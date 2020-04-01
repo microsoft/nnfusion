@@ -1,0 +1,34 @@
+// dim3(1, 256, 1), dim3(64, 1, 1)
+
+	constexpr unsigned int gridDim = 1;
+	constexpr unsigned int blockSize = 64;
+	constexpr unsigned int dataSize = 256;
+	constexpr bool transposeB = false;
+
+	extern __shared__ float sdata[blockSize];
+	unsigned int tid = threadIdx.x;
+	unsigned int i = blockIdx.x*(blockSize*2) + tid;
+	constexpr unsigned int gridSize = blockSize*2*gridDim;
+	sdata[tid] = 0;
+	if (transposeB) {
+		#pragma unroll
+		while (i < dataSize) { sdata[tid] += input0[i] * input1[blockIdx.y * 256 + i] + input0[i+blockSize] * input1[blockIdx.y * 256 + i+blockSize]; i += gridSize; }
+    } else {
+		#pragma unroll
+		while (i < dataSize) { sdata[tid] += input0[i] * input1[blockIdx.y + 256 * i] + input0[i+blockSize] * input1[blockIdx.y + 256 * i+ 256 * blockSize]; i += gridSize; }
+	}
+	if (blockSize >= 128) { __syncthreads(); }
+	if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+	if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+
+	// warp_reduce
+	volatile float *__sdata = (volatile float *)sdata;
+	if (blockSize >= 128) __sdata[tid] += __sdata[tid + 64];
+	if (blockSize >= 64) __sdata[tid] += __sdata[tid + 32];
+	if (blockSize >= 32) __sdata[tid] += __sdata[tid + 16];
+	if (blockSize >= 16) __sdata[tid] += __sdata[tid + 8];
+	if (blockSize >= 8) __sdata[tid] += __sdata[tid + 4];
+	if (blockSize >= 4) __sdata[tid] += __sdata[tid + 2];
+	if (blockSize >= 2) __sdata[tid] += __sdata[tid + 1];
+
+	if (tid == 0) output0[blockIdx.y] = sdata[0];

@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #pragma once
 #include "nnfusion/common/descriptor/layout/tensor_layout.hpp"
 #include "nnfusion/common/descriptor/tensor.hpp"

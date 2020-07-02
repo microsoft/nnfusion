@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Wenxiang
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 /**
  * \brief Predefined Operator Inventory for Unit Tests
  * \author wenxh

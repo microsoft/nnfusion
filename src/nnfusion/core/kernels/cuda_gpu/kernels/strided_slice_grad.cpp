@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #include "strided_slice_grad.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"

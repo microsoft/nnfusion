@@ -1,4 +1,5 @@
-# Microsoft (c) 2019, MSRA/NNFUSION Team
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 # Author: wenxh
 # This script is to be used as batch system intergration test in Azure Build Agent
 import os

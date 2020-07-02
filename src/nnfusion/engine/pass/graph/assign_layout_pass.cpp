@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #include "assign_layout_pass.hpp"
 #include "nnfusion/common/descriptor/layout/dense_tensor_layout.hpp"

@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFUSION Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #pragma once
 #include "nnfusion/common/languageunit.hpp"
 

@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Wenxiang
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 // Metagraph IR, which is to guide the codegen procedcure.
 // This IR is based on ONNIX::ir's interface, but
 // Instructions has attribute, namespace, and tag

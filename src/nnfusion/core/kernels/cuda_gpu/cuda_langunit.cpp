@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Wenxiang
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "cuda_langunit.hpp"
 //#include "cuda_cublas.hpp"
 #include "cuda_cudnn.hpp"

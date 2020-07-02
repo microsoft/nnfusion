@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Yanhui Hong
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #pragma once
 #include "nnfusion/common/common.hpp"
 #include "nnfusion/engine/interpreter.hpp"

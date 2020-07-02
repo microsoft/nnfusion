@@ -1,4 +1,5 @@
-# Microsoft (c) 2019, NNFusion Team
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 #-------lib_kernels_registration----------
 set(SRC

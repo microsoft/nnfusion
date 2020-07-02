@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #pragma once
 #include "cuda_helper.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"

@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Wenxiang
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "cuda_helper.hpp"
 
 using namespace nnfusion::kernels;

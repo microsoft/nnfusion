@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, MSRA/NNFUSION Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 /**
  * \brief Unittest for profiler feature of engine
  * \author wenxh

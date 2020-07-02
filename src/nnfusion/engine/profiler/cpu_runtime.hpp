@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, MSRA/NNFUSION Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 /**
  * \brief Profiler::CPURuntime for creating a Compiler to profile the cpu kernel
  * \author wenxh

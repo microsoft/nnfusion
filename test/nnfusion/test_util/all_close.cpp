@@ -1,4 +1,5 @@
-// Microsoft (c) 2019 X-mas, MSRA NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "all_close.hpp"
 
 namespace nnfusion

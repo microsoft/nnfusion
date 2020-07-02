@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #include "binary_elementwise_comparison.hpp"
 #include "nnfusion/core/graph/gnode.hpp"

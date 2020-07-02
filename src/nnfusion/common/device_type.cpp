@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNfusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "device_type.hpp"
 
 std::string nnfusion::get_device_str(DeviceType dt)

@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "assign_async_info_pass.hpp"
 #include "nnfusion/util/util.hpp"
 

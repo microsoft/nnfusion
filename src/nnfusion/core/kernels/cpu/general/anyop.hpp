@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #pragma once
 #include "../cpu_kernel_emitter.hpp"
 #include "../cpu_langunit.hpp"

@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Yanhui Hong
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "extract_graph_signature.hpp"
 
 using namespace nnfusion::interpreter;

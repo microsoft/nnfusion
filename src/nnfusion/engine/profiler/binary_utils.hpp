@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Wenxiang
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 /**
  * \brief Binary utilities for profiling.
  * \todo This file should be moved into util/ in the future, since other feature may use this

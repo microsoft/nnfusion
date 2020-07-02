@@ -1,4 +1,5 @@
-# Microsoft (c) 2019
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 if (NNFUSION_TENSORFLOW_IMPORT_ENABLE)
     add_subdirectory(tensorflow_import)

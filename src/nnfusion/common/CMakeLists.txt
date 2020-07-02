@@ -1,4 +1,5 @@
-# Microsoft (c) 2019, MNFusion Team
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 set(SRC
     languageunit.cpp

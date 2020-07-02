@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFUSION TEAM
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "memory_allocator.hpp"
 
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)

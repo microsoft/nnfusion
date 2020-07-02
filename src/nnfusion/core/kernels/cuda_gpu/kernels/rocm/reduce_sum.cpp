@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #include "../../cuda_emitter.hpp"
 #include "../../cuda_langunit.hpp"
@@ -105,7 +106,8 @@ namespace nnfusion
         } // namespace cuda
     }     // namespace kernels
 } // namespace nnfusion
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

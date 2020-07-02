@@ -1,5 +1,6 @@
 
-// Microsoft (c) 2019, NNFUSION Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "nnfusion/common/languageunit.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"

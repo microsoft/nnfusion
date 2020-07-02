@@ -1,4 +1,5 @@
-# Microsoft (c) 2019, MSRA/NNFUSION Team
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 # Author: wenxh
 # This script is to be used to diff the trace
 import os

@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Wenxiang Hu
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "interpreter.hpp"
 #include "nnfusion/engine/pass/cpu_codegenerator.hpp"
 #include "nnfusion/engine/pass/cuda_codegenerator.hpp"

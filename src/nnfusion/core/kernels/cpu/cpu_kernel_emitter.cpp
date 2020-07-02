@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "cpu_kernel_emitter.hpp"
 
 using namespace nnfusion;
@@ -10,7 +11,8 @@ LanguageUnit_p cpu::EigenKernelEmitter::emit_eigen_utils()
     auto& lu = *_lu;
 
     lu << R"(
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #pragma once
 
 #include <Eigen/Core>

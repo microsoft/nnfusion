@@ -1,4 +1,5 @@
-# Microsoft (c) 2019, NNFusion Team
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 file(GLOB generic_op_define generic_op/generic_op_define/*.cpp)
 

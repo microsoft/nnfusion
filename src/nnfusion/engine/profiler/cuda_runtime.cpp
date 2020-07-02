@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, MSRA/NNFUSION Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 /**
  * \brief Profiler::CudaRuntime for creating a Compiler to profile the kernel
  * \author wenxh
@@ -16,7 +17,8 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
         return true;
     FunctionUnit_p fu = ke->kernel->get_or_emit_source();
     LanguageUnit writer(fu->name_unit->get_code() + ".cu");
-    writer << "// Microsoft (c) 2019, NNFusion\n";
+    writer << "// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License., NNFusion\n";
 
     auto re = fu->dep_unit;
     re->require(header::assert);

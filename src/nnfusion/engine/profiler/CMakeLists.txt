@@ -1,4 +1,5 @@
-# Microsoft (c) 2019, MSRA/NNFUSION team
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 set(ENGINE_PROFILER
     profiler.cpp

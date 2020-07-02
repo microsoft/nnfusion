@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFUSION TEAM
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 #include "tensor_memory_layout.hpp"
 
 #include <exception>

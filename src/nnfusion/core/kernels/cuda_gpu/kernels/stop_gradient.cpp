@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 // This is the 2rd-generation of kernel definition, recommend to extend new ops with this style
 // Changes needed for creating an new kernel with 2rd generation style:

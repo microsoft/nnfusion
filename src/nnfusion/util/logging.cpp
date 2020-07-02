@@ -1,4 +1,5 @@
-// Microsoft (c) 2019, Wenxiang Hu
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 // This file is modified from nnfusion Log
 
 #include <chrono>

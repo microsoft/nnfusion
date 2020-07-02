@@ -1,4 +1,5 @@
-# Microsoft (c) 2019, NNFusion Team
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 set(SRC
     assign_layout_pass.cpp

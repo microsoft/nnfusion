@@ -3,7 +3,7 @@
 
 FROM rocm/dev-ubuntu-18.04:3.5
 RUN apt update && apt install -y git
-RUN git clone git@github.com:microsoft/nnfusion.git /root/nnfusion --branch master --single-branch
+RUN git clone https://github.com/microsoft/nnfusion.git /root/nnfusion --branch master --single-branch
 # - Install Requirements 
 RUN bash /root/nnfusion/maint/script/install_dependency.sh
 # - Make Install

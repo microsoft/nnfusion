@@ -50,6 +50,11 @@ To ease the process of installing all the dependencies, baseline softwares, and 
     ```
     bash artifacts/scripts/build_and_install_deps.sh
     ```
+* For better evaluation figure produced, the font named Times-New-Roman need to be installed by this command:
+    ```
+    apt install ttf-mscorefonts-installer
+    ```
+
 So far, you are ready to run NNFusion. Besides, if you want to run the evaluation in your native enviroment and build everything from scratch, please follow [README_DEPENDENCY.md](README_DEPENDENCY.md) and install each of them step by step. We recommend to use a Ubuntu 16.04 environment.
 
 ## 2. Getting Started with a Simple Example

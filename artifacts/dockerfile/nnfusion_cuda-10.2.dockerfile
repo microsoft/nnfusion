@@ -8,7 +8,7 @@ FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu16.04
 RUN apt update && apt install -y cuda-toolkit-10-0 git llvm-6.0 clang-6.0 curl wget
 RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && apt install -y git-lfs && git lfs install
 
-RUN git clone git@github.com:microsoft/nnfusion.git /root/nnfusion --branch artifact --single-branch
+RUN git clone https://github.com/microsoft/nnfusion.git /root/nnfusion --branch artifact --single-branch
 
 # install anaconda
 RUN mkdir /root/nnfusion/artifacts/.deps && curl https://repo.anaconda.com/archive/Anaconda3-5.1.0-Linux-x86_64.sh -o /root/nnfusion/artifacts/.deps/Anaconda3-5.1.0-Linux-x86_64.sh && bash /root/nnfusion/artifacts/.deps/Anaconda3-5.1.0-Linux-x86_64.sh -b -p /root/nnfusion/artifacts/.deps/anaconda3

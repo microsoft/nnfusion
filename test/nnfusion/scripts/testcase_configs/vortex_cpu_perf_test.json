@@ -1,0 +1,16 @@
+{
+    "testcases": [
+        {
+            "testcase": "cpu_performance test #1",
+            "tag": [
+                "performance_cpu_only"
+            ],
+            "filename": "cpu_performance/vortex_cpu_perf_test.pb",
+            "type": "cpu_perf_case_single_line",
+            "flag" : "-backend nnfusion -fnum_stream 4 -fantares_codegen_server 172.23.234.89:9999 -fthread_num_per_node 16 -fkernel_fusion_level 2 -fconst_folding_backend=CUDA",
+            "baseline" : 600,
+            "output": "2.882386e-01  .. (size = 1, ends with 2.882386e-01);",
+            "comment": "CPU performance test json descriptor for test case."
+        }
+    ]
+}

@@ -1,0 +1,45 @@
+onnx-example:½
+`
+dout
+x
+scale
+mean
+inv_vardxdscaledbias"LayerNormalizationGrad*
+axisÿÿÿÿÿÿÿÿÿ layer_norm_gradZ
+dout
+
+
+
+Z
+x
+
+
+
+Z
+scale
+
+
+Z
+mean
+
+
+
+Z
+inv_var
+
+
+
+b
+dx
+
+
+
+b
+dscale
+
+
+b
+dbias
+
+
+B

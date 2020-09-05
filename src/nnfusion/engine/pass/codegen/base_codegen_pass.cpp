@@ -1,0 +1,210 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+#include "base_codegen_pass.hpp"
+#include "nnfusion/core/kernels/kernel_emitter.hpp"
+
+using namespace nnfusion;
+using namespace nnfusion::graph;
+using namespace nnfusion::kernels;
+using namespace nnfusion::codegen;
+
+DECLARE_bool(fkernels_as_files);
+DECLARE_int64(fkernels_files_number);
+
+bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
+                          std::shared_ptr<TranslationUnit> tu)
+{
+    NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " starts up.";
+
+    initialize(ctx, tu);
+    NNFUSION_CHECK(collect_mem(ctx, tu));
+    NNFUSION_CHECK(collect_stream(ctx, tu));
+    NNFUSION_CHECK(collect_funcs(ctx, tu));
+    NNFUSION_CHECK(modify_codegen());
+
+    // codegen
+    projgen->codegen();
+    NNFUSION_CHECK(after_projgen());
+    exit(0);
+
+    return true;
+}
+
+void BaseCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
+                                 std::shared_ptr<TranslationUnit> tu)
+{
+    // setup lup_codegen execution info
+    projgen->lup_codegen->pwd = m_codegen_folder;
+    projgen->lup_codegen->write_to = "nnfusion_rt.h";
+
+    return;
+}
+
+nnfusion::codegen::CodegenFuncCallsUnit_p
+    BaseCodegenPass::get_kernel_func_calls(const string& calls_symbol,
+                                           CodegenMainBlockUnit_p main_block)
+{
+    std::string search_str = calls_symbol;
+    if (main_block)
+        search_str += "_" + main_block->symbol;
+    if (kernel_func_calls.find(search_str) != kernel_func_calls.end())
+        return kernel_func_calls[search_str];
+
+    CodegenFuncCallsUnit_p lup_func_calls = std::make_shared<CodegenFuncCallsUnit>(calls_symbol);
+    // add to main_block
+    if (main_block)
+        main_block->unit_vec.push_back(lup_func_calls);
+    kernel_func_calls[search_str] = lup_func_calls;
+    return kernel_func_calls[search_str];
+}
+
+void BaseCodegenPass::separate_func_defs_files(int file_number, const string& kernel_folder)
+{
+    if (kernel_folder != m_kernel_folder)
+        change_kernel_folder(kernel_folder);
+
+    if (file_number <= 0)
+    {
+        for (auto it : kernel_func_defs)
+        {
+            LanguageUnit_p func_def = it.second.second;
+            func_def->pwd = kernel_folder;
+            string fname = func_def->symbol;
+            if (fname.length() > 128)
+            {
+                size_t hashcode = std::hash<std::string>{}(fname);
+                fname = "compressed_src_" + std::to_string(hashcode);
+            }
+            func_def->write_to = fname + m_kernel_suffix;
+        }
+    }
+    else
+    {
+        int i = 0;
+        for (auto it : kernel_func_defs)
+        {
+            int file_idx = i % file_number;
+            LanguageUnit_p func_def = it.second.second;
+            func_def->pwd = kernel_folder;
+            func_def->write_to = "kernel_func_def_" + to_string(file_idx) + m_kernel_suffix;
+            i++;
+        }
+    }
+}
+
+void BaseCodegenPass::add_init_and_exit_pair(LanguageUnit_p lup_in_init, LanguageUnit_p lup_in_exit)
+{
+    //add to init
+    projgen->lup_init->unit_vec.push_back(lup_in_init);
+    //add to exit
+    projgen->lup_exit->unit_vec.push_back(lup_in_exit);
+
+    return;
+}
+
+bool BaseCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
+                                    std::shared_ptr<TranslationUnit> tu)
+{
+    if (!tu)
+        return false;
+    auto lup_func_calls = get_kernel_func_calls("func_calls", projgen->lup_exec);
+
+    auto& prog = tu->program;
+    // collect code
+    for (auto iterator : prog)
+    {
+        for (auto ins : *iterator)
+        {
+            KernelEmitter::Pointer kernel;
+            kernel = ins->getKernel();
+            if (!kernel || !kernel->get_or_emit_source())
+            {
+                return false;
+            }
+
+            // process kernel code
+            FunctionUnit_p fu = kernel->get_or_emit_source(true);
+            string call_str = fu->call_unit->get_code();
+            string body_str = fu->body_unit->get_code();
+            if (!body_str.empty())
+            {
+                if (kernel_func_defs.find(body_str) == kernel_func_defs.end())
+                {
+                    auto kernel_func_def = fu->body_unit;
+                    for (auto& it : fu->dep_unit->local_symbol)
+                    {
+                        kernel_func_def->require(it.second);
+                    }
+                    kernel_func_defs[body_str] = make_pair(call_str, kernel_func_def);
+                }
+                else
+                {
+                    call_str = kernel_func_defs[body_str].first;
+                }
+            }
+            LanguageUnit_p kernel_func_call = fu->call_unit;
+            lup_func_calls->unit_vec.push_back(kernel_func_call);
+            lup_func_calls->require(kernel_func_defs[body_str].second);
+            if (FLAGS_fkernels_as_files &&
+                kernel_func_defs[body_str].second->extern_decl_unit != nullptr)
+                lup_func_calls->require(kernel_func_defs[body_str].second->extern_decl_unit);
+        }
+    }
+
+    if (FLAGS_fkernels_as_files)
+        separate_func_defs_files(FLAGS_fkernels_files_number, m_kernel_folder);
+
+    return true;
+}
+
+bool BaseCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
+                                  std::shared_ptr<TranslationUnit> tu)
+{
+    if (!tu)
+        return false;
+    auto mem_pair = create_init_and_exit_pair<LanguageUnitwithVec, LanguageUnitwithVec>("MEM_ALLOC",
+                                                                                        "MEM_FREE");
+    auto lup_mem_alloc = mem_pair.first;
+    auto lup_mem_free = mem_pair.second;
+    auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
+
+    size_t total_alloc = 0;
+    for (const auto& allocator : allocator_list)
+    {
+        total_alloc += allocator.second->max_allocated();
+    }
+    LanguageUnit_p total = std::make_shared<LanguageUnit>(
+        "total_memory", "// total memory:" + to_string(total_alloc) + "\n");
+    lup_mem_alloc->unit_vec.push_back(total);
+
+    for (const auto& allocator : allocator_list)
+    {
+        auto init = allocator.second->emit_memory_init();
+        auto alloc = allocator.second->emit_memory_alloc();
+        auto free = allocator.second->emit_memory_free();
+
+        lup_mem_alloc->unit_vec.push_back(alloc);
+        lup_mem_alloc->require(init);
+        lup_mem_free->unit_vec.push_back(free);
+        lup_mem_free->require(init);
+    }
+
+    return true;
+}
+
+bool BaseCodegenPass::after_projgen()
+{
+    struct stat s;
+    std::string constant_folder = get_current_dir_name() + std::string("/Constant");
+    if (stat(constant_folder.c_str(), &s) == 0)
+    {
+        std::string cmd = std::string("cp -R ") + constant_folder + " " + m_codegen_folder;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError("Failed to copy constant files.\n");
+        }
+    }
+
+    return true;
+}

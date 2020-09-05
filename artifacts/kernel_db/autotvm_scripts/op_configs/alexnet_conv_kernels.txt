@@ -1,0 +1,5 @@
+cudnn_convolution_op_float|i+1_3_227_227|w+64_3_11_11|o+1_64_55_55|ws+4_4|wd+1_1|p+0_0
+cudnn_convolution_op_float|i+1_64_27_27|w+192_64_5_5|o+1_192_27_27|ws+1_1|wd+1_1|p+2_2
+cudnn_convolution_op_float|i+1_192_13_13|w+384_192_3_3|o+1_384_13_13|ws+1_1|wd+1_1|p+1_1
+cudnn_convolution_op_float|i+1_384_13_13|w+384_384_3_3|o+1_384_13_13|ws+1_1|wd+1_1|p+1_1
+cudnn_convolution_op_float|i+1_384_13_13|w+256_384_3_3|o+1_256_13_13|ws+1_1|wd+1_1|p+1_1

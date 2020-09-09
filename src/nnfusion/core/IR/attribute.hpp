@@ -123,7 +123,7 @@ namespace nnfusion
             bool hasAttribute(Symbol name) const { return find(name, false) != values_.end(); }
             Attributes* removeAttribute(Symbol name)
             {
-                values_.erase(find(name, true));
+                values_.erase(find(name, false));
                 return this;
             }
             bool hasAttributes() const { return values_.size() > 0; }
@@ -235,6 +235,7 @@ namespace nnfusion
                 return get<ScalarAttributeValue<T>>(name);
             }
 
+            void Del(Symbol name) { removeAttribute(name); }
             template <typename T>
             bool CheckType(Symbol name) const
             {
@@ -275,6 +276,14 @@ namespace nnfusion
             }
 
             bool is_valid() { return _tags->hasAttribute(_sym); };
+            void remove()
+            {
+                if (is_valid())
+                {
+                    _tags->removeAttribute(_sym);
+                }
+            }
+
             template <typename T>
             bool is_valid_as()
             {

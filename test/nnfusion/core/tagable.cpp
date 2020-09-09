@@ -34,4 +34,9 @@ TEST(nnfusion_core_ir, tagable)
     gnode["Grouped"] = true;
     ins.copy_tags_from(gnode);
     EXPECT_TRUE(ins["Grouped"].is_valid() && ins["Grouped"].as<bool>());
+
+    ins["Example"].remove();
+    EXPECT_TRUE(!ins["Example"].is_valid());
+    ins["Example1"].remove();
+    EXPECT_TRUE(!ins["Example1"].is_valid());
 }

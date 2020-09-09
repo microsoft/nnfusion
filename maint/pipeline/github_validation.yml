@@ -1,0 +1,18 @@
+name: github_validation
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Pipelines Action
+        uses: Azure/pipelines@v1
+        with:
+          azure-devops-project-url: https://dev.azure.com/sysdnn/NNFusion
+          azure-pipeline-name: nnfusion_build_validation
+          azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}

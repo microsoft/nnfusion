@@ -19,20 +19,6 @@ namespace nnfusion
     {
     public:
         virtual bool run(shared_ptr<InterpreterContext> ctx, shared_ptr<TranslationUnit> tu) = 0;
-
-        static bool run_passes(const vector<shared_ptr<IInterpreterPass>>& passes,
-                               shared_ptr<InterpreterContext> ctx,
-                               shared_ptr<TranslationUnit> tu)
-        {
-            bool rc = true;
-            for (auto& pass : passes)
-            {
-                rc = pass->run(ctx, tu);
-                if (!rc)
-                    break;
-            }
-            return rc;
-        }
     };
 
     class TranslationUnit
@@ -74,32 +60,4 @@ namespace nnfusion
         unordered_map<string, string> m_variable_name_map;
         TranslationUnitMap m_tus;
     };
-
-    // This is to translate nnfusion::graph to NNFusion::IntermediateOP
-    class Interpreter
-    {
-        friend class nnfusion_Backend;
-
-    public:
-        Interpreter();
-        Interpreter(shared_ptr<vector<shared_ptr<IInterpreterPass>>> m_passes,
-                    shared_ptr<InterpreterContext> ctx);
-        ~Interpreter(){};
-
-        TranslationUnitMap& translate(shared_ptr<graph::Graph> graph);
-
-        bool translate(TranslationUnit::Pointer tu);
-
-        static const size_t s_memory_pool_alignment;
-
-        shared_ptr<InterpreterContext> m_trans_ctx;
-        shared_ptr<vector<shared_ptr<IInterpreterPass>>> m_passes;
-
-    private:
-        void add_memcpy_ir(shared_ptr<graph::Graph> graph,
-                           shared_ptr<nnfusion::graph::GNode> gnode,
-                           nnfusion::ir::BasicBlock::Pointer bb_main);
-    };
-
-    using Interpreter_p = shared_ptr<Interpreter>;
 }

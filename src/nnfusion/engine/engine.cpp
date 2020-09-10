@@ -4,6 +4,16 @@
 #include "engine.hpp"
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
 
+DEFINE_bool(fkernels_as_files, false, "Saving kernels as standalone source code files.");
+DEFINE_int64(fkernels_files_number, -1, "Saving kernels into how many source code files.");
+DEFINE_bool(ftraining_mode, false, "Turn on training mode.");
+DEFINE_bool(fextern_result_memory, false, "Model result tensor memory is managed externally.");
+DEFINE_int32(fwarmup_step, 5, "Warm up step.");
+DEFINE_int32(frun_step, 100, "Run step.");
+DEFINE_int32(min_log_level,
+             1,
+             "Minimum logging level: 0 - debug; 1 - info; 2 - warning; 3 - error; 4 - fatal;");
+
 using namespace nnfusion;
 
 Engine::Engine()

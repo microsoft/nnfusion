@@ -2,7 +2,6 @@ add_subdirectory(pass)
 
 set(ENGINE
     external/backend_manager.cpp
-    external/backend.cpp
 )
 
 add_library(ngraph_backend STATIC 

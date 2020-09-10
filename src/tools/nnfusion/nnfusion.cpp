@@ -10,7 +10,6 @@
 #include <iomanip>
 
 #include "gflags/gflags.h"
-#include "nnfusion/engine/external/backend.hpp"
 #include "nnfusion/frontend/onnx_import/onnx.hpp"
 #include "nnfusion/frontend/tensorflow_import/tensorflow.hpp"
 #include "nnfusion/frontend/torchscript_import/torchscript.hpp"

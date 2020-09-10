@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "engine.hpp"
+#include "nnfusion/engine/pass/extract_graph_signature.hpp"
 
 using namespace nnfusion;
 

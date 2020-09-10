@@ -93,7 +93,7 @@ TranslationUnitMap& Interpreter::translate(shared_ptr<graph::Graph> graph)
     NNFUSION_CHECK(graph_passes.run(graph_vec) == true);
 
     // Iterator through all nodes
-    static interpreter::ExtractGraphSignature extract_global;
+    static pass::ExtractGraphSignature extract_global;
 
     // Deal with translation unit's program
     for (auto cur_graph : graph_vec)

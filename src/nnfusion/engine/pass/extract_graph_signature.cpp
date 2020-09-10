@@ -6,10 +6,10 @@
 
 DEFINE_string(fpara_json_file, "./para_info.json", "Kenel entry parameter info json file.");
 
-using namespace nnfusion::interpreter;
+using namespace nnfusion::pass;
 
 bool ExtractGraphSignature::extract_result(std::shared_ptr<TranslationUnit> tu,
-                                           std::shared_ptr<graph::Graph> graph)
+                                           std::shared_ptr<nnfusion::graph::Graph> graph)
 {
     for (auto gnode : graph->get_outputs())
     {
@@ -24,7 +24,7 @@ bool ExtractGraphSignature::extract_result(std::shared_ptr<TranslationUnit> tu,
 
 bool ExtractGraphSignature::extract_constants(std::shared_ptr<InterpreterContext> ctx,
                                               std::shared_ptr<TranslationUnit> tu,
-                                              std::shared_ptr<graph::Graph> graph)
+                                              std::shared_ptr<nnfusion::graph::Graph> graph)
 {
     for (auto gnode : graph->get_nodes())
     {
@@ -129,7 +129,7 @@ void ExtractGraphSignature::propagate_in_place_output(std::shared_ptr<Interprete
 
 bool ExtractGraphSignature::extract_args(std::shared_ptr<InterpreterContext> ctx,
                                          std::shared_ptr<TranslationUnit> tu,
-                                         std::shared_ptr<graph::Graph> graph)
+                                         std::shared_ptr<nnfusion::graph::Graph> graph)
 {
     size_t arg_index = 0;
     for (auto gnode : graph->get_parameters())
@@ -167,7 +167,7 @@ bool ExtractGraphSignature::extract_args(std::shared_ptr<InterpreterContext> ctx
 
 bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> ctx,
                                            std::shared_ptr<TranslationUnit> tu,
-                                           std::shared_ptr<graph::Graph> graph)
+                                           std::shared_ptr<nnfusion::graph::Graph> graph)
 {
     for (size_t i = 0; i < graph->get_output_size(); ++i)
     {

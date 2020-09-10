@@ -166,8 +166,8 @@ int main(int argc, char** argv)
             // case CUDA_GPU:
             //     runtime->codegen(graph);
             //     break;
-            // case ROCM_GPU: rocm_engine.run_on_graph(graph); break;
-            case ROCM_GPU: runtime->codegen(graph); break;
+            case ROCM_GPU: rocm_engine.run_on_graph(graph); break;
+            // case ROCM_GPU: runtime->codegen(graph); break;
             case GENERIC_CPU: runtime->codegen(graph); break;
             case HLSL: hlsl_engine.run_on_graph(graph); break;
             case GraphCore: gc_engine.run_on_graph(graph); break;

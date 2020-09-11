@@ -49,21 +49,4 @@ bool BlockFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
         return true;
     }
     return true;
-    // auto dev_name = FLAGS_fdefault_device;
-    // if (dev_name == "ROCm" || dev_name == "CUDA")
-    // {
-    //     NNFUSION_LOG(INFO) << "device: " << dev_name;
-    //     if (FLAGS_fblockfusion_level == 1)
-    //     {
-    //         //
-    //     }
-    //     BlockFuseOptimizer optimizer(graph);
-    //     return optimizer.Optimize();
-    // }
-    // else
-    // {
-    //     NNFUSION_LOG(WARNING) << "BlockFusion does not support " << dev_name
-    //                           << " now, BlockFusion will be disabled in this compilation.";
-    //     return true;
-    // }
 }

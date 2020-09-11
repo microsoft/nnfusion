@@ -7,6 +7,7 @@ set(SRC
     graphcore.cpp
     hlsl.cpp
     rocm.cpp
+    cpu.cpp
     reversed_dfs_visitor.cpp
     degree_based_visitor.cpp
 )

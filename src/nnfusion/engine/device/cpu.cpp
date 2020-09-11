@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#include "cuda.hpp"
+#include "cpu.hpp"
 #include "reversed_dfs_visitor.hpp"
 
 #include "nnfusion/engine/pass/graph/assign_async_info_pass.hpp"
@@ -20,6 +20,7 @@
 #include "nnfusion/engine/pass/graph/multi_reshape_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
+#include "nnfusion/engine/pass/graph/rammer_base_k.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
 
@@ -29,14 +30,14 @@
 #include "nnfusion/engine/pass/tensor/tensor_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_memory_layout.hpp"
 
-#include "nnfusion/engine/pass/codegen/cuda_codegen_pass.hpp"
+#include "nnfusion/engine/pass/codegen/cpu_codegen_pass.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::engine;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::pass;
 
-CudaEngine::CudaEngine()
+CpuEngine::CpuEngine()
     : Engine()
 {
     g_passes->push_back(make_shared<CSEPass>());
@@ -58,11 +59,9 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<FetchBasedSelector>());
     g_passes->push_back(make_shared<DefaultKernelSelector>());
 
-    // GPU specific graph passes
     g_passes->push_back(make_shared<KernelFusionPass>());
     g_passes->push_back(make_shared<KernelProfilingPass>());
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
-    g_passes->push_back(make_shared<BlockFusionPass>());
 
     // Specific opt for dot
     g_passes->push_back(make_shared<DotTransposePass>());
@@ -82,5 +81,5 @@ CudaEngine::CudaEngine()
     m_passes->push_back(make_shared<AssignTensorMemoryLayout>(64, false));
 
     // Do codegen
-    m_passes->push_back(make_shared<CudaCodegenPass>());
+    m_passes->push_back(make_shared<CpuCodegenPass>());
 }

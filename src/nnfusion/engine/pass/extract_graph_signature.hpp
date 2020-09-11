@@ -7,7 +7,7 @@
 
 namespace nnfusion
 {
-    namespace interpreter
+    namespace pass
     {
         struct NodeOut
         {
@@ -23,11 +23,11 @@ namespace nnfusion
         {
         public:
             bool extract_result(std::shared_ptr<TranslationUnit> tu,
-                                std::shared_ptr<graph::Graph> graph);
+                                std::shared_ptr<nnfusion::graph::Graph> graph);
 
             bool extract_constants(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu,
-                                   std::shared_ptr<graph::Graph> graph);
+                                   std::shared_ptr<nnfusion::graph::Graph> graph);
 
             void propagate_in_place_input(std::shared_ptr<InterpreterContext> ctx,
                                           NodeOut nodeOutput,
@@ -39,11 +39,11 @@ namespace nnfusion
 
             bool extract_args(std::shared_ptr<InterpreterContext> ctx,
                               std::shared_ptr<TranslationUnit> tu,
-                              std::shared_ptr<graph::Graph> graph);
+                              std::shared_ptr<nnfusion::graph::Graph> graph);
 
             bool extract_output(std::shared_ptr<InterpreterContext> ctx,
                                 std::shared_ptr<TranslationUnit> tu,
-                                std::shared_ptr<graph::Graph> graph);
+                                std::shared_ptr<nnfusion::graph::Graph> graph);
 
             bool run(std::shared_ptr<InterpreterContext> ctx,
                      std::shared_ptr<TranslationUnit> tu) override;

@@ -10,12 +10,12 @@
 #include <iomanip>
 
 #include "gflags/gflags.h"
-#include "nnfusion/engine/external/backend.hpp"
 #include "nnfusion/frontend/onnx_import/onnx.hpp"
 #include "nnfusion/frontend/tensorflow_import/tensorflow.hpp"
 #include "nnfusion/frontend/torchscript_import/torchscript.hpp"
 #include "nnfusion/frontend/util/parameter.hpp"
 
+#include "nnfusion/engine/device/cpu.hpp"
 #include "nnfusion/engine/device/cuda.hpp"
 #include "nnfusion/engine/device/graphcore.hpp"
 #include "nnfusion/engine/device/hlsl.hpp"
@@ -152,21 +152,27 @@ int main(int argc, char** argv)
     {
         if (!FLAGS_fdefault_device.empty())
         {
-            auto runtime = ngraph::runtime::Backend::create(backend);
+            // auto runtime = ngraph::runtime::Backend::create(backend);
             nnfusion::engine::CudaEngine cuda_engine;
             nnfusion::engine::HLSLEngine hlsl_engine;
             nnfusion::engine::GraphCoreEngine gc_engine;
             nnfusion::engine::ROCmEngine rocm_engine;
+            nnfusion::engine::CpuEngine cpu_engine;
 
             switch (get_device_type(FLAGS_fdefault_device))
             {
-            // case CUDA_GPU: cuda_engine.run_on_graph(graph); break;
             case CUDA_GPU:
-                runtime->codegen(graph);
+                cuda_engine.run_on_graph(graph);
                 break;
-            // case ROCM_GPU: rocm_engine.run_on_graph(graph); break;
-            case ROCM_GPU: runtime->codegen(graph); break;
-            case GENERIC_CPU: runtime->codegen(graph); break;
+            // case CUDA_GPU:
+            //     runtime->codegen(graph);
+            //     break;
+            case ROCM_GPU:
+                rocm_engine.run_on_graph(graph);
+                break;
+            // case ROCM_GPU: runtime->codegen(graph); break;
+            // case GENERIC_CPU: runtime->codegen(graph); break;
+            case GENERIC_CPU: cpu_engine.run_on_graph(graph); break;
             case HLSL: hlsl_engine.run_on_graph(graph); break;
             case GraphCore: gc_engine.run_on_graph(graph); break;
             }

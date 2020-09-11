@@ -10,8 +10,8 @@
 #include "../test_util/common.hpp"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
-#include "nnfusion/engine/external/backend_manager.hpp"
 #include "nnfusion/engine/pass/graph/autodiff_pass.hpp"
+#include "nnfusion/engine/util/file_util.hpp"
 #include "nnfusion/frontend/onnx_import/onnx.hpp"
 
 using namespace nnfusion;

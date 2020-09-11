@@ -15,9 +15,6 @@
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
 #include "nnfusion/util/util.hpp"
 
-extern int BLOCKFUSION_NUM_KERNELS;
-extern int BLOCKFUSION_BE_SIZE;
-
 namespace nnfusion
 {
     namespace pass

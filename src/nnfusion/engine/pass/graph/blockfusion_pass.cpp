@@ -12,21 +12,22 @@ using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
 
 // It's not encouraging to use the blockfusion level 2 because it is still an experimental feature and is under development
-DEFINE_int32(fblockfusion_level, 0, "");
+DEFINE_int32(
+    fblockfusion_level,
+    0,
+    "BlockFusion optimization level: 0: disable, 1: wavefront, 2: wavefront with wave merge");
 DECLARE_string(fproduct_name);
 DECLARE_string(fdefault_device);
 
-DEFINE_bool(frammer_fast, false, "Rammer Fast");
-DECLARE_bool(fdot_transpose);
+DEFINE_bool(fblockfusion_interplay,
+            true,
+            "Interplay of intra- and inter- operator scheduling in BlockFusion");
 
 const static size_t DEFAULT_GROUP_ID = -1;
 const static size_t MAX_GROUP = 128;
 const static size_t DEFAULT_BE = 10240;
 // volta max parallelism
 const static size_t RESOURCE_CAPACITY = 4 * 80;
-
-int BLOCKFUSION_NUM_KERNELS;
-int BLOCKFUSION_BE_SIZE;
 
 struct FusionGroup
 {
@@ -79,6 +80,7 @@ public:
         m_nodes.resize(m_graph->get_max_node_id());
         m_kernel_db = std::make_shared<cache::KernelCacheManager>();
         m_db_ready = m_kernel_db->is_valid() ? true : false;
+        m_interplay = FLAGS_fblockfusion_interplay;
     }
 
     bool Optimize()
@@ -165,9 +167,6 @@ public:
                     break;
                 }
             }
-            // for group_sync initialization
-            BLOCKFUSION_NUM_KERNELS = BlockFusionCudaCodegen::get_unique_func_id();
-            BLOCKFUSION_BE_SIZE = DEFAULT_BE;
         }
         return true;
     }
@@ -181,8 +180,8 @@ private:
 
         if (!(*node)["Kernel_Selection_Result"].is_valid())
         {
-            NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before this pass:"
-                                           << node->get_name();
+            NNFUSION_LOG(NNFUSION_WARNING)
+                << "Kernel should be emitted before this pass:" << node->get_name();
             return false;
         }
         auto emitted_kernel = (*node)["Kernel_Selection_Result"]
@@ -196,8 +195,8 @@ private:
         }
         else if (!emitted_kernel.second->is_emitted())
         {
-            NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before this pass:"
-                                           << node->get_name();
+            NNFUSION_LOG(NNFUSION_WARNING)
+                << "Kernel should be emitted before this pass:" << node->get_name();
             return false;
         }
         else
@@ -478,7 +477,7 @@ private:
             std::make_shared<BlockParallelDevice>(DEFAULT_BE, BlockKernelSchedulePolicy::RANGE);
         BlockParallelDevice& virtual_device = *virtual_device_p;
         std::vector<std::string> nodes_dep;
-        if (group->nodes.size() > 1 && m_db_ready && !FLAGS_frammer_fast)
+        if (group->nodes.size() > 1 && m_db_ready && m_interplay)
         {
             int aggregated_resources = 0;
             for (int i = 0; i < group->nodes.size(); i++)
@@ -507,10 +506,10 @@ private:
                         kernel->get_or_emit_source();
                         group->block_kernels[i] = kernel;
                         group->duration[i] = fetched_kernel.profile[FLAGS_fproduct_name];
-                        NNFUSION_LOG(DEBUG) << "fetched kernel " << identifier << " with resource "
-                                            << fetched_kernel.resource << " and profiled on "
-                                            << FLAGS_fproduct_name << " in "
-                                            << fetched_kernel.profile[FLAGS_fproduct_name] << "us";
+                        NNFUSION_LOG(DEBUG)
+                            << "fetched kernel " << identifier << " with resource "
+                            << fetched_kernel.resource << " and profiled on " << FLAGS_fproduct_name
+                            << " in " << fetched_kernel.profile[FLAGS_fproduct_name] << "us";
                     }
                 }
             }
@@ -689,6 +688,7 @@ private:
     std::shared_ptr<Graph> m_graph;
     std::vector<std::shared_ptr<TaggedNode>> m_nodes;
     std::shared_ptr<cache::KernelCacheManager> m_kernel_db;
+    bool m_interplay;
 };
 
 bool BlockFusionPass::run_on_graph(std::shared_ptr<Graph>& graph)
@@ -697,15 +697,13 @@ bool BlockFusionPass::run_on_graph(std::shared_ptr<Graph>& graph)
     if (dev_name == "ROCm" || dev_name == "CUDA")
     {
         NNFUSION_LOG(INFO) << "device: " << dev_name;
-        if (FLAGS_frammer_fast && FLAGS_fdot_transpose)
-        {
-            DotTransposePass().run_on_graph(graph);
-        }
         BlockFuseOptimizer optimizer(graph);
         return optimizer.Optimize();
     }
     else
     {
-        return false;
+        NNFUSION_LOG(WARNING) << "BlockFusion does not support " << dev_name
+                              << " now, BlockFusion will be disabled in this compilation.";
+        return true;
     }
 }

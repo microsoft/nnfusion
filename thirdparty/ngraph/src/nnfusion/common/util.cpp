@@ -25,7 +25,6 @@
 
 //#include "nnfusion/graph_util.hpp"
 
-//#include "nnfusion/runtime/backend.hpp"
 #include "nnfusion/common/shape.hpp"
 #include "nnfusion/common/util.hpp"
 

@@ -9,7 +9,7 @@
 
 #include "../test_util/common.hpp"
 #include "gtest/gtest.h"
-#include "nnfusion/engine/external/backend_manager.hpp"
+#include "nnfusion/engine/util/file_util.hpp"
 #include "nnfusion/frontend/tensorflow_import/tensorflow.hpp"
 
 using namespace nnfusion;

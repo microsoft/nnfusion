@@ -9,6 +9,7 @@
 using namespace nnfusion;
 
 DECLARE_string(fcuda_init_stream);
+DECLARE_string(fstream_assign_policy);
 
 void add_memcpy_ir(shared_ptr<graph::Graph> graph,
                    shared_ptr<nnfusion::graph::GNode> gnode,
@@ -244,7 +245,11 @@ nnfusion::ir::Program::Pointer ReversedDFSVisitor::run_on_graph(shared_ptr<graph
     // * Store all instruction inside one basicblock since we don't have
     //   control-flow by now.
     nnfusion::graph::GNodeVector node_vec;
-    node_vec = graph->get_ordered_ops();
+    if (FLAGS_fstream_assign_policy == "kernel_prof_based")
+        node_vec = graph->get_bfs_ordered_ops();
+    else
+        node_vec = graph->get_ordered_ops();
+
     for (auto gnode : node_vec)
     {
         shared_ptr<TranslationUnit> _tu(new TranslationUnit());

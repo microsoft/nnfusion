@@ -10,7 +10,6 @@ add_subdirectory(cache)
 
 # This is the source file shared by devices
 set(ENGINE
-    interpreter.cpp
     engine.cpp
     op.cpp
     memory_allocator.cpp
@@ -24,11 +23,12 @@ add_library(nnfusion_backend SHARED
 target_link_libraries(nnfusion_backend PRIVATE
    # nnfusion_engine_pass
     nnfusion_common
-    nnfusion_ir
+    # nnfusion_ir
     nnfusion_util
     # kernels
     # use ${WholeArchiveFlag} because MacOS' ldtool use different flag.
     ${WholeArchiveFlag}
+    nnfusion_ir
     nnfusion_engine_pass
     kernels_registration
     nnfusion_engine_device

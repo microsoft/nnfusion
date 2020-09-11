@@ -7,6 +7,7 @@ set(SRC
     block_parallel_device.cpp
     blockfusion_codegen.cpp
     blockfusion_profiler.cpp
+    blockfusion_optimizer.cpp
 )
 
 add_library(nnfusion_engine_pass_graph_blockfusion STATIC ${SRC})

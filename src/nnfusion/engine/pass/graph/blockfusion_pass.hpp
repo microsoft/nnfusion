@@ -3,17 +3,7 @@
 
 #pragma once
 
-#include "blockfusion/blockfusion.hpp"
 #include "graph_pass_base.hpp"
-#include "nnfusion/common/languageunit.hpp"
-#include "nnfusion/core/graph/gnode.hpp"
-#include "nnfusion/core/graph/graph.hpp"
-#include "nnfusion/core/kernels/cuda_gpu/kernels/blockfusion_fused.hpp"
-#include "nnfusion/core/kernels/kernel_registration.hpp"
-#include "nnfusion/core/operators/op_define/noop.hpp"
-#include "nnfusion/engine/cache/manager.hpp"
-#include "nnfusion/engine/pass/graph/kernel_selection.hpp"
-#include "nnfusion/util/util.hpp"
 
 namespace nnfusion
 {

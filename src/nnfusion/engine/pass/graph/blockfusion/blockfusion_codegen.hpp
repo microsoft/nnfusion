@@ -17,8 +17,8 @@ public:
                            int _codegen_opt_level = 2);
 
     std::shared_ptr<KernelContext> get_kernel_context() { return this->m_context; }
-    // FunctionUnit_p emit_source() override;
     static size_t get_unique_func_id() { return unique_func_id; }
+
 private:
     LanguageUnit_p emit_function_signature() override;
     LanguageUnit_p emit_function_body() override;
@@ -35,7 +35,6 @@ private:
     LanguageUnit_p emit_function_body_default();
 
     LanguageUnit_p emit_step_to_device_function();
-    // LanguageUnit_p emit_wait_for_device_function();
 
     LanguageUnit_p emit_block_executor_instruction_execute_block(
         std::shared_ptr<BlockExecutorInstructionExecuteBlock> be_ins_execute_block);

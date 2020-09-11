@@ -13,6 +13,8 @@ namespace nnfusion
 {
     namespace blockfusion
     {
+        const static std::vector<std::string> BlockFusionSupportBackend = {"CUDA", "ROCm"};
+
         class BlockExecutorInstruction
         {
         public:

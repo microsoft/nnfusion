@@ -12,12 +12,12 @@ DEFINE_int32(
     fblockfusion_level,
     0,
     "BlockFusion optimization level: 0: disable, 1: wavefront, 2: wavefront with wave merge");
-DECLARE_string(fproduct_name);
-DECLARE_string(fdefault_device);
-
 DEFINE_bool(fblockfusion_interplay,
             true,
             "Interplay of intra- and inter- operator scheduling in BlockFusion");
+DECLARE_string(fproduct_name);
+DECLARE_string(fdefault_device);
+
 
 bool BlockFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
@@ -31,12 +31,12 @@ bool BlockFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
     if (FLAGS_fblockfusion_level == 1)
     {
         optimizer = std::make_shared<BlockFusionWavefrontOptimizer>(
-            graph, FLAGS_fdefault_device, FLAGS_fproduct_name, 1, true);
+            graph, FLAGS_fdefault_device, FLAGS_fproduct_name, 1, FLAGS_fblockfusion_interplay);
     }
     else if (FLAGS_fblockfusion_level == 2)
     {
         optimizer = std::make_shared<BlockFusionWavefrontOptimizer>(
-            graph, FLAGS_fdefault_device, FLAGS_fproduct_name, 2, true);
+            graph, FLAGS_fdefault_device, FLAGS_fproduct_name, 2, FLAGS_fblockfusion_interplay);
     }
 
     if (optimizer->Optimize())

@@ -123,6 +123,14 @@ LanguageUnit_p cuda::Pad::emit_dependency()
     return _lu;
 }
 
+bool cuda::Pad::is_eliminative()
+{
+    if (m_context->inputs[0]->is_same_address(m_context->outputs[0]))
+        return true;
+    else
+        return false;
+}
+
 // Register Pad kernel emitter
 
 /*

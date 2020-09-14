@@ -78,17 +78,44 @@ namespace nnfusion
                         auto ir = nnfusion::op::get_translation(ctx->gnode);
                         if (!ir.empty())
                         {
-                            auto info = m_antares_ke_imp->autogen(ir);
-                            antares_code = info.first;
-                            m_is_tuned = info.second;
+                            const char annotation[] = "## @annotation: ";
+                            int pos = ir.find(annotation);
+                            if (pos >= 0)
+                            {
+                                pos += sizeof(annotation) - 1;
+                                options = ir.substr(pos);
+                            }
+
+                            if (options.size() > 0)
+                            {
+                                if (options[0] != '|')
+                                    options = "|" + options;
+                                if (options.back() != '|')
+                                    options += "|";
+                            }
+
+                            // if is_memcpy, no need to request antares server
+                            if (options.find("|memcpy|") != string::npos)
+                            {
+                                is_memcpy = true;
+                            }
+                            else
+                            {
+                                auto info = m_antares_ke_imp->autogen(ir);
+                                antares_code = info.first;
+                                m_is_tuned = info.second;
+                            }
                         }
                     }
                 }
+
+                bool is_eliminative() override;
                 virtual LanguageUnit_p emit_function_body() override;
                 virtual LanguageUnit_p emit_dependency() override;
 
                 AntaresKEImp::Pointer m_antares_ke_imp;
-                std::string antares_code;
+                std::string antares_code, options;
+                bool is_memcpy;
             };
 
             class SimdKernelEmitter : public CpuKernelEmitter

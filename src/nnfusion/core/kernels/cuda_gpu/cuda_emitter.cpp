@@ -230,3 +230,8 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_dependency()
     _lu->require(header::cuda);
     return _lu;
 }
+
+bool cuda::AntaresCudaKernelEmitter::is_eliminative()
+{
+    return is_memcpy;
+}

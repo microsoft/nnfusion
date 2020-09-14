@@ -200,6 +200,11 @@ LanguageUnit_p cpu::AntaresCpuKernelEmitter::emit_dependency()
     return _lu;
 }
 
+bool cpu::AntaresCpuKernelEmitter::is_eliminative()
+{
+    return is_memcpy;
+}
+
 LanguageUnit_p cpu::CpuKernelEmitter::emit_function_signature()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));

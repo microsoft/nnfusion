@@ -100,6 +100,14 @@ out.device(*(thread_pool->GetDevice())) =
                     return _lu;
                 }
 
+                bool is_eliminative()
+                {
+                    if (m_context->inputs[0]->is_same_address(m_context->outputs[0]))
+                        return true;
+                    else
+                        return false;
+                }
+
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 nnfusion::Shape input_shape, output_shape, padding_above, padding_below,

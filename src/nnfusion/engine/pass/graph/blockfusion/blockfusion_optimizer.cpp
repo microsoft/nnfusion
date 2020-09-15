@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #include "blockfusion_optimizer.hpp"
 #include <queue>
 #include "block_parallel_device.hpp"

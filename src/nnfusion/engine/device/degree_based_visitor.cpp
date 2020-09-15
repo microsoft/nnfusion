@@ -10,12 +10,12 @@ using namespace nnfusion;
 using namespace nnfusion::graph;
 
 nnfusion::program::Program::Pointer DegreeBasedVisitor::run_on_graph(shared_ptr<graph::Graph> graph,
-                                                                EngineContext::Pointer context)
+                                                                     EngineContext::Pointer context)
 {
     NNFUSION_LOG(INFO) << "Translating graph:\t" << graph->get_name();
 
-    auto program =
-        make_shared<program::Program>(nnfusion::program::Program::create_single_basic_block_program());
+    auto program = make_shared<program::Program>(
+        nnfusion::program::Program::create_single_basic_block_program());
     auto bb_main = program->get_entry();
 
     // Translate the Node

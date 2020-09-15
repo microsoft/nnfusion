@@ -436,8 +436,8 @@ std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationU
     return join(params, ", ");
 }
 
-std::pair<std::string, std::string>
-    CudaCodegenPass::get_paras_and_args(std::vector<nnfusion::program::Instruction::Pointer>& ir_vec)
+std::pair<std::string, std::string> CudaCodegenPass::get_paras_and_args(
+    std::vector<nnfusion::program::Instruction::Pointer>& ir_vec)
 {
     std::pair<std::string, std::string> paras_and_args;
     vector<string> params;
@@ -488,9 +488,8 @@ std::pair<std::string, std::string>
     return paras_and_args;
 }
 
-nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::program::Instruction::Pointer ins,
-                                                            bool func_call_only,
-                                                            const std::string& func_call)
+nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(
+    nnfusion::program::Instruction::Pointer ins, bool func_call_only, const std::string& func_call)
 {
     std::string symbol;
     auto kernel = ins->getKernel();

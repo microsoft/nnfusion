@@ -95,6 +95,7 @@ namespace nnfusion
         std::unordered_map<std::string, OpConfig>& get_op_configs();
         std::string get_translation(std::shared_ptr<nnfusion::graph::GNode>& gnode);
         std::string get_translation_v2(std::shared_ptr<nnfusion::graph::GNode>& gnode);
+        std::string get_annotation(std::string translation);
 
         inline const OpConfig& lookup_op_config(const std::string& opname)
         {

@@ -78,24 +78,9 @@ namespace nnfusion
                         auto ir = nnfusion::op::get_translation(ctx->gnode);
                         if (!ir.empty())
                         {
-                            const char annotation[] = "## @annotation: ";
-                            int pos = ir.find(annotation);
-                            if (pos >= 0)
-                            {
-                                pos += sizeof(annotation) - 1;
-                                options = ir.substr(pos);
-                            }
-
-                            if (options.size() > 0)
-                            {
-                                if (options[0] != '|')
-                                    options = "|" + options;
-                                if (options.back() != '|')
-                                    options += "|";
-                            }
-
+                            std::string annotation = nnfusion::op::get_annotation(ir);
                             // if is_memcpy, no need to request antares server
-                            if (options.find("|memcpy|") != string::npos)
+                            if (annotation.find("|memcpy|") != string::npos)
                             {
                                 is_memcpy = true;
                             }
@@ -114,7 +99,7 @@ namespace nnfusion
                 virtual LanguageUnit_p emit_dependency() override;
 
                 AntaresKEImp::Pointer m_antares_ke_imp;
-                std::string antares_code, options;
+                std::string antares_code;
                 bool is_memcpy;
             };
 

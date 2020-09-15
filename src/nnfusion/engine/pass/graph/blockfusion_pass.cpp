@@ -18,7 +18,6 @@ DEFINE_bool(fblockfusion_interplay,
 DECLARE_string(fproduct_name);
 DECLARE_string(fdefault_device);
 
-
 bool BlockFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
     if (FLAGS_fblockfusion_level == 0)

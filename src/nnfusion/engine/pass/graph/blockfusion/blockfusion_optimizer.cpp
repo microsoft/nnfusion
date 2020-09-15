@@ -127,8 +127,8 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
 
     if (!(*node)["Kernel_Selection_Result"].is_valid())
     {
-        NNFUSION_LOG(NNFUSION_WARNING)
-            << "Kernel should be emitted before this pass:" << node->get_name();
+        NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before this pass:"
+                                       << node->get_name();
         return false;
     }
     auto emitted_kernel =
@@ -142,8 +142,8 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
     }
     else if (!emitted_kernel.second->is_emitted())
     {
-        NNFUSION_LOG(NNFUSION_WARNING)
-            << "Kernel should be emitted before this pass:" << node->get_name();
+        NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before this pass:"
+                                       << node->get_name();
         return false;
     }
     else
@@ -451,10 +451,10 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
                     kernel->get_or_emit_source();
                     group->block_kernels[i] = kernel;
                     group->duration[i] = fetched_kernel.profile[m_device_name];
-                    NNFUSION_LOG(DEBUG)
-                        << "fetched kernel " << identifier << " with resource "
-                        << fetched_kernel.resource << " and profiled on " << m_device_name << " in "
-                        << fetched_kernel.profile[m_device_name] << "us";
+                    NNFUSION_LOG(DEBUG) << "fetched kernel " << identifier << " with resource "
+                                        << fetched_kernel.resource << " and profiled on "
+                                        << m_device_name << " in "
+                                        << fetched_kernel.profile[m_device_name] << "us";
                 }
             }
         }

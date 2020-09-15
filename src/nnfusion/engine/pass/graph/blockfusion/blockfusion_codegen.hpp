@@ -18,7 +18,6 @@ public:
 
     std::shared_ptr<KernelContext> get_kernel_context() { return this->m_context; }
     static size_t get_unique_func_id() { return unique_func_id; }
-
 private:
     LanguageUnit_p emit_function_signature() override;
     LanguageUnit_p emit_function_body() override;

@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// Metagraph IR, which is to guide the codegen procedcure.
-// This IR is based on ONNIX::ir's interface, but
+// Metagraph program, which is to guide the codegen procedcure.
+// This program is based on ONNIX::ir's interface, but
 // Instructions has attribute, namespace, and tag
 
 #include "instruction.hpp"

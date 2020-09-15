@@ -20,8 +20,8 @@
 #include "nnfusion/core/graph/output.hpp"
 
 #include "nnfusion/common/descriptor/tensor.hpp"
-#include "nnfusion/core/IR/attribute.hpp"
 #include "nnfusion/core/operators/op.hpp"
+#include "nnfusion/core/program/attribute.hpp"
 namespace nnfusion
 {
     namespace graph

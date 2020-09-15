@@ -3,6 +3,6 @@
 
 
 add_subdirectory(kernels)
-add_subdirectory(IR)
+add_subdirectory(program)
 add_subdirectory(graph)
 add_subdirectory(operators)

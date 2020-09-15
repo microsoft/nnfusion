@@ -3,9 +3,9 @@
 
 #include "op.hpp"
 
-using namespace nnfusion::ir;
+using namespace nnfusion::program;
 
-unordered_map<string, LanguageUnit_p> ir::Function::definition_pool;
+unordered_map<string, LanguageUnit_p> program::Function::definition_pool;
 
 Operator::Operator()
     : m_name("Null")
@@ -64,7 +64,7 @@ Operator::Operator(shared_ptr<graph::GNode> gnode)
     this->out_names = node_output_names;
 }
 
-ir::Function::Function()
+program::Function::Function()
     : definition_unit(nullptr)
     , op(nullptr)
     , call_unit(nullptr)
@@ -75,13 +75,13 @@ ir::Function::Function()
 {
 }
 
-ir::Function::Function(shared_ptr<Operator> op)
+program::Function::Function(shared_ptr<Operator> op)
     : Function()
 {
     NNFUSION_CHECK_NOT_NULLPTR(this->op = op);
 }
 
-LanguageUnit_p ir::Function::codegen_source()
+LanguageUnit_p program::Function::codegen_source()
 {
     NNFUSION_CHECK(isCodeGened == false) << "Code only generated once.";
     NNFUSION_CHECK_NOT_NULLPTR(this->dep_unit = codegen_dependency());

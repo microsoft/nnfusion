@@ -38,7 +38,7 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
 
     NNFUSION_CHECK(result) << "Engine failed after finished graph passes.";
 
-    ir::Program::Pointer p = nullptr;
+    program::Program::Pointer p = nullptr;
     if (g_visitor != nullptr)
         p = g_visitor->run_on_graph(graph, context);
     else

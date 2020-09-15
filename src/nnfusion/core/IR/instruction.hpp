@@ -15,7 +15,7 @@ using namespace nnfusion::kernels;
 
 namespace nnfusion
 {
-    namespace ir
+    namespace program
     {
         class Instruction : public Tagable
         {

@@ -22,7 +22,7 @@ to do tensor analysis and do memory plan.
 
 namespace nnfusion
 {
-    class EngineContext : public ir::Tagable
+    class EngineContext : public program::Tagable
     {
     public:
         using Pointer = shared_ptr<EngineContext>;
@@ -34,7 +34,7 @@ namespace nnfusion
     {
     public:
         using Pointer = shared_ptr<GraphVisitor>;
-        virtual nnfusion::ir::Program::Pointer
+        virtual nnfusion::program::Program::Pointer
             run_on_graph(shared_ptr<graph::Graph> graph, EngineContext::Pointer context = nullptr)
         {
             return nullptr;
@@ -45,7 +45,7 @@ namespace nnfusion
     {
     public:
         using Pointer = shared_ptr<InterpreterPassManager>;
-        virtual bool run_on_program(ir::Program::Pointer prog,
+        virtual bool run_on_program(program::Program::Pointer prog,
                                     EngineContext::Pointer context = nullptr)
         {
             // For compatible purpose

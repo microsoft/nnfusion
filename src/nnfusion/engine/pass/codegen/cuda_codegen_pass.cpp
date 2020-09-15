@@ -320,11 +320,11 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
     return true;
 }
 
-std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
+std::vector<std::pair<string, vector<nnfusion::program::Instruction::Pointer>>>
     CudaCodegenPass::collect_ins(std::shared_ptr<InterpreterContext> ctx,
                                  std::shared_ptr<TranslationUnit> tu)
 {
-    unordered_map<string, vector<nnfusion::ir::Instruction::Pointer>> ins_vec_map;
+    unordered_map<string, vector<nnfusion::program::Instruction::Pointer>> ins_vec_map;
 
     auto& prog = tu->program;
     for (auto iterator : prog)
@@ -372,7 +372,7 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
         }
     }
 
-    std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>> pairs;
+    std::vector<std::pair<string, vector<nnfusion::program::Instruction::Pointer>>> pairs;
     for (auto itr = ins_vec_map.begin(); itr != ins_vec_map.end(); ++itr)
         pairs.push_back(*itr);
     //if superscaler_enable, we preserve the thread call order
@@ -380,8 +380,8 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
     {
         sort(pairs.begin(),
              pairs.end(),
-             [](std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& a,
-                std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& b) {
+             [](std::pair<string, vector<nnfusion::program::Instruction::Pointer>>& a,
+                std::pair<string, vector<nnfusion::program::Instruction::Pointer>>& b) {
                  if (a.first.find("default_") != string::npos)
                      return false;
 
@@ -437,7 +437,7 @@ std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationU
 }
 
 std::pair<std::string, std::string>
-    CudaCodegenPass::get_paras_and_args(std::vector<nnfusion::ir::Instruction::Pointer>& ir_vec)
+    CudaCodegenPass::get_paras_and_args(std::vector<nnfusion::program::Instruction::Pointer>& ir_vec)
 {
     std::pair<std::string, std::string> paras_and_args;
     vector<string> params;
@@ -488,7 +488,7 @@ std::pair<std::string, std::string>
     return paras_and_args;
 }
 
-nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instruction::Pointer ins,
+nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::program::Instruction::Pointer ins,
                                                             bool func_call_only,
                                                             const std::string& func_call)
 {

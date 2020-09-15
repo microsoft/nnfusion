@@ -5,7 +5,7 @@
 
 namespace nnfusion
 {
-    namespace ir
+    namespace program
     {
         TagProxy Tags::operator[](Symbol sym) { return TagProxy(this, sym); }
         template <>

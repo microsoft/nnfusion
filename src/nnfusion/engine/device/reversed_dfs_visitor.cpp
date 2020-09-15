@@ -13,13 +13,13 @@ DECLARE_string(fstream_assign_policy);
 
 void add_memcpy_ir(shared_ptr<graph::Graph> graph,
                    shared_ptr<nnfusion::graph::GNode> gnode,
-                   nnfusion::ir::BasicBlock::Pointer bb_main)
+                   nnfusion::program::BasicBlock::Pointer bb_main)
 {
     auto CUDA_async_manager =
         nnfusion::async::AsyncManagerFactory::get_device_stream_async_manager(graph, CUDA_GPU);
     auto CPU_async_manager =
         nnfusion::async::AsyncManagerFactory::get_host_async_manager(graph, GENERIC_CPU);
-    std::unordered_map<string, nnfusion::ir::Instruction::Pointer> dev_ir;
+    std::unordered_map<string, nnfusion::program::Instruction::Pointer> dev_ir;
     auto n_device_type = (*gnode)["DeviceType"].as<NNFusion_DeviceType>();
     auto n_device_id = (*gnode)["DeviceID"].as<int>();
     for (auto& out_edge : gnode->get_out_edges())
@@ -34,14 +34,14 @@ void add_memcpy_ir(shared_ptr<graph::Graph> graph,
                 get_device_str(out_device_type) + "_" + to_string(out_device_id);
             if (n_device_type != out_device_type || n_device_id != out_device_id)
             {
-                nnfusion::ir::Instruction::Pointer memcpy_ir;
+                nnfusion::program::Instruction::Pointer memcpy_ir;
                 if (dev_ir.find(out_dev_name) == dev_ir.end())
                 {
                     auto& async_info =
                         (*gnode)["Async_info"].as<nnfusion::async::AsyncExecutionInfo>();
                     auto thread = async_info.execution_thread;
                     auto stream = async_info.execution_stream;
-                    memcpy_ir = std::make_shared<nnfusion::ir::Instruction>();
+                    memcpy_ir = std::make_shared<nnfusion::program::Instruction>();
                     memcpy_ir->setName("Memcpy");
                     if (n_device_type == out_device_type)
                     {
@@ -230,13 +230,13 @@ void add_memcpy_ir(shared_ptr<graph::Graph> graph,
     }
 }
 
-nnfusion::ir::Program::Pointer ReversedDFSVisitor::run_on_graph(shared_ptr<graph::Graph> graph,
+nnfusion::program::Program::Pointer ReversedDFSVisitor::run_on_graph(shared_ptr<graph::Graph> graph,
                                                                 EngineContext::Pointer context)
 {
     NNFUSION_LOG(INFO) << "Translating graph:\t" << graph->get_name();
 
     auto program =
-        make_shared<ir::Program>(nnfusion::ir::Program::create_single_basic_block_program());
+        make_shared<program::Program>(nnfusion::program::Program::create_single_basic_block_program());
     auto bb_main = program->get_entry();
 
     // Translate the Node
@@ -253,7 +253,7 @@ nnfusion::ir::Program::Pointer ReversedDFSVisitor::run_on_graph(shared_ptr<graph
     for (auto gnode : node_vec)
     {
         shared_ptr<TranslationUnit> _tu(new TranslationUnit());
-        nnfusion::ir::Instruction::Pointer ir(new nnfusion::ir::Instruction);
+        nnfusion::program::Instruction::Pointer ir(new nnfusion::program::Instruction);
         ir->setGNode(gnode);
         ir->copy_tags_from(*gnode);
         ir->setName(gnode->get_name());

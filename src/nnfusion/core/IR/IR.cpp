@@ -7,11 +7,11 @@
 
 #include "IR.hpp"
 
-using namespace nnfusion::ir;
+using namespace nnfusion::program;
 
 BasicBlock::Pointer Program::create_empty_bb()
 {
-    nnfusion::ir::BasicBlock::Pointer emptybb(new nnfusion::ir::BasicBlock);
+    nnfusion::program::BasicBlock::Pointer emptybb(new nnfusion::program::BasicBlock);
     this->push_back(emptybb);
     return emptybb;
 }

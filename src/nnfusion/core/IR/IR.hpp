@@ -12,10 +12,10 @@
 
 namespace nnfusion
 {
-    namespace ir
+    namespace program
     {
         ///\brief The Basic Block is to store a block of instructions.
-        class BasicBlock : public std::vector<ir::Instruction::Pointer>, public Tagable
+        class BasicBlock : public std::vector<program::Instruction::Pointer>, public Tagable
         {
         public:
             BasicBlock()

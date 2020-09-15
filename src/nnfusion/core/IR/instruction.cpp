@@ -9,7 +9,7 @@
 
 using namespace std;
 using namespace nnfusion;
-using namespace nnfusion::ir;
+using namespace nnfusion::program;
 using namespace nnfusion::graph;
 using namespace nnfusion::kernels;
 

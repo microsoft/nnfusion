@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 /**
- * \brief Unit tests for ir::anyop
+ * \brief Unit tests for program::anyop
  * \author wenxh
  */
 #include <iostream>

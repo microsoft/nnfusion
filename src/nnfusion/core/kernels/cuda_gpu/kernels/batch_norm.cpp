@@ -9,7 +9,7 @@ using namespace nnfusion::kernels;
 cuda::BatchNorm::BatchNorm(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {
-    // nnfusion::op::BatchNormInferece <-> nnfusion::ir::BatchNorm
+    // nnfusion::op::BatchNormInferece <-> nnfusion::program::BatchNorm
     auto bn_op = static_pointer_cast<nnfusion::op::BatchNormInference>(ctx->gnode->get_op_ptr());
     dtype = nnfusion::element::Type(ctx->outputs[0]->get_element_type());
     // <todo> need to check the index
@@ -108,7 +108,7 @@ LanguageUnit_p cuda::BatchNorm::emit_function_signature()
 cuda::BatchNormNCHW::BatchNormNCHW(shared_ptr<KernelContext> ctx)
     : BlockCudaEmitter(ctx)
 {
-    // nnfusion::op::BatchNormInferece <-> nnfusion::ir::BatchNormNCHW
+    // nnfusion::op::BatchNormInferece <-> nnfusion::program::BatchNormNCHW
     auto bn_op = static_pointer_cast<nnfusion::op::BatchNormInference>(ctx->gnode->get_op_ptr());
     dtype = nnfusion::element::Type(ctx->outputs[0]->get_element_type());
     // <todo> need to check the index

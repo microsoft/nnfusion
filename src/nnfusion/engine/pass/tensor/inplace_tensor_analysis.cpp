@@ -30,7 +30,7 @@ bool InplaceTensorAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
 
     auto& p = tu->program;
 
-    // auto get_kernel = [](std::shared_ptr<ir::Instruction> ins) {
+    // auto get_kernel = [](std::shared_ptr<program::Instruction> ins) {
     //     auto emitted_kernel = (*ins)["Kernel_Selection_Result"]
     //                               .as<pair<NNFusion_DeviceType, KernelEmitter::Pointer>>();
     //     KernelEmitter::Pointer kernel = nullptr;
@@ -53,7 +53,7 @@ bool InplaceTensorAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
     std::unordered_map<std::shared_ptr<descriptor::Tensor>, size_t> inplace_use_count;
     std::unordered_map<std::shared_ptr<nnfusion::graph::GNode>, size_t> orders;
     size_t node_order = 0;
-    std::unordered_map<std::shared_ptr<nnfusion::graph::GNode>, ir::Instruction::Pointer>
+    std::unordered_map<std::shared_ptr<nnfusion::graph::GNode>, program::Instruction::Pointer>
         node_to_ins;
 
     size_t annotate_concat = 0;

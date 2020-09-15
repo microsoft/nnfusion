@@ -19,7 +19,7 @@
 
 namespace nnfusion
 {
-    namespace ir
+    namespace program
     {
         using Symbol = std::string;
 
@@ -340,9 +340,9 @@ namespace nnfusion
         };
 
         template <>
-        void nnfusion::ir::TagProxy::operator=<char*>(char* str);
+        void nnfusion::program::TagProxy::operator=<char*>(char* str);
         template <>
-        void nnfusion::ir::TagProxy::operator=<char[]>(char str[]);
+        void nnfusion::program::TagProxy::operator=<char[]>(char str[]);
         template <>
         const Tagable* TagProxy::set<char*>(char* val);
         template <>

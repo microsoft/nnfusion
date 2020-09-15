@@ -9,7 +9,7 @@
 
 namespace nnfusion
 {
-    namespace ir
+    namespace program
     {
         // Store the caculated intermediated data
         class Operator

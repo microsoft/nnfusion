@@ -41,7 +41,7 @@ namespace nnfusion
                                         std::shared_ptr<TranslationUnit> tu) override;
             virtual bool collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                        std::shared_ptr<TranslationUnit> tu) override;
-            virtual std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
+            virtual std::vector<std::pair<string, vector<nnfusion::program::Instruction::Pointer>>>
                 collect_ins(std::shared_ptr<InterpreterContext> ctx,
                             std::shared_ptr<TranslationUnit> tu);
             virtual void create_graph_config(std::shared_ptr<InterpreterContext> ctx,
@@ -59,9 +59,9 @@ namespace nnfusion
             }
             virtual std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu);
             virtual std::pair<std::string, std::string>
-                get_paras_and_args(std::vector<nnfusion::ir::Instruction::Pointer>& ir_vec);
+                get_paras_and_args(std::vector<nnfusion::program::Instruction::Pointer>& ir_vec);
             virtual nnfusion::LanguageUnit_p
-                func_call_codegen(nnfusion::ir::Instruction::Pointer ins,
+                func_call_codegen(nnfusion::program::Instruction::Pointer ins,
                                   bool func_call_only = false,
                                   const std::string& func_call = "");
 

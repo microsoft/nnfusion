@@ -9,13 +9,13 @@
 using namespace nnfusion;
 using namespace nnfusion::graph;
 
-nnfusion::ir::Program::Pointer DegreeBasedVisitor::run_on_graph(shared_ptr<graph::Graph> graph,
+nnfusion::program::Program::Pointer DegreeBasedVisitor::run_on_graph(shared_ptr<graph::Graph> graph,
                                                                 EngineContext::Pointer context)
 {
     NNFUSION_LOG(INFO) << "Translating graph:\t" << graph->get_name();
 
     auto program =
-        make_shared<ir::Program>(nnfusion::ir::Program::create_single_basic_block_program());
+        make_shared<program::Program>(nnfusion::program::Program::create_single_basic_block_program());
     auto bb_main = program->get_entry();
 
     // Translate the Node
@@ -122,7 +122,7 @@ nnfusion::ir::Program::Pointer DegreeBasedVisitor::run_on_graph(shared_ptr<graph
     for (auto gnode : node_vec)
     {
         shared_ptr<TranslationUnit> _tu(new TranslationUnit());
-        nnfusion::ir::Instruction::Pointer ir(new nnfusion::ir::Instruction);
+        nnfusion::program::Instruction::Pointer ir(new nnfusion::program::Instruction);
         ir->setGNode(gnode);
         ir->copy_tags_from(*gnode);
         ir->setName(gnode->get_name());

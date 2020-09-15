@@ -59,7 +59,7 @@ namespace nnfusion
         /// Nodes are the backbone of the graph of Value dataflow. Every node has
         /// zero or more nodes as arguments and one value, which is either a tensor
         /// view or a (possibly empty) tuple of values.
-        class GNode : public std::enable_shared_from_this<GNode>, public nnfusion::ir::Tagable
+        class GNode : public std::enable_shared_from_this<GNode>, public nnfusion::program::Tagable
         {
         public:
             GNode();

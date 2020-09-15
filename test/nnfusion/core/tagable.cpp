@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 /**
- * \brief Unit tests for ir::anyop
+ * \brief Unit tests for program::anyop
  * \author wenxh
  */
 #include <iostream>
@@ -19,7 +19,7 @@
 TEST(nnfusion_core_ir, tagable)
 {
     // Check Tag-able interface for instruction;
-    nnfusion::ir::Instruction ins;
+    nnfusion::program::Instruction ins;
     ins["Example"] = std::string("Yes");
     EXPECT_TRUE(ins["Example"].is_valid());
     EXPECT_TRUE(ins["Example"].as<std::string>() == std::string("Yes"));

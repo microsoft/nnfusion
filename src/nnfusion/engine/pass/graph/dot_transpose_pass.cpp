@@ -9,10 +9,7 @@
 
 DEFINE_bool(fdot_transpose, false, "Dot transpose.");
 // official product name for cuda: > nvidia-smi -x -q | grep product_name | sed -n '1p' | cut -d \> -f 2 | cut -d \< -f 1
-DEFINE_string(fproduct_name,
-              "",
-              "Device product name, like 'GeForce GTX 1080 Ti', 'Tesla V100-PCIE-16GB'");
-DECLARE_bool(frammer_base_k);
+DECLARE_string(fproduct_name);
 
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
@@ -88,7 +85,7 @@ namespace
 
 bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
-    bool using_pass = FLAGS_fdot_transpose && (!FLAGS_frammer_base_k);
+    bool using_pass = FLAGS_fdot_transpose;
     if (!using_pass)
         return true;
 

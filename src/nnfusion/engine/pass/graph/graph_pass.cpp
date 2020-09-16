@@ -22,7 +22,6 @@
 #include "multi_reshape_folding_pass.hpp"
 #include "op_inplace_pass.hpp"
 #include "pattern_substitution.hpp"
-#include "rammer_base_k.hpp"
 #include "runtime_const_folding_pass.hpp"
 #include "vector_dot_transpose_pass.hpp"
 using namespace nnfusion::pass::graph;
@@ -65,7 +64,6 @@ bool GraphPass::run(std::vector<std::shared_ptr<Graph>>& graph_vec)
     pass_manager.register_pass<KernelProfilingPass>();
     pass_manager.register_pass<PatternSubstitutionPass>();
     pass_manager.register_pass<BlockFusionPass>();
-    pass_manager.register_pass<RammerBaseKPass>();
 
     // Specific opt for dot
     pass_manager.register_pass<DotTransposePass>();

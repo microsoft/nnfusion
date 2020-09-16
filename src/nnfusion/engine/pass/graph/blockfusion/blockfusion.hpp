@@ -3,7 +3,4 @@
 
 #pragma once
 
-#include "block_parallel_device.hpp"
-#include "blockfusion_codegen.hpp"
-#include "blockfusion_profiler.hpp"
-#include "common.hpp"
+#include "blockfusion_optimizer.hpp"

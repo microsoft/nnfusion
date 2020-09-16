@@ -15,7 +15,6 @@ set(SRC
     gnode_device_dispatcher.cpp
     kernel_selection.cpp
     blockfusion_pass.cpp
-    rammer_base_k.cpp
     assign_async_info_pass.cpp
     kernel_profiling_pass.cpp
     runtime_const_folding_pass.cpp

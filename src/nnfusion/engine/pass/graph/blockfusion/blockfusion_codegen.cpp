@@ -278,14 +278,6 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_step_to_device_function()
     return _lu;
 }
 
-// LanguageUnit_p BlockFusionCudaCodegen::emit_wait_for_device_function()
-// {
-//     LanguageUnit_p _lu(new LanguageUnit("declaration::BlockFusion_wait_for_device_function"));
-//     auto& lu = *_lu;
-
-//     return _lu;
-// }
-
 LanguageUnit_p BlockFusionCudaCodegen::emit_block_kernel_functions()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_block_kernel_function"));
@@ -1233,10 +1225,6 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_function_call()
     if (this->is_group_sync)
     {
         names.push_back(this->m_context->tensors[0]->get_name());
-        // size_t state_pool_offset = (size_t)unique_func_id *
-        //                            block_executor_program.block_executor_instructions.size() *
-        //                            sizeof(int);
-        // names.push_back("blockfusion_state_pool + " + std::to_string(state_pool_offset));
     }
 
     lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z << "), dim3("

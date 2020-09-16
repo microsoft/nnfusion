@@ -4,7 +4,9 @@
 #include "./manager.hpp"
 #include <limits>
 
-DECLARE_string(fproduct_name);
+DEFINE_string(fproduct_name,
+              "",
+              "Device product name, like 'GeForce GTX 1080 Ti', 'Tesla V100-PCIE-16GB'");
 
 using namespace nnfusion::cache;
 

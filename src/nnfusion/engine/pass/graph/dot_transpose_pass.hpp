@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-
 #pragma once
 
 #include "graph_pass_base.hpp"

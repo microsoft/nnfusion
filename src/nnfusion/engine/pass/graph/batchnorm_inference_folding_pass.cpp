@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-
 #include "batchnorm_inference_folding_pass.hpp"
 #include <queue>
 #include "nnfusion/core/operators/op_define/add.hpp"

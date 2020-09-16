@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 REGISTER_OP(Sum)
@@ -9,6 +10,56 @@ REGISTER_OP(Sum)
         auto _op = static_pointer_cast<nnfusion::op::Sum>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
         auto axes = _op->get_reduction_axes();
+        auto in_shape = curr->get_input_shape(0);
+
+        std::string dtype;
+        NNFUSION_CHECK(
+            element::Type::nnfusion_element_type_to_dtype_string(curr->get_element_type(), dtype));
+        NNFUSION_CHECK(dtype == "float32");
+
+        std::vector<int> ordered_axes(axes.begin(), axes.end());
+        std::sort(ordered_axes.begin(), ordered_axes.end());
+
+        size_t num_elements = 1, sample = 1;
+        for (int i = 0; i < in_shape.size(); ++i)
+            num_elements *= in_shape[i];
+        for (auto it : axes)
+            sample *= in_shape[it];
+        assert(sample != 0);
+
+        // ReduceHigh
+        if (axes.size() && ordered_axes.front() == 0 &&
+            ordered_axes.back() == ordered_axes.size() - 1)
+        {
+            return op::create_code_from_template(
+                R"( - einstein_v2("output0[C] +=! input0[N, C]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@sample@, @batch@]}});  ## :@ plan/reduce_sum_v1)",
+                {
+                    {"dtype", dtype}, {"sample", sample}, {"batch", num_elements / sample},
+                });
+        }
+
+        // ReduceLow
+        if (axes.size() && ordered_axes.front() == in_shape.size() - ordered_axes.size() &&
+            ordered_axes.back() == in_shape.size() - 1)
+        {
+            return op::create_code_from_template(
+                R"( - einstein_v2("output0[N] +=! input0[N, C]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@batch@, @sample@]}});  ## :@ plan/reduce_sum_v1)",
+                {
+                    {"dtype", dtype}, {"sample", sample}, {"batch", num_elements / sample},
+                });
+        }
+
+        // ReduceNone
+        if (!ordered_axes.size())
+        {
+            return op::create_code_from_template(
+                R"( - einstein_v2("output0[N] = input0[N]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@num_elements@]}});  ## @annotation: memcpy)",
+                {
+                    {"dtype", dtype}, {"num_elements", num_elements},
+                });
+        }
+        return "";
+
         auto input_shape = curr->get_input_shape(0);
 
         int min_axis = axes.size() + 1;

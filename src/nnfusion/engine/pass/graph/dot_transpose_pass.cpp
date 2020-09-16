@@ -1,4 +1,6 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #include "dot_transpose_pass.hpp"
 #include "gnode_device_dispatcher.hpp"
 #include "kernel_selection.hpp"

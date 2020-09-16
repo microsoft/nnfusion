@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 REGISTER_OP(BatchMatMul)
@@ -92,7 +93,7 @@ REGISTER_OP(BatchMatMul)
         std::vector<int> outshape = {batch, N, M};
 
         auto expression = op::create_code_from_template(
-            R"( - input("input0", @input_shape_0@); input("input1", @input_shape_1@); k = loop(@k@); output(@output_shape@, lambda b, n, m: tvm.sum(@input0_expr@ * @input1_expr@, axis=k)); )",
+            R"( - input("input0", @input_shape_0@); input("input1", @input_shape_1@); k = loop(@k@); output(@output_shape@, lambda b, n, m: tvm.sum(@input0_expr@ * @input1_expr@, axis=k));  ## @: plan/batch_matmul_v1)",
             {{"input_shape_0", vector_to_string(shape0)},
              {"input_shape_1", vector_to_string(shape1)},
              {"output_shape", vector_to_string(outshape)},

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 REGISTER_OP(Broadcast)
@@ -36,7 +37,7 @@ REGISTER_OP(Broadcast)
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto expression_template =
-            R"( @output0@@output0_layout@ = @input0@@input0_layout@ where @boardcast_dims@; )";
+            R"( @output0@@output0_layout@ = @input0@@input0_layout@ @suffix@@boardcast_dims@; )";
 
         auto op = static_pointer_cast<nnfusion::op::Broadcast>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
@@ -62,6 +63,7 @@ REGISTER_OP(Broadcast)
             expression_template,
             {{"output0_layout", vector_to_string<std::vector<std::string>>(output_layout)},
              {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
-             {"boardcast_dims", boardcast_code}});
+             {"boardcast_dims", boardcast_code},
+             {"suffix", (boardcast_code.size() ? "where " : "")}});
         return expression_code;
     });

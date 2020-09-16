@@ -1,20 +1,3 @@
-//*****************************************************************************
-// Copyright 2017-2020 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//*****************************************************************************
-
-
 //----------------------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation. All rights reserved.
 //  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -77,12 +60,65 @@ namespace nnfusion
                 {
                     auto logits_index = GetInputIndex(all_ng_nodes, node_proto, 0);
                     auto label_index = GetInputIndex(all_ng_nodes, node_proto, 1);
-                    // TODO: support weights
-                    // GNodeIndex weight_index{nullptr};
-                    // if (node_proto.input_size() > 2)
-                    // {
-                    //     weight_index = GetInputIndex(all_ng_nodes, node_proto, 2);
-                    // }
+
+                    auto logits_shape = logits_index.get_shape();
+                    auto label_shape = label_index.get_shape();
+                    auto sample_num = shape_size(label_shape);
+                    Shape flatten_shape{sample_num, logits_shape.back()};
+                    NNFUSION_CHECK(logits_shape.size() - label_shape.size() == 1)
+                        << "SparseSoftmaxCrossEntropy should be (N+1)-D logits with N-D label, but "
+                           "found "
+                        << logits_index.get_shape().size() << "-D logits and "
+                        << label_index.get_shape().size() << "-D label.";
+
+                    ///\todo different weight sematic
+                    // For SparseSoftmaxCrossEntropy, weight is sample weight, see https://github.com/microsoft/onnxruntime/blob/bd215b79a2aeeb5e0b77feaaed67cc7e3ac98ead/orttraining/orttraining/training_ops/cuda/loss/softmaxcrossentropy_impl.cc#L164
+                    // For SoftmaxCrossEntropyLoss, weight is class weight, see: https://github.com/onnx/onnx/blob/master/docs/Operators.md#softmaxcrossentropyloss
+                    std::shared_ptr<graph::GNode> sample_weight_gnode = nullptr;
+                    if (node_proto.input_size() > 2)
+                    {
+                        auto weight_index = GetInputIndex(all_ng_nodes, node_proto, 2);
+                        if (node_proto.op_type() == "SoftmaxCrossEntropyLoss")
+                        {
+                            NNFUSION_CHECK(weight_index.get_shape().size() == 1);
+
+                            nnfusion::op::OpConfig::any myConfig;
+                            myConfig["axis"] = 0;
+
+                            auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
+                                node_proto.output(0), "GatherV2", myConfig);
+                            sample_weight_gnode =
+                                m_graph->add_node_and_edge(generic_op, {weight_index, label_index});
+                        }
+                        else if (node_proto.op_type() == "SparseSoftmaxCrossEntropy")
+                        {
+                            NNFUSION_CHECK(weight_index.get_shape() == label_shape);
+                            NNFUSION_CHECK(weight_index.gnode->get_output_size() == 1);
+                            sample_weight_gnode = weight_index.gnode;
+                        }
+                        else
+                        {
+                            NNFUSION_CHECK_FAIL() << "unsupported weight input in op "
+                                                  << node_proto.op_type();
+                        }
+                    }
+                    else
+                    {
+                        auto sample_weight_const =
+                            std::make_shared<op::Constant>(logits_index.get_element_type(),
+                                                           label_index.get_shape(),
+                                                           std::vector<float>{1.0});
+                        sample_weight_gnode =
+                            m_graph->add_node_and_edge(sample_weight_const, GNodeIndexVector{});
+                    }
+                    if (sample_weight_gnode->get_shape().size() > 1)
+                    {
+                        auto weight_reshape_op = std::make_shared<op::Reshape>(
+                            reshape::get_default_axis_vector(label_shape.size()),
+                            Shape{sample_num});
+                        sample_weight_gnode =
+                            m_graph->add_node_and_edge(weight_reshape_op, {sample_weight_gnode});
+                    }
 
                     NamedNodeVector ret(2, {"", nullptr});
 
@@ -97,28 +133,17 @@ namespace nnfusion
                         log_prob_name = node_proto.name() + "_log_prob";
                     }
 
-                    auto logits_shape = logits_index.get_shape();
-                    auto label_shape = label_index.get_shape();
-                    NNFUSION_CHECK(logits_shape.size() - label_shape.size() == 1)
-                        << "SparseSoftmaxCrossEntropy should be (N+1)-D logits with N-D label, but "
-                           "found "
-                        << logits_index.get_shape().size() << "-D logits and "
-                        << label_index.get_shape().size() << "-D label.";
-
                     if (logits_shape.size() > 2)
                     {
-                        auto sample_num = shape_size(label_index.get_shape());
-                        Shape softmax_logits_shape{sample_num, logits_shape.back()};
                         auto logits_reshape_op = std::make_shared<op::Reshape>(
-                            reshape::get_default_axis_vector(logits_index.get_shape().size()),
-                            softmax_logits_shape);
+                            reshape::get_default_axis_vector(logits_shape.size()), flatten_shape);
                         auto logits_reshape_gnode =
                             m_graph->add_node_and_edge(logits_reshape_op, {logits_index});
                         logits_index = GNodeIndex{logits_reshape_gnode, 0};
 
                         Shape softmax_label_shape{sample_num};
                         auto label_reshape_op = std::make_shared<op::Reshape>(
-                            reshape::get_default_axis_vector(label_index.get_shape().size()),
+                            reshape::get_default_axis_vector(label_shape.size()),
                             softmax_label_shape);
                         auto label_reshape_gnode =
                             m_graph->add_node_and_edge(label_reshape_op, {label_index});
@@ -164,25 +189,31 @@ namespace nnfusion
                     auto loss_gnode = m_graph->add_node_and_edge(
                         loss_op, {GNodeIndex{softmax_gnode}, label_index});
 
+                    loss_gnode = m_graph->add_node_and_edge(std::make_shared<op::Multiply>(),
+                                                            {loss_gnode, sample_weight_gnode});
+
                     if (reduction == "mean")
                     {
                         auto loss_shape = loss_gnode->get_shape();
-                        size_t sample_num = nnfusion::shape_size(loss_shape);
-                        std::vector<size_t> reduction_axes(loss_shape.size());
-                        std::iota(reduction_axes.begin(), reduction_axes.end(), 0);
                         auto sum_gnode = m_graph->add_node_and_edge(
-                            std::make_shared<op::Sum>(reduction_axes), {loss_gnode});
-
-                        const auto& et = sum_gnode->get_element_type();
-                        auto divisor_const = std::make_shared<op::Constant>(
-                            et, sum_gnode->get_shape(), std::vector<size_t>{sample_num});
-                        auto divisor_gnode =
-                            m_graph->add_node_and_edge(divisor_const, GNodeIndexVector{});
+                            std::make_shared<op::Sum>(get_default_order(loss_shape)), {loss_gnode});
+                        auto sum_weight_gnode =
+                            m_graph->add_node_and_edge(std::make_shared<op::Sum>(get_default_order(
+                                                           sample_weight_gnode->get_shape())),
+                                                       {sample_weight_gnode});
                         auto mean_op = std::make_shared<op::Divide>();
                         mean_op->set_name(node_proto.output(0));
                         auto mean_gnode =
-                            m_graph->add_node_and_edge(mean_op, {sum_gnode, divisor_gnode});
+                            m_graph->add_node_and_edge(mean_op, {sum_gnode, sum_weight_gnode});
                         ret[0] = NamedNode{node_proto.output(0), mean_gnode};
+                    }
+                    else if (reduction == "sum")
+                    {
+                        auto sum_op =
+                            std::make_shared<op::Sum>(get_default_order(loss_gnode->get_shape()));
+                        sum_op->set_name(node_proto.output(0));
+                        auto sum_gnode = m_graph->add_node_and_edge(sum_op, {loss_gnode});
+                        ret[0] = NamedNode{node_proto.output(0), sum_gnode};
                     }
                     else
                     {

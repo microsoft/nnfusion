@@ -60,7 +60,7 @@ REGISTER_OP(OneHot)
         NNFUSION_CHECK(ret);
 
         return op::create_code_from_template(
-            R"( - input("input0", @input_shape@, dtype='int32'); output(@output_shape@, topi=topi.one_hot(args("input0"), depth=@depth@, on_value=@on_value@, off_value=@off_value@, axis=@axis@, dtype="@dtype@")); )",
+            R"( - input("input0", @input_shape@, dtype="int32"); output(@output_shape@, topi=topi.one_hot(args("input0"), depth=@depth@, on_value=@on_value@, off_value=@off_value@, axis=@axis@, dtype="@dtype@")); )",
             {{"input_shape", vector_to_string(gnode->get_input_shape(0))},
              {"output_shape", vector_to_string(gnode->get_output_shape(0))},
              {"depth", depth},

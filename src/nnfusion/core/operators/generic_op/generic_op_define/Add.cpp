@@ -35,6 +35,9 @@ REGISTER_OP(Add)
         auto shape1_def = op::create_layout_from_dims(input1_shape);
         auto output0_def = op::create_layout_from_dims(curr->get_output_shape(0));
 
+        if (!shape0_def.size() && !shape1_def.size() && !output0_def.size())
+            shape0_def = shape1_def = output0_def = {"N"};
+
         op::OpConfig::any op_config;
         op_config["input0_layout"] = vector_to_string<std::vector<std::string>>(shape0_def);
         op_config["input1_layout"] = vector_to_string<std::vector<std::string>>(shape1_def);

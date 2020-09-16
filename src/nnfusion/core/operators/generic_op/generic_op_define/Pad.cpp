@@ -36,5 +36,22 @@ REGISTER_OP(Pad)
                  {"pad_value", constant_values[0]}});
         }
 
+        bool pad_zero = true;
+        for (auto i : op->get_padding_below())
+        {
+            if (i != 0)
+                pad_zero = false;
+        }
+
+        for (auto i : op->get_padding_above())
+        {
+            if (i != 0)
+                pad_zero = false;
+        }
+
+        if (pad_zero)
+        {
+            expression += " ## @annotation: memcpy";
+        }
         return expression;
     });

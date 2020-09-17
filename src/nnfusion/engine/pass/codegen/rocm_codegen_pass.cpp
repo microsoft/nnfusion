@@ -31,6 +31,23 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     auto& copy_templates = projgen->lup_codegen->copy_templates;
     copy_templates.emplace_back("rocm_adapter/rocm_adapter.h", "./rocm_adapter.h");
     // NNFUSION_CHECK(0 == system("chmod a+x fastgen_for_sliced_kernels.sh"));
+    copy_templates.emplace_back("image_tests/image_test.cpp", "./image_tests/image_test.cpp");
+    copy_templates.emplace_back("image_tests/CMakeLists_rocm.txt", "./image_tests/CMakeLists.txt");
+
+    //copy folder
+    auto& copy_folder = projgen->lup_codegen->copy_folder;
+    char exe_path[PATH_MAX];
+    size_t count = readlink("/proc/self/exe", exe_path, PATH_MAX);
+    const char* path;
+    if (count != -1)
+    {
+        path = dirname(exe_path);
+    }
+    else
+    {
+        throw nnfusion::errors::RuntimeError("Failed to get the directory of executable file.\n");
+    }
+
     if (superscaler_enable)
     {
         copy_templates.emplace_back("super_scaler/super_scaler.h", "./super_scaler.h");

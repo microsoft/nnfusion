@@ -5,6 +5,10 @@
 
 declare THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+if [ -f "/.dockerenv" ]; then
+  umask 000
+fi
+
 # do check code style
 $THIS_SCRIPT_DIR/check_code_style.sh
 if [ $? -ne 0 ]; then

@@ -16,5 +16,3 @@ stages:
   - job: BuildJob
     steps:
     - script: ./maint/script/test.sh
-    - script: ./maint/script/remove_all.sh
-      condition: always()

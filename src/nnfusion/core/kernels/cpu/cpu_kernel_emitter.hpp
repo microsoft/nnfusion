@@ -78,17 +78,15 @@ namespace nnfusion
                         auto ir = nnfusion::op::get_translation(ctx->gnode);
                         if (!ir.empty())
                         {
+                            auto info = m_antares_ke_imp->autogen(ir);
+                            antares_code = info.first;
+                            m_is_tuned = info.second;
+
                             std::string annotation = nnfusion::op::get_annotation(ir);
                             // if is_memcpy, no need to request antares server
                             if (annotation.find("|memcpy|") != string::npos)
                             {
                                 is_memcpy = true;
-                            }
-                            else
-                            {
-                                auto info = m_antares_ke_imp->autogen(ir);
-                                antares_code = info.first;
-                                m_is_tuned = info.second;
                             }
                         }
                     }

@@ -233,5 +233,5 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_dependency()
 
 bool cuda::AntaresCudaKernelEmitter::is_eliminative()
 {
-    return is_memcpy;
+    return (is_memcpy && m_context->inputs[0]->is_same_address(m_context->outputs[0]));
 }

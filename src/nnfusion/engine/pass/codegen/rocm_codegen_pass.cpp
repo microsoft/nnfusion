@@ -30,8 +30,6 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->write_to = "nnfusion_rt.cu";
     auto& copy_templates = projgen->lup_codegen->copy_templates;
     copy_templates.emplace_back("rocm_adapter/rocm_adapter.h", "./rocm_adapter.h");
-    // copy_templates.emplace_back("rocm_adapter/fastgen_for_sliced_kernels.sh",
-    //                             "./fastgen_for_sliced_kernels.sh");
     // NNFUSION_CHECK(0 == system("chmod a+x fastgen_for_sliced_kernels.sh"));
     copy_templates.emplace_back("image_tests/image_test.cpp", "./image_tests/image_test.cpp");
     copy_templates.emplace_back("image_tests/CMakeLists_rocm.txt", "./image_tests/CMakeLists.txt");
@@ -52,9 +50,14 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     if (superscaler_enable)
     {
-        std::string superscaler_path = std::string(path) + std::string("/superscaler");
-        copy_folder.push_back(superscaler_path);
+        copy_templates.emplace_back("super_scaler/super_scaler.h", "./super_scaler.h");
+        NNFUSION_LOG(NNFUSION_WARNING) << "libsuper_scaler_rocm.so should be copied from "
+                                          "(build)/src/tools/nnfusion/templates/super_scaler/";
+        copy_templates.emplace_back("super_scaler/libsuper_scaler_rocm.so",
+                                    "./libsuper_scaler_rocm.so");
     }
+    copy_templates.emplace_back("image_tests/image_test.cpp", "./image_tests/image_test.cpp");
+    copy_templates.emplace_back("image_tests/CMakeLists_rocm.txt", "./image_tests/CMakeLists.txt");
 
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
@@ -72,6 +75,20 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     {
         std::string params = get_kernel_entry_paras(tu);
         lu_exec_begin << "extern \"C\" int kernel_entry(" << params << ")\n{\n";
+    }
+
+    auto& lu_exec_init = *(projgen->lup_exec->begin);
+    {
+        auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
+        lu_exec_init << "// kernel_entry_init\n";
+        // emit memset
+        for (const auto& allocator : allocator_list)
+        {
+            if (allocator.first.find("memset") != std::string::npos)
+            {
+                lu_exec_init << allocator.second->emit_memory_set(0)->get_code();
+            }
+        }
     }
 
     auto& lu_exec_end = *(projgen->lup_exec->end);
@@ -146,10 +163,10 @@ set(CMAKE_CXX_FLAGS "-O2 -Wno-ignored-attributes -Wno-duplicate-decl-specifier")
         // add rocm_lib
         lu << nnfusion::codegen::cmake::rocm_lib->get_code();
 
-        if (superscaler_enable)
+        if (global_required.count("header::super_scaler") > 0)
         {
-            // add superscaler
-            lu << nnfusion::codegen::cmake::superscaler_rocm->get_code();
+            // add super_scaler
+            lu << nnfusion::codegen::cmake::rocm_super_scaler->get_code();
         }
     }
 
@@ -274,7 +291,6 @@ bool RocmCodegenPass::after_projgen()
         // // fast compile script for dynamic shared lib
         // nnfusion::codegen::copy_file_from_templates("rocm_adapter/fastgen_for_sliced_kernels.sh",
         //                                             "./fastgen_for_sliced_kernels.sh");
-        // NNFUSION_CHECK(0 == system("chmod a+x fastgen_for_sliced_kernels.sh"));
     }
     NNFUSION_CHECK(chdir(cd) == 0);
     return true;

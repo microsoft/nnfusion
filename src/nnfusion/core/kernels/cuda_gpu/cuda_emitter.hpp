@@ -189,7 +189,6 @@ namespace nnfusion
                         auto ir = nnfusion::op::get_translation(ctx->gnode);
                         if (!ir.empty())
                         {
-                            NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
                             std::string annotation = nnfusion::op::get_annotation(ir);
                             // if is_memcpy, no need to request antares server
                             if (annotation.find("|memcpy|") != string::npos)

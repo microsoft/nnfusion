@@ -4,7 +4,7 @@
 #pragma once
 
 #include "nnfusion/common/common.hpp"
-#include "nnfusion/core/IR/IR.hpp"
+#include "nnfusion/core/IR/program.hpp"
 #include "nnfusion/engine/interpreter.hpp"
 #include "nnfusion/engine/memory_allocator.hpp"
 #include "nnfusion/engine/pass/graph/graph_pass.hpp"

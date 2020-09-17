@@ -5,7 +5,7 @@
 // This IR is based on ONNIX::ir's interface, but
 // Instructions has attribute, namespace(todo), and tag
 
-#include "IR.hpp"
+#include "program.hpp"
 
 using namespace nnfusion::ir;
 

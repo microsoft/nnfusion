@@ -25,7 +25,7 @@ popd > /dev/null
 
 if [ $? -ne 0 ]; then
     echo "CMake failed."
-    exit 2
+    exit 1
 else
     echo "CMake succeded."
 fi
@@ -37,7 +37,7 @@ popd > /dev/null
 
 if [ $? -ne 0 ]; then
     echo "Build failed."
-    exit 3
+    exit 1
 else
     echo "Build succeded."
 fi
@@ -50,7 +50,7 @@ if [ -f "/.dockerenv" ]; then
 
     if [ $? -ne 0 ]; then
         echo "Install failed."
-        exit 4
+        exit 1
     else
         echo "Install succeded."
     fi

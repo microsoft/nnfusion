@@ -4,6 +4,7 @@
 pr:
   - opensource
   - releases/*
+  - master
 
 pool:
   name : NNFusion Build Agents
@@ -15,8 +16,5 @@ stages:
   - job: BuildJob
     steps:
     - script: ./maint/script/test.sh
-  - job: Clean
-    dependsOn: BuildJob
-    condition: failed()
-    steps:
     - script: ./maint/script/remove_all.sh
+      condition: always()

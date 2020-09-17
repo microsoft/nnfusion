@@ -20,4 +20,3 @@ stages:
     condition: failed()
     steps:
     - script: ./maint/script/remove_all.sh
-    - script: exit 1

@@ -4,7 +4,6 @@
 
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/frontend/frontend_base.hpp"
-
 #include "torch/script.h"
 
 namespace nnfusion

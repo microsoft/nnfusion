@@ -1,3 +1,0 @@
-[submodule "thirdparty/torch/binary"]
-	path = thirdparty/torch/binary
-	url = https://sysdnn.visualstudio.com/NNFusion/_git/thirdparty.torch.binary

@@ -6,6 +6,7 @@ set (SRC
 )
 
 add_executable(nnfusion ${SRC})
+set_property(TARGET nnfusion PROPERTY CXX_STANDARD 14)
 target_include_directories(nnfusion PRIVATE ${TFPROTO_INCLUDE})
 target_link_libraries(nnfusion ${CMAKE_DL_LIBS})
 
@@ -18,7 +19,7 @@ if (ONNX_FRONTEND)
 endif()
 
 if (TORCHSCRIPT_FRONTEND)
-    target_link_libraries(nnfusion torchscript_import_interface torchscript_import frontend_util)
+    target_link_libraries(nnfusion torchscript_import_interface frontend_util)
 endif()
 
 target_link_libraries(nnfusion nnfusion_backend nnfusion_engine_pass_graph nnfusion_operators gflags)

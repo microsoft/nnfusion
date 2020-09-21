@@ -33,16 +33,14 @@ namespace nnfusion
 
             torch::jit::script::Method m = module.get_method("forward");
 
-            auto lowered_graph = torch::jit::LowerGraph(*m.graph(), module._ivalue());
-            std::shared_ptr<torch::jit::Graph> torchscript_graph = lowered_graph.first->copy();
+            auto lowered_pair = torch::jit::LowerGraph(*m.graph(), module._ivalue());
+            std::shared_ptr<torch::jit::Graph> torchscript_graph = lowered_pair.first->copy();
             std::vector<at::Tensor> weights;
-            for (auto v : lowered_graph.second)
+            for (auto v : lowered_pair.second)
             {
+                ///\todo handle other types
                 weights.push_back(v.toTensor());
             }
-            // std::vector<c10::IValue> weights = lowered_graph.second();
-            // std::shared_ptr<torch::jit::Graph> torchscript_graph = m._lowered_graph().first->copy();
-            // std::vector<at::Tensor> weights = m._lowered_graph().second;
 
             auto graph_convert = torchscript_import::GraphConvert(
                 torchscript_graph, weights, input_shapes, input_types);

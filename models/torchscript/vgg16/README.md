@@ -1,6 +1,5 @@
 ## Generate VGG16 trace model
 
-
 ## Build NNFusion with TorchScript support
 PyTorch is installed with pre-cxx11 ABI, which is incompatible with NNFusion. Luckily, PyTorch team provides cxx11 ABI version:
 ```bash
@@ -32,6 +31,3 @@ cmake .
 make -j
 ./main_test
 ```
-
-
-

@@ -6,7 +6,6 @@ set (SRC
 )
 
 add_executable(nnfusion ${SRC})
-set_property(TARGET nnfusion PROPERTY CXX_STANDARD 14)
 target_include_directories(nnfusion PRIVATE ${TFPROTO_INCLUDE})
 target_link_libraries(nnfusion ${CMAKE_DL_LIBS})
 

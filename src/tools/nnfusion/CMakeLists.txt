@@ -18,7 +18,7 @@ if (ONNX_FRONTEND)
 endif()
 
 if (TORCHSCRIPT_FRONTEND)
-    target_link_libraries(nnfusion torchscript_import_interface torchscript_import frontend_util)
+    target_link_libraries(nnfusion torchscript_import_interface frontend_util)
 endif()
 
 target_link_libraries(nnfusion nnfusion_backend nnfusion_engine_pass_graph nnfusion_operators gflags)

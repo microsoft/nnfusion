@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "torch/csrc/jit/passes/lower_graph.h"
 #include "torch/script.h"
 #include "torchscript.hpp"
 #include "util/graph_convert.hpp"
@@ -31,8 +32,15 @@ namespace nnfusion
             torch::jit::script::Module module = torch::jit::load(path);
 
             torch::jit::script::Method m = module.get_method("forward");
-            std::shared_ptr<torch::jit::Graph> torchscript_graph = m._lowered_graph().first->copy();
-            std::vector<at::Tensor> weights = m._lowered_graph().second;
+
+            auto lowered_pair = torch::jit::LowerGraph(*m.graph(), module._ivalue());
+            std::shared_ptr<torch::jit::Graph> torchscript_graph = lowered_pair.first->copy();
+            std::vector<at::Tensor> weights;
+            for (auto v : lowered_pair.second)
+            {
+                ///\todo handle other types
+                weights.push_back(v.toTensor());
+            }
 
             auto graph_convert = torchscript_import::GraphConvert(
                 torchscript_graph, weights, input_shapes, input_types);

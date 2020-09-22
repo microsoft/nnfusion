@@ -2,10 +2,13 @@
 //  Licensed under the MIT License.
 #pragma once
 
+// we need put torch header first to avoid ambiguous log level,
+// so disable clang-format changing header order
+// clang-format off
+#include "torch/script.h"
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/frontend/frontend_base.hpp"
-
-#include "torch/script.h"
+// clang-format on
 
 namespace nnfusion
 {

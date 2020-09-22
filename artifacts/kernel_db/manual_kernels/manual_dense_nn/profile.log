@@ -1,4 +1,0 @@
-manual_dot_nn_op_float_m1_k256_n256_kernel0|8|1|1|128|1|1
-manual_dot_nn_op_float_m1_k256_n512_kernel0|16|1|1|128|1|1
-manual_dot_nn_op_float_m1_k512_n1024_kernel0|32|1|1|256|1|1
-manual_dot_nn_op_float_m1_k3008_n1024_kernel0|32|1|1|1024|1|1

@@ -199,10 +199,10 @@ bool BaseCodegenPass::after_projgen()
     std::string constant_folder = get_current_dir_name() + std::string("/Constant");
     if (stat(constant_folder.c_str(), &s) == 0)
     {
-        std::string cmd = std::string("cp -R ") + constant_folder + " " + m_codegen_folder;
+        std::string cmd = std::string("mv ") + constant_folder + " " + m_codegen_folder;
         if (0 != system(cmd.c_str()))
         {
-            throw nnfusion::errors::RuntimeError("Failed to copy constant files.\n");
+            throw nnfusion::errors::RuntimeError("Failed to move constant files.\n");
         }
     }
 

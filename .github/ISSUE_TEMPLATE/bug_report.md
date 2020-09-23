@@ -1,6 +1,7 @@
 ---
 name: Bug report
-about: Submit a bug report to help us improve NNFusion.
+about: Submit a bug report to help us improve NNFusion. If this doesn't look right,
+  [choose a different type.](https://github.com/microsoft/nnfusion/issues/new/choose)
 title: "[BUG]"
 labels: bug
 assignees: ''

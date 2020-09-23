@@ -1071,7 +1071,7 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
 
         lu << "list(APPEND SRC ${kernels} shared" << m_kernel_suffix << ")\n";
 
-        lu << "include_directories(${CMAKE_BINARY_DIR})\n\n";
+        lu << "include_directories(${CMAKE_SOURCE_DIR})\n\n";
     }
 
     lu << "cuda_add_library(${TARGET_NAME} ${SRC})\n";

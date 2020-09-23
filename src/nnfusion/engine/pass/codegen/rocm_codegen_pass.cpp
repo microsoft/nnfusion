@@ -154,7 +154,7 @@ set(CMAKE_CXX_FLAGS "-O2 -Wno-ignored-attributes -Wno-duplicate-decl-specifier")
         lu << "list(APPEND SRC ${kernels} shared"
            << ".cpp"
            << ")\n";
-        lu << "include_directories(${CMAKE_BINARY_DIR})\n\n";
+        lu << "include_directories(${CMAKE_SOURCE_DIR})\n\n";
     }
     lu << "add_library(${TARGET_NAME} ${SRC})\n";
 

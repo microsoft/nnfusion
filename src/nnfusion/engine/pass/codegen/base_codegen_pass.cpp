@@ -197,12 +197,21 @@ bool BaseCodegenPass::after_projgen()
 {
     struct stat s;
     std::string constant_folder = get_current_dir_name() + std::string("/Constant");
+    std::string para_info_json = get_current_dir_name() + std::string("/para_info.json");
     if (stat(constant_folder.c_str(), &s) == 0)
     {
-        std::string cmd = std::string("cp -R ") + constant_folder + " " + m_codegen_folder;
+        std::string cmd = std::string("mv ") + constant_folder + " " + m_codegen_folder;
         if (0 != system(cmd.c_str()))
         {
-            throw nnfusion::errors::RuntimeError("Failed to copy constant files.\n");
+            throw nnfusion::errors::RuntimeError("Failed to move constant files.\n");
+        }
+    }
+    if (stat(para_info_json.c_str(), &s) == 0)
+    {
+        std::string cmd = std::string("mv ") + para_info_json + " " + m_codegen_folder;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError("Failed to move para_info.json.\n");
         }
     }
 

@@ -182,7 +182,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=gnu++11 -O3 -march=native -p
     {
         lu << "\nfile(GLOB kernels kernels/*" << m_kernel_suffix << ")\n";
         lu << "list(APPEND SRC ${kernels} shared" << m_kernel_suffix << ")\n";
-        lu << "include_directories(${CMAKE_BINARY_DIR})\n\n";
+        lu << "include_directories(${CMAKE_SOURCE_DIR})\n\n";
     }
 
     lu << "add_library(${TARGET_NAME} ${SRC})\n";

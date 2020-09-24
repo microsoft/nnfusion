@@ -175,7 +175,14 @@ int main(int argc, char** argv)
             case GENERIC_CPU: cpu_engine.run_on_graph(graph); break;
             case HLSL: hlsl_engine.run_on_graph(graph); break;
             case GraphCore: gc_engine.run_on_graph(graph); break;
+            default:
+                throw nnfusion::errors::NotSupported("Unsupported device type:" +
+                                                     FLAGS_fdefault_device);
             }
+        }
+        else
+        {
+            throw nnfusion::errors::InvalidArgument("Default device cannot be empty.");
         }
     }
     return 0;

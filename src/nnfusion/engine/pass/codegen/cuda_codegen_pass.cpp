@@ -978,7 +978,6 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         // kernel launch
         lu_main << "kernel_entry(" << join(params, ", ") << ");\n";
 
-        lu_main << d2hcopy.get_code();
         lu_main << "cudaEventRecord(stop_i, 0);\n";
         lu_main << "cudaEventSynchronize(stop_i);\n";
         lu_main << "cudaEventElapsedTime(&ms_i, start_i, stop_i);\n";

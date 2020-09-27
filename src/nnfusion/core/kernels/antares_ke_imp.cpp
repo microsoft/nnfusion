@@ -26,7 +26,8 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
 
         if (!req.send_request(response))
         {
-            NNFUSION_LOG(NNFUSION_WARNING) << "Curl request Antares kernel failed.";
+            NNFUSION_LOG(INFO) << "[Autogen] " << expr << " (tuned = " << -1 << ")";
+            code_cache[expr] = std::make_pair(response, -1);
             return std::make_pair("", tuned);
         }
         if (strncmp(response.c_str(), "[ERROR]", 7) == 0)

@@ -75,7 +75,7 @@ REGISTER_OP(DepthwiseConv2dNative)
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto ir_template =
-            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@ * @input1@@input1_layout@@pad_cond@ where HO in @height@, WO in @width@; )";
+            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
         auto manual_rule = R"( ## @: plan/depthwise_convfwd_nhwc_v1 )";
 
         auto _op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());

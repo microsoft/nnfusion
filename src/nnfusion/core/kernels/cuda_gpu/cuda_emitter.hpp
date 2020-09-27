@@ -193,8 +193,9 @@ namespace nnfusion
                           "Dot", "Elementwise", "GatherV2", "MaxPool", "OneHot", "Pad", "Relu", "Reshape", "Tile", "Reverse", "Shape", "Slice", "Sum",
                         };
                         if (!ir.empty() && wl.count(ctx->gnode->get_op_type()))
-#endif
+#else
                         if (!ir.empty())
+#endif
                         {
                             auto info = m_antares_ke_imp->autogen(ir);
                             antares_code = info.first;
@@ -205,6 +206,16 @@ namespace nnfusion
                             if (annotation.find("|memcpy|") != string::npos)
                             {
                                 is_memcpy = true;
+                            }
+                        }
+                        if (ir.empty())
+                        {
+                            static std::unordered_set<std::string> log_cache;
+                            if (log_cache.count(ctx->gnode->get_op_type()) == 0)
+                            {
+                                NNFUSION_LOG(INFO) << "No Antares Translation for Op: "
+                                                   << ctx->gnode->get_op_type();
+                                log_cache.insert(ctx->gnode->get_op_type());
                             }
                         }
                     }

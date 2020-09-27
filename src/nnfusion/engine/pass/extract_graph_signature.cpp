@@ -17,7 +17,7 @@ bool ExtractGraphSignature::extract_result(std::shared_ptr<TranslationUnit> tu,
         NNFUSION_CHECK_NOT_NULLPTR(tv);
 
         tu->output_names->insert(tv->get_name());
-        NNFUSION_LOG(INFO) << "Result Tensor: " << tv->get_name();
+        // NNFUSION_LOG(INFO) << "Result Tensor: " << tv->get_name();
     }
     return true;
 }
@@ -205,7 +205,7 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
             propagate_in_place_output(
                 ctx, NodeOut(input_node, in_edge->get_src_output()), output_name);
         }
-        NNFUSION_LOG(INFO) << "Output Tensor:\t" << itv->get_name() << "\t with id:" << output_name;
+        // NNFUSION_LOG(INFO) << "Output Tensor:\t" << itv->get_name() << "\t with id:" << output_name;
 
         std::string frontend_name = itv->get_name();
         para_info["output"][frontend_name]["name"] = tv->get_name();

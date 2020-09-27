@@ -307,10 +307,11 @@ namespace nnfusion
                     };
                     kernel_dict["DivNoNan"] = [&](std::shared_ptr<GNode>& curr,
                                                   std::ofstream& fout) {
-                        codegen_for_elementwise(curr,
-                                                fout,
-                                                "lambda x: tvm.if_then_else(args(\"input1\")[x] != "
-                                                "0, args(\"input0\")[x] / args(\"input1\")[x], 0)");
+                        codegen_for_elementwise(
+                            curr,
+                            fout,
+                            "lambda x: tvm.te.if_then_else(args(\"input1\")[x] != "
+                            "0, args(\"input0\")[x] / args(\"input1\")[x], 0)");
                     };
                     kernel_dict["Power"] = [&](std::shared_ptr<GNode>& curr, std::ofstream& fout) {
                         codegen_for_elementwise(
@@ -359,16 +360,18 @@ namespace nnfusion
                     };
                     kernel_dict["ReluBackprop"] = [&](std::shared_ptr<GNode>& curr,
                                                       std::ofstream& fout) {
-                        codegen_for_elementwise(curr,
-                                                fout,
-                                                "lambda x: tvm.if_then_else(args(\"input0\")[x] > "
-                                                "0, args(\"input1\")[x], 0)");
+                        codegen_for_elementwise(
+                            curr,
+                            fout,
+                            "lambda x: tvm.te.if_then_else(args(\"input0\")[x] > "
+                            "0, args(\"input1\")[x], 0)");
                     };
                     kernel_dict["Select"] = [&](std::shared_ptr<GNode>& curr, std::ofstream& fout) {
-                        codegen_for_elementwise(curr,
-                                                fout,
-                                                "lambda x: tvm.if_then_else(args(\"input0\")[x] == "
-                                                "0, args(\"input2\")[x], args(\"input1\")[x])");
+                        codegen_for_elementwise(
+                            curr,
+                            fout,
+                            "lambda x: tvm.te.if_then_else(args(\"input0\")[x] == "
+                            "0, args(\"input2\")[x], args(\"input1\")[x])");
                     };
 
                     // Non-standard Ops

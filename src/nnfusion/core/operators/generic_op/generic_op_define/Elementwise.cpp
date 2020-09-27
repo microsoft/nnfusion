@@ -54,7 +54,7 @@ REGISTER_OP(DivNoNan)
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         std::string topi =
-            "lambda x: tvm.if_then_else(args(\"input1\")[x] != "
+            "lambda x: tvm.te.if_then_else(args(\"input1\")[x] != "
             "0, args(\"input0\")[x] / args(\"input1\")[x], 0)";
         return trans_elementwise(curr, topi);
     });
@@ -185,7 +185,7 @@ REGISTER_OP(ReluBackprop)
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         std::string topi =
-            "lambda x: tvm.if_then_else(args(\"input0\")[x] > "
+            "lambda x: tvm.te.if_then_else(args(\"input0\")[x] > "
             "0, args(\"input1\")[x], 0)";
         return trans_elementwise(curr, topi);
     });
@@ -197,7 +197,7 @@ REGISTER_OP(Select)
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         std::string topi =
-            "lambda x: tvm.if_then_else(args(\"input0\")[x] == "
+            "lambda x: tvm.te.if_then_else(args(\"input0\")[x] == "
             "0, args(\"input2\")[x], args(\"input1\")[x])";
         return trans_elementwise(curr, topi);
     });

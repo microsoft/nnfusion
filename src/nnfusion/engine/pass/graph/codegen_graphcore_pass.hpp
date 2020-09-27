@@ -529,7 +529,7 @@ namespace nnfusion
                                 convert_input[1] = ".transpose()";
 
                             auto code = autogen(op::create_code_from_template(
-                                R"( - input("input0", @input_shape_0@); input("input1", @input_shape_1@); k = loop(@K@); output(@output_shape@, lambda i: tvm.sum(args("input0")[k] * args("input1")[k], axis=k)); )",
+                                R"( - input("input0", @input_shape_0@); input("input1", @input_shape_1@); k = loop(@K@); output(@output_shape@, lambda i: tvm.te.sum(args("input0")[k] * args("input1")[k], axis=k)); )",
                                 {{"input_shape_0", "[ " + std::to_string(K) + " ]"},
                                  {"input_shape_1", "[ " + std::to_string(K) + " ]"},
                                  {"output_shape", "[ 1 ]"},
@@ -1022,18 +1022,20 @@ namespace nnfusion
 
                     kernel_dict["DivNoNan"] = [&](std::shared_ptr<GNode>& curr,
                                                   std::ofstream& fout) {
-                        codegen_for_elementwise(curr,
-                                                fout,
-                                                "lambda x: tvm.if_then_else(args(\"input1\")[x] != "
-                                                "0, args(\"input0\")[x] / args(\"input1\")[x], 0)");
+                        codegen_for_elementwise(
+                            curr,
+                            fout,
+                            "lambda x: tvm.te.if_then_else(args(\"input1\")[x] != "
+                            "0, args(\"input0\")[x] / args(\"input1\")[x], 0)");
                     };
 
                     kernel_dict["ReluBackprop"] = [&](std::shared_ptr<GNode>& curr,
                                                       std::ofstream& fout) {
-                        codegen_for_elementwise(curr,
-                                                fout,
-                                                "lambda x: tvm.if_then_else(args(\"input0\")[x] > "
-                                                "0, args(\"input1\")[x], 0)");
+                        codegen_for_elementwise(
+                            curr,
+                            fout,
+                            "lambda x: tvm.te.if_then_else(args(\"input0\")[x] > "
+                            "0, args(\"input1\")[x], 0)");
                     };
 
                     kernel_dict["Select"] = [&](std::shared_ptr<GNode>& curr, std::ofstream& fout) {

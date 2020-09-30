@@ -25,7 +25,7 @@ const static std::vector<std::vector<std::string>> PATTERNS = {
     // {"Convolution", "BatchNormInference", "Relu"},
     // {"Convolution", "BatchNormInference", "Add"},
     // {"Convolution", "BatchNormInference"},
-    // {"Convolution", "Add", "Reshape", "Relu"},
+    // Conv-BN-Relu is converted into Conv-Add-Relu
     {"Convolution", "Add", "Relu"},
     {"Convolution", "Relu"}};
 

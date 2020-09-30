@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 """
+This incompetent parser has been deprecated
 Basic lexer and parser needed
 pip install ply
 """

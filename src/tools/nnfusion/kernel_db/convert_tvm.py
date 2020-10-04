@@ -4,7 +4,7 @@
 """
 This script helps you to insert specific kernels (specs in json files) into our kernel_db
 Some more explains to customize it for your needs
-    parameters : specify the parameters and their data types for a certain type of kernel
+    param_list : specify the parameters and their data types for a certain type of kernel
     gen_key    : generate identifier of kernel specification, including I/O shapes, types and more
     gen_config : convert kernel specification to the db format 
     insert_db  : insert the parsed kernel into kernel db
@@ -24,7 +24,7 @@ db_name = "kernel_cache.db"
 
 
 # Todo: re-org operator definition to oop and coordinate to NNFusion
-parameters = {
+param_list = {
     "Convolution": {
         'symbol': ['input0', 'input1', 'output0'],
         'dtype': ['float*', 'float*', 'float*']
@@ -72,7 +72,7 @@ def gen_key(data, dtype="float"):
     op_type = data["op_type"]
     in_shape = data["in_shape"]
     out_shape = data["out_shape"]
-    parameters = data["parameters"]
+    parameters = data["parameters"] if "parameters" in data else {}
 
     key = op_type
     key += ";".join(",".join(str(i) for i in shape) for shape in in_shape)
@@ -110,7 +110,7 @@ def gen_key(data, dtype="float"):
         key += "Shape{" + ", ".join(str(i)
                                     for i in parameters["padding_below"]) + "}"
     else:
-        raise ("not implemented")
+        pass
 
     return key
 
@@ -213,7 +213,7 @@ if __name__ == '__main__':
 
         # parse and clean up the cuda code to get some specific information
         shared_memory, new_code, sync_code, signature = code_parse(
-            kernel["code"], parameters[op_type])
+            kernel["code"], param_list[op_type])
 
         config = gen_config(op_type, kernel, shared_memory, num_sync=0)
 

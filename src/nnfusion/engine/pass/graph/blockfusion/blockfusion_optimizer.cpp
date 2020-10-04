@@ -445,8 +445,8 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
                 auto node = m_nodes[group->nodes.at(i)]->node;
                 std::shared_ptr<KernelContext> ctx(new KernelContext(node));
                 std::string identifier = generate_identifier(ctx);
-                std::set<std::string> tags = {"fast"};
-                auto fetched_kernel = m_kernel_db->fetch_with_tags(identifier, "CUDA", tags, true);
+                auto fetched_kernel =
+                    m_kernel_db->fetch_with_tags(identifier, "CUDA", set<string>{}, true);
                 if (fetched_kernel.function != "")
                 {
                     auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(

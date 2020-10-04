@@ -139,7 +139,7 @@ private:
         if (identifier != "")
         {
             // Todo: more tags, more platform
-            std::set<std::string> tags = {"fast"};
+            std::set<std::string> tags = {};
             auto fetched_kernel = kernel_db->fetch_with_tags(identifier, "CUDA", tags);
             if (fetched_kernel.function != "")
             {

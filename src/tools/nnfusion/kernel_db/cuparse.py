@@ -2,7 +2,6 @@
 # Licensed under the MIT License.
 
 """
-This incompetent parser has been deprecated
 Basic lexer and parser needed
 pip install ply
 """
@@ -30,16 +29,6 @@ reserved = {
     'else': 'ELSE',
     'for': 'FOR',
     'void': 'VOID',
-    # mark
-    # '*': '*',
-    # ',': ',',
-    # ';': ';',
-    # '(': '(',
-    # ')': ')',
-    # '[': '[',
-    # ']': ']',
-    # '{': '{',
-    # '}': '}',
     # data types
     'bool': 'TYPE',
     'char': 'TYPE',
@@ -132,16 +121,14 @@ def t_error(t):
 # rules for parsing shared memory and sync thread
 
 shared_memory = {"symbol": [], "dtype": [], "size": []}
-include_set = {}
-exclude_set = {}
 arguments = {"symbol": [], "dtype": []}
 signature = []
 
 
-def p_functon(p):
-    'function : signature \'{\' shared_buffer statements \'}\''
-    include_set[p.slice[2].lexpos] = p.slice[-1].lexpos
-    p[0] = p.slice[-2].value
+def p_start(p):
+    '''start : signature 
+             | shared
+    '''
 
 
 def p_signature(p):
@@ -171,14 +158,8 @@ def p_type(p):
     '''type : TYPE 
             | TYPE \'*\'
     '''
+    # not all cases are covered like: const type * const
     p[0] = ''.join(p[1:])
-
-
-def p_shared_buffer(p):
-    '''shared_buffer : shared
-                     | shared_buffer shared
-                     | normal
-    '''
 
 
 def p_shared(p):
@@ -186,51 +167,6 @@ def p_shared(p):
     shared_memory["symbol"].append(p[3])
     shared_memory["dtype"].append(p[2])
     shared_memory["size"].append(int(p[5]))
-    exclude_set[p.slice[1].lexpos] = p.slice[-1].lexpos
-
-
-def p_statements(p):
-    '''statements : statement
-                  | statements statement
-    '''
-    p[0] = sum(p[1:])
-
-
-def p_statement(p):
-    '''statement : sync
-                 | for_loop_static
-                 | normal
-    '''
-    p[0] = p[1]
-
-
-def p_for_loop_static(p):
-    '''for_loop_static : FOR \'(\' assign compare increase \')\' \'{\' statements \'}\'
-       assign   : TYPE ID \'=\' INTEGER \';\'
-       compare  : ID \'<\' INTEGER \';\'
-       increase : \'+\' \'+\' ID
-                | ID \'+\' \'+\'
-    '''
-    if len(p) == 10:
-        p[0] = p[4] * p[8]
-    elif len(p) == 6:
-        assert int(p[4]) == 0
-    elif len(p) == 5:
-        p[0] = int(p[3])
-    else:
-        pass
-
-
-def p_sync(p):
-    'sync : SYNC \'(\' \')\' \';\' '
-    p[0] = 1
-
-
-def p_normal(p):
-    '''normal : \';\'
-               | \'{\' normal \'}\'
-    '''
-    p[0] = 0
 
 
 def p_error(p):
@@ -242,60 +178,53 @@ def p_error(p):
 
 
 lexer = lex.lex()
-parser = yacc.yacc(debug=True)
-
-
-def is_valid(pos):
-    for start in include_set:
-        # Todo: replace the static analysis part with a simpler way
-        if start - 1 < pos:
-            break
-    else:
-        return False
-    for start in exclude_set:
-        if start <= pos <= exclude_set[start]:
-            return False
-    return True
+parser = yacc.yacc()
 
 
 def clear_global():
-    shared_memory["symbol"] = []
-    shared_memory["dtype"] = []
-    shared_memory["size"] = []
-    include_set.clear()
-    exclude_set.clear()
-    arguments["symbol"] = []
-    arguments["dtype"] = []
+    shared_memory["symbol"].clear()
+    shared_memory["dtype"].clear()
+    shared_memory["size"].clear()
+    arguments["symbol"].clear()
+    arguments["dtype"].clear()
+    signature.clear()
+
+
+re_func = re.compile(
+    r'(.*__global__\s+void\s+[A-Za-z_]\w*\s*\([^{]*\))\s*({.+\Z)', re.DOTALL)
+re_sharedmem = re.compile(
+    r'__shared__\s+[A-Za-z_]\w*\s+[A-Za-z_]\w*\s*\[\s*\d+\s*\]\s*;')
+re_syncthread = re.compile(r'__syncthreads\s*\(\s*\)\s*;')
+print_sync = r'''
+  if (blockIdx.x == 0 && blockIdx.y == 0&& blockIdx.z == 0&& threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+  {
+    printf("Amount of syncthreads logged: %d\n", SYNC_COUNT);
+  }
+'''
 
 
 def parse(code, parameters):
-    # Todo: the defined grammar for the parser is not sufficient, to be completed
     clear_global()
-    num_sync = parser.parse(code)
-    lexer.input(code)
-    new_code = ""
+
+    func_sig, func_body = re_func.match(code).groups()
+    new_code = sync_code = func_body
+
+    parser.parse(func_sig)
+
     for (i, dtype) in enumerate(parameters["dtype"]):
         assert dtype == arguments["dtype"][i]
         if parameters["symbol"][i] != arguments["symbol"][i]:
-            new_code += "{} {} = {};".format(dtype,
-                                             arguments["symbol"][i], parameters["symbol"][i])
-    while True:
-        tok = lexer.token()
-        if not tok:
-            break
-        elif is_valid(tok.lexpos):
-            new_code += tok.value
-        else:
-            pass
+            new_code = "{} {} = {};\n".format(
+                dtype, arguments["symbol"][i], parameters["symbol"][i]) + new_code
 
-    return shared_memory, num_sync, new_code, signature[-1]
+    for m in re_sharedmem.finditer(code):
+        new_code = new_code.replace(m.group(0), "")
+        parser.parse(m.group(0))
 
+    for m in re_syncthread.finditer(code):
+        sync_code = sync_code.replace(m.group(0), "__LOGSYNC()\n")
+    sync_code = "#define __LOGSYNC() {__syncthreads(); SYNC_COUNT++;}\n" + \
+        func_sig + "{\n" + "int SYNC_COUNT = 0;\n" + \
+        sync_code + print_sync + "}"
 
-if __name__ == '__main__':
-
-    with open(sys.argv[1]) as f:
-        input = f.read()
-
-    parameters = {'symbol': ['input0', 'input1', 'output0'], 'dtype': [
-        'float*', 'float*', 'float*']}
-    print(parse(input, parameters)[2])
+    return shared_memory, new_code, sync_code, signature[-1]

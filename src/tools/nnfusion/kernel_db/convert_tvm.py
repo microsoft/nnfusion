@@ -16,8 +16,8 @@ import sqlite3
 import os
 import math
 
-from reparse import parse as code_parse
-from profile import prepare_file, profile, prod
+from cuparse import parse as code_parse
+from profile import prepare_file, log_sync, profile, prod
 
 db_path = os.environ['HOME'] + "/.cache/nnfusion/"
 db_name = "kernel_cache.db"
@@ -63,8 +63,10 @@ parameters = {
     }
 }
 
-conv_augmented = ["Fused_Convolution_Batchnorm", "Fused_Convolution_Batchnorm_Relu", "Fused_Convolution_Add_Relu"]
+conv_augmented = ["Fused_Convolution_Batchnorm",
+                  "Fused_Convolution_Batchnorm_Relu", "Fused_Convolution_Add_Relu"]
 conv_family = ["Convolution", "Fused_Convolution_Relu"] + conv_augmented
+
 
 def gen_key(data, dtype="float"):
     op_type = data["op_type"]
@@ -74,10 +76,11 @@ def gen_key(data, dtype="float"):
 
     key = op_type
     key += ";".join(",".join(str(i) for i in shape) for shape in in_shape)
-    if op_type in augmented_conv:
+    if op_type in conv_augmented:
         key += "float" * len(in_shape)
     else:
-        key += ";".join(",".join(str(i) for i in shape) for shape in out_shape)
+        key += ";" + ";".join(",".join(str(i) for i in shape)
+                              for shape in out_shape)
         key += "float" * (len(in_shape) + len(out_shape))
 
     if op_type in conv_family:
@@ -93,10 +96,10 @@ def gen_key(data, dtype="float"):
                 pass
             elif op == "Add":
                 key += "Add" + ";".join(",".join(str(i) for i in shape)
-                                        for shape in out_shape) * 3 + "float" * 3 * len(out_shape)
+                                        for shape in out_shape * 3) + "float" * 3 * len(out_shape)
             elif op == "Relu":
                 key += "Relu" + ";".join(",".join(str(i) for i in shape)
-                                        for shape in out_shape) * 2 + "float" * 2 * len(out_shape)
+                                         for shape in out_shape * 2) + "float" * 2 * len(out_shape)
             else:
                 raise ("to be specified")
     elif op_type == "AvgPool" or op_type == "MaxPool":
@@ -209,12 +212,15 @@ if __name__ == '__main__':
         op_type = kernel["op_type"]
 
         # parse and clean up the cuda code to get some specific information
-        shared_memory, new_code, signature = code_parse(kernel["code"], parameters[op_type])
+        shared_memory, new_code, sync_code, signature = code_parse(
+            kernel["code"], parameters[op_type])
 
-        prepare_file(signature, kernel["code"], config, db_path + "profile/", parse=True)
+        config = gen_config(op_type, kernel, shared_memory, num_sync=0)
+
+        prepare_file(signature, sync_code, config,
+                     db_path + "profile/", parse=True)
         num_sync = log_sync(signature, db_path + "profile/")
-
-        config = gen_config(op_type, kernel, shared_memory, num_sync)
+        config["num_sync"] = num_sync
 
         # feel free to customize the repo name you want
         name = kernel["tvm_func_name"].replace("_kernel0", "")
@@ -238,5 +244,6 @@ if __name__ == '__main__':
 
         prepare_file(signature, kernel["code"], config, db_path + "profile/")
         profile_info = profile(signature, db_path + "profile/")
-        print(profile_info, resource)
-        insert_db(operator_path + name, resource, tags=default_tags, profile=profile_info)
+        print(profile_info, resource, config["num_sync"])
+        insert_db(operator_path + name, resource,
+                  tags=default_tags, profile=profile_info)

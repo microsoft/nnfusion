@@ -35,8 +35,6 @@ def prepare_file(signature, code, config, path, parse=False):
     }                                                                  \
   } while (0)
 
-#define __LOGSYNC() {__syncthreads(); SYNC_COUNT++;}
-
 __placeholder__
 
 extern "C" void cuda_init() {
@@ -90,7 +88,7 @@ __init_input__
   CUDA_SAFE_CALL(cudaFree(memory_pool));
 
   return 0;
-}'''.replace("__step__", 1 if parse else 100)
+}'''.replace("__step__", "1" if parse else "100")
 
     bytes_count = [0]
     for shape in config["in_shape"]+config["out_shape"]:
@@ -128,6 +126,7 @@ def log_sync(kernel, path):
     syncthreads, _ = process.communicate()
     num_sync = re.compile(r'Amount of syncthreads logged: (\d+)')
     return num_sync.search(str(syncthreads)).group(1)
+
 
 def profile(kernel, path):
     command = ["make; nvprof --normalized-time-unit us --csv ./profile"]

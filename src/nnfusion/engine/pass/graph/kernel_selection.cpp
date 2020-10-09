@@ -258,6 +258,20 @@ bool DefaultKernelSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>
     return true;
 }
 
+template <typename Iter>
+std::string item_join(Iter begin,
+                      Iter end,
+                      std::string const& separator,
+                      std::function<std::string(Iter)> f_item)
+{
+    std::ostringstream result;
+    if (begin != end)
+        result << f_item(begin++);
+    while (begin != end)
+        result << separator << f_item(begin++);
+    return result.str();
+}
+
 std::string nnfusion::pass::graph::generate_identifier(const shared_ptr<KernelContext>& ctx)
 {
     std::string op_type = ctx->gnode->get_op_type();
@@ -272,21 +286,17 @@ std::string nnfusion::pass::graph::generate_identifier(const shared_ptr<KernelCo
     // operator type as identifier
     identifier += op_type;
 
-    // shapes of input tensors as identifier
-    for (int i = 0; i < ctx->inputs.size(); ++i)
-    {
-        auto& shape = ctx->inputs[i]->get_shape();
-        for (int j = 0; j < shape.size(); ++j)
-            identifier += to_string(shape[j]);
-    }
-
-    // shapes of output tensors as identifier
-    for (int i = 0; i < ctx->outputs.size(); ++i)
-    {
-        auto& shape = ctx->outputs[i]->get_shape();
-        for (int j = 0; j < shape.size(); ++j)
-            identifier += to_string(shape[j]);
-    }
+    // shapes of input and output tensors as identifier
+    std::function<std::string(std::vector<size_t>::const_iterator)> f_shape =
+        [](std::vector<size_t>::const_iterator s) { return to_string(*s); };
+    std::function<std::string(std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>>::iterator)>
+        f_tensor =
+            [&f_shape](std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>>::iterator t) {
+                auto& shape = (*t)->get_shape();
+                return item_join(shape.begin(), shape.end(), ",", f_shape);
+            };
+    identifier += item_join(ctx->inputs.begin(), ctx->inputs.end(), ";", f_tensor);
+    identifier += ";" + item_join(ctx->outputs.begin(), ctx->outputs.end(), ";", f_tensor);
 
     // data types of input tensors as identifier
     for (int i = 0; i < ctx->dtypes.size(); ++i)
@@ -356,7 +366,7 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
     if (identifier != "")
     {
         // Todo: more tags and policy to be added
-        std::set<std::string> tags = {"fast"};
+        std::set<std::string> tags = {};
         auto fetched_kernel = cache_manager->fetch_with_tags(identifier, platform.front(), tags);
         if (fetched_kernel.function != "")
         {

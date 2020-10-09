@@ -11,7 +11,7 @@ def prod(a):
     return reduce((lambda x, y: x * y), a)
 
 
-def prepare_file(signature, code, config, path):
+def prepare_file(signature, code, config, path, parse=False):
     kernel_cuh = r'''
 #pragma once
 
@@ -77,7 +77,7 @@ __init_input__
   }
 
   // kernel call
-  int steps = 100;
+  int steps = __step__;
   cudaProfilerStart();
   for (int i_ = 0; i_ < steps; i_++) {
     __signature__<<<
@@ -88,7 +88,8 @@ __init_input__
   CUDA_SAFE_CALL(cudaFree(memory_pool));
 
   return 0;
-}'''
+}'''.replace("__step__", "1" if parse else "100")
+
     bytes_count = [0]
     for shape in config["in_shape"]+config["out_shape"]:
         bytes_count.append(prod(shape)*4 + bytes_count[-1])
@@ -116,6 +117,15 @@ __init_input__
         f.write(kernel_cuh)
     with open(path + "profile_kernel.cu", "w+") as f:
         f.write(profile_kernel)
+
+
+def log_sync(kernel, path):
+    command = ["make; ./profile"]
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=path, shell=True)
+    syncthreads, _ = process.communicate()
+    num_sync = re.compile(r'Amount of syncthreads logged: (\d+)')
+    return num_sync.search(str(syncthreads)).group(1)
 
 
 def profile(kernel, path):

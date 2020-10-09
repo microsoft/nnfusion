@@ -176,10 +176,10 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
 
         auto platform = devtype2platform((*it)["DeviceType"].as<NNFusion_DeviceType>());
         auto product_name = get_product_name();
-        nnfusion::cache::kernel dot_kernel = fetch_best_kernel(
-            identifier, platform, set<string>{"fast"}, cache_manager, product_name);
+        nnfusion::cache::kernel dot_kernel =
+            fetch_best_kernel(identifier, platform, set<string>{}, cache_manager, product_name);
         nnfusion::cache::kernel transpose_dot_kernel = fetch_best_kernel(
-            identifier, platform, set<string>{"fast", "transB"}, cache_manager, product_name);
+            identifier, platform, set<string>{"transB"}, cache_manager, product_name);
         // no profiling time
         if (dot_kernel.profile.find(product_name) == dot_kernel.profile.end() ||
             transpose_dot_kernel.profile.find(product_name) == transpose_dot_kernel.profile.end())

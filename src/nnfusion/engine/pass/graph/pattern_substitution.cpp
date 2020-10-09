@@ -25,7 +25,7 @@ const static std::vector<std::vector<std::string>> PATTERNS = {
     // {"Convolution", "BatchNormInference", "Relu"},
     // {"Convolution", "BatchNormInference", "Add"},
     // {"Convolution", "BatchNormInference"},
-    // {"Convolution", "Add", "Reshape", "Relu"},
+    // Conv-BN-Relu is converted into Conv-Add-Relu
     {"Convolution", "Add", "Relu"},
     {"Convolution", "Relu"}};
 
@@ -139,7 +139,7 @@ private:
         if (identifier != "")
         {
             // Todo: more tags, more platform
-            std::set<std::string> tags = {"fast"};
+            std::set<std::string> tags = {};
             auto fetched_kernel = kernel_db->fetch_with_tags(identifier, "CUDA", tags);
             if (fetched_kernel.function != "")
             {

@@ -4,7 +4,7 @@
 """
 This script helps you to insert specific kernels (specs in json files) into our kernel_db
 Some more explains to customize it for your needs
-    parameters : specify the parameters and their data types for a certain type of kernel
+    param_list : specify the parameters and their data types for a certain type of kernel
     gen_key    : generate identifier of kernel specification, including I/O shapes, types and more
     gen_config : convert kernel specification to the db format 
     insert_db  : insert the parsed kernel into kernel db
@@ -17,14 +17,14 @@ import os
 import math
 
 from cuparse import parse as code_parse
-from profile import prepare_file, profile, prod
+from profile import prepare_file, log_sync, profile, prod
 
 db_path = os.environ['HOME'] + "/.cache/nnfusion/"
 db_name = "kernel_cache.db"
 
 
 # Todo: re-org operator definition to oop and coordinate to NNFusion
-parameters = {
+param_list = {
     "Convolution": {
         'symbol': ['input0', 'input1', 'output0'],
         'dtype': ['float*', 'float*', 'float*']
@@ -45,11 +45,11 @@ parameters = {
         'symbol': ['input0', 'input1', 'output0'],
         'dtype': ['float*', 'float*', 'float*']
     },
-    "Fused_Convolution_Batchnorm_Relu": {
+    "Fused_Convolution_Batchnorm": {
         'symbol': ['input0', 'input1', 'output0', 'input2'],
         'dtype': ['float*', 'float*', 'float*', 'float*']
     },
-    "Fused_Convolution_Batchnorm": {
+    "Fused_Convolution_Batchnorm_Relu": {
         'symbol': ['input0', 'input1', 'output0', 'input2'],
         'dtype': ['float*', 'float*', 'float*', 'float*']
     },
@@ -63,51 +63,54 @@ parameters = {
     }
 }
 
+conv_augmented = ["Fused_Convolution_Batchnorm",
+                  "Fused_Convolution_Batchnorm_Relu", "Fused_Convolution_Add_Relu"]
+conv_family = ["Convolution", "Fused_Convolution_Relu"] + conv_augmented
+
 
 def gen_key(data, dtype="float"):
     op_type = data["op_type"]
     in_shape = data["in_shape"]
     out_shape = data["out_shape"]
-    key = op_type
-    key += "".join("".join(str(i) for i in shape) for shape in in_shape)
-    if op_type != "Fused_Convolution_Add_Relu":
-        key += "".join("".join(str(i) for i in shape) for shape in out_shape)
-        key += "float" * (len(in_shape) + len(out_shape))
-    else:
-        key += "float" * len(in_shape)
+    parameters = data["parameters"] if "parameters" in data else {}
 
-    if op_type in [
-            "Convolution", "Fused_Convolution_Relu", "Fused_Convolution_Batchnorm", "Fused_Convolution_Batchnorm_Relu",
-            "Fused_Convolution_Add_Relu"
-    ]:
-        parameters = data["parameters"]
+    key = op_type
+    key += ";".join(",".join(str(i) for i in shape) for shape in in_shape)
+    if op_type in conv_augmented:
+        key += "float" * len(in_shape)
+    else:
+        key += ";" + ";".join(",".join(str(i) for i in shape)
+                              for shape in out_shape)
+        key += "float" * (len(in_shape) + len(out_shape))
+
+    if op_type in conv_family:
         key += "".join(["Strides{", ", ".join(str(i)
                                               for i in parameters["window_movement_strides"]), "}"])
         key += "".join(["Strides{", ", ".join(str(i)
                                               for i in parameters["window_dilation_strides"]), "}"])
         key += "".join(["CoordinateDiff{", ", ".join(str(i)
                                                      for i in parameters["padding_below_diff"]), "}"])
-        if op_type != "Convolution":
-            key = key.replace(op_type, "Convolution")
-            for op in op_type.split("_"):
-                if op == "Batchnorm":
-                    raise ("to be specified")
-                elif op == "Add":
-                    key += "Add" + "".join("".join(str(i) for i in shape)
-                                           for shape in out_shape) * 3 + "float" * 3 * len(out_shape)
-                elif op == "Relu":
-                    key += "Relu" + "".join("".join(str(i) for i in shape)
-                                            for shape in out_shape) * 2 + "float" * 2 * len(out_shape)
-                elif op not in ["Fused", "Convolution"]:
-                    raise ("not implemented")
+        key = key.replace(op_type, "Convolution")
+        for op in op_type.split("_"):
+            if op in ["Fused", "Convolution"]:
+                pass
+            elif op == "Add":
+                key += "Add" + ";".join(",".join(str(i) for i in shape)
+                                        for shape in out_shape * 3) + "float" * 3 * len(out_shape)
+            elif op == "Relu":
+                key += "Relu" + ";".join(",".join(str(i) for i in shape)
+                                         for shape in out_shape * 2) + "float" * 2 * len(out_shape)
+            else:
+                raise ("to be specified")
     elif op_type == "AvgPool" or op_type == "MaxPool":
-        parameters = data["parameters"]
         key += "Shape{" + ", ".join(str(i)
                                     for i in parameters["window_shape"]) + "}"
         key += "Strides{" + ", ".join(str(i)
                                       for i in parameters["window_stride"]) + "}"
         key += "Shape{" + ", ".join(str(i)
                                     for i in parameters["padding_below"]) + "}"
+    else:
+        pass
 
     return key
 
@@ -122,11 +125,7 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
         "blockDim": kernel["blockDim"],
         "gridDim": kernel["gridDim"],
     }
-    if op_type in [
-            "Convolution", "Fused_Convolution_Relu", "Fused_Convolution_Batchnorm", "Fused_Convolution_Batchnorm_Relu",
-            "Fused_Convolution_Add_Relu"
-    ]:
-        config["function_sig"] = "extern \"C\" __global__  void (float* input0, float* input1, float* output0)"
+    if op_type in conv_family:
         config["in_shape"] = [kernel["parameters"]
                               ["input_shape"], kernel["parameters"]["filter_shape"]]
         config["out_shape"] = [kernel["parameters"]["output_shape"]]
@@ -135,14 +134,12 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
             "window_dilation_strides": kernel["parameters"]["window_dilation_strides"],
             "padding_below_diff": kernel["parameters"]["padding_below_diff"]
         }
-        if "Batchnorm" in op_type or "Add" in op_type:
-            if "Batchnorm" in op_type and "Add" in op_type:
-                config[
-                    "function_sig"] = "extern \"C\" __global__  void (float* input0, float* input1, float* input2, float* input3, float* output0)"
-            else:
-                config["in_shape"].append(config["out_shape"][0])
-                config[
-                    "function_sig"] = "extern \"C\" __global__  void (float* input0, float* input1, float* input2, float* output0)"
+        if op_type in conv_augmented:
+            config["in_shape"].append(config["out_shape"][0])
+            config[
+                "function_sig"] = "extern \"C\" __global__  void (float* input0, float* input1, float* input2, float* output0)"
+        else:
+            config["function_sig"] = "extern \"C\" __global__  void (float* input0, float* input1, float* output0)"
     elif (op_type == "Dot"):
         config["in_shape"] = [kernel["parameters"]
                               ["arg0_shape"], kernel["parameters"]["arg1_shape"]]
@@ -168,7 +165,7 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
     return config
 
 
-def insert_db(name, platform="CUDA", tags="fast", profile="Tesla V100-PCIE-16GB:1", resource=0):
+def insert_db(name, resource, platform="CUDA", tags="", profile="Tesla V100-PCIE-16GB:1"):
     # Todo: More tags could be used to store multiple implementations with the same kernel specs
     in_file = open(name + ".cu")
     json_file = open(name + ".json")
@@ -215,10 +212,15 @@ if __name__ == '__main__':
         op_type = kernel["op_type"]
 
         # parse and clean up the cuda code to get some specific information
-        shared_memory, num_sync, new_code, signature = code_parse(
-            kernel["code"], parameters[op_type])
+        shared_memory, new_code, sync_code, signature = code_parse(
+            kernel["code"], param_list[op_type])
 
-        config = gen_config(op_type, kernel, shared_memory, num_sync)
+        config = gen_config(op_type, kernel, shared_memory, num_sync=0)
+
+        prepare_file(signature, sync_code, config,
+                     db_path + "profile/", parse=True)
+        num_sync = log_sync(signature, db_path + "profile/")
+        config["num_sync"] = num_sync
 
         # feel free to customize the repo name you want
         name = kernel["tvm_func_name"].replace("_kernel0", "")
@@ -230,16 +232,18 @@ if __name__ == '__main__':
         with open(operator_path + name + ".cu", "w+") as f:
             f.write(new_code)
 
-        default_tags = "fast"
+        default_tags = ""
         if (op_type == "Dot"):
+            # Todo: move the transpose information into identifier
             default_tags += kernel["parameters"]["transpose_A"] * \
                 ",transA" + kernel["parameters"]["transpose_B"]*",transB"
 
         # apply rules that every 32 threads will be formed as a warp
         resource = math.ceil(
             prod(config["blockDim"])/32)*32 * prod(config["gridDim"])
+
         prepare_file(signature, kernel["code"], config, db_path + "profile/")
         profile_info = profile(signature, db_path + "profile/")
-        print(profile_info, resource)
-        insert_db(operator_path + name,
-                  tags=default_tags, profile=profile_info, resource=resource)
+        print(profile_info, resource, config["num_sync"])
+        insert_db(operator_path + name, resource,
+                  tags=default_tags, profile=profile_info)

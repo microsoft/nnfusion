@@ -18,6 +18,12 @@ using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
 
+const size_t BlockFusionWavefrontOptimizer::DEFAULT_GROUP_ID = -1;
+const size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
+const size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
+const size_t BlockFusionWavefrontOptimizer::RESOURCE_CAPACITY =
+    4 * 80; // volta max parallelism: 4 * #SM
+
 BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Graph> g,
                                                              std::string _device_type,
                                                              std::string _device_name,

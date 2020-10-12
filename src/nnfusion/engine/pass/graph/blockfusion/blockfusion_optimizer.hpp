@@ -130,8 +130,8 @@ private:
     int m_fusion_level; // 0: disable, 1: wavefront, 2: wavefront with wave merge
 
 private:
-    const static size_t DEFAULT_GROUP_ID = -1;
-    const static size_t MAX_GROUP = 128;
-    const static size_t DEFAULT_BE = 10240;
-    const static size_t RESOURCE_CAPACITY = 4 * 80; // volta max parallelism: 4 * #SM
+    const static size_t DEFAULT_GROUP_ID;
+    const static size_t MAX_GROUP;
+    const static size_t DEFAULT_BE;
+    const static size_t RESOURCE_CAPACITY;
 };

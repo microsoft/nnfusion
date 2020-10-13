@@ -3,6 +3,7 @@
 
 #include "kernel_fusion_pass.hpp"
 #include <queue>
+#include "kernel_selection.hpp"
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
@@ -76,7 +77,7 @@ public:
         : m_graph(g)
     {
         // reserved for careating new nodes during the optimization
-        const size_t empty_node_ids = 1000;
+        const size_t empty_node_ids = 10000;
         m_nodes.resize(m_graph->get_max_node_id() + empty_node_ids);
 
         ELEM_GROUP_NODEID = m_nodes.size();
@@ -96,6 +97,9 @@ public:
                 if (fusion_level > 1)
                 {
                     FuseReshapeAndBroadcast(fuse_groups);
+                    // after fuse reshape and broadcast, there might be new node added without kernel selected
+                    auto kernel_selector = DefaultKernelSelector();
+                    kernel_selector.run_on_graph(m_graph);
                 }
                 if (fusion_level > 2)
                 {
@@ -462,6 +466,8 @@ private:
                                         << "too many new nodes created, try increase the "
                                            "empty_node_ids.";
                                     dup_bc_node->copy_tags_from(*input_node);
+                                    // need to reselect kernel for new added broadcast node
+                                    dup_bc_node->Del("Kernel_Selection_Result");
 
                                     m_graph->add_edge(
                                         dup_bc_node, 0, n_node, in_edge->get_dst_input());

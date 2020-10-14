@@ -1,27 +1,25 @@
 import torch
 from torch.utils.data import *
-from torchvision import datasets, transforms  
+from torchvision import datasets, transforms
 
-def get_dataloader():
 
-    batch_size = 3
-    kwargs = {'batch_size': batch_size}
+def get_mnist_dataloader(**kwargs):
+    data_config = {'num_workers': 1, 'pin_memory': True, 'shuffle': True}
+    data_config.update(kwargs)
 
-    kwargs.update({'num_workers': 1,
-                       'pin_memory': True,
-                       'shuffle': True},
-                     )
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize((0.1307, ), (0.3081, ))])
 
-    transform=transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-        ])
-    
-    dataset1 = datasets.MNIST('../data', train=True, download=True,
-                       transform=transform)
-    dataset2 = datasets.MNIST('../data', train=False, download=True,
-                       transform=transform)
-    train_dataloader = torch.utils.data.DataLoader(dataset1,**kwargs)
-    test_dataloader = torch.utils.data.DataLoader(dataset2, **kwargs)
+    dataset1 = datasets.MNIST('/tmp',
+                              train=True,
+                              download=True,
+                              transform=transform)
+    dataset2 = datasets.MNIST('/tmp',
+                              train=False,
+                              download=True,
+                              transform=transform)
+    train_dataloader = torch.utils.data.DataLoader(dataset1, **data_config)
+    test_dataloader = torch.utils.data.DataLoader(dataset2, **data_config)
 
     return train_dataloader, test_dataloader

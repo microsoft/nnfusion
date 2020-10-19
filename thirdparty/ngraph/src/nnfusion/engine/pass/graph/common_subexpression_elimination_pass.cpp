@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 // Microsoft (c) 2020, NNFusion Team
 
 #include <climits>

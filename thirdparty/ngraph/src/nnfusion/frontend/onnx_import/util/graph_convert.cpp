@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 //----------------------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation. All rights reserved.
 //  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -22,6 +21,7 @@
 
 #include "graph_convert.hpp"
 #include <sys/stat.h>
+#include <type_traits>
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "ops_bridge.hpp"
 
@@ -403,16 +403,26 @@ namespace nnfusion
                 }
 
                 // Verify that ONNX graph contains only nodes of available operator types
-                std::vector<onnx::NodeProto> unknown_nodes;
-                for (const auto& node_proto : onnx_graph_proto->node())
                 {
-                    if (!is_operator_available(node_proto))
+                    std::unordered_set<std::remove_cv<std::remove_reference<decltype(
+                        std::declval<onnx::NodeProto>().op_type())>::type>::type>
+                        unknown_op_types;
+                    for (const auto& node_proto : onnx_graph_proto->node())
                     {
-                        unknown_nodes.push_back(node_proto);
-                        NNFUSION_LOG(ERROR) << "unknown operations: " << node_proto.DebugString();
+                        if (!is_operator_available(node_proto))
+                        {
+                            unknown_op_types.insert(node_proto.op_type());
+                        }
+                    }
+                    if (unknown_op_types.size() >= 0)
+                    {
+                        for (auto op_type : unknown_op_types)
+                        {
+                            NNFUSION_LOG(ERROR) << "Unknown op type: " << op_type;
+                        }
+                        NNFUSION_CHECK_FAIL();
                     }
                 }
-                NNFUSION_CHECK(unknown_nodes.size() == 0) << "unknown operations found";
 
                 // Process ONNX graph nodes, convert to nGraph nodes
                 // sorted to avoid non-stardard model

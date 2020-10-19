@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 //----------------------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation. All rights reserved.
 //  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -22,10 +21,10 @@
 
 #include <vector>
 
-#include "nnfusion/frontend/util/evaluator.hpp"
 #include "../util/util.hpp"
 #include "expand.hpp"
 #include "nnfusion/core/graph/util/autobroadcast.hpp"
+#include "nnfusion/frontend/util/evaluator.hpp"
 
 namespace nnfusion
 {

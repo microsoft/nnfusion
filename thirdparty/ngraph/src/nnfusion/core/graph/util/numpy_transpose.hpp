@@ -14,14 +14,13 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 // Microsoft (c) 2019, NNFusion Team
 
 #pragma once
 
+#include "nnfusion/common/axis_vector.hpp"
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/core/graph/graph.hpp"
-#include "nnfusion/common/axis_vector.hpp"
 
 namespace nnfusion
 {

@@ -33,7 +33,6 @@
 #define DL_HANDLE void*
 #endif
 
-
 using namespace std;
 namespace file_util
 {

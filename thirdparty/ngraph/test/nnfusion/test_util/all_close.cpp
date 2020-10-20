@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 // Microsoft (c) 2019 X-mas, MSRA NNFusion Team
 #include "all_close.hpp"
 

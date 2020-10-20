@@ -14,12 +14,11 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 // Microsoft (c) 2019, NNFusion Team
 
 #include "fused.hpp"
-#include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/core/graph/gnode.hpp"
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 using namespace nnfusion::op;
 

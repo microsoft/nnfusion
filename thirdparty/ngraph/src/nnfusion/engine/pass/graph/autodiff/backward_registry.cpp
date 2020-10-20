@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 #include "backward_registry.hpp"
 
 using namespace nnfusion::pass::graph::autodiff;

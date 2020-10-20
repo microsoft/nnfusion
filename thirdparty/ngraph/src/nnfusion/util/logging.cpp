@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 // Microsoft (c) 2019, Wenxiang Hu
 // This file is modified from nnfusion Log
 

@@ -14,13 +14,12 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 // Microsoft (c) 2020, NNFusion Team
 
 #pragma once
 
-#include "nnfusion/engine/pass/graph/graph_pass_base.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#include "nnfusion/engine/pass/graph/graph_pass_base.hpp"
 
 DECLARE_bool(fautodiff);
 

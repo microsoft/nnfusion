@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 //----------------------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation. All rights reserved.
 //  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -22,9 +21,9 @@
 
 #include <vector>
 
-#include "nnfusion/frontend/util/evaluator.hpp"
 #include "gather.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#include "nnfusion/frontend/util/evaluator.hpp"
 
 namespace nnfusion
 {

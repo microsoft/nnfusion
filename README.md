@@ -16,7 +16,7 @@ NNFusion is a flexible and efficient DNN compiler that can generate high-perform
 - Customized optimization support through directly rewriting the generated human-readable code
 
 ### Getting Started
-To try NNFusion, please read the tutorial on How to compile a Tensorflow model with NNFusion.
+To try NNFusion, please read the tutorial on [Compile a Tensorflow model with NNFusion](https://github.com/microsoft/nnfusion/wiki/Compile-a-Tensorflow-model-with-NNFusion).
 
 ### Build and Test
 For more detailed building and testing information, please read the Build Guide.

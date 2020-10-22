@@ -30,8 +30,10 @@ if [ -f "/.dockerenv" ]; then
     python3 $THIS_SCRIPT_DIR/../../test/nnfusion/scripts/e2e_tests.py
 else
     
-    # prepare models
-    $THIS_SCRIPT_DIR/download_models.sh
+    if [ ! -d "$THIS_SCRIPT_DIR/../../models/frozenmodels/"]; then
+        # prepare models
+        $THIS_SCRIPT_DIR/download_models.sh
+    fi
 
     # use nnfusion_base for build / test cpu
     create_container nnfusion_base_dev nnfusion/ubuntu:18.04

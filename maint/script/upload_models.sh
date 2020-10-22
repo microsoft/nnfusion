@@ -4,9 +4,12 @@
 # Licensed under the MIT License.
 
 declare THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-declare MODELS=$THIS_SCRIPT_DIR/../../models/frozenmodels/pipeline
+declare MODELS=$THIS_SCRIPT_DIR/../../models/frozenmodels/
 # Please use valid sas_token here
-declare SAS_TOKEN="?sv=2019-12-12&ss=bfqt&srt=co&sp=rl&se=2021-10-22T01:39:45Z&st=2020-10-21T17:39:45Z&spr=https&sig=KH9GB6LO7hguUPH5%2BdF8YKJk%2By55cVQlSHmExOT1uAg%3D"
+if [ -z $SAS_TOKEN];then
+    echo "Please specify a valid SAS_TOKEN for uploading to azure storage service;"
+    exit 1
+fi
 
 # install az cli
 if which az >/dev/null; then
@@ -17,4 +20,12 @@ else
 fi
 
 # upload pipline folder
-az storage copy -s $MODELS -d https://nnfusion.blob.core.windows.net/frozenmodels --recursive --sas-token $SAS_TOKEN
+for subfolder in `ls $MODELS`
+do
+    subdir=$MODELS"/"$subfolder
+    if [ -d $subdir ]
+    then 
+        echo "az uploading $subdir..."
+        az storage copy -s $subdir -d https://nnfusion.blob.core.windows.net/frozenmodels --recursive --sas-token $SAS_TOKEN
+    fi
+done

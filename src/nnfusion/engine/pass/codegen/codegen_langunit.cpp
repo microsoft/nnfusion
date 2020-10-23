@@ -64,7 +64,7 @@ target_link_libraries(${TARGET_NAME}
 
 LU_DEFINE(nnfusion::codegen::cmake::cuda_lib,
           R"(
-link_directories(/usr/local/cuda/lib64)
+link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
 
 find_path(CUDNN_INCLUDE_DIR cudnn.h
     HINTS ${CUDA_TOOLKIT_ROOT_DIR}
@@ -76,8 +76,8 @@ find_library(CUDNN_LIBRARY cudnn
     HINTS ${CUDA_TOOLKIT_ROOT_DIR}
     PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
 
-find_library(CUDA_cuda_LIBRARY cuda /usr/local/cuda/lib64/stubs)
-find_library(CUDA_cudart_LIBRARY libcudart.so /usr/local/cuda/lib64)
+find_library(CUDA_cuda_LIBRARY cuda ${CUDA_TOOLKIT_ROOT_DIR}/lib64/stubs)
+find_library(CUDA_cudart_LIBRARY libcudart.so ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
 
 target_link_libraries(${TARGET_NAME}
     ${CUDA_cuda_LIBRARY}

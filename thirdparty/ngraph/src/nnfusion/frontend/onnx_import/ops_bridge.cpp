@@ -37,6 +37,7 @@
 #include "op/dropout.hpp"
 #include "op/erf_grad.hpp"
 #include "op/expand.hpp"
+#include "op/flatten.hpp"
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
 #include "op/identity.hpp"
@@ -159,7 +160,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ErfGrad", 1, TranslateErfGradOp);
                 REGISTER_OPERATOR("Exp", 1, TranslateUnaryOp<op::Exp>);
                 REGISTER_OPERATOR("Expand", 1, TranslateExpandOp);
-                //REGISTER_OPERATOR("Flatten", 1, flatten);
+                REGISTER_OPERATOR("Flatten", 1, TranslateFlattenOp);
                 REGISTER_OPERATOR("Floor", 1, TranslateUnaryOp<op::Floor>);
                 REGISTER_OPERATOR("Gather", 1, TranslateGatherOp);
                 REGISTER_OPERATOR("GatherGrad", 1, TranslateGatherGradOp);

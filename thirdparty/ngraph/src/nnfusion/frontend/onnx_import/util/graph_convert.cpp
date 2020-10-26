@@ -414,13 +414,13 @@ namespace nnfusion
                             unknown_op_types.insert(node_proto.op_type());
                         }
                     }
-                    if (unknown_op_types.size() >= 0)
+                    if (unknown_op_types.size() > 0)
                     {
                         for (auto op_type : unknown_op_types)
                         {
                             NNFUSION_LOG(ERROR) << "Unknown op type: " << op_type;
                         }
-                        NNFUSION_CHECK_FAIL();
+                        NNFUSION_CHECK_FAIL() << "Unknown op count: " << unknown_op_types.size();
                     }
                 }
 

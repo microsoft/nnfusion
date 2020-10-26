@@ -148,11 +148,13 @@ namespace nnfusion
                     if (input_indexes.size() == 3)
                     {
                         auto bias_index = input_indexes.at(2);
-                        auto conv_index = GNodeIndex(conv_node);
-                        std::tie(bias_index, conv_index) =
-                            graph::numpy_broadcast(std::make_pair(bias_index, conv_index), m_graph);
+                        auto bc_op = std::make_shared<op::Broadcast>(
+                            conv_node->get_shape(),
+                            calculate_broadcast_axes(
+                                conv_node->get_shape(), bias_index.get_shape(), 1));
+                        auto broadcasted_bias = m_graph->add_node_and_edge(bc_op, {bias_index});
                         conv_node = m_graph->add_node_and_edge(std::make_shared<op::Add>(),
-                                                               {bias_index, conv_index});
+                                                               {conv_node, broadcasted_bias});
                     }
 
                     return {{node_proto.output(0), GNodeIndex(conv_node)}};

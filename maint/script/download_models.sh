@@ -17,4 +17,5 @@ fi
 
 # download all the files & save to same level as source code
 az storage copy -s https://nnfusion.blob.core.windows.net/frozenmodels -d $MODELS --recursive --sas-token $SAS_TOKEN
+rm -rf $THIS_SCRIPT_DIR/../../models/frozenmodels
 ln -s $THIS_SCRIPT_DIR/../../../frozenmodels/  $THIS_SCRIPT_DIR/../../models/frozenmodels

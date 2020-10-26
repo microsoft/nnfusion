@@ -33,9 +33,9 @@ else
     if [ ! -d "$THIS_SCRIPT_DIR/../../models/frozenmodels/"]; then
         # prepare models
         if [ ! -d "$THIS_SCRIPT_DIR/../../../frozenmodels/"]; then
-            ln -s $THIS_SCRIPT_DIR/../../../frozenmodels/  $THIS_SCRIPT_DIR/../../models/frozenmodels
-        else
             $THIS_SCRIPT_DIR/download_models.sh
+        else
+            ln -s $THIS_SCRIPT_DIR/../../../frozenmodels/  $THIS_SCRIPT_DIR/../../models/frozenmodels
         fi
     fi
 

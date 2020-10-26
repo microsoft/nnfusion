@@ -39,7 +39,6 @@ nnfusion path/[YOUR_MODEL_FILE]
 cd root/nnfusion_rt/cuda_codegen
 make. && make -j
 ./main_test
-
 ```
 
 ## Build and Test

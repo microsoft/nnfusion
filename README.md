@@ -16,7 +16,7 @@ NNFusion is a flexible and efficient DNN compiler that can generate high-perform
 - Customized optimization support through directly rewriting the generated human-readable code
 
 ## Quick Start
-For end users, simply use docker to compile model.
+For end users, simply use docker to compile your model and generate high-performance executable.
 NNFusion supports and is tested on Ubuntu 16.04 and 18.04 with CUDA. For more infomation on system requirements, please refer to [System Requirements](https://github.com/microsoft/nnfusion/wiki/Before-Started)
 1. Pull docker image
 `docker pull nnfusion/cuda:10.2-cudnn7-devel-ubuntu18.04`
@@ -41,8 +41,8 @@ make. && make -j
 ./main_test
 ```
 
-## Build and Test
-For more detailed building and testing information, please read the Build Guide.
+## Build from Source Code
+
 
 
 # Contributing

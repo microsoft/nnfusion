@@ -32,7 +32,11 @@ else
     
     if [ ! -d "$THIS_SCRIPT_DIR/../../models/frozenmodels/"]; then
         # prepare models
-        $THIS_SCRIPT_DIR/download_models.sh
+        if [ ! -d "$THIS_SCRIPT_DIR/../../../frozenmodels/"]; then
+            ln -s $THIS_SCRIPT_DIR/../../../frozenmodels/  $THIS_SCRIPT_DIR/../../models/frozenmodels
+        else
+            $THIS_SCRIPT_DIR/download_models.sh
+        fi
     fi
 
     # use nnfusion_base for build / test cpu

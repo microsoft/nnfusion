@@ -10,7 +10,7 @@ echo "  /_/|_//_/|_//_/   \\_,_//___//_/ \\___//_//_/"
 echo "      MSRAsia NNFusion Team(@nnfusion)"
 echo ""
 
-declare DOCKERNAME=nnf_cpu_dev
+declare DOCKERNAME=nnf_cuda_dev
 declare THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 check_results=`docker ps --filter "name=${DOCKERNAME}"`
 
@@ -26,7 +26,7 @@ else
 
     #docker kill nnfusion_dev >/dev/null 2>&1 || true
     #docker rm nnfusion_dev >/dev/null 2>&1 || true
-    docker run --name $DOCKERNAME -it -d --net=host -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -w /nnfusion ubuntu:18.04 bash > /dev/null 2>&1
+    docker run --gpus all --name $DOCKERNAME -it -d --net=host -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -w /nnfusion nnfusion/cuda:10.2-cudnn7-devel-ubuntu18.04 bash > /dev/null 2>&1
     docker exec -t $DOCKERNAME /nnfusion/maint/script/install_dependency.sh
     docker exec -it $DOCKERNAME bash
 fi

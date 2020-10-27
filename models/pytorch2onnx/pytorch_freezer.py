@@ -28,6 +28,7 @@ def generate_sample(desc, device=None):
 
 def convert_model_to_onnx(model, model_desc, device, file_name):
     model.to(device)
+    model.eval()
 
     input_names = [input.name_ for input in model_desc.inputs_]
     output_names = [output.name_ for output in model_desc.outputs_]

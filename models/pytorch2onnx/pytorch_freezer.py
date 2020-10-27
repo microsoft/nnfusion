@@ -55,13 +55,13 @@ def convert_model_to_onnx(model, model_desc, device, file_name):
     return model
 
 
-class Freezer(object):
+class PTFreezer(object):
     def __init__(self, model, model_desc):
         self.model = model
         self.model_desc = model_desc
         self.onnx_model = None
 
-    def freeze_onnx_model(self, output_path):
+    def execute(self, output_path):
         f = io.BytesIO()
         convert_model_to_onnx(self.model, self.model_desc, "cpu", f)
         self.onnx_model = onnx.load_model_from_string(f.getvalue())

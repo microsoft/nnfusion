@@ -37,8 +37,13 @@ class TestMultiOutput(TestCase):
     def extract_data(self, strs):
         data = list()
         for i in range(1, len(strs), 2):
-            data.append([float(v.strip())
-                         for v in strs[i].strip().split("..")[0].strip().split(" ")])
+            try:
+                it = [float(v.strip())
+                        for v in strs[i].strip().split("..")[0].strip().split(" ")]
+                data.append(it)
+            except:
+                print("Unsupported output: " + strs[i].strip())
+                break
         return data
 
     def all_allclose(self, a, b):

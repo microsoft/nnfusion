@@ -24,12 +24,12 @@ parser.add_argument('--warmup', type=int, default=5,
                     help='Warmup steps when runing tf_run_frozen_graph.')
 parser.add_argument('--num_iter', type=int, default=10,
                     help='Iteration steps when runing tf_run_frozen_graph.') 
-parser.add_argument('--profile', action='store_true',
-                    help='Profile kernel run time.')  
 parser.add_argument('--run_const_folded_graph', action='store_true',
                     help='Run tf_run_graph_graph with const_folded graph.')                    
 parser.add_argument('--debug', action='store_true',
                     help='Print log.') 
+parser.add_argument('--is_training', action='store_true',
+                    help='Is training graph.')
 
 args = parser.parse_args()
 
@@ -60,7 +60,7 @@ outputs = [tf.identity(logits, name="logits")]
 
 if __name__ == "__main__":
     freezer = tf_freezer(args.frozen_graph, args.const_folding, args.run_graph, args.xla, args.parallel, 
-        args.warmup, args.num_iter, args.profile, args.run_const_folded_graph, args.debug)
+        args.warmup, args.num_iter, args.run_const_folded_graph, args.debug, args.is_training)
     freezer.execute(inputs, outputs)
 
 

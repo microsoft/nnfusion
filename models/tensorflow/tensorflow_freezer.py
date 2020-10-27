@@ -17,8 +17,8 @@ from tensorflow.tools import graph_transforms
 from typing import List
 
 class tf_freezer(object):
-    def __init__(self, frozen_graph= 'frozen_graph.pb', const_folding=True, run_graph=True, xla=False, parallel=0,
-    warmup=5, num_iter=10, profile=False, run_const_folded_graph=False, debug = False):
+    def __init__(self, frozen_graph= "frozen_graph.pb", const_folding=True, run_graph=True, xla=False, parallel=0,
+    warmup=5, num_iter=10, run_const_folded_graph=False, debug=False, is_training=False):
         self.frozen_graph = frozen_graph
         self.const_folding = const_folding
         self.run_graph = run_graph  
@@ -26,32 +26,58 @@ class tf_freezer(object):
         self.parallel = parallel
         self.warmup = warmup
         self.num_iter = num_iter
-        self.profile = profile
         self.folded_graph = None
         self.run_const_folded_graph = run_const_folded_graph
         self.debug = debug
+        self.is_training = is_training
+
     
-    def execute(self, inputs : List[tf.placeholder], outputs : List[tf.identity]):
-        self.freeze(inputs, outputs)
+    def execute(self, inputs : List[tf.placeholder], outputs : List[tf.identity], optimizer : tf.train.Optimizer=None):
+        self.freeze(inputs, outputs, optimizer)
         if self.const_folding:
             self.tf_run_const_folding(self.frozen_graph)
         if self.run_graph:
             if self.folded_graph and self.run_const_folded_graph:
                 print('run constant-folded graph: ')
-                self.tf_run_frozen_graph(self.folded_graph, self.xla, self.parallel, self.warmup, self.num_iter, self.profile)
+                self.tf_run_frozen_graph(self.folded_graph, self.xla, self.parallel, self.warmup, self.num_iter)
             else:
                 print('run original frozen graph: ')
-                self.tf_run_frozen_graph(self.frozen_graph, self.xla, self.parallel, self.warmup, self.num_iter, self.profile)
+                self.tf_run_frozen_graph(self.frozen_graph, self.xla, self.parallel, self.warmup, self.num_iter)
 
-    def freeze(self, inputs : List[tf.placeholder], outputs : List[tf.identity]):
-        print("Freeze graph ----------------------------------")    
+    def freeze(self, inputs : List[tf.placeholder], outputs : List[tf.identity], optimizer : tf.train.Optimizer=None):
+        print("Freeze graph ----------------------------------") 
+        varlist = []             
         with tf.Session() as sess:
-            print('>> Tensorflow output: ')
-            feed_dict = {}
-            for x in inputs:
-                feed_dict[x] =  np.ones(x.shape, dtype=x.dtype.as_numpy_dtype())
             sess.run(tf.global_variables_initializer())
-            print(sess.run(outputs, feed_dict = feed_dict))
+            if self.is_training:
+                logits = outputs[0] # assume outputs[0] is logits
+                labels =  tf.placeholder(tf.int32, shape=[logits.shape[0], ], name="nnfusion/labels")
+                inputs += labels
+                loss = tf.identity(tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits), name="nnfusion/loss")
+                outputs += [loss]
+                if optimizer:
+                    opt = optimizer
+                else:
+                    opt = tf.train.GradientDescentOptimizer(learning_rate=1e-4) 
+                grads = opt.compute_gradients(loss)
+                train_op = opt.apply_gradients(grads)
+            # print('>> Tensorflow output: ')
+            # feed_dict = {}
+            # for x in inputs:
+            #     feed_dict[x] =  np.ones(x.shape, dtype=x.dtype.as_numpy_dtype())
+            # print(sess.run(outputs, feed_dict = feed_dict))
+                sess.run(tf.global_variables_initializer())
+                for t in train_op.control_inputs:
+                    for ot in t.outputs:
+                        outputs += [tf.identity(ot, name = 'nnfusion_grads/' + ot.name.split(':')[0])]
+                    # outputs += grads
+                    for op in sess.graph_def.node:
+                        if "Apply" in str(op.op) or "Assign" in str(op.op) or "Scatter" in str(op.op):
+                            varlist.append(op.input[0])
+                varlist = ",".join(varlist)
+                if self.debug:
+                    print(varlist)
+            # sess.run(tf.global_variables_initializer())    
             tf.train.write_graph(sess.graph_def, '/tmp/save', 'model.pbtxt')
             saver = tf.train.Saver(write_version=tf.train.SaverDef.V2)
             try:
@@ -71,7 +97,8 @@ class tf_freezer(object):
                 restore_op_name='save/restore_all', 
                 filename_tensor_name='save/Const:0', 
                 clear_devices=True, 
-                initializer_nodes="")
+                initializer_nodes="", 
+                variable_names_blacklist = varlist)
             '''
             self.graphdef_to_json(self.frozen_graph, self.frozen_graph + ".json.gz")
 
@@ -145,7 +172,7 @@ class tf_freezer(object):
         graph_io.write_graph(as_text=False, name=self.folded_graph, logdir="./",graph_or_graph_def=g_def_const)
         print("Finished.")
 
-    def tf_run_frozen_graph(self, file, xla, parallel, warmup, num_iter, profile):
+    def tf_run_frozen_graph(self, file, xla, parallel, warmup, num_iter):
         print("run frozen graph----------------------------")
         graph_def, graph = self.import_graph(file)
         if (self.debug):
@@ -293,49 +320,37 @@ class tf_freezer(object):
 
             # Init as Ones
             sess.run(init)
-            if not profile:
-                # Get vals before apply_gradients
-                for i in range(warmup):
-                    ret = sess.run(last_outputs + varlist, feed_dict)
-                    for i in range(0, len(last_outputs)):
-                        out_flat = ret[i].flat
-                        if (len(out_flat) > 0):
-                            max_len = min(10, len(out_flat))
-                            print(last_outputs[i].name)
-                            print(out_flat[:max_len], "...(size=", len(out_flat), "end with", out_flat[-1], ")")
-                    # Do the apply_gradient
-                    sess.run(init)
-                    ret1 = sess.run(varlist + aps , feed_dict)
-                
-                iter_times = []
+            # Get vals before apply_gradients
+            for i in range(warmup):
+                ret = sess.run(last_outputs + varlist, feed_dict)
+                for i in range(0, len(last_outputs)):
+                    out_flat = ret[i].flat
+                    if (len(out_flat) > 0):
+                        max_len = min(10, len(out_flat))
+                        print(last_outputs[i].name)
+                        print(out_flat[:max_len], "...(size=", len(out_flat), "end with", out_flat[-1], ")")
+                # Do the apply_gradient
+                sess.run(init)
+                ret1 = sess.run(varlist + aps , feed_dict)
+                print("Updated:")
+                for i in range(0, len(varlist)):
+                    print(varlist[i].name, ret1[i])
+            
+            iter_times = []
+            for i in range(num_iter):
+                start_time = time.time()
+                ret = sess.run(last_outputs + varlist, feed_dict)
+                ret1 = sess.run(varlist + aps , feed_dict)
+                iter_time = (time.time() - start_time) * 1000
+                iter_times.append(iter_time)
+                print("Iteration time %f ms" % (iter_time))
 
-                for i in range(num_iter):
-                    start_time = time.time()
-                    ret = sess.run(last_outputs + varlist, feed_dict)
-                    iter_time = (time.time() - start_time) * 1000
-                    iter_times.append(iter_time)
-                    print("Iteration time %f ms" % (iter_time))
-
-                print("Summary: [min, max, mean] = [%f, %f, %f] ms" % (
-                    min(iter_times), max(iter_times), sum(iter_times) / len(iter_times)))
-                
-                # print("Updated:\n\n\n")
-                # for i in range(0, len(varlist)):
-                #     print(varlist[i].name, ret1[i])
-            else:
-                options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-                run_metadata = tf.RunMetadata()
-                for i in range(5):
-                    start_time = time.time()
-                    ret = sess.run(last_outputs + varlist, feed_dict,
-                                        options=options,
-                                        run_metadata=run_metadata)
-                    end_time = (time.time() - start_time) * 1000
-                    print("iteration time %f ms" % (end_time))
-                    fetched_timeline = timeline.Timeline(run_metadata.step_stats)
-                    chrome_trace = fetched_timeline.generate_chrome_trace_format()
-                    with open('timelines/timeline_step_%d.json' % i, 'w') as f:
-                        f.write(chrome_trace)
+            print("Summary: [min, max, mean] = [%f, %f, %f] ms" % (
+                min(iter_times), max(iter_times), sum(iter_times) / len(iter_times)))
+            
+            print("Updated:\n\n\n")
+            for i in range(0, len(varlist)):
+                print(varlist[i].name, ret1[i])
 
 
     def import_graph(self, file):

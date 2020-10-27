@@ -21,24 +21,48 @@
 
 #pragma once
 
-#include "ngraph/node_vector.hpp"
-
+#include "../util/reduce_grad.hpp"
 #include "core/node.hpp"
+#include "nnfusion/core/graph/util/autobroadcast.hpp"
 
-namespace ngraph
+namespace nnfusion
 {
-    namespace onnx_import
+    namespace frontend
     {
-        namespace op
+        namespace onnx_import
         {
             namespace set_1
             {
-                NodeVector leaky_relu(const Node& node);
+                NamedNodeVector
+                    TranslateLeakyReluOp(const onnx::NodeProto& node_proto,
+                                         const NodeMap& all_ng_nodes,
+                                         std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+                    NNFUSION_CHECK(input_indexes.size() == 1);
+
+                    auto x = input_indexes.at(0);
+                    Node node(node_proto);
+                    float alpha = node.get_attribute_value<float>("alpha", 0.01);
+                    NNFUSION_CHECK(alpha >= 0 && alpha <= 1);
+                    auto alpha_op = std::make_shared<op::Constant>(
+                        x.get_element_type(), Shape{}, std::vector<float>{alpha});
+                    auto alpha_gnode =
+                        m_graph->add_node_and_edge(alpha_op, nnfusion::graph::GNodeVector{});
+                    auto alpha_index = GNodeIndex(alpha_gnode);
+                    std::tie(x, alpha_index) =
+                        graph::numpy_broadcast(std::make_pair(x, alpha_index), m_graph);
+                    auto alpha_x = m_graph->add_node_and_edge(std::make_shared<op::Multiply>(),
+                                                              {x, alpha_index});
+                    auto result = m_graph->add_node_and_edge(std::make_shared<op::Maximum>(),
+                                                             {x, GNodeIndex(alpha_x)});
+                    return {{node_proto.output(0), GNodeIndex(result)}};
+                }
 
             } // namespace set_1
 
-        } //namespace op
+        } //namespace onnx_import
 
-    } // namespace onnx_import
+    } // namespace frontend
 
-} // namespace ngraph
+} // namespace nnfusion

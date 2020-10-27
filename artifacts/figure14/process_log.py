@@ -1,6 +1,7 @@
 # import tensorflow as tf
 import numpy as np
 import time
+import csv
 
 # flags = tf.flags
 # logging = tf.logging
@@ -11,46 +12,96 @@ import time
 
 # FLAGS = flags.FLAGS
 
-def process_log(iter_file, nvprof_file):
-    num_warmup = int(nvprof_file.split('.')[-2].split('+')[1])
-    num_step = int(nvprof_file.split('.')[-2].split('+')[0])
-    num_iter = num_step + num_warmup
 
-    fin = open(nvprof_file, 'r')
-    lines = fin.readlines()
-    fin.close()
-    start_point = -1
-    for i in range(len(lines)):
-        if "\"Avg\",\"Min\",\"Max\",\"Name\"" in lines[i]:
-            start_point = i + 1
+def process_log_rammer(kernel_trace_file, sm_efficiency_file):
+    # num_warmup = int(nvprof_file.split('.')[-2].split('+')[1])
+    # num_step = int(nvprof_file.split('.')[-2].split('+')[0])
+    # num_iter = num_step + num_warmup
+
+    kernel_logs = open(kernel_trace_file, 'r').readlines()
+    metric_logs = open(sm_efficiency_file, 'r').readlines()
+
+    entry_name = ["Name", "Start", "Duration", "sm_efficiency"]
+
+    kernel_name = []
+    kernel_start = []
+    kernel_dur = []
+    kernel_sm_efficiency = []
+
+    for idx in range(len(metric_logs)):
+        i = idx
+        kernel_items = kernel_logs[i].rstrip('\n').split(',')
+        metric_items = metric_logs[i].rstrip('\n').split(',')
+        kernel_name.append(metric_items[0])
+        kernel_start.append(float(kernel_items[0]))
+        kernel_dur.append(float(kernel_items[1]))
+        kernel_sm_efficiency.append(float(metric_items[-1]))
+
+    kernel_time_sum = 0
+    all_sm_efficiency = 0
+    for i in range(len(kernel_name)):
+        all_sm_efficiency += kernel_dur[i] * kernel_sm_efficiency[i]
+        kernel_time_sum += kernel_dur[i]
+
+    return all_sm_efficiency / kernel_time_sum
+
+
+def process_log_tf(kernel_trace_file, sm_efficiency_file):
+    kernel_logs = open(kernel_trace_file, 'r').readlines()
+    metric_logs = open(sm_efficiency_file, 'r').readlines()
+
+    entry_name = ["Name", "Start", "Duration", "sm_efficiency"]
+
+    kernel_name = []
+    kernel_start = []
+    kernel_dur = []
+    kernel_sm_efficiency = []
+
+    j = 0
+
+    for i in range(len(metric_logs)):
+        if j >= len(kernel_logs):
             break
-    assert(start_point != -1)
-    line = lines[start_point + 1]
-    items = line.split(',')
-    kernel_port = float(items[1])
-    kernel_time = float(items[2])
-    time_unit = lines[start_point].split(',')[2]
-    fix = 1.0
-    if time_unit == 'us':
-        fix = 0.001
-    if time_unit == 's':
-        fix = 1000.0
-    all_kernel_time = kernel_time * fix / kernel_port * 100.0 / num_iter
+        kernel_log = kernel_logs[j]
+        kernel_items = kernel_logs[j].rstrip('\n').split(',')
+        metric_items = metric_logs[i].rstrip('\n').split(',')
 
+        kernel_name.append(metric_items[0])
+        kernel_sm_efficiency.append(float(metric_items[-1]))
 
-    fin = open(iter_file, 'r')
-    lines = fin.readlines()
-    fin.close()
-    line = lines[-1]
-    items = line.split(',')
-    all_run_time = float(items[-1].rstrip('] ms\n'))
+        acc_start = 0
+        acc_dur = 0
 
-    overhead = all_run_time - all_kernel_time
+        if ('cudnn' in kernel_log) and not ('pooling' in kernel_log):
+            acc_start = float(kernel_items[0])
+            acc_dur = float(kernel_items[1])
+            while True:
+                j += 1
+                if j >= len(kernel_logs):
+                    break
+                kernel_log = kernel_logs[j]
+                kernel_items = kernel_logs[j].rstrip('\n').split(',')
+                if ('cudnn' in kernel_log or 'gemm' in kernel_log or 'fft' in kernel_log) and not ('pooling' in kernel_log) and not ('bn_fw_inf_1C11_kernel_NCHW' in kernel_log):
+                    acc_dur += float(kernel_items[1])
+                else:
+                    j -= 1
+                    break
+            kernel_start.append(acc_start)
+            kernel_dur.append(acc_dur)
+        else:
+            kernel_start.append(float(kernel_items[0]))
+            kernel_dur.append(float(kernel_items[1]))
+        j += 1
 
-    # print(all_run_time, all_kernel_time, all_kernel_time / all_run_time)
+    # print('correctness check:', len(metric_logs), '==' , i+1, ',', len(kernel_logs), '==' , j)
 
-    return all_run_time, all_kernel_time, overhead, all_kernel_time / all_run_time, overhead / all_run_time
+    kernel_time_sum = 0
+    all_sm_efficiency = 0
+    for i in range(len(kernel_name)):
+        all_sm_efficiency += kernel_dur[i] * kernel_sm_efficiency[i]
+        kernel_time_sum += kernel_dur[i]
 
+    return all_sm_efficiency / kernel_time_sum
 
 
 models = ['resnext_nchw', 'nasnet_cifar_nchw',
@@ -61,57 +112,40 @@ baselines = ['tf', 'rammerbase', 'rammer']
 # baselines = ['tf']
 batches = [1]
 prefix = 'logs/'
-warmup = 5
-steps = 1000
+warmup = 0
+steps = 3
 
+reproduced_results = {}
+for model in models:
+    # print(model)
+    model_record = {}
+    for baseline in baselines:
+        if baseline == 'tf':
+            # for batch in batches:
+            batch = 1
+            kernel_trace_file = prefix + model + '_bs' + \
+                str(batch) + '.tf.kernel_trace.' + \
+                str(steps) + '+' + str(warmup) + '.extracted.log'
+            kernel_metric_file = prefix + model + '_bs' + \
+                str(batch) + '.tf.sm_efficiency.' + \
+                str(steps) + '+' + str(warmup) + '.extracted.log'
+            result = process_log_tf(kernel_trace_file, kernel_metric_file)
+        else:
+            # for batch in batches:
+            batch = 1
+            kernel_trace_file = prefix + model + '_bs' + \
+                str(batch) + '.' + baseline + \
+                '.kernel_trace.extracted.log'
+            kernel_metric_file = prefix + model + '_bs' + \
+                str(batch) + '.' + baseline + \
+                '.sm_efficiency.extracted.log'
+            result = process_log_rammer(kernel_trace_file, kernel_metric_file)
+        model_record.update({baseline: str(result)})
+    reproduced_results.update({model: model_record})
 
-output_dat_path = './reproduce_result/gpu1_gpu_schedoverhead_cuda.dat'
+# save dat
+output_dat_path = './reproduce_result/gpu1_gpu_util_cuda.dat'
 fout = open(output_dat_path, 'w')
-fout.write("Baseline	RexNeXt-Kernel	RexNeXt-Overhead	RexNeXt-Proportion	NASNet-Kernel	NASNet-Overhead	NASNet-Proportion	AlexNet-Kernel	AlexNet-Overhead	AlexNet-Proportion	DeepSpeech2-Kernel	DeepSpeech2-Overhead	DeepSpeech2-Proportion	LSTM-Kernel	LSTM-Overhead	LSTM-Proportion	Seq2Seq-Kernel	Seq2Seq-Overhead	Seq2Seq-Proportion	Text-Height-Offset\n")
-
-baseline = 'tf'
-data = []
+fout.write("#	TF	RammerBase	Rammer\n")
 for model in models:
-    # print(model)
-    record = {}
-    iter_file = prefix + model + '_bs' + str(1) + '.' + baseline + '.iter_time' + '.' + str(steps) + '+' + str(warmup) + '.log'
-    nvprof_file = prefix + model + '_bs' + str(1) + '.' + baseline + '.nvprof' + '.' + str(steps) + '+' + str(warmup) + '.log'
-    result = process_log(iter_file, nvprof_file)
-        # print(result[0], result[1], result[2], result[3], result[4])
-    data = data + [result[1], result[2], result[4] * 100.0]
-fout.write("TF")
-for item in data:
-    fout.write("\t" + str(item))
-fout.write("\t8\n")
-
-
-baseline = 'rammerbase'
-data = []
-for model in models:
-    # print(model)
-    record = {}
-    iter_file = prefix + model + '_bs' + str(1) + '.' + baseline + '.iter_time' + '.' + str(steps) + '+' + str(warmup) + '.log'
-    nvprof_file = prefix + model + '_bs' + str(1) + '.' + baseline + '.nvprof' + '.' + str(steps) + '+' + str(warmup) + '.log'
-    result = process_log(iter_file, nvprof_file)
-        # print(result[0], result[1], result[2], result[3], result[4])
-    data = data + [result[1], result[2], result[4] * 100.0]
-fout.write("RB")
-for item in data:
-    fout.write("\t" + str(item))
-fout.write("\t9\n")
-
-
-baseline = 'rammer'
-data = []
-for model in models:
-    # print(model)
-    record = {}
-    iter_file = prefix + model + '_bs' + str(1) + '.' + baseline + '.iter_time' + '.' + str(steps) + '+' + str(warmup) + '.log'
-    nvprof_file = prefix + model + '_bs' + str(1) + '.' + baseline + '.nvprof' + '.' + str(steps) + '+' + str(warmup) + '.log'
-    result = process_log(iter_file, nvprof_file)
-        # print(result[0], result[1], result[2], result[3], result[4])
-    data = data + [result[1], result[2], result[4] * 100.0]
-fout.write("R")
-for item in data:
-    fout.write("\t" + str(item))
-fout.write("\t-1\n")
+    fout.write(model_name_dict2[model] + "\t" + str(reproduced_results[model]['tf']) + "\t" + str(reproduced_results[model]['rammerbase']) + "\t" + str(reproduced_results[model]['rammer']) + "\n")

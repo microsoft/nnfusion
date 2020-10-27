@@ -1,6 +1,9 @@
-# Experiment #2: Performance with different batch sizes
+# Experiment #5: Interplay of Intra and Inter Operator Scheduling
 
-This experiment is used to show the performance comparison on two representative CNN and RNN models, i.e., ResNeXt and LSTM-TC, with batch sizes of 4 and 16, and to reproduce the results in Figure 11 of our origianl paper.
+Rammer enables scheduling policies to optimize the interplay of intra and inter operator scheduling, instead of just focusing on making individual operators fast.
+This is implemented through selecting appropriate kernels for each operator. 
+We evaluate the effect of such scheduling by using two sets of kernels: the fastest kernels only for each individual operator, and the kernels selected by Rammer's scheduling policy.
+This experiment is usedto reproduce the results in Figure 15 of our origianl paper.
 
 ## Requirements
 
@@ -9,7 +12,7 @@ If you are using our Docker container environment, you can just skip this step. 
 ## Reproduce results
 Use NNFusion to compile all the frozen models:
 ```
-cd /root/nnfusion/artifacts/figure12
+cd /root/nnfusion/artifacts/figure17
 bash codegen_and_build.sh
 ```
 Run all baselines and NNFusion on all the benchmarks, the corresponding output logs are generated in individual folders. 
@@ -21,16 +24,16 @@ Process all the logs and generate the final performance numbers in a Gnuplot inp
 ```
 python process_log.py
 ```
-Plot the end-to-end comparision figure (i.g., Figure 11). 
+Plot the end-to-end comparision figure (i.g., Figure 15). 
 ```
 cd reproduce_result/
-gnuplot gpu1_batch_cuda_multifig.plt
+gnuplot gpu1_interplay_cuda_multifig.plt
 ```
-Fianlly, in the reproduce_result folder, you will see the "figure12_paper.pdf".
+Fianlly, in the reproduce_result folder, you will see the "figure17_paper.pdf".
 To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
 
 ### End-to-end script
 All the above steps can be exected by the below single script:
 ```
-bash reproduce_figure12.sh
+bash reproduce_figure17.sh
 ```

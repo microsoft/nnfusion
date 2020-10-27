@@ -74,8 +74,8 @@ Before we start to run the evaluation experiements, we need to take two steps to
 
 | Experiments   | Figure # in Paper |  Script Location | Instructions | 
 | -----------     | -----------  |  ----------- |    ----------- |              
-| #1. End-to-end comparation with the state-of-the-arts  | Figure 10 | nnfusion/artifacts/figure10 | [README_FIGURE10.md](figure10/README_FIGURE10.md) |
-| #2. Performance with different batch sizes | Figure 11 | nnfusion/artifacts/figure11 | [README_FIGURE11.md](figure11/README_FIGURE11.md) |
-| #3. Comparison of GPU utilization | Figure 12 | nnfusion/artifacts/figure12 | [README_FIGURE12.md](figure12/README_FIGURE12.md) |
-| #4. Comparison of GPU scheduling overhead | Figure 14 | nnfusion/artifacts/figure14 | [README_FIGURE14.md](figure14/README_FIGURE14.md) |
-| #5. Interplay of intra and inter operator scheduling | Figure 15 | nnfusion/artifacts/figure15 | [README_FIGURE15.md](figure15/README_FIGURE15.md) |
+| #1. End-to-end comparation with the state-of-the-arts  | Figure 11 | nnfusion/artifacts/figure11 | [README_FIGURE11.md](figure11/README_FIGURE11.md) |
+| #2. Performance with different batch sizes | Figure 12 | nnfusion/artifacts/figure12 | [README_FIGURE12.md](figure12/README_FIGURE12.md) |
+| #3. Comparison of GPU utilization | Figure 14 | nnfusion/artifacts/figure14 | [README_FIGURE14.md](figure14/README_FIGURE14.md) |
+| #4. Comparison of GPU scheduling overhead | Figure 16 | nnfusion/artifacts/figure16 | [README_FIGURE16.md](figure16/README_FIGURE16.md) |
+| #5. Interplay of intra and inter operator scheduling | Figure 17 | nnfusion/artifacts/figure17 | [README_FIGURE17.md](figure17/README_FIGURE17.md) |

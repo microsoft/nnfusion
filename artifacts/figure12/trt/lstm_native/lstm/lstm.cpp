@@ -60,6 +60,8 @@ const int BATCH_SIZE = 1;
 const int HIDDEN_SIZE = 256;
 const int SEQ_SIZE = 100;
 const int DATA_SIZE = HIDDEN_SIZE;
+const int VOCAB_SIZE = 65;
+const int OUTPUT_SIZE = 1;
 
 const int NUM_BINDINGS = 7;
 const int INPUT_IDX = 0;
@@ -542,7 +544,7 @@ void stepOnce(float **data, void **buffers, int *indices, cudaStream_t &stream, 
         cudaEventCreate(&ed);
         cudaEventRecord(st, 0);
         // Execute asynchronously
-        context.enqueue(BATCH_SIZE, buffers, stream, nullptr);
+        context.enqueue(1, buffers, stream, nullptr);
 
         cudaEventRecord(ed, 0);
         cudaEventSynchronize(ed);
@@ -599,7 +601,7 @@ bool doInference(IExecutionContext &context, std::string input, std::string expe
     std::string genstr;
 
     // Set sequence lengths to maximum
-    std::fill_n(reinterpret_cast<int32_t *>(data[SEQ_LEN_IN_IDX]), BATCH_SIZE, SEQ_SIZE);
+    std::fill_n(reinterpret_cast<int32_t *>(data[SEQ_LEN_IN_IDX]), gSizes[SEQ_LEN_IN_IDX], SEQ_SIZE);
     std::cout << "seqLen: " << *reinterpret_cast<int32_t *>(data[SEQ_LEN_IN_IDX]) << std::endl;
 
     // Seed the RNN with the input.
@@ -697,7 +699,7 @@ int main(int argc, char **argv)
     // assumes that the batch size is one. To change this, one would need to add code to the
     // doInference() function to seed BATCH_SIZE number of inputs and process the
     // generation of BATCH_SIZE number of outputs. We leave this as an exercise for the user.
-    assert(BATCH_SIZE == 1 && "This code assumes batch size is equal to 1.");
+    // assert(BATCH_SIZE == 1 && "This code assumes batch size is equal to 1.");
 
     // create a model using the API directly and serialize it to a stream
     IHostMemory *modelStream{nullptr};

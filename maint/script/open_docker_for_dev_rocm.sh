@@ -26,7 +26,7 @@ else
 
     #docker kill nnfusion_dev >/dev/null 2>&1 || true
     #docker rm nnfusion_dev >/dev/null 2>&1 || true
-    docker run --name $DOCKERNAME -t -d --net=host --privileged --device=/dev/kfd --device=/dev/dri --security-opt seccomp=unconfined --group-add video -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -w /nnfusion nnfusion/rocm/dev-ubuntu-18.04:3.5 bash
+    docker run --name $DOCKERNAME -t -d --net=host --privileged --device=/dev/kfd --device=/dev/dri --security-opt seccomp=unconfined --group-add video -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -w /nnfusion nnfusion/rocm:3.5-ubuntu-18.04 bash
     docker exec -t $DOCKERNAME /nnfusion/maint/script/install_dependency.sh
     docker exec -it $DOCKERNAME bash
 fi

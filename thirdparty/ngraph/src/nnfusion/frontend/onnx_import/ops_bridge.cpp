@@ -32,15 +32,18 @@
 #include "op/clip.hpp"
 #include "op/concat.hpp"
 #include "op/constant.hpp"
+#include "op/conv.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
 #include "op/erf_grad.hpp"
 #include "op/expand.hpp"
+#include "op/flatten.hpp"
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
 #include "op/identity.hpp"
 #include "op/index_reduce.hpp"
 #include "op/layer_norm.hpp"
+#include "op/leaky_relu.hpp"
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
 #include "op/memory_copy.hpp"
@@ -145,7 +148,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Clip", 1, TranslateClipOp);
                 REGISTER_OPERATOR("Concat", 1, TranslateConcatOp);
                 REGISTER_OPERATOR("Constant", 1, TranslateConstantOp);
-                //REGISTER_OPERATOR("Conv", 1, conv);
+                REGISTER_OPERATOR("Conv", 1, TranslateConvOp);
                 REGISTER_OPERATOR("Cos", 1, TranslateUnaryOp<op::Cos>);
                 REGISTER_OPERATOR("Div", 1, TranslateLegacyBinaryOp<op::Divide>);
                 REGISTER_OPERATOR("Div", 7, TranslateBinaryOp<op::Divide>);
@@ -157,7 +160,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ErfGrad", 1, TranslateErfGradOp);
                 REGISTER_OPERATOR("Exp", 1, TranslateUnaryOp<op::Exp>);
                 REGISTER_OPERATOR("Expand", 1, TranslateExpandOp);
-                //REGISTER_OPERATOR("Flatten", 1, flatten);
+                REGISTER_OPERATOR("Flatten", 1, TranslateFlattenOp);
                 REGISTER_OPERATOR("Floor", 1, TranslateUnaryOp<op::Floor>);
                 REGISTER_OPERATOR("Gather", 1, TranslateGatherOp);
                 REGISTER_OPERATOR("GatherGrad", 1, TranslateGatherGradOp);
@@ -173,7 +176,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
                 REGISTER_OPERATOR("LayerNormalization", 1, TranslateLayerNormalizationOp);
                 REGISTER_OPERATOR("LayerNormalizationGrad", 1, TranslateLayerNormalizationGradOp);
-                //REGISTER_OPERATOR("LeakyRelu", 1, leaky_relu);
+                REGISTER_OPERATOR("LeakyRelu", 1, TranslateLeakyReluOp);
                 REGISTER_OPERATOR("Less", 1, TranslateBinaryOp<op::Less>);
                 REGISTER_OPERATOR("Log", 1, TranslateUnaryOp<op::Log>);
                 //REGISTER_OPERATOR("LogSoftmax", 1, log_softmax);

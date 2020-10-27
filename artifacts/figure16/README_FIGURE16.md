@@ -21,7 +21,7 @@ Process all the logs and generate the final performance numbers in a Gnuplot inp
 ```
 python process_log.py
 ```
-Plot the end-to-end GPU scheduling overhead figure (i.g., Figure 14). 
+Plot the end-to-end GPU scheduling overhead figure (i.g., Figure 16). 
 ```
 cd reproduce_result/
 gnuplot gpu1_gpu_schedoverhead_cuda.plt

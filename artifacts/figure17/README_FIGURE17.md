@@ -3,7 +3,7 @@
 Rammer enables scheduling policies to optimize the interplay of intra and inter operator scheduling, instead of just focusing on making individual operators fast.
 This is implemented through selecting appropriate kernels for each operator. 
 We evaluate the effect of such scheduling by using two sets of kernels: the fastest kernels only for each individual operator, and the kernels selected by Rammer's scheduling policy.
-This experiment is usedto reproduce the results in Figure 15 of our origianl paper.
+This experiment is usedto reproduce the results in Figure 17 of our origianl paper.
 
 ## Requirements
 
@@ -24,7 +24,7 @@ Process all the logs and generate the final performance numbers in a Gnuplot inp
 ```
 python process_log.py
 ```
-Plot the end-to-end comparision figure (i.g., Figure 15). 
+Plot the end-to-end comparision figure (i.g., Figure 17). 
 ```
 cd reproduce_result/
 gnuplot gpu1_interplay_cuda_multifig.plt

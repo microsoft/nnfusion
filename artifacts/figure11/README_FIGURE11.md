@@ -1,6 +1,6 @@
 # Experiment #1: End-to-end comparation with the state-of-the-arts
 
-This experiment is used to demonstrate the end-to-end efficiency of Rammer by comparing with TensorFlow (TF), TensorFlow-XLA (TF-XLA), TVM and TensorRT (TF-TRT), and to reproduce the results in Figure 10 of our origianl paper.
+This experiment is used to demonstrate the end-to-end efficiency of Rammer by comparing with TensorFlow (TF), TensorFlow-XLA (TF-XLA), TVM and TensorRT (TF-TRT), and to reproduce the results in Figure 11 of our origianl paper.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ Process all the logs and generate the final performance numbers in a Gnuplot inp
 ```
 python process_log.py
 ```
-Plot the end-to-end comparision figure (i.g., Figure 10). 
+Plot the end-to-end comparision figure (i.g., Figure 11). 
 ```
 cd reproduce_result/
 gnuplot gpu1_e2e_cuda_multifig.plt

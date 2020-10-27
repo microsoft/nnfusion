@@ -22,7 +22,7 @@ Process all the logs and generate the final performance numbers in a Gnuplot inp
 python extract_iteration_log.py
 python process_log.py
 ```
-Plot the end-to-end GPU utlization figure (i.g., Figure 12). 
+Plot the end-to-end GPU utlization figure (i.g., Figure 14). 
 ```
 cd reproduce_result/
 gnuplot gpu1_gpu_util_cud.plt

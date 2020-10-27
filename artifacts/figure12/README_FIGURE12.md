@@ -1,6 +1,6 @@
 # Experiment #2: Performance with different batch sizes
 
-This experiment is used to show the performance comparison on two representative CNN and RNN models, i.e., ResNeXt and LSTM-TC, with batch sizes of 4 and 16, and to reproduce the results in Figure 11 of our origianl paper.
+This experiment is used to show the performance comparison on two representative CNN and RNN models, i.e., ResNeXt and LSTM-TC, with batch sizes of 4 and 16, and to reproduce the results in Figure 12 of our origianl paper.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ Process all the logs and generate the final performance numbers in a Gnuplot inp
 ```
 python process_log.py
 ```
-Plot the end-to-end comparision figure (i.g., Figure 11). 
+Plot the end-to-end comparision figure (i.g., Figure 12). 
 ```
 cd reproduce_result/
 gnuplot gpu1_batch_cuda_multifig.plt

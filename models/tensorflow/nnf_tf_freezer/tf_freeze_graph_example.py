@@ -7,6 +7,8 @@
 from nnf_tf_freezer import nnf_tf_freezer
 import argparse
 import tensorflow as tf
+import sys
+sys.path.append('..')
 from seq2seq_model import Seq2SeqModel
 from google_bert.modeling import BertConfig, BertModel
 from nasnet_cifar_nchw import nasnet

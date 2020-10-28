@@ -46,3 +46,4 @@ doc/doxygen/html/*
 .idea/*
 
 nnfusion_rt/
+models/frozenmodels/

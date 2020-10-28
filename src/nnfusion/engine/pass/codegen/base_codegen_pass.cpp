@@ -200,7 +200,17 @@ bool BaseCodegenPass::after_projgen()
     std::string para_info_json = get_current_dir_name() + std::string("/para_info.json");
     if (stat(constant_folder.c_str(), &s) == 0)
     {
-        std::string cmd = std::string("mv ") + constant_folder + " " + m_codegen_folder;
+        std::string nnfusion_rt_const_folder = m_codegen_folder + std::string("Constant");
+        std::string cmd;
+        if (stat(nnfusion_rt_const_folder.c_str(), &s) == 0)
+        {
+            cmd = std::string("rm -rf ") + nnfusion_rt_const_folder;
+            if (0 != system(cmd.c_str()))
+            {
+                throw nnfusion::errors::RuntimeError("Failed to remove constant folder.\n");
+            }
+        }
+        cmd = std::string("mv ") + constant_folder + " " + m_codegen_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError("Failed to move constant files.\n");

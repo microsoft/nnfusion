@@ -20,7 +20,7 @@
         {
             "testcase": "naive_cases_onnx #2 - bert_for_pretraining_without_loss_optimized_layer_norm_bw_grad_output.onnx",
             "tag": [
-                "correctness_cuda_only"
+                "disable"
             ],
             "flag" : "-p \"batch:3;sequence:512;dynamic_prediction_count:20\"",
             "filename": "pipeline/naive_tests_onnx/bert_for_pretraining_without_loss_optimized_layer_norm_bw_grad_output.onnx",

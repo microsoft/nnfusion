@@ -30,16 +30,18 @@ docker exec -it [YOUR_CONTAINER_NAME] bash
 ```
 3. Put your model in the container
 In host, you can use `docker cp host_path [YOUR_CONTAINER_NAME]:container_path` to copy your model into the container, or use `docker run -t -i -v <host_dir>:<container_dir>` to map the host dir to the container.
+We will use a simple TensorFlow LSTM inference model as an example. You can download a frozen version from our model zoo:
+`wget https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_lstm_l8s8h256_bs1.pb`
 4. Compile Model
-When model is prepared, we can compile model in the container.
+When model is prepared, we can compile model in the container and run it to see the performance.
 ```
 cd root
 nnfusion path/[YOUR_MODEL_FILE]
 ```
-5. Run Compiled Model
+5. Build and Run Compiled Model
 ```
 cd root/nnfusion_rt/cuda_codegen
-make. && make -j
+cmake. && make -j
 ./main_test
 ```
 

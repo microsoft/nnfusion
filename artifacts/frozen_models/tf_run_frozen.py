@@ -128,10 +128,10 @@ with tf.Session(graph=graph, config=config) as sess:
                 # max_len = min(10, len(out_flat) - print_offset)
                 # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
 
-    print('>> Evalutating Benchmark ...')
-    num_steps = 100
-    t_start = time.time()
-    for step in range(num_steps):
-        sess.run(last_outputs, feed_dict=feed_dict)
-    t_end = time.time()
-    print('>> Average time for each run: %.4f ms;' % ((t_end - t_start) * 1e3 / num_steps))
+    # print('>> Evalutating Benchmark ...')
+    # num_steps = 100
+    # t_start = time.time()
+    # for step in range(num_steps):
+    #     sess.run(last_outputs, feed_dict=feed_dict)
+    # t_end = time.time()
+    # print('>> Average time for each run: %.4f ms;' % ((t_end - t_start) * 1e3 / num_steps))

@@ -1,0 +1,342 @@
+/home/lingm/anaconda3/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+Loading graph definition ...
+WARNING:tensorflow:From tf_run_frozen.py:22: The name tf.gfile.GFile is deprecated. Please use tf.io.gfile.GFile instead.
+
+WARNING:tensorflow:From tf_run_frozen.py:23: The name tf.GraphDef is deprecated. Please use tf.compat.v1.GraphDef instead.
+
+Importing graph ...
+WARNING:tensorflow:From tf_run_frozen.py:38: calling import_graph_def (from tensorflow.python.framework.importer) with op_dict is deprecated and will be removed in a future version.
+Instructions for updating:
+Please file an issue at https://github.com/tensorflow/tensorflow/issues if you depend on this feature.
+
+Operations:
+- Placeholder          "eval_input" (1 outputs)
+- Const                "transpose/perm" (1 outputs)
+- Transpose            "transpose" (1 outputs)
+- Const                "cg/conv0/conv2d/kernel" (1 outputs)
+- Identity             "cg/conv0/conv2d/kernel/read" (1 outputs)
+- Conv2D               "cg/conv0/conv2d/Conv2D" (1 outputs)
+- Const                "cg/conv0/biases" (1 outputs)
+- Identity             "cg/conv0/biases/read" (1 outputs)
+- BiasAdd              "cg/conv0/BiasAdd" (1 outputs)
+- Const                "cg/conv0/Reshape/shape" (1 outputs)
+- Reshape              "cg/conv0/Reshape" (1 outputs)
+- Relu                 "cg/conv0/Relu" (1 outputs)
+- MaxPool              "cg/mpool0/MaxPool" (1 outputs)
+- Const                "cg/conv1/conv2d/kernel" (1 outputs)
+- Identity             "cg/conv1/conv2d/kernel/read" (1 outputs)
+- Conv2D               "cg/conv1/conv2d/Conv2D" (1 outputs)
+- Const                "cg/conv1/biases" (1 outputs)
+- Identity             "cg/conv1/biases/read" (1 outputs)
+- BiasAdd              "cg/conv1/BiasAdd" (1 outputs)
+- Const                "cg/conv1/Reshape/shape" (1 outputs)
+- Reshape              "cg/conv1/Reshape" (1 outputs)
+- Relu                 "cg/conv1/Relu" (1 outputs)
+- MaxPool              "cg/mpool1/MaxPool" (1 outputs)
+- Const                "cg/conv2/conv2d/kernel" (1 outputs)
+- Identity             "cg/conv2/conv2d/kernel/read" (1 outputs)
+- Conv2D               "cg/conv2/conv2d/Conv2D" (1 outputs)
+- Const                "cg/conv2/biases" (1 outputs)
+- Identity             "cg/conv2/biases/read" (1 outputs)
+- BiasAdd              "cg/conv2/BiasAdd" (1 outputs)
+- Const                "cg/conv2/Reshape/shape" (1 outputs)
+- Reshape              "cg/conv2/Reshape" (1 outputs)
+- Relu                 "cg/conv2/Relu" (1 outputs)
+- Const                "cg/conv3/conv2d/kernel" (1 outputs)
+- Identity             "cg/conv3/conv2d/kernel/read" (1 outputs)
+- Conv2D               "cg/conv3/conv2d/Conv2D" (1 outputs)
+- Const                "cg/conv3/biases" (1 outputs)
+- Identity             "cg/conv3/biases/read" (1 outputs)
+- BiasAdd              "cg/conv3/BiasAdd" (1 outputs)
+- Const                "cg/conv3/Reshape/shape" (1 outputs)
+- Reshape              "cg/conv3/Reshape" (1 outputs)
+- Relu                 "cg/conv3/Relu" (1 outputs)
+- Const                "cg/conv4/conv2d/kernel" (1 outputs)
+- Identity             "cg/conv4/conv2d/kernel/read" (1 outputs)
+- Conv2D               "cg/conv4/conv2d/Conv2D" (1 outputs)
+- Const                "cg/conv4/biases" (1 outputs)
+- Identity             "cg/conv4/biases/read" (1 outputs)
+- BiasAdd              "cg/conv4/BiasAdd" (1 outputs)
+- Const                "cg/conv4/Reshape/shape" (1 outputs)
+- Reshape              "cg/conv4/Reshape" (1 outputs)
+- Relu                 "cg/conv4/Relu" (1 outputs)
+- MaxPool              "cg/mpool2/MaxPool" (1 outputs)
+- Const                "cg/Reshape/shape" (1 outputs)
+- Reshape              "cg/Reshape" (1 outputs)
+- Const                "cg/affine0/weights" (1 outputs)
+- Identity             "cg/affine0/weights/read" (1 outputs)
+- Const                "cg/affine0/biases" (1 outputs)
+- Identity             "cg/affine0/biases/read" (1 outputs)
+- MatMul               "cg/affine0/xw_plus_b/MatMul" (1 outputs)
+- BiasAdd              "cg/affine0/xw_plus_b" (1 outputs)
+- Relu                 "cg/affine0/affine0" (1 outputs)
+- Identity             "cg/dropout0/dropout/Identity" (1 outputs)
+- Const                "cg/affine1/weights" (1 outputs)
+- Identity             "cg/affine1/weights/read" (1 outputs)
+- Const                "cg/affine1/biases" (1 outputs)
+- Identity             "cg/affine1/biases/read" (1 outputs)
+- MatMul               "cg/affine1/xw_plus_b/MatMul" (1 outputs)
+- BiasAdd              "cg/affine1/xw_plus_b" (1 outputs)
+- Relu                 "cg/affine1/affine1" (1 outputs)
+- Identity             "cg/dropout0_1/dropout/Identity" (1 outputs)
+- Const                "cg/affine2/weights" (1 outputs)
+- Identity             "cg/affine2/weights/read" (1 outputs)
+- Const                "cg/affine2/biases" (1 outputs)
+- Identity             "cg/affine2/biases/read" (1 outputs)
+- MatMul               "cg/affine2/xw_plus_b/MatMul" (1 outputs)
+- BiasAdd              "cg/affine2/xw_plus_b" (1 outputs)
+
+Sinks (operations without outputs):
+- BiasAdd              cg/affine2/xw_plus_b
+
+Sources (operations without inputs):
+- Placeholder          eval_input
+- Const                transpose/perm
+- Const                cg/conv0/conv2d/kernel
+- Const                cg/conv0/biases
+- Const                cg/conv0/Reshape/shape
+- Const                cg/conv1/conv2d/kernel
+- Const                cg/conv1/biases
+- Const                cg/conv1/Reshape/shape
+- Const                cg/conv2/conv2d/kernel
+- Const                cg/conv2/biases
+- Const                cg/conv2/Reshape/shape
+- Const                cg/conv3/conv2d/kernel
+- Const                cg/conv3/biases
+- Const                cg/conv3/Reshape/shape
+- Const                cg/conv4/conv2d/kernel
+- Const                cg/conv4/biases
+- Const                cg/conv4/Reshape/shape
+- Const                cg/Reshape/shape
+- Const                cg/affine0/weights
+- Const                cg/affine0/biases
+- Const                cg/affine1/weights
+- Const                cg/affine1/biases
+- Const                cg/affine2/weights
+- Const                cg/affine2/biases
+
+Operation inputs:
+- Transpose             transpose           
+  eval_input:0, transpose/perm:0
+- Identity              cg/conv0/conv2d/kernel/read
+  cg/conv0/conv2d/kernel:0
+- Conv2D                cg/conv0/conv2d/Conv2D
+  transpose:0, cg/conv0/conv2d/kernel/read:0
+- Identity              cg/conv0/biases/read
+  cg/conv0/biases:0
+- BiasAdd               cg/conv0/BiasAdd    
+  cg/conv0/conv2d/Conv2D:0, cg/conv0/biases/read:0
+- Reshape               cg/conv0/Reshape    
+  cg/conv0/BiasAdd:0, cg/conv0/Reshape/shape:0
+- Relu                  cg/conv0/Relu       
+  cg/conv0/Reshape:0
+- MaxPool               cg/mpool0/MaxPool   
+  cg/conv0/Relu:0
+- Identity              cg/conv1/conv2d/kernel/read
+  cg/conv1/conv2d/kernel:0
+- Conv2D                cg/conv1/conv2d/Conv2D
+  cg/mpool0/MaxPool:0, cg/conv1/conv2d/kernel/read:0
+- Identity              cg/conv1/biases/read
+  cg/conv1/biases:0
+- BiasAdd               cg/conv1/BiasAdd    
+  cg/conv1/conv2d/Conv2D:0, cg/conv1/biases/read:0
+- Reshape               cg/conv1/Reshape    
+  cg/conv1/BiasAdd:0, cg/conv1/Reshape/shape:0
+- Relu                  cg/conv1/Relu       
+  cg/conv1/Reshape:0
+- MaxPool               cg/mpool1/MaxPool   
+  cg/conv1/Relu:0
+- Identity              cg/conv2/conv2d/kernel/read
+  cg/conv2/conv2d/kernel:0
+- Conv2D                cg/conv2/conv2d/Conv2D
+  cg/mpool1/MaxPool:0, cg/conv2/conv2d/kernel/read:0
+- Identity              cg/conv2/biases/read
+  cg/conv2/biases:0
+- BiasAdd               cg/conv2/BiasAdd    
+  cg/conv2/conv2d/Conv2D:0, cg/conv2/biases/read:0
+- Reshape               cg/conv2/Reshape    
+  cg/conv2/BiasAdd:0, cg/conv2/Reshape/shape:0
+- Relu                  cg/conv2/Relu       
+  cg/conv2/Reshape:0
+- Identity              cg/conv3/conv2d/kernel/read
+  cg/conv3/conv2d/kernel:0
+- Conv2D                cg/conv3/conv2d/Conv2D
+  cg/conv2/Relu:0, cg/conv3/conv2d/kernel/read:0
+- Identity              cg/conv3/biases/read
+  cg/conv3/biases:0
+- BiasAdd               cg/conv3/BiasAdd    
+  cg/conv3/conv2d/Conv2D:0, cg/conv3/biases/read:0
+- Reshape               cg/conv3/Reshape    
+  cg/conv3/BiasAdd:0, cg/conv3/Reshape/shape:0
+- Relu                  cg/conv3/Relu       
+  cg/conv3/Reshape:0
+- Identity              cg/conv4/conv2d/kernel/read
+  cg/conv4/conv2d/kernel:0
+- Conv2D                cg/conv4/conv2d/Conv2D
+  cg/conv3/Relu:0, cg/conv4/conv2d/kernel/read:0
+- Identity              cg/conv4/biases/read
+  cg/conv4/biases:0
+- BiasAdd               cg/conv4/BiasAdd    
+  cg/conv4/conv2d/Conv2D:0, cg/conv4/biases/read:0
+- Reshape               cg/conv4/Reshape    
+  cg/conv4/BiasAdd:0, cg/conv4/Reshape/shape:0
+- Relu                  cg/conv4/Relu       
+  cg/conv4/Reshape:0
+- MaxPool               cg/mpool2/MaxPool   
+  cg/conv4/Relu:0WARNING:tensorflow:From tf_run_frozen.py:102: The name tf.ConfigProto is deprecated. Please use tf.compat.v1.ConfigProto instead.
+
+WARNING:tensorflow:From tf_run_frozen.py:106: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2020-10-28 09:28:22.457896: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2020-10-28 09:28:22.467041: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcuda.so.1
+2020-10-28 09:28:22.763752: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x558e3e4903a0 executing computations on platform CUDA. Devices:
+2020-10-28 09:28:22.763837: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): Tesla V100-PCIE-16GB, Compute Capability 7.0
+2020-10-28 09:28:22.766477: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2593990000 Hz
+2020-10-28 09:28:22.769070: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x558e3e7582d0 executing computations on platform Host. Devices:
+2020-10-28 09:28:22.769113: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+2020-10-28 09:28:22.770428: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1640] Found device 0 with properties: 
+name: Tesla V100-PCIE-16GB major: 7 minor: 0 memoryClockRate(GHz): 1.38
+pciBusID: 0004:00:00.0
+2020-10-28 09:28:22.770805: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcudart.so.10.0
+2020-10-28 09:28:22.772148: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcublas.so.10.0
+2020-10-28 09:28:22.773336: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcufft.so.10.0
+2020-10-28 09:28:22.773787: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcurand.so.10.0
+2020-10-28 09:28:22.775810: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcusolver.so.10.0
+2020-10-28 09:28:22.777159: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcusparse.so.10.0
+2020-10-28 09:28:22.781008: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcudnn.so.7
+2020-10-28 09:28:22.783946: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1763] Adding visible gpu devices: 0
+2020-10-28 09:28:22.784019: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcudart.so.10.0
+2020-10-28 09:28:22.786328: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1181] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-10-28 09:28:22.786364: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1187]      0 
+2020-10-28 09:28:22.786377: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1200] 0:   N 
+2020-10-28 09:28:22.788650: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1326] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 15051 MB memory) -> physical GPU (device: 0, name: Tesla V100-PCIE-16GB, pci bus id: 0004:00:00.0, compute capability: 7.0)
+2020-10-28 09:28:25.208442: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcublas.so.10.0
+2020-10-28 09:28:25.431008: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcudnn.so.7
+
+- Reshape               cg/Reshape          
+  cg/mpool2/MaxPool:0, cg/Reshape/shape:0
+- Identity              cg/affine0/weights/read
+  cg/affine0/weights:0
+- Identity              cg/affine0/biases/read
+  cg/affine0/biases:0
+- MatMul                cg/affine0/xw_plus_b/MatMul
+  cg/Reshape:0, cg/affine0/weights/read:0
+- BiasAdd               cg/affine0/xw_plus_b
+  cg/affine0/xw_plus_b/MatMul:0, cg/affine0/biases/read:0
+- Relu                  cg/affine0/affine0  
+  cg/affine0/xw_plus_b:0
+- Identity              cg/dropout0/dropout/Identity
+  cg/affine0/affine0:0
+- Identity              cg/affine1/weights/read
+  cg/affine1/weights:0
+- Identity              cg/affine1/biases/read
+  cg/affine1/biases:0
+- MatMul                cg/affine1/xw_plus_b/MatMul
+  cg/dropout0/dropout/Identity:0, cg/affine1/weights/read:0
+- BiasAdd               cg/affine1/xw_plus_b
+  cg/affine1/xw_plus_b/MatMul:0, cg/affine1/biases/read:0
+- Relu                  cg/affine1/affine1  
+  cg/affine1/xw_plus_b:0
+- Identity              cg/dropout0_1/dropout/Identity
+  cg/affine1/affine1:0
+- Identity              cg/affine2/weights/read
+  cg/affine2/weights:0
+- Identity              cg/affine2/biases/read
+  cg/affine2/biases:0
+- MatMul                cg/affine2/xw_plus_b/MatMul
+  cg/dropout0_1/dropout/Identity:0, cg/affine2/weights/read:0
+- BiasAdd               cg/affine2/xw_plus_b
+  cg/affine2/xw_plus_b/MatMul:0, cg/affine2/biases/read:0
+
+Tensors:
+- (1, 227, 227, 3)     float32    "eval_input:0"
+- (4,)                 int32      "transpose/perm:0"
+- (1, 3, 227, 227)     float32    "transpose:0"
+- (11, 11, 3, 64)      float32    "cg/conv0/conv2d/kernel:0"
+- (11, 11, 3, 64)      float32    "cg/conv0/conv2d/kernel/read:0"
+- (1, 64, 55, 55)      float32    "cg/conv0/conv2d/Conv2D:0"
+- (64,)                float32    "cg/conv0/biases:0"
+- (64,)                float32    "cg/conv0/biases/read:0"
+- (1, 64, 55, 55)      float32    "cg/conv0/BiasAdd:0"
+- (4,)                 int32      "cg/conv0/Reshape/shape:0"
+- (1, 64, 55, 55)      float32    "cg/conv0/Reshape:0"
+- (1, 64, 55, 55)      float32    "cg/conv0/Relu:0"
+- (1, 64, 27, 27)      float32    "cg/mpool0/MaxPool:0"
+- (5, 5, 64, 192)      float32    "cg/conv1/conv2d/kernel:0"
+- (5, 5, 64, 192)      float32    "cg/conv1/conv2d/kernel/read:0"
+- (1, 192, 27, 27)     float32    "cg/conv1/conv2d/Conv2D:0"
+- (192,)               float32    "cg/conv1/biases:0"
+- (192,)               float32    "cg/conv1/biases/read:0"
+- (1, 192, 27, 27)     float32    "cg/conv1/BiasAdd:0"
+- (4,)                 int32      "cg/conv1/Reshape/shape:0"
+- (1, 192, 27, 27)     float32    "cg/conv1/Reshape:0"
+- (1, 192, 27, 27)     float32    "cg/conv1/Relu:0"
+- (1, 192, 13, 13)     float32    "cg/mpool1/MaxPool:0"
+- (3, 3, 192, 384)     float32    "cg/conv2/conv2d/kernel:0"
+- (3, 3, 192, 384)     float32    "cg/conv2/conv2d/kernel/read:0"
+- (1, 384, 13, 13)     float32    "cg/conv2/conv2d/Conv2D:0"
+- (384,)               float32    "cg/conv2/biases:0"
+- (384,)               float32    "cg/conv2/biases/read:0"
+- (1, 384, 13, 13)     float32    "cg/conv2/BiasAdd:0"
+- (4,)                 int32      "cg/conv2/Reshape/shape:0"
+- (1, 384, 13, 13)     float32    "cg/conv2/Reshape:0"
+- (1, 384, 13, 13)     float32    "cg/conv2/Relu:0"
+- (3, 3, 384, 384)     float32    "cg/conv3/conv2d/kernel:0"
+- (3, 3, 384, 384)     float32    "cg/conv3/conv2d/kernel/read:0"
+- (1, 384, 13, 13)     float32    "cg/conv3/conv2d/Conv2D:0"
+- (384,)               float32    "cg/conv3/biases:0"
+- (384,)               float32    "cg/conv3/biases/read:0"
+- (1, 384, 13, 13)     float32    "cg/conv3/BiasAdd:0"
+- (4,)                 int32      "cg/conv3/Reshape/shape:0"
+- (1, 384, 13, 13)     float32    "cg/conv3/Reshape:0"
+- (1, 384, 13, 13)     float32    "cg/conv3/Relu:0"
+- (3, 3, 384, 256)     float32    "cg/conv4/conv2d/kernel:0"
+- (3, 3, 384, 256)     float32    "cg/conv4/conv2d/kernel/read:0"
+- (1, 256, 13, 13)     float32    "cg/conv4/conv2d/Conv2D:0"
+- (256,)               float32    "cg/conv4/biases:0"
+- (256,)               float32    "cg/conv4/biases/read:0"
+- (1, 256, 13, 13)     float32    "cg/conv4/BiasAdd:0"
+- (4,)                 int32      "cg/conv4/Reshape/shape:0"
+- (1, 256, 13, 13)     float32    "cg/conv4/Reshape:0"
+- (1, 256, 13, 13)     float32    "cg/conv4/Relu:0"
+- (1, 256, 6, 6)       float32    "cg/mpool2/MaxPool:0"
+- (2,)                 int32      "cg/Reshape/shape:0"
+- (1, 9216)            float32    "cg/Reshape:0"
+- (9216, 4096)         float32    "cg/affine0/weights:0"
+- (9216, 4096)         float32    "cg/affine0/weights/read:0"
+- (4096,)              float32    "cg/affine0/biases:0"
+- (4096,)              float32    "cg/affine0/biases/read:0"
+- (1, 4096)            float32    "cg/affine0/xw_plus_b/MatMul:0"
+- (1, 4096)            float32    "cg/affine0/xw_plus_b:0"
+- (1, 4096)            float32    "cg/affine0/affine0:0"
+- (1, 4096)            float32    "cg/dropout0/dropout/Identity:0"
+- (4096, 4096)         float32    "cg/affine1/weights:0"
+- (4096, 4096)         float32    "cg/affine1/weights/read:0"
+- (4096,)              float32    "cg/affine1/biases:0"
+- (4096,)              float32    "cg/affine1/biases/read:0"
+- (1, 4096)            float32    "cg/affine1/xw_plus_b/MatMul:0"
+- (1, 4096)            float32    "cg/affine1/xw_plus_b:0"
+- (1, 4096)            float32    "cg/affine1/affine1:0"
+- (1, 4096)            float32    "cg/dropout0_1/dropout/Identity:0"
+- (4096, 1000)         float32    "cg/affine2/weights:0"
+- (4096, 1000)         float32    "cg/affine2/weights/read:0"
+- (1000,)              float32    "cg/affine2/biases:0"
+- (1000,)              float32    "cg/affine2/biases/read:0"
+- (1, 1000)            float32    "cg/affine2/xw_plus_b/MatMul:0"
+- (1, 1000)            float32    "cg/affine2/xw_plus_b:0"
+cg/affine2/xw_plus_b:0
+[-0.1679279  -0.07223763  0.02840625  0.00482175  0.20100325  0.12922418
+  0.03249899 -0.13698608 -0.10801189  0.16312279] ...(size= 1000 end with -0.051316503 )
+cg/affine2/xw_plus_b:0
+[-0.1679279  -0.07223763  0.02840625  0.00482175  0.20100325  0.12922418
+  0.03249899 -0.13698608 -0.10801189  0.16312279] ...(size= 1000 end with -0.051316503 )
+cg/affine2/xw_plus_b:0
+[-0.1679279  -0.07223763  0.02840625  0.00482175  0.20100325  0.12922418
+  0.03249899 -0.13698608 -0.10801189  0.16312279] ...(size= 1000 end with -0.051316503 )
+cg/affine2/xw_plus_b:0
+[-0.1679279  -0.07223763  0.02840625  0.00482175  0.20100325  0.12922418
+  0.03249899 -0.13698608 -0.10801189  0.16312279] ...(size= 1000 end with -0.051316503 )
+cg/affine2/xw_plus_b:0
+[-0.1679279  -0.07223763  0.02840625  0.00482175  0.20100325  0.12922418
+  0.03249899 -0.13698608 -0.10801189  0.16312279] ...(size= 1000 end with -0.051316503 )

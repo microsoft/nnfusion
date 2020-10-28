@@ -19,7 +19,7 @@ flags.DEFINE_boolean('profile', False, 'profile kernel runtime')
 flags.DEFINE_integer("num_iter", 10, "num of iterations")
 flags.DEFINE_integer("warmup", 5, "mini batch size")
 flags.DEFINE_integer(
-    "model_layer", 29, "num of model layers, (depth - 2) % 9 == 0, 'depth should be one of 29, 38, 47, 56, 101'")
+    "model_layer", 101, "num of model layers, (depth - 2) % 9 == 0, 'depth should be one of 29, 38, 47, 56, 101'")
 flags.DEFINE_boolean('xla', False, 'enable xla')
 flags.DEFINE_string('frozen_file', '', 'output path for the frozen pb file')
 flags.DEFINE_integer("parallel", 0, "tf.ConfigProto.inter_op_parallelism_threads")
@@ -38,6 +38,7 @@ def profile_stop():
         raise Exception("cudaProfilerStop() returned %d" % ret)
 
 def main(_):
+    profile_stop()
     session_conf = tf.ConfigProto(
         allow_soft_placement=True,
         log_device_placement=False,
@@ -48,8 +49,8 @@ def main(_):
         session_conf.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
     with tf.Graph().as_default(), tf.Session(config=session_conf) as session:
         batch_size = FLAGS.batch_size
-        height, width = 32, 32
-        num_classes = 10
+        height, width = 224, 224
+        num_classes = 1000
         model_layer = FLAGS.model_layer
 
         eval_inputs = tf.placeholder(

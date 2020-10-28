@@ -11,15 +11,15 @@ from tensorflow.python.client import timeline
 from tensorflow.python.framework import graph_util
 
 # from nets import inception
-import resnext
+import nasnet
+
+slim = tf.contrib.slim
 
 flags = tf.flags
 flags.DEFINE_integer("batch_size", 1, "mini batch size")
 flags.DEFINE_boolean('profile', False, 'profile kernel runtime')
-flags.DEFINE_integer("num_iter", 10, "num of iterations")
+flags.DEFINE_integer("num_iter", 10, "mini batch size")
 flags.DEFINE_integer("warmup", 5, "mini batch size")
-flags.DEFINE_integer(
-    "model_layer", 29, "num of model layers, (depth - 2) % 9 == 0, 'depth should be one of 29, 38, 47, 56, 101'")
 flags.DEFINE_boolean('xla', False, 'enable xla')
 flags.DEFINE_string('frozen_file', '', 'output path for the frozen pb file')
 flags.DEFINE_integer("parallel", 0, "tf.ConfigProto.inter_op_parallelism_threads")
@@ -38,6 +38,7 @@ def profile_stop():
         raise Exception("cudaProfilerStop() returned %d" % ret)
 
 def main(_):
+    profile_stop()
     session_conf = tf.ConfigProto(
         allow_soft_placement=True,
         log_device_placement=False,
@@ -48,17 +49,17 @@ def main(_):
         session_conf.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
     with tf.Graph().as_default(), tf.Session(config=session_conf) as session:
         batch_size = FLAGS.batch_size
-        height, width = 32, 32
-        num_classes = 10
-        model_layer = FLAGS.model_layer
+
+        height, width = 224, 224
+        num_classes = 1000
 
         eval_inputs = tf.placeholder(
-            tf.float32, [batch_size, 3, height, width], 'input')
+            tf.float32, [batch_size, height, width, 3], 'eval_input')
 
-        logits = resnext.ResNeXt(
-            eval_inputs, num_classes, model_layer, 'NCHW', False).model
+        with slim.arg_scope(nasnet.nasnet_mobile_arg_scope()):
+            logits, end_points = nasnet.build_nasnet_mobile(eval_inputs, num_classes, is_training=False)
 
-        image_inputs = np.ones((batch_size, 3, height, width))
+        image_inputs = np.ones((batch_size, height, width, 3))
 
         session.run(tf.global_variables_initializer())
 
@@ -88,7 +89,7 @@ def main(_):
                 print("Iteration time %f ms" % (iter_time))
             profile_stop()
 
-            print("Summary: [min, max, mean] = [%f, %f, %f] ms" % (
+            print("Iteration time: [min, max, mean] = [%f, %f, %f] ms" % (
                 min(iter_times), max(iter_times), sum(iter_times) / len(iter_times)))
 
         else:

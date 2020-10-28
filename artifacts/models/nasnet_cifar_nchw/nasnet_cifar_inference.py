@@ -26,8 +26,19 @@ flags.DEFINE_integer("parallel", 0, "tf.ConfigProto.inter_op_parallelism_threads
 
 FLAGS = flags.FLAGS
 
+import ctypes
+_cudart = ctypes.CDLL('libcudart.so')
+def profile_start():
+    ret = _cudart.cudaProfilerStart()
+    if ret != 0:
+        raise Exception("cudaProfilerStart() returned %d" % ret)
+def profile_stop():
+    ret = _cudart.cudaProfilerStop()
+    if ret != 0:
+        raise Exception("cudaProfilerStop() returned %d" % ret)
 
 def main(_):
+    profile_stop()
     session_conf = tf.ConfigProto(
         allow_soft_placement=True,
         log_device_placement=False,
@@ -69,17 +80,20 @@ def main(_):
 
             iter_times = []
 
+            profile_start()
             for i in range(FLAGS.num_iter):
                 start_time = time.time()
                 output = session.run(logits, {eval_inputs: image_inputs})
                 iter_time = (time.time() - start_time) * 1000
                 iter_times.append(iter_time)
                 print("Iteration time %f ms" % (iter_time))
+            profile_stop()
 
             print("Summary: [min, max, mean] = [%f, %f, %f] ms" % (
                 min(iter_times), max(iter_times), sum(iter_times) / len(iter_times)))
 
         else:
+            profile_start()
             options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
             run_metadata = tf.RunMetadata()
             for i in range(5):
@@ -93,6 +107,7 @@ def main(_):
                 chrome_trace = fetched_timeline.generate_chrome_trace_format()
                 with open('timelines/timeline_step_%d.json' % i, 'w') as f:
                     f.write(chrome_trace)
+            profile_stop()
 
 
 if __name__ == "__main__":

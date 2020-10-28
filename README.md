@@ -3,7 +3,7 @@ NNFusion(Nerual Network Fusion) is a flexible and efficient DNN compiler that ca
 
 ## Who should consider using NNFusion?
 - Those who want to use different accelerator device to optimize model compilation.
-- End users who want to generate high-performance executables from DNN model description of different frameworks(ONNX,TensorFlow and PyTorch).
+- End users who want to generate high-performance executables from DNN model description of different frameworks including ONNX, TensorFlow and PyTorch.
 - Researchers who want to optimize model compilation and apply the method to their own work.
 - Contributors who want to do DNN compiler optimization research and are willing to contribute.
 

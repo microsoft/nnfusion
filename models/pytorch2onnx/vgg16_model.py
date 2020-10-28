@@ -1,3 +1,4 @@
+# NNFusion codegen flags: nnfusion /path/to/vgg16.onnx -f onnx
 from pytorch_freezer import IODescription, ModelDescription, PTFreezer
 import torch
 import torchvision

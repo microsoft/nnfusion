@@ -4,6 +4,15 @@ import io
 
 
 class IODescription(object):
+    """ A tensor description for PyTorch model input/output.
+
+    Attributes:
+        name: A string representing tensor name.
+        shape: A sequence of ints representing tensor shape.
+        dtype: torch.Dtype representing tensor type
+        num_classes: An int if the tensor is a integer and
+            in the range of [0, num_classes-1].
+    """
     def __init__(self, name, shape, dtype=None, num_classes=None):
         self.name_ = name
         self.shape_ = shape
@@ -12,6 +21,12 @@ class IODescription(object):
 
 
 class ModelDescription(object):
+    """ A model description for PyTorch models.
+
+    Attributes:
+        inputs: A sequence of input IODescription.
+        outputs: A sequence of output IODescription.
+    """
     def __init__(self, inputs, outputs):
         self.inputs_ = inputs
         self.outputs_ = outputs
@@ -57,12 +72,23 @@ def convert_model_to_onnx(model, model_desc, device, file_name):
 
 
 class PTFreezer(object):
+    """ A class to freeze PyTorch model to ONNX format.
+
+    Attributes:
+        model: A torch.nn.Module to freeze.
+        model_desc: ModelDescription for this model.
+    """
     def __init__(self, model, model_desc):
         self.model = model
         self.model_desc = model_desc
         self.onnx_model = None
 
     def execute(self, output_path):
+        """ Execute the freeze process and dump model to disk.
+
+        Args:
+            output_path: freezed ONNX format model path.
+        """
         f = io.BytesIO()
         convert_model_to_onnx(self.model, self.model_desc, "cpu", f)
         self.onnx_model = onnx.load_model_from_string(f.getvalue())

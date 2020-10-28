@@ -16,7 +16,7 @@ from tensorflow.core.framework.tensor_shape_pb2 import TensorShapeProto
 from tensorflow.tools import graph_transforms
 from typing import List
 
-class tf_freezer(object):
+class nnf_tf_freezer(object):
     def __init__(self, frozen_graph= "frozen_graph.pb", const_folding=True, run_graph=True, xla=False, parallel=0,
     warmup=5, num_iter=10, run_const_folded_graph=False, debug=False, is_training=False):
         self.frozen_graph = frozen_graph
@@ -30,9 +30,8 @@ class tf_freezer(object):
         self.run_const_folded_graph = run_const_folded_graph
         self.debug = debug
         self.is_training = is_training
-
     
-    def execute(self, inputs : List[tf.placeholder], outputs : List[tf.identity], optimizer : tf.train.Optimizer=None):
+    def execute(self, inputs : List[tf.placeholder], outputs : List[tf.identity], optimizer : tf.train.Optimizer=None):      
         self.freeze(inputs, outputs, optimizer)
         if self.const_folding:
             self.tf_run_const_folding(self.frozen_graph)
@@ -53,7 +52,10 @@ class tf_freezer(object):
                 logits = outputs[0] # assume outputs[0] is logits
                 labels =  tf.placeholder(tf.int32, shape=[logits.shape[0], ], name="nnfusion/labels")
                 inputs += labels
-                loss = tf.identity(tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits), name="nnfusion/loss")
+                if self.const_folding:
+                    loss = tf.identity(tf.identity(tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits), name="nnfusion/loss"), name="nnfusion/loss_identity")
+                else:
+                    loss = tf.identity(tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits), name="nnfusion/loss")
                 outputs += [loss]
                 if optimizer:
                     opt = optimizer
@@ -61,11 +63,7 @@ class tf_freezer(object):
                     opt = tf.train.GradientDescentOptimizer(learning_rate=1e-4) 
                 grads = opt.compute_gradients(loss)
                 train_op = opt.apply_gradients(grads)
-            # print('>> Tensorflow output: ')
-            # feed_dict = {}
-            # for x in inputs:
-            #     feed_dict[x] =  np.ones(x.shape, dtype=x.dtype.as_numpy_dtype())
-            # print(sess.run(outputs, feed_dict = feed_dict))
+
                 sess.run(tf.global_variables_initializer())
                 for t in train_op.control_inputs:
                     for ot in t.outputs:
@@ -76,8 +74,7 @@ class tf_freezer(object):
                             varlist.append(op.input[0])
                 varlist = ",".join(varlist)
                 if self.debug:
-                    print(varlist)
-            # sess.run(tf.global_variables_initializer())    
+                    print(varlist) 
             tf.train.write_graph(sess.graph_def, '/tmp/save', 'model.pbtxt')
             saver = tf.train.Saver(write_version=tf.train.SaverDef.V2)
             try:
@@ -91,7 +88,7 @@ class tf_freezer(object):
                 input_graph="/tmp/save/model.pbtxt",
                 input_checkpoint="/tmp/save/model.ckpt",
                 output_node_names=','.join([x.name.split(':')[0] for x in outputs]),
-                output_graph=self.frozen_graph,
+                output_graph= self.frozen_graph,
                 input_saver="", 
                 input_binary=False, 
                 restore_op_name='save/restore_all', 
@@ -140,8 +137,6 @@ class tf_freezer(object):
             name2nodeIdx_map[ops[i].name] = i
         node_outputs_ = [[] for i in range(num_nodes)]
         for n in range(num_nodes):
-        #    if len(ops[n].outputs) > 0:
-        #        last_outputs.append(ops[n].outputs[0])
             op = ops[n]
             pending_count = len(op.inputs)
             for i in range(pending_count):
@@ -263,8 +258,6 @@ class tf_freezer(object):
             
             noop_assign = tf.NodeDef(name = "init_all_var", op="NoOp", input = var_inits)
             g_def.node.extend([noop_assign])
-            # graph_io.write_graph(as_text=False, name="g.pb", logdir="./",graph_or_graph_def=g_def)
-            # exit(0)
 
         tf.reset_default_graph()
         tf.import_graph_def(g_def)
@@ -347,11 +340,6 @@ class tf_freezer(object):
 
             print("Summary: [min, max, mean] = [%f, %f, %f] ms" % (
                 min(iter_times), max(iter_times), sum(iter_times) / len(iter_times)))
-            
-            print("Updated:\n\n\n")
-            for i in range(0, len(varlist)):
-                print(varlist[i].name, ret1[i])
-
 
     def import_graph(self, file):
         graph_def = None
@@ -362,8 +350,8 @@ class tf_freezer(object):
             with tf.gfile.GFile(file, "rb") as f:
                 graph_def = tf.GraphDef()
                 graph_def.ParseFromString(f.read())
-        except BaseException as e:
-            parser.exit(2, 'Error loading the graph definition: {}'.format(str(e)))
+        except:
+            raise Exception('Error loading the graph definition')
 
         print('Importing graph ...', file=sys.stderr)
         try:
@@ -377,8 +365,9 @@ class tf_freezer(object):
                     op_dict=None,
                     producer_op_list=None
                 )
-        except BaseException as e:
-            parser.exit(2, 'Error importing the graph: {}'.format(str(e)))
+        except:
+            raise Exception('Error importing the graph')
+
         
         return graph_def, graph
 
@@ -388,9 +377,7 @@ class tf_freezer(object):
             graph_def.ParseFromString(f.read())
             tf.import_graph_def(graph_def, name='')
             with gzip.open(fout, 'wt') as fp:
-                # with open(fout, 'w') as fp:
                 print("Saving JSON..")
                 fp.write(json_format.MessageToJson(graph_def))
                 print("Saving JSON done!")
-                # tf.train.write_graph(graph_def, './', fout, as_text=True)
 

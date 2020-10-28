@@ -25,7 +25,7 @@ References:
 
 import tensorflow as tf
 from six.moves import xrange  # pylint: disable=redefined-builtin
-from . import model
+from cnn_model_util import base_model
 
 
 def _construct_vgg(cnn, num_conv_layers):
@@ -53,7 +53,7 @@ def _construct_vgg(cnn, num_conv_layers):
   cnn.dropout()
 
 
-class Vgg11Model(model.CNNModel):
+class Vgg11Model(base_model.CNNModel):
 
   def __init__(self, params=None):
     super(Vgg11Model, self).__init__('vgg11', 224, 64, 0.005, params=params)
@@ -62,7 +62,7 @@ class Vgg11Model(model.CNNModel):
     _construct_vgg(cnn, [1, 1, 2, 2, 2])
 
 
-class Vgg16Model(model.CNNModel):
+class Vgg16Model(base_model.CNNModel):
 
   def __init__(self, params=None):
     super(Vgg16Model, self).__init__('vgg16', 224, 64, 0.005, params=params)
@@ -71,22 +71,10 @@ class Vgg16Model(model.CNNModel):
     _construct_vgg(cnn, [2, 2, 3, 3, 3])
 
 
-class Vgg19Model(model.CNNModel):
+class Vgg19Model(base_model.CNNModel):
 
   def __init__(self, params=None):
     super(Vgg19Model, self).__init__('vgg19', 224, 64, 0.005, params=params)
 
   def add_inference(self, cnn):
     _construct_vgg(cnn, [2, 2, 4, 4, 4])
-
-print('>> Converting graph vgg11')
-cur_model = Vgg11Model()
-batch_size = 1
-cur_model.batch_size = batch_size
-input_shapes = cur_model.get_input_shapes('validation')
-dtype = cur_model.get_input_data_types('validation')
-graph_in = tf.placeholder(dtype[0], shape=input_shapes[0])
-logits, _ = cur_model.build_network([graph_in], phase_train=False, nclass=1001)
-
-inputs = [graph_in]
-outputs = [tf.identity(logits, name="logits")]

@@ -35,8 +35,8 @@ from __future__ import division
 import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
-from . import datasets
-from . import model as model_lib
+from cnn_model_util import datasets
+from cnn_model_util import base_model as model_lib
 
 
 def bottleneck_block_v1(cnn, depth, depth_bottleneck, stride):

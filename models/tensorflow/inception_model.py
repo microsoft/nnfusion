@@ -39,10 +39,10 @@ References:
 
 import tensorflow as tf
 from six.moves import xrange  # pylint: disable=redefined-builtin
-from . import model
+from cnn_model_util import base_model
 
 
-class Inceptionv3Model(model.CNNModel):
+class Inceptionv3Model(base_model.CNNModel):
   """InceptionV3."""
 
   def __init__(self, auxiliary=False, params=None):
@@ -160,7 +160,7 @@ def inception_v4_rb(cnn):
   cnn.inception_module('incept_v4_rb', cols)
 
 
-class Inceptionv4Model(model.CNNModel):
+class Inceptionv4Model(base_model.CNNModel):
   """Inceptionv4."""
 
   def __init__(self, params=None):

@@ -528,15 +528,3 @@ def _build_nasnet_base(images,
       return net, end_points
   return logits, end_points
 
-
-print('>> Converting graph nasnet_cifar')
-batch_size = 1
-height, width = 32, 32
-num_classes = 10
-eval_inputs = tf.placeholder(
-        tf.float32, [batch_size, height, width, 3], 'eval_input')
-with slim.arg_scope(nasnet_cifar_arg_scope()):
-            logits, end_points = build_nasnet_cifar(eval_inputs, num_classes, is_training=False)
-
-inputs = [eval_inputs]
-outputs = [logits]

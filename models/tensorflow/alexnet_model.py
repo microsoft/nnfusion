@@ -21,10 +21,10 @@ References:
 """
 
 import tensorflow as tf
-from . import model
+from cnn_model_util import base_model
 
 
-class AlexnetModel(model.CNNModel):
+class AlexnetModel(base_model.CNNModel):
   """Alexnet cnn model."""
 
   def __init__(self, params=None):
@@ -65,7 +65,7 @@ class AlexnetModel(model.CNNModel):
     print("top floats without include_top:", cnn.top_layer.shape)
     print("total floats without include_top:", total)
 
-class AlexnetCifar10Model(model.CNNModel):
+class AlexnetCifar10Model(base_model.CNNModel):
   """Alexnet cnn model for cifar datasets.
 
   The model architecture follows the one defined in the tensorflow tutorial

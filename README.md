@@ -1,10 +1,11 @@
-# Introduction
-NNFusion is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description. NNFusion is designed to facilitate DNN compiler research, with full stack of optimizations built-in and can target different accelerator devices.
+## Introduction
+NNFusion(Nerual Network Fusion) is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description. NNFusion is designed to facilitate DNN compiler research, with full stack of optimizations built-in and can target different accelerator devices.
 
-## Major goal
-- Framework independent: support ONNX, TensorFlow and PyTorch models through a source-to-source (model to code) compilation
-- Innovation agility: provide a flexible and modular architecture to enable new compiler optimization research
-- Hardware neutral: aims to be able to support existing and future 1st and 3rd party accelerator devices
+## Who should consider using NNFusion?
+- Those who want to use different accelerator device to optimize model compilation.
+- End users who want to generate high-performance executables from DNN model description of different frameworks(ONNX,TensorFlow and PyTorch).
+- Researchers who want to optimize model compilation and apply the method to their own work.
+- Contributors who want to do DNN compiler optimization research and are willing to contribute.
 
 ## Highlight features
 - Source-to-source compilation to remove framework overhead and dependency
@@ -15,9 +16,10 @@ NNFusion is a flexible and efficient DNN compiler that can generate high-perform
 - Compatible with both hand-crafted kernel code and vendor-provided libraries
 - Customized optimization support through directly rewriting the generated human-readable code
 
-## Quick Start
+## Get Started
+### Quick Start with Docker Image
 For end users, simply use docker to compile your model and generate high-performance executable.
-NNFusion supports and is tested on Ubuntu 16.04 and 18.04 with CUDA. For more infomation on system requirements, please refer to [System Requirements](https://github.com/microsoft/nnfusion/wiki/Before-Started)
+NNFusion supports and is tested on Ubuntu 16.04 and 18.04 with CUDA. You should install nvidia-docker on your device to do the following steps.
 1. Pull docker image
 `docker pull nnfusion/cuda:10.2-cudnn7-devel-ubuntu18.04`
 2. Run docker container with the given image
@@ -41,9 +43,10 @@ make. && make -j
 ./main_test
 ```
 
-## Build from Source Code
-
-
+### Build from Source Code
+Researchers or contributors who want to do more research on optimizing model compilation, you can build NNFusion from source code.
+If you want to use docker to build from source code, please refer to [Build Guide for Docker Users](https://github.com/microsoft/nnfusion/wiki/Build-from-Source-Code-with-Docker-Image).
+If you want to build from source code in your native system, please firstly read [System Requirements](https://github.com/microsoft/nnfusion/wiki/Before-Started) and check. Then please refer to [Build Guide for Native Users](https://github.com/microsoft/nnfusion/wiki/Build-Guide).
 
 # Contributing
 

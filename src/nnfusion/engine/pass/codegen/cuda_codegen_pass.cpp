@@ -1103,14 +1103,6 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
     lu << R"(
 cuda_add_executable(main_test main_test.cpp)   
 target_link_libraries(main_test ${TARGET_NAME}) 
-
-if(EXISTS "${CMAKE_BINARY_DIR}/Constant")
-else()
-add_custom_command(
-    TARGET ${TARGET_NAME}
-    POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Constant ${CMAKE_BINARY_DIR}/Constant
-)
-endif()
 )";
     return;
 }

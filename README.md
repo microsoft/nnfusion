@@ -29,7 +29,7 @@ docker start [YOUR_CONTAINER_NAME]
 docker exec -it [YOUR_CONTAINER_NAME] bash
 ```
 3. Put your model in the container
-In host, you can use `docker cp host_path container_path` to copy your model into the container, or use `docker run -t -i -v <host_dir>:<container_dir>` to map the host dir to the container.
+In host, you can use `docker cp host_path [YOUR_CONTAINER_NAME]:container_path` to copy your model into the container, or use `docker run -t -i -v <host_dir>:<container_dir>` to map the host dir to the container.
 4. Compile Model
 When model is prepared, we can compile model in the container.
 ```

@@ -45,6 +45,7 @@ cmake. && make -j
 ./main_test
 ```
 6. The output of NNFusion should be Tensors with value and model iteration times.
+For more detailed information on NNFusion usage, please refer to [NNFusion Usage](https://github.com/microsoft/nnfusion/wiki/Compile-a-Tensorflow-model-with-NNFusion).
 
 ### Build from Source Code
 Researchers or contributors who want to do more research on optimizing model compilation, you can build NNFusion from source code.

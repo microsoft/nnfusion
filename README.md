@@ -44,6 +44,7 @@ cd root/nnfusion_rt/cuda_codegen
 cmake. && make -j
 ./main_test
 ```
+6. The output of NNFusion should be Tensors with value and model iteration times.
 
 ### Build from Source Code
 Researchers or contributors who want to do more research on optimizing model compilation, you can build NNFusion from source code.

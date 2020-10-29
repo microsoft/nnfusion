@@ -1,6 +1,6 @@
 # TensorFlow Frozen Model Zoo
 
-NNFusion supports compiling Tensorflow through taking its frozen format (i.e., a protobuf file) as input. For more information about how to freeze a TensorFlow model into a frozen format, please refer to [Freeze TensorFlow models]().
+NNFusion supports compiling Tensorflow through taking its frozen format (i.e., a protobuf file) as input. For more information about how to freeze a TensorFlow model into a frozen format, please refer to [Freeze TensorFlow models](nnf_tf_freezer/README.md).
 
 This page lists some commonly-used frozen models that are well tested with NNFusion. These models contain typical DNN architecures such as CNN, RNN, Transformer, etc., and cover the most common DNN domains including image, NLP and speech.
 

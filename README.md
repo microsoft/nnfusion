@@ -26,21 +26,27 @@ To use your own model to get started, please refer to [Supported Models]() to se
 
 1. Pull docker image
 `docker pull nnfusion/cuda:10.2-cudnn7-devel-ubuntu18.04`
+
 2. Run docker container with the given image
+
 ```
 docker run -t --name [YOUR_CONTAINER_NAME] -d nnfusion/cuda:10.2-cudnn7-devel-ubuntu18.04
 docker start [YOUR_CONTAINER_NAME]
 docker exec -it [YOUR_CONTAINER_NAME] bash
 ```
 3. Put your model in the container
+
 In host, you can use `docker cp host_path [YOUR_CONTAINER_NAME]:container_path` to copy your model into the container, or use `docker run -t -i -v <host_dir>:<container_dir>` to map the host dir to the container.
+
 4. Compile Model
+
 When model is prepared, we can compile model in the container and run it to see the performance.
 ```
 cd root
 nnfusion path/[YOUR_MODEL_FILE]
 ```
 5. Build and Run Compiled Model
+
 ```
 cd root/nnfusion_rt/cuda_codegen
 cmake. && make -j

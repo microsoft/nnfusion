@@ -17,8 +17,11 @@
 ### Quick Start with Docker Image
 For end users, simply use docker to compile your model and generate high-performance executable.
 NNFusion supports and is tested on Ubuntu 16.04 and 18.04 with a CUDA GPU equipped. You should install nvidia-docker on your device to do the following steps.
+
 We will use a simple TensorFlow LSTM inference model as an example. You can download a frozen version from our model zoo:
+
 `wget https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_lstm_l8s8h256_bs1.pb`
+
 If you want to use your own model to get started, please refer to [Supported Models]() to see whether it is supported and freeze your model.
 1. Pull docker image
 `docker pull nnfusion/cuda:10.2-cudnn7-devel-ubuntu18.04`

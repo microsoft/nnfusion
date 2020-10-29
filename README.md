@@ -1,4 +1,4 @@
-**NNFusion** (Nerual Network Fusion) is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description(frozen models of pb or ONNX format). NNFusion is designed to facilitate DNN compiler research, with full stack of optimizations built-in and can target different types of GPUs(Nvidia and AMD GPUs).
+**NNFusion** (Nerual Network Fusion) is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description(frozen models in pb or ONNX format). NNFusion is designed to facilitate DNN compiler research, with full stack of optimizations built-in and can target different types of GPUs(Nvidia and AMD GPUs).
 
 ## Who should consider using NNFusion?
 - Developers who want to generate high-performance executables from DNN model description of different frameworks including ONNX, TensorFlow and PyTorch.

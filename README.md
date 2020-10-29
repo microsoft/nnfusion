@@ -9,7 +9,7 @@
 - Support acceleration of model compilation and execution 
   - Compile-time kernel co-scheduling abstraction for GPUs
   - Tight integration and co-optimization with communication, data loading and job scheduling
--Support customized optimization 
+- Support customized optimization 
   - Compatible with both hand-crafted kernel code and vendor-provided libraries
   - Support rewriting the generated human-readable code
 

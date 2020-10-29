@@ -96,19 +96,20 @@ namespace nnfusion
                         std::iota(axes.begin(), axes.end(), 0);
                     }
 
-                    std::vector<int64_t> strides;
+                    std::vector<int64_t> steps;
                     if (inputs.size() > 4)
                     {
-                        NNFUSION_CHECK(GetValueFromNGraphOp(inputs[4].gnode, &strides));
+                        NNFUSION_CHECK(GetValueFromNGraphOp(inputs[4].gnode, &steps));
                     }
                     else
                     {
-                        axes.resize(starts.size(), 1);
+                        steps.resize(starts.size(), 1);
                     }
 
                     Shape data_shape = data.get_shape();
                     Shape lower_bounds(data_shape.size());
                     Shape upper_bounds = data_shape;
+                    Strides strides(data_shape.size(), 1);
 
                     for (auto idx = 0; idx < axes.size(); ++idx)
                     {
@@ -117,10 +118,10 @@ namespace nnfusion
                             get_valid_array_idx(starts.at(idx), data_shape.at(axis));
                         upper_bounds.at(axis) =
                             get_valid_array_idx(ends.at(idx), data_shape.at(axis));
+                        strides.at(axis) = steps.at(idx);
                     }
 
-                    auto op = std::make_shared<op::Slice>(
-                        lower_bounds, upper_bounds, Strides(strides.begin(), strides.end()));
+                    auto op = std::make_shared<op::Slice>(lower_bounds, upper_bounds, strides);
                     op->set_name(node_proto.output(0));
                     auto gnode = m_graph->add_node_and_edge(op, {data});
                     NamedNodeVector ret{{node_proto.output(0), gnode}};

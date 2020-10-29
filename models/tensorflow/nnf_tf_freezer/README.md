@@ -9,7 +9,7 @@
 ## Use nnf_tf_freezer to freeze a tensorflow model
 
 ### step1:
-Import `nnf_tf_freezer`.
+Download [nnf_tf_freezer.py](./nnf_tf_freezer.py), and import `nnf_tf_freezer`.
 
 ### step2: 
 Construct your model, and define the `inputs : List[tf.placeholder]` and `outputs : List[tf.identity]` of the model graph. For training model, we use `tf.train.GradientDescentOptimizer(learning_rate=1e-4) ` as our default optimizer. You may also pass other `optimizer ：tf.train.Optimizer` to nnf_tf_freezer. 
@@ -23,14 +23,14 @@ freezer.execute(inputs, outputs, optimizer)
 ```
 
 ## Quick Start
-`tf_freeze_graph_example.py` gives an example on how to use tf_feezer to freeze tensorflow models. It supports freeze bert, nasnet_cifar, alexnet, deepspeech2, inception3, lstm, resnet, seq2seq and vgg models.
+First you need to download the folder [nnf_tf_freezer](./). Inside the folder, `tf_freeze_graph_example.py` gives an example on how to use tf_feezer to freeze tensorflow models. It supports freezing bert, nasnet_cifar, alexnet, deepspeech2, inception3, lstm, resnet, seq2seq and vgg models.
 
 If you want to freeze a bert inference model, run constant folding to the frozen graph, and see the performance of tensorflow on this frozen constant-folded graph, just type the following code to your terminal:
 
 ```
 python3 tf_freeze_graph_example.py --model_name=bert --frozen_graph=bert.pb --const_folding --run_graph --run_const_folded_graph
 ```
-It will generate two files under current directory:  `bert.pb` (the original version) and `bert.const_folded.pb` (the constant-folded version). And you will see the output of this model and a summary of tensorflow performance which look like:
+It will generate two files under current directory:  `bert.pb` (the original version) and `bert.const_folded.pb` (the constant-folded version). And you will see the output of this model and a summary of tensorflow performance which looks like:
 ```
 Updated:
 import/dense/Softmax:0

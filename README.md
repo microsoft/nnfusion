@@ -61,7 +61,7 @@ For more detailed information on NNFusion usage, please refer to [NNFusion Usage
 ### Build from Source Code
 Researchers or contributors who want to do more research on optimizing model compilation, you can build NNFusion from source code.
 To build from source code, please read the following documents:
-1. Read [Before Started](https://github.com/microsoft/nnfusion/wiki/1.-Before-Started) page to see supported CUDA GPUS and required libs. 
+1. Read [Before Started](https://github.com/microsoft/nnfusion/wiki/1.-Before-Started) page to see supported CUDA GPUs and required libs. 
 2. Read [Build Guide](https://github.com/microsoft/nnfusion/wiki/2.-Build-Guide) for more information on how to build and install NNFusion in your native system or in the docker container.
 3. After building and installing NNFusion, please refer to [Compile Guide and Tool Usage](https://github.com/microsoft/nnfusion/wiki/3.-Compile-a-Tensorflow-model-with-NNFusion) to learn how to compile or optimize a DNN model.
 

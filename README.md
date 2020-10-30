@@ -45,6 +45,9 @@ When model is prepared, we can compile model in the container and run it to see 
 cd root
 nnfusion path/[YOUR_MODEL_FILE]
 ```
+Note: 
+If you are using an ONNX model, the compile command will be  `nnfusion path/[YOUR_MODEL_FILE] -f onnx`
+
 5. Build and Run Compiled Model
 
 ```

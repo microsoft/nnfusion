@@ -86,7 +86,7 @@ target_link_libraries(${TARGET_NAME}
     ${CUDA_CUBLAS_LIBRARIES}
     ${CUDNN_LIBRARIES})
 
-target_link_libraries(${TARGET_NAME} cudnn culibos cublas)   
+target_link_libraries(${TARGET_NAME} cudnn)   
 )");
 
 LU_DEFINE(nnfusion::codegen::cmake::rocm_lib,

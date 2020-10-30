@@ -15,6 +15,8 @@ def process_log(iter_file, nvprof_file):
     num_warmup = int(nvprof_file.split('.')[-2].split('+')[1])
     num_step = int(nvprof_file.split('.')[-2].split('+')[0])
     num_iter = num_step + num_warmup
+    if 'tf' in iter_file or 'trt' in iter_file:
+        num_iter = num_step
 
     fin = open(nvprof_file, 'r')
     lines = fin.readlines()
@@ -67,7 +69,7 @@ steps = 1000
 
 output_dat_path = './reproduce_result/gpu1_gpu_schedoverhead_cuda.dat'
 fout = open(output_dat_path, 'w')
-fout.write("Baseline	RexNeXt-Kernel	RexNeXt-Overhead	RexNeXt-Proportion	NASNet-Kernel	NASNet-Overhead	NASNet-Proportion	AlexNet-Kernel	AlexNet-Overhead	AlexNet-Proportion	DeepSpeech2-Kernel	DeepSpeech2-Overhead	DeepSpeech2-Proportion	LSTM-Kernel	LSTM-Overhead	LSTM-Proportion	Seq2Seq-Kernel	Seq2Seq-Overhead	Seq2Seq-Proportion	Text-Height-Offset\n")
+# fout.write("Baseline	RexNeXt-Kernel	RexNeXt-Overhead	RexNeXt-Proportion	NASNet-Kernel	NASNet-Overhead	NASNet-Proportion	AlexNet-Kernel	AlexNet-Overhead	AlexNet-Proportion	DeepSpeech2-Kernel	DeepSpeech2-Overhead	DeepSpeech2-Proportion	LSTM-Kernel	LSTM-Overhead	LSTM-Proportion	Seq2Seq-Kernel	Seq2Seq-Overhead	Seq2Seq-Proportion	Text-Height-Offset\n")
 
 baseline = 'tf'
 data = []
@@ -84,6 +86,20 @@ for item in data:
     fout.write("\t" + str(item))
 fout.write("\t8\n")
 
+baseline = 'trt'
+data = []
+for model in models:
+    # print(model)
+    record = {}
+    iter_file = prefix + model + '_bs' + str(1) + '.' + baseline + '.iter_time' + '.' + str(steps) + '+' + str(warmup) + '.log'
+    nvprof_file = prefix + model + '_bs' + str(1) + '.' + baseline + '.nvprof' + '.' + str(steps) + '+' + str(warmup) + '.log'
+    result = process_log(iter_file, nvprof_file)
+        # print(result[0], result[1], result[2], result[3], result[4])
+    data = data + [result[1], result[2], result[4] * 100.0]
+fout.write("TRT")
+for item in data:
+    fout.write("\t" + str(item))
+fout.write("\t8\n")
 
 baseline = 'rammerbase'
 data = []
@@ -100,7 +116,6 @@ for item in data:
     fout.write("\t" + str(item))
 fout.write("\t9\n")
 
-
 baseline = 'rammer'
 data = []
 for model in models:
@@ -114,4 +129,4 @@ for model in models:
 fout.write("R")
 for item in data:
     fout.write("\t" + str(item))
-fout.write("\t-1\n")
+fout.write("\t8\n")

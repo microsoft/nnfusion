@@ -26,7 +26,7 @@ Note that the system name of "Rammer" is only used in paper, our implementation 
     - *Exercisability*: under the *artifacts* folder, we prepare all the script and data to reproduce the experiements in individual folders named by the figure name in paper.
 
 - Results Reproduced:
-    - To reproduce the main results presented in our paper, we provide a Docker image containing all the environments and baseline software, and an Azure NC24s_v3 VM with the same configurations as we used in paper evaluation. As the GraphCore and ROCm environments are internal resoruces with resitrict accessbility, we use the CUDA GPUs environment to reproduce the main results. We also provide detailed guideline to help reproduce the results step by step.
+    - To reproduce the main results presented in our paper, we provide a Docker image containing all the environments and baseline software, and an Azure NC24s_v3 VM with the same configurations as we used in paper evaluation. As the GraphCore and ROCm environments are internal resoruces with resitrict accessbility, we use the CUDA GPUs (NVIDIA Tesla V100 GPU) environment to reproduce the main results. We also provide detailed guideline to help reproduce the results step by step.
 
 
 ## 1. Environment Preparation
@@ -54,6 +54,7 @@ To ease the process of installing all the dependencies, baseline softwares, and 
     ```
     apt install ttf-mscorefonts-installer
     ```
+* It is recommended to use a 4K monitor when you plotting the figure, as the gnuplot scripts might produce unligned figures in a non-4K monitor.
 
 So far, you are ready to run NNFusion. Besides, if you want to run the evaluation in your native enviroment and build everything from scratch, please follow [README_DEPENDENCY.md](README_DEPENDENCY.md) and install each of them step by step. We recommend to use a Ubuntu 16.04 environment.
 

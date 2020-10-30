@@ -42,15 +42,92 @@ def extract_iteration_kernel_trace_tf(log_file, head_len=1, tail_len=1):
             break
 
     tail_kernels = []
-    for i in range(len(lines) - 2, len(lines) - 2 - tail_len, -1):
+    for i in range(len(lines) - 1, -1, -1):
         if '[CUDA' not in lines[i]:
             kernel_name = lines[i].rstrip('\n').split('\",')[-2].lstrip('\"')
             tail_kernels.append(kernel_name)
+        if len(tail_kernels) >= tail_len:
+            break
 
     return (len(extracted), head_kernels, tail_kernels)
 
 
 def extract_iteration_kernel_metric_tf(log_file, len_kernel_trace, head_kernels, tail_kernels):
+    # print(head_kernels)
+    # print(tail_kernels)
+    lines = open(log_file).readlines()
+    extracted = []
+    if ('lstm' in log_file) or ('seq2seq' in log_file):
+        for i in range(len(lines) - len_kernel_trace, len(lines)):
+            extracted.append(lines[i])
+    else:
+        start_point = -1
+        for i in range(len(lines) - 1 - len(head_kernels), -1 + len(tail_kernels), -1):
+            # check head
+            flag_head_matched = True
+            for j in range(len(head_kernels)):
+                kernel_name = lines[i + j].rstrip('\n').split('\",')[-2].lstrip('\"')
+                if kernel_name != head_kernels[j]:
+                    flag_head_matched = False
+            flag_tail_matched = True
+            for j in range(len(tail_kernels)):
+                kernel_name = lines[i - j - 1].rstrip('\n').split('\",')[-2].lstrip('\"')
+                if kernel_name != tail_kernels[j]:
+                    flag_tail_matched = False
+            if flag_head_matched and flag_tail_matched:
+                start_point = i
+                break
+        assert (start_point != -1)
+        # print(start_point)
+        for i in range(start_point, len(lines)):
+            extracted.append(lines[i])
+    fout = open(log_file.rstrip('.log') + ".extracted.log", 'w')
+    for line in extracted:
+        fout.write(line)
+    fout.close()
+
+
+def extract_iteration_kernel_trace_trt_native(log_file, head_len=1, tail_len=1):
+    lines = open(log_file).readlines()
+    start_point = -1
+    for i in range(len(lines)-2, -1, -1):
+        # print(lines[i])
+        if '[CUDA memcpy DtoH]' in lines[i]:
+            start_point = i + 1
+            break
+    assert (start_point != -1)
+    # print(start_point)
+
+    extracted = []
+    for i in range(start_point, len(lines)):
+        if '[CUDA' not in lines[i]:
+            extracted.append(lines[i])
+
+    fout = open(log_file.rstrip('.log') + ".extracted.log", 'w')
+    for line in extracted:
+        fout.write(line)
+    fout.close()
+
+    head_kernels = []
+    for i in range(start_point, len(lines)):
+        if '[CUDA' not in lines[i]:
+            kernel_name = lines[i].rstrip('\n').split('\",')[-2].lstrip('\"')
+            head_kernels.append(kernel_name)
+        if len(head_kernels) >= head_len:
+            break
+
+    tail_kernels = []
+    for i in range(len(lines) - 1, -1, -1):
+        if '[CUDA' not in lines[i]:
+            kernel_name = lines[i].rstrip('\n').split('\",')[-2].lstrip('\"')
+            tail_kernels.append(kernel_name)
+        if len(tail_kernels) >= tail_len:
+            break
+
+    return (len(extracted), head_kernels, tail_kernels)
+
+
+def extract_iteration_kernel_metric_trt_native(log_file, len_kernel_trace, head_kernels, tail_kernels):
     # print(head_kernels)
     # print(tail_kernels)
     lines = open(log_file).readlines()
@@ -124,10 +201,10 @@ def extract_iteration_kernel_metric_rammer(log_file):
 # extract_iteration_kernel_trace(FLAGS.kernel_trace_file)
 
 models = ['resnext_nchw', 'nasnet_cifar_nchw', 'alexnet_nchw', 'deepspeech2', 'lstm', 'seq2seq']
-baselines = ['tf', 'rammerbase', 'rammer']
+baselines = ['tf', 'trt', 'rammerbase', 'rammer']
 batches = [1]
 prefix = 'logs/'
-warmup = 0
+warmup = 1
 steps = 3
 
 for model in models:
@@ -139,6 +216,16 @@ for model in models:
                     str(steps) + '+' + str(warmup) + '.log'
                 kernel_metric_file = prefix + model + '_bs' + \
                     str(batch) + '.tf.sm_efficiency.' + \
+                    str(steps) + '+' + str(warmup) + '.log'
+                results = extract_iteration_kernel_trace_tf(kernel_trace_file)
+                extract_iteration_kernel_metric_tf(kernel_metric_file, results[0], results[1], results[2])
+        elif baseline == 'trt':
+            for batch in batches:
+                kernel_trace_file = prefix + model + '_bs' + \
+                    str(batch) + '.trt.kernel_trace.' + \
+                    str(steps) + '+' + str(warmup) + '.log'
+                kernel_metric_file = prefix + model + '_bs' + \
+                    str(batch) + '.trt.sm_efficiency.' + \
                     str(steps) + '+' + str(warmup) + '.log'
                 results = extract_iteration_kernel_trace_tf(kernel_trace_file)
                 extract_iteration_kernel_metric_tf(kernel_metric_file, results[0], results[1], results[2])

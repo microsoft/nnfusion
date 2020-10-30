@@ -120,6 +120,7 @@ def main(_):
     if FLAGS.xla:
         session_conf.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
     with tf.Graph().as_default(), tf.Session(config=session_conf) as session:
+        profile_stop()
         batch_size = FLAGS.batch_size
 
         model = LSTMModel(FLAGS.num_layer, FLAGS.hidden_size)

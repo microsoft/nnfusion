@@ -2,10 +2,10 @@
 MODEL_DIR=$ARTIFACTS_HOME/models
 LOG_DIR=$ARTIFACTS_HOME/figure14/logs
 STEP=3
-WARMUP=0
+WARMUP=1
 ITERS=$STEP+$WARMUP
 
-# rm -rf $LOG_DIR
+rm -rf $LOG_DIR
 mkdir $LOG_DIR
 
 
@@ -43,6 +43,38 @@ done
 
 
 cd $ARTIFACTS_HOME/figure14/
+
+# profile tensorrt
+cd trt/
+
+nvprof --csv --print-gpu-trace --metrics sm_efficiency python tf_trt_run_frozen.py --warmup $WARMUP --num_iter $STEP --model ResNextNchw --model_path ../../frozen_models/frozen_pbs/frozen_resnext_nchw_infer_bs1.const_folded.pb > ../logs/resnext_nchw_bs1.trt.sm_efficiency.$ITERS.log 2>&1
+nvprof --csv --print-gpu-trace python tf_trt_run_frozen.py --warmup $WARMUP --num_iter $STEP --model ResNextNchw --model_path ../../frozen_models/frozen_pbs/frozen_resnext_nchw_infer_bs1.const_folded.pb > ../logs/resnext_nchw_bs1.trt.kernel_trace.$ITERS.log 2>&1
+
+nvprof --csv --print-gpu-trace --metrics sm_efficiency python tf_trt_run_frozen.py --warmup $WARMUP --num_iter $STEP --model NasnetCifarNchw --model_path ../../frozen_models/frozen_pbs/frozen_nasnet_cifar_nchw_infer_bs1.const_folded.pb > ../logs/nasnet_cifar_nchw_bs1.trt.sm_efficiency.$ITERS.log 2>&1
+nvprof --csv --print-gpu-trace python tf_trt_run_frozen.py --warmup $WARMUP --num_iter $STEP --model NasnetCifarNchw --model_path ../../frozen_models/frozen_pbs/frozen_nasnet_cifar_nchw_infer_bs1.const_folded.pb > ../logs/nasnet_cifar_nchw_bs1.trt.kernel_trace.$ITERS.log 2>&1
+
+nvprof --csv --print-gpu-trace --metrics sm_efficiency python tf_trt_run_frozen.py --warmup $WARMUP --num_iter $STEP --model AlexnetNchw --model_path ../../frozen_models/frozen_pbs/frozen_alexnet_nchw_infer_bs1.const_folded.pb > ../logs/alexnet_nchw_bs1.trt.sm_efficiency.$ITERS.log 2>&1
+nvprof --csv --print-gpu-trace python tf_trt_run_frozen.py --warmup $WARMUP --num_iter $STEP --model AlexnetNchw --model_path ../../frozen_models/frozen_pbs/frozen_alexnet_nchw_infer_bs1.const_folded.pb > ../logs/alexnet_nchw_bs1.trt.kernel_trace.$ITERS.log 2>&1
+
+cd deepspeech2_native/deepspeech/
+make -j
+nvprof --csv --print-gpu-trace --metrics sm_efficiency bin/deepspeech > $LOG_DIR/deepspeech2_bs1.trt.sm_efficiency.$ITERS.log 2>&1
+nvprof --csv --print-gpu-trace bin/deepspeech > $LOG_DIR/deepspeech2_bs1.trt.kernel_trace.$ITERS.log 2>&1
+cd ../..
+
+cd lstm_native/lstm/
+make -j
+nvprof --csv --print-gpu-trace --metrics sm_efficiency bin/lstm > $LOG_DIR/lstm_bs1.trt.sm_efficiency.$ITERS.log 2>&1
+nvprof --csv --print-gpu-trace bin/lstm > $LOG_DIR/lstm_bs1.trt.kernel_trace.$ITERS.log 2>&1
+cd ../..
+
+cd seq2seq_native/seq2seq/
+make -j
+nvprof --csv --print-gpu-trace --metrics sm_efficiency bin/seq2seq > $LOG_DIR/seq2seq_bs1.trt.sm_efficiency.$ITERS.log 2>&1
+nvprof --csv --print-gpu-trace bin/seq2seq > $LOG_DIR/seq2seq_bs1.trt.kernel_trace.$ITERS.log 2>&1
+cd ../..
+
+cd ..
 
 # profile rammer_base
 cd rammer_base/

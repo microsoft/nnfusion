@@ -38,6 +38,7 @@ def profile_stop():
         raise Exception("cudaProfilerStop() returned %d" % ret)
 
 def main(_):
+    profile_stop()
     session_conf = tf.ConfigProto(
         allow_soft_placement=True,
         log_device_placement=False,
@@ -47,6 +48,7 @@ def main(_):
     if FLAGS.xla:
         session_conf.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
     with tf.Graph().as_default(), tf.Session(config=session_conf) as session:
+        profile_stop()
         batch_size = FLAGS.batch_size
         height, width = 32, 32
         num_classes = 10

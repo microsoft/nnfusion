@@ -22,7 +22,7 @@ We will use a simple TensorFlow LSTM inference model as an example. You can down
 
 `wget https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_lstm_l8s8h256_bs1.pb`
 
-To use your own model to get started, please refer to [Supported Models]() to see whether it is supported and freeze your model according to [Freeze Your Model](https://github.com/microsoft/nnfusion/wiki/1.1-Freeze-TensorFlow-Models).
+To use your own model to get started, please refer to [Supported Models](https://github.com/microsoft/nnfusion/wiki/1.3-Supported-Models-and-Operators) to see whether it is supported and freeze your model according to [Freeze Your Model](https://github.com/microsoft/nnfusion/wiki/1.1-Freeze-TensorFlow-Models).
 
 1. Pull docker image
 `docker pull nnfusion/cuda:10.2-cudnn7-devel-ubuntu18.04`

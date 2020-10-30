@@ -6,6 +6,7 @@ import sys
 
 flags = tf.flags
 flags.DEFINE_integer("num_iter", 10, "num of iterations")
+flags.DEFINE_integer("warmup", 5, "num of warmup iterations")
 flags.DEFINE_string("model_path", "", "path of frozen model")
 flags.DEFINE_integer("batch_size", 1, "batch size")
 flags.DEFINE_string("model", "", "model name")
@@ -50,7 +51,7 @@ class BaseNet:
         output_tensor = sess.graph.get_tensor_by_name("import/" + self.output_node[0] + ":0")
 
         # warm up
-        for i in range(5):
+        for i in range(FLAGS.warmup):
             outputs = sess.run(output_tensor, feed_dict={input_image: rand_image})
             out_flat = outputs.flat
             if (len(out_flat) > 0):

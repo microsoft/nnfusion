@@ -12,6 +12,17 @@ flags.DEFINE_string("model", "", "model name")
 
 FLAGS = flags.FLAGS
 
+import ctypes
+_cudart = ctypes.CDLL('libcudart.so')
+def profile_start():
+    ret = _cudart.cudaProfilerStart()
+    if ret != 0:
+        raise Exception("cudaProfilerStart() returned %d" % ret)
+def profile_stop():
+    ret = _cudart.cudaProfilerStop()
+    if ret != 0:
+        raise Exception("cudaProfilerStop() returned %d" % ret)
+
 class BaseNet:
     input_node = "eval_input"
     image_size = (1, 3, 32, 32)
@@ -26,6 +37,7 @@ class BaseNet:
         return input_graph_def
 
     def execute(self, sess):
+        profile_stop()
         trt_graph = trt.create_inference_graph(
             input_graph_def=self.parse(sess),
             outputs=self.output_node,
@@ -48,12 +60,14 @@ class BaseNet:
 
         iter_times = []
 
+        profile_start()
         for i in range(FLAGS.num_iter):
             start_time = time.time()
             sess.run(output_tensor, feed_dict={input_image: rand_image})
             iter_time = (time.time() - start_time) * 1000
             iter_times.append(iter_time)
             print("Iteration time %f ms" % (iter_time))
+        profile_stop()
 
         print("Summary: [min, max, mean] = [%f, %f, %f] ms" % (
             min(iter_times), max(iter_times), sum(iter_times) / len(iter_times)))

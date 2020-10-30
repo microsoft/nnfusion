@@ -27,7 +27,7 @@ Plot the end-to-end comparision figure (i.g., Figure 11).
 cd reproduce_result/
 gnuplot gpu1_e2e_cuda_multifig.plt
 ```
-Fianlly, in the reproduce_result folder, you will see the "figure11_paper.pdf". To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
+Fianlly, in the reproduce_result folder, you will see the "figure11_reproduce.pdf". To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
 
 ### End-to-end script
 All the above steps can be exected by the below single script:

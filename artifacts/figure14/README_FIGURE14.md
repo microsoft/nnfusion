@@ -27,7 +27,7 @@ Plot the end-to-end GPU utlization figure (i.g., Figure 14).
 cd reproduce_result/
 gnuplot gpu1_gpu_util_cud.plt
 ```
-Fianlly, in the reproduce_result folder, you will see the "figure14_paper.pdf".
+Fianlly, in the reproduce_result folder, you will see the "figure14_reproduce.pdf".
 To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
 
 ### End-to-end script

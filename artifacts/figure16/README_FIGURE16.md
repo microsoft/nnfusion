@@ -26,7 +26,7 @@ Plot the end-to-end GPU scheduling overhead figure (i.g., Figure 16).
 cd reproduce_result/
 gnuplot gpu1_gpu_schedoverhead_cuda.plt
 ```
-Fianlly, in the reproduce_result folder, you will see the "figure16_paper.pdf".
+Fianlly, in the reproduce_result folder, you will see the "figure16_reproduce.pdf".
 To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
 
 ### End-to-end script

@@ -120,3 +120,9 @@ search_matmul_config(16, 256, 10, 1000)
 
 # nasnet_cifar
 search_matmul_config(1, 768, 10, 1000)
+
+# resnext-imagenet
+search_matmul_config(1, 2048, 1000, 1000)
+
+# nasnet-imagenet
+search_matmul_config(1, 1056, 1000, 1000)

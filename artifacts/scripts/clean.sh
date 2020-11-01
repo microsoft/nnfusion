@@ -13,6 +13,12 @@ rm -rf logs rammer rammer_base | true
 rm reproduce_result/*.dat | true
 cd ..
 
+echo "clean figure13"
+cd figure13/
+rm -rf logs rammer rammer_base | true
+rm reproduce_result/*.dat | true
+cd ..
+
 echo "clean figure14"
 cd figure14/
 rm -rf logs rammer rammer_base | true

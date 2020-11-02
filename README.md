@@ -14,7 +14,7 @@
   - Model-specific kernel selection, kernel co-scheduling and kernel fusion
   - Static memory layout and placement optimizations
 - Provide ahead-of-time and source-to-source (model-to-code) compilation to reduce runtime overhead and remove library/framework dependencies.
-- Support popular DNN model formats including TensorFlow, ONNX, and TorchScript as input models
+- Support popular DNN model formats including TensorFlow and ONNX as input models
 - Support customized optimization in an easier and more efficient way, e.g., directly replacing hand-crafted kernels on the generated human-readable code.
 - Support commonly used devices like CUDA GPUs, and ROCm GPUs
 

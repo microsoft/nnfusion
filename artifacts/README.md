@@ -81,3 +81,36 @@ Before we start to run the evaluation experiements, we need to take two steps to
 | #4. Comparison of GPU utilization | Figure 14 | nnfusion/artifacts/figure14 | [README_FIGURE14.md](figure14/README_FIGURE14.md) |
 | #5. Comparison of GPU scheduling overhead | Figure 16 | nnfusion/artifacts/figure16 | [README_FIGURE16.md](figure16/README_FIGURE16.md) |
 | #6. Interplay of intra and inter operator scheduling | Figure 17 | nnfusion/artifacts/figure17 | [README_FIGURE17.md](figure17/README_FIGURE17.md) |
+
+## 5. Performance on NVIDIA CUDA GPU
+
+Here, we show some evaluation results on a **NVIDIA Tesla V100 GPU (Azure NC24s_v3 VM)**. All data reported here are on the inference task with batch size 1. More evaluation details and results can be found in our [OSDI'20 paper](https://www.usenix.org/conference/osdi20/presentation/ma).
+
+Baselines:
+* Deep learning framework: TensorFlow-1.15.2 (TF)
+* Deep learning compilers: TensorFlow-XLA-1.15.2 (TF-XLA), TVM-0.7 (TVM)
+* Vendor optimized proprietary DNN inference library from NVIDIA: TensorRT-7.0 (TF-TRT)
+
+### 1. End-to-end Performance
+
+This figure shows how NNFusion (Rammer) performs comparing with the state-of-the-art DNN frameworks and compilers.
+
+<p align="center">
+  <img src="images/cuda_e2e_overall.png" width="600">
+</p>
+
+### 2. GPU Utilization
+
+This figure shows how well NNFusion (Rammer) utilizes the GPU's parallel resource.
+
+<p align="center">
+  <img src="images/cuda_utilization.png" width="600">
+</p>
+
+### 3. Scheduling Overhead
+
+This figure shows how much NNFusion (Rammer) reduces the runtime scheduling overhead.
+
+<p align="center">
+  <img src="images/cuda_overhead.png" width="600">
+</p>

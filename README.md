@@ -60,10 +60,33 @@ If you are using an ONNX model, the compile command will be  `nnfusion path/[YOU
 
 ```
 cd root/nnfusion_rt/cuda_codegen
-cmake. && make -j
+cmake . && make -j
 ./main_test
 ```
-6. The output of NNFusion should be Tensors with value and model iteration times.
+6. The output of NNFusion should be Tensors with value and model iteration times. Using the example model `frozen_lstm_l8s8h256_bs1.pb`, you will see the output of this model and a summary of perfomance:
+```
+Result_2261_0:
+8.921492e-03 1.182088e-02 8.937406e-03 7.932204e-03 1.574194e-02 3.844390e-03 -1.505094e-02 -1.112035e-02 5.026608e-03 -8.032205e-03  .. (size = 256, ends with 1.357487e-02);
+Result_2261_0:
+8.921492e-03 1.182088e-02 8.937406e-03 7.932204e-03 1.574194e-02 3.844390e-03 -1.505094e-02 -1.112035e-02 5.026608e-03 -8.032205e-03  .. (size = 256, ends with 1.357487e-02);
+...
+Iteration time 2.735200 ms
+Iteration time 2.741376 ms
+Iteration time 2.733440 ms
+Iteration time 2.726528 ms
+Iteration time 2.731616 ms
+Iteration time 2.736544 ms
+Iteration time 2.728576 ms
+Iteration time 2.733440 ms
+Iteration time 2.732992 ms
+Iteration time 2.729536 ms
+Iteration time 2.726656 ms
+Iteration time 2.732512 ms
+Iteration time 2.732032 ms
+Iteration time 2.730208 ms
+Iteration time 2.732960 ms
+Summary: [min, max, mean] = [2.724704, 2.968352, 2.921987] ms
+```
 For more detailed information on NNFusion usage, please refer to [NNFusion Usage](https://github.com/microsoft/nnfusion/wiki/3.-Compile-a-Tensorflow-model-with-NNFusion).
 
 ### Build from Source Code

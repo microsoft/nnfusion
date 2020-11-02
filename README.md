@@ -1,24 +1,28 @@
-**NNFusion** (Neural Network Fusion) is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description (e.g., TensorFlow frozen models or ONNX format). NNFusion is designed to facilitate full-stack model optimization, framework-free code generation, and new accelerator devices support.
+**NNFusion** is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description (e.g., TensorFlow frozen models and ONNX format). With the efficient compiler as core, NNFusion aims to:
+- facilitate full-stack model optimization
+- provide framework-free code generation capability
+- support new accelerator devices as target inferencing devices
 
 ## Who should consider using NNFusion?
-- Developers who want to deploy their pre-trained model as a framework-free source code with minimum library dependencies.
 - Developers who want to speed up the execution performance of their pre-defined or pre-trained DNN model.
+- Developers who want to deploy their pre-trained model as framework-free source codes with minimum library dependencies.
 - Researchers who want to quickly try new compiler optimization ideas or customize optimizations on some specific models.
 
 ## Highlight features
-- Provide ahead-of-time and source-to-source (model-to-code) compilation to reduce runtime overhead and remove library/framework dependencies.
 - Provide a full-stack optimization mechanism, including:
   - Data-flow graph optimizations, e.g., CSE, compile-time constant folding, etc.
   - Model-specific kernel selection, kernel co-scheduling and kernel fusion
   - Static memory layout and placement optimizations
-- Support popular DNN model formats including TensorFlow, ONNX, and TorchScript, and commonly used devices like CPU, CUDA GPUs, and ROCm GPUs.
+- Provide ahead-of-time and source-to-source (model-to-code) compilation to reduce runtime overhead and remove library/framework dependencies.
+- Support popular DNN model formats including TensorFlow, ONNX, and TorchScript as input models
 - Support customized optimization in an easier and efficient way, e.g., directly replacing hand-crafted kernels on the generated human-readable code.
+- Support commonly used devices like CPU, CUDA GPUs, and ROCm GPUs
 
 ## Get Started
 ### Quick Start with Docker Image
 For end users, simply use docker to compile your model and generate high-performance executable.
 
-NNFusion supports and is tested on Ubuntu 16.04 and 18.04 with a CUDA GPU equipped. 
+NNFusion supports and is well tested on Ubuntu 16.04 and 18.04 with a CUDA GPU equipped. 
 
 You should install nvidia-docker on your device to do the following steps.
 

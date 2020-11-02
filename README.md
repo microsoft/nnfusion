@@ -69,7 +69,7 @@ To build from source code, please read the following documents:
 2. Read [Build Guide](https://github.com/microsoft/nnfusion/wiki/2.-Build-Guide) for more information on how to build and install NNFusion in your native system or in the docker container.
 3. After building and installing NNFusion, please refer to [Compile Guide and Tool Usage](https://github.com/microsoft/nnfusion/wiki/3.-Compile-a-Tensorflow-model-with-NNFusion) to learn how to compile or optimize a DNN model.
 
-### Performance
+### Speedups on benchmarks
 
 To learn how much performance improvement that NNFusion can achive on some typical DNN models, please refer to the [README page](https://github.com/microsoft/nnfusion/blob/osdi20_artifact/artifacts/README.md) at our OSDI'20 artifact branch. 
 

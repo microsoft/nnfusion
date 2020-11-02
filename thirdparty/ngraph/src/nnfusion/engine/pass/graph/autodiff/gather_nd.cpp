@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 #include "backward_registry.hpp"
 
 REGISTER_BACKWARD_TRANSLATOR(GatherND).translator(

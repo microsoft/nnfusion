@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 #include "backward_registry.hpp"
 #include "nnfusion/core/graph/util/autobroadcast.hpp"
 

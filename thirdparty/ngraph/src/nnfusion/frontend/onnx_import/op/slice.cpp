@@ -14,7 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-
 //----------------------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation. All rights reserved.
 //  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -22,8 +21,8 @@
 
 #include <vector>
 
-#include "nnfusion/frontend/util/evaluator.hpp"
 #include "../util/util.hpp"
+#include "nnfusion/frontend/util/evaluator.hpp"
 #include "slice.hpp"
 
 static inline int64_t get_valid_array_idx(int64_t idx, int64_t last_idx)

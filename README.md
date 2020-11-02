@@ -1,17 +1,18 @@
-**NNFusion** (Nerual Network Fusion) is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description(frozen models in pb or ONNX format). NNFusion is designed to facilitate DNN compiler research, with full stack of optimizations built-in and can target different types of GPUs(Nvidia and AMD GPUs).
+**NNFusion** (Neural Network Fusion) is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description (e.g., TensorFlow frozen models or ONNX format). NNFusion is designed to facilitate full-stack model optimization, framework-free deployment, and targeting new accelerator devices.
 
 ## Who should consider using NNFusion?
-- Developers who want to generate high-performance executables from DNN model description of different frameworks including ONNX, TensorFlow and PyTorch.
-- Researchers who want to optimize DNN models and apply the method to their own reasearch work.
+- Developers who want to deploy their pre-trained model as a framework-free source code with minimum library dependencies.
+- Developers who want to speed up the execution performance of their pre-defined DNN model.
+- Researchers who want to quickly try new compiler optimization ideas or customize optimizations on some specific models.
 
 ## Highlight features
-- Provide source-to-source(model-to-code) compilation to avoid compliation time cost of different frameworks.
-- Support acceleration of model compilation and execution 
-  - Compile-time kernel co-scheduling abstraction for GPUs
-  - Tight integration and co-optimization with communication, data loading and job scheduling
-- Support customized optimization 
-  - Compatible with both hand-crafted kernel code and vendor-provided libraries
-  - Support rewriting the generated human-readable code
+- Provide ahead-of-time and source-to-source (model-to-code) compilation to reduce runtime overhead and remove library/framework dependencies.
+- Provide a full-stack optimization mechanism, including:
+  - Data-flow graph optimizations, e.g., CSE, compile-time constant folding, etc.
+  - Model-specific kernel selection, kernel co-scheduling and kernel fusion
+  - Static memory layout and placement optimizations
+- Support popular DNN model formats including TensorFlow, ONNX, and TorchScript, and commonly used devices like CPU, CUDA GPUs, and ROCm GPUs.
+- Support customized optimization in an easier and efficient way, e.g., directly replacing hand-crafted kernels on the generated human-readable code.
 
 ## Get Started
 ### Quick Start with Docker Image

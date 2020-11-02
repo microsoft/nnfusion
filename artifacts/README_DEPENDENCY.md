@@ -316,7 +316,6 @@ set(USE_GRAPH_RUNTIME_DEBUG OFF)
 # - OFF: disable llvm
 # - /path/to/llvm-config: enable specific LLVM when multiple llvm-dev is available.
 set(USE_LLVM ON)
-set(USE_LLVM /home/lingm/projects/rammer_artifacts/.deps/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-16.04/bin/llvm-config)
 
 #---------------------------------------------
 # Contrib libraries

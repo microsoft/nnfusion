@@ -1,8 +1,8 @@
-**NNFusion** (Neural Network Fusion) is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description (e.g., TensorFlow frozen models or ONNX format). NNFusion is designed to facilitate full-stack model optimization, framework-free deployment, and targeting new accelerator devices.
+**NNFusion** (Neural Network Fusion) is a flexible and efficient DNN compiler that can generate high-performance executables from a DNN model description (e.g., TensorFlow frozen models or ONNX format). NNFusion is designed to facilitate full-stack model optimization, framework-free code generation, and new accelerator devices support.
 
 ## Who should consider using NNFusion?
 - Developers who want to deploy their pre-trained model as a framework-free source code with minimum library dependencies.
-- Developers who want to speed up the execution performance of their pre-defined DNN model.
+- Developers who want to speed up the execution performance of their pre-defined or pre-trained DNN model.
 - Researchers who want to quickly try new compiler optimization ideas or customize optimizations on some specific models.
 
 ## Highlight features
@@ -88,3 +88,19 @@ provided by the bot. You will only need to do this once across all repos using o
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+# Reference
+Please cite NNFusion or Rammer in your publications if it helps your research:
+```
+@inproceedings {rammer-osdi20,
+author = {Lingxiao Ma and Zhiqiang Xie and Zhi Yang and Jilong Xue and Youshan Miao and Wei Cui and Wenxiang Hu and Fan Yang and Lintao Zhang and Lidong Zhou},
+title = {Rammer: Enabling Holistic Deep Learning Compiler Optimizations with rTasks},
+booktitle = {14th {USENIX} Symposium on Operating Systems Design and Implementation ({OSDI} 20)},
+year = {2020},
+isbn = {978-1-939133-19-9},
+pages = {881--897},
+url = {https://www.usenix.org/conference/osdi20/presentation/ma},
+publisher = {{USENIX} Association},
+month = nov,
+}
+```

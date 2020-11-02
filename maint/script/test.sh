@@ -9,19 +9,19 @@ declare MODELS=$THIS_SCRIPT_DIR/../../models
 create_container(){
     docker kill $1 >/dev/null 2>&1 || true
     docker rm $1 >/dev/null 2>&1 || true
-    docker run --name $1 -t -d --net=host -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -w /nnfusion $2 bash
+    docker run --name $1 -t -d --net=host -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -v $THIS_SCRIPT_DIR/../../../frozenmodels:/frozenmodels -w /nnfusion $2 bash
 }
 
 create_cuda_container(){
     docker kill $1 >/dev/null 2>&1 || true
     docker rm $1 >/dev/null 2>&1 || true
-    docker run --gpus all --name $1 -t -d --net=host -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -w /nnfusion $2 bash
+    docker run --gpus all --name $1 -t -d --net=host -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -v $THIS_SCRIPT_DIR/../../../frozenmodels:/frozenmodels -w /nnfusion $2 bash
 }
 
 create_rocm_container(){
     docker kill $1 >/dev/null 2>&1 || true
     docker rm $1 >/dev/null 2>&1 || true
-    docker run --name $1 -t -d --net=host --privileged --device=/dev/kfd --device=/dev/dri --security-opt seccomp=unconfined --group-add video -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -w /nnfusion $2 bash
+    docker run --name $1 -t -d --net=host --privileged --device=/dev/kfd --device=/dev/dri --security-opt seccomp=unconfined --group-add video -e EXEC_BASH=1 -v $THIS_SCRIPT_DIR/../../:/nnfusion -v $THIS_SCRIPT_DIR/../../../frozenmodels:/frozenmodels -w /nnfusion $2 bash
 }
 
 # check if inside one docker container(for testing)
@@ -30,8 +30,12 @@ if [ -f "/.dockerenv" ]; then
     python3 $THIS_SCRIPT_DIR/../../test/nnfusion/scripts/e2e_tests.py
 else
     
-    # prepare models
-    $THIS_SCRIPT_DIR/download_models.sh
+    if [ ! -d "$THIS_SCRIPT_DIR/../../models/frozenmodels/" ]; then
+        # prepare models
+        if [ ! -d "$THIS_SCRIPT_DIR/../../../frozenmodels/" ]; then
+            $THIS_SCRIPT_DIR/download_models.sh
+        fi
+    fi
 
     # use nnfusion_base for build / test cpu
     create_container nnfusion_base_dev nnfusion/ubuntu:18.04
@@ -56,7 +60,7 @@ else
     res=`lspci | grep -i amd/ati`
     if [ ! -z "$res" ]; then
         echo "Launch ROCm container to test:"
-        create_rocm_container nnfusion_rocm_dev nnfusion/rocm/dev-ubuntu-18.04:3.5 && docker exec -t nnfusion_rocm_dev /nnfusion/maint/script/test.sh &
+        create_rocm_container nnfusion_rocm_dev nnfusion/rocm:3.5-ubuntu-18.04 && docker exec -t nnfusion_rocm_dev /nnfusion/maint/script/test.sh &
     fi
 
     res=`lspci | grep -i nvidia`

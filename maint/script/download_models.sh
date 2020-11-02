@@ -4,20 +4,18 @@
 # Licensed under the MIT License.
 
 declare THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-declare MODELS=$THIS_SCRIPT_DIR/../../
-declare NNF_FILE_SERV="10.190.174.54"
+declare MODELS=$THIS_SCRIPT_DIR/../../../
+declare SAS_TOKEN="?sv=2019-12-12&ss=bfqt&srt=co&sp=rl&se=2021-10-22T01:39:45Z&st=2020-10-21T17:39:45Z&spr=https&sig=KH9GB6LO7hguUPH5%2BdF8YKJk%2By55cVQlSHmExOT1uAg%3D"
 
-if ping -c 1 $NNF_FILE_SERV &> /dev/null
-then
-    #sync files
-    rsync -a nnfusion@$NNF_FILE_SERV:/home/nnfusion/pipeline/models $MODELS
-    if [ $? -ne 0 ]; then
-        echo "Download models failed."
-        exit 1
-    else
-        echo "Download models succeded."
-    fi
+# install az cli
+if which az >/dev/null; then
+    echo "az existed"
 else
-    echo "NNFusion fileserver:$NNF_FILE_SERV is not reachable;"
-    exit 2
+    echo "installing az ..."
+    curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 fi
+
+# download all the files & save to same level as source code
+az storage copy -s https://nnfusion.blob.core.windows.net/frozenmodels -d $MODELS --recursive --sas-token $SAS_TOKEN
+rm -rf $THIS_SCRIPT_DIR/../../models/frozenmodels
+ln -s $THIS_SCRIPT_DIR/../../../frozenmodels/  $THIS_SCRIPT_DIR/../../models/frozenmodels

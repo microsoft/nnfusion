@@ -4,6 +4,7 @@
 pr:
   - opensource
   - releases/*
+  - master
 
 pool:
   name : NNFusion Build Agents

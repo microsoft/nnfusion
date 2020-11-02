@@ -227,7 +227,7 @@ namespace nnfusion
                 void set_launch_config() override {}
                 AntaresKEImp::Pointer m_antares_ke_imp;
                 std::string antares_code;
-                bool is_memcpy;
+                bool is_memcpy = false;
             };
 
         } // namespace cuda

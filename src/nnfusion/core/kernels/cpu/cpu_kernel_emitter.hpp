@@ -98,7 +98,7 @@ namespace nnfusion
 
                 AntaresKEImp::Pointer m_antares_ke_imp;
                 std::string antares_code;
-                bool is_memcpy;
+                bool is_memcpy = false;
             };
 
             class SimdKernelEmitter : public CpuKernelEmitter

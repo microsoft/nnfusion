@@ -96,7 +96,7 @@ Baselines:
 This figure shows how NNFusion (Rammer) performs comparing with the state-of-the-art DNN frameworks and compilers.
 
 <p align="center">
-  <img src="images/cuda_e2e_overall.png" width="600">
+  <img src="images/cuda_e2e_overall.png" width="1000">
 </p>
 
 ### 2. GPU Utilization
@@ -104,7 +104,7 @@ This figure shows how NNFusion (Rammer) performs comparing with the state-of-the
 This figure shows how well NNFusion (Rammer) utilizes the GPU's parallel resource.
 
 <p align="center">
-  <img src="images/cuda_utilization.png" width="600">
+  <img src="images/cuda_utilization.png" width="700">
 </p>
 
 ### 3. Scheduling Overhead
@@ -112,5 +112,5 @@ This figure shows how well NNFusion (Rammer) utilizes the GPU's parallel resourc
 This figure shows how much NNFusion (Rammer) reduces the runtime scheduling overhead.
 
 <p align="center">
-  <img src="images/cuda_overhead.png" width="600">
+  <img src="images/cuda_overhead.png" width="700">
 </p>

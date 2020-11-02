@@ -316,7 +316,7 @@ namespace nnfusion
                 uint32_t block_size_x;
                 string dtype;
                 size_t axis;
-                bool is_memcpy;
+                bool is_memcpy = false;
             };
         } // namespace cuda
     }     // namespace kernels
@@ -473,7 +473,7 @@ namespace nnfusion
                 uint32_t nthreads;
                 uint32_t output_stride;
                 size_t axis;
-                bool is_memcpy;
+                bool is_memcpy = false;
             };
         } // namespace cuda
     }     // namespace kernels

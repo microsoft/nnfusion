@@ -84,7 +84,7 @@ namespace nnfusion
                 }
 
             private:
-                bool is_memcpy;
+                bool is_memcpy = false;
                 bool is_noop;
                 nnfusion::Shape input_shape, output_shape;
             };

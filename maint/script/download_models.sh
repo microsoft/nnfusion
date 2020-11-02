@@ -7,6 +7,10 @@ declare THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 declare MODELS=$THIS_SCRIPT_DIR/../../../
 declare SAS_TOKEN="?sv=2019-12-12&ss=bfqt&srt=co&sp=rl&se=2021-10-22T01:39:45Z&st=2020-10-21T17:39:45Z&spr=https&sig=KH9GB6LO7hguUPH5%2BdF8YKJk%2By55cVQlSHmExOT1uAg%3D"
 
+if [ ! -d "$THIS_SCRIPT_DIR/../../models/" ]; then
+    mkdir $THIS_SCRIPT_DIR/../../models/
+fi
+
 # install az cli
 if which az >/dev/null; then
     echo "az existed"

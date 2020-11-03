@@ -49,7 +49,6 @@ class nnf_tf_freezer(object):
         print("Freeze graph ----------------------------------") 
         varlist = []             
         with tf.Session() as sess:
-            # 初始化
             sess.run(tf.global_variables_initializer())
             if self.is_training:
                 logits = outputs[0] # assume outputs[0] is logits

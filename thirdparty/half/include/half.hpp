@@ -2170,7 +2170,7 @@ namespace half_float
 		}
 
 		// Get a copy of data_
-		uint16_t get_raw_data()
+		uint16_t get_raw_data() const
 		{
 			return data_;
 		}

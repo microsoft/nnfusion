@@ -27,17 +27,21 @@
 
 #include "nnfusion/common/type/bfloat16.hpp"
 #include "nnfusion/util/errors.hpp"
+#include "thirdparty/half/include/half.hpp"
 
 namespace nnfusion
 {
     namespace element
     {
+        using half = half_float::half;
+
         class Type;
 
         extern const Type dynamic;
         extern const Type boolean;
         extern const Type character;
         extern const Type bf16;
+        extern const Type f16;
         extern const Type f32;
         extern const Type f64;
         extern const Type i8;

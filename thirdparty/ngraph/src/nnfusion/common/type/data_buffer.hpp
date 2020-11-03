@@ -18,7 +18,7 @@ namespace nnfusion {
         DataBuffer &operator =(DataBuffer &&);
 
         void resize(size_t len);
-        size_t size();
+        size_t size() const;
 
         void setElement(size_t idx, void *ele);
         void getElement(size_t idx, void *ret) const;

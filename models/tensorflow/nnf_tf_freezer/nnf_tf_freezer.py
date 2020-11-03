@@ -15,10 +15,11 @@ from tensorflow.core.framework.tensor_pb2 import TensorProto
 from tensorflow.core.framework.tensor_shape_pb2 import TensorShapeProto
 from tensorflow.tools import graph_transforms
 from typing import List
+from convert_graph_fp16 import* 
 
 class nnf_tf_freezer(object):
     def __init__(self, frozen_graph= "frozen_graph.pb", const_folding=True, run_graph=True, xla=False, parallel=0,
-    warmup=5, num_iter=10, run_const_folded_graph=False, debug=False, is_training=False):
+    warmup=5, num_iter=10, run_const_folded_graph=False, debug=False, is_training=False, is_fp16=False):
         self.frozen_graph = frozen_graph
         self.const_folding = const_folding
         self.run_graph = run_graph  
@@ -30,7 +31,8 @@ class nnf_tf_freezer(object):
         self.run_const_folded_graph = run_const_folded_graph
         self.debug = debug
         self.is_training = is_training
-    
+        self.is_fp16 = is_fp16
+
     def execute(self, inputs : List[tf.placeholder], outputs : List[tf.identity], optimizer : tf.train.Optimizer=None):      
         self.freeze(inputs, outputs, optimizer)
         if self.const_folding:
@@ -47,6 +49,7 @@ class nnf_tf_freezer(object):
         print("Freeze graph ----------------------------------") 
         varlist = []             
         with tf.Session() as sess:
+            # 初始化
             sess.run(tf.global_variables_initializer())
             if self.is_training:
                 logits = outputs[0] # assume outputs[0] is logits
@@ -83,7 +86,18 @@ class nnf_tf_freezer(object):
             except:
                 print('Not using existing checkpoint.')
                 pass
+
             saver_path = saver.save(sess, "/tmp/save/model.ckpt")
+            
+            if self.is_fp16:
+                # convert graph to fp16 model
+                print('convert to fp16 model')
+                input_name = [input.name for input in inputs]
+                output_names = [output.name for output in outputs]
+                
+                new_graph = convert_graph_to_fp16(sess.graph_def, target_type='fp16', input_name=input_name, output_names=output_names)
+                tf.train.write_graph(new_graph, '/tmp/save', 'model.pbtxt')
+
             freeze_graph.freeze_graph(
                 input_graph="/tmp/save/model.pbtxt",
                 input_checkpoint="/tmp/save/model.ckpt",
@@ -98,7 +112,6 @@ class nnf_tf_freezer(object):
                 variable_names_blacklist = varlist)
             '''
             self.graphdef_to_json(self.frozen_graph, self.frozen_graph + ".json.gz")
-
             ops_used = subprocess.getoutput("zgrep -v tensorContent " + self.frozen_graph + ".json.gz | grep '\"op\":' | sort | uniq | awk -F'\"' '{print $4}' | xargs echo").split()
             os.system('zgrep -v tensorContent ' + self.frozen_graph + '.json.gz > ' + self.frozen_graph + '.json.thin')
             print('>> Ops used by Graph `%s`:' % self.frozen_graph)
@@ -107,7 +120,7 @@ class nnf_tf_freezer(object):
                 for op in ops_used:
                     fp.write(op + '\n')
             '''
-    
+
     def tf_run_const_folding(self, file):
         print("run const folding----------------------------")
         tf.reset_default_graph()

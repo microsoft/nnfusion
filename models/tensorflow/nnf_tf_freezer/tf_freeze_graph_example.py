@@ -42,7 +42,8 @@ parser.add_argument('--debug', action='store_true',
                     help='Print log.') 
 parser.add_argument('--is_training', action='store_true',
                     help='Is training graph.')
-
+parser.add_argument('--is_fp16', action='store_true',
+                    help='Is frozen_graph in fp16 format')
 
 args = parser.parse_args()
 
@@ -52,6 +53,8 @@ inputs = []
 outputs = []
 optimizer = None
 
+tf.logging.set_verbosity(tf.logging.ERROR)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR) 
 if args.model_name == 'alexnet':
     print('>> Converting graph alexnet')
     batch_size = 1
@@ -225,8 +228,5 @@ else:
 
 if __name__ == "__main__":
     freezer = nnf_tf_freezer(args.frozen_graph, args.const_folding, args.run_graph, args.xla, args.parallel, 
-        args.warmup, args.num_iter, args.run_const_folded_graph, args.debug, args.is_training)
+        args.warmup, args.num_iter, args.run_const_folded_graph, args.debug, args.is_training, args.is_fp16)
     freezer.execute(inputs, outputs, optimizer)
-
-
-

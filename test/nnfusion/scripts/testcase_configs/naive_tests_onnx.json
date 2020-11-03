@@ -5,7 +5,7 @@
             "tag": [
                 "correctness_cuda_only"
             ],
-            "filename": "../../models/naive_tests_onnx/bert_for_pretraining_without_loss_optimized_layer_norm_no_trainable_dropout.onnx",
+            "filename": "pipeline/naive_tests_onnx/bert_for_pretraining_without_loss_optimized_layer_norm_no_trainable_dropout.onnx",
             "type": "naive_case_multi_lines",
             "flag" : "-p \"batch:3;sequence:512;dynamic_prediction_count:20\"",
             "output": [
@@ -20,10 +20,10 @@
         {
             "testcase": "naive_cases_onnx #2 - bert_for_pretraining_without_loss_optimized_layer_norm_bw_grad_output.onnx",
             "tag": [
-                "correctness_cuda_only"
+                "disable"
             ],
             "flag" : "-p \"batch:3;sequence:512;dynamic_prediction_count:20\"",
-            "filename": "../../models/naive_tests_onnx/bert_for_pretraining_without_loss_optimized_layer_norm_bw_grad_output.onnx",
+            "filename": "pipeline/naive_tests_onnx/bert_for_pretraining_without_loss_optimized_layer_norm_bw_grad_output.onnx",
             "type": "naive_case_multi_lines",
             "output": [
                 "Result_1604_0:",

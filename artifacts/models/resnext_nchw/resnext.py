@@ -1,22 +1,14 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
-
 """
 According to the ResNeXt paper (https://arxiv.org/pdf/1611.05431.pdf, Table 7), ResNeXt-29-16x64d achieves the best performance among different model parameters on the CIFAR dataset.
 So, we follow the ResNeXt-29-16x64d model parameters based on the widely used open-source implementation (https://github.com/taki0112/ResNeXt-Tensorflow/blob/master/ResNeXt.py).
 """
 
 import tensorflow as tf
-from tflearn.layers.conv import global_avg_pool
 from tensorflow.contrib.layers import batch_norm, flatten
 from tensorflow.contrib.framework import arg_scope
-# from cifar10 import *
 import numpy as np
 
-weight_decay = 0.0005
-momentum = 0.9
 
-init_learning_rate = 0.1
 cardinality = 16  # how many split ?
 blocks = 3  # res_block ! (split + transition)
 
@@ -28,14 +20,6 @@ thus, total number of layers = (3*blocks)*residual_layer_num + 2
 """
 
 depth = 64  # out channel
-
-batch_size = 128
-iteration = 391
-# 128 * 391 ~ 50,000
-
-test_iteration = 10
-
-total_epochs = 300
 
 
 def conv_layer(input, filter, kernel, stride, padding='SAME', data_format='NCHW', layer_name="conv"):

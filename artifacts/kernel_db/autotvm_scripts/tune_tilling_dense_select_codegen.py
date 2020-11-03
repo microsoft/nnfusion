@@ -202,11 +202,13 @@ def lookup_matmul_config(batch, in_dim, out_dim, output_log):
                   "block": [record_json['i'][5]["e"][2][2][2], record_json['i'][5]["e"][1][2][2], 1],
                   "config": line}
         log_records_all.append((tm, record))
-        if record["block"][0] * record["block"][1] * record["block"][2] % 32 != 0:
-            continue
+        # if record["block"][0] * record["block"][1] * record["block"][2] % 32 != 0:
+        #     continue
         # if record["grid"][0] * record["grid"][1] * record["grid"][2] < 16:
         #     continue
         opt = tm * record["grid"][0] * record["grid"][1] * record["grid"][2] * record["block"][0] * record["block"][1] * record["block"][2]
+        if record["block"][0] * record["block"][1] * record["block"][2] % 32 != 0:
+            opt = tm * record["grid"][0] * record["grid"][1] * record["grid"][2] * (record["block"][0] * record["block"][1] * record["block"][2] / 32 + 1) * 32
         record.update({"opt": opt})
         log_records.append((tm, record))
         # print(log_records[-1])

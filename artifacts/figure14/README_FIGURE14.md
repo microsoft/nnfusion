@@ -1,7 +1,7 @@
-# Experiment #4: Comparison of GPU scheduling overhead
+# Experiment #3: Comparison of GPU utilization
 
-Rammer's techniques can effectively reduce scheduling overhead. 
-This experiment is used to evaluate the run-time scheduling overhead by comparing Rammer with both TF and RammerBase.
+Rammer's scheduling enables rTasks from different operators to execute alongside each other to achieve better GPU utilization.
+This experiment is used to evaluate the utilization improvement by Rammer through comparing it with both TF and RammerBase.
 
 ## Requirements
 
@@ -19,14 +19,15 @@ bash run_all.sh
 ```
 Process all the logs and generate the final performance numbers in a Gnuplot input format:
 ```
+python extract_iteration_log.py
 python process_log.py
 ```
-Plot the end-to-end GPU scheduling overhead figure (i.g., Figure 14). 
+Plot the end-to-end GPU utlization figure (i.g., Figure 14). 
 ```
 cd reproduce_result/
-gnuplot gpu1_gpu_schedoverhead_cuda.plt
+gnuplot gpu1_gpu_util_cud.plt
 ```
-Fianlly, in the reproduce_result folder, you will see the "figure14_paper.pdf".
+Fianlly, in the reproduce_result folder, you will see the "figure14_reproduce.pdf".
 To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
 
 ### End-to-end script

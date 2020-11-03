@@ -39,6 +39,14 @@ cd seq2seq
 python seq2seq_inference.py --frozen_file ../../frozen_models/frozen_pbs/frozen_seq2seq_infer_bs1.pb
 cd ..
 
+cd resnext_imagenet_nchw
+python resnext_inference.py --frozen_file ../../frozen_models/frozen_pbs/frozen_resnext_imagenet_nchw_infer_bs1.pb
+cd ..
+
+cd nasnet_imagenet_nchw
+python nasnet_imagenet_inference.py --frozen_file ../../frozen_models/frozen_pbs/frozen_nasnet_imagenet_nchw_infer_bs1.pb
+cd ..
+
 echo "run const folding"
 
 cd ../frozen_models/frozen_pbs/
@@ -48,6 +56,9 @@ python ../tf_run_const_folding.py --file frozen_alexnet_nchw_infer_bs1.pb
 python ../tf_run_const_folding.py --file frozen_deepspeech2_infer_bs1.pb
 python ../tf_run_const_folding.py --file frozen_lstm_infer_bs1.pb
 python ../tf_run_const_folding.py --file frozen_seq2seq_infer_bs1.pb
+
+python ../tf_run_const_folding.py --file frozen_resnext_imagenet_nchw_infer_bs1.pb
+python ../tf_run_const_folding.py --file frozen_nasnet_imagenet_nchw_infer_bs1.pb
 
 python ../tf_run_const_folding.py --file frozen_lstm_infer_bs4.pb
 python ../tf_run_const_folding.py --file frozen_lstm_infer_bs16.pb

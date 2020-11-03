@@ -1,7 +1,6 @@
-# Experiment #3: Comparison of GPU utilization
+# Experiment #2: Performance with different batch sizes
 
-Rammer's scheduling enables rTasks from different operators to execute alongside each other to achieve better GPU utilization.
-This experiment is used to evaluate the utilization improvement by Rammer through comparing it with both TF and RammerBase.
+This experiment is used to show the performance comparison on two representative CNN and RNN models, i.e., ResNeXt and LSTM-TC, with batch sizes of 4 and 16, and to reproduce the results in Figure 12 of our origianl paper.
 
 ## Requirements
 
@@ -14,20 +13,20 @@ cd /root/nnfusion/artifacts/figure12
 bash codegen_and_build.sh
 ```
 Run all baselines and NNFusion on all the benchmarks, the corresponding output logs are generated in individual folders. 
+Note that, this will take a relativley long time as each of the running needs to iterative for 1000 times.
 ```
 bash run_all.sh
 ```
 Process all the logs and generate the final performance numbers in a Gnuplot input format:
 ```
-python extract_iteration_log.py
 python process_log.py
 ```
-Plot the end-to-end GPU utlization figure (i.g., Figure 12). 
+Plot the end-to-end comparision figure (i.g., Figure 12). 
 ```
 cd reproduce_result/
-gnuplot gpu1_gpu_util_cud.plt
+gnuplot gpu1_batch_cuda_multifig.plt
 ```
-Fianlly, in the reproduce_result folder, you will see the "figure12_paper.pdf".
+Fianlly, in the reproduce_result folder, you will see the "figure12_reproduce.pdf".
 To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
 
 ### End-to-end script

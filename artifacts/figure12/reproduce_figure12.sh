@@ -1,17 +1,16 @@
-# run all baselines and print log
+# run experiments and get logs
 bash codegen_and_build.sh
 bash run_all.sh
 
-# analyze logs and generate dat files
-python extract_iteration_log.py
+# process log
 python process_log.py
 
 # draw figure
 # paper result
 cd paper_result/
-gnuplot gpu1_gpu_util_cuda.plt
+gnuplot gpu1_batch_cuda_multifig.plt
 cd ..
 # reproduce result
 cd reproduce_result/
-gnuplot gpu1_gpu_util_cuda.plt
+gnuplot gpu1_batch_cuda_multifig.plt
 cd ..

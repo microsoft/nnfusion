@@ -357,7 +357,7 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNCHW()
 void cuda::DepthwiseConv2dNative::set_launch_config()
 {
     uint32_t nthreads = args.num_outputs;
-    uint32_t block_size_x = 512;
+    uint32_t block_size_x = 128;
     uint32_t aligned_grid_size_x = align_to_block_size(nthreads, block_size_x);
 
     m_gridDim = dim3(aligned_grid_size_x, 1, 1);

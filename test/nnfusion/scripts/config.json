@@ -1,5 +1,8 @@
 {
   "env": {
+    "PYTHONDONTWRITEBYTECODE" : {
+      "set" : 1
+    },
     "HSA_USERPTR_FOR_PAGED_MEM": {
       "set": 0
     },

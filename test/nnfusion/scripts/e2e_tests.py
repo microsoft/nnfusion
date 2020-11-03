@@ -120,7 +120,8 @@ class TestsManager:
 
     def load_default_models_path(self):
         models_path = [os.path.join(os.path.dirname(
-            os.path.abspath(__file__)), "../../../models")]
+            os.path.abspath(__file__)), "../../../../frozenmodels"), os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), "../../../models/frozenmodels")]
         for models in models_path:
             if os.path.exists(models):
                 print("models/ folder detected: " + models)

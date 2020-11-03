@@ -1,6 +1,6 @@
-# Experiment #2: Performance with different batch sizes
+# Experiment #1: End-to-end comparation with the state-of-the-arts
 
-This experiment is used to show the performance comparison on two representative CNN and RNN models, i.e., ResNeXt and LSTM-TC, with batch sizes of 4 and 16, and to reproduce the results in Figure 11 of our origianl paper.
+This experiment is used to demonstrate the end-to-end efficiency of Rammer by comparing with TensorFlow (TF), TensorFlow-XLA (TF-XLA), TVM and TensorRT (TF-TRT), and to reproduce the results in Figure 11 of our origianl paper.
 
 ## Requirements
 
@@ -10,6 +10,7 @@ If you are using our Docker container environment, you can just skip this step. 
 Use NNFusion to compile all the frozen models:
 ```
 cd /root/nnfusion/artifacts/figure11
+source ../.profile
 bash codegen_and_build.sh
 ```
 Run all baselines and NNFusion on all the benchmarks, the corresponding output logs are generated in individual folders. 
@@ -24,10 +25,9 @@ python process_log.py
 Plot the end-to-end comparision figure (i.g., Figure 11). 
 ```
 cd reproduce_result/
-gnuplot gpu1_batch_cuda_multifig.plt
+gnuplot gpu1_e2e_cuda_multifig.plt
 ```
-Fianlly, in the reproduce_result folder, you will see the "figure11_paper.pdf".
-To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
+Fianlly, in the reproduce_result folder, you will see the "figure11_reproduce.pdf". To compare with paper results, we put the paper data and the same plotting script under the *paper_result* folder.
 
 ### End-to-end script
 All the above steps can be exected by the below single script:

@@ -94,9 +94,11 @@ def lookup_conv2d_config(input_shape, filter_shape, output_shape, strides, paddi
                   "grid": [griddim_x, griddim_y, griddim_z],
                   "block": [record_json['i'][5]["e"][2][2][2], record_json['i'][5]["e"][1][2][2], record_json['i'][5]["e"][0][2][2]],
                   "config": line}
-        if record["block"][0] * record["block"][1] * record["block"][2] % 32 != 0:
-            continue
+        # if record["block"][0] * record["block"][1] * record["block"][2] % 32 != 0:
+        #     continue
         opt = tm * record["grid"][0] * record["grid"][1] * record["grid"][2] * record["block"][0] * record["block"][1] * record["block"][2]
+        if record["block"][0] * record["block"][1] * record["block"][2] % 32 != 0:
+            opt = tm * record["grid"][0] * record["grid"][1] * record["grid"][2] * (record["block"][0] * record["block"][1] * record["block"][2] / 32 + 1) * 32
         # opt = record["grid"][0] * record["grid"][1] * record["grid"][2] * record["block"][0] * record["block"][1] * record["block"][2]
         record.update({"opt": opt})
         log_records.append((tm, record))

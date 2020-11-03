@@ -10,7 +10,7 @@ echo "  /_/|_//_/|_//_/   \\_,_//___//_/ \\___//_//_/"
 echo "      MSRAsia NNFusion Team(@nnfusion)"
 echo ""
 
-declare DOCKERNAME=nnfusion_dev
+declare DOCKERNAME=nnf_cpu_dev
 declare THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 check_results=`docker ps --filter "name=${DOCKERNAME}"`
 

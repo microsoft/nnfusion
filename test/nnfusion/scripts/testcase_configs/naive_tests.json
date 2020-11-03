@@ -5,7 +5,7 @@
             "tag": [
                 "correctness"
             ],
-            "filename": "../../models/naive_tests/simple_tests/frozen_random-weights_bert_large.pb",
+            "filename": "pipeline/naive_tests/simple_tests/frozen_random-weights_bert_large.pb",
             "type": "naive_case_single_line",
             "output": "0.001335 0.001490 0.000675 0.002558 0.000761 0.001435 0.000518 0.001516 0.000738 0.001183  .. (size = 1001, ends with 0.000281);",
             "comment": "Naive json descriptor for test case."
@@ -15,7 +15,7 @@
             "tag": [
                 "correctness"
             ],
-            "filename": "naive_tests/simple_tests/frozen_alexnet_infer_batch_1.pb",
+            "filename": "pipeline/naive_tests/simple_tests/frozen_alexnet_infer_batch_1.pb",
             "type": "naive_case_single_line",
             "output": "0.000914 -0.030341 -0.006662 -0.010238 0.014080 0.024311 0.006832 -0.035370 0.017920 0.038856  .. (size = 1001, ends with 0.022597);",
             "comment": "Naive json descriptor for test case."
@@ -25,7 +25,7 @@
             "tag": [
                 "correctness"
             ],
-            "filename": "naive_tests/simple_tests/frozen_resnet50_infer_batch_1.pb",
+            "filename": "pipeline/naive_tests/simple_tests/frozen_resnet50_infer_batch_1.pb",
             "type": "naive_case_single_line",
             "output": "-0.001597 0.030608 -0.002212 0.037812 0.030037 0.039713 -0.006352 0.051142 0.016946 -0.009263  .. (size = 1001, ends with 0.043752);",
             "comment": "Naive json descriptor for test case."
@@ -35,7 +35,7 @@
             "tag": [
                 "correctness"
             ],
-            "filename": "naive_tests/simple_tests/frozen_vgg11_infer_batch_1.pb",
+            "filename": "pipeline/naive_tests/simple_tests/frozen_vgg11_infer_batch_1.pb",
             "type": "naive_case_single_line",
             "output": "-0.003832 -0.008819 0.004029 -0.003441 0.012382 -0.003776 0.001756 -0.014141 -0.005059 -0.001504  .. (size = 1001, ends with 0.008471);",
             "comment": "Naive json descriptor for test case."
@@ -45,7 +45,7 @@
             "tag": [
                 "correctness"
             ],
-            "filename": "naive_tests/simple_tests/frozen_inception3_infer_batch_1.pb",
+            "filename": "pipeline/naive_tests/simple_tests/frozen_inception3_infer_batch_1.pb",
             "type": "naive_case_single_line",
             "output": "-0.000079 -0.000875 -0.000871 -0.000491 0.000316 -0.000246 0.000187 0.000502 -0.000710 -0.000311  .. (size = 1001, ends with -0.000542);",
             "comment": "Naive json descriptor for test case."

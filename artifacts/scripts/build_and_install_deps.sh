@@ -26,14 +26,14 @@ pip install $tftrt
 # build and install tvm
 echo "Build TVM-0.7"
 tvmfolder=$THIS_SCRIPT_DIR/../.deps/tvm-0.7
-cd $tvmfolder && git submodule init && git submodule update && mkdir build && cp ../../tvm-config.cmake ./config.cmake && cmake .. && make -j
+cd $tvmfolder && git submodule init && git submodule update && mkdir build && cd build && cp $THIS_SCRIPT_DIR/tvm-config.cmake ./config.cmake && cmake .. && make -j
 apt-get -y install antlr4
 pip install tornado==4.5.3 psutil==5.4.3 xgboost==0.90 decorator==4.2.1 attrs==17.4.0 mypy==0.720 orderedset==2.0.1 antlr4-python3-runtime==4.7.2
 pip install tflearn
 
 echo "Build TVM-0.7-codegen"
 tvmfoldercg=$THIS_SCRIPT_DIR/../.deps/tvm-0.7-codegen
-cd $tvmfoldercg && git submodule init && git submodule update && mkdir build && cp ../../tvm-config.cmake ./config.cmake && cmake .. && make -j
+cd $tvmfoldercg && git submodule init && git submodule update && mkdir build && cd build && cp $THIS_SCRIPT_DIR/tvm-config.cmake ./config.cmake && cmake .. && make -j
 
 # build and install rammer
 echo "Build Rammer(NNFusion)"

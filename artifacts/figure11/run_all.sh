@@ -20,7 +20,6 @@ cd tvm/
 bash run_tvm.sh
 cd ..
 
-
 # run rammer_base
 cd rammer_base/
 
@@ -28,24 +27,24 @@ cd resnext_nchw_bs1_rammerbase/cuda_codegen
 ./main_test > ../../../logs/resnext_nchw_bs1.rammerbase.1000.log 2>&1
 cd ../..
 
-cd resnext_nchw_bs4_rammerbase/cuda_codegen
-./main_test > ../../../logs/resnext_nchw_bs4.rammerbase.1000.log 2>&1
+cd nasnet_cifar_nchw_bs1_rammerbase/cuda_codegen
+./main_test > ../../../logs/nasnet_cifar_nchw_bs1.rammerbase.1000.log 2>&1
 cd ../..
 
-cd resnext_nchw_bs16_rammerbase/cuda_codegen
-./main_test > ../../../logs/resnext_nchw_bs16.rammerbase.1000.log 2>&1
+cd alexnet_nchw_bs1_rammerbase/cuda_codegen
+./main_test > ../../../logs/alexnet_nchw_bs1.rammerbase.1000.log 2>&1
+cd ../..
+
+cd deepspeech2_bs1_rammerbase/cuda_codegen
+./main_test > ../../../logs/deepspeech2_bs1.rammerbase.1000.log 2>&1
 cd ../..
 
 cd lstm_bs1_rammerbase/cuda_codegen
 ./main_test > ../../../logs/lstm_bs1.rammerbase.1000.log 2>&1
 cd ../..
 
-cd lstm_bs4_rammerbase/cuda_codegen
-./main_test > ../../../logs/lstm_bs4.rammerbase.1000.log 2>&1
-cd ../..
-
-cd lstm_bs16_rammerbase/cuda_codegen
-./main_test > ../../../logs/lstm_bs16.rammerbase.1000.log 2>&1
+cd seq2seq_bs1_rammerbase/cuda_codegen
+./main_test > ../../../logs/seq2seq_bs1.rammerbase.1000.log 2>&1
 cd ../..
 
 cd ..
@@ -57,24 +56,24 @@ cd resnext_nchw_bs1_rammer/cuda_codegen
 ./main_test > ../../../logs/resnext_nchw_bs1.rammer.1000.log 2>&1
 cd ../..
 
-cd resnext_nchw_bs4_rammer/cuda_codegen
-./main_test > ../../../logs/resnext_nchw_bs4.rammer.1000.log 2>&1
+cd nasnet_cifar_nchw_bs1_rammer/cuda_codegen
+./main_test > ../../../logs/nasnet_cifar_nchw_bs1.rammer.1000.log 2>&1
 cd ../..
 
-cd resnext_nchw_bs16_rammer/cuda_codegen
-./main_test > ../../../logs/resnext_nchw_bs16.rammer.1000.log 2>&1
+cd alexnet_nchw_bs1_rammer/cuda_codegen
+./main_test > ../../../logs/alexnet_nchw_bs1.rammer.1000.log 2>&1
+cd ../..
+
+cd deepspeech2_bs1_rammer/cuda_codegen
+./main_test > ../../../logs/deepspeech2_bs1.rammer.1000.log 2>&1
 cd ../..
 
 cd lstm_bs1_rammer/cuda_codegen
 ./main_test > ../../../logs/lstm_bs1.rammer.1000.log 2>&1
 cd ../..
 
-cd lstm_bs4_rammer/cuda_codegen
-./main_test > ../../../logs/lstm_bs4.rammer.1000.log 2>&1
-cd ../..
-
-cd lstm_bs16_rammer/cuda_codegen
-./main_test > ../../../logs/lstm_bs16.rammer.1000.log 2>&1
+cd seq2seq_bs1_rammer/cuda_codegen
+./main_test > ../../../logs/seq2seq_bs1.rammer.1000.log 2>&1
 cd ../..
 
 cd ..

@@ -19,7 +19,7 @@ from convert_graph_fp16 import*
 
 class nnf_tf_freezer(object):
     def __init__(self, frozen_graph= "frozen_graph.pb", const_folding=True, run_graph=True, xla=False, parallel=0,
-    warmup=5, num_iter=10, run_const_folded_graph=False, debug=False, is_training=False, is_fp16=False):
+    warmup=5, num_iter=10, run_const_folded_graph=False, debug=False, is_training=False, to_fp16=False):
         self.frozen_graph = frozen_graph
         self.const_folding = const_folding
         self.run_graph = run_graph  
@@ -31,7 +31,7 @@ class nnf_tf_freezer(object):
         self.run_const_folded_graph = run_const_folded_graph
         self.debug = debug
         self.is_training = is_training
-        self.is_fp16 = is_fp16
+        self.to_fp16 = to_fp16
 
     def execute(self, inputs : List[tf.placeholder], outputs : List[tf.identity], optimizer : tf.train.Optimizer=None):      
         self.freeze(inputs, outputs, optimizer)
@@ -88,7 +88,7 @@ class nnf_tf_freezer(object):
 
             saver_path = saver.save(sess, "/tmp/save/model.ckpt")
             
-            if self.is_fp16:
+            if self.to_fp16:
                 # convert graph to fp16 model
                 print('convert to fp16 model')
                 input_name = [input.name for input in inputs]

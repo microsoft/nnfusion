@@ -8,6 +8,8 @@
 - Developers who want to deploy their pre-trained model as framework-free source codes with minimum library dependencies.
 - Researchers who want to quickly try new compiler optimization ideas or customize optimizations on some specific models.
 
+### [NNI v0.1 has been released!](https://github.com/microsoft/nnfusion/releases/tag/v0.1):raised_hands:
+
 ## Highlight features
 - Provide a full-stack optimization mechanism, including:
   - Data-flow graph optimizations, e.g., CSE, compile-time constant folding, etc.

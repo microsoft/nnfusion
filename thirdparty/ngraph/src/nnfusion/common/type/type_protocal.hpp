@@ -1,6 +1,8 @@
 #pragma once
-#include <element_type.hpp>
 #include <map>
+
+#include "element_type.hpp"
+#include "../util.hpp"
 
 namespace nnfusion {
     namespace element {
@@ -8,7 +10,7 @@ namespace nnfusion {
             using New = void*();
             using NewArray = void*(size_t);
             using Copy = void(void *, void *, size_t);
-            using SetElement = void(void *, size_t, void *);
+            using SetElement = void(void *, size_t, const void *);
             using GetElement = void(void *, size_t, void *);
             using Delete = void(void*);
             using DeleteArray = void(void*); 
@@ -59,14 +61,14 @@ namespace nnfusion {
         }
 
         template <typename T, typename U=T>
-        void defaultSetElement(void *arr, size_t idx, void *ele) {
+        void defaultSetElement(void *arr, size_t idx, const void *ele) {
             T *lhs = reinterpret_cast<T*>(arr);
             const U *rhs = reinterpret_cast<const U*>(ele);
             lhs[idx] = rhs;
         }
 
         template <>
-        void defaultSetElement<uint16_t, half>(void *arr, size_t idx, void *ele);
+        void defaultSetElement<uint16_t, half>(void *arr, size_t idx, const void *ele);
 
         template <typename T, typename U=T>
         void defaultGetElement(void *arr, size_t idx, void *ret) {

@@ -26,6 +26,7 @@
 #include "nnfusion/common/type/element_type.hpp"
 #include "nnfusion/common/util.hpp"
 #include "nnfusion/core/graph/gnode.hpp"
+#include "thirdparty/ngraph/src/nnfusion/common/type/data_buffer.hpp"
 
 namespace nnfusion
 {
@@ -64,6 +65,28 @@ namespace nnfusion
                 {
                     write_values(values);
                 }
+            }
+
+            /// \brief Constructs a tensor constant.
+            ///
+            /// \param element_type The element type of the tensor constant.
+            /// \param shape The shape of the tensor constant.
+            /// \param values A DataBuffer of literals for initializing the tensor constant. The size
+            ///        of values must match the size of the shape.
+            Constant(const nnfusion::element::Type& element_type,
+                     nnfusion::Shape shape,
+                     const DataBuffer& values)
+                : TensorOp("Constant", element_type, shape)
+                , m_data(nnfusion::aligned_alloc(
+                      m_element_type.size(), nnfusion::shape_size(m_shape) * m_element_type.size()))
+            {
+                OP_VALIDATION(this, values.size() == nnfusion::shape_size(m_shape))
+                    << "Did not get the expected number of literals for a constant of shape "
+                    << m_shape << " (got " << values.size() << ", expected "
+                    << (nnfusion::shape_size(m_shape) == 1 ? "" : "1 or ")
+                    << nnfusion::shape_size(m_shape) << ").";
+
+                values.dump(m_data);
             }
 
             /// \brief Constructs a tensor constant
@@ -181,10 +204,14 @@ namespace nnfusion
             template <typename T>
             void write_values(const std::vector<T>& values)
             {
-                write_to_buffer(
-                    m_element_type, m_shape, values, m_data, nnfusion::shape_size(m_shape));
+                DataBuffer buf(m_element_type);
+                buf.loadVector(values);
+                buf.dump(m_data);
+                // write_to_buffer(
+                //     m_element_type, m_shape, values, m_data, nnfusion::shape_size(m_shape));
             }
-
+            
+            /*
             template <typename T, typename U>
             void write_buffer(void* target, const std::vector<U>& source, size_t count)
             {
@@ -195,6 +222,7 @@ namespace nnfusion
                 }
             }
 
+            
             template <typename T>
             void write_to_buffer(const nnfusion::element::Type& target_type,
                                  const nnfusion::Shape& target_shape,
@@ -259,6 +287,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL() << "unsupported type";
                 }
             }
+            */
 
             bool m_is_weight = false;
             void* m_data{nullptr};

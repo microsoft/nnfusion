@@ -137,7 +137,7 @@ bool element::Type::operator<(const Type& other) const
 
 size_t element::Type::size() const
 {
-    return std::ceil(static_cast<float>(m_bitwidth) / 8.0f);
+    return (m_bitwidth + 7) / 8;
 }
 
 size_t element::Type::hash() const

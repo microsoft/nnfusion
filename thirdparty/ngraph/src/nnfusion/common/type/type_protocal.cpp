@@ -35,7 +35,7 @@ void element::defaultCopy<uint16_t, element::half>(void *dst, void *src, size_t 
 */
 
 template <>
-void element::defaultSetElement<uint16_t, element::half>(void *arr, size_t idx, void *ele) {
+void element::defaultSetElement<uint16_t, element::half>(void *arr, size_t idx, const void *ele) {
     uint16_t *lhs = reinterpret_cast<uint16_t*>(arr);
     const half *rhs = reinterpret_cast<const half*>(ele);
     lhs[idx] = rhs->get_raw_data();

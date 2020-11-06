@@ -16,5 +16,5 @@ fi
 res=`lspci | grep -i amd/ati`
 if [ ! -z "$res" ]; then
     echo "Build ROCm container"
-    docker build -t nnfusion/rocm/dev-ubuntu-18.04:3.5 -f $THIS_SCRIPT_DIR/../dockerfile/nnfusion_rocm-3.5.dockerfile .
+    docker build -t nnfusion/rocm:3.5-ubuntu-18.04 -f $THIS_SCRIPT_DIR/../dockerfile/nnfusion_rocm-3.5.dockerfile .
 fi

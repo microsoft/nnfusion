@@ -199,7 +199,7 @@ thread_pool->ParallelFor(num_shards, func);
                 std::vector<uint32_t> input_strides;
                 uint64_t output_size, output_stride, dim0;
                 string dtype;
-                bool is_memcpy;
+                bool is_memcpy = false;
             };
         } // namespace cpu
     }     // namespace kernels

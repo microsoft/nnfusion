@@ -3,7 +3,8 @@ include(ExternalProject)
 if(MSVC)
     ExternalProject_Add(hwloc
       PREFIX "hwloc"
-      URL "https://download.open-mpi.org/release/hwloc/v2.1/hwloc-2.1.0.tar.gz"
+      URL "https://nnfusion.blob.core.windows.net/mirror/hwloc/hwloc-2.1.0.tar.gz"
+          "https://download.open-mpi.org/release/hwloc/v2.1/hwloc-2.1.0.tar.gz"
       CONFIGURE_COMMAND ""
       BUILD_COMMAND msbuild "${CMAKE_CURRENT_BINARY_DIR}/hwloc/src/contrib/windows/hwloc.sln" /p:Configuration=Release /p:Platform=x64
       INSTALL_COMMAND ""
@@ -24,7 +25,8 @@ if(MSVC)
 else()
     ExternalProject_Add(hwloc
       PREFIX "hwloc"
-      URL "https://download.open-mpi.org/release/hwloc/v2.1/hwloc-2.1.0.tar.gz"
+      URL "https://nnfusion.blob.core.windows.net/mirror/hwloc/hwloc-2.1.0.tar.gz"
+          "https://download.open-mpi.org/release/hwloc/v2.1/hwloc-2.1.0.tar.gz"
       CONFIGURE_COMMAND ../src/configure --prefix "${CMAKE_CURRENT_BINARY_DIR}/hwloc/include"
       BUILD_COMMAND make -j${J} install
       TMP_DIR "${CMAKE_CURRENT_BINARY_DIR}/hwloc/tmp"

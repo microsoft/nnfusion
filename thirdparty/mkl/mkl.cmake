@@ -2,7 +2,8 @@ include(ExternalProject)
 
 ExternalProject_Add(ext_mkl
   PREFIX "mkl"
-  URL "https://github.com/intel/mkl-dnn/releases/download/v0.18/mklml_lnx_2019.0.3.20190220.tgz"
+  URL "https://nnfusion.blob.core.windows.net/mirror/mkl/mklml_lnx_2019.0.3.20190220.tgz"
+      "https://github.com/intel/mkl-dnn/releases/download/v0.18/mklml_lnx_2019.0.3.20190220.tgz"
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ""
   INSTALL_COMMAND ""

@@ -1074,7 +1074,7 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
         lu << "include_directories(${CMAKE_SOURCE_DIR})\n\n";
     }
 
-    lu << "cuda_add_library(${TARGET_NAME} ${SRC})\n";
+    lu << "cuda_add_library(${TARGET_NAME} SHARED ${SRC})\n";
 
     // Prepare submodule
     {

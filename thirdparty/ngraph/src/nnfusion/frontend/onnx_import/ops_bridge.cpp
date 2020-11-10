@@ -203,7 +203,7 @@ namespace nnfusion
                 //REGISTER_OPERATOR("ReduceL1", 1, reduce_l1);
                 //REGISTER_OPERATOR("ReduceL2", 1, reduce_l2);
                 //REGISTER_OPERATOR("ReduceMax", 1, reduce_max);
-                //REGISTER_OPERATOR("ReduceMean", 1, reduce_mean);
+                REGISTER_OPERATOR("ReduceMean", 1, TranslateReduceMeanOp);
                 //REGISTER_OPERATOR("ReduceMin", 1, reduce_min);
                 //REGISTER_OPERATOR("ReduceProd", 1, reduce_prod);
                 REGISTER_OPERATOR("ReduceSum", 1, TranslateReduceSumOp);

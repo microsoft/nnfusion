@@ -178,13 +178,15 @@ LanguageUnit_p cuda::get_cudnn_convolution_descriptor(const Shape& padding,
             ss << "int " << name << "[] = {";
             for (int i = 0; i + 1 < d.size(); i++)
                 ss << to_string(d[i]) << ", ";
-            ss << to_string(d.back()) << "}\n";
+            ss << to_string(d.back()) << "}";
             return ss.str();
         };
 
-        expand_vector_int("padding_int", padding_int);
-        expand_vector_int("window_movement_strides_int", window_movement_strides_int);
-        expand_vector_int("window_dilation_strides_int", window_dilation_strides_int);
+        lu << expand_vector_int("padding_int", padding_int) << ";\n";
+        lu << expand_vector_int("window_movement_strides_int", window_movement_strides_int)
+           << ";\n";
+        lu << expand_vector_int("window_dilation_strides_int", window_dilation_strides_int)
+           << ";\n";
 
         lu << "CUDNN_SAFE_CALL(cudnnSetConvolutionNdDescriptor(" << desc << ", "
            << static_cast<int>(padding_int.size()) << ", "

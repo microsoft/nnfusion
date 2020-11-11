@@ -5,6 +5,40 @@
 
 REGISTER_OP(Sum)
     .infershape(nnfusion::op::infershape::unimplemented_and_not_used)
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        auto make_layout = [](const std::set<int>& axes) -> std::string {
+            std::string ret = "";
+            for (auto ax : axes)
+                ret += ", N" + std::to_string(ax);
+            return "[" + (axes.empty() ? "N" : ret.substr(2)) + "]";
+        };
+
+        auto _op = static_pointer_cast<nnfusion::op::Sum>(curr->get_op_ptr());
+        auto input_shape = curr->get_input_shape(0);
+        auto axes = _op->get_reduction_axes();
+
+        std::set<int> input_ax, output_ax;
+        size_t reduce_size = 1L;
+        for (int i = 0; i < input_shape.size(); ++i)
+        {
+            if (!axes.count(i))
+                output_ax.insert(i);
+            else
+                reduce_size *= input_shape[i];
+            input_ax.insert(i);
+        }
+
+        auto expression =
+            "@output0@" + make_layout(output_ax) + " +=! @input0@" + make_layout(input_ax);
+        if (output_ax.empty())
+            expression += " where N in 1";
+
+        // FIXME: Need to include annotation
+        // if (reduce_size == 1L)
+        //     expression += " ## @annotation: memcpy";
+
+        return expression;
+    })
     .translate([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto _op = static_pointer_cast<nnfusion::op::Sum>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();

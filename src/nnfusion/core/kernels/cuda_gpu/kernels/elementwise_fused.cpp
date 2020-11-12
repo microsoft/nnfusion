@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "elementwise_fused.hpp"
+#include "elementwise.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
@@ -77,6 +78,28 @@ std::shared_ptr<KernelContext> ElementWiseFused::FuseContext()
     }
 
     return ctx;
+}
+
+std::pair<std::string, shared_ptr<LanguageUnit>> get_op_kernel(shared_ptr<KernelContext> ctx)
+{
+    auto iter = CudaElementOpMap.find(ctx->gnode->get_op_type());
+    NNFUSION_CHECK(iter != CudaElementOpMap.end()) << "unable find op type: "
+                                                   << ctx->gnode->get_op_type();
+    std::string op = iter->second.op;
+    shared_ptr<LanguageUnit> kernel = nullptr;
+
+    if (iter->second.math_kernel != "")
+    {
+        std::vector<std::string> data_types;
+        for (auto arg : ctx->inputs)
+        {
+            data_types.push_back(arg->get_element_type().c_type_string());
+        }
+        data_types.push_back(ctx->outputs[0]->get_element_type().c_type_string());
+        kernel = get_math_kernel(op, iter->second.math_kernel, data_types);
+        NNFUSION_CHECK_NOT_NULLPTR(kernel);
+    }
+    return std::make_pair(op, kernel);
 }
 
 LanguageUnit_p ElementWiseFused::emit_function_body()
@@ -163,18 +186,30 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         else
         {
             auto cuda_kernel = std::dynamic_pointer_cast<CudaElementwiseEmitter>(kernel_emitter);
-            NNFUSION_CHECK_NOT_NULLPTR(cuda_kernel)
-                << "kernel type:" << kernel_emitter->m_context->gnode->get_op_type();
-            auto op_kernel = cuda_kernel->get_op_kernel();
+
+            if (!cuda_kernel)
+            {
+                auto ir_kernel =
+                    std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel_emitter);
+                if (!ir_kernel ||
+                    CudaElementOpMap.find(ir_kernel->m_context->gnode->get_op_type()) ==
+                        CudaElementOpMap.end())
+                {
+                    NNFUSION_CHECK_FAIL() << "Illegal element-wise kernel: "
+                                          << kernel_emitter->m_context->gnode->get_op_type();
+                }
+            }
+
+            auto op_kernel = get_op_kernel(kernel_emitter->m_context);
             if (op_kernel.second != nullptr)
             {
                 lu.require(op_kernel.second);
             }
             local_tensors[out_tw->get_name()] = "temp" + std::to_string(temp_tensor_id++);
             std::vector<std::string> input_args;
-            for (int i = 0; i < cuda_kernel->m_context->inputs.size(); i++)
+            for (int i = 0; i < kernel_emitter->m_context->inputs.size(); i++)
             {
-                auto& in_tw = cuda_kernel->m_context->inputs[i];
+                auto& in_tw = kernel_emitter->m_context->inputs[i];
                 if (in_args.count(in_tw->get_name()) > 0)
                 {
                     input_args.push_back(in_args[in_tw->get_name()] + "[tid]");

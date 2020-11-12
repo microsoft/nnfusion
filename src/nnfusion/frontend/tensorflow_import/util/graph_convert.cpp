@@ -3370,6 +3370,30 @@ namespace nnfusion
                 {"ApplyAdam", TranslateApplyAdamOp},
                 {"Unpack", TranslateUnpackOp}};
 
+            bool check_model_availability(const tensorflow::GraphDef* graph_proto)
+            {
+                auto op_configs = op::get_op_configs();
+                const size_t num_nodes = graph_proto->node_size();
+                std::unordered_set<std::string> unknown_ops;
+                for (size_t n = 0; n < num_nodes; ++n)
+                {
+                    std::string op_type = graph_proto->node(n).op();
+                    if (TRANSLATE_OP_MAP.find(op_type) == TRANSLATE_OP_MAP.end() &&
+                        op_configs.find(op_type) == op_configs.end())
+                    {
+                        unknown_ops.insert(op_type);
+                    }
+                }
+                if (unknown_ops.size() > 0)
+                {
+                    for (auto& op_type : unknown_ops)
+                    {
+                        NNFUSION_LOG(ERROR) << "Unsupported tf op: " << op_type;
+                    }
+                    return false;
+                }
+                return true;
+            }
             struct InputInfo
             {
                 explicit InputInfo(const std::string& node_name,
@@ -3389,6 +3413,8 @@ namespace nnfusion
                 : tf_graph_proto{&proto}
             {
                 NNFUSION_LOG(INFO) << "Converting Tensorflow Graph";
+
+                NNFUSION_CHECK(check_model_availability(tf_graph_proto));
 
                 m_graph = std::make_shared<nnfusion::graph::Graph>();
 

@@ -3,15 +3,15 @@
 
 #include "nnfusion/core/graph/gedge.hpp"
 #include "nnfusion/core/graph/graph.hpp"
-#include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 #include "nnfusion/engine/engine.hpp"
+#include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 
 #include "../test_util/common.hpp"
 
 TEST(nnfusion_core, constant_foldeing_pass)
 {
     // using namespace nnfusion::pass::graph;
-    
+    //
     // Shape shape{4};
     // std::vector<int> values(4, 10);
     // auto A = make_shared<op::Constant>(element::i32, shape, values);
@@ -32,7 +32,6 @@ TEST(nnfusion_core, constant_foldeing_pass)
     // auto pass_manager = make_shared<nnfusion::GraphPassManager>();
     // pass_manager->push_back(make_shared<RuntimeConstantFoldingPass>());
     // pass_manager->run_on_graph(graph);
-    
 
     /*
         shared_ptr<runtime::Backend> backend = runtime::Backend::create("INTERPRETER");

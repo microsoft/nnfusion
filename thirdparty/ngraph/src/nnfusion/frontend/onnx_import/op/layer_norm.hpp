@@ -92,7 +92,9 @@ namespace nnfusion
 
                     const auto& et = sum_gnode->get_element_type();
                     auto divisor_op = std::make_shared<op::Constant>(
-                        et, sum_gnode->get_shape(), std::vector<size_t>{num_feature});
+                        et,
+                        sum_gnode->get_shape(),
+                        std::vector<std::string>{std::to_string(num_feature)});
                     auto divisor_gnode = m_graph->add_node_and_edge(divisor_op, GNodeVector({}));
 
                     auto mean_gnode = m_graph->add_node_and_edge(
@@ -126,7 +128,9 @@ namespace nnfusion
                     auto std_sqrt_gnode =
                         m_graph->add_node_and_edge(std::make_shared<op::Sqrt>(), {std_mean_gnode});
                     auto eps_op = std::make_shared<op::Constant>(
-                        et, std_sqrt_gnode->get_shape(), std::vector<float>{eps});
+                        et,
+                        std_sqrt_gnode->get_shape(),
+                        std::vector<std::string>{std::to_string(eps)});
                     auto eps_gnode = m_graph->add_node_and_edge(eps_op, GNodeVector({}));
                     auto std_gnode = m_graph->add_node_and_edge(
                         std::make_shared<op::Add>(), {std_sqrt_gnode, eps_gnode}); // 2, 128
@@ -135,7 +139,7 @@ namespace nnfusion
                         std::make_shared<op::Reshape>(ng_axis_order, mean_shape_with_keep),
                         {std_gnode}); // 2, 128, 1
                     auto one_op = std::make_shared<op::Constant>(
-                        et, std_gnode->get_shape(), std::vector<float>{1.0});
+                        et, std_gnode->get_shape(), std::vector<std::string>{"1.0"});
                     auto one_gnode = m_graph->add_node_and_edge(one_op, GNodeVector({}));
                     auto inv_std_gnode = m_graph->add_node_and_edge(std::make_shared<op::Divide>(),
                                                                     {one_gnode, std_gnode});

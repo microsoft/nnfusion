@@ -136,7 +136,7 @@ namespace nnfusion
                     auto divisor_op = std::make_shared<op::Constant>(
                         sum_gnode->get_element_type(),
                         Shape{},
-                        std::vector<float>{static_cast<float>(reduced_ele_count)});
+                        std::vector<std::string>{std::to_string(reduced_ele_count)});
                     auto divisor_gnode =
                         m_graph->add_node_and_edge(divisor_op, nnfusion::graph::GNodeVector{});
                     std::tie(sum_gnode, divisor_gnode) =

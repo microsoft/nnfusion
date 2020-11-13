@@ -1415,9 +1415,11 @@ namespace nnfusion
                 auto xsum_gnode = m_graph->add_node_and_edge(xsum_op, {input_gnode});
                 auto N = GetNumElements(input_gnode->get_shape(), ng_reduction_axes);
                 const auto& et = xsum_gnode->get_element_type();
+                auto xsum_shape = xsum_gnode->get_shape();
+                std::vector<std::string> constant_values(nnfusion::shape_size(xsum_shape),
+                                                         std::to_string(N));
 
-                auto divisor_op = std::make_shared<op::Constant>(
-                    et, xsum_gnode->get_shape(), std::vector<size_t>{N});
+                auto divisor_op = std::make_shared<op::Constant>(et, xsum_shape, constant_values);
                 auto divisor_gnode = m_graph->add_node_and_edge(divisor_op, GNodeVector({}));
 
                 auto mean_op = std::make_shared<op::Divide>();
@@ -3069,7 +3071,8 @@ namespace nnfusion
                                nnfusion_et == nnfusion::element::i64);
 
                 nnfusion::Shape output_shape(1, shape.size());
-                auto shape_op = std::make_shared<op::Constant>(nnfusion_et, output_shape, shape);
+                auto shape_op =
+                    std::make_shared<op::Constant>(nnfusion_et, output_shape, shape); // TODO
                 auto shape_gnode = m_graph->add_node_and_edge(shape_op, GNodeVector({}));
                 NamedNodeVector ret{{node.name(), shape_gnode}};
                 return ret;

@@ -6,39 +6,48 @@
 using namespace nnfusion;
 using element::typeMemProto;
 
-DataBuffer::~DataBuffer() {
+DataBuffer::~DataBuffer()
+{
     bufDelete();
 }
 
-void DataBuffer::resize(size_t len) {
+void DataBuffer::resize(size_t len)
+{
     bufDelete();
-    if (len != 0) {
+    if (len != 0)
+    {
         m_data = typeMemProto.at(m_type).f_newArray(len);
         m_len = len;
     }
 }
 
-size_t DataBuffer::size() const{
+size_t DataBuffer::size() const
+{
     return m_len;
 }
-        
-element::Type DataBuffer::get_type() const {
+
+element::Type DataBuffer::get_type() const
+{
     return m_type;
 }
 
-void DataBuffer::bufDelete() {
-    if (m_data != nullptr) {
+void DataBuffer::bufDelete()
+{
+    if (m_data != nullptr)
+    {
         typeMemProto.at(m_type).f_deleteArray(m_data);
         m_data = nullptr;
         m_len = 0;
     }
 }
 
-DataBuffer::DataBuffer(DataBuffer &&other) {
+DataBuffer::DataBuffer(DataBuffer&& other)
+{
     *this = std::move(other);
 }
 
-DataBuffer &DataBuffer::operator = (DataBuffer &&other) {
+DataBuffer& DataBuffer::operator=(DataBuffer&& other)
+{
     bufDelete();
     m_type = other.m_type;
     m_len = other.m_len;
@@ -48,25 +57,57 @@ DataBuffer &DataBuffer::operator = (DataBuffer &&other) {
     other.bufDelete();
 }
 
-void DataBuffer::setElement(size_t idx, const void *ele) {
+void DataBuffer::setElement(size_t idx, const void* ele)
+{
     typeMemProto.at(m_type).f_setElement(m_data, idx, ele);
 }
 
-void DataBuffer::getElement(size_t idx, void *ret) const {
+void DataBuffer::getElement(size_t idx, void* ret) const
+{
     typeMemProto.at(m_type).f_getElement(m_data, idx, ret);
 }
 
-void DataBuffer::load(const void *src, size_t len) {
+void DataBuffer::load(const void* src, size_t len)
+{
     resize(len);
     memcpy(m_data, src, len * m_type.size());
 }
 
-void DataBuffer::dump(void *dst) const {
+void DataBuffer::dump(void* dst) const
+{
     typeMemProto.at(m_type).f_copy(dst, m_data, m_len);
 }
 
-void DataBuffer::move_to(void **dst) {
+void DataBuffer::move_to(void** dst)
+{
     *dst = m_data;
     m_data = nullptr;
     m_len = 0;
+}
+
+void DataBuffer::loadFromStrings(const std::vector<std::string>& vec, size_t size)
+{
+    if (size == 0 || size == vec.size())
+    {
+        resize(vec.size());
+        void* tmp = typeMemProto.at(m_type).f_new();
+        for (size_t i = 0; i < vec.size(); ++i)
+        {
+            const std::string& str = vec.at(i);
+            typeMemProto.at(m_type).f_fromString(tmp, str);
+            setElement(i, tmp);
+        }
+        typeMemProto.at(m_type).f_delete(tmp);
+    }
+    else if (vec.size() == 0)
+    {
+        resize(size);
+        void* tmp = typeMemProto.at(m_type).f_new();
+        typeMemProto.at(m_type).f_fromString(tmp, vec.at(0));
+        for (size_t i = 0; i < size; ++i)
+        {
+            setElement(i, tmp);
+        }
+        typeMemProto.at(m_type).f_delete(tmp);
+    }
 }

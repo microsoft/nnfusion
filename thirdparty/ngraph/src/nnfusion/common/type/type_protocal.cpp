@@ -1,16 +1,17 @@
-#include <type_protocal.hpp>
-#include <element_type.hpp>
 #include <map>
+
+#include "element_type.hpp"
+#include "type_protocal.hpp"
 
 using namespace nnfusion;
 
-std::map<element::Type, element::TypeProtocal>
-element::typeMemProto = {
+const std::map<element::Type, element::TypeProtocal> element::typeMemProto = {
     {element::dynamic, element::getEmptyProtocal()},
     {element::boolean, element::getDefaultProtocal<bool>()},
     {element::character, element::getDefaultProtocal<char>()},
-    {element::bf16, element::getDefaultProtocal<char>()},       // TODO: verify what to do with bf16
-    {element::f16, element::getDefaultProtocal<uint16_t, element::half>()},    // TODO: verify what to do with fp16
+    {element::bf16, element::getDefaultProtocal<char>()}, // TODO: verify what to do with bf16
+    {element::f16,
+     element::getDefaultProtocal<uint16_t, element::half>()}, // TODO: verify what to do with fp16
     {element::f32, element::getDefaultProtocal<float>()},
     {element::f64, element::getDefaultProtocal<double>()},
     {element::i8, element::getDefaultProtocal<int8_t>()},
@@ -35,17 +36,17 @@ void element::defaultCopy<uint16_t, element::half>(void *dst, void *src, size_t 
 */
 
 template <>
-void element::defaultSetElement<uint16_t, element::half>(void *arr, size_t idx, const void *ele) {
-    uint16_t *lhs = reinterpret_cast<uint16_t*>(arr);
-    const half *rhs = reinterpret_cast<const half*>(ele);
+void element::defaultSetElement<uint16_t, element::half>(void* arr, size_t idx, const void* ele)
+{
+    uint16_t* lhs = reinterpret_cast<uint16_t*>(arr);
+    const half* rhs = reinterpret_cast<const half*>(ele);
     lhs[idx] = rhs->get_raw_data();
 }
 
 template <>
-void element::defaultGetElement<uint16_t, element::half>(void *arr, size_t idx, void *ret) {
-    const uint16_t *rhs = reinterpret_cast<const uint16_t*>(arr);
-    half *lhs = reinterpret_cast<half*>(ret);
+void element::defaultGetElement<uint16_t, element::half>(void* arr, size_t idx, void* ret)
+{
+    const uint16_t* rhs = reinterpret_cast<const uint16_t*>(arr);
+    half* lhs = reinterpret_cast<half*>(ret);
     lhs->set_raw_data(rhs[idx]);
 }
-
-

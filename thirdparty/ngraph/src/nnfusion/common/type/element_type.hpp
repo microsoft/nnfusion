@@ -25,9 +25,9 @@
 #include <string>
 #include <vector>
 
+#include "half/include/half.hpp"
 #include "nnfusion/common/type/bfloat16.hpp"
 #include "nnfusion/util/errors.hpp"
-#include "thirdparty/half/include/half.hpp"
 
 namespace nnfusion
 {

@@ -123,7 +123,7 @@ namespace nnfusion
                         auto sample_weight_const =
                             std::make_shared<op::Constant>(logits_index.get_element_type(),
                                                            label_index.get_shape(),
-                                                           std::vector<float>{1.0});
+                                                           std::vector<std::string>{"1.0"});
                         sample_weight_gnode =
                             m_graph->add_node_and_edge(sample_weight_const, GNodeIndexVector{});
                     }
@@ -301,7 +301,9 @@ namespace nnfusion
 
                         const auto& et = loss_index.gnode->get_element_type();
                         auto divisor_const = std::make_shared<op::Constant>(
-                            et, logits_index.get_shape(), std::vector<size_t>{batch_size});
+                            et,
+                            logits_index.get_shape(),
+                            std::vector<std::string>{std::to_string(batch_size)});
                         auto divisor_gnode =
                             m_graph->add_node_and_edge(divisor_const, GNodeIndexVector{});
                         sample_loss =

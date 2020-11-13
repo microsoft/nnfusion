@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #pragma once
+#include "../cuda_common_ops.hpp"
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"
 
@@ -33,12 +34,16 @@ namespace nnfusion
                     create_ptr(LanguageUnit, lu_, get_function_name());
                     LanguageUnit& lu = *lu_;
 
-                    std::string op = CudaOpMap<T>::op;
+                    //std::string op = CudaOpMap<T>::op;
+                    auto iter = CudaElementOpMap.find(m_context->gnode->get_op_type());
+                    NNFUSION_CHECK(iter != CudaElementOpMap.end())
+                        << "unable find op type: " << m_context->gnode->get_op_type();
+                    std::string op = iter->second.op;
 
-                    if (CudaOpMap<T>::math_kernel != nullptr)
+                    if (iter->second.math_kernel != "")
                     {
                         auto math_kernel =
-                            get_math_kernel(op, CudaOpMap<T>::math_kernel, data_types);
+                            get_math_kernel(op, iter->second.math_kernel, data_types);
                         NNFUSION_CHECK_NOT_NULLPTR(math_kernel);
                         lu.require(math_kernel);
                     }
@@ -92,12 +97,16 @@ namespace nnfusion
 
                 std::pair<std::string, shared_ptr<LanguageUnit>> get_op_kernel() override
                 {
-                    std::string op = CudaOpMap<T>::op;
+                    //std::string op = CudaOpMap<T>::op;
+                    auto iter = CudaElementOpMap.find(m_context->gnode->get_op_type());
+                    NNFUSION_CHECK(iter != CudaElementOpMap.end())
+                        << "unable find op type: " << m_context->gnode->get_op_type();
+                    std::string op = iter->second.op;
                     shared_ptr<LanguageUnit> kernel = nullptr;
 
-                    if (CudaOpMap<T>::math_kernel != nullptr)
+                    if (iter->second.math_kernel != "")
                     {
-                        kernel = get_math_kernel(op, CudaOpMap<T>::math_kernel, data_types);
+                        kernel = get_math_kernel(op, iter->second.math_kernel, data_types);
                         NNFUSION_CHECK_NOT_NULLPTR(kernel);
                     }
                     return std::make_pair(op, kernel);

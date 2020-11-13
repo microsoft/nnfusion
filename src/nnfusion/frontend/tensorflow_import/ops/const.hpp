@@ -7,7 +7,7 @@
 
 #include "../tensorflow_base.hpp"
 #include "../util/util.hpp"
-#include "thirdparty/ngraph/src/nnfusion/common/type/element_type.hpp"
+#include "ngraph/src/nnfusion/common/type/element_type.hpp"
 
 namespace nnfusion
 {

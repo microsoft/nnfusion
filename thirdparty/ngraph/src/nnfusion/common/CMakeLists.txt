@@ -9,6 +9,8 @@ set(SRC
     code_writer.cpp
     type/bfloat16.cpp
     type/element_type.cpp
+    type/data_buffer.cpp
+    type/type_protocal.cpp
     shape.cpp
     partial_shape.cpp
     axis_set.cpp

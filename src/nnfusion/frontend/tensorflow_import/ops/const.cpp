@@ -2,9 +2,9 @@
 // Licensed under the MIT License.
 
 #include "const.hpp"
+#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/core/operators/op_define/constant.hpp"
 #include "stdint.h"
-#include "thirdparty/ngraph/src/nnfusion/common/type/data_buffer.hpp"
 
 namespace nnfusion
 {
@@ -148,8 +148,9 @@ namespace nnfusion
                 *const_tensor_shape = shape;
 
                 const auto tensor_content_size = tensor.tensor_content().size();
-                NNFUSION_CHECK(0 == tensor_content_size % sizeof(values->get_type().size()));
-                
+                // NNFUSION_LOG(INFO) << values->get_type() << ": tensor_size = " << tensor_content_size << ", type size = " << values->get_type().size();
+                NNFUSION_CHECK(0 == tensor_content_size % values->get_type().size());
+
                 int64_t n_elements = 1;
                 for (size_t i = 0; i < shape.dim_size(); i++)
                 {
@@ -162,40 +163,48 @@ namespace nnfusion
                     n_elements *= shape.dim(i).size();
                 }
 
-
                 // If tensor_content_size is zero, we'll have to take the values from
                 // int_val, float_val, etc.
                 if (tensor_content_size == 0)
                 {
-                    
                     values->resize(n_elements);
                     for (size_t i = 0; i < n_elements; i++)
                     {
                         auto& tensor = node.attr().at("value").tensor();
-                        const void *dat = nullptr;
+                        const void* dat = nullptr;
                         switch (dt)
                         {
                         // TODO(amprocte/NGRAPH-2502): there are more element types to support
                         // here
                         case tensorflow::DT_INT32:
-                            dat = reinterpret_cast<const void *>(&(tensor.int_val_size() == 1 ? tensor.int_val()[0]
-                                                                                            : tensor.int_val()[i]));
+                            dat = reinterpret_cast<const void*>(&(tensor.int_val_size() == 1
+                                                                      ? tensor.int_val()[0]
+                                                                      : tensor.int_val()[i]));
+                            values->setElement(i, dat);
                             break;
                         case tensorflow::DT_INT64:
-                            dat = reinterpret_cast<const void *>(&(tensor.int64_val_size() == 1 ? tensor.int64_val()[0]
-                                                                                            : tensor.int64_val()[i]));
+                            dat = reinterpret_cast<const void*>(&(tensor.int64_val_size() == 1
+                                                                      ? tensor.int64_val()[0]
+                                                                      : tensor.int64_val()[i]));
+                            values->setElement(i, dat);
                             break;
                         case tensorflow::DT_FLOAT:
-                            dat = reinterpret_cast<const void *>(&(tensor.float_val_size() == 1 ? tensor.float_val()[0]
-                                                                                            : tensor.float_val()[i]));
+                            dat = reinterpret_cast<const void*>(&(tensor.float_val_size() == 1
+                                                                      ? tensor.float_val()[0]
+                                                                      : tensor.float_val()[i]));
+                            values->setElement(i, dat);
                             break;
                         case tensorflow::DT_BOOL:
-                            dat = reinterpret_cast<const void *>(&(tensor.bool_val_size() == 1 ? tensor.bool_val()[0]
-                                                                                            : tensor.bool_val()[i]));
+                            dat = reinterpret_cast<const void*>(&(tensor.bool_val_size() == 1
+                                                                      ? tensor.bool_val()[0]
+                                                                      : tensor.bool_val()[i]));
+                            values->setElement(i, dat);
                             break;
                         case tensorflow::DT_DOUBLE:
-                            dat = reinterpret_cast<const void *>(&(tensor.double_val_size() == 1 ? tensor.double_val()[0]
-                                                                          : tensor.double_val()[i]));
+                            dat = reinterpret_cast<const void*>(&(tensor.double_val_size() == 1
+                                                                      ? tensor.double_val()[0]
+                                                                      : tensor.double_val()[i]));
+                            values->setElement(i, dat);
                             break;
                         case tensorflow::DT_STRING:
                             if (i > 0)
@@ -203,10 +212,13 @@ namespace nnfusion
                                 // TODO: only support one dimension for string type now
                                 return false;
                             }
-                            values->resize(tensor.string_val()[0].length());
-                            auto it = tensor.string_val()[0].begin();
-                            for (size_t j = 0; it != tensor.string_val()[0].end(); ++j, ++it) {
-                                values->setElement(j, reinterpret_cast<const void *>(&it));
+                            {
+                                values->resize(tensor.string_val()[0].length());
+                                auto it = tensor.string_val()[0].begin();
+                                for (size_t j = 0; it != tensor.string_val()[0].end(); ++j, ++it)
+                                {
+                                    values->setElement(j, reinterpret_cast<const void*>(&it));
+                                }
                             }
                             break;
                         default:
@@ -225,11 +237,15 @@ namespace nnfusion
                 else
                 {
                     size_t size_tensor = tensor_content_size / values->get_type().size();
-                    const char *content = tensor.tensor_content().c_str();
-                    if (size_tensor > 1 || size_tensor == n_elements) {
+                    const char* content = tensor.tensor_content().c_str();
+                    if (size_tensor > 1 || size_tensor == n_elements)
+                    {
                         values->load(content, size_tensor);
-                    } else {
-                        for (size_t i = 0; i < n_elements; ++i) {
+                    }
+                    else
+                    {
+                        for (size_t i = 0; i < n_elements; ++i)
+                        {
                             values->setElement(i, content);
                         }
                     }
@@ -293,7 +309,6 @@ namespace nnfusion
 
                 return true;
             }
-
 
             /*
             const std::map<tensorflow::DataType,
@@ -385,8 +400,7 @@ namespace nnfusion
                 {tensorflow::DataType::DT_UINT32, nnfusion::element::u32},
                 {tensorflow::DataType::DT_UINT64, nnfusion::element::u64},
                 {tensorflow::DataType::DT_BOOL, nnfusion::element::boolean},
-                {tensorflow::DataType::DT_STRING, nnfusion::element::character}
-            };
+                {tensorflow::DataType::DT_STRING, nnfusion::element::character}};
         } // namespace tensorflow_import
     }     // namespace frontend
 } // namespace nnfusion

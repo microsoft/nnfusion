@@ -9,9 +9,7 @@
 #include "gtest/gtest.h"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
-#include "nnfusion/engine/pass/graph/graph_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
-#include "nnfusion/engine/pass/graph/manager.hpp"
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 
@@ -21,18 +19,18 @@ using namespace nnfusion::profiler;
 
 bool run(std::shared_ptr<nnfusion::graph::Graph> graph)
 {
-    graph->set_default_outputs();
-    GraphPassManager pass_manager;
+    // graph->set_default_outputs();
+    // GraphPassManager pass_manager;
 
-    pass_manager.register_pass<OpInplacePass>();
+    // pass_manager.register_pass<OpInplacePass>();
 
-    // The graph after this pass will have selected kernels
-    pass_manager.register_pass<DefaultGNodeDeviceDispatcher>();
-    pass_manager.register_pass<DefaultKernelSelector>();
-    std::vector<std::shared_ptr<nnfusion::graph::Graph>> graph_vec{graph};
-    pass_manager.run_passes(graph_vec);
+    // // The graph after this pass will have selected kernels
+    // pass_manager.register_pass<DefaultGNodeDeviceDispatcher>();
+    // pass_manager.register_pass<DefaultKernelSelector>();
+    // std::vector<std::shared_ptr<nnfusion::graph::Graph>> graph_vec{graph};
+    // pass_manager.run_passes(graph_vec);
 
-    return true;
+    // return true;
 }
 // bool check_inplace_oi_pair(shared_ptr<nnfusion::op::Op> node)
 // {

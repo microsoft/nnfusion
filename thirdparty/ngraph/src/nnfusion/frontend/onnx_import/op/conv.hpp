@@ -95,11 +95,30 @@ namespace nnfusion
                     CoordinateDiff padding_below = CoordinateDiff(
                         conv_attrs[3].begin() + conv_attrs[3].size() / 2, conv_attrs[3].end());
 
+                    std::string conv_data_format;
+                    if (data_shape.size() == 3)
+                    {
+                        conv_data_format = "NCW";
+                    }
+                    else if (data_shape.size() == 4)
+                    {
+                        conv_data_format = "NCHW";
+                    }
+                    // else if (data_shape.size() == 5)
+                    // {
+                    //     conv_data_format = "NCDHW";
+                    // }
+                    else
+                    {
+                        NNFUSION_CHECK_FAIL() << "Convolution with dimensions of "
+                                              << data_shape.size() << " not implemented yet.";
+                    }
+
                     std::shared_ptr<nnfusion::graph::GNode> conv_node = nullptr;
                     if (groups == 1)
                     {
                         auto conv_op = std::make_shared<op::Convolution>(
-                            strides, dilations, padding_below, padding_above);
+                            strides, dilations, padding_below, padding_above, conv_data_format);
                         conv_node = m_graph->add_node_and_edge(conv_op, {data, filters});
                     }
                     else
@@ -135,8 +154,11 @@ namespace nnfusion
                                 m_graph->add_node_and_edge(sliced_filters_op, {filters});
 
                             convolution_nodes.push_back(m_graph->add_node_and_edge(
-                                std::make_shared<op::Convolution>(
-                                    strides, dilations, padding_below, padding_above),
+                                std::make_shared<op::Convolution>(strides,
+                                                                  dilations,
+                                                                  padding_below,
+                                                                  padding_above,
+                                                                  conv_data_format),
                                 {sliced_data, sliced_filters}));
                         }
                         std::size_t concatenation_axis = 1;

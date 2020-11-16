@@ -25,7 +25,7 @@ namespace nnfusion
                 nnfusion::Strides window_dilation_strides, window_movement_strides,
                     data_dilation_strides;
                 nnfusion::CoordinateDiff padding_below_diff, padding_above_diff;
-                string dtype;
+                string dtype, data_format;
             };
         } // namespace cuda
     }     // namespace kernels

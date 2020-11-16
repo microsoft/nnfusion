@@ -40,7 +40,7 @@ namespace nnfusion
 
                 LanguageUnit_p emit_function_body() override
                 {
-                    if (data_format == "NCHW")
+                    if (data_format != "NHWC")
                     {
                         return nullptr;
                     }

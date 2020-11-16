@@ -39,8 +39,6 @@ LanguageUnit_p cuda::cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& s
     lu << "cudnnTensorDescriptor_t " << desc << ";\n";
     lu << "CUDNN_SAFE_CALL(cudnnCreateTensorDescriptor(&" << desc << "));\n";
 
-    // NNFUSION_CHECK(shape.size() >= 4)
-    //     << "Conv1D should be converted to Reshape-Conv2D-Reshape for execution.";
     if (shape.size() < 4)
     {
         std::array<int, 4> dimensions;
@@ -102,9 +100,6 @@ LanguageUnit_p cuda::get_cudnn_filter_descriptor(const Shape& shape, string desc
     string tensor_format = "CUDNN_TENSOR_NCHW";
     lu << "cudnnFilterDescriptor_t " << desc << ";\n";
     lu << "CUDNN_SAFE_CALL(cudnnCreateFilterDescriptor(&" << desc << "));\n";
-
-    // NNFUSION_CHECK(shape.size() >= 4)
-    //     << "Conv1D should be converted to Reshape-Conv2D-Reshape for execution.";
 
     std::vector<int> dimensions(fmax(4, shape.size()), 1);
     int idx = 0;

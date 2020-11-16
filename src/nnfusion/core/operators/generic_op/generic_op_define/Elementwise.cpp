@@ -17,6 +17,22 @@ auto trans_elementwise = [&](std::shared_ptr<graph::GNode>& curr, const std::str
         expr, {{"common_shape", "[ " + std::to_string(num_elements) + " ]"}});
 };
 
+auto trans_elementwise_v2 = [&](std::shared_ptr<graph::GNode>& curr, const std::string& mask) {
+    std::string expr_template;
+    switch (curr->get_input_size())
+    {
+    case 2:
+        expr_template =
+            "@output0@@data_layout@ = @input0@@data_layout@ @mask@ @input1@@data_layout@;";
+        break;
+    default: NNFUSION_CHECK(0) << "Unsupport number of inputs with elementwise op"; break;
+    }
+    auto data_layput = op::create_layout_from_dims(curr->get_output_shape(0));
+    return op::create_code_from_template(
+        expr_template,
+        {{"mask", mask}, {"data_layout", vector_to_string<std::vector<std::string>>(data_layput)}});
+};
+
 REGISTER_OP(Subtract)
     .infershape(nnfusion::op::infershape::copy_shape_from_inputs)
     .translate([](std::shared_ptr<graph::GNode> curr) -> std::string {
@@ -35,6 +51,12 @@ REGISTER_OP(Multiply)
 
         std::string topi = "topi=topi.multiply(args(\"input0\"), args(\"input1\"))";
         return trans_elementwise(curr, topi);
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        auto _op = static_pointer_cast<nnfusion::op::Multiply>(curr->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not" << curr->get_op_ptr()->get_op_type();
+
+        return trans_elementwise_v2(curr, "*");
     });
 
 REGISTER_OP(Divide)
@@ -54,7 +76,7 @@ REGISTER_OP(DivNoNan)
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         std::string topi =
-            "lambda x: tvm.te.if_then_else(args(\"input1\")[x] != "
+            "lambda x: tvm.if_then_else(args(\"input1\")[x] != "
             "0, args(\"input0\")[x] / args(\"input1\")[x], 0)";
         return trans_elementwise(curr, topi);
     });
@@ -185,7 +207,7 @@ REGISTER_OP(ReluBackprop)
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         std::string topi =
-            "lambda x: tvm.te.if_then_else(args(\"input0\")[x] > "
+            "lambda x: tvm.if_then_else(args(\"input0\")[x] > "
             "0, args(\"input1\")[x], 0)";
         return trans_elementwise(curr, topi);
     });
@@ -197,7 +219,7 @@ REGISTER_OP(Select)
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         std::string topi =
-            "lambda x: tvm.te.if_then_else(args(\"input0\")[x] == "
+            "lambda x: tvm.if_then_else(args(\"input0\")[x] == "
             "0, args(\"input2\")[x], args(\"input1\")[x])";
         return trans_elementwise(curr, topi);
     });

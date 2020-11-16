@@ -16,11 +16,14 @@ namespace nnfusion
         // empty string result when translation is not available for a certain op
         std::string get_translation(std::shared_ptr<nnfusion::graph::GNode>& gnode)
         {
+            std::string result = get_translation_v2(gnode);
+            if (!result.empty())
+                return result;
             auto& configs = get_op_configs();
             auto it = configs.find(gnode->get_op_ptr()->get_op_type());
             if (it == configs.end() || it->second.f_translate == nullptr)
                 return "";
-            auto result = it->second.f_translate(gnode);
+            result = it->second.f_translate(gnode);
             return std::move(result);
         }
 
@@ -93,6 +96,5 @@ namespace nnfusion
 
             return options;
         }
-    }
-    // namespace op
+    } // namespace op
 } // namespace nnfusion

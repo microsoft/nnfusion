@@ -25,6 +25,7 @@ namespace nnfusion
             using any = nlohmann::json;
             using constrait_func_t = bool (*)(const OpConfig::any& config);
             using infershape_func_t = void (*)(std::shared_ptr<graph::GNode> gnode);
+            using infersharedmemory_func_t = void (*)(std::shared_ptr<graph::GNode> gnode);
             using translate_func_t = std::string (*)(std::shared_ptr<graph::GNode> gnode);
             using translate_func_t_v2 = std::string (*)(std::shared_ptr<graph::GNode> gnode);
 
@@ -52,6 +53,12 @@ namespace nnfusion
             OpConfig& infershape(const infershape_func_t& func)
             {
                 f_infershape = func;
+                return *this;
+            }
+
+            OpConfig& infersharedmemory(const infersharedmemory_func_t& func)
+            {
+                f_infersharedmemory = func;
                 return *this;
             }
 
@@ -87,6 +94,7 @@ namespace nnfusion
             OpConfig::any& get(std::string key) { return getRoot()[key]; }
             std::vector<constrait_func_t> f_constraits;
             infershape_func_t f_infershape;
+            infersharedmemory_func_t f_infersharedmemory;
             translate_func_t f_translate;
             translate_func_t_v2 f_translate_v2;
             OpConfig::any j_attrs;
@@ -125,37 +133,51 @@ namespace nnfusion
         inline std::string create_code_from_template(std::string templ,
                                                      const OpConfig::any& feed_dict)
         {
+            std::unordered_map<std::string, std::string> feed_pairs;
             for (auto& it : feed_dict.items())
             {
-                std::string placeholder = "@" + it.key() + "@";
-                int at = 0;
-                while (true)
+                std::string value;
+                if (it.value().is_string())
+                    value = it.value();
+                else if (it.value().is_null())
+                    value = "NULL";
+                else if (it.value().is_number_float())
                 {
-                    at = templ.find(placeholder, at);
-                    if (at < 0)
-                        break;
-                    std::string value;
-                    if (it.value().is_string())
-                        value = it.value();
-                    else if (it.value().is_null())
-                        value = "NULL";
-                    else if (it.value().is_number_float())
-                    {
-                        std::stringstream ss;
-                        ss.flags(std::ios_base::scientific);
-                        ss << std::setprecision(std::numeric_limits<float>::digits)
-                           << (float)it.value();
-                        value = ss.str();
-                    }
-                    else
-                    {
-                        std::stringstream ss;
-                        ss << it.value();
-                        value = ss.str();
-                    }
-                    templ = templ.substr(0, at) + value + templ.substr(at + placeholder.size());
-                    at += value.size();
+                    std::stringstream ss;
+                    ss.flags(std::ios_base::scientific);
+                    ss << std::setprecision(std::numeric_limits<float>::digits)
+                       << (float)it.value();
+                    value = ss.str();
                 }
+                else
+                {
+                    std::stringstream ss;
+                    ss << it.value();
+                    value = ss.str();
+                }
+                feed_pairs.insert(std::make_pair("@" + it.key() + "@", value));
+            }
+
+            int at = templ.find("@");
+            while (true)
+            {
+                int cur_at = templ.find("@", at + 1);
+                if (cur_at == std::string::npos || at == std::string::npos)
+                    break;
+                auto placeholder = templ.substr(at, cur_at - at + 1);
+                // NNFUSION_LOG(INFO) << placeholder;
+                auto feed_pair = feed_pairs.find(placeholder);
+                if (feed_pair != feed_pairs.end())
+                {
+                    // NNFUSION_LOG(INFO) << "Value->" << feed_pair->second;
+                    templ = templ.substr(0, at) + feed_pair->second + templ.substr(cur_at + 1);
+                    at += feed_pair->second.size();
+                }
+                else
+                {
+                    at = cur_at;
+                }
+                // NNFUSION_LOG(INFO) << templ;
             }
             return std::move(templ);
         };
@@ -237,10 +259,21 @@ namespace nnfusion
                 localOpConfig.check_constrait();
                 localOpConfig.f_infershape(gnode);
 
+                if (localOpConfig.f_translate_v2 != nullptr && !m_expression.size())
+                {
+                    m_expression = localOpConfig.f_translate_v2(gnode);
+                }
+
                 if (localOpConfig.f_translate != nullptr && !m_expression.size())
                 {
                     m_expression = localOpConfig.f_translate(gnode);
                 }
+            }
+
+            virtual void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override
+            {
+                if (localOpConfig.f_infersharedmemory)
+                    localOpConfig.f_infersharedmemory(gnode);
             }
 
             mutable OpConfig localOpConfig;

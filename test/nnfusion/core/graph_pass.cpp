@@ -3,31 +3,35 @@
 
 #include "nnfusion/core/graph/gedge.hpp"
 #include "nnfusion/core/graph/graph.hpp"
-#include "nnfusion/engine/pass/graph/manager.hpp"
+#include "nnfusion/engine/engine.hpp"
+#include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 
 #include "../test_util/common.hpp"
 
 TEST(nnfusion_core, constant_foldeing_pass)
 {
-    /*
-        Shape shape{4};
-    std::vector<int> values(4, 10); 
-    std::shared_ptr<nnfusion::graph::Node> A = make_shared<op::Constant>(element::i32, shape, values);
-    std::shared_ptr<nnfusion::graph::Node> B = make_shared<op::Constant>(element::i32, shape, values);
-    std::shared_ptr<nnfusion::graph::Node> add = make_shared<op::Add>(A, B);
-    std::shared_ptr<nnfusion::graph::Graph> graph;
-    graph->add_node(A);
-    graph->add_node(B);
-    graph->add_node(add);
-    graph->add_edge(A, add, 0, 0);
-    graph->add_edge(B, add, 0, 1);
+    // using namespace nnfusion::pass::graph;
+    //
+    // Shape shape{4};
+    // std::vector<int> values(4, 10);
+    // auto A = make_shared<op::Constant>(element::i32, shape, values);
+    // auto B = make_shared<op::Constant>(element::i32, shape, values);
+    // auto add = make_shared<op::Add>();
 
-    GraphPassManager pass_manager;
-    pass_manager.register_pass<ConstantFoldingPass>();
-    pass_manager.run_passes(graph);
-    
-    
-     */
+    // auto A_GNode = make_shared<GNode>(A,GNodeVector());
+    // auto B_GNode = make_shared<GNode>(B,GNodeVector());
+    // auto add_GNode = make_shared<GNode>(add,GNodeVector());
+
+    // std::shared_ptr<Graph> graph;
+    // graph->add_node(A_GNode);
+    // graph->add_node(B_GNode);
+    // graph->add_node(add_GNode);
+    // graph->add_edge(A_GNode, 0, add_GNode, 0);
+    // graph->add_edge(B_GNode, 0, add_GNode, 1);
+
+    // auto pass_manager = make_shared<nnfusion::GraphPassManager>();
+    // pass_manager->push_back(make_shared<RuntimeConstantFoldingPass>());
+    // pass_manager->run_on_graph(graph);
 
     /*
         shared_ptr<runtime::Backend> backend = runtime::Backend::create("INTERPRETER");

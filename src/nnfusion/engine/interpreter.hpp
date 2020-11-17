@@ -7,7 +7,6 @@
 #include "nnfusion/common/descriptor/tensor.hpp"
 #include "nnfusion/core/IR/program.hpp"
 #include "nnfusion/engine/memory_allocator.hpp"
-#include "nnfusion/engine/pass/graph/graph_pass.hpp"
 #include "op.hpp"
 
 namespace nnfusion

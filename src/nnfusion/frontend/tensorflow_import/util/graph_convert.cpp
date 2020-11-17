@@ -830,6 +830,32 @@ namespace nnfusion
                 BatchedOpParamToNGraph(is_nhwc, input_gnode->get_shape(), ng_image_shape);
                 BatchedOpParamToNGraph(is_nhwc, tf_dilations, ng_dilations);
 
+                auto reshape_input_gnode = BatchToNGraph(is_nhwc, input_gnode);
+                auto default_device = get_device_type(FLAGS_fdefault_device);
+                if (reshape_input_gnode != nullptr && default_device != GENERIC_CPU &&
+                    default_device != HLSL)
+                {
+                    m_graph->add_node(reshape_input_gnode);
+                    m_graph->add_edge(input_gnode, 0, reshape_input_gnode, 0);
+                }
+                else
+                {
+                    reshape_input_gnode = input_gnode;
+                }
+
+                auto reshape_filter_gnode = Reshape<2, 3, 0, 1>(filter_gnode);
+                if (!is_nhwc || (default_device != GENERIC_CPU && default_device != HLSL))
+                {
+                    // Set data format as "NCHW", since have transposed the data from "NHWC" to "NCHW".
+                    tf_data_format = "NCHW";
+                    m_graph->add_node(reshape_filter_gnode);
+                    m_graph->add_edge(filter_gnode, 0, reshape_filter_gnode, 0);
+                }
+                else
+                {
+                    reshape_filter_gnode = filter_gnode;
+                }
+
                 CoordinateDiff ng_padding_below{0, 0};
                 CoordinateDiff ng_padding_above{0, 0};
                 MakePadding(tf_padding_type,
@@ -850,9 +876,24 @@ namespace nnfusion
 
                 auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
                     node.name(), "DepthwiseConv2dNative", op_config);
-                auto generic_gnode =
-                    m_graph->add_node_and_edge(generic_op, {input_gnode, filter_gnode});
-                NamedNodeVector ret{{node.name(), generic_gnode}};
+
+                auto conv_gnode =
+                    m_graph->add_node_and_edge(generic_op, {input_gnode, reshape_filter_gnode});
+
+                auto reshape_conv_gnode = BatchToTensorflow(is_nhwc, conv_gnode);
+                if (reshape_conv_gnode != nullptr && default_device != GENERIC_CPU &&
+                    default_device != HLSL)
+                {
+                    m_graph->add_node(reshape_conv_gnode);
+                    m_graph->add_edge(conv_gnode, 0, reshape_conv_gnode, 0);
+                }
+                else
+                {
+                    reshape_conv_gnode = conv_gnode;
+                }
+                // reshape_conv_gnode->get_op_ptr()->set_name(node.name());
+                reshape_conv_gnode->set_name(node.name());
+                NamedNodeVector ret{{node.name(), reshape_conv_gnode}};
                 return ret;
             }
 

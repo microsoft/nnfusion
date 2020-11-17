@@ -96,6 +96,5 @@ namespace nnfusion
 
             return options;
         }
-    }
-    // namespace op
+    } // namespace op
 } // namespace nnfusion

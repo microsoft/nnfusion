@@ -37,4 +37,32 @@ REGISTER_OP(Tile)
              {"multiples", vector_to_string(multiples)}});
 
         return expression;
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> gnode) -> std::string {
+        auto expression_template =
+            R"( @output0@@output0_layout@ = @input0@@input0_layout@ where @cond@; )";
+
+        nnfusion::Shape output_shape = gnode->get_output_shape(0);
+
+        auto ng_op = gnode->get_in_edge(1)->get_src();
+        NNFUSION_CHECK(ng_op->is_constant())
+            << "We only accept the Tile input \"multiples\" as Constant.";
+        ///\todo multiples must be int32 or int64, we use int32 in this case, currently we ignore int64
+        auto multiples = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
+                             ->get_vector<int64_t>();
+
+        auto output_layout = op::create_layout_from_dims(output_shape);
+        auto input_layout = op::create_layout_from_dims(output_shape);
+        std::string cond;
+        for (int d = 0; d < output_layout.size(); ++d)
+        {
+            input_layout[d] += " % " + to_string(output_shape[d] / multiples[d]);
+            cond +=
+                (cond.empty() ? "" : ", ") + output_layout[d] + " in " + to_string(output_shape[d]);
+        }
+
+        return op::create_code_from_template(expression_template,
+                                             {{"output0_layout", vector_to_string(output_layout)},
+                                              {"input0_layout", vector_to_string(input_layout)},
+                                              {"cond", cond}});
     });

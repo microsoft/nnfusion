@@ -1,9 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#include "graph_pass.hpp"
-#include "manager.hpp"
-
 #include "assign_async_info_pass.hpp"
 #include "assign_layout_pass.hpp"
 #include "autodiff_pass.hpp"
@@ -34,42 +31,3 @@ DEFINE_string(fantares_codegen_server,
               "Antares codegen server address and port, format: <ip>:<port>");
 
 DECLARE_string(fdefault_device);
-
-bool GraphPass::run(std::vector<std::shared_ptr<Graph>>& graph_vec)
-{
-    GraphPassManager pass_manager;
-    // Generate result op must before LivenessPass
-    // Generate result is implemented in gradient weight mapping pass
-    pass_manager.register_pass<CSEPass>();
-    pass_manager.register_pass<AutodiffPass>();
-    pass_manager.register_pass<GradientWeightMappingPass>();
-    pass_manager.register_pass<RuntimeConstantFoldingPass>();
-    pass_manager.register_pass<MultiReshapeFoldingPass>();
-    pass_manager.register_pass<VectorDotTransposePass>();
-    pass_manager.register_pass<GemmFusionPass>();
-    pass_manager.register_pass<BatchNormInferenceFoldingPass>();
-    pass_manager.register_pass<AssignLayoutPass>();
-    pass_manager.register_pass<OpInplacePass>();
-
-    pass_manager.register_pass<PatternSubstitutionPass>();
-
-    // The graph after this pass will have selected kernels
-    pass_manager.register_pass<DefaultGNodeDeviceDispatcher>();
-    pass_manager.register_pass<ProfilingBasedKernelSelector>();
-    pass_manager.register_pass<FetchBasedSelector>();
-    pass_manager.register_pass<DefaultKernelSelector>();
-
-    // GPU specific graph passes
-    pass_manager.register_pass<KernelFusionPass>();
-    pass_manager.register_pass<KernelProfilingPass>();
-    pass_manager.register_pass<PatternSubstitutionPass>();
-    pass_manager.register_pass<BlockFusionPass>();
-
-    // Specific opt for dot
-    pass_manager.register_pass<DotTransposePass>();
-
-    // assign stream
-    pass_manager.register_pass<AssignAsyncInfoPass>();
-
-    return pass_manager.run_passes(graph_vec);
-}

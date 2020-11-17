@@ -31,13 +31,13 @@ REGISTER_OP(DepthwiseConv2dNative)
         bool is_nhwc = (data_format == "NHWC");
 
         const int64_t in_depth = is_nhwc ? input_shape[3] : input_shape[1];
-        NNFUSION_CHECK(in_depth == filter_shape[2]);
-        const int64_t depth_multiplier = filter_shape[3];
+        NNFUSION_CHECK(in_depth == (is_nhwc ? filter_shape[2] : filter_shape[0]));
+        const int64_t depth_multiplier = is_nhwc ? filter_shape[3] : filter_shape[1];
         const int64_t out_depth = in_depth * depth_multiplier;
         const int64_t input_rows = is_nhwc ? input_shape[1] : input_shape[2];
         const int64_t input_cols = is_nhwc ? input_shape[2] : input_shape[3];
-        const int64_t filter_rows = filter_shape[0];
-        const int64_t filter_cols = filter_shape[1];
+        const int64_t filter_rows = is_nhwc ? filter_shape[0] : filter_shape[2];
+        const int64_t filter_cols = is_nhwc ? filter_shape[1] : filter_shape[3];
         const int64_t batch = input_shape[0];
 
         std::vector<int64_t> strides = op->localOpConfig.getRoot()["strides"];
@@ -76,23 +76,26 @@ REGISTER_OP(DepthwiseConv2dNative)
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto ir_template =
             R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
-        auto manual_rule = R"( ## @: plan/depthwise_convfwd_nhwc_v1 )";
+        auto manual_rule = R"( ## @: plan/depthwise_convfwd_@data_format@_v1 )";
 
         auto _op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
+        auto is_nhwc = _op->localOpConfig.getRoot()["data_format"] == "NHWC";
         const auto& padding_h = int64_t(_op->localOpConfig.getRoot()["padding_before"][0]);
         const auto& padding_w = int64_t(_op->localOpConfig.getRoot()["padding_before"][1]);
         const auto& in_shape = curr->get_input_shape(0);
+        const std::string data_format = is_nhwc ? "nhwc" : "nchw";
 
         nnfusion::op::OpConfig::any config;
-        config["input1_layout"] = "[KH, KW, C, 0]";
-        config["output0_layout"] = "[N, HO, WO, C]";
-        config["height"] = in_shape[1];
-        config["width"] = in_shape[2];
+        config["input1_layout"] = is_nhwc ? "[KH, KW, C, 0]" : "[C, 0, KH, KW]";
+        config["output0_layout"] = is_nhwc ? "[N, HO, WO, C]" : "[N, C, HO, WO]";
+        config["height"] = is_nhwc ? in_shape[1] : in_shape[2];
+        config["width"] = is_nhwc ? in_shape[2] : in_shape[3];
         config["pad_0"] = to_string(padding_h);
         config["pad_1"] = to_string(padding_w);
-        auto shape_template = "[N, -@pad_0@ + HO + KH, -@pad_1@ + WO + KW, C]";
+        auto shape_template = is_nhwc ? "[N, -@pad_0@ + HO + KH, -@pad_1@ + WO + KW, C]"
+                                      : "[N, C, -@pad_0@ + HO + KH, -@pad_1@ + WO + KW]";
         config["input0_layout"] = op::create_code_from_template(shape_template, config);
 
         std::string pad_cond;
@@ -105,5 +108,53 @@ REGISTER_OP(DepthwiseConv2dNative)
         }
         config["pad_cond"] = pad_cond;
 
-        return op::create_code_from_template(ir_template, config) + manual_rule;
+        return op::create_code_from_template(ir_template, config) +
+               op::create_code_from_template(manual_rule, {{"data_format", data_format}});
+        ;
+    })
+    .infersharedmemory([](std::shared_ptr<graph::GNode> gnode) -> void {
+        auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        if (op->localOpConfig.getRoot()["padding_type"] != "SAME")
+            return;
+
+        for (auto s : op->localOpConfig.getRoot()["strides"])
+        {
+            if (s != 1)
+                return;
+        }
+
+        for (auto d : op->localOpConfig.getRoot()["dilations"])
+        {
+            if (d != 1)
+                return;
+        }
+
+        for (auto p : op->localOpConfig.getRoot()["padding_before"])
+        {
+            if (p != 0)
+                return;
+        }
+
+        for (auto p : op->localOpConfig.getRoot()["padding_after"])
+        {
+            if (p != 0)
+                return;
+        }
+
+        std::string data_format = op->localOpConfig.getRoot()["data_format"];
+        bool is_nhwc = (data_format == "NHWC");
+        const Shape& input_shape = gnode->get_input_shape(0);
+        int channel = is_nhwc ? 3 : 1;
+        auto input_channel_count = input_shape[channel];
+
+        std::vector<size_t> shared_memory;
+        for (size_t i = 0; i < gnode->get_output_shape(0).size(); i++)
+        {
+            if (i == channel)
+                shared_memory.push_back(input_channel_count);
+            else
+                shared_memory.push_back(1);
+        }
+
+        op->set_shared_memory(shared_memory);
     });

@@ -44,7 +44,7 @@ REGISTER_OP(Convolution)
         nnfusion::op::OpConfig::any config;
         auto shape_template = is_nchw ? "[N, C, -@pad_0@ + HO + KH, -@pad_1@ + WO + KW]"
                                       : "[N, -@pad_0@ + HO + KH, -@pad_1@ + WO + KW, C]";
-        config["input1_layout"] = "[KH, KW, C, F]";
+        config["input1_layout"] = is_nchw ? "[F, C, KH, KW]" : "[KH, KW, C, F]";
         config["output0_layout"] = is_nchw ? "[N, F, HO, WO]" : "[N, HO, WO, F]";
         config["height"] = is_nchw ? in_shape[2] : in_shape[1];
         config["width"] = is_nchw ? in_shape[3] : in_shape[2];

@@ -73,6 +73,7 @@ std::shared_ptr<GNode> Graph::add_node_and_edge(const std::shared_ptr<nnfusion::
         add_edge(input_gnodes[i], 0, gnode, i);
     }
     op->revalidate_and_infer_types(gnode->shared_from_this());
+    op->infer_shared_memory(gnode->shared_from_this());
     return gnode;
 }
 
@@ -89,6 +90,7 @@ std::shared_ptr<GNode> Graph::add_node_and_edge(const std::shared_ptr<nnfusion::
         add_edge(input_gnodes[i].gnode, input_gnodes[i].index, gnode, i);
     }
     op->revalidate_and_infer_types(gnode->shared_from_this());
+    op->infer_shared_memory(gnode->shared_from_this());
     return gnode;
 }
 
@@ -405,4 +407,46 @@ size_t Graph::get_temporary_pool_size()
 void Graph::set_temporary_pool_size(size_t size)
 {
     m_temporary_pool_size = size;
+}
+
+size_t Graph::get_memory_io()
+{
+    size_t total_io = 0;
+    for (auto gnode : get_ordered_ops())
+    {
+        size_t node_io = 0;
+        for (size_t i = 0; i < gnode->get_input_size(); ++i)
+        {
+            auto shape = gnode->get_input_shape(i);
+            if (shape.size() > 0)
+            {
+                size_t ins = 1;
+                for (auto d : shape)
+                {
+                    NNFUSION_CHECK(d != 0);
+                    ins *= d;
+                }
+                node_io += ins;
+            }
+        }
+
+        for (size_t i = 0; i < gnode->get_output_size(); ++i)
+        {
+            auto shape = gnode->get_output_shape(i);
+            if (shape.size() > 0)
+            {
+                size_t outs = 1;
+                for (auto d : shape)
+                {
+                    NNFUSION_CHECK(d != 0);
+                    outs *= d;
+                }
+                node_io += outs;
+            }
+        }
+
+        total_io += node_io;
+    }
+
+    return total_io;
 }

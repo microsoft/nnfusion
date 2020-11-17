@@ -35,7 +35,7 @@ REGISTER_OP(Dot)
         int M = _op->get_transpose_B() ? shape_1[0] : shape_1[1];
 
         return op::create_code_from_template(
-            R"( - input("input0", @shape_0@); input("input1", @shape_1@); k = loop(@K@); output(@output_shape@, lambda i, j: tvm.te.sum(args("input0")[@dimA@] * args("input1")[@dimB@], axis=k));  ## @: plan/matmul_v1)",
+            R"( - input("input0", @shape_0@); input("input1", @shape_1@); k = loop(@K@); output(@output_shape@, lambda i, j: tvm.sum(args("input0")[@dimA@] * args("input1")[@dimB@], axis=k));  ## @: plan/matmul_v1)",
             {{"shape_0", vector_to_string(shape_0)},
              {"shape_1", vector_to_string(shape_1)},
              {"dimA", _op->get_transpose_A() ? "k,i" : "i,k"},

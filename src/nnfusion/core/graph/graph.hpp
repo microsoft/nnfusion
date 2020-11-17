@@ -124,6 +124,8 @@ namespace nnfusion
             size_t get_temporary_pool_size();
             void set_temporary_pool_size(size_t);
 
+            size_t get_memory_io();
+
         private:
             // Map from node ids to allocated nodes.  nodes_[id] may be nullptr if
             // the node with that id was removed from the graph.

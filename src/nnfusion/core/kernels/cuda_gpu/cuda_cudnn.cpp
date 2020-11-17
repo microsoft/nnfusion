@@ -38,6 +38,7 @@ LanguageUnit_p cuda::cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& s
     string tensor_format = "CUDNN_TENSOR_NCHW";
     lu << "cudnnTensorDescriptor_t " << desc << ";\n";
     lu << "CUDNN_SAFE_CALL(cudnnCreateTensorDescriptor(&" << desc << "));\n";
+
     if (shape.size() < 4)
     {
         std::array<int, 4> dimensions;

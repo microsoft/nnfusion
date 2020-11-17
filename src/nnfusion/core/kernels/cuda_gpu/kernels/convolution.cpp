@@ -20,6 +20,7 @@ cuda::ConvolutionCudnn::ConvolutionCudnn(shared_ptr<KernelContext> ctx)
     data_dilation_strides = conv->get_data_dilation_strides();
     padding_below_diff = conv->get_padding_below();
     padding_above_diff = conv->get_padding_above();
+    data_format = conv->get_data_format();
     dtype = ctx->outputs[0]->get_element_type().c_type_string();
 
     std::stringstream tag;
@@ -52,6 +53,19 @@ LanguageUnit_p cuda::ConvolutionCudnn::emit_function_body()
     {
         NNFUSION_LOG(NNFUSION_WARNING) << "Asymetric padding is not supported by now.";
         return nullptr;
+    }
+
+    // Conv1D: convert Conv1D to Conv2D
+    if (data_format == "NCW")
+    {
+        input_shape = {input_shape[0], input_shape[1], 1, input_shape[2]};
+        filter_shape = {filter_shape[0], filter_shape[1], 1, filter_shape[2]};
+        output_shape = {output_shape[0], output_shape[1], 1, output_shape[2]};
+        window_dilation_strides = {1, window_dilation_strides[0]};
+        window_movement_strides = {1, window_movement_strides[0]};
+        data_dilation_strides = {1, data_dilation_strides[0]};
+        padding_below_diff = {0, padding_below_diff[0]};
+        padding_above_diff = {0, padding_above_diff[0]};
     }
 
     // emit code

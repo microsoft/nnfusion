@@ -32,6 +32,8 @@ namespace nnfusion
             std::string get_fused_ir2() { return fused_op_ir2; };
             std::string get_plan_rule() { return plan_rule; };
         protected:
+            void assemble_inputs_and_outputs();
+
             std::string fused_op_ir2;
             std::string plan_rule;
         };

@@ -26,30 +26,14 @@ REGISTER_OP(Sum)
             sample *= in_shape[it];
         assert(sample != 0);
 
-        std::string anno = "plan/reduce_sum_v1";
-
-        // ReduceNone
-        if (sample == 1)
-        {
-            anno = "memcpy";
-            return op::create_code_from_template(
-                R"( - einstein_v2("output0[N] = input0[N]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@num_elements@]}});  ## @annotation: @anno@)",
-                {
-                    {"dtype", dtype}, {"num_elements", num_elements}, {"anno", anno},
-                });
-        }
-
         // ReduceHigh
         if (axes.size() && ordered_axes.front() == 0 &&
             ordered_axes.back() == ordered_axes.size() - 1)
         {
             return op::create_code_from_template(
-                R"( - einstein_v2("output0[C] +=! input0[N, C]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@sample@, @batch@]}});  ## @annotation: @anno@)",
+                R"( - einstein_v2("output0[C] +=! input0[N, C]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@sample@, @batch@]}});  ## :@ plan/reduce_sum_v1)",
                 {
-                    {"dtype", dtype},
-                    {"sample", sample},
-                    {"batch", num_elements / sample},
-                    {"anno", anno},
+                    {"dtype", dtype}, {"sample", sample}, {"batch", num_elements / sample},
                 });
         }
 
@@ -58,15 +42,21 @@ REGISTER_OP(Sum)
             ordered_axes.back() == in_shape.size() - 1)
         {
             return op::create_code_from_template(
-                R"( - einstein_v2("output0[N] +=! input0[N, C]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@batch@, @sample@]}});  ## @annotation: @anno@)",
+                R"( - einstein_v2("output0[N] +=! input0[N, C]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@batch@, @sample@]}});  ## :@ plan/reduce_sum_v1)",
                 {
-                    {"dtype", dtype},
-                    {"sample", sample},
-                    {"batch", num_elements / sample},
-                    {"anno", anno},
+                    {"dtype", dtype}, {"sample", sample}, {"batch", num_elements / sample},
                 });
         }
 
+        // ReduceNone
+        if (!ordered_axes.size())
+        {
+            return op::create_code_from_template(
+                R"( - einstein_v2("output0[N] = input0[N]", input_dict={"input0": {"dtype": "@dtype@", "shape": [@num_elements@]}});  ## @annotation: memcpy)",
+                {
+                    {"dtype", dtype}, {"num_elements", num_elements},
+                });
+        }
         return "";
 
         auto input_shape = curr->get_input_shape(0);

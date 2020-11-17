@@ -81,7 +81,7 @@ REGISTER_OP(Pad)
         }
 
         if (pad_value.empty())
-            return;
+            return "";
 
         auto ir_template =
             R"( @output0@@output0_layout@ = @input0@@input0_layout@@conditions@; )";
@@ -122,9 +122,6 @@ REGISTER_OP(Pad)
         }
 
         conditions = when_condition + where_condition;
-
-        auto input0_shape = curr->get_input_shape(0);
-        auto input0_layout = op::create_layout_from_dims(input0_shape);
 
         op::OpConfig::any op_config;
         op_config["input0_layout"] = vector_to_string<std::vector<std::string>>(input0_layout);

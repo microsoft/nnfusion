@@ -108,7 +108,7 @@ REGISTER_OP(BatchMatMul)
 
         const nnfusion::Shape& input_shape_0 = curr->get_input_shape(0);
         const nnfusion::Shape& input_shape_1 = curr->get_input_shape(1);
-        nnfusion::Shape output_shape = curr->get_output_shape(0);
+        nnfusion::Shape output_shape_0 = curr->get_output_shape(0);
 
         NNFUSION_CHECK(input_shape_0.size() == input_shape_1.size());
         NNFUSION_CHECK(curr->get_input_element_type(0) == curr->get_input_element_type(1));
@@ -120,11 +120,47 @@ REGISTER_OP(BatchMatMul)
         auto ir_template =
             R"( @output0@@output0_layout@ +=! @input0@@input0_layout@ * @input1@@input1_layout@; )";
 
-        op::OpConfig::any op_config;
-        op_config["input0_layout"] = trans_A ? "[B, K, N]" : "[B, N, K]";
+        std::vector<std::string> output0_layout;
+        std::vector<std::string> input0_layout;
+        std::vector<std::string> input1_layout;
 
-        op_config["input1_layout"] = trans_B ? "[B, M, K]" : "[B, K, M]";
-        op_config["output0_layout"] = "[B, N, M]";
+        for (size_t i = 0; i < output_shape_0.size() - 2; ++i)
+        {
+            std::string batch_dim = "B" + to_string(i);
+            output0_layout.push_back(batch_dim);
+            input0_layout.push_back(batch_dim);
+            input1_layout.push_back(batch_dim);
+        }
+
+        output0_layout.push_back("N");
+        output0_layout.push_back("M");
+
+        if (trans_A)
+        {
+            input0_layout.push_back("K");
+            input0_layout.push_back("N");
+        }
+        else
+        {
+            input0_layout.push_back("N");
+            input0_layout.push_back("K");
+        }
+
+        if (trans_B)
+        {
+            input1_layout.push_back("M");
+            input1_layout.push_back("K");
+        }
+        else
+        {
+            input1_layout.push_back("K");
+            input1_layout.push_back("M");
+        }
+
+        op::OpConfig::any op_config;
+        op_config["input0_layout"] = vector_to_string<std::vector<std::string>>(input0_layout);
+        op_config["input1_layout"] = vector_to_string<std::vector<std::string>>(input1_layout);
+        op_config["output0_layout"] = vector_to_string<std::vector<std::string>>(output0_layout);
 
         return op::create_code_from_template(ir_template, op_config);
     });

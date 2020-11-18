@@ -144,6 +144,8 @@ namespace nnfusion
         const Type& from<uint64_t>();
         template <>
         const Type& from<nnfusion::bfloat16>();
+        template <>
+        const Type& from<half>();
 
         std::ostream& operator<<(std::ostream& out, const nnfusion::element::Type& obj);
     }

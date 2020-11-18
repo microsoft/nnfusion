@@ -106,7 +106,7 @@ namespace nnfusion
                               values.size() == 1 || values.size() == nnfusion::shape_size(m_shape))
                     << "Did not get the expected number of literals for a constant of shape "
                     << m_shape << " (got " << values.size() << ", expected "
-                    << nnfusion::shape_size(m_shape) << ".";
+                    << nnfusion::shape_size(m_shape) << ").";
 
                 DataBuffer buf(element_type);
 
@@ -153,6 +153,7 @@ namespace nnfusion
                 return rc;
             }
 
+            DataBuffer get_buffer() const;
             const void* get_data_ptr() const { return m_data; }
             size_t get_data_size() const
             {

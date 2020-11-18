@@ -26,6 +26,11 @@ size_t DataBuffer::size() const
     return m_len;
 }
 
+size_t DataBuffer::size_in_bytes() const
+{
+    return m_len * m_type.size();
+}
+
 element::Type DataBuffer::get_type() const
 {
     return m_type;
@@ -42,8 +47,17 @@ void DataBuffer::bufDelete()
 }
 
 DataBuffer::DataBuffer(DataBuffer&& other)
+    : m_data(nullptr)
+    , m_len(0U)
 {
     *this = std::move(other);
+}
+
+DataBuffer::DataBuffer(const DataBuffer& other)
+    : m_data(nullptr)
+    , m_len(0U)
+{
+    *this = other;
 }
 
 DataBuffer& DataBuffer::operator=(DataBuffer&& other)
@@ -55,6 +69,13 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other)
     other.m_data = nullptr;
     other.m_len = 0U;
     other.bufDelete();
+}
+
+DataBuffer& DataBuffer::operator=(const DataBuffer& other)
+{
+    m_type = other.m_type;
+    resize(other.m_len);
+    typeMemProto.at(m_type).f_copy(m_data, other.m_data, m_len);
 }
 
 void DataBuffer::setElement(size_t idx, const void* ele)
@@ -85,6 +106,11 @@ void DataBuffer::move_to(void** dst)
     m_len = 0;
 }
 
+void* DataBuffer::data() const
+{
+    return m_data;
+}
+
 void DataBuffer::loadFromStrings(const std::vector<std::string>& vec, size_t size)
 {
     if (size == 0 || size == vec.size())
@@ -99,7 +125,7 @@ void DataBuffer::loadFromStrings(const std::vector<std::string>& vec, size_t siz
         }
         typeMemProto.at(m_type).f_delete(tmp);
     }
-    else if (vec.size() == 0)
+    else if (vec.size() == 1)
     {
         resize(size);
         void* tmp = typeMemProto.at(m_type).f_new();
@@ -109,5 +135,9 @@ void DataBuffer::loadFromStrings(const std::vector<std::string>& vec, size_t siz
             setElement(i, tmp);
         }
         typeMemProto.at(m_type).f_delete(tmp);
+    }
+    else
+    {
+        NNFUSION_CHECK_FAIL() << "Size should be either zero or equal to vec.size() or vec.size() should be exact one";
     }
 }

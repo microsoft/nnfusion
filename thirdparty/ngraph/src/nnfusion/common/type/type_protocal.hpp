@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <cmath>
+#include <cstring>
 #include <map>
 #include <string>
 
@@ -69,10 +70,7 @@ namespace nnfusion
         {
             T* lhs = reinterpret_cast<T*>(dst);
             const T* rhs = reinterpret_cast<const T*>(src);
-            for (int i = 0; i < n; ++i)
-            {
-                lhs[i] = rhs[i];
-            }
+            std::memcpy(lhs, rhs, sizeof(T) * n);
         }
 
         template <typename T, typename U = T>
@@ -297,7 +295,7 @@ namespace nnfusion
                                 defaultGetElement<T, U>,
                                 defaultDelete<T>,
                                 defaultDeleteArray<T>,
-                                defaultFromString<T>);
+                                defaultFromString<U>);
         }
 
         constexpr TypeProtocal getEmptyProtocal()

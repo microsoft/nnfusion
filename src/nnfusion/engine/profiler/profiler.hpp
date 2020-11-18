@@ -13,6 +13,7 @@
 
 #include "cpu_runtime.hpp"
 #include "cuda_runtime.hpp"
+#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "profiling_runtime.hpp"
@@ -28,6 +29,7 @@
 using namespace std;
 using namespace nnfusion::graph;
 using namespace nnfusion::kernels;
+using nnfusion::DataBuffer;
 
 namespace nnfusion
 {
@@ -58,11 +60,26 @@ namespace nnfusion
                 if (rt->execute(pctx, kernel_mem->unsafe_inputs(), kernel_mem->unsafe_outputs()) <
                     0)
                 {
-                    NNFUSION_LOG(ERROR) << "Failed execute the kernel.";
+                    NNFUSION_LOG(ERROR) << "Failed to execute the kernel.";
                     return vector<vector<T>>();
                 }
 
                 return kernel_mem->save_outputs<T>();
+            }
+
+            vector<DataBuffer> execute(const vector<DataBuffer>& inputs, element::Type type)
+            {
+                auto& kernel_mem = pctx->kernel_memory;
+                kernel_mem->load_inputs(inputs);
+
+                if (rt->execute(pctx, kernel_mem->unsafe_inputs(), kernel_mem->unsafe_outputs()) <
+                    0)
+                {
+                    NNFUSION_LOG(ERROR) << "Failed to execute the kernel.";
+                    return vector<DataBuffer>();
+                }
+
+                return kernel_mem->save_outputs(type);
             }
 
             // multiple inputs (or outputs) may have different element types
@@ -130,6 +147,31 @@ namespace nnfusion
                 }
 
                 return kernel_mem->save_outputs<T>();
+            }
+
+            vector<DataBuffer> unsafe_execute(const void* val, element::Type type)
+            {
+                auto& kernel_mem = pctx->kernel_memory;
+
+                size_t offset = 0;
+                auto kctx = pctx->kernel->m_context;
+                for (size_t i = 0; i < kctx->inputs.size(); i++)
+                {
+                    auto& t = kctx->inputs[i];
+                    size_t _size = t->size();
+                    void* newval = (void*)((char*)val + offset);
+                    kernel_mem->load_input_from(i, newval, _size);
+                    offset += _size;
+                }
+
+                if (rt->execute(pctx, kernel_mem->unsafe_inputs(), kernel_mem->unsafe_outputs()) <
+                    0)
+                {
+                    NNFUSION_LOG(ERROR) << "Failed execute the kernel.";
+                    return vector<DataBuffer>();
+                }
+
+                return kernel_mem->save_outputs(type);
             }
 
             // HOST TENSOR Operations
@@ -275,6 +317,77 @@ namespace nnfusion
                 return move(result);
             }
 
+            unordered_map<string, vector<DataBuffer>> eval(const vector<DataBuffer>& inputs,
+                                                           element::Type type_out,
+                                                           element::Type type_in)
+            {
+                auto parameters = gctx.graph->get_parameters();
+
+                NNFUSION_CHECK(inputs.size() == parameters.size())
+                    << "The input size does not match graph's Parameter count";
+                for (size_t i = 0; i < parameters.size(); i++)
+                {
+                    parameter_map[parameters[i]] = i;
+                }
+                auto ordered_ops = gctx.graph->get_ordered_ops();
+                for (auto& op : ordered_ops)
+                {
+                    create_profiling_contexts(op);
+                }
+
+                for (auto& op : ordered_ops)
+                {
+                    connect_nodes(op, inputs);
+                }
+
+                int i = 0;
+                for (auto& node : ordered_ops)
+                {
+                    if (node->get_op_ptr()->is_tensor_op())
+                    {
+                        continue;
+                    }
+                    auto pctx = gctx.get_profiling_context(node);
+                    // Ensure only run once
+                    pctx->warmup_times = 0;
+                    pctx->runtime_times = 1;
+
+                    rt->execute(pctx,
+                                pctx->kernel_memory->unsafe_inputs(),
+                                pctx->kernel_memory->unsafe_outputs());
+                }
+
+                unordered_map<string, vector<DataBuffer>> result;
+                for (auto& outnode : gctx.graph->get_outputs())
+                {
+                    if (outnode->is_parameter())
+                    {
+                        DataBuffer vec = std::move(inputs[parameter_map[outnode]]);
+                        result[outnode->get_unique_name()].push_back(std::move(vec));
+                    }
+                    ///\todo tensor op?
+                    else if (outnode->is_constant())
+                    {
+                        auto const_node = static_pointer_cast<op::Constant>(outnode->get_op_ptr());
+                        NNFUSION_LOG(NNFUSION_WARNING) << "GraphEvaluate::eval might return "
+                                                          "unexpected result on constant node, "
+                                                          "please use mixed_type_eval instead.";
+                        ///\warning const->get_vector<T> only reinterprete memory to desired T.
+                        result[outnode->get_unique_name()].push_back(
+                            move(const_node->get_buffer()));
+                    }
+                    else
+                    {
+                        auto pctx = gctx.get_profiling_context(outnode);
+                        result[outnode->get_unique_name()] =
+                            pctx->kernel_memory->save_outputs(type_out);
+                    }
+                }
+
+                // The result data ptr is like result["nodename"]->kernel_memory->unsafe_output(0);
+                return move(result);
+            }
+
             unordered_map<string, vector<vector<char>>>
                 mixed_type_eval(const vector<vector<char>>& inputs)
             {
@@ -389,6 +502,60 @@ namespace nnfusion
                             edge->get_dst_input(),
                             (void*)inputs[parameter_map[gnode]].data(),
                             _size);
+                    }
+                }
+                else if (gnode->is_constant())
+                {
+                    auto const_node = static_pointer_cast<op::Constant>(gnode->get_op_ptr());
+
+                    for (auto& edge : gnode->get_out_edges())
+                    {
+                        // Skip control edge
+                        if (edge->is_control_edge())
+                            continue;
+                        auto dstnode = edge->get_dst();
+                        auto dstpctx = gctx.get_profiling_context(dstnode);
+                        // This statments will remove some allocated memory.
+                        dstpctx->kernel_memory->load_input_from(edge->get_dst_input(),
+                                                                const_node->get_data_ptr(),
+                                                                const_node->get_data_size());
+                    }
+                }
+                else
+                {
+                    auto pctx = gctx.get_profiling_context(gnode);
+                    for (auto& edge : gnode->get_out_edges())
+                    {
+                        // Skip control edge
+                        if (edge->is_control_edge())
+                            continue;
+                        auto dstnode = edge->get_dst();
+                        auto dstpctx = gctx.get_profiling_context(dstnode);
+                        if (!dstpctx)
+                            continue;
+                        // This statments will remove some allocated memory.
+                        pctx->kernel_memory->forward(
+                            edge->get_src_output(), dstpctx->kernel_memory, edge->get_dst_input());
+                    }
+                }
+            }
+
+            void connect_nodes(shared_ptr<GNode> gnode, const vector<DataBuffer>& inputs)
+            {
+                if (gnode->is_parameter())
+                {
+                    for (auto& edge : gnode->get_out_edges())
+                    {
+                        // Skip control edge
+                        if (edge->is_control_edge())
+                            continue;
+                        auto dstnode = edge->get_dst();
+                        auto dstpctx = gctx.get_profiling_context(dstnode);
+                        size_t _size = nnfusion::shape_size(gnode->get_shape()) *
+                                       gnode->get_element_type().size();
+                        // This statments will remove some allocated memory.
+                        dstpctx->kernel_memory->load_input_from(
+                            edge->get_dst_input(), inputs[parameter_map[gnode]].data(), _size);
                     }
                 }
                 else if (gnode->is_constant())

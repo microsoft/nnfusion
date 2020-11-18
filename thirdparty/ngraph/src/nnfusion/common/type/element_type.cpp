@@ -62,6 +62,8 @@ bool element::Type::nnfusion_element_type_to_dtype_string(const element::Type& n
         dtype = "char";
     else if (ng_et == element::character)
         dtype = "char";
+    else if (ng_et == element::f16)
+        dtype = "float16";
     else if (ng_et == element::f32)
         dtype = "float32";
     else if (ng_et == element::f64)
@@ -132,7 +134,7 @@ bool element::Type::operator<(const Type& other) const
     v2 |= static_cast<size_t>(other.m_is_signed ? 2 : 0);
     v2 |= static_cast<size_t>(other.m_is_quantized ? 1 : 0);
 
-    return v1 < v2;
+    return v1 == v2 ? m_cname < other.m_cname : v1 < v2;
 }
 
 size_t element::Type::size() const
@@ -146,7 +148,8 @@ size_t element::Type::hash() const
     size_t h2 = std::hash<bool>{}(m_is_real);
     size_t h3 = std::hash<bool>{}(m_is_signed);
     size_t h4 = std::hash<bool>{}(m_is_quantized);
-    return h1 ^ ((h2 ^ ((h3 ^ (h4 << 1)) << 1)) << 1);
+    size_t h5 = std::hash<std::string>{}(m_cname);
+    return (h1 ^ ((h2 ^ ((h3 ^ (h4 << 1)) << 1)) << 1) << 1) ^ h5;
 }
 
 namespace nnfusion
@@ -162,6 +165,11 @@ namespace nnfusion
         const Type& from<bool>()
         {
             return boolean;
+        }
+        template <>
+        const Type& from<half>()
+        {
+            return f16;
         }
         template <>
         const Type& from<float>()

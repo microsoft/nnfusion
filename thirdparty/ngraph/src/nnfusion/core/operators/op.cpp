@@ -61,6 +61,10 @@ void Op::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
 {
 }
 
+void Op::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
+{
+}
+
 bool Op::is_parameter() const
 {
     return false;

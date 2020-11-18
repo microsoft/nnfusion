@@ -169,7 +169,7 @@ namespace nnfusion
                 nnfusion::Shape result_shape;
                 size_t rank;
                 AxisSet axes;
-                bool is_memcpy;
+                bool is_memcpy = false;
             };
 
             class RocmBroadcast : public Broadcast

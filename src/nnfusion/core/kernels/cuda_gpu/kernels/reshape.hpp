@@ -26,7 +26,7 @@ namespace nnfusion
                 nnfusion::Shape result_shape;
                 nnfusion::AxisVector input_order;
                 shared_ptr<nnfusion::op::Reshape> reshape;
-                bool is_memcpy;
+                bool is_memcpy = false;
                 bool is_noop;
             };
 
@@ -90,7 +90,7 @@ namespace nnfusion
                 nnfusion::Shape result_shape;
                 nnfusion::AxisVector input_order;
                 shared_ptr<nnfusion::op::Reshape> reshape;
-                bool is_memcpy;
+                bool is_memcpy = false;
                 bool is_noop;
             };
 

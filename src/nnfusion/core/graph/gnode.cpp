@@ -10,6 +10,8 @@
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 
+#include "nnfusion/core/operators/op_define/fused.hpp"
+
 using namespace std;
 using namespace nnfusion::graph;
 using namespace nnfusion::op;
@@ -372,4 +374,100 @@ const nnfusion::Shape& GNodeIndex::get_shape() const
 const nnfusion::element::Type& GNodeIndex::get_element_type() const
 {
     return gnode->get_output_element_type(index);
+}
+
+void FusedGNode::build_fused_node(std::unordered_set<std::shared_ptr<GNode>> nodes,
+                                  std::shared_ptr<Graph> graph,
+                                  bool clean_graph)
+{
+    reorder_nodes(nodes, graph);
+    set_inputs_and_outputs(graph);
+    derive_op_def();
+    if (clean_graph)
+        clean_nodes(graph);
+}
+
+void FusedGNode::reorder_nodes(std::unordered_set<std::shared_ptr<GNode>> nodes,
+                               std::shared_ptr<Graph> graph)
+{
+    NNFUSION_CHECK(!m_order_nodes.size());
+    for (auto& node : graph->get_ordered_ops())
+    {
+        if (nodes.find(node) == nodes.end())
+            continue;
+        m_order_nodes.push_back(node);
+    }
+}
+
+void FusedGNode::set_inputs_and_outputs(std::shared_ptr<Graph> graph)
+{
+    NNFUSION_CHECK(m_order_nodes.size());
+    std::unordered_set<std::shared_ptr<GNode>> cached_nodes;
+    for (const auto& m_node : m_order_nodes)
+        cached_nodes.insert(m_node);
+
+    // Regirster input tensors
+    for (const auto& m_node : m_order_nodes)
+    {
+        // Add non-control-edges as inputs of fused node
+        auto next_input_id = m_inputs.size();
+        for (auto in_id = 0; in_id < m_node->get_input_size(); ++in_id)
+        {
+            auto& in_edge = m_node->get_in_edge(in_id);
+            if (cached_nodes.find(in_edge->get_src()) == cached_nodes.end())
+            {
+                auto input_id = next_input_id++;
+                set_input(input_id, m_node->get_inputs().at(in_edge->get_dst_input()));
+                graph->add_edge(
+                    in_edge->get_src(), in_edge->get_src_output(), shared_from_this(), input_id);
+            }
+        }
+        // Add control-edges as inputs of fused node
+        for (const auto& in_edge : m_node->get_in_edges())
+        {
+            if (!in_edge->is_control_edge())
+                continue;
+            graph->add_edge(in_edge->get_src(),
+                            in_edge->get_src_output(),
+                            shared_from_this(),
+                            Graph::kControlSlot);
+        }
+    }
+
+    // Register output tensors
+    for (const auto& m_node : m_order_nodes)
+    {
+        for (int out_id = 0; out_id < m_node->get_output_size(); ++out_id)
+        {
+            bool has_output = false;
+            auto out_edges = m_node->get_output_users(out_id);
+            for (auto out_edge : out_edges)
+            {
+                auto out_node = out_edge->get_dst();
+                if (cached_nodes.find(out_node) != cached_nodes.end())
+                    continue;
+                if (!has_output)
+                {
+                    has_output = true;
+                    set_output(get_output_size(),
+                               m_node->get_outputs().at(out_edge->get_src_output()));
+                }
+                graph->add_edge(shared_from_this(),
+                                get_output_size() - 1,
+                                out_edge->get_dst(),
+                                out_edge->get_dst_input());
+            }
+        }
+    }
+}
+
+void FusedGNode::clean_nodes(std::shared_ptr<Graph> graph)
+{
+    for (auto& node : m_order_nodes)
+        graph->remove_node(node);
+}
+
+void FusedGNode::derive_op_def()
+{
+    static_pointer_cast<nnfusion::op::Fused>(m_op_ptr)->register_ir2(m_order_nodes);
 }

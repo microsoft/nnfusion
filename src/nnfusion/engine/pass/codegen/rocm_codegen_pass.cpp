@@ -156,7 +156,7 @@ set(CMAKE_CXX_FLAGS "-O2 -Wno-ignored-attributes -Wno-duplicate-decl-specifier")
            << ")\n";
         lu << "include_directories(${CMAKE_SOURCE_DIR})\n\n";
     }
-    lu << "add_library(${TARGET_NAME} ${SRC})\n";
+    lu << "add_library(${TARGET_NAME} SHARED ${SRC})\n";
 
     // Prepare submodule
     {

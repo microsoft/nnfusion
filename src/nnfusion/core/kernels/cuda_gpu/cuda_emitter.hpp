@@ -176,11 +176,11 @@ namespace nnfusion
                 virtual bool require_cublas_handle() { return false; }
             };
 
-            class AntaresCudaKernelEmitter : public CudaEmitter
+            class AntaresCudaKernelEmitter : public BlockCudaEmitter
             {
             public:
                 AntaresCudaKernelEmitter(shared_ptr<KernelContext> ctx)
-                    : CudaEmitter(ctx)
+                    : BlockCudaEmitter(ctx)
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
                     GENERIC_OP_LOGGING();
@@ -227,7 +227,7 @@ namespace nnfusion
                 void set_launch_config() override {}
                 AntaresKEImp::Pointer m_antares_ke_imp;
                 std::string antares_code;
-                bool is_memcpy;
+                bool is_memcpy = false;
             };
 
         } // namespace cuda

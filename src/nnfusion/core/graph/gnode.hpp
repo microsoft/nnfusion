@@ -28,6 +28,7 @@ namespace nnfusion
     {
         class Edge;
         class GNode;
+        class Graph;
         struct GNodeIndex
         {
             explicit GNodeIndex(std::shared_ptr<GNode> gnode, int i)
@@ -166,12 +167,15 @@ namespace nnfusion
             // std::unordered_set<std::shared_ptr<descriptor::Tensor>> liveness_new_list;
             // std::unordered_set<std::shared_ptr<descriptor::Tensor>> liveness_free_list;
 
+            void set_implementation(std::string impl) { m_implementation = impl; };
+            std::string get_implementation() { return m_implementation; };
         protected:
             int64_t m_id; // m_id is for graph, the index in graph m_nodes
             size_t m_instance_id;
             static std::atomic<size_t> m_next_instance_id;
             std::string m_name;
             const std::string m_unique_name;
+            std::string m_implementation;
 
             std::string m_op_type;
             std::shared_ptr<op::Op> m_op_ptr;
@@ -181,6 +185,29 @@ namespace nnfusion
 
             std::vector<std::shared_ptr<Input>> m_inputs;
             std::vector<std::shared_ptr<Output>> m_outputs;
+        };
+
+        class FusedGNode : public GNode
+        {
+        public:
+            FusedGNode(const std::shared_ptr<op::Op> op_ptr)
+                : GNode()
+            {
+                construct_from_op_ptr(op_ptr);
+            };
+
+            void build_fused_node(std::unordered_set<std::shared_ptr<GNode>> nodes,
+                                  std::shared_ptr<Graph> graph,
+                                  bool clean_graph = true);
+
+        protected:
+            void reorder_nodes(std::unordered_set<std::shared_ptr<GNode>> nodes,
+                               std::shared_ptr<Graph> graph);
+            void set_inputs_and_outputs(std::shared_ptr<Graph> graph);
+            void derive_op_def();
+            void clean_nodes(std::shared_ptr<Graph> graph);
+
+            std::vector<std::shared_ptr<GNode>> m_order_nodes;
         };
     } // namespace graph
 } // namespace nnfusion

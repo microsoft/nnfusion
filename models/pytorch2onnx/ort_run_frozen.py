@@ -1,33 +1,38 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-import onnxruntime
+import onnxruntime as ort
 import numpy as np
 import argparse
 import os
 import sys
 import time
+import onnx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--file', type=str, default='./frozen_graph.onnx', help='The file name of the frozen graph.')
 parser.add_argument('--warmup', type=int, default=5, help='The number of warmup iterations.')
 parser.add_argument('--iters', type=int, default=100, help='The number of execution iterations.')
 parser.add_argument('--provider', type=str, default='', help='The backend provider.')
+parser.add_argument('--logger_severity', type=int, default=2, help='onnxruntime.set_default_logger_severity.')
 args = parser.parse_args()
 
 if not os.path.exists(args.file):
     parser.exit(1, 'The specified file does not exist: {}'.format(args.file))
 
+onnx.checker.check_model(args.file)
+print("ONNX model check passed!")
 
 def get_numpy(tensor):
-    # ONNX Data Types: https://github.com/onnx/onnx/blob/master/docs/IR.md#standard-data-types
+    # ONNX Data Types Doc: https://github.com/onnx/onnx/blob/master/docs/IR.md#standard-data-types
+    # ONNX Data Types Code: https://github.com/onnx/onnx/blob/master/onnx/defs/data_type_utils.h
     # NumPy Data Types: https://numpy.org/doc/stable/user/basics.types.html
     def get_numpy_dtype(onnx_dtype):
         if 'float16' in onnx_dtype:
             return np.float16
-        elif 'float32' in onnx_dtype:
+        elif 'float' in onnx_dtype:
             return np.float32
-        elif 'float64' in onnx_dtype:
+        elif 'double' in onnx_dtype:
             return np.float64
         elif 'int8' in onnx_dtype:
             return np.int8
@@ -41,6 +46,8 @@ def get_numpy(tensor):
             return np.uint8
         elif 'uint16' in onnx_dtype:
             return np.uint16
+        elif 'bool' in onnx_dtype:
+            return np.bool_
         else:
             raise NotImplementedError(onnx_dtype + " is not supported in this script yet.")
         return np.float32
@@ -49,9 +56,13 @@ def get_numpy(tensor):
     shape = tensor.shape
     return np.ones(shape, dtype=dtype)
 
-# print("Execution Device:", onnxruntime.get_device())
+# print("Execution Device:", ort.get_device())
 
-ort_session = onnxruntime.InferenceSession(args.file)
+print("Importing ONNX model into ONNX Runtime...")
+ort.set_default_logger_severity(args.logger_severity)
+sess_options = ort.SessionOptions()
+sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+ort_session = ort.InferenceSession(args.file, sess_options)
 
 if args.provider != '':
     ort_session.set_providers([args.provider])

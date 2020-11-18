@@ -14,6 +14,7 @@ set(ENGINE
     op.cpp
     memory_allocator.cpp
     async_manager.cpp
+    util/file_util.cpp
 )
 
 add_library(nnfusion_backend SHARED
@@ -38,7 +39,6 @@ target_link_libraries(nnfusion_backend PRIVATE
     nnfusion_cache_manager
     kernels_cache
     nnfusion_engine_profiler
-    ngraph_backend
     ${NoWholeArchiveFlag} 
 )
 

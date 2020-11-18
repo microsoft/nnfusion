@@ -3,6 +3,7 @@
 
 
 add_subdirectory(blockfusion)
+add_subdirectory(autodiff)
 
 set(SRC
     assign_layout_pass.cpp
@@ -20,6 +21,8 @@ set(SRC
     pattern_substitution.cpp
     batchnorm_inference_folding_pass.cpp
     dot_transpose_pass.cpp
+    common_subexpression_elimination_pass.cpp
+    autodiff_pass.cpp
 )
 
 add_library(nnfusion_engine_pass_graph STATIC ${SRC})
@@ -28,6 +31,6 @@ target_include_directories(nnfusion_engine_pass_graph SYSTEM PUBLIC
 )
 target_compile_options(nnfusion_engine_pass_graph PRIVATE "-fPIC")
 
-target_link_libraries(nnfusion_engine_pass_graph PRIVATE nnfusion_common nnfusion_engine_pass_graph_blockfusion ngraph_engine_pass_graph
+target_link_libraries(nnfusion_engine_pass_graph PRIVATE nnfusion_common nnfusion_engine_pass_graph_blockfusion nnfusion_engine_pass_graph_autodiff
 gflags ${CURL_LIBRARIES}
 )

@@ -10,4 +10,8 @@ if (TORCHSCRIPT_FRONTEND)
     add_subdirectory(torchscript_import)
 endif()
 
+if (ONNX_FRONTEND)
+    add_subdirectory(onnx_import)
+endif()
+
 add_subdirectory(util)

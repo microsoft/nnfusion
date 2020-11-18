@@ -30,10 +30,6 @@ def get_numpy(tensor):
     def get_numpy_dtype(onnx_dtype):
         if 'float16' in onnx_dtype:
             return np.float16
-        elif 'float32' in onnx_dtype:
-            return np.float32
-        elif 'float64' in onnx_dtype:
-            return np.float64
         elif 'float' in onnx_dtype:
             return np.float32
         elif 'double' in onnx_dtype:

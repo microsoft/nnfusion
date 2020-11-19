@@ -23,23 +23,23 @@ namespace nnfusion
         {
             switch (option)
             {
+            // case 0:
+            // {
+            //     auto graph = std::make_shared<graph::Graph>();
+            //     Shape shape_a{6};
+            //     auto A = make_shared<op::Parameter>(element::f32, shape_a);
+            //     auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
+            //     Shape shape_b{};
+            //     auto B = make_shared<op::Parameter>(element::f32, shape_b);
+            //     auto B_gnode = graph->add_node_and_edge(B, GNodeVector({}));
+            //     Shape padding_below{0};
+            //     Shape padding_above{0};
+            //     Shape padding_interior{2};
+            //     auto r = make_shared<op::Pad>(padding_below, padding_above, padding_interior);
+            //     auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
+            //     return r_gnode;
+            // }
             case 0:
-            {
-                auto graph = std::make_shared<graph::Graph>();
-                Shape shape_a{6};
-                auto A = make_shared<op::Parameter>(element::f32, shape_a);
-                auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
-                Shape shape_b{};
-                auto B = make_shared<op::Parameter>(element::f32, shape_b);
-                auto B_gnode = graph->add_node_and_edge(B, GNodeVector({}));
-                Shape padding_below{0};
-                Shape padding_above{0};
-                Shape padding_interior{2};
-                auto r = make_shared<op::Pad>(padding_below, padding_above, padding_interior);
-                auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
-                return r_gnode;
-            }
-            case 1:
             {
                 auto graph = std::make_shared<graph::Graph>();
                 Shape shape_a{6};
@@ -55,39 +55,39 @@ namespace nnfusion
                 auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
                 return r_gnode;
             }
-            case 2:
-            {
-                auto graph = std::make_shared<graph::Graph>();
-                Shape shape_a{6};
-                auto A = make_shared<op::Parameter>(element::f32, shape_a);
-                auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
-                Shape shape_b{};
-                auto B = make_shared<op::Parameter>(element::f32, shape_b);
-                auto B_gnode = graph->add_node_and_edge(B, GNodeVector({}));
-                Shape padding_below{4};
-                Shape padding_above{5};
-                Shape padding_interior{2};
-                auto r = make_shared<op::Pad>(padding_below, padding_above, padding_interior);
-                auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
-                return r_gnode;
-            }
-            case 3:
-            {
-                auto graph = std::make_shared<graph::Graph>();
-                Shape shape_a{2, 3};
-                auto A = make_shared<op::Parameter>(element::f32, shape_a);
-                auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
-                Shape shape_b{};
-                auto B = make_shared<op::Parameter>(element::f32, shape_b);
-                auto B_gnode = graph->add_node_and_edge(B, GNodeVector({}));
-                Shape padding_below{1, 0};
-                Shape padding_above{2, 1};
-                Shape padding_interior{2, 1};
-                auto r = make_shared<op::Pad>(padding_below, padding_above, padding_interior);
-                auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
-                return r_gnode;
-            }
-            case 4:
+            // case 2:
+            // {
+            //     auto graph = std::make_shared<graph::Graph>();
+            //     Shape shape_a{6};
+            //     auto A = make_shared<op::Parameter>(element::f32, shape_a);
+            //     auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
+            //     Shape shape_b{};
+            //     auto B = make_shared<op::Parameter>(element::f32, shape_b);
+            //     auto B_gnode = graph->add_node_and_edge(B, GNodeVector({}));
+            //     Shape padding_below{4};
+            //     Shape padding_above{5};
+            //     Shape padding_interior{2};
+            //     auto r = make_shared<op::Pad>(padding_below, padding_above, padding_interior);
+            //     auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
+            //     return r_gnode;
+            // }
+            // case 3:
+            // {
+            //     auto graph = std::make_shared<graph::Graph>();
+            //     Shape shape_a{2, 3};
+            //     auto A = make_shared<op::Parameter>(element::f32, shape_a);
+            //     auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
+            //     Shape shape_b{};
+            //     auto B = make_shared<op::Parameter>(element::f32, shape_b);
+            //     auto B_gnode = graph->add_node_and_edge(B, GNodeVector({}));
+            //     Shape padding_below{1, 0};
+            //     Shape padding_above{2, 1};
+            //     Shape padding_interior{2, 1};
+            //     auto r = make_shared<op::Pad>(padding_below, padding_above, padding_interior);
+            //     auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
+            //     return r_gnode;
+            // }
+            case 1:
             {
                 auto graph = std::make_shared<graph::Graph>();
                 Shape shape_a{0, 0};
@@ -103,7 +103,7 @@ namespace nnfusion
                 auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
                 return r_gnode;
             }
-            case 5:
+            case 2:
             {
                 auto graph = std::make_shared<graph::Graph>();
                 Shape shape_a{0, 3};
@@ -119,7 +119,7 @@ namespace nnfusion
                 auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
                 return r_gnode;
             }
-            case 6:
+            case 3:
             {
                 auto graph = std::make_shared<graph::Graph>();
                 Shape shape_a{3, 0};
@@ -135,7 +135,7 @@ namespace nnfusion
                 auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
                 return r_gnode;
             }
-            case 7:
+            case 4:
             {
                 auto graph = std::make_shared<graph::Graph>();
                 Shape shape_a{1, 2, 2, 2};
@@ -151,22 +151,22 @@ namespace nnfusion
                 auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
                 return r_gnode;
             }
-            case 8:
-            {
-                auto graph = std::make_shared<graph::Graph>();
-                Shape shape_a{2, 0, 3, 2};
-                auto A = make_shared<op::Parameter>(element::f32, shape_a);
-                auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
-                Shape shape_b{};
-                auto B = make_shared<op::Parameter>(element::f32, shape_b);
-                auto B_gnode = graph->add_node_and_edge(B, GNodeVector({}));
-                Shape padding_below{1, 0, 0, 0};
-                Shape padding_above{0, 2, 0, 0};
-                Shape padding_interior{2, 1, 0, 0};
-                auto r = make_shared<op::Pad>(padding_below, padding_above, padding_interior);
-                auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
-                return r_gnode;
-            }
+            // case 8:
+            // {
+            //     auto graph = std::make_shared<graph::Graph>();
+            //     Shape shape_a{2, 0, 3, 2};
+            //     auto A = make_shared<op::Parameter>(element::f32, shape_a);
+            //     auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
+            //     Shape shape_b{};
+            //     auto B = make_shared<op::Parameter>(element::f32, shape_b);
+            //     auto B_gnode = graph->add_node_and_edge(B, GNodeVector({}));
+            //     Shape padding_below{1, 0, 0, 0};
+            //     Shape padding_above{0, 2, 0, 0};
+            //     Shape padding_interior{2, 1, 0, 0};
+            //     auto r = make_shared<op::Pad>(padding_below, padding_above, padding_interior);
+            //     auto r_gnode = graph->add_node_and_edge(r, {A_gnode, B_gnode});
+            //     return r_gnode;
+            // }
             default: return nullptr;
             }
         }
@@ -176,6 +176,15 @@ namespace nnfusion
         {
             switch (option)
             {
+            // case 0:
+            // {
+            //     vector<float> a = test::NDArray<float, 1>({1, 2, 3, 4, 5, 6}).get_vector();
+            //     vector<float> b = vector<float>{2112};
+            //     auto return_vector = vector<float>();
+            //     return_vector.insert(return_vector.end(), a.begin(), a.end());
+            //     return_vector.insert(return_vector.end(), b.begin(), b.end());
+            //     return return_vector;
+            // }
             case 0:
             {
                 vector<float> a = test::NDArray<float, 1>({1, 2, 3, 4, 5, 6}).get_vector();
@@ -185,55 +194,46 @@ namespace nnfusion
                 return_vector.insert(return_vector.end(), b.begin(), b.end());
                 return return_vector;
             }
+            // case 2:
+            // {
+            //     vector<float> a = test::NDArray<float, 1>({1, 2, 3, 4, 5, 6}).get_vector();
+            //     vector<float> b = vector<float>{2112};
+            //     auto return_vector = vector<float>();
+            //     return_vector.insert(return_vector.end(), a.begin(), a.end());
+            //     return_vector.insert(return_vector.end(), b.begin(), b.end());
+            //     return return_vector;
+            // }
+            // case 3:
+            // {
+            //     vector<float> a = test::NDArray<float, 2>({{1, 2, 3}, {4, 5, 6}}).get_vector();
+            //     vector<float> b = vector<float>{9};
+            //     auto return_vector = vector<float>();
+            //     return_vector.insert(return_vector.end(), a.begin(), a.end());
+            //     return_vector.insert(return_vector.end(), b.begin(), b.end());
+            //     return return_vector;
+            // }
             case 1:
             {
-                vector<float> a = test::NDArray<float, 1>({1, 2, 3, 4, 5, 6}).get_vector();
                 vector<float> b = vector<float>{2112};
                 auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), a.begin(), a.end());
                 return_vector.insert(return_vector.end(), b.begin(), b.end());
                 return return_vector;
             }
             case 2:
             {
-                vector<float> a = test::NDArray<float, 1>({1, 2, 3, 4, 5, 6}).get_vector();
                 vector<float> b = vector<float>{2112};
                 auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), a.begin(), a.end());
                 return_vector.insert(return_vector.end(), b.begin(), b.end());
                 return return_vector;
             }
             case 3:
             {
-                vector<float> a = test::NDArray<float, 2>({{1, 2, 3}, {4, 5, 6}}).get_vector();
-                vector<float> b = vector<float>{9};
+                vector<float> b = vector<float>{2112};
                 auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), a.begin(), a.end());
                 return_vector.insert(return_vector.end(), b.begin(), b.end());
                 return return_vector;
             }
             case 4:
-            {
-                vector<float> b = vector<float>{2112};
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), b.begin(), b.end());
-                return return_vector;
-            }
-            case 5:
-            {
-                vector<float> b = vector<float>{2112};
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), b.begin(), b.end());
-                return return_vector;
-            }
-            case 6:
-            {
-                vector<float> b = vector<float>{2112};
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), b.begin(), b.end());
-                return return_vector;
-            }
-            case 7:
             {
                 vector<float> a = test::NDArray<float, 4>({{{{0.0f, 0.0f}, {0.0f, 0.0f}},
                                                             {{0.0f, 0.0f}, {0.0f, 0.0f}}}})
@@ -244,13 +244,13 @@ namespace nnfusion
                 return_vector.insert(return_vector.end(), b.begin(), b.end());
                 return return_vector;
             }
-            case 8:
-            {
-                vector<float> b = vector<float>{2112};
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), b.begin(), b.end());
-                return return_vector;
-            }
+            // case 8:
+            // {
+            //     vector<float> b = vector<float>{2112};
+            //     auto return_vector = vector<float>();
+            //     return_vector.insert(return_vector.end(), b.begin(), b.end());
+            //     return return_vector;
+            // }
             default: return vector<float>();
             }
         }
@@ -260,30 +260,30 @@ namespace nnfusion
         {
             switch (option)
             {
+            // case 0:
+            // {
+            //     vector<float> result = test::NDArray<float, 1>({1,
+            //                                                     2112,
+            //                                                     2112,
+            //                                                     2,
+            //                                                     2112,
+            //                                                     2112,
+            //                                                     3,
+            //                                                     2112,
+            //                                                     2112,
+            //                                                     4,
+            //                                                     2112,
+            //                                                     2112,
+            //                                                     5,
+            //                                                     2112,
+            //                                                     2112,
+            //                                                     6})
+            //                                .get_vector();
+            //     auto return_vector = vector<float>();
+            //     return_vector.insert(return_vector.end(), result.begin(), result.end());
+            //     return return_vector;
+            // }
             case 0:
-            {
-                vector<float> result = test::NDArray<float, 1>({1,
-                                                                2112,
-                                                                2112,
-                                                                2,
-                                                                2112,
-                                                                2112,
-                                                                3,
-                                                                2112,
-                                                                2112,
-                                                                4,
-                                                                2112,
-                                                                2112,
-                                                                5,
-                                                                2112,
-                                                                2112,
-                                                                6})
-                                           .get_vector();
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), result.begin(), result.end());
-                return return_vector;
-            }
-            case 1:
             {
                 vector<float> result =
                     test::NDArray<float, 1>(
@@ -293,68 +293,68 @@ namespace nnfusion
                 return_vector.insert(return_vector.end(), result.begin(), result.end());
                 return return_vector;
             }
+            // case 2:
+            // {
+            //     vector<float> result =
+            //         test::NDArray<float, 1>({2112, 2112, 2112, 2112, 1,    2112, 2112, 2, 2112,
+            //                                  2112, 3,    2112, 2112, 4,    2112, 2112, 5, 2112,
+            //                                  2112, 6,    2112, 2112, 2112, 2112, 2112})
+            //             .get_vector();
+            //     auto return_vector = vector<float>();
+            //     return_vector.insert(return_vector.end(), result.begin(), result.end());
+            //     return return_vector;
+            // }
+            // case 3:
+            // {
+            //     vector<float> result = test::NDArray<float, 2>({{9, 9, 9, 9, 9, 9},
+            //                                                     {1, 9, 2, 9, 3, 9},
+            //                                                     {9, 9, 9, 9, 9, 9},
+            //                                                     {9, 9, 9, 9, 9, 9},
+            //                                                     {4, 9, 5, 9, 6, 9},
+            //                                                     {9, 9, 9, 9, 9, 9},
+            //                                                     {9, 9, 9, 9, 9, 9}})
+            //                                .get_vector();
+            //     auto return_vector = vector<float>();
+            //     return_vector.insert(return_vector.end(), result.begin(), result.end());
+            //     return return_vector;
+            // }
+            case 1:
+            {
+                vector<float> result = test::NDArray<float, 2>({{2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112}})
+                                           .get_vector();
+                auto return_vector = vector<float>();
+                return_vector.insert(return_vector.end(), result.begin(), result.end());
+                return return_vector;
+            }
             case 2:
             {
-                vector<float> result =
-                    test::NDArray<float, 1>({2112, 2112, 2112, 2112, 1,    2112, 2112, 2, 2112,
-                                             2112, 3,    2112, 2112, 4,    2112, 2112, 5, 2112,
-                                             2112, 6,    2112, 2112, 2112, 2112, 2112})
-                        .get_vector();
+                vector<float> result = test::NDArray<float, 2>({{2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112}})
+                                           .get_vector();
                 auto return_vector = vector<float>();
                 return_vector.insert(return_vector.end(), result.begin(), result.end());
                 return return_vector;
             }
             case 3:
             {
-                vector<float> result = test::NDArray<float, 2>({{9, 9, 9, 9, 9, 9},
-                                                                {1, 9, 2, 9, 3, 9},
-                                                                {9, 9, 9, 9, 9, 9},
-                                                                {9, 9, 9, 9, 9, 9},
-                                                                {4, 9, 5, 9, 6, 9},
-                                                                {9, 9, 9, 9, 9, 9},
-                                                                {9, 9, 9, 9, 9, 9}})
+                vector<float> result = test::NDArray<float, 2>({{2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112},
+                                                                {2112, 2112, 2112, 2112, 2112}})
                                            .get_vector();
                 auto return_vector = vector<float>();
                 return_vector.insert(return_vector.end(), result.begin(), result.end());
                 return return_vector;
             }
             case 4:
-            {
-                vector<float> result = test::NDArray<float, 2>({{2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112}})
-                                           .get_vector();
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), result.begin(), result.end());
-                return return_vector;
-            }
-            case 5:
-            {
-                vector<float> result = test::NDArray<float, 2>({{2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112}})
-                                           .get_vector();
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), result.begin(), result.end());
-                return return_vector;
-            }
-            case 6:
-            {
-                vector<float> result = test::NDArray<float, 2>({{2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112},
-                                                                {2112, 2112, 2112, 2112, 2112}})
-                                           .get_vector();
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), result.begin(), result.end());
-                return return_vector;
-            }
-            case 7:
             {
                 vector<float> result = test::NDArray<float, 4>({{{{42.0f, 42.0f, 42.0f, 42.0f},
                                                                   {42.0f, 0.0f, 0.0f, 42.0f},
@@ -369,14 +369,14 @@ namespace nnfusion
                 return_vector.insert(return_vector.end(), result.begin(), result.end());
                 return return_vector;
             }
-            case 8:
-            {
-                vector<float> expected(5 * 2 * 3 * 2, 2112);
-                vector<float> result = expected;
-                auto return_vector = vector<float>();
-                return_vector.insert(return_vector.end(), result.begin(), result.end());
-                return return_vector;
-            }
+            // case 8:
+            // {
+            //     vector<float> expected(5 * 2 * 3 * 2, 2112);
+            //     vector<float> result = expected;
+            //     auto return_vector = vector<float>();
+            //     return_vector.insert(return_vector.end(), result.begin(), result.end());
+            //     return return_vector;
+            // }
             default: return vector<float>();
             }
         }

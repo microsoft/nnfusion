@@ -52,11 +52,13 @@
 #include "nnfusion/core/operators/op_define/sqrt.hpp"
 #include "nnfusion/core/operators/op_define/subtract.hpp"
 #include "nnfusion/core/operators/op_define/sum.hpp"
+#include "nnfusion/engine/pass/graph/kernel_selection.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 
 using namespace nnfusion::inventory;
 using namespace nnfusion::profiler;
 
+DECLARE_bool(fantares_mode);
 namespace nnfusion
 {
     namespace test

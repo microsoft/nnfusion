@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #include "data_buffer.hpp"
 
 using namespace nnfusion::test;

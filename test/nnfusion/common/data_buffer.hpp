@@ -1,6 +1,9 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+#include <climits>
 #include <cstdlib>
 #include <vector>
-#include <climits>
 
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
@@ -25,20 +28,21 @@ namespace nnfusion
         {
             for (size_t i = 0; i < len; ++i)
             {
-                arr[i] = 1.*rand()/RAND_MAX;
+                arr[i] = 1. * rand() / RAND_MAX;
             }
         }
 
         template <typename T, typename U, typename V>
         bool arrcmp(U* x, V* y, size_t len)
         {
-            T *lhs = reinterpret_cast<T*>(x);
-            T *rhs = reinterpret_cast<T*>(y);
+            T* lhs = reinterpret_cast<T*>(x);
+            T* rhs = reinterpret_cast<T*>(y);
             for (size_t i = 0; i < len; ++i)
             {
                 if (lhs[i] != rhs[i])
                 {
-                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << lhs[i] << " != rhs[" << i << "] = " << rhs[i];
+                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << lhs[i] << " != rhs[" << i
+                                       << "] = " << rhs[i];
                     return false;
                 }
             }
@@ -48,21 +52,22 @@ namespace nnfusion
         template <typename U, typename V>
         bool bitcmp(U* x, V* y, size_t len)
         {
-            uint8_t *lhs = reinterpret_cast<uint8_t*>(x);
-            uint8_t *rhs = reinterpret_cast<uint8_t*>(y);
+            uint8_t* lhs = reinterpret_cast<uint8_t*>(x);
+            uint8_t* rhs = reinterpret_cast<uint8_t*>(y);
             for (size_t i = 0; i < len; ++i)
             {
                 if (lhs[i] != rhs[i])
                 {
-                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << lhs[i] << " != rhs[" << i << "] = " << rhs[i];
+                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << lhs[i] << " != rhs[" << i
+                                       << "] = " << rhs[i];
                     return false;
                 }
             }
             return true;
-        } 
+        }
 
         template <typename T>
-        bool bufarrcmp(const DataBuffer &buf, T* arr)
+        bool bufarrcmp(const DataBuffer& buf, T* arr)
         {
             for (size_t i = 0; i < buf.size(); ++i)
             {
@@ -71,12 +76,13 @@ namespace nnfusion
                 buf.getElement(i, &x);
                 if (x != y)
                 {
-                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << x << " != rhs[" << i << "] = " << y;
+                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << x << " != rhs[" << i
+                                       << "] = " << y;
                     return false;
                 }
             }
             return true;
-        } 
+        }
 
         template <typename T>
         void basicTestDataBuffer()
@@ -112,7 +118,7 @@ namespace nnfusion
             }
 
             // test move_to
-            void* p = nullptr, *pt = buf.data();
+            void *p = nullptr, *pt = buf.data();
             buf.move_to(reinterpret_cast<void**>(&p));
             ASSERT_NE(p, nullptr);
             ASSERT_EQ(buf.data(), nullptr);
@@ -151,8 +157,9 @@ namespace nnfusion
             ASSERT_TRUE(arrcmp<T>(buf.data(), buf2.data(), 5));
         }
 
-        template<typename T>
-        void testStringLoading() {
+        template <typename T>
+        void testStringLoading()
+        {
             element::Type tp = element::from<T>();
             DataBuffer buf(tp), buf2(tp), buf3(tp);
             T ele[10];
@@ -179,16 +186,23 @@ namespace nnfusion
         }
 
         template <>
-        void testStringLoading<int8_t>() {}
+        void testStringLoading<int8_t>()
+        {
+        }
 
         template <>
-        void testStringLoading<uint8_t>() {}
-        
+        void testStringLoading<uint8_t>()
+        {
+        }
+
         template <>
-        void testStringLoading<char>() {}
+        void testStringLoading<char>()
+        {
+        }
 
         template <typename T>
-        void fullTestDataBuffer() {
+        void fullTestDataBuffer()
+        {
             basicTestDataBuffer<T>();
             testStringLoading<T>();
         }

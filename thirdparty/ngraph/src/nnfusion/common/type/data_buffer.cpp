@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #include <cstring>
 
 #include "data_buffer.hpp"
@@ -138,6 +141,7 @@ void DataBuffer::loadFromStrings(const std::vector<std::string>& vec, size_t siz
     }
     else
     {
-        NNFUSION_CHECK_FAIL() << "Size should be either zero or equal to vec.size() or vec.size() should be exact one";
+        NNFUSION_CHECK_FAIL() << "Size should be either zero or equal to vec.size() or vec.size() "
+                                 "should be exact one";
     }
 }

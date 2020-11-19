@@ -36,7 +36,7 @@ REGISTER_OP(AvgPool)
         const auto& output0_shape = curr->get_output_shape(0);
         const auto& kernel = _op->get_window_shape();
         const auto& stride = _op->get_window_movement_strides();
-        const auto& padding_above = _op->get_padding_above();
+        const auto& padding_below = _op->get_padding_below();
 
         std::string input0_layout;
         std::string output0_layout;
@@ -61,17 +61,17 @@ REGISTER_OP(AvgPool)
         }
 
         std::string H_in = "HO * " + to_string(stride[0]) + " + KH";
-        if (padding_above[0] > 0)
+        if (padding_below[0] > 0)
         {
-            H_in += " - " + to_string(padding_above[0]);
+            H_in += " - " + to_string(padding_below[0]);
             when_condition += (when_condition.empty() ? "" : " , ") + H_in + " >= 0, " + H_in +
                               " < " + to_string(input0_shape[input0_shape.size() - 2]);
         }
 
         std::string W_in = "WO * " + to_string(stride[1]) + " + KW";
-        if (padding_above[1] > 0)
+        if (padding_below[1] > 0)
         {
-            W_in += " - " + to_string(padding_above[1]);
+            W_in += " - " + to_string(padding_below[1]);
             when_condition += (when_condition.empty() ? "" : " , ") + W_in + " >= 0, " + W_in +
                               " < " + to_string(input0_shape[input0_shape.size() - 1]);
         }

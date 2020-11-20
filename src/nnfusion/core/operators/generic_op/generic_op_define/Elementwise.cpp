@@ -44,7 +44,7 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Square", element_op("square", "x0 * x0")},
     {"Negative", element_op("negative", "-x0")},
     {"Select", element_op("select", "x2.when([x0 == 0], x1)")},
-    {"Sign", element_op("sign", "parse(1).when([x0 > 0], -1)")},
+    {"Sign", element_op("sign", "const(1).when([x0 > 0], -1)")},
     {"Gelu", element_op("gelu", "x0 * x0.call(\"normcdf\"")},
     {"Relu", element_op("relu", "x0.call(\"max\", 0)")},
     {"Relu6", element_op("relu6", "x0.call(\"max\", 0).call(\"min\", 6)")},
@@ -59,11 +59,11 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"GreaterEq", element_op("greater_equal", "x0 >= x1")},
     {"Less", element_op("less", "x0 < x1")},
     {"LessEq", element_op("less_equal", "x0 <= x1")},
-    {"Not", element_op("logical_not", "!x0")},
-    {"And", element_op("logical_and", "x0 && x1")},
-    {"Or", element_op("logical_or", "x0 || x1")}};
+    {"Not", element_op("logical_not", "~x0")},
+    {"And", element_op("logical_and", "x0 & x1")},
+    {"Or", element_op("logical_or", "x0 | x1")}};
 
-inline std::string replace_input_str(std::string ir)
+std::string replace_input_str(std::string ir)
 {
     const size_t max_input_size = 3;
     for (size_t i = 0; i < max_input_size; i++)
@@ -76,6 +76,8 @@ inline std::string replace_input_str(std::string ir)
             ir.replace(found, input.size(), input_new);
         }
     }
+
+    return ir;
 }
 
 auto trans_elementwise = [&](std::shared_ptr<graph::GNode>& node) {
@@ -99,6 +101,7 @@ auto trans_elementwise = [&](std::shared_ptr<graph::GNode>& node) {
     {
         expr += replace_input_str(iter->second.expr) + ";";
     }
+
     auto data_layput = op::create_layout_from_dims(node->get_output_shape(0));
     return op::create_code_from_template(
         expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layput)}});

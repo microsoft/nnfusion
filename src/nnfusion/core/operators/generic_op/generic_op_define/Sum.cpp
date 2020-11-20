@@ -14,7 +14,7 @@ REGISTER_OP(Sum)
         std::string dtype;
         NNFUSION_CHECK(
             element::Type::nnfusion_element_type_to_dtype_string(curr->get_element_type(), dtype));
-        // NNFUSION_CHECK(dtype == "float32") << "unsupported Sum dtype " << dtype;
+        NNFUSION_CHECK(dtype == "float32") << "Unsupported Sum dtype " << dtype;
 
         std::vector<int> ordered_axes(axes.begin(), axes.end());
         std::sort(ordered_axes.begin(), ordered_axes.end());

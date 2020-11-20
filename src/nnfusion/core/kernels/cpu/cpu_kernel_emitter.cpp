@@ -158,6 +158,9 @@ LanguageUnit_p cpu::AntaresCpuKernelEmitter::emit_function_body()
     std::string::size_type s_func_pos = antares_code.find(s_func_pattern);
     std::string::size_type e_func_pos = antares_code.rfind(e_func_pattern);
 
+    if (s_func_pos != std::string::npos || e_func_pos != std::string::npos)
+        return nullptr;
+
     NNFUSION_CHECK(s_func_pos != std::string::npos && e_func_pos != std::string::npos);
 
     std::string func_body = antares_code.substr(s_func_pos + strlen(s_func_pattern),

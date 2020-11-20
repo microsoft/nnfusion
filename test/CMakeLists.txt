@@ -40,7 +40,7 @@ if(NGRAPH_ADDRESS_SANITIZER)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=address -fno-omit-frame-pointer")
 endif()
 
-target_link_libraries(unit-test PRIVATE GTest::GTest Threads::Threads)
+target_link_libraries(unit-test PRIVATE GTest::GTest Threads::Threads gflags)
 target_link_libraries(unit-test PRIVATE ${CMAKE_DL_LIBS})
 target_link_libraries(unit-test PRIVATE nnfusion_operators)
 

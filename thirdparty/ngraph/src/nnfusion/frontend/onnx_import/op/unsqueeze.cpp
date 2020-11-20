@@ -38,6 +38,11 @@ namespace nnfusion
                     auto input_shape = data.get_shape();
                     Node node(node_proto);
                     auto axes = node.get_attribute_value<std::vector<int64_t>>("axes");
+                    ///\todo: check duplicate axes between neg and pos axes
+                    for (auto& axis : axes)
+                    {
+                        axis += axis < 0 ? input_shape.size() + axes.size() : 0;
+                    }
 
                     NNFUSION_CHECK(!axes.empty()) << "'axes' attribute is mandatory.";
                     std::sort(std::begin(axes), std::end(axes), std::less<int64_t>());

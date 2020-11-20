@@ -35,14 +35,16 @@ namespace nnfusion
                                                   const NodeMap& all_ng_nodes,
                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                    auto input_gnodes = GetAllInputNode(all_ng_nodes, node_proto);
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
 
+                    auto input_shape = input_indexes.at(0).get_shape();
                     Node node(node_proto);
                     auto axis = node.get_attribute_value<int64_t>("axis");
+                    axis += axis < 0 ? input_shape.size() : 0;
 
                     auto concat_op = std::make_shared<op::Concat>(axis);
                     concat_op->set_name(node_proto.output(0));
-                    auto concat_gnode = m_graph->add_node_and_edge(concat_op, input_gnodes);
+                    auto concat_gnode = m_graph->add_node_and_edge(concat_op, input_indexes);
                     NamedNodeVector ret{{node_proto.output(0), concat_gnode}};
                     return ret;
                 }

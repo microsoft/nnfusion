@@ -25,8 +25,8 @@ public:
     blockfusion::ProfilingResult get_profiling_result();
 
 private:
-    blockfusion::ProfilingResult
-        get_codegen_profiling_result(BlockFusionCudaCodegen::Pointer codegen_context);
+    bool get_codegen_profiling_result(BlockFusionCudaCodegen::Pointer codegen_context,
+                                      blockfusion::ProfilingResult& codegen_profiling);
 
 private:
     BlockParallelDevice::Pointer block_parallel_device;

@@ -15,7 +15,9 @@ using namespace nnfusion;
 class BlockFusionOptimizer
 {
 public:
-    BlockFusionOptimizer(std::shared_ptr<nnfusion::graph::Graph> g, std::string _device_type)
+    BlockFusionOptimizer(std::shared_ptr<nnfusion::graph::Graph> g,
+                         std::string _device_type,
+                         bool _flag_check_correctness)
         : m_graph(g)
         , m_device_type(_device_type)
     {
@@ -33,6 +35,8 @@ public:
                 << "BlockFusion does not support " << m_device_type
                 << " now, BlockFusion will be disabled in this compilation.";
         }
+
+        m_check_correctness = _flag_check_correctness;
     }
 
     virtual bool Optimize()
@@ -48,6 +52,7 @@ protected:
     std::shared_ptr<nnfusion::graph::Graph> m_graph;
     std::string m_device_type;
     bool m_enable_blockfusion;
+    bool m_check_correctness; // check the correctness of BlockFusion codegen
 };
 
 class BlockFusionWavefrontOptimizer : public BlockFusionOptimizer
@@ -57,7 +62,8 @@ public:
                                   std::string _device_type,
                                   std::string _device_name,
                                   int _fusion_level = 1,
-                                  bool _flag_interplay = true);
+                                  bool _flag_interplay = true,
+                                  bool _flag_check_correctness = false);
 
     bool Optimize() override;
 

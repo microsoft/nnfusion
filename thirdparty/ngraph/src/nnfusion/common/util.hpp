@@ -29,6 +29,7 @@
 #include "nnfusion/common/axis_vector.hpp"
 #include "nnfusion/common/shape.hpp"
 #include "nnfusion/core/graph/gnode_vector.hpp"
+#include "type/element_type.hpp"
 
 namespace nnfusion
 {
@@ -148,6 +149,8 @@ namespace nnfusion
     float parse_string<float>(const std::string& s);
     template <>
     double parse_string<double>(const std::string& s);
+    template <>
+    element::half parse_string<element::half>(const std::string& s);
 
     /// Parses a list of strings containing literals of the underlying type.
     template <typename T>

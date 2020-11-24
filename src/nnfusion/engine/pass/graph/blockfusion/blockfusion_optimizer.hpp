@@ -113,6 +113,8 @@ private:
     std::shared_ptr<std::vector<std::shared_ptr<FusionGroup>>> ExtractFusionGroups();
 
     void SplitGroup(std::shared_ptr<std::vector<std::shared_ptr<FusionGroup>>> groups);
+    bool CheckGroupMergeable(std::shared_ptr<FusionGroup> prev_group,
+                             std::shared_ptr<FusionGroup> succ_group);
     void MergeGroups(std::shared_ptr<std::vector<std::shared_ptr<FusionGroup>>> groups);
     double GroupProfiler(const std::shared_ptr<FusionGroup> group);
     bool SkipGroupOnProfilingResult(blockfusion::ProfilingResult profiling_result);

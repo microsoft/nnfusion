@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "core/node.hpp"
 
 namespace nnfusion
@@ -43,19 +45,19 @@ namespace nnfusion
                     double min_value = node.get_attribute_value<double>(
                         "min", std::numeric_limits<double>::lowest());
 
-                    auto max_value_op =
-                        std::make_shared<op::Constant>(input_gnode->get_element_type(),
-                                                       nnfusion::Shape{},
-                                                       std::vector<double>{max_value});
+                    auto max_value_op = std::make_shared<op::Constant>(
+                        input_gnode->get_element_type(),
+                        nnfusion::Shape{},
+                        std::vector<std::string>{std::to_string(max_value)});
                     auto max_value_gnode =
                         m_graph->add_node_and_edge(max_value_op, graph::GNodeVector({}));
                     max_value_gnode =
                         make_broadcast_node(max_value_gnode, input_gnode->get_shape(), m_graph);
 
-                    auto min_value_op =
-                        std::make_shared<op::Constant>(input_gnode->get_element_type(),
-                                                       nnfusion::Shape{},
-                                                       std::vector<double>{min_value});
+                    auto min_value_op = std::make_shared<op::Constant>(
+                        input_gnode->get_element_type(),
+                        nnfusion::Shape{},
+                        std::vector<std::string>{std::to_string(min_value)});
                     auto min_value_gnode =
                         m_graph->add_node_and_edge(min_value_op, graph::GNodeVector({}));
                     min_value_gnode =

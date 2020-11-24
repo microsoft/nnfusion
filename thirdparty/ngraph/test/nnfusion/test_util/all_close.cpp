@@ -74,5 +74,33 @@ namespace nnfusion
             }
             return rc;
         }
+
+        bool all_close_f(const DataBuffer& a,
+                         const DataBuffer& b,
+                         int mantissa_bits,
+                         int tolerance_bits)
+        {
+            NNFUSION_CHECK(a.get_type() == element::f32 && b.get_type() == element::f32)
+                << "element type of DataBuffer should be element::f32";
+            bool rc = true;
+            if (a.size() != b.size())
+            {
+                throw nnfusion::errors::RuntimeError(
+                    "a.size() != b.size() for all_close comparison.");
+            }
+            for (size_t i = 0; i < a.size(); ++i)
+            {
+                float lhs, rhs;
+                a.getElement(i, &lhs);
+                b.getElement(i, &rhs);
+                bool is_close_f = close_f(lhs, rhs, mantissa_bits, tolerance_bits);
+                if (!is_close_f)
+                {
+                    NNFUSION_LOG(INFO) << lhs << " is not close to " << rhs;
+                    rc = false;
+                }
+            }
+            return rc;
+        }
     }
 }

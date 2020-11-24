@@ -36,7 +36,7 @@ class E2EEvaluator:
             if suf == ".pt":
                 modeltype = "-f torchscript"
 
-        logging.error("cd %s && %s %s %s %s -fdefault_device=%s %s >> nnfusion.log" %
+        logging.info("cd %s && %s %s %s %s -fdefault_device=%s %s >> nnfusion.log" %
                 (self.working_foler, self.nnfusion_cli, self.testcase.get_filename(), modeltype, self.testcase.flag, self.default_device, self.nnfusion_cli_arg))
         
         os.system("cd %s && %s %s %s %s -fdefault_device=%s %s >> nnfusion.log" %

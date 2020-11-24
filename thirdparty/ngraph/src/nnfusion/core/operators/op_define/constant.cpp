@@ -63,6 +63,13 @@ Constant::~Constant()
     }
 }
 
+DataBuffer Constant::get_buffer() const
+{
+    DataBuffer ret(m_element_type);
+    ret.load(m_data, nnfusion::shape_size(m_shape));
+    return std::move(ret);
+}
+
 vector<string> Constant::get_value_strings() const
 {
     vector<string> rc;

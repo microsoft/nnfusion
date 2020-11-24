@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import ctypes
 import torch
 c_float = ctypes.c_float

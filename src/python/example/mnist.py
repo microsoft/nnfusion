@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import sys
 import os
 sys.path.insert(1, os.path.abspath("./src/python"))

@@ -49,8 +49,9 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
      element_op(
          "relu6",
          "x0.call(`max`, [const(0).cast(x0.dtype())]).call(`min`, [const(6).cast(x0.dtype())])")},
-    {"ReluBackprop", element_op("relu_backprop", "x1.when([x0 > 0], 0)")},
-    {"Relu6Backprop", element_op("relu_backprop", "x1.when([x0 > 0, x0 < 6], 0)")},
+    {"ReluBackprop", element_op("relu_backprop", "x1.when([x0 > 0], const(0).cast(x1.dtype()))")},
+    {"Relu6Backprop",
+     element_op("relu_backprop", "x1.when([x0 > 0, x0 < 6], const(0).cast(x1.dtype()))")},
     {"Sigmoid", element_op("sigmoid", "1 / (1 + (-x0).call(`exp`))")},
     {"SigmoidBackprop",
      element_op("sigmoid_backprop", "x1 / (2 + (-x0).call(`exp`) + (x0).call(`exp`))")},
@@ -91,10 +92,18 @@ auto trans_elementwise = [&](std::shared_ptr<graph::GNode>& node) {
 
     if (iter->second.expr == "")
     {
-        expr += "@input0@@data_layout@.call(\\\"" + iter->second.func + "\\\"";
-        for (size_t i = 1; i < node->get_input_size(); ++i)
+        expr += "@input0@@data_layout@.call(`" + iter->second.func + "`";
+        if (node->get_input_size() > 1)
         {
-            expr += ", @input" + std::to_string(i) + "@data_layout@";
+            expr += ", [";
+            size_t i = 1;
+            for (; i < node->get_input_size(); ++i)
+            {
+                expr += "@input" + std::to_string(i) + "@@data_layout@";
+                if (i < node->get_input_size() - 1)
+                    expr += ", ";
+            }
+            expr += "]";
         }
         expr += ");";
     }

@@ -25,8 +25,6 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Exp", element_op("exp", "")},
     {"Floor", element_op("floor", "")},
     {"Log", element_op("log", "")},
-    {"Max", element_op("max", "")},
-    {"Min", element_op("min", "")},
     {"Maximum", element_op("max", "")},
     {"Minimum", element_op("min", "")},
     {"Sin", element_op("sin", "")},
@@ -44,15 +42,18 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Square", element_op("square", "x0 * x0")},
     {"Negative", element_op("negative", "-x0")},
     {"Select", element_op("select", "x2.when([x0 == 0], x1)")},
-    {"Sign", element_op("sign", "const(1).when([x0 > 0], -1)")},
-    {"Gelu", element_op("gelu", "x0 * x0.call(\"normcdf\"")},
-    {"Relu", element_op("relu", "x0.call(\"max\", 0)")},
-    {"Relu6", element_op("relu6", "x0.call(\"max\", 0).call(\"min\", 6)")},
+    {"Sign", element_op("sign", "const(1).when([x0 > 0], const(-1).when([x0 < 0], 0))")},
+    {"Gelu", element_op("gelu", "x0 * x0.call(`normcdf`)")},
+    {"Relu", element_op("relu", "x0.call(`max`, [const(0).cast(x0.dtype())])")},
+    {"Relu6",
+     element_op(
+         "relu6",
+         "x0.call(`max`, [const(0).cast(x0.dtype())]).call(`min`, [const(6).cast(x0.dtype())])")},
     {"ReluBackprop", element_op("relu_backprop", "x1.when([x0 > 0], 0)")},
     {"Relu6Backprop", element_op("relu_backprop", "x1.when([x0 > 0, x0 < 6], 0)")},
-    {"Sigmoid", element_op("sigmoid", "1 / (1 + (-x0).call(\"exp\"))")},
+    {"Sigmoid", element_op("sigmoid", "1 / (1 + (-x0).call(`exp`))")},
     {"SigmoidBackprop",
-     element_op("sigmoid_backprop", "x1 / (2 + (-x0).call(\"exp\") + (x0).call(\"exp\"))")},
+     element_op("sigmoid_backprop", "x1 / (2 + (-x0).call(`exp`) + (x0).call(`exp`))")},
     {"Equal", element_op("equal", "x0 == x1")},
     {"NotEqual", element_op("not_equal", "x0 != x1")},
     {"Greater", element_op("greater", "x0 > x1")},
@@ -90,7 +91,7 @@ auto trans_elementwise = [&](std::shared_ptr<graph::GNode>& node) {
 
     if (iter->second.expr == "")
     {
-        expr += "@input0@@data_layout@.call(\"" + iter->second.func + "\"";
+        expr += "@input0@@data_layout@.call(\\\"" + iter->second.func + "\\\"";
         for (size_t i = 1; i < node->get_input_size(); ++i)
         {
             expr += ", @input" + std::to_string(i) + "@data_layout@";
@@ -124,8 +125,6 @@ REGISTER_ELEM_OP(Erf)
 REGISTER_ELEM_OP(Exp)
 REGISTER_ELEM_OP(Floor)
 REGISTER_ELEM_OP(Log)
-REGISTER_ELEM_OP(Max)
-REGISTER_ELEM_OP(Min)
 REGISTER_ELEM_OP(Maximum)
 REGISTER_ELEM_OP(Minimum)
 REGISTER_ELEM_OP(Sin)

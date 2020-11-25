@@ -74,5 +74,5 @@ using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER(
     "ConcatOffset",                                                           // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
     cuda::ConcatOffset)                                                       // constructor

@@ -296,5 +296,5 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER("Broadcast",                                           // op_name
-                        Device(ROCM_GPU).TypeConstraint(DT_FLOAT).Priority(4), // attrs
+                        Device(ROCM_GPU).TypeConstraint(element::f32).Priority(4), // attrs
                         cuda::RocmManualBroadcast)                             // constructor

@@ -14,6 +14,7 @@ LU_DEFINE(header::cudnn, "#include <cudnn.h>\n");
 LU_DEFINE(header::super_scaler, "#include \"super_scaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
+LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>");
 
 // Macro
 LU_DEFINE(
@@ -217,6 +218,15 @@ LU_DEFINE(
 __device__ __forceinline__ float  load(const float*  __restrict__ in, int i=0, bool b=true)
 {
     float v = 0.0f;
+    if (b)
+    {
+        v = __ldg(in + i);
+    }
+    return v;
+}
+__device__ __forceinline__ half  load(const half*  __restrict__ in, int i=0, bool b=true)
+{
+    half v = 0.0f;
     if (b)
     {
         v = __ldg(in + i);

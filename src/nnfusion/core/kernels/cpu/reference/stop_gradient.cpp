@@ -55,7 +55,7 @@ namespace nnfusion
 
             REGISTER_KERNEL_EMITTER(
                 "StopGradient",                                                // op_name
-                Device(GENERIC_CPU).TypeConstraint(DT_FLOAT).Tag("reference"), // attrs
+                Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 StopGradientRef)                                               // constructor
 
         } // namespace cpu

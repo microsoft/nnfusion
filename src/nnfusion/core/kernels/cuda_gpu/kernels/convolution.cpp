@@ -12,6 +12,12 @@ cuda::ConvolutionCudnn::ConvolutionCudnn(shared_ptr<KernelContext> ctx)
 {
     auto conv = static_pointer_cast<nnfusion::op::Convolution>(ctx->gnode->get_op_ptr());
 
+    input_type = ctx->inputs[0]->get_element_type();
+    filter_type = ctx->inputs[1]->get_element_type();
+    output_type = ctx->outputs[0]->get_element_type();
+    NNFUSION_CHECK(input_type == filter_type && input_type == output_type) 
+        << "Convolution input datatype (" << input_type << ") should be the same with that of filter (" << filter_type << "), and that of output (" << output_type << ").";
+    conv_type = input_type;
     input_shape = ctx->inputs[0]->get_shape();
     filter_shape = ctx->inputs[1]->get_shape();
     output_shape = ctx->outputs[0]->get_shape();
@@ -79,13 +85,14 @@ LanguageUnit_p cuda::ConvolutionCudnn::emit_function_body()
         padding_below[i] = static_cast<size_t>(padding_below_diff[i]);
     }
 
+
     {
         // lu << "cudnnDataType_t data_type = " << get_cudnn_datatype(dtype) << ";\n";
-        lu << cudnn_tensor_descriptor_from_shape(input_shape, "tensor_desc_0")->get_code();
-        lu << cudnn_tensor_descriptor_from_shape(output_shape, "tensor_desc_1")->get_code();
-        lu << get_cudnn_filter_descriptor(filter_shape, "filter_desc")->get_code();
+        lu << cudnn_tensor_descriptor_from_shape(input_shape, "tensor_desc_0", input_type)->get_code();
+        lu << cudnn_tensor_descriptor_from_shape(output_shape, "tensor_desc_1", output_type)->get_code();
+        lu << get_cudnn_filter_descriptor(filter_shape, "filter_desc", filter_type)->get_code();
         lu << get_cudnn_convolution_descriptor(
-                  padding_below, window_movement_strides, window_dilation_strides, "conv_desc")
+                  padding_below, window_movement_strides, window_dilation_strides, "conv_desc", conv_type)
                   ->get_code();
 
         lu << R"(
@@ -207,5 +214,10 @@ LanguageUnit_p cuda::ConvolutionCudnn::emit_function_signature()
 
 REGISTER_KERNEL_EMITTER(
     "Convolution",                                                             // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cudnn_kernel").Priority(2), // attrs
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
+    cuda::ConvolutionCudnn)                                                    // constructor
+
+REGISTER_KERNEL_EMITTER(
+    "Convolution",                                                             // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f16).Tag("cudnn_kernel").Priority(2), // attrs
     cuda::ConvolutionCudnn)                                                    // constructor

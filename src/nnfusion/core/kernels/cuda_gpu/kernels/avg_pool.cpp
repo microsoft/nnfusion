@@ -405,10 +405,10 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_signature()
 
 REGISTER_KERNEL_EMITTER(
     "AvgPool",                                                                // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
     cuda::AvgPool1D)                                                          // constructor
 
 REGISTER_KERNEL_EMITTER(
     "AvgPool",                                                                 // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cudnn_kernel").Priority(2), // attrs
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
     cuda::AvgPoolmD)                                                           // constructor

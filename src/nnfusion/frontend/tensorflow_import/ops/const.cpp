@@ -284,56 +284,6 @@ namespace nnfusion
                 return true;
             }
 
-            /*
-            const std::map<tensorflow::DataType,
-                           std::pair<std::function<bool(const tensorflow::NodeDef&,
-                                                        nnfusion::element::Type,
-                                                        std::shared_ptr<nnfusion::op::Op>*)>,
-                                     const nnfusion::element::Type>>&
-                TF_NGRAPH_CONST_MAP()
-            {
-                static const std::map<
-                    tensorflow::DataType,
-                    std::pair<std::function<bool(const tensorflow::NodeDef&,
-                                                 nnfusion::element::Type,
-                                                 std::shared_ptr<nnfusion::op::Op>*)>,
-                              const nnfusion::element::Type>>
-                    the_map = {
-                        {tensorflow::DataType::DT_FLOAT,
-                         std::make_pair(MakeConstOp<float>, nnfusion::element::f32)},
-                        {tensorflow::DataType::DT_DOUBLE,
-                         std::make_pair(MakeConstOp<double>, nnfusion::element::f64)},
-                        {tensorflow::DataType::DT_INT8,
-                         std::make_pair(MakeConstOp<int8>, nnfusion::element::i8)},
-                        {tensorflow::DataType::DT_INT16,
-                         std::make_pair(MakeConstOp<int16>, nnfusion::element::i16)},
-                        // {tensorflow::DataType::DT_QINT8,
-                        //   std::make_pair(MakeConstOp<google::protobuf::qint8>, nnfusion::element::i8)},
-                        // {tensorflow::DataType::DT_QUINT16,
-                        //   std::make_pair(MakeConstOp<google::protobuf::quint8>, nnfusion::element::u8)},
-                        {tensorflow::DataType::DT_INT32,
-                         std::make_pair(MakeConstOp<int32>, nnfusion::element::i32)},
-                        {tensorflow::DataType::DT_INT64,
-                         std::make_pair(MakeConstOp<int64>, nnfusion::element::i64)},
-                        {tensorflow::DataType::DT_UINT8,
-                         std::make_pair(MakeConstOp<uint8>, nnfusion::element::u8)},
-                        {tensorflow::DataType::DT_UINT16,
-                         std::make_pair(MakeConstOp<uint16>, nnfusion::element::u16)},
-                        {tensorflow::DataType::DT_UINT32,
-                         std::make_pair(MakeConstOp<uint32>, nnfusion::element::u32)},
-                        {tensorflow::DataType::DT_UINT64,
-                         std::make_pair(MakeConstOp<uint64>, nnfusion::element::u64)},
-                        {tensorflow::DataType::DT_BOOL,
-                         std::make_pair(MakeConstOp<bool, char>, nnfusion::element::boolean)},
-                        {tensorflow::DataType::DT_STRING,
-                         std::make_pair(MakeConstOp<std::string, char>,
-                                        nnfusion::element::character)}};
-                // TODO: data type string unsupport now, bert model has string type const op used for assert
-
-                return the_map;
-            }
-            */
-
             NamedNodeVector TranslateConstOp(const tensorflow::NodeDef& node,
                                              const NodeMap& all_ng_nodes,
                                              std::shared_ptr<nnfusion::graph::Graph> m_graph)
@@ -363,20 +313,6 @@ namespace nnfusion
 
                 return ret;
             }
-
-            // const std::map<tensorflow::DataType, element::Type> TF_NGRAPH_CONST_MAP = {
-            //     {tensorflow::DataType::DT_FLOAT, nnfusion::element::f32},
-            //     {tensorflow::DataType::DT_DOUBLE, nnfusion::element::f64},
-            //     {tensorflow::DataType::DT_INT8, nnfusion::element::i8},
-            //     {tensorflow::DataType::DT_INT16, nnfusion::element::i16},
-            //     {tensorflow::DataType::DT_INT32, nnfusion::element::i32},
-            //     {tensorflow::DataType::DT_INT64, nnfusion::element::i64},
-            //     {tensorflow::DataType::DT_UINT8, nnfusion::element::u8},
-            //     {tensorflow::DataType::DT_UINT16, nnfusion::element::u16},
-            //     {tensorflow::DataType::DT_UINT32, nnfusion::element::u32},
-            //     {tensorflow::DataType::DT_UINT64, nnfusion::element::u64},
-            //     {tensorflow::DataType::DT_BOOL, nnfusion::element::boolean},
-            //     {tensorflow::DataType::DT_STRING, nnfusion::element::character}};
         } // namespace tensorflow_import
     }     // namespace frontend
 } // namespace nnfusion

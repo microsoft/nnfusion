@@ -221,7 +221,7 @@ namespace nnfusion
             }
             else
             {
-                NNFUSION_CHECK_FAIL_WITH_EXCEPTION() << "Unhandled type: " << d_type.c_str();
+                NNFUSION_CHECK_FAIL() << "Unhandled type: " << d_type;
             }
             auto shape = tensor->get_shape();
             if (shape.size() == 0)

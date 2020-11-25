@@ -22,6 +22,7 @@
 #pragma once
 
 #include "core/node.hpp"
+#include "core/tensor.hpp"
 #include "nnfusion/frontend/util/evaluator.hpp"
 
 namespace nnfusion

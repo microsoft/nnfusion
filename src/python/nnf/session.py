@@ -164,6 +164,10 @@ class Session(object):
             name: param
             for name, param in self._model.named_parameters()
         }
+        self._torch_weights.update({
+            name: param
+            for name, param in self._model.named_buffers()
+        })
         self._torch_weights.update(external_weights)
         self._input_desc = input_desc
         self._device = device

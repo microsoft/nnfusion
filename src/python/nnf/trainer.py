@@ -1,4 +1,3 @@
-
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
@@ -7,6 +6,7 @@ from torch import nn
 import numpy as np
 
 from .runner import Runner
+
 
 class ModelWithLoss(nn.Module):
     def __init__(self, model, loss_func):
@@ -21,21 +21,24 @@ class ModelWithLoss(nn.Module):
 
 
 class Trainer(object):
-    def __init__(self,
-                 model,
-                 loss_func,
-                 device="cuda:0"):
+    def __init__(self, model, loss_func=None, device="cuda:0", **kwargs):
         super(Trainer, self).__init__()
         self.model = model
         self.loss_func = loss_func
-        self.model_with_loss = ModelWithLoss(self.model, self.loss_func).to(device)
+        if self.loss_func:
+            self.model_with_loss = ModelWithLoss(self.model,
+                                                 self.loss_func).to(device)
+        else:
+            self.model_with_loss = model
         self.device = device
         codegen_flags = {
-            "autodiff": 1, # add backward graph
-            "training_mode": 1, # move weight external
-            "extern_result_memory": 1 # move result external
+            "autodiff": 1,  # add backward graph
+            "training_mode": 1,  # move weight external
+            "extern_result_memory": 1  # move result external
         }
-        self.runner = Runner(self.model_with_loss, codegen_flags=codegen_flags)
+        self.runner = Runner(self.model_with_loss,
+                             codegen_flags=codegen_flags,
+                             **kwargs)
 
     def __call__(self, *args):
         return self.run_by_nnf(*args)

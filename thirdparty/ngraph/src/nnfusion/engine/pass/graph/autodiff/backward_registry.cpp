@@ -56,9 +56,15 @@ void DiffEngine::differentiate_graph(const GNodeIndexVector& outputs,
     {
         nodes_to_check.push_back(output.gnode);
     }
+    auto& backward_registry = Registry();
+    std::unordered_set<std::string> no_backward_ops;
     while (nodes_to_check.size() > 0)
     {
         auto node = nodes_to_check.front();
+        if (backward_registry.find(node->get_op_type()) == backward_registry.end())
+        {
+            no_backward_ops.insert(node->get_op_type());
+        }
         nodes_to_check.pop_front();
         if (m_adjoint_map.find(node) == m_adjoint_map.end())
         {
@@ -78,6 +84,14 @@ void DiffEngine::differentiate_graph(const GNodeIndexVector& outputs,
                 }
             }
         }
+    }
+    if (no_backward_ops.size() > 0)
+    {
+        for (auto& op_type : no_backward_ops)
+        {
+            NNFUSION_LOG(ERROR) << "No backward translator for op " << op_type;
+        }
+        NNFUSION_CHECK_FAIL();
     }
 
     // Second pass visits the nodes so that all users of a node's value are visited

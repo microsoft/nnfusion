@@ -13,6 +13,7 @@ from torch import nn
 from transformers import BertForSequenceClassification
 from transformers import BertTokenizer
 from nnf.runner import Runner
+from nnf.trainer import Trainer
 
 
 class WrapperModel(nn.Module):
@@ -44,12 +45,8 @@ def test_runner():
     labels = torch.tensor([1, 0]).unsqueeze(0).to("cuda:0")
     loss = wrapper(input_ids, attention_mask, labels)
 
-    external_weights = {
-        "_model.bert.embeddings.position_ids":
-        torch.arange(512).expand((1, -1)).to("cuda:0")
-    }
     nnf_flags = {"training_mode": 1}
-    runner = Runner(wrapper, external_weights=external_weights, codegen_flags=nnf_flags)
+    runner = Runner(wrapper, codegen_flags=nnf_flags)
     nnf_loss = runner(input_ids, attention_mask, labels)[0]
     assert np.allclose(
         loss.cpu().detach().numpy(),
@@ -57,5 +54,45 @@ def test_runner():
             loss, nnf_loss)
 
 
+def train_bert():
+    device = "cuda:0"
+    model = BertForSequenceClassification.from_pretrained(
+        'bert-base-uncased', return_dict=True).to(device)
+    # model.train()
+    wrapper = WrapperModel(model)
+
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    text_batch = ["I love Pixar.", "I don't care for Pixar."]
+    encoding = tokenizer(text_batch,
+                         return_tensors='pt',
+                         padding=True,
+                         truncation=True)
+    input_ids = encoding['input_ids'].to(device)
+    attention_mask = encoding['attention_mask'].to(device)
+    labels = torch.tensor([1, 0]).unsqueeze(0).to(device)
+    loss = wrapper(input_ids, attention_mask, labels)
+    print(loss)
+
+    input_ids = torch.ones([1, 512], dtype=torch.int64).to(device)
+    attention_mask = torch.ones([1, 512], dtype=torch.int64).to(device)
+    labels = torch.ones([1, 1], dtype=torch.int64).to(device)
+
+    trainer = Trainer(wrapper, device=device, workdir="./tmp")
+    print("feeding")
+    for i in range(1000):
+        pytorch_loss = trainer.run_by_pytorch(input_ids, attention_mask,
+                                              labels)
+        nnf_loss = trainer(input_ids, attention_mask, labels)
+        if i % 100 == 0:
+            print("iter ", i)
+            print('pytorch_loss: ', pytorch_loss)
+            print('nnf_loss: ', nnf_loss)
+            print(external_weights)
+
+    torch.save(model.state_dict(), "/tmp/bert.pt")
+
+
 if __name__ == "__main__":
     test_runner()
+    # train_bert()
+    # test()

@@ -165,7 +165,7 @@ namespace nnfusion
                 NNFUSION_CHECK(status);
                 nnfusion::element::Type nnfusion_et;
                 status = TFDataTypeToNNFusionElementType(dtype, &nnfusion_et);
-                NNFUSION_CHECK(status);
+                NNFUSION_CHECK(status) << "DataType " << dtype << " is not supported.";
                 tensorflow::TensorShapeProto tf_shape = node.attr().at("shape").shape();
                 nnfusion::Shape ng_shape;
                 status = TFTensorShapeToNGraphShape(tf_shape, &ng_shape);

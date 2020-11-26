@@ -69,7 +69,7 @@ namespace nnfusion
 
             REGISTER_KERNEL_EMITTER(
                 "OneHot",                                                      // op_name
-                Device(GENERIC_CPU).TypeConstraint(DT_FLOAT).Tag("reference"), // attrs
+                Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 OneHotRef)                                                     // constructor
 
         } // namespace cpu

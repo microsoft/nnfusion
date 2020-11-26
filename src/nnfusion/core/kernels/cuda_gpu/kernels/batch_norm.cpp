@@ -202,11 +202,11 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER("BatchNormInference", // op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cudnn").Priority(2), // attrs
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn").Priority(2), // attrs
                         cuda::BatchNorm)      // constructor
 REGISTER_KERNEL_EMITTER("BatchNormInference", // op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda").Priority(2), // attrs
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda").Priority(2), // attrs
                         cuda::BatchNormNCHW)  // constructor
 REGISTER_KERNEL_EMITTER("BatchNormInference", // op_name
-                        Device(ROCM_GPU).TypeConstraint(DT_FLOAT).Tag("cuda").Priority(2), // attrs
+                        Device(ROCM_GPU).TypeConstraint(element::f32).Tag("cuda").Priority(2), // attrs
                         cuda::BatchNormNCHW) // constructor

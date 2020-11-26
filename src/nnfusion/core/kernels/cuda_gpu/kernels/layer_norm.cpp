@@ -78,5 +78,5 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER("LayerNorm",                                              // op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cudalib"), // attrs
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudalib"), // attrs
                         cuda::LayerNorm)                                          // constructor

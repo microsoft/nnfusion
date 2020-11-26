@@ -35,5 +35,5 @@ LanguageUnit_p cuda::AnyOP::emit_dependency()
 // Register Pad kernel emitter
 
 REGISTER_KERNEL_EMITTER("AnyOP",                                               //op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Priority(2), //attrs
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Priority(2), //attrs
                         cuda::AnyOP)                                           // constructor

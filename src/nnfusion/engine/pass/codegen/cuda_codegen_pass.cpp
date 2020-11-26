@@ -838,6 +838,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
     re_main->require(header::limits);
 
     re_main->require(header::cuda_prof_api);
+    re_main->require(header::cuda_fp16);
     re_main->require(macro::CUDA_SAFE_CALL);
 
     lu_main << "#include \"nnfusion_rt.h\"\n";

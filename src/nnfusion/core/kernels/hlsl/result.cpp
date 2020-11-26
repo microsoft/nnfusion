@@ -48,5 +48,5 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER("Result",
-                        Device(HLSL).TypeConstraint(DT_FLOAT).Tag("hlsl_kernel"),
+                        Device(HLSL).TypeConstraint(element::f32).Tag("hlsl_kernel"),
                         hlsl::Result)

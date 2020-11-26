@@ -436,7 +436,7 @@ bool DefaultKernelSelector::register_antares_kernel()
             op_name,
             Name(op_name)
                 .Device(CUDA_GPU)
-                .TypeConstraint(DT_FLOAT)
+                .TypeConstraint(element::f32)
                 .Tag("antares")
                 .Priority(9)
                 .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
@@ -447,7 +447,7 @@ bool DefaultKernelSelector::register_antares_kernel()
             op_name,
             Name(op_name)
                 .Device(GENERIC_CPU)
-                .TypeConstraint(DT_FLOAT)
+                .TypeConstraint(element::f32)
                 .Tag("antares")
                 .Priority(9)
                 .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
@@ -458,7 +458,7 @@ bool DefaultKernelSelector::register_antares_kernel()
             op_name,
             Name(op_name)
                 .Device(HLSL)
-                .TypeConstraint(DT_FLOAT)
+                .TypeConstraint(element::f32)
                 .Tag("antares")
                 .Priority(9)
                 .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {

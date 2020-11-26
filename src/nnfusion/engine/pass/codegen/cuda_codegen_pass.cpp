@@ -345,7 +345,7 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
             else
             {
                 auto kernel_reg = KernelRegistry::Global()->FindKernelRegistration(
-                    "AnyOP", device_type(), DT_FLOAT);
+                    "AnyOP", device_type(), element::f32);
                 NNFUSION_CHECK(kernel_reg != nullptr) << "AnyOp Kernel not found, op="
                                                       << ins->getGNode()->get_op_type();
                 shared_ptr<KernelContext> ctx(new KernelContext(ins->getGNode()));

@@ -14,7 +14,7 @@ LU_DEFINE(header::cudnn, "#include <cudnn.h>\n");
 LU_DEFINE(header::super_scaler, "#include \"super_scaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
-LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>");
+LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>\n");
 
 // Macro
 LU_DEFINE(

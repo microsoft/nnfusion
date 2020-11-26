@@ -65,7 +65,7 @@ cd root/nnfusion_rt/cuda_codegen
 cmake . && make -j
 ./main_test
 ```
-6. The output of NNFusion should be Tensors with value and model iteration times. Using the example model `frozen_lstm_l8s8h256_bs1.pb`, you will see the output of this model and a summary of perfomance:
+6. The output of NNFusion should be Tensors with value and model iteration times. Using the example model `frozen_lstm_l8s8h256_bs1.pb`, you will see the output of this model and a summary of performance:
 ```
 Result_2261_0:
 8.921492e-03 1.182088e-02 8.937406e-03 7.932204e-03 1.574194e-02 3.844390e-03 -1.505094e-02 -1.112035e-02 5.026608e-03 -8.032205e-03  .. (size = 256, ends with 1.357487e-02);
@@ -100,7 +100,7 @@ To build from source code, please read the following documents:
 
 ### Speedups on benchmarks
 
-To learn how much performance improvement that NNFusion can achive on some typical DNN models, please refer to the [README page](https://github.com/microsoft/nnfusion/blob/osdi20_artifact/artifacts/README.md) at our OSDI'20 artifact branch. 
+To learn how much performance improvement that NNFusion can acheive on some typical DNN models, please refer to the [README page](https://github.com/microsoft/nnfusion/blob/osdi20_artifact/artifacts/README.md) at our OSDI'20 artifact branch. 
 
 # Contributing
 

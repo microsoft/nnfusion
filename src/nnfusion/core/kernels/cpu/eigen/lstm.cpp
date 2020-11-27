@@ -144,7 +144,7 @@ LanguageUnit_p cpu::LstmEigen::emit_dependency()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "Lstm",                                                                // op_name
+    "Lstm",                                                                    // op_name
     Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("eigen").Priority(4), // attrs
     cpu::LstmEigen)
 

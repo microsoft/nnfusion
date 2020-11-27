@@ -2136,9 +2136,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Abs",                                                         // op_name
+                "Abs",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                AbsRef)                                                        // constructor
+                AbsRef)                                                            // constructor
 
             class AcosRef : public KernelEmitter
             {
@@ -2174,9 +2174,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Acos",                                                        // op_name
+                "Acos",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                AcosRef)                                                       // constructor
+                AcosRef)                                                           // constructor
 
             class AddRef : public KernelEmitter
             {
@@ -2212,9 +2212,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Add",                                                         // op_name
+                "Add",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                AddRef)                                                        // constructor
+                AddRef)                                                            // constructor
 
             class AllReduceRef : public KernelEmitter
             {
@@ -2251,9 +2251,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "AllReduce",                                                   // op_name
+                "AllReduce",                                                       // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                AllReduceRef)                                                  // constructor
+                AllReduceRef)                                                      // constructor
 
             class AsinRef : public KernelEmitter
             {
@@ -2289,9 +2289,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Asin",                                                        // op_name
+                "Asin",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                AsinRef)                                                       // constructor
+                AsinRef)                                                           // constructor
 
             class AtanRef : public KernelEmitter
             {
@@ -2327,9 +2327,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Atan",                                                        // op_name
+                "Atan",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                AtanRef)                                                       // constructor
+                AtanRef)                                                           // constructor
 
             class BroadcastRef : public KernelEmitter
             {
@@ -2367,9 +2367,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Broadcast",                                                   // op_name
+                "Broadcast",                                                       // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                BroadcastRef)                                                  // constructor
+                BroadcastRef)                                                      // constructor
 
             class CeilingRef : public KernelEmitter
             {
@@ -2405,9 +2405,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Ceiling",                                                     // op_name
+                "Ceiling",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                CeilingRef)                                                    // constructor
+                CeilingRef)                                                        // constructor
 
             class ConcatRef : public KernelEmitter
             {
@@ -2452,9 +2452,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Concat",                                                      // op_name
+                "Concat",                                                          // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                ConcatRef)                                                     // constructor
+                ConcatRef)                                                         // constructor
 
             /*
             class ConstantRef : public KernelEmitter
@@ -2529,9 +2529,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Convert",                                                     // op_name
+                "Convert",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                ConvertRef)                                                    // constructor
+                ConvertRef)                                                        // constructor
 
             class ConvolutionRef : public KernelEmitter
             {
@@ -2574,9 +2574,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Convolution",                                                 // op_name
+                "Convolution",                                                     // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                ConvolutionRef)                                                // constructor
+                ConvolutionRef)                                                    // constructor
 
             class CosRef : public KernelEmitter
             {
@@ -2612,9 +2612,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Cos",                                                         // op_name
+                "Cos",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                CosRef)                                                        // constructor
+                CosRef)                                                            // constructor
 
             class CoshRef : public KernelEmitter
             {
@@ -2650,9 +2650,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Cosh",                                                        // op_name
+                "Cosh",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                CoshRef)                                                       // constructor
+                CoshRef)                                                           // constructor
 
             class DivideRef : public KernelEmitter
             {
@@ -2688,9 +2688,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Divide",                                                      // op_name
+                "Divide",                                                          // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                DivideRef)                                                     // constructor
+                DivideRef)                                                         // constructor
 
             class EqualRef : public KernelEmitter
             {
@@ -2726,9 +2726,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Equal",                                                       // op_name
+                "Equal",                                                           // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                EqualRef)                                                      // constructor
+                EqualRef)                                                          // constructor
 
             class ExpRef : public KernelEmitter
             {
@@ -2764,9 +2764,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Exp",                                                         // op_name
+                "Exp",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                ExpRef)                                                        // constructor
+                ExpRef)                                                            // constructor
 
             class FloorRef : public KernelEmitter
             {
@@ -2802,9 +2802,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Floor",                                                       // op_name
+                "Floor",                                                           // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                FloorRef)                                                      // constructor
+                FloorRef)                                                          // constructor
 
             class GreaterRef : public KernelEmitter
             {
@@ -2840,9 +2840,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Greater",                                                     // op_name
+                "Greater",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                GreaterRef)                                                    // constructor
+                GreaterRef)                                                        // constructor
 
             class LessRef : public KernelEmitter
             {
@@ -2878,9 +2878,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Less",                                                        // op_name
+                "Less",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                LessRef)                                                       // constructor
+                LessRef)                                                           // constructor
 
             class LogRef : public KernelEmitter
             {
@@ -2916,9 +2916,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Log",                                                         // op_name
+                "Log",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                LogRef)                                                        // constructor
+                LogRef)                                                            // constructor
 
             class LRNRef : public KernelEmitter
             {
@@ -2956,9 +2956,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "LRN",                                                         // op_name
+                "LRN",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                LRNRef)                                                        // constructor
+                LRNRef)                                                            // constructor
 
             class MaxRef : public KernelEmitter
             {
@@ -2996,9 +2996,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Max",                                                         // op_name
+                "Max",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                MaxRef)                                                        // constructor
+                MaxRef)                                                            // constructor
 
             class MaximumRef : public KernelEmitter
             {
@@ -3034,9 +3034,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Maximum",                                                     // op_name
+                "Maximum",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                MaximumRef)                                                    // constructor
+                MaximumRef)                                                        // constructor
 
             class MinRef : public KernelEmitter
             {
@@ -3074,9 +3074,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Min",                                                         // op_name
+                "Min",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                MinRef)                                                        // constructor
+                MinRef)                                                            // constructor
 
             class MinimumRef : public KernelEmitter
             {
@@ -3112,9 +3112,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Minimum",                                                     // op_name
+                "Minimum",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                MinimumRef)                                                    // constructor
+                MinimumRef)                                                        // constructor
 
             class MultiplyRef : public KernelEmitter
             {
@@ -3150,9 +3150,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Multiply",                                                    // op_name
+                "Multiply",                                                        // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                MultiplyRef)                                                   // constructor
+                MultiplyRef)                                                       // constructor
 
             class NegativeRef : public KernelEmitter
             {
@@ -3188,9 +3188,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Negative",                                                    // op_name
+                "Negative",                                                        // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                NegativeRef)                                                   // constructor
+                NegativeRef)                                                       // constructor
 
             class PowerRef : public KernelEmitter
             {
@@ -3226,9 +3226,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Power",                                                       // op_name
+                "Power",                                                           // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                PowerRef)                                                      // constructor
+                PowerRef)                                                          // constructor
 
             class ProductRef : public KernelEmitter
             {
@@ -3266,9 +3266,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Product",                                                     // op_name
+                "Product",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                ProductRef)                                                    // constructor
+                ProductRef)                                                        // constructor
 
             class ReluRef : public KernelEmitter
             {
@@ -3304,9 +3304,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Relu",                                                        // op_name
+                "Relu",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                ReluRef)                                                       // constructor
+                ReluRef)                                                           // constructor
 
             class SelectRef : public KernelEmitter
             {
@@ -3343,9 +3343,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Select",                                                      // op_name
+                "Select",                                                          // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SelectRef)                                                     // constructor
+                SelectRef)                                                         // constructor
 
             class SigmoidRef : public KernelEmitter
             {
@@ -3381,9 +3381,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Sigmoid",                                                     // op_name
+                "Sigmoid",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SigmoidRef)                                                    // constructor
+                SigmoidRef)                                                        // constructor
 
             class SignRef : public KernelEmitter
             {
@@ -3419,9 +3419,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Sign",                                                        // op_name
+                "Sign",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SignRef)                                                       // constructor
+                SignRef)                                                           // constructor
 
             class SinRef : public KernelEmitter
             {
@@ -3457,9 +3457,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Sin",                                                         // op_name
+                "Sin",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SinRef)                                                        // constructor
+                SinRef)                                                            // constructor
 
             class SinhRef : public KernelEmitter
             {
@@ -3495,9 +3495,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Sinh",                                                        // op_name
+                "Sinh",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SinhRef)                                                       // constructor
+                SinhRef)                                                           // constructor
 
             class SliceRef : public KernelEmitter
             {
@@ -3536,9 +3536,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Slice",                                                       // op_name
+                "Slice",                                                           // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SliceRef)                                                      // constructor
+                SliceRef)                                                          // constructor
 
             class SoftmaxRef : public KernelEmitter
             {
@@ -3580,9 +3580,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Softmax",                                                     // op_name
+                "Softmax",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SoftmaxRef)                                                    // constructor
+                SoftmaxRef)                                                        // constructor
 
             class SqrtRef : public KernelEmitter
             {
@@ -3618,9 +3618,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Sqrt",                                                        // op_name
+                "Sqrt",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SqrtRef)                                                       // constructor
+                SqrtRef)                                                           // constructor
 
             class SubtractRef : public KernelEmitter
             {
@@ -3656,9 +3656,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Subtract",                                                    // op_name
+                "Subtract",                                                        // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SubtractRef)                                                   // constructor
+                SubtractRef)                                                       // constructor
 
             class SumRef : public KernelEmitter
             {
@@ -3696,9 +3696,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Sum",                                                         // op_name
+                "Sum",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                SumRef)                                                        // constructor
+                SumRef)                                                            // constructor
 
             class TanRef : public KernelEmitter
             {
@@ -3734,9 +3734,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Tan",                                                         // op_name
+                "Tan",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                TanRef)                                                        // constructor
+                TanRef)                                                            // constructor
 
             class TanhRef : public KernelEmitter
             {
@@ -3772,9 +3772,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Tanh",                                                        // op_name
+                "Tanh",                                                            // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                TanhRef)                                                       // constructor
+                TanhRef)                                                           // constructor
 
             class BatchNormRef : public KernelEmitter
             {
@@ -3811,7 +3811,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "BatchNormInference",                                          // op_name
+                "BatchNormInference",                                              // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 BatchNormRef)
 
@@ -3855,7 +3855,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "AvgPool",                                                     // op_name
+                "AvgPool",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 AvgPoolRef)
 
@@ -3896,7 +3896,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Dot",                                                         // op_name
+                "Dot",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 DotRef)
 
@@ -3939,7 +3939,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "MaxPool",                                                     // op_name
+                "MaxPool",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 MaxPoolRef)
 
@@ -3981,7 +3981,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Pad",                                                         // op_name
+                "Pad",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 PadRef)
 
@@ -4021,7 +4021,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Reshape",                                                     // op_name
+                "Reshape",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 ReshapeRef)
 
@@ -4067,7 +4067,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Result",                                                      // op_name
+                "Result",                                                          // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 ResultRef)
 
@@ -4105,7 +4105,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "LessEq",                                                      // op_name
+                "LessEq",                                                          // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 LessEqRef)
 
@@ -4145,7 +4145,7 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Reverse",                                                     // op_name
+                "Reverse",                                                         // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
                 ReverseRef)
 

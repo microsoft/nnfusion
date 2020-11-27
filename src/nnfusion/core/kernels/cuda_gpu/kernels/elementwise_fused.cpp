@@ -340,6 +340,6 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
 }
 
 REGISTER_KERNEL_EMITTER(
-    "ElementWiseFused",                                                       // op_name
+    "ElementWiseFused",                                                           // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
     cuda::ElementWiseFused)

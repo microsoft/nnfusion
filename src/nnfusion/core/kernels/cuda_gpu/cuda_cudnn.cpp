@@ -31,7 +31,9 @@ std::string cuda::get_cudnn_datatype(element::Type dtype)
     return p->second;
 }
 
-LanguageUnit_p cuda::cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& shape, string desc, element::Type type)
+LanguageUnit_p cuda::cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& shape,
+                                                        string desc,
+                                                        element::Type type)
 {
     LanguageUnit_p _lu(new LanguageUnit);
     auto& lu = *_lu;
@@ -92,7 +94,8 @@ LanguageUnit_p cuda::cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& s
     return _lu;
 }
 
-LanguageUnit_p cuda::get_cudnn_filter_descriptor(const Shape& shape, string desc, element::Type type)
+LanguageUnit_p
+    cuda::get_cudnn_filter_descriptor(const Shape& shape, string desc, element::Type type)
 {
     LanguageUnit_p _lu(new LanguageUnit);
     auto& lu = *_lu;

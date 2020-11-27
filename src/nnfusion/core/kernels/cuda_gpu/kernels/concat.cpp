@@ -324,9 +324,9 @@ namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
-REGISTER_KERNEL_EMITTER("Concat",                                  //op_name
+REGISTER_KERNEL_EMITTER("Concat",                                      //op_name
                         Device(CUDA_GPU).TypeConstraint(element::f32), //attrs
-                        cuda::Concat)                              // constructor
+                        cuda::Concat)                                  // constructor
 
 namespace nnfusion
 {
@@ -479,6 +479,6 @@ namespace nnfusion
     }     // namespace kernels
 } // namespace nnfusion
 
-REGISTER_KERNEL_EMITTER("Concat",                                  //op_name
+REGISTER_KERNEL_EMITTER("Concat",                                      //op_name
                         Device(CUDA_GPU).TypeConstraint(element::f32), //attrs
-                        cuda::ConcatKernel)                        // constructor
+                        cuda::ConcatKernel)                            // constructor

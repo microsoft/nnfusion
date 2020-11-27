@@ -109,6 +109,6 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER(
-    "OneHot",                                                                 // op_name
+    "OneHot",                                                                     // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::OneHot)                                                             // constructor
+    cuda::OneHot)                                                                 // constructor

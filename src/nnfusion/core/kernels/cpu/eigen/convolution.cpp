@@ -143,6 +143,6 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER(
-    "Convolution",                                                         // op_name
+    "Convolution",                                                             // op_name
     Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("eigen").Priority(4), // attrs
     cpu::ConvolutionEigen)

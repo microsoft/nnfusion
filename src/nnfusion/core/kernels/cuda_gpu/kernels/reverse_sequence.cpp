@@ -124,10 +124,10 @@ if (tid < @threads@) {
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 REGISTER_KERNEL_EMITTER(
-    "ReverseSequence",                                                        // op_name
+    "ReverseSequence",                                                            // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::ReverseSequence)                                                    // constructor
+    cuda::ReverseSequence)                                                        // constructor
 
-REGISTER_KERNEL_EMITTER("ReverseSequence",                                     // op_name
+REGISTER_KERNEL_EMITTER("ReverseSequence",                                         // op_name
                         Device(ROCM_GPU).TypeConstraint(element::f32).Priority(2), // attrs
-                        cuda::RocmReverseSequence)                             // constructor
+                        cuda::RocmReverseSequence)                                 // constructor

@@ -61,9 +61,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "All",                                                         // op_name
+                "All",                                                             // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                AllRef)                                                        // constructor
+                AllRef)                                                            // constructor
 
         } // namespace cpu
     }     // namespace kernels

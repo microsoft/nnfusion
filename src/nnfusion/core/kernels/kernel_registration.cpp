@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include "kernel_registration.hpp"
-#include "nnfusion/util/util.hpp"
 #include "ngraph/src/nnfusion/common/type/element_type.hpp"
+#include "nnfusion/util/util.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

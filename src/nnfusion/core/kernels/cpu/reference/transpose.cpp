@@ -113,9 +113,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "Transpose",                                                   // op_name
+                "Transpose",                                                       // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                TransposeRef)                                                  // constructor
+                TransposeRef)                                                      // constructor
 
         } // namespace cpu
     }     // namespace kernels

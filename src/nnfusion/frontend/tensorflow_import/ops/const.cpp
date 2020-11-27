@@ -167,42 +167,62 @@ namespace nnfusion
                 // int_val, float_val, etc.
                 if (tensor_content_size == 0)
                 {
-
-#define GET_VALUES(type) do {                                               \
-                        const void* dat = nullptr;                                              \
-                        for (size_t i = 0; i < n_elements; ++i) {                               \
-                            if (tensor.type##_val_size() == 1) {                                \
-                                dat = reinterpret_cast<const void *>(&tensor.type##_val()[0]);  \
-                            } else {                                                            \
-                                dat = reinterpret_cast<const void *>(&tensor.type##_val()[i]);  \
-                            }                                                                   \
-                            values->setElement(i, dat);                                         \
-                        }                                                                       \
-                    } while(0)
+#define GET_VALUES(type)                                                                           \
+    do                                                                                             \
+    {                                                                                              \
+        const void* dat = nullptr;                                                                 \
+        for (size_t i = 0; i < n_elements; ++i)                                                    \
+        {                                                                                          \
+            if (tensor.type##_val_size() == 1)                                                     \
+            {                                                                                      \
+                dat = reinterpret_cast<const void*>(&tensor.type##_val()[0]);                      \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                dat = reinterpret_cast<const void*>(&tensor.type##_val()[i]);                      \
+            }                                                                                      \
+            values->setElement(i, dat);                                                            \
+        }                                                                                          \
+    } while (0)
 
                     values->resize(n_elements);
                     auto& tensor = node.attr().at("value").tensor();
                     size_t val_size;
-                    if (dt == tensorflow::DT_INT32) {
+                    if (dt == tensorflow::DT_INT32)
+                    {
                         GET_VALUES(int);
-                    } else if (dt == tensorflow::DT_INT64) {
+                    }
+                    else if (dt == tensorflow::DT_INT64)
+                    {
                         GET_VALUES(int64);
-                    } else if (dt == tensorflow::DT_BOOL) {
+                    }
+                    else if (dt == tensorflow::DT_BOOL)
+                    {
                         GET_VALUES(bool);
-                    } else if (dt == tensorflow::DT_HALF) {
+                    }
+                    else if (dt == tensorflow::DT_HALF)
+                    {
                         GET_VALUES(half);
-                    } else if (dt == tensorflow::DT_FLOAT) {
+                    }
+                    else if (dt == tensorflow::DT_FLOAT)
+                    {
                         GET_VALUES(float);
-                    } else if (dt == tensorflow::DT_DOUBLE) {
+                    }
+                    else if (dt == tensorflow::DT_DOUBLE)
+                    {
                         GET_VALUES(double);
-                    } else if (dt == tensorflow::DT_STRING) {
+                    }
+                    else if (dt == tensorflow::DT_STRING)
+                    {
                         values->resize(tensor.string_val()[0].length());
                         auto it = tensor.string_val()[0].begin();
                         for (size_t j = 0; it != tensor.string_val()[0].end(); ++j, ++it)
                         {
                             values->setElement(j, reinterpret_cast<const void*>(&it));
                         }
-                    } else {
+                    }
+                    else
+                    {
                         return false;
                     }
 

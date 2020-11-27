@@ -192,11 +192,11 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER(
-    "BatchMatMul",                                                            // op_name
+    "BatchMatMul",                                                                // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::BatchMatMul)                                                        // constructor
+    cuda::BatchMatMul)                                                            // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "BatchMatMul",                                                            // op_name
+    "BatchMatMul",                                                                // op_name
     Device(ROCM_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::BatchMatMul)                                                        // constructor
+    cuda::BatchMatMul)                                                            // constructor

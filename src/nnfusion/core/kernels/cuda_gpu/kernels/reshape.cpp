@@ -557,21 +557,21 @@ LanguageUnit_p cuda::ReshapeMemcpy::emit_function_signature()
 // Register Reshape kernel emitter
 
 REGISTER_KERNEL_EMITTER(
-    "Reshape",                                                                   // op_name
+    "Reshape",                                                                       // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel_2D").Priority(2), // attrs
-    cuda::Reshape2D)                                                             // constructor
+    cuda::Reshape2D)                                                                 // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "Reshape",                                                                   // op_name
+    "Reshape",                                                                       // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel_3D").Priority(2), // attrs
-    cuda::Reshape3D)                                                             // constructor
+    cuda::Reshape3D)                                                                 // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "Reshape",                                                                  // op_name
+    "Reshape",                                                                      // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel_D").Priority(2), // attrs
-    cuda::ReshapehD)                                                            // constructor
+    cuda::ReshapehD)                                                                // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "Reshape",                                                             // op_name
+    "Reshape",                                                                 // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_lib").Priority(2), // attrs
-    cuda::ReshapeMemcpy)                                                   // constructor
+    cuda::ReshapeMemcpy)                                                       // constructor

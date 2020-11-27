@@ -253,10 +253,10 @@ namespace nnfusion
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
-REGISTER_KERNEL_EMITTER("DropoutTraining",                                      // op_name
+REGISTER_KERNEL_EMITTER("DropoutTraining",                                          // op_name
                         Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn"), // attrs
-                        cuda::DropoutTraining)                                  // constructor
+                        cuda::DropoutTraining)                                      // constructor
 
-REGISTER_KERNEL_EMITTER("DropoutTrainingGrad",                                  // op_name
+REGISTER_KERNEL_EMITTER("DropoutTrainingGrad",                                      // op_name
                         Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn"), // attrs
-                        cuda::DropoutTrainingGrad)                              // constructor
+                        cuda::DropoutTrainingGrad)                                  // constructor

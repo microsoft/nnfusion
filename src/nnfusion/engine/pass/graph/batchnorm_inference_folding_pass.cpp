@@ -887,7 +887,7 @@ bool BatchNormInferenceFoldingPass::run_on_graph(std::shared_ptr<nnfusion::graph
     if (folding_flag)
     {
         NNFUSION_LOG(INFO) << "batchnorm inference folding Pass starts up for Graph: "
-                                       << graph->get_name();
+                           << graph->get_name();
         for (auto pattern : BN_FOLDING_PATTERNS)
         {
             BatchNormInferenceOptimizer optimizer(graph, pattern);
@@ -899,7 +899,7 @@ bool BatchNormInferenceFoldingPass::run_on_graph(std::shared_ptr<nnfusion::graph
             const_folding_optimizer.run_on_graph(graph);
         }
         NNFUSION_LOG(INFO) << "batchnorm inference folding Pass ends for Graph: "
-                                       << graph->get_name();
+                           << graph->get_name();
     }
     return true;
 }

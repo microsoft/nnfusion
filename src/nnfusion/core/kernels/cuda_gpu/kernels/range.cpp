@@ -63,6 +63,6 @@ LanguageUnit_p cuda::Range::emit_dependency()
     return _lu;
 }
 REGISTER_KERNEL_EMITTER(
-    "Range",                                                                  // op_name
+    "Range",                                                                      // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::Range)                                                              // constructor
+    cuda::Range)                                                                  // constructor

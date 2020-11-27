@@ -6,8 +6,8 @@
 #include <iomanip>
 #include <limits>
 
-#include "nnfusion/common/common.hpp"
 #include "ngraph/src/nnfusion/common/type/element_type.hpp"
+#include "nnfusion/common/common.hpp"
 
 #define REGISTER_OP(op_x)                                                                          \
     static nnfusion::op::OpConfig __register_op_##op_x = nnfusion::op::build_op_config(#op_x)

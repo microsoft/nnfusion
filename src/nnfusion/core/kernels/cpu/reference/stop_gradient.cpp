@@ -54,9 +54,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "StopGradient",                                                // op_name
+                "StopGradient",                                                    // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                StopGradientRef)                                               // constructor
+                StopGradientRef)                                                   // constructor
 
         } // namespace cpu
     }     // namespace kernels

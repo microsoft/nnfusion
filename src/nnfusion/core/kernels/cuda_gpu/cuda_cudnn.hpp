@@ -16,13 +16,15 @@ namespace nnfusion
             std::string get_cudnn_datatype(element::Type type);
             LanguageUnit_p cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& shape,
                                                               string desc,
-                                                              element::Type type = element::f32);
+                                                              element::Type type);
             LanguageUnit_p get_cudnn_convolution_descriptor(const Shape& padding,
                                                             const Strides& window_movement_strides,
                                                             const Strides& window_dilation_strides,
                                                             string desc,
                                                             element::Type type = element::f32);
-            LanguageUnit_p get_cudnn_filter_descriptor(const Shape& shape, string desc, element::Type type = element::f32);
+            LanguageUnit_p get_cudnn_filter_descriptor(const Shape& shape,
+                                                       string desc,
+                                                       element::Type type = element::f32);
             LanguageUnit_p get_dropout_global_states(float ratio);
             inline std::string ratio2str(float ratio)
             {

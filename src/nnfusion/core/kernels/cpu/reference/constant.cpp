@@ -69,6 +69,6 @@ namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
-REGISTER_KERNEL_EMITTER("Constant",                                   //op_name
+REGISTER_KERNEL_EMITTER("Constant",                                       //op_name
                         Device(GENERIC_CPU).TypeConstraint(element::f32), //attrs
-                        cpu::Constant)                                // constructor
+                        cpu::Constant)                                    // constructor

@@ -83,17 +83,19 @@ REGISTER_OP(OneHot)
 
         auto input0_layout = op::create_layout_from_dims(gnode->get_input_shape(0));
         auto output_layout = op::create_layout_from_dims(gnode->get_output_shape(0));
+        axis = ((axis < 0) ? output_layout.size() + axis : axis);
 
         //e.g., output0[N0, F, N1, N2] = parse(1.0).when([input0[N0, N1, N2]  == F], 0.0) where F in Depth;
         std::string expr =
-            "@output0@@output_layout@ = parse(@on_value@).when([@input0@@input0_layout@  == "
+            "@output0@@output_layout@ = const(@on_value@).when([@input0@@input0_layout@  == "
             "@axis@], @off_value@) where @axis@ in @depth@;";
 
-        return op::create_code_from_template(expr,
-                                             {{"input0_layout", input0_layout},
-                                              {"output_layout", output_layout},
-                                              {"depth", depth},
-                                              {"on_value", on_value},
-                                              {"off_value", off_value},
-                                              {"axis", output_layout[axis + 1]}});
+        return op::create_code_from_template(
+            expr,
+            {{"input0_layout", vector_to_string<std::vector<std::string>>(input0_layout)},
+             {"output_layout", vector_to_string<std::vector<std::string>>(output_layout)},
+             {"depth", depth},
+             {"on_value", on_value},
+             {"off_value", off_value},
+             {"axis", output_layout[axis]}});
     });

@@ -53,45 +53,4 @@ REGISTER_OP(MaxPool)
 
         auto expression_code = op::create_code_from_template(expression_template, config);
         return expression_code;
-    })
-    .infersharedmemory([](std::shared_ptr<graph::GNode> gnode) -> void {
-        auto op = static_pointer_cast<nnfusion::op::MaxPool>(gnode->get_op_ptr());
-        size_t ws = op->get_window_shape()[0];
-        for (auto w : op->get_window_shape())
-        {
-            if (w != ws)
-                return;
-        }
-        for (auto s : op->get_window_movement_strides())
-        {
-            if (s != ws)
-                return;
-        }
-
-        for (auto p : op->get_padding_below())
-        {
-            if (p != 0)
-                return;
-        }
-
-        for (auto p : op->get_padding_above())
-        {
-            if (p != 0)
-                return;
-        }
-
-        const Shape& input_shape = gnode->get_input_shape(0);
-        const Shape& output_shape = gnode->get_output_shape(0);
-        int channel = op->get_data_format() == "NCHW" ? 1 : 3;
-
-        std::vector<size_t> shared_memory;
-        for (size_t i = 0; i < output_shape.size(); i++)
-        {
-            if (i == channel || i == 0)
-                shared_memory.push_back(1);
-            else
-                shared_memory.push_back(ws);
-        }
-
-        op->set_shared_memory(shared_memory);
     });

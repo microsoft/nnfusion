@@ -203,8 +203,6 @@ private:
                 }
                 else
                 {
-                    NNFUSION_LOG(INFO) << "-------dst---" << dst->get_name() << " "
-                                   << dst->get_op_type();
                     ready.push(dst);
                 }
             }

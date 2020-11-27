@@ -51,19 +51,4 @@ REGISTER_OP(Slice)
              {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
              {"slice_dims", slice_dims}});
         return expression_code;
-    })
-    .infersharedmemory([](std::shared_ptr<graph::GNode> gnode) -> void {
-        auto op = static_pointer_cast<nnfusion::op::Slice>(gnode->get_op_ptr());
-        auto& input_shape = gnode->get_input_shape(0);
-        auto& output_shape = gnode->get_output_shape(0);
-        if (input_shape.size() == output_shape.size())
-        {
-            std::vector<size_t> shared_memory;
-            for (size_t i = 0; i < output_shape.size(); i++)
-            {
-                shared_memory.push_back(1);
-            }
-
-            op->set_shared_memory(shared_memory);
-        }
     });

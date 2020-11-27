@@ -65,15 +65,4 @@ REGISTER_OP(Broadcast)
              {"boardcast_dims", boardcast_code},
              {"suffix", (boardcast_code.size() ? "where " : "")}});
         return expression_code;
-    })
-    .infersharedmemory([](std::shared_ptr<graph::GNode> gnode) -> void {
-        auto op = static_pointer_cast<nnfusion::op::Broadcast>(gnode->get_op_ptr());
-        const Shape& out_shape = gnode->get_output_shape(0);
-        std::vector<size_t> shared_memory;
-        for (size_t i = 0; i < out_shape.size(); i++)
-        {
-            shared_memory.push_back(1);
-        }
-
-        op->set_shared_memory(shared_memory);
     });

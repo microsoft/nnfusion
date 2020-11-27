@@ -5,6 +5,7 @@
 #include "nnfusion/common/type/element_type.hpp"
 #include "nnfusion/util/util.hpp"
 #include "ngraph/src/nnfusion/common/type/element_type.hpp"
+#include "nnfusion/util/util.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

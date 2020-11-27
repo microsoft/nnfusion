@@ -87,7 +87,6 @@ LanguageUnit_p cuda::ConvolutionCudnn::emit_function_body()
         padding_below[i] = static_cast<size_t>(padding_below_diff[i]);
     }
 
-
     {
         // lu << "cudnnDataType_t data_type = " << get_cudnn_datatype(dtype) << ";\n";
         lu << cudnn_tensor_descriptor_from_shape(input_shape, "tensor_desc_0", input_type)

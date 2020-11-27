@@ -253,6 +253,26 @@ __device__ __forceinline__ int64_t  load(const int64_t*  __restrict__ in, int i=
 }
 )");
 
+LU_DEFINE(
+  declaration::cuda_fp16_scale,
+  R"(
+__global__ void nnfusionHalfScaleKernel(half *x, half *alpha, size_t count)
+{
+    size_t offset = threadIdx.x + blockIdx.x * blockDim.x;
+    x += offset;
+    if (offset < count)
+    {
+        *x *= *alpha;
+    }
+}
+
+void nnfusionHalfScale(half *x, half *alpha, size_t len)
+{
+    nnfusionHalfScaleKernel<<<(len+255)/256, 256>>>(x, alpha, len);
+}
+  )"
+)
+
 LU_DEFINE_EXTEND(declaration::cuda_reduce_primitive,
                  R"(
 #if CUDA_VERSION < 9000

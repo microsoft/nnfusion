@@ -61,19 +61,21 @@ void print_tuning_results(std::vector<std::shared_ptr<TuningStatus>> tuned_kerne
                           std::vector<std::shared_ptr<TuningStatus>> tuning_kernels)
 {
     std::stringstream ss;
-    ss << " Kernel Tuning Status: \n\n";
-    ss << " | " << std::setw(16) << "OP"
+    ss << " Kernel Tuning Status: \n";
+    ss << " NOTE: the tuning progress (N/M) means that the current best kernel is searched at the "
+          "N-th step of the total M steps. \n\n";
+    ss << " | " << std::setw(20) << "OP"
        << " | " << std::setw(26) << "NAME"
        << " | " << std::setw(10) << "STATUS"
        << " | " << std::setw(10) << "PROGRESS"
        << " | " << std::setw(18) << "PERFORMANCE |\n";
 
-    ss << " | " << std::setfill('-') << setw(92) << " |\n";
+    ss << " | " << std::setfill('-') << setw(96) << " |\n";
     ss << std::setfill(' ');
 
     for (auto s : tuned_kernels)
     {
-        ss << " | " << std::setw(16) << s->op_type << " | " << std::setw(26)
+        ss << " | " << std::setw(20) << s->op_type << " | " << std::setw(26)
            << ((s->op_name.size() > 26) ? (s->op_name.substr(0, 24) + "..") : s->op_name) << " | "
            << std::setw(10) << s->status << " | " << std::setw(6) << s->progress_step << "/"
            << FLAGS_fkernel_tuning_steps << " "
@@ -81,7 +83,7 @@ void print_tuning_results(std::vector<std::shared_ptr<TuningStatus>> tuned_kerne
     }
     for (auto s : tuning_kernels)
     {
-        ss << " | " << std::setw(16) << s->op_type << " | " << std::setw(26)
+        ss << " | " << std::setw(20) << s->op_type << " | " << std::setw(26)
            << ((s->op_name.size() > 26) ? (s->op_name.substr(0, 24) + "..") : s->op_name) << " | "
            << std::setw(10) << s->status << " | " << std::setw(6) << s->progress_step << "/"
            << FLAGS_fkernel_tuning_steps << " "

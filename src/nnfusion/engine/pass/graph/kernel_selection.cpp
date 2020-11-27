@@ -12,12 +12,7 @@ using namespace nnfusion;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::profiler;
 
-// Register_Tag(Enable_Kernel_Selection, bool);
-// Register_Tag(Kernel_Selection_Device, NNFusion_DeviceType);
-// Register_Tag(Kernel_Selection_Result, vector<pair<NNFusion_DeviceType, KernelEmitter>>);
-
-DEFINE_bool(fkernel_selection, true, "Select kernel before codegen.");
-DEFINE_bool(fkernel_tunning, false, "Tunning and choose best kernel when do kernel selection.");
+DEFINE_bool(fkernel_selection, false, "Select 'best' kernel based on the profiling information.");
 DECLARE_bool(fantares_mode);
 
 pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
@@ -76,8 +71,8 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 
 bool ProfilingBasedKernelSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
-    bool enable_tuning = FLAGS_fkernel_tunning;
-    if (!enable_tuning)
+    bool enable_selection = FLAGS_fkernel_selection;
+    if (!enable_selection)
         return true;
 
     // auto dev_name = FLAGS_fdefault_device.c_str();
@@ -234,7 +229,6 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 
 bool DefaultKernelSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
-    register_antares_kernel();
     // std::vector<std::shared_ptr<GNode>> nodes = graph->get_ordered_ops();
     std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
     for (auto it : nodes)
@@ -422,49 +416,5 @@ bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
         }
     }
 
-    return true;
-}
-
-bool DefaultKernelSelector::register_antares_kernel()
-{
-    for (auto pair : nnfusion::op::get_op_configs())
-    {
-        std::string op_name = pair.first;
-        std::vector<NNFusion_DeviceType> devs{CUDA_GPU, GENERIC_CPU, HLSL};
-
-        KernelRegistrar kernel_registrar_cuda(
-            op_name,
-            Name(op_name)
-                .Device(CUDA_GPU)
-                .TypeConstraint(DT_FLOAT)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
-                    return make_shared<cuda::AntaresCudaKernelEmitter>(context);
-                })
-                .Build());
-        KernelRegistrar kernel_registrar_cpu(
-            op_name,
-            Name(op_name)
-                .Device(GENERIC_CPU)
-                .TypeConstraint(DT_FLOAT)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
-                    return make_shared<cpu::AntaresCpuKernelEmitter>(context);
-                })
-                .Build());
-        KernelRegistrar kernel_registrar_hlsl(
-            op_name,
-            Name(op_name)
-                .Device(HLSL)
-                .TypeConstraint(DT_FLOAT)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
-                    return make_shared<hlsl::AntaresHLSLKernelEmitter>(context);
-                })
-                .Build());
-    }
     return true;
 }

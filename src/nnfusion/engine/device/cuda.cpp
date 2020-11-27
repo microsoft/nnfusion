@@ -17,6 +17,7 @@
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
+#include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
 #include "nnfusion/engine/pass/graph/multi_reshape_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
@@ -54,6 +55,7 @@ CudaEngine::CudaEngine()
 
     // Kernel selection
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+    g_passes->push_back(make_shared<KernelTuning>());
     g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
     g_passes->push_back(make_shared<FetchBasedSelector>());
     g_passes->push_back(make_shared<DefaultKernelSelector>());

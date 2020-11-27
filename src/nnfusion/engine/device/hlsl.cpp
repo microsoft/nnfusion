@@ -7,6 +7,7 @@
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
+#include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 
 using namespace nnfusion;
@@ -21,6 +22,7 @@ HLSLEngine::HLSLEngine()
 
     // Kernel selection
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+    g_passes->push_back(make_shared<KernelTuning>());
     g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
     g_passes->push_back(make_shared<FetchBasedSelector>());
     g_passes->push_back(make_shared<DefaultKernelSelector>());

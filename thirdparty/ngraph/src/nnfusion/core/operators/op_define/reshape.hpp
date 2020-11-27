@@ -65,7 +65,7 @@ namespace nnfusion
             Reshape(const nnfusion::AxisVector& input_order, const nnfusion::Shape& output_shape);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
-
+            void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override;
             /// \return The order in which to iterate over input axes.
             const nnfusion::AxisVector& get_input_order() const { return m_input_order; }
             /// \return The shape of the output tensor.

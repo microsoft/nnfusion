@@ -7,6 +7,7 @@
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
+#include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 
 using namespace nnfusion;
@@ -18,6 +19,7 @@ HLSLEngine::HLSLEngine()
 {
     g_passes->push_back(make_shared<GradientWeightMappingPass>());
     g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
+    g_passes->push_back(make_shared<ReduceFusionPass>());
 
     // Kernel selection
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());

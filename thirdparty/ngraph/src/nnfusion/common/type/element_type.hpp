@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "half/include/half.hpp"
 #include "nnfusion/common/type/bfloat16.hpp"
 #include "nnfusion/util/errors.hpp"
 
@@ -32,12 +33,15 @@ namespace nnfusion
 {
     namespace element
     {
+        using half = half_float::half;
+
         class Type;
 
         extern const Type dynamic;
         extern const Type boolean;
         extern const Type character;
         extern const Type bf16;
+        extern const Type f16;
         extern const Type f32;
         extern const Type f64;
         extern const Type i8;
@@ -140,6 +144,8 @@ namespace nnfusion
         const Type& from<uint64_t>();
         template <>
         const Type& from<nnfusion::bfloat16>();
+        template <>
+        const Type& from<half>();
 
         std::ostream& operator<<(std::ostream& out, const nnfusion::element::Type& obj);
     }

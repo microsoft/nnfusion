@@ -6,6 +6,7 @@ add_subdirectory(models)
 set(SRC main.cpp)
 
 file(GLOB nnfusion_core_files nnfusion/core/*.cpp)
+file(GLOB nnfusion_common_files nnfusion/common/*.cpp)
 file(GLOB nnfusion_engine_files nnfusion/engine/*.cpp)
 file(GLOB nnfusion_inventory_files nnfusion/inventory/*.cpp)
 file(GLOB nnfusion_kernels_files nnfusion/kernels/*.cpp)
@@ -21,6 +22,7 @@ if (TORCHSCRIPT_FRONTEND)
 endif()
 list(APPEND SRC ${nnfusion_core_files}
     ${nnfusion_engine_files}
+    ${nnfusion_common_files}
     ${nnfusion_inventory_files}
     ${nnfusion_kernels_files}
     ${nnfusion_testutil_files}
@@ -40,7 +42,7 @@ if(NGRAPH_ADDRESS_SANITIZER)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=address -fno-omit-frame-pointer")
 endif()
 
-target_link_libraries(unit-test PRIVATE GTest::GTest Threads::Threads)
+target_link_libraries(unit-test PRIVATE GTest::GTest Threads::Threads gflags)
 target_link_libraries(unit-test PRIVATE ${CMAKE_DL_LIBS})
 target_link_libraries(unit-test PRIVATE nnfusion_operators)
 

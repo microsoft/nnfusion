@@ -176,11 +176,11 @@ namespace nnfusion
                 virtual bool require_cublas_handle() { return false; }
             };
 
-            class AntaresCudaKernelEmitter : public CudaEmitter
+            class AntaresCudaKernelEmitter : public BlockCudaEmitter
             {
             public:
                 AntaresCudaKernelEmitter(shared_ptr<KernelContext> ctx)
-                    : CudaEmitter(ctx)
+                    : BlockCudaEmitter(ctx)
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
                     GENERIC_OP_LOGGING();

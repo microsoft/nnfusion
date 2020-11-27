@@ -10,7 +10,6 @@ set(SRC
     gemm_fusion_pass.cpp
     op_inplace_pass.cpp
     graph_pass.cpp
-    manager.cpp
     gradient_weight_mapping_pass.cpp
     gnode_device_dispatcher.cpp
     kernel_selection.cpp

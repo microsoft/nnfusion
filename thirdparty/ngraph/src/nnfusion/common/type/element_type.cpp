@@ -25,6 +25,7 @@ const element::Type element::dynamic(0, false, false, false, "dynamic");
 const element::Type element::boolean(8, false, true, false, "char");
 const element::Type element::character(8, false, false, false, "char");
 const element::Type element::bf16(16, true, true, false, "bfloat16");
+const element::Type element::f16(16, true, true, false, "half");
 const element::Type element::f32(32, true, true, false, "float");
 const element::Type element::f64(64, true, true, false, "double");
 const element::Type element::i8(8, false, true, true, "int8_t");
@@ -61,6 +62,8 @@ bool element::Type::nnfusion_element_type_to_dtype_string(const element::Type& n
         dtype = "char";
     else if (ng_et == element::character)
         dtype = "char";
+    else if (ng_et == element::f16)
+        dtype = "float16";
     else if (ng_et == element::f32)
         dtype = "float32";
     else if (ng_et == element::f64)
@@ -131,12 +134,12 @@ bool element::Type::operator<(const Type& other) const
     v2 |= static_cast<size_t>(other.m_is_signed ? 2 : 0);
     v2 |= static_cast<size_t>(other.m_is_quantized ? 1 : 0);
 
-    return v1 < v2;
+    return v1 == v2 ? m_cname < other.m_cname : v1 < v2;
 }
 
 size_t element::Type::size() const
 {
-    return std::ceil(static_cast<float>(m_bitwidth) / 8.0f);
+    return (m_bitwidth + 7) / 8;
 }
 
 size_t element::Type::hash() const
@@ -145,7 +148,8 @@ size_t element::Type::hash() const
     size_t h2 = std::hash<bool>{}(m_is_real);
     size_t h3 = std::hash<bool>{}(m_is_signed);
     size_t h4 = std::hash<bool>{}(m_is_quantized);
-    return h1 ^ ((h2 ^ ((h3 ^ (h4 << 1)) << 1)) << 1);
+    size_t h5 = std::hash<std::string>{}(m_cname);
+    return (h1 ^ ((h2 ^ ((h3 ^ (h4 << 1)) << 1)) << 1) << 1) ^ h5;
 }
 
 namespace nnfusion
@@ -161,6 +165,11 @@ namespace nnfusion
         const Type& from<bool>()
         {
             return boolean;
+        }
+        template <>
+        const Type& from<half>()
+        {
+            return f16;
         }
         template <>
         const Type& from<float>()

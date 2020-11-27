@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
@@ -315,8 +316,38 @@ INSERT INTO KernelCache(key_code, key_op, device_type, cost) VALUES(?, ?, ?, ?);
                 return true;
             }
 
+            bool load_input_from(const DataBuffer& data, int input_id)
+            {
+                auto buffsize = kctx->inputs[input_id]->size();
+                // Check if the buffer is same size;
+                if (input_id >= kctx->inputs.size() || data.size_in_bytes() != buffsize)
+                {
+                    NNFUSION_LOG(ERROR) << "Input data size and memory buffer size don't match:"
+                                        << data.size_in_bytes() << " != " << buffsize;
+                    return false;
+                }
+                data.dump(unsafe_input(input_id));
+
+                return true;
+            }
+
             template <typename T>
             bool load_inputs(const vector<vector<T>>& data)
+            {
+                if (data.size() != kctx->inputs.size())
+                {
+                    NNFUSION_LOG(ERROR) << "Data items missmatch.";
+                    return false;
+                }
+                for (int i = 0; i < data.size(); i++)
+                {
+                    if (load_input_from(data[i], i) == false)
+                        return false;
+                }
+                return true;
+            }
+
+            bool load_inputs(const vector<DataBuffer>& data)
             {
                 if (data.size() != kctx->inputs.size())
                 {
@@ -345,6 +376,20 @@ INSERT INTO KernelCache(key_code, key_op, device_type, cost) VALUES(?, ?, ?, ?);
                 return move(res);
             }
 
+            DataBuffer save_output(int output_id, element::Type type)
+            {
+                if (output_id > raw_output.size())
+                {
+                    NNFUSION_LOG(ERROR) << "Index exceeded the limit of vector.";
+                    return std::move(DataBuffer(type));
+                }
+                void* base = unsafe_output(output_id);
+                size_t buffsize = kctx->outputs[output_id]->size(false);
+                DataBuffer res(type);
+                res.load(base, buffsize);
+                return move(res);
+            }
+
             template <typename T>
             vector<vector<T>> save_outputs()
             {
@@ -352,6 +397,24 @@ INSERT INTO KernelCache(key_code, key_op, device_type, cost) VALUES(?, ?, ?, ?);
                 for (int i = 0; i < kctx->outputs.size(); i++)
                     res.push_back(save_output<T>(i));
                 return res;
+            }
+
+            vector<DataBuffer> save_outputs(element::Type type)
+            {
+                vector<DataBuffer> res;
+                for (int i = 0; i < kctx->outputs.size(); i++)
+                    res.push_back(save_output(i, type));
+                return move(res);
+            }
+
+            vector<DataBuffer> save_outputs(const vector<element::Type>& type)
+            {
+                NNFUSION_CHECK(type.size() == kctx->outputs.size()) << "Type vector size mismatch.";
+
+                vector<DataBuffer> res;
+                for (size_t i = 0; i < kctx->outputs.size(); i++)
+                    res.push_back(save_output(i, type[i]));
+                return move(res);
             }
 
             void* unsafe_input(int n)

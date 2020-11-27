@@ -133,7 +133,7 @@ private:
 
 private:
     const static size_t DEFAULT_GROUP_ID;
-    const static size_t MAX_GROUP;
-    const static size_t DEFAULT_BE;
+    static size_t MAX_GROUP;
+    static size_t DEFAULT_BE;
     const static size_t RESOURCE_CAPACITY;
 };

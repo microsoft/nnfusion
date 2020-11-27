@@ -19,8 +19,8 @@ using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
 
 const size_t BlockFusionWavefrontOptimizer::DEFAULT_GROUP_ID = -1;
-const size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
-const size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
+size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
+size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
 const size_t BlockFusionWavefrontOptimizer::RESOURCE_CAPACITY =
     4 * 80; // volta max parallelism: 4 * #SM
 
@@ -38,6 +38,11 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
 
     m_kernel_db = std::make_shared<cache::KernelCacheManager>();
     m_db_ready = m_kernel_db->is_valid() ? true : false;
+
+    if (m_device_type == "ROCm")
+    {
+        MAX_GROUP = 10;
+    }
 }
 
 bool BlockFusionWavefrontOptimizer::Optimize()

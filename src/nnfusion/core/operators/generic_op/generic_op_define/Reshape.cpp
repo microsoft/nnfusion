@@ -143,4 +143,45 @@ REGISTER_OP(Reshape)
                  {"conditions", condition}});
             return expression_code;
         }
+    })
+    .infersharedmemory([](std::shared_ptr<graph::GNode> gnode) -> void {
+        auto op = static_pointer_cast<nnfusion::op::Reshape>(gnode->get_op_ptr());
+        auto& input_shape = gnode->get_input_shape(0);
+        auto& output_shape = gnode->get_output_shape(0);
+        std::vector<size_t> shared_memory;
+
+        if (!op->get_is_layout_change() || shape_size(output_shape) < 2)
+        {
+            for (size_t i = 0; i < output_shape.size(); i++)
+                shared_memory.push_back(1);
+        }
+        else
+        {
+            auto m_input_order = op->get_input_order();
+            size_t len = m_input_order.size();
+            if (m_input_order[len - 1] == len - 2 && m_input_order[len - 2] == len - 1)
+            {
+                bool trans_inner = true;
+                for (size_t i = 0; i < len - 2; i++)
+                {
+                    if (m_input_order[i] != i)
+                    {
+                        trans_inner = false;
+                        break;
+                    }
+                }
+
+                if (trans_inner)
+                {
+                    for (size_t i = 0; i < len - 2; i++)
+                    {
+                        shared_memory.push_back(1);
+                    }
+                    shared_memory.push_back(input_shape[len - 2]);
+                    shared_memory.push_back(input_shape[len - 1]);
+                }
+            }
+        }
+
+        op->set_shared_memory(shared_memory);
     });

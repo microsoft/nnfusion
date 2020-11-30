@@ -843,18 +843,10 @@ namespace nnfusion
                     reshape_input_gnode = input_gnode;
                 }
 
+                // transpose filter shape from tf format to nnfusion format
                 auto reshape_filter_gnode = Reshape<2, 3, 0, 1>(filter_gnode);
-                if (!is_nhwc || (default_device != GENERIC_CPU && default_device != HLSL))
-                {
-                    // Set data format as "NCHW", since have transposed the data from "NHWC" to "NCHW".
-                    tf_data_format = "NCHW";
-                    m_graph->add_node(reshape_filter_gnode);
-                    m_graph->add_edge(filter_gnode, 0, reshape_filter_gnode, 0);
-                }
-                else
-                {
-                    reshape_filter_gnode = filter_gnode;
-                }
+                m_graph->add_node(reshape_filter_gnode);
+                m_graph->add_edge(filter_gnode, 0, reshape_filter_gnode, 0);
 
                 CoordinateDiff ng_padding_below{0, 0};
                 CoordinateDiff ng_padding_above{0, 0};

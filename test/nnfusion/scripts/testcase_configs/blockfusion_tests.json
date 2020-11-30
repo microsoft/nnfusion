@@ -3,7 +3,7 @@
         {
             "testcase": "blockfusion_cases #1",
             "tag": [
-                "correctness_cuda_only"
+                "correctness"
             ],
             "filename": "pipeline/blockfusion_tests/frozen_lstm_l2_s2_h256.const_folded.pb",
             "type": "naive_case_single_line",

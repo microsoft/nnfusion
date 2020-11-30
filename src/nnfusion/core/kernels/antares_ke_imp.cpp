@@ -37,7 +37,7 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
         }
         tuned = response.find("\n// Saved Perf =") != std::string::npos;
 
-        NNFUSION_LOG(INFO) << "[Autogen] " << expr << " (tuned = " << tuned << ")";
+        // NNFUSION_LOG(INFO) << "[Autogen] " << expr << " (tuned = " << tuned << ")";
         code_cache[expr] = std::make_pair(response, tuned);
         return std::make_pair(std::move(response), tuned);
     }

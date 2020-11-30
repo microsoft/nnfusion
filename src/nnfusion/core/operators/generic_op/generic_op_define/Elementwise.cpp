@@ -38,7 +38,10 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Subtract", element_op("subtract", "x0 - x1")},
     {"Multiply", element_op("mul", "x0 * x1")},
     {"Divide", element_op("fdivide", "x0 / x1")},
-    {"DivNoNan", element_op("divnonan", "(x0 / x1).when([x1 != 0], 0)")},
+    {"DivNoNan",
+     element_op(
+         "divnonan",
+         "(x0 / x1).when([x1 != const(0).cast(x1.dtype())], const(0).cast(input1[].dtype()))")},
     {"Square", element_op("square", "x0 * x0")},
     {"Negative", element_op("negative", "-x0")},
     {"Select", element_op("select", "x2.when([x0 == 0], x1)")},

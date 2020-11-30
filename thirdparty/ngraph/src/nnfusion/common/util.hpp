@@ -66,7 +66,7 @@ namespace nnfusion
     std::string vector_to_string(const T& v, const std::string& sep = ", ")
     {
         std::ostringstream os;
-        os << "[ " << nnfusion::join(v, sep) << " ]";
+        os << "[" << nnfusion::join(v, sep) << "]";
         return os.str();
     }
 

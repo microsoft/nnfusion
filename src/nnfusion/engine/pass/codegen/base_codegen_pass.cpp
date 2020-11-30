@@ -15,8 +15,6 @@ DECLARE_int64(fkernels_files_number);
 bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
                           std::shared_ptr<TranslationUnit> tu)
 {
-    NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " starts up.";
-
     initialize(ctx, tu);
     NNFUSION_CHECK(collect_mem(ctx, tu));
     NNFUSION_CHECK(collect_stream(ctx, tu));
@@ -26,6 +24,7 @@ bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
     // codegen
     projgen->codegen();
     NNFUSION_CHECK(after_projgen());
+    NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " done.";
     exit(0);
 
     return true;

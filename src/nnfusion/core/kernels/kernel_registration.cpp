@@ -56,9 +56,9 @@ bool KernelRegistry::RegisterKernel(const string op_name,
                                     shared_ptr<KernelRegistration> registration)
 {
     m_kernel_registry.insert(std::make_pair(op_name, registration));
-    NNFUSION_LOG(INFO) << "Registered kernel for Opeartor: " << op_name
-                       << ", tag: " << registration->m_tag
-                       << " , dev type: " << nnfusion::get_device_str(registration->m_device_type);
+    // NNFUSION_LOG(INFO) << "Registered kernel for Opeartor: " << op_name
+    //                    << ", tag: " << registration->m_tag
+    //                    << " , dev type: " << nnfusion::get_device_str(registration->m_device_type);
 
     return true;
 }

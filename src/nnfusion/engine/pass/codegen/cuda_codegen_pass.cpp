@@ -571,7 +571,7 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     {
         if (ins->getKernel()->is_eliminative())
         {
-            lu << "// eliminated\n";
+            lu << "// eliminated: " << func_call;
         }
         else
         {

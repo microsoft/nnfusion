@@ -153,7 +153,6 @@ class Session(object):
                  output_desc=None,
                  workdir=None,
                  model_format="onnx",
-                 external_weights=None,
                  codegen_flags=None,
                  **kwargs):
         self._model = model
@@ -168,7 +167,6 @@ class Session(object):
             name: param
             for name, param in self._model.named_buffers()
         })
-        self._torch_weights.update(external_weights)
         self._input_desc = input_desc
         self._device = device
         if output_desc is None:

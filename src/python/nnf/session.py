@@ -18,7 +18,7 @@ def generate_output_desc(model, input_desc, device="cpu"):
     out = model_copy(*fake_inputs)
     if isinstance(out, torch.Tensor):
         out = (out, )
-    return (IODescription("output{}".format(i), t.shape, t.dtype)
+    return tuple(IODescription("output_{}".format(i), t.shape, t.dtype)
             for i, t in enumerate(out))
 
 
@@ -182,7 +182,6 @@ class Session(object):
         else:
             self._dir_ctx = tempfile.TemporaryDirectory(prefix="nnf_")
             self._workdir = self._dir_ctx.name
-        # self._workdir = "./tmp"
         ## convert torch model to onnx
         self._onnx_model_path = os.path.join(self._workdir, "nnf.onnx")
         convert_model_to_onnx(self._model, self._model_desc, self._device,

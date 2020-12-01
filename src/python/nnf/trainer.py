@@ -47,7 +47,6 @@ class Trainer(object):
         return self.model_with_loss(*args)
 
     def run_by_nnf(self, *args):
-        ## only return the first output, because nnf will add all optimizer to output
         outs = self.runner(*args)
         for out in outs:
             if np.prod(out.shape) == 1:

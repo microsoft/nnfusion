@@ -9,6 +9,7 @@ os.environ["PATH"] = os.path.abspath(
 
 import numpy as np
 import torch
+torch.manual_seed(0)
 from torch import nn
 from transformers import BertForSequenceClassification
 from transformers import BertTokenizer
@@ -79,20 +80,18 @@ def train_bert():
 
     trainer = Trainer(wrapper, device=device, workdir="./tmp")
     print("feeding")
-    for i in range(1000):
+    for i in range(10):
         pytorch_loss = trainer.run_by_pytorch(input_ids, attention_mask,
                                               labels)
         nnf_loss = trainer(input_ids, attention_mask, labels)
-        if i % 100 == 0:
-            print("iter ", i)
-            print('pytorch_loss: ', pytorch_loss)
-            print('nnf_loss: ', nnf_loss)
-            print(external_weights)
+        print("iter ", i)
+        print('pytorch_loss: ', pytorch_loss)
+        print('nnf_loss: ', nnf_loss)
 
     torch.save(model.state_dict(), "/tmp/bert.pt")
 
 
 if __name__ == "__main__":
-    test_runner()
-    # train_bert()
+    # test_runner()
+    train_bert()
     # test()

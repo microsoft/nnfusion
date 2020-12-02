@@ -27,8 +27,8 @@ def tensor_ptr(tensor):
 
 
 def get_data_addr(tensors):
-    return (tensor_ptr(t) for t in tensors)
+    return tuple(tensor_ptr(t) for t in tensors)
 
 
 def deduce_signatrue(tensors):
-    return (dtype2ctype[t.dtype] for t in tensors)
+    return tuple(dtype2ctype[t.dtype] for t in tensors)

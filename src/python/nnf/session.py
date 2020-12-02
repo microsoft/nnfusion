@@ -18,17 +18,23 @@ def generate_output_desc(model, input_desc, device="cpu"):
     out = model_copy(*fake_inputs)
     if isinstance(out, torch.Tensor):
         out = (out, )
-    return tuple(IODescription("output_{}".format(i), t.shape, t.dtype)
-            for i, t in enumerate(out))
+    return tuple(
+        IODescription("output_{}".format(i), t.shape, t.dtype)
+        for i, t in enumerate(out))
 
 
 def convert_model_to_onnx(model, model_desc, device, file_name):
     model.to(device)
     input_names = [input.name_ for input in model_desc.inputs_]
     output_names = [output.name_ for output in model_desc.outputs_]
-    sample_inputs = [generate_sample(input, device) for input in model_desc.inputs_]
-    sample_outputs = [generate_sample(output, device) for output in model_desc.outputs_]
-    torch.onnx.export(model,
+    sample_inputs = [
+        generate_sample(input, device) for input in model_desc.inputs_
+    ]
+    sample_outputs = [
+        generate_sample(output, device) for output in model_desc.outputs_
+    ]
+    # note: onnx exporter might have side effect, so copy a new model
+    torch.onnx.export(copy.deepcopy(model).to(device),
                       tuple(sample_inputs),
                       file_name,
                       input_names=input_names,
@@ -163,10 +169,9 @@ class Session(object):
             name: param
             for name, param in self._model.named_parameters()
         }
-        self._torch_weights.update({
-            name: param
-            for name, param in self._model.named_buffers()
-        })
+        self._torch_weights.update(
+            {name: param
+             for name, param in self._model.named_buffers()})
         self._input_desc = input_desc
         self._device = device
         if output_desc is None:
@@ -230,14 +235,16 @@ class Session(object):
         if self._codegen_flags.get("extern_result_memory"):
             validate_nnf_outputs(nnf_outputs, self._output_desc)
             output_offset = len(nnf_weights) + len(nnf_inputs)
+            output_names = {desc.name_ for desc in self._output_desc}
             for name, desc in nnf_outputs.items():
                 self._feed_tensors[int(desc["id"]) +
                                    output_offset] = torch.ones(
                                        desc["shape"],
                                        dtype=str2dtype(desc["dtype"]),
                                        device=self._device)
-                self._nnf_outputs_indexes.append(
-                    int(desc["id"]) + output_offset)
+                if name in output_names:
+                    self._nnf_outputs_indexes.append(
+                        int(desc["id"]) + output_offset)
 
     def __call__(self, feed_data):
         return self.run_by_nnf(feed_data)

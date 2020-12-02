@@ -13,13 +13,11 @@ def extract_desc_and_device(name, tensor):
 class Runner(object):
     def __init__(self,
                  model,
-                 external_weights=None,
                  codegen_flags=None,
                  **kwargs):
         self._model = model
         self._sessions = defaultdict(dict)
         self._codegen_flags = codegen_flags or {}
-        self._external_weights = external_weights or {}
         self._session_kwargs = kwargs
 
     def _retrieve_by_tensor(self, tensors):
@@ -31,7 +29,6 @@ class Runner(object):
                 self._model,
                 descs,
                 device,
-                external_weights=self._external_weights,
                 codegen_flags=self._codegen_flags,
                 **self._session_kwargs)
         return self._sessions[tuple(descs)][device]

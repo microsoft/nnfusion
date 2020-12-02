@@ -71,14 +71,10 @@ def train_bert():
     input_ids = encoding['input_ids'].to(device)
     attention_mask = encoding['attention_mask'].to(device)
     labels = torch.tensor([1, 0]).unsqueeze(0).to(device)
-    loss = wrapper(input_ids, attention_mask, labels)
-    print(loss)
+    # loss = wrapper(input_ids, attention_mask, labels)
+    # print(loss)
 
-    input_ids = torch.ones([1, 512], dtype=torch.int64).to(device)
-    attention_mask = torch.ones([1, 512], dtype=torch.int64).to(device)
-    labels = torch.ones([1, 1], dtype=torch.int64).to(device)
-
-    trainer = Trainer(wrapper, device=device, workdir="./tmp")
+    trainer = Trainer(wrapper, device=device)
     print("feeding")
     for i in range(10):
         pytorch_loss = trainer.run_by_pytorch(input_ids, attention_mask,
@@ -92,6 +88,5 @@ def train_bert():
 
 
 if __name__ == "__main__":
-    # test_runner()
+    test_runner()
     train_bert()
-    # test()

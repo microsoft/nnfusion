@@ -11,7 +11,7 @@ LanguageUnit_p CacheBlockCudaKernel::emit_function_signature()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_sig"));
 
     std::stringstream ss;
-    ss.str(func["function_sig"]);
+    ss.str(func["function_signature"]);
     *_lu << ss.str();
 
     return _lu;
@@ -39,7 +39,7 @@ LanguageUnit_p CacheBlockCudaKernel::emit_function_body()
 
     lu.block_begin();
     std::stringstream ss;
-    ss.str(func["function_body"]);
+    ss.str(func["block_function_body"]);
     lu << ss.str() << "\n";
     lu.block_end();
     return _lu;
@@ -59,6 +59,6 @@ LanguageUnit_p CacheBlockCudaKernel::emit_dependency()
 void CacheBlockCudaKernel::set_launch_config()
 {
     auto func = nlohmann::json::parse(m_function);
-    m_gridDim = dim3(func["gridDim"][0], func["gridDim"][1], func["gridDim"][2]);
-    m_blockDim = dim3(func["blockDim"][0], func["blockDim"][1], func["blockDim"][2]);
+    m_gridDim = dim3(func["grid_dim"][0], func["grid_dim"][1], func["grid_dim"][2]);
+    m_blockDim = dim3(func["block_dim"][0], func["block_dim"][1], func["block_dim"][2]);
 }

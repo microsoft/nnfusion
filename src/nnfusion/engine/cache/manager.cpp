@@ -4,6 +4,7 @@
 #include "./manager.hpp"
 #include <limits>
 
+DEFINE_string(fkernel_cache_path, "", "Kernel cache DB path");
 DEFINE_string(fproduct_name,
               "",
               "Device product name, like 'GeForce GTX 1080 Ti', 'Tesla V100-PCIE-16GB'");
@@ -15,6 +16,10 @@ sqlite3* KernelCacheManager::kernel_cache = nullptr;
 KernelCacheManager::KernelCacheManager()
 {
     m_path = (getpwuid(getuid())->pw_dir + std::string("/.cache/nnfusion/kernel_cache.db"));
+    if (FLAGS_fkernel_cache_path != "")
+    {
+        m_path = FLAGS_fkernel_cache_path;
+    }
 
     if (!kernel_cache)
     {
@@ -23,12 +28,16 @@ KernelCacheManager::KernelCacheManager()
             NNFUSION_LOG(INFO) << "Load kernel cache from: " << m_path;
             const char* table_create = R"(
 CREATE TABLE IF NOT EXISTS KernelCache(
-   identifier TEXT NOT NULL,
-   platform   TEXT NOT NULL,
-   function   TEXT NOT NULL,
-   tags       TEXT DEFAULT "",
-   profile    TEXT DEFAULT "",
-   resource   INTEGER NOT NULL
+   Key        TEXT NOT NULL,
+   Identifier TEXT NOT NULL,
+   OpType     TEXT NOT NULL,
+   Attributes TEXT DEFAULT "",
+   Source     TEXT DEFAULT "External",
+   DeviceType TEXT NOT NULL,
+   Function   TEXT NOT NULL,
+   Tags       TEXT DEFAULT "",
+   Miscs      TEXT DEFAULT "",
+   PRIMARY KEY(Key)
    );
 )";
             NNFUSION_CHECK(SQLITE_OK == sqlite3_exec(kernel_cache, table_create, NULL, 0, NULL));
@@ -47,26 +56,36 @@ KernelCacheManager::~KernelCacheManager()
     kernel_cache = NULL;
 }
 
-std::vector<kernel> KernelCacheManager::fetch_all(std::string identifier, std::string platform)
+std::vector<KernelEntry> KernelCacheManager::fetch_all(std::string identifier,
+                                                       std::string device_type)
 {
-    NNFUSION_LOG(DEBUG) << "Trying to fetch kernel " << identifier << " on platform: " << platform;
+    NNFUSION_LOG(DEBUG) << "Trying to fetch kernel " << identifier
+                        << " on DeviceType: " << device_type;
     sqlite3_stmt* pStmt;
     const char* fetch = R"(
-SELECT function, tags, profile, resource FROM KernelCache WHERE (identifier = ?) AND (platform = ?);
+SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, Miscs FROM KernelCache WHERE (Identifier = ?) AND (DeviceType = ?);
     )";
     NNFUSION_CHECK(SQLITE_OK == sqlite3_prepare(kernel_cache, fetch, -1, &pStmt, 0));
     sqlite3_bind_text(pStmt, 1, identifier.data(), identifier.size(), SQLITE_STATIC);
-    sqlite3_bind_text(pStmt, 2, platform.data(), platform.size(), SQLITE_STATIC);
+    sqlite3_bind_text(pStmt, 2, device_type.data(), device_type.size(), SQLITE_STATIC);
 
-    std::vector<kernel> fetched;
+    std::vector<KernelEntry> fetched;
     while (SQLITE_ROW == sqlite3_step(pStmt))
     {
-        kernel fetched_kernel;
-        fetched_kernel.function = std::string((char*)sqlite3_column_text(pStmt, 0));
+        KernelEntry fetched_kernel;
+
+        fetched_kernel.key = std::string((char*)sqlite3_column_text(pStmt, 0));
+        fetched_kernel.identifier = std::string((char*)sqlite3_column_text(pStmt, 1));
+        fetched_kernel.op_type = std::string((char*)sqlite3_column_text(pStmt, 2));
+        fetched_kernel.attributes = std::string((char*)sqlite3_column_text(pStmt, 3));
+        fetched_kernel.source = std::string((char*)sqlite3_column_text(pStmt, 4));
+        fetched_kernel.device_type = std::string((char*)sqlite3_column_text(pStmt, 5));
+        fetched_kernel.function = std::string((char*)sqlite3_column_text(pStmt, 6));
+        fetched_kernel.miscs = std::string((char*)sqlite3_column_text(pStmt, 8));
 
         // parse input tags
         size_t pos = 0;
-        std::string fetched_tags = std::string((char*)sqlite3_column_text(pStmt, 1));
+        std::string fetched_tags = std::string((char*)sqlite3_column_text(pStmt, 7));
         while ((pos = fetched_tags.find(",")) != std::string::npos)
         {
             fetched_kernel.tags.insert(fetched_tags.substr(0, pos));
@@ -79,7 +98,8 @@ SELECT function, tags, profile, resource FROM KernelCache WHERE (identifier = ?)
 
         // parse profiling information
         size_t subpos = 0;
-        std::string fetched_profile = std::string((char*)sqlite3_column_text(pStmt, 2));
+        auto miscs = nlohmann::json::parse(fetched_kernel.miscs);
+        std::string fetched_profile = miscs["external_profile"]["time"];
         while ((pos = fetched_profile.find(";")) != std::string::npos)
         {
             subpos = fetched_profile.find(":");
@@ -88,7 +108,7 @@ SELECT function, tags, profile, resource FROM KernelCache WHERE (identifier = ?)
             fetched_profile.erase(0, pos + 1);
         }
 
-        fetched_kernel.resource = sqlite3_column_int(pStmt, 3);
+        fetched_kernel.resource = miscs["external_profile"]["resource"];
 
         fetched.push_back(fetched_kernel);
     }
@@ -96,8 +116,8 @@ SELECT function, tags, profile, resource FROM KernelCache WHERE (identifier = ?)
     NNFUSION_CHECK(SQLITE_OK == sqlite3_finalize(pStmt));
     if (fetched.size() > 0)
     {
-        NNFUSION_LOG(INFO) << fetched.size() << " Cached kernel fetched " << identifier
-                           << " on: " << platform;
+        NNFUSION_LOG(INFO) << fetched.size() << " cached kernel fetched " << identifier
+                           << " on: " << device_type;
     }
     else
     {
@@ -106,15 +126,15 @@ SELECT function, tags, profile, resource FROM KernelCache WHERE (identifier = ?)
     return fetched;
 }
 
-kernel KernelCacheManager::fetch_with_tags(std::string identifier,
-                                           std::string platform,
-                                           std::set<std::string> tags,
-                                           bool efficient)
+KernelEntry KernelCacheManager::fetch_with_tags(std::string identifier,
+                                                std::string device_type,
+                                                std::set<std::string> tags,
+                                                bool efficient)
 {
-    auto fetched = fetch_all(identifier, platform);
+    auto fetched = fetch_all(identifier, device_type);
 
     std::string device = FLAGS_fproduct_name;
-    kernel target_kernel;
+    KernelEntry target_kernel;
     target_kernel.function = "";
     target_kernel.profile[device] = 1048576;
 

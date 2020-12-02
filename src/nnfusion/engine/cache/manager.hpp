@@ -22,10 +22,18 @@ namespace nnfusion
     {
         // presently only kernel cache database supported
         // Todo: integrate the interfaces of profiling cache database
-        struct kernel
+        struct KernelEntry
         {
+            std::string key;
+            std::string identifier;
+            std::string op_type;
+            std::string attributes;
+            std::string source;
+            std::string device_type;
             std::string function;
             std::set<std::string> tags;
+            std::string miscs;
+
             std::map<std::string, float> profile;
             int resource;
         };
@@ -36,11 +44,11 @@ namespace nnfusion
             KernelCacheManager();
             ~KernelCacheManager();
 
-            std::vector<kernel> fetch_all(std::string identifier, std::string platform);
-            kernel fetch_with_tags(std::string identifier,
-                                   std::string platform,
-                                   std::set<std::string> tags,
-                                   bool efficient = false);
+            std::vector<KernelEntry> fetch_all(std::string identifier, std::string device_type);
+            KernelEntry fetch_with_tags(std::string identifier,
+                                        std::string device_type,
+                                        std::set<std::string> tags,
+                                        bool efficient = false);
             bool is_valid() { return kernel_cache != nullptr; }
         private:
             std::string m_path;

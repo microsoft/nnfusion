@@ -355,7 +355,7 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 
     std::string identifier = generate_identifier(ctx);
     // Todo: platform interface to be coordinated with nnfusion devtype
-    std::vector<std::string> platform = {"CUDA"};
+    std::vector<std::string> platform = {"CUDA_GPU"};
 
     if (identifier != "")
     {

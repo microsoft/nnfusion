@@ -18,8 +18,8 @@ using namespace nnfusion::pass::graph;
 
 namespace
 {
-    using nnfusion::cache::kernel;
-    nnfusion::cache::kernel fetch_best_kernel(
+    using nnfusion::cache::KernelEntry;
+    nnfusion::cache::KernelEntry fetch_best_kernel(
         const string& identifier,
         const string& platform,
         const set<string>& tags, // should exactly match every tag, no more no less
@@ -27,8 +27,8 @@ namespace
         const string& product_name)
     {
         auto fetched = cache_manager->fetch_all(identifier, platform);
-        std::vector<kernel> matched_kernels;
-        kernel best_kernel;
+        std::vector<KernelEntry> matched_kernels;
+        KernelEntry best_kernel;
         best_kernel.function = "";
         for (auto matched_kernel : fetched)
         {
@@ -72,17 +72,6 @@ namespace
     }
 
     string get_product_name() { return FLAGS_fproduct_name; }
-    // convert NNFusion device type to db platform
-    string devtype2platform(NNFusion_DeviceType device_type)
-    {
-        switch (device_type)
-        {
-        case NNFusion_DeviceType::CUDA_GPU: { return "CUDA";
-        }
-        default: { return "";
-        }
-        }
-    }
 }
 
 bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
@@ -174,11 +163,11 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
             continue;
         }
 
-        auto platform = devtype2platform((*it)["DeviceType"].as<NNFusion_DeviceType>());
+        auto platform = nnfusion::get_device_str((*it)["DeviceType"].as<NNFusion_DeviceType>());
         auto product_name = get_product_name();
-        nnfusion::cache::kernel dot_kernel =
+        nnfusion::cache::KernelEntry dot_kernel =
             fetch_best_kernel(identifier, platform, set<string>{}, cache_manager, product_name);
-        nnfusion::cache::kernel transpose_dot_kernel = fetch_best_kernel(
+        nnfusion::cache::KernelEntry transpose_dot_kernel = fetch_best_kernel(
             identifier, platform, set<string>{"transB"}, cache_manager, product_name);
         // no profiling time
         if (dot_kernel.profile.find(product_name) == dot_kernel.profile.end() ||

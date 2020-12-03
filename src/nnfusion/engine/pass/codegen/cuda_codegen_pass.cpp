@@ -161,6 +161,7 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
+    projgen->lup_codegen->require(macro::HALF_MAX);
 
     return;
 }

@@ -57,7 +57,8 @@ REGISTER_OP(Convolution)
         {
             auto pad_template =
                 ".when([-@pad_0@ + HO + KH >= 0, -@pad_0@ + HO + KH < @height@, -@pad_1@ + WO + KW "
-                ">= 0, -@pad_1@ + WO + KW < @width@], 0.0)";
+                ">= 0, -@pad_1@ + WO + KW < @width@], "
+                "const(0.0).cast(@input0@@input0_layout@.dtype()))";
             pad_cond = op::create_code_from_template(pad_template, config);
         }
         config["pad_cond"] = pad_cond;

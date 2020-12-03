@@ -17,6 +17,13 @@ LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
 LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>\n");
 
 // Macro
+LU_DEFINE(macro::HALF_MAX,
+          R"(#ifndef __HALF_COMPARE_EX__
+#define __HALF_COMPARE_EX__
+inline __device__ half max(half x, half y) { return x > y ? x : y; }
+inline __device__ half min(half x, half y) { return x < y ? x : y; }
+#endif)");
+
 LU_DEFINE(
     macro::CUDA_SAFE_CALL_NO_THROW,
     R"(#define CUDA_SAFE_CALL_NO_THROW(x)                                                                 \

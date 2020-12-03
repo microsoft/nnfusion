@@ -36,7 +36,7 @@ fi
 
 # Make
 pushd $THIS_SCRIPT_DIR/../../build/ > /dev/null
-make -j6
+make -j$(nproc)
 popd > /dev/null
 
 if [ $? -ne 0 ]; then

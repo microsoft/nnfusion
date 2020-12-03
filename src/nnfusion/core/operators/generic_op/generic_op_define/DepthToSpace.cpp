@@ -48,7 +48,7 @@ REGISTER_OP(DepthToSpace)
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto expression_template =
-            R"( temp0@mediate0_layout@ = @input0@@input0_layout@ @cond0@; temp1@mediate1_layout@ = temp0@mediate0_layout@; @output0@@output0_layout@ = temp1@mediate1o_layout@ @cond1@;  ## @: plan/advance_fusion )";
+            R"( temp0@mediate0_layout@ = @input0@@input0_layout@ @cond0@; temp1@mediate1_layout@ = temp0@mediate0_layout@; @output0@@output0_layout@ = temp1@mediate1o_layout@ @cond1@;)";
 
         auto input_shape = curr->get_input_shape(0);
         auto _op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());

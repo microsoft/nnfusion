@@ -59,6 +59,9 @@ namespace nnfusion
                             config[entry.first] = "float32";
                             break;
                         case ::tensorflow::DataType::DT_INT32: config[entry.first] = "int32"; break;
+                        case ::tensorflow::DataType::DT_HALF:
+                            config[entry.first] = "float16";
+                            break;
                         default: NNFUSION_CHECK(false) << "Unrecognized data type: " << dtype;
                         }
                     }

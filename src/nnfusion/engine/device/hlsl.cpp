@@ -4,32 +4,78 @@
 #include "hlsl.hpp"
 #include "degree_based_visitor.hpp"
 #include "nnfusion/engine/pass/codegen/hlsl_codegen_pass.hpp"
+#include "nnfusion/engine/pass/codegen/hlsl_cs_codegen_pass.hpp"
+#include "nnfusion/engine/pass/graph/assign_async_info_pass.hpp"
+#include "nnfusion/engine/pass/graph/assign_layout_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
 #include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
+#include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
+#include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
+
+#include "nnfusion/engine/pass/extract_graph_signature.hpp"
+#include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
+#include "nnfusion/engine/pass/tensor/liveness_analysis.hpp"
+#include "nnfusion/engine/pass/tensor/tensor_device_dispatcher.hpp"
+#include "nnfusion/engine/pass/tensor/tensor_memory_layout.hpp"
 
 using namespace nnfusion;
-using namespace nnfusion::pass::graph;
 using namespace nnfusion::engine;
-
+using namespace nnfusion::pass::graph;
+using namespace nnfusion::pass;
+DEFINE_bool(fhlsl_csharp_codegen, false, "hlsl csharp codegen");
 HLSLEngine::HLSLEngine()
     : Engine()
 {
-    g_passes->push_back(make_shared<GradientWeightMappingPass>());
-    g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
+    if (FLAGS_fhlsl_csharp_codegen)
+    {
+        g_passes->push_back(make_shared<GradientWeightMappingPass>());
+        g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
+        g_passes->push_back(make_shared<AssignLayoutPass>());
+        g_passes->push_back(make_shared<OpInplacePass>());
 
-    // Kernel selection
-    g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
-    g_passes->push_back(make_shared<KernelTuning>());
-    g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
-    g_passes->push_back(make_shared<FetchBasedSelector>());
-    g_passes->push_back(make_shared<DefaultKernelSelector>());
+        // Kernel selection
+        g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelTuning>());
+        g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
+        g_passes->push_back(make_shared<FetchBasedSelector>());
+        g_passes->push_back(make_shared<DefaultKernelSelector>());
 
-    // Visitor
-    g_visitor = make_shared<DegreeBasedVisitor>();
+        // Assign stream passes
+        g_passes->push_back(make_shared<AssignAsyncInfoPass>());
 
-    // Do codegen
-    m_passes->push_back(make_shared<HLSLCodegenPass>());
+        // Visitor
+        g_visitor = make_shared<DegreeBasedVisitor>();
+
+        // extract graph signature
+        m_passes->push_back(make_shared<ExtractGraphSignature>());
+        // Do tensor allocation plan
+        m_passes->push_back(make_shared<TensorDeviceDispatcher>());
+        m_passes->push_back(make_shared<TensorLivenessAnalysis>());
+        m_passes->push_back(make_shared<InplaceTensorAnalysis>());
+        m_passes->push_back(make_shared<AssignTensorMemoryLayout>(64, false));
+
+        // Do codegen
+        m_passes->push_back(make_shared<HLSLCSCodegenPass>());
+    }
+    else
+    {
+        g_passes->push_back(make_shared<GradientWeightMappingPass>());
+        g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
+
+        // Kernel selection
+        g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelTuning>());
+        g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
+        g_passes->push_back(make_shared<FetchBasedSelector>());
+        g_passes->push_back(make_shared<DefaultKernelSelector>());
+
+        // Visitor
+        g_visitor = make_shared<DegreeBasedVisitor>();
+
+        // Do codegen
+        m_passes->push_back(make_shared<HLSLCodegenPass>());
+    }
 }

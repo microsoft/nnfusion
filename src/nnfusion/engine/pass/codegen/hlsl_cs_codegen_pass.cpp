@@ -50,6 +50,7 @@ void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     auto& lu_init_end = *(projgen->lup_init->end);
     {
+        lu_init_end << "dxStreamSynchronize(IntPtr.Zero);\n";
         lu_init_end << "}\n\n";
     }
 
@@ -181,6 +182,10 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                             lup_member->unit_vec.push_back(shader_decl);
                             projgen->lup_init->unit_vec.push_back(shader_load);
                         }
+                        else
+                        {
+                            lup_member->unit_vec.push_back(kernel_func_defs[body_str].second);
+                        }
                     }
                 }
                 else
@@ -194,7 +199,7 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
                 {
-                    lup_member->unit_vec.push_back(kernel_func_defs[body_str].second);
+                    // do not add requre
                 }
                 else
                 {

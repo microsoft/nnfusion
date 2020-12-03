@@ -43,11 +43,10 @@ namespace nnfusion
 
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
                     auto& writer = *_lu;
-                    writer << "var byteArray = File.ReadAllBytes(@\"" << folder + const_name
-                           << "\");\n";
+                    writer << "var byteArray = File.ReadAllBytes(path);\n";
                     writer << "dxMemcpyHtoDAsync(output0, "
-                              "Marshal.UnsafeAddrOfPinnedArrayElement(byteArray, 0), "
-                           << op->get_data_size() << ", IntPtr.Zero);\n";
+                              "Marshal.UnsafeAddrOfPinnedArrayElement(byteArray, 0), bytes, "
+                              "IntPtr.Zero);\n";
                     return _lu;
                 }
 
@@ -69,7 +68,9 @@ namespace nnfusion
                         names.insert(names.end(),
                                      m_context->tensor_names.begin(),
                                      m_context->tensor_names.end());
-                        lu << "(" << join(names, ", ") << ");\n";
+
+                        lu << "(@\"" << folder + const_name << "\", " << op->get_data_size() << ", "
+                           << join(names, ", ") << ");\n";
                     }
                     else
                     {
@@ -112,7 +113,7 @@ namespace nnfusion
                     }
 
                     lu << "void "
-                       << "(" << join(params, ", ") << ")";
+                       << "(string path, int bytes, " << join(params, ", ") << ")";
                     return _lu;
                 }
 

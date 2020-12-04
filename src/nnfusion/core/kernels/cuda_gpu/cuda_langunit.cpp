@@ -22,7 +22,8 @@ LU_DEFINE(macro::HALF_MAX,
 #define __HALF_COMPARE_EX__
 inline __device__ half max(half x, half y) { return x > y ? x : y; }
 inline __device__ half min(half x, half y) { return x < y ? x : y; }
-#endif)");
+#endif
+)");
 
 LU_DEFINE(
     macro::CUDA_SAFE_CALL_NO_THROW,

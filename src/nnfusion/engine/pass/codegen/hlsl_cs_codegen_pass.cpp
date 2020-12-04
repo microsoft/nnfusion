@@ -171,7 +171,7 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                 fname = "compressed_src_" + std::to_string(hashcode);
                             }
 
-                            std::string file = "file://HLSL\\\\" + fname + m_kernel_suffix;
+                            std::string file = "file://HLSL/" + fname + m_kernel_suffix;
                             std::string load_str = hShader_name + " = dxShaderLoad(\"" + file +
                                                    "\");\nif (" + hShader_name +
                                                    " == IntPtr.Zero)\n    throw new  "

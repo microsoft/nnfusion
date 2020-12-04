@@ -69,7 +69,7 @@ namespace nnfusion
                                      m_context->tensor_names.begin(),
                                      m_context->tensor_names.end());
 
-                        lu << "(@\"" << folder + const_name << "\", " << op->get_data_size() << ", "
+                        lu << "(\"" << folder + const_name << "\", " << op->get_data_size() << ", "
                            << join(names, ", ") << ");\n";
                     }
                     else

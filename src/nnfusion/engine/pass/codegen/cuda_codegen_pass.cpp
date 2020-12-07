@@ -805,7 +805,7 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
     if (device_type() == CUDA_GPU || device_type() == ROCM_GPU)
         lu_header << header::cuda->get_code();
     // TODO only include this if half is used
-    if (device_type() == CUDA_GPU) 
+    if (device_type() == CUDA_GPU)
         lu_header << header::cuda_fp16->get_code();
 
     lu_header << "extern \"C\" int kernel_entry(";

@@ -380,7 +380,7 @@ LanguageUnit_p cuda::Dot::emit_dependency()
     _lu->require(header::sstream);
     _lu->require(macro::CUBLAS_SAFE_CALL);
     _lu->require(macro::CUDA_SAFE_CALL);
-    _lu->require(declaration::cuda_fp16_scale);
+    // _lu->require(declaration::cuda_fp16_scale);
     //_lu->require(declaration::cublas_handle);
     return _lu;
 }

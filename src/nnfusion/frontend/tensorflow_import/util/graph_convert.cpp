@@ -843,11 +843,6 @@ namespace nnfusion
                     reshape_input_gnode = input_gnode;
                 }
 
-                // transpose filter shape from tf format to nnfusion format
-                auto reshape_filter_gnode = Reshape<2, 3, 0, 1>(filter_gnode);
-                m_graph->add_node(reshape_filter_gnode);
-                m_graph->add_edge(filter_gnode, 0, reshape_filter_gnode, 0);
-
                 CoordinateDiff ng_padding_below{0, 0};
                 CoordinateDiff ng_padding_above{0, 0};
                 MakePadding(tf_padding_type,
@@ -870,7 +865,7 @@ namespace nnfusion
                     node.name(), "DepthwiseConv2dNative", op_config);
 
                 auto conv_gnode =
-                    m_graph->add_node_and_edge(generic_op, {input_gnode, reshape_filter_gnode});
+                    m_graph->add_node_and_edge(generic_op, {input_gnode, filter_gnode});
 
                 auto reshape_conv_gnode = BatchToTensorflow(is_nhwc, conv_gnode);
                 if (reshape_conv_gnode != nullptr && default_device != GENERIC_CPU &&

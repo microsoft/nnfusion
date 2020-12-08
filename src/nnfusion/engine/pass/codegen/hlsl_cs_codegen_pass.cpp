@@ -24,6 +24,7 @@ DECLARE_bool(fextern_result_memory);
 void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
 {
+    set_global_member(ctx, tu);
     // setup lup_codegen execution info
     projgen->lup_codegen->pwd = m_codegen_folder;
     projgen->lup_codegen->write_to = "nnfusion_rt.cs";
@@ -176,7 +177,8 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                                    "\");\nif (" + hShader_name +
                                                    " == IntPtr.Zero)\n    throw new  "
                                                    "Exception(\"Invalid Shader Source "
-                                                   "for Compilation.\");\n";
+                                                   "for Compilation: " +
+                                                   file + "\");\n";
                             LanguageUnit_p shader_load =
                                 std::make_shared<LanguageUnit>(hShader_name + "_load", load_str);
                             lup_member->unit_vec.push_back(shader_decl);
@@ -385,4 +387,30 @@ std::string HLSLCSCodegenPass::get_kernel_entry_paras(std::shared_ptr<Translatio
         params.push_back(ss.str());
     }
     return join(params, ", ");
+}
+
+void HLSLCSCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
+                                          std::shared_ptr<TranslationUnit> tu)
+{
+    this->device_async_manager =
+        AsyncManagerFactory::get_device_stream_async_manager(tu->m_graph, HLSL);
+    this->host_async_manager =
+        AsyncManagerFactory::get_host_async_manager(tu->m_graph, GENERIC_CPU);
+
+    // auto& prog = tu->program;
+    // for (auto iterator : prog)
+    // {
+    //     for (auto ins : *iterator)
+    //     {
+    //         auto kernel = ins->getKernel();
+    //         if (!kernel || !kernel->get_or_emit_source())
+    //             continue;
+    //         for (auto& it : kernel->get_or_emit_source()->dep_unit->local_symbol)
+    //         {
+    //             global_required.insert(it.second->symbol);
+    //         }
+    //     }
+    // }
+
+    return;
 }

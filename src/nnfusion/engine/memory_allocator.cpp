@@ -412,7 +412,6 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
     if (m_max_allocated > 0)
     {
         lu << this->get_name() << "_memory_pool = dxMemAlloc(" << m_max_allocated << ");\n";
-
         for (auto tensor : m_allocated_tensors)
         {
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());

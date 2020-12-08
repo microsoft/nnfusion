@@ -91,3 +91,8 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
     }
     return _lu;
 }
+
+bool hlsl::AntaresHLSLKernelEmitter::is_eliminative()
+{
+    return (is_memcpy && m_context->inputs[0]->is_same_address(m_context->outputs[0]));
+}

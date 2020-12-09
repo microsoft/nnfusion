@@ -108,7 +108,8 @@ def eval():
     model.load_state_dict(state_dict)
     model.to(device)
     model.eval()
-    _, test_loader = data_loader.get_mnist_dataloader(batch_size=1, shuffle=False)
+    _, test_loader = data_loader.get_mnist_dataloader(batch_size=1,
+                                                      shuffle=False)
 
     for i, batch in enumerate(test_loader):
         with torch.no_grad():

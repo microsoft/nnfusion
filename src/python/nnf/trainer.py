@@ -21,7 +21,22 @@ class ModelWithLoss(nn.Module):
 
 
 class Trainer(object):
+    """
+    Trainer is a wrapper to train PyTorch model in NNFusion.
+    """
     def __init__(self, model, loss_func=None, device="cuda:0", **kwargs):
+        """
+        It builds a training graph as well as optimizer based on PyTorch model.
+        Currently the optimizer is SGD and non-configurable.
+
+        Parameters:
+            model: torch.nn.Module, to be trained.
+            loss_func: Optional, PyTorch loss func. Its signature is accepting model 
+                output and a label tensor, return a tensor representing loss. If not
+                provided, training is directly on origin model.
+            device: a string representing training device.
+            kwargs: arguments for underlying Runner.
+        """
         super(Trainer, self).__init__()
         self.model = model
         self.loss_func = loss_func
@@ -47,6 +62,13 @@ class Trainer(object):
         return self.model_with_loss(*args)
 
     def run_by_nnf(self, *args):
+        """
+        Parameters:
+            args: a list of input tensors and label for origin PyTorch model training.
+        
+        Returns:
+            a PyTorch tensor representing loss.
+        """
         outs = self.runner(*args)
         for out in outs:
             if np.prod(out.shape) == 1:

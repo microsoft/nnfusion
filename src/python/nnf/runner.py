@@ -11,10 +11,19 @@ def extract_desc_and_device(name, tensor):
 
 
 class Runner(object):
-    def __init__(self,
-                 model,
-                 codegen_flags=None,
-                 **kwargs):
+    """
+    Runner is the replacement of PyTorch models, it caches sessions for various input desc.
+    Every time tensors feed, runner will forward them to corresponding session(cache hit)
+    or trigger a new session build(cache miss), then return the results.
+    """
+    def __init__(self, model, codegen_flags=None, **kwargs):
+        """
+        Parameters:
+            model: torch.nn.Module to be converted.
+            codegen_flags: NNFusion codegen flags, 
+                ref: https://github.com/microsoft/nnfusion/wiki/4.3-NNFusion-CLI-Interface#cli-flags
+            kwargs: arguments for sessions
+        """
         self._model = model
         self._sessions = defaultdict(dict)
         self._codegen_flags = codegen_flags or {}
@@ -37,6 +46,14 @@ class Runner(object):
         return self.run_by_nnf(*args, **kwargs)
 
     def run_by_nnf(self, *args, **kwargs):
+        """
+        Parameters:
+            args: a list of input tensors for origin PyTorch model.
+        
+        Returns:
+            a list of PyTorch tensors executed by NNFusion,
+            they should be the same as origin PyTorch model forward results.
+        """
         ## Cannot support kwargs because they have no fixed args index,
         ## but torch exportor requires a fixed sequence
         ## todo: partially support such model by `inspect`

@@ -24,10 +24,10 @@ def execute(command, redirect_stderr=True, shell=True, **kwargs):
     stderr = subprocess.STDOUT if redirect_stderr else None
     try:
         output = subprocess.check_output(command,
-                                     stderr=stderr,
-                                     shell=shell,
-                                     encoding="utf8",
-                                     **kwargs)
+                                         stderr=stderr,
+                                         shell=shell,
+                                         encoding="utf8",
+                                         **kwargs)
     except subprocess.CalledProcessError as e:
         logger.error(e.output)
         raise e

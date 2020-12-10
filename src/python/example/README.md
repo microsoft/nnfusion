@@ -77,11 +77,11 @@ out = runner(data)
 
 ## Test
 
-You could run the mnist example directly to verfiy Python interface.
+Run the mnist example directly to verfiy Python interface.
 
 ```bash
 # make sure torch version
-pip install torch==1.6.0
+pip install torch==1.6.0 torchvision==0.7.0
 
 # change to NNFusion root folder
 cd /path/to/NNFusion

@@ -389,6 +389,53 @@ LanguageUnit_p nnfusion::HostMemoryAllocator::emit_memory_set(int value)
     return _lu;
 }
 
+LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_init()
+{
+    LanguageUnit_p _lu(new LanguageUnit("declaration::" + this->get_name() + "_init"));
+    auto& lu = *_lu;
+    if (m_max_allocated > 0)
+    {
+        lu << "static IntPtr " << this->get_name() << "_memory_pool;\n";
+
+        for (auto tensor : m_allocated_tensors)
+        {
+            lu << "static IntPtr " << tensor->get_name() << ";\n";
+        }
+    }
+    return _lu;
+}
+
+LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_alloc"));
+    auto& lu = *_lu;
+    if (m_max_allocated > 0)
+    {
+        lu << this->get_name() << "_memory_pool = dxMemAlloc(" << m_max_allocated << ");\n";
+        for (auto tensor : m_allocated_tensors)
+        {
+            NNFUSION_CHECK(tensor->get_pool() == this->get_name());
+            lu << tensor->get_name() << " = IntPtr.Add(" << this->get_name() << "_memory_pool, "
+               << tensor->get_pool_offset() << ");\n";
+        }
+    }
+    return _lu;
+}
+
+LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_free()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_free"));
+    auto& lu = *_lu;
+    lu << "dxMemFree(" << this->get_name() + "_memory_pool);\n";
+    return _lu;
+}
+
+LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_set(int value)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_memset"));
+    return _lu;
+}
+
 nnfusion::MemoryAllocatorFactory::MemoryAllocatorFactory(size_t alignment, bool disable_reuse)
     : m_alignment(alignment)
     , m_disable_reuse(disable_reuse)
@@ -511,6 +558,15 @@ MemoryAllocator*
                     allocator = new HostMemoryAllocator(m_alignment,
                                                         m_disable_reuse,
                                                         GENERIC_CPU,
+                                                        tensor->get_device_id(),
+                                                        "group_" + group);
+                    break;
+                }
+                case HLSL:
+                {
+                    allocator = new HLSLMemoryAllocator(m_alignment,
+                                                        m_disable_reuse,
+                                                        HLSL,
                                                         tensor->get_device_id(),
                                                         "group_" + group);
                     break;

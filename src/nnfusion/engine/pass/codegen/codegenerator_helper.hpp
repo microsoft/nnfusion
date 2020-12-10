@@ -72,5 +72,25 @@ namespace nnfusion
 
         using FunctionFile_p = FunctionFile::FunctionFile_p;
         using CPUFunctionFile_p = CPUFunctionFile::CPUFunctionFile_p;
+
+        class HLSLFunctionFile : public FunctionFile
+        {
+        public:
+            using HLSLFunctionFile_p = shared_ptr<HLSLFunctionFile>;
+            static HLSLFunctionFile_p
+                convert_from(std::shared_ptr<nnfusion::kernels::KernelEmitter> kernel);
+            HLSLFunctionFile(string extern_declare, LanguageUnit_p file_context)
+                : FunctionFile(extern_declare, file_context)
+            {
+            }
+            HLSLFunctionFile() { extern_declare = ""; }
+            void save_file() override { return; } // not support yet
+        private:
+            string extern_declare;
+            string suffix_str = ".hlsl";
+        };
+
+        using FunctionFile_p = FunctionFile::FunctionFile_p;
+        using HLSLFunctionFile_p = HLSLFunctionFile::HLSLFunctionFile_p;
     } // namespace codegenerator
 } // namespace nnfusion

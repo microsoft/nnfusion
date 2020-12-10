@@ -165,7 +165,7 @@ def log_sync(kernel, path):
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=path, shell=True)
     syncthreads, _ = process.communicate()
     num_sync = re.compile(r'Amount of syncthreads logged: (\d+)')
-    return num_sync.search(str(syncthreads)).group(1)
+    return int(num_sync.search(str(syncthreads)).group(1))
 
 
 def profile(kernel, path):

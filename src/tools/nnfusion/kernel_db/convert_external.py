@@ -195,6 +195,7 @@ def insert_db(name, resource, platform="CUDA_GPU", tags="", profile="Tesla V100-
     function_dict.update({"block_dim": data["blockDim"]})
     function_dict.update({"block_function_body": data["block_function_body"]})
     function_dict.update({"shared_memory": data["shared_memory"]})
+    function_dict.update({"num_syncthreads": data["num_syncthreads"]})
     function = json.dumps(function_dict)
 
     miscs_dict = {}
@@ -249,7 +250,7 @@ if __name__ == '__main__':
         prepare_file(signature, sync_code, config,
                      db_path + "profile/", parse=True)
         num_sync = log_sync(signature, db_path + "profile/")
-        config["num_sync"] = num_sync
+        config["num_syncthreads"] = num_sync
         config["function_body"] = func_body
 
         # feel free to customize the repo name you want
@@ -263,6 +264,7 @@ if __name__ == '__main__':
             f.write(new_code)
 
         default_tags = ""
+        default_tags += "KernelEmitter,CudaEmitter,BlockCudaEmitter"
         if (op_type == "Dot"):
             # Todo: move the transpose information into identifier
             default_tags += kernel["parameters"]["transpose_A"] * \
@@ -274,6 +276,6 @@ if __name__ == '__main__':
 
         prepare_file(signature, kernel["code"], config, db_path + "profile/")
         profile_info = profile(signature, db_path + "profile/")
-        print(profile_info, resource, config["num_sync"])
+        print(profile_info, resource, config["num_syncthreads"])
         insert_db(operator_path + name, resource,
                   tags=default_tags, profile=profile_info)

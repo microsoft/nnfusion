@@ -58,6 +58,6 @@ namespace nnfusion
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
-REGISTER_KERNEL_EMITTER("Zeros",                                                      // op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel"), // attrs
-                        cuda::Zeros)                                                  // constructor
+REGISTER_KERNEL_EMITTER("Zeros",                                                          // op_name
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel"), // attrs
+                        cuda::Zeros) // constructor

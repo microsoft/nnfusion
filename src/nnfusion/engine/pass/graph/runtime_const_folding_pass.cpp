@@ -98,24 +98,24 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
             runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
             NNFUSION_CHECK(runtime->check_env());
             kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                it->get_op_type(), ROCM_GPU, DT_FLOAT);
+                it->get_op_type(), ROCM_GPU, element::f32);
             if (kernel_regs.size() == 0)
                 kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                    it->get_op_type(), CUDA_GPU, DT_FLOAT);
+                    it->get_op_type(), CUDA_GPU, element::f32);
         }
         else if (backend == "CUDA")
         {
             runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
             NNFUSION_CHECK(runtime->check_env());
             kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                it->get_op_type(), CUDA_GPU, DT_FLOAT);
+                it->get_op_type(), CUDA_GPU, element::f32);
         }
         else if (backend == "CPU")
         {
             runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
             NNFUSION_CHECK(runtime->check_env());
             kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                it->get_op_type(), GENERIC_CPU, DT_FLOAT);
+                it->get_op_type(), GENERIC_CPU, element::f32);
         }
         else
         {

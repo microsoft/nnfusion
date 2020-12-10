@@ -226,6 +226,6 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER(
-    "Convolution",                                                             // op_name
-    Device(ROCM_GPU).TypeConstraint(DT_FLOAT).Tag("cudnn_kernel").Priority(2), // attrs
-    cuda::RocmConvolutionCudnn)                                                // constructor
+    "Convolution",                                                                 // op_name
+    Device(ROCM_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
+    cuda::RocmConvolutionCudnn)                                                    // constructor

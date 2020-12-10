@@ -24,7 +24,7 @@ LU_DEFINE(header::limits, "#include <limits>\n");
 
 // Macro
 LU_DEFINE(macro::NNFUSION_DEBUG, "#define NNFUSION_DEBUG\n");
-LU_DEFINE(macro::MIN, "#define MIN(a,b) ((a)>(b)?(b):(a))\n")
+LU_DEFINE(macro::MIN, "#define MIN(a,b) ((a)>(b)?(b):(a))\n");
 
 // Declaration
 LU_DEFINE(declaration::typedef_int,

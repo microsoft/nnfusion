@@ -14,8 +14,17 @@ LU_DEFINE(header::cudnn, "#include <cudnn.h>\n");
 LU_DEFINE(header::super_scaler, "#include \"super_scaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
+LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>\n");
 
 // Macro
+LU_DEFINE(macro::HALF_MAX,
+          R"(#ifndef __HALF_COMPARE_EX__
+#define __HALF_COMPARE_EX__
+inline __device__ half max(half x, half y) { return x > y ? x : y; }
+inline __device__ half min(half x, half y) { return x < y ? x : y; }
+#endif
+)");
+
 LU_DEFINE(
     macro::CUDA_SAFE_CALL_NO_THROW,
     R"(#define CUDA_SAFE_CALL_NO_THROW(x)                                                                 \
@@ -223,6 +232,15 @@ __device__ __forceinline__ float  load(const float*  __restrict__ in, int i=0, b
     }
     return v;
 }
+__device__ __forceinline__ half  load(const half*  __restrict__ in, int i=0, bool b=true)
+{
+    half v = 0.0f;
+    if (b)
+    {
+        v = __ldg(in + i);
+    }
+    return v;
+}
 __device__ __forceinline__ int32_t  load(const int32_t*  __restrict__ in, int i=0, bool b=true)
 {
     int32_t v = 0;
@@ -242,6 +260,24 @@ __device__ __forceinline__ int64_t  load(const int64_t*  __restrict__ in, int i=
     return v;
 }
 )");
+
+LU_DEFINE(declaration::cuda_fp16_scale,
+          R"(
+__global__ void nnfusionHalfScaleKernel(half *x, half *alpha, size_t count)
+{
+    size_t offset = threadIdx.x + blockIdx.x * blockDim.x;
+    x += offset;
+    if (offset < count)
+    {
+        *x *= *alpha;
+    }
+}
+
+void nnfusionHalfScale(half *x, half *alpha, size_t len)
+{
+    nnfusionHalfScaleKernel<<<(len+255)/256, 256>>>(x, alpha, len);
+}
+  )")
 
 LU_DEFINE_EXTEND(declaration::cuda_reduce_primitive,
                  R"(

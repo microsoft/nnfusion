@@ -5,6 +5,8 @@
 
 #include <iomanip>
 #include <limits>
+
+#include "ngraph/src/nnfusion/common/type/element_type.hpp"
 #include "nnfusion/common/common.hpp"
 
 #define REGISTER_OP(op_x)                                                                          \
@@ -200,23 +202,26 @@ namespace nnfusion
         {
             alias_name = alias_name.empty() ? input_name : alias_name;
             config[alias_name] = input_name;
-            auto d_type = tensor->get_element_type().c_type_string();
-            if (d_type == "float")
+            auto d_type = tensor->get_element_type();
+            if (d_type == element::f32)
             {
                 config[alias_name + "_dtype"] = "float32";
             }
-            else if (d_type == "int32_t")
+            else if (d_type == element::i32)
             {
                 config[alias_name + "_dtype"] = "int32";
             }
-            else if (d_type == "int64_t")
+            else if (d_type == element::i64)
             {
                 config[alias_name + "_dtype"] = "int64";
             }
+            else if (d_type == element::f16)
+            {
+                config[alias_name + "_dtype"] = "float16";
+            }
             else
             {
-                printf("Unhandled type: %s\n", d_type.c_str());
-                assert(0);
+                NNFUSION_CHECK_FAIL() << "Unhandled type: " << d_type;
             }
             auto shape = tensor->get_shape();
             if (shape.size() == 0)

@@ -23,16 +23,16 @@ cuda::MaxPool1D::MaxPool1D(shared_ptr<KernelContext> ctx)
     input_width = input_shape.back();
     output_width = output_shape.back();
 
-    input_type = ctx->inputs[0]->get_element_type().c_type_string();
-    output_type = ctx->outputs[0]->get_element_type().c_type_string();
+    input_type = ctx->inputs[0]->get_element_type();
+    output_type = ctx->outputs[0]->get_element_type();
 
     // NNFUSION_CHECK(input_shape.size() == 3)
     //     << "Input shape size of MaxPool1D is invalid, shape size: " << input_shape.size()
     //     << "expected 3";
 
     std::stringstream tag;
-    tag << "cuda_maxpool_" << input_type << "_" << output_type << "_iw"
-        << std::to_string(input_width) << "_ow" << std::to_string(output_width) << "_ww"
+    tag << "cuda_maxpool_" << input_type.c_type_string() << "_" << output_type.c_type_string()
+        << "_iw" << std::to_string(input_width) << "_ow" << std::to_string(output_width) << "_ww"
         << std::to_string(window_width) << "_wst" << std::to_string(window_stride_width);
     custom_tag = tag.str();
 }
@@ -53,11 +53,12 @@ LanguageUnit_p cuda::MaxPool1D::emit_function_body()
         // Index into input tensor.
         lu << "size_t start = (tid / " << output_width << ") * " << input_width << " + "
            << " (tid % " << output_width << ") * " << window_stride[0] << ";\n";
-        lu << input_type << " max_val = " << TypeInfo::Get(input_type)->lowest() << ";\n";
+        lu << input_type.c_type_string() << " max_val = " << TypeInfo::Get(input_type)->lowest()
+           << ";\n";
         lu << "for (size_t i = start; i < start + " << window_width << "; i++)\n";
         lu.block_begin();
         {
-            lu << "const " << input_type << " input = input0[i];\n";
+            lu << "const " << input_type.c_type_string() << " input = input0[i];\n";
             lu << "if (input > max_val)\n";
             lu.block_begin();
             {
@@ -98,6 +99,8 @@ cuda::MaxPoolmD::MaxPoolmD(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {
     auto max_pool = static_pointer_cast<nnfusion::op::MaxPool>(ctx->gnode->get_op_ptr());
+    input_type = ctx->inputs[0]->get_element_type();
+    output_type = ctx->outputs[0]->get_element_type();
     input_shape = nnfusion::Shape(ctx->inputs[0]->get_shape());
     output_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
     window_shape = nnfusion::Shape(max_pool->get_window_shape());
@@ -105,12 +108,9 @@ cuda::MaxPoolmD::MaxPoolmD(shared_ptr<KernelContext> ctx)
     padding_above = nnfusion::Shape(max_pool->get_padding_above());
     window_stride = nnfusion::Strides(max_pool->get_window_movement_strides());
 
-    input_type = ctx->inputs[0]->get_element_type().c_type_string();
-    output_type = ctx->outputs[0]->get_element_type().c_type_string();
-
     std::stringstream tag;
-    tag << "cudnn_maxpool_dtype_" << output_type << "_i" << join(input_shape, "_") << "_o"
-        << join(output_shape, "_") << "_ws" << join(window_shape, "_") << "_wst"
+    tag << "cudnn_maxpool_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
+        << "_o" << join(output_shape, "_") << "_ws" << join(window_shape, "_") << "_wst"
         << join(window_stride, "_") << "_pb" << join(padding_below, "_") << "_pb"
         << join(padding_above, "_");
     custom_tag = tag.str();
@@ -124,8 +124,8 @@ LanguageUnit_p cuda::MaxPoolmD::emit_function_body()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
 
-    auto input_desc = cudnn_tensor_descriptor_from_shape(input_shape, "input_desc");
-    auto output_desc = cudnn_tensor_descriptor_from_shape(output_shape, "output_desc");
+    auto input_desc = cudnn_tensor_descriptor_from_shape(input_shape, "input_desc", input_type);
+    auto output_desc = cudnn_tensor_descriptor_from_shape(output_shape, "output_desc", output_type);
     lu << input_desc->get_code();
     lu << output_desc->get_code();
 
@@ -240,11 +240,11 @@ LanguageUnit_p cuda::MaxPoolmD::emit_function_signature()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "MaxPool",                                                                // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::MaxPool1D)                                                          // constructor
+    "MaxPool",                                                                    // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+    cuda::MaxPool1D)                                                              // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "MaxPool",                                                                 // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cudnn_kernel").Priority(2), // attrs
-    cuda::MaxPoolmD)                                                           // constructor
+    "MaxPool",                                                                     // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
+    cuda::MaxPoolmD)                                                               // constructor

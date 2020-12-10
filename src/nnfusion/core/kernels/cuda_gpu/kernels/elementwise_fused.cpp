@@ -191,9 +191,13 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
             {
                 auto ir_kernel =
                     std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel_emitter);
-                if (!ir_kernel ||
-                    CudaElementOpMap.find(ir_kernel->m_context->gnode->get_op_type()) ==
-                        CudaElementOpMap.end())
+                auto cache_kernel = std::dynamic_pointer_cast<CacheCudaEmitter>(kernel_emitter);
+                if ((!ir_kernel ||
+                     CudaElementOpMap.find(ir_kernel->m_context->gnode->get_op_type()) ==
+                         CudaElementOpMap.end()) &&
+                    (!cache_kernel ||
+                     CudaElementOpMap.find(cache_kernel->m_context->gnode->get_op_type()) ==
+                         CudaElementOpMap.end()))
                 {
                     NNFUSION_CHECK_FAIL() << "Illegal element-wise kernel: "
                                           << kernel_emitter->m_context->gnode->get_op_type();

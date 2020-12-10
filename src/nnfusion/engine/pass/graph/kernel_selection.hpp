@@ -44,8 +44,6 @@ namespace nnfusion
                                     shared_ptr<GNode> gnode,
                                     NNFusion_DeviceType devtype);
             };
-
-            std::string generate_identifier(const shared_ptr<KernelContext>& ctx);
         }
     }
 } // namespace nnfusion

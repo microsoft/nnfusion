@@ -3,10 +3,14 @@
 
 #include "pattern_substitution.hpp"
 #include <queue>
+#include "nnfusion/common/common.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/core/operators/op_define/constant.hpp"
 #include "nnfusion/core/operators/op_define/noop.hpp"
+#include "nnfusion/engine/cache/manager.hpp"
 #include "nnfusion/engine/op.hpp"
+#include "nnfusion/engine/pass/graph/kernel_selection.hpp"
+#include "nnfusion/engine/profiler/profiler.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;

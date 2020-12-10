@@ -455,9 +455,8 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
                     m_kernel_db->fetch_with_tags(identifier, "CUDA_GPU", set<string>{}, true);
                 if (fetched_kernel != nullptr)
                 {
-                    NNFUSION_CHECK(!fetched_kernel->function.is_null());
-                    auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(
-                        ctx, fetched_kernel->function);
+                    auto kernel =
+                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, fetched_kernel);
                     kernel->get_or_emit_source();
                     group->block_kernels[i] = kernel;
                     group->duration[i] = fetched_kernel->profile[m_device_name];

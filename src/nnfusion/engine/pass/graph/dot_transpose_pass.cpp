@@ -5,6 +5,7 @@
 #include "gnode_device_dispatcher.hpp"
 #include "kernel_selection.hpp"
 #include "nnfusion/core/graph/util/numpy_transpose.hpp"
+#include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/operators/op_define/dot.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 #include "runtime_const_folding_pass.hpp"
@@ -58,12 +59,12 @@ namespace
     }
 
     kernels::KernelEmitter::Pointer generate_func_point(shared_ptr<GNode> gnode,
-                                                        nlohmann::json func)
+                                                        nnfusion::cache::KernelEntry_p kernel_entry)
     {
         shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-        if (!func.is_null())
+        if (kernel_entry != nullptr)
         {
-            auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(ctx, func);
+            auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, kernel_entry);
             if (kernel->get_or_emit_source())
             {
                 return kernel;
@@ -207,7 +208,8 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
             NNFUSION_CHECK(dot);
             dot->get_transpose_B() = true;
 
-            auto func_p = generate_func_point(dst_node, transpose_dot_kernel.function);
+            auto func_p = generate_func_point(
+                dst_node, std::make_shared<nnfusion::cache::KernelEntry>(transpose_dot_kernel));
             NNFUSION_CHECK(func_p);
             if (func_p)
                 (*dst_node)["Kernel_Selection_Result"] =

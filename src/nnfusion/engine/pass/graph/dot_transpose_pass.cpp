@@ -29,13 +29,13 @@ namespace
         auto fetched = cache_manager->fetch_all(identifier, platform);
         std::vector<KernelEntry> matched_kernels;
         KernelEntry best_kernel;
-        best_kernel.function = "";
-        for (auto matched_kernel : fetched)
+        for (auto matched_kernel_p : fetched)
         {
+            auto matched_kernel = *matched_kernel_p;
             if (matched_kernel.tags == tags)
             {
                 bool is_better = false;
-                if (best_kernel.function == "")
+                if (best_kernel.function.is_null())
                 {
                     is_better = true;
                 }
@@ -57,12 +57,13 @@ namespace
         return best_kernel;
     }
 
-    kernels::KernelEmitter::Pointer generate_func_point(shared_ptr<GNode> gnode, string func_str)
+    kernels::KernelEmitter::Pointer generate_func_point(shared_ptr<GNode> gnode,
+                                                        nlohmann::json func)
     {
         shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-        if (func_str != "")
+        if (!func.is_null())
         {
-            auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(ctx, func_str);
+            auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(ctx, func);
             if (kernel->get_or_emit_source())
             {
                 return kernel;
@@ -130,7 +131,7 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
         // }
 
         shared_ptr<KernelContext> ctx(new KernelContext(it));
-        std::string identifier = generate_identifier(ctx);
+        std::string identifier = ctx->generate_identifier();
         if (identifier == "")
         {
             continue;
@@ -146,7 +147,7 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
                 break;
             }
             shared_ptr<KernelContext> cur_ctx(new KernelContext(out_edge->get_dst()));
-            std::string cur_identifier = generate_identifier(ctx);
+            std::string cur_identifier = ctx->generate_identifier();
             if (cur_identifier != identifier)
             {
                 different_reference = true;

@@ -18,7 +18,7 @@ namespace nnfusion
                 shared_ptr<nnfusion::op::GenericOp> generic_op;
 
             public:
-                CacheBlockCudaKernel(shared_ptr<KernelContext> ctx, std::string function)
+                CacheBlockCudaKernel(shared_ptr<KernelContext> ctx, nlohmann::json function)
                     : BlockCudaEmitter(ctx)
                     , m_function(function)
                     , generic_op(
@@ -34,7 +34,7 @@ namespace nnfusion
                 void set_launch_config() override;
 
             private:
-                std::string m_function;
+                nlohmann::json m_function;
             };
 
             // more types of emitters to be implemented

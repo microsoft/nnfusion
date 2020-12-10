@@ -7,6 +7,7 @@
 #include "nnfusion/common/descriptor/tensor.hpp"
 #include "nnfusion/common/languageunit.hpp"
 #include "nnfusion/core/operators/util/annotations.hpp"
+#include "nnfusion/engine/cache/manager.hpp"
 
 namespace nnfusion
 {
@@ -22,6 +23,8 @@ namespace nnfusion
             KernelContext(shared_ptr<graph::GNode> gnode);
 
             KernelContext(){};
+
+            std::string generate_identifier();
 
             // The node this OpKernel corresponds to
             shared_ptr<graph::GNode> gnode;
@@ -83,6 +86,11 @@ namespace nnfusion
             // The context for this kernel
             shared_ptr<KernelContext> m_context;
             bool is_tuned() { return m_is_tuned; }
+            NNFusion_DeviceType get_device_type();
+            // Serialize KernelEmitter to nnfusion::cache::KernelEntry, information will be appended to the input KernelEntry object
+            virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
+                shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr);
+
         protected:
             // Generate function name for this kernel, the default name is:
             // "op_name + args_shapes + data_type + device + custom_tag"

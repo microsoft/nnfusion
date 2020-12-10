@@ -450,20 +450,21 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
             {
                 auto node = m_nodes[group->nodes.at(i)]->node;
                 std::shared_ptr<KernelContext> ctx(new KernelContext(node));
-                std::string identifier = generate_identifier(ctx);
+                std::string identifier = ctx->generate_identifier();
                 auto fetched_kernel =
                     m_kernel_db->fetch_with_tags(identifier, "CUDA_GPU", set<string>{}, true);
-                if (fetched_kernel.function != "")
+                if (fetched_kernel != nullptr)
                 {
+                    NNFUSION_CHECK(!fetched_kernel->function.is_null());
                     auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(
-                        ctx, fetched_kernel.function);
+                        ctx, fetched_kernel->function);
                     kernel->get_or_emit_source();
                     group->block_kernels[i] = kernel;
-                    group->duration[i] = fetched_kernel.profile[m_device_name];
+                    group->duration[i] = fetched_kernel->profile[m_device_name];
                     NNFUSION_LOG(DEBUG) << "fetched kernel " << identifier << " with resource "
-                                        << fetched_kernel.resource << " and profiled on "
+                                        << fetched_kernel->resource << " and profiled on "
                                         << m_device_name << " in "
-                                        << fetched_kernel.profile[m_device_name] << "us";
+                                        << fetched_kernel->profile[m_device_name] << "us";
                 }
             }
         }

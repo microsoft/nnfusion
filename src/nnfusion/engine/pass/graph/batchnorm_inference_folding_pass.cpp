@@ -132,7 +132,7 @@ private:
         for (auto m_tn : matched)
         {
             std::shared_ptr<KernelContext> ctx(new KernelContext(m_tn->node));
-            identifier += generate_identifier(ctx);
+            identifier += ctx->generate_identifier();
         }
 
         NNFUSION_LOG(INFO) << "BatchNormInference folding pattern found: " << identifier;

@@ -15,8 +15,6 @@ DECLARE_int64(fkernels_files_number);
 bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
                           std::shared_ptr<TranslationUnit> tu)
 {
-    NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " starts up.";
-
     initialize(ctx, tu);
     NNFUSION_CHECK(collect_mem(ctx, tu));
     NNFUSION_CHECK(collect_stream(ctx, tu));
@@ -26,6 +24,7 @@ bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
     // codegen
     projgen->codegen();
     NNFUSION_CHECK(after_projgen());
+    NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " done.";
     exit(0);
 
     return true;
@@ -69,14 +68,16 @@ void BaseCodegenPass::separate_func_defs_files(int file_number, const string& ke
         for (auto it : kernel_func_defs)
         {
             LanguageUnit_p func_def = it.second.second;
-            func_def->pwd = kernel_folder;
+            if (func_def->pwd.empty())
+                func_def->pwd = kernel_folder;
             string fname = func_def->symbol;
             if (fname.length() > 128)
             {
                 size_t hashcode = std::hash<std::string>{}(fname);
                 fname = "compressed_src_" + std::to_string(hashcode);
             }
-            func_def->write_to = fname + m_kernel_suffix;
+            if (func_def->write_to.empty())
+                func_def->write_to = fname + m_kernel_suffix;
         }
     }
     else

@@ -68,4 +68,34 @@ REGISTER_OP(OneHot)
              {"off_value", off_value},
              {"axis", axis},
              {"dtype", dtype}});
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> gnode) -> std::string {
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        int depth = generic_op->localOpConfig.getRoot()["depth"];
+        float on_value = generic_op->localOpConfig.getRoot()["on_value"];
+        float off_value = generic_op->localOpConfig.getRoot()["off_value"];
+        int axis = generic_op->localOpConfig.getRoot()["axis"];
+
+        std::string dtype;
+        bool ret =
+            element::Type::nnfusion_element_type_to_dtype_string(gnode->get_element_type(), dtype);
+        NNFUSION_CHECK(ret);
+
+        auto input0_layout = op::create_layout_from_dims(gnode->get_input_shape(0));
+        auto output_layout = op::create_layout_from_dims(gnode->get_output_shape(0));
+        axis = ((axis < 0) ? output_layout.size() + axis : axis);
+
+        //e.g., output0[N0, F, N1, N2] = parse(1.0).when([input0[N0, N1, N2]  == F], 0.0) where F in Depth;
+        std::string expr =
+            "@output0@@output_layout@ = const(@on_value@).when([@input0@@input0_layout@  == "
+            "@axis@], @off_value@) where @axis@ in @depth@;";
+
+        return op::create_code_from_template(
+            expr,
+            {{"input0_layout", vector_to_string<std::vector<std::string>>(input0_layout)},
+             {"output_layout", vector_to_string<std::vector<std::string>>(output_layout)},
+             {"depth", depth},
+             {"on_value", on_value},
+             {"off_value", off_value},
+             {"axis", output_layout[axis]}});
     });

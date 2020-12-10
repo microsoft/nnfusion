@@ -27,6 +27,7 @@
 
 #include "nnfusion/common/shape.hpp"
 #include "nnfusion/common/util.hpp"
+#include "type/element_type.hpp"
 
 #include <iostream>
 
@@ -393,6 +394,13 @@ namespace nnfusion
         {
             throw std::runtime_error("Could not parse literal '" + s + "'");
         }
+        return result;
+    }
+
+    template <>
+    element::half parse_string<element::half>(const std::string& s)
+    {
+        element::half result(parse_string<float>(s));
         return result;
     }
 }

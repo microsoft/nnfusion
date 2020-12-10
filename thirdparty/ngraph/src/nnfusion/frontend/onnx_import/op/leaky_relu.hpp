@@ -46,7 +46,9 @@ namespace nnfusion
                     float alpha = node.get_attribute_value<float>("alpha", 0.01);
                     NNFUSION_CHECK(alpha >= 0 && alpha <= 1);
                     auto alpha_op = std::make_shared<op::Constant>(
-                        x.get_element_type(), Shape{}, std::vector<float>{alpha});
+                        x.get_element_type(),
+                        Shape{},
+                        std::vector<std::string>{std::to_string(alpha)});
                     auto alpha_gnode =
                         m_graph->add_node_and_edge(alpha_op, nnfusion::graph::GNodeVector{});
                     auto alpha_index = GNodeIndex(alpha_gnode);

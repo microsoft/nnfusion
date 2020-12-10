@@ -62,5 +62,10 @@ namespace nnfusion
                          const std::vector<float>& b,
                          int mantissa_bits = 8,
                          int tolerance_bits = 2);
+
+        bool all_close_f(const DataBuffer& a,
+                         const DataBuffer& b,
+                         int mantissa_bits = 8,
+                         int tolerance_bits = 2);
     }
 }

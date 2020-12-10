@@ -118,7 +118,7 @@ namespace nnfusion
         {
             NNFUSION_CHECK(get_op_configs().find(opname) == get_op_configs().end())
                 << "OpConfig for opname `" + opname + "` is registered more than once.";
-            NNFUSION_LOG(INFO) << "Registering opname `" << opname << "`";
+            //NNFUSION_LOG(INFO) << "Registering opname `" << opname << "`";
             return get_op_configs()[opname];
         }
 
@@ -250,8 +250,8 @@ namespace nnfusion
 
                 if (name != "")
                     set_name(name);
-                NNFUSION_LOG(INFO) << "Managing GenericOp for Opeartor: type = " << opname
-                                   << ", name = " << name;
+                // NNFUSION_LOG(INFO) << "Managing GenericOp for Opeartor: type = " << opname
+                //                    << ", name = " << name;
 
                 localOpConfig.check_constrait();
             }

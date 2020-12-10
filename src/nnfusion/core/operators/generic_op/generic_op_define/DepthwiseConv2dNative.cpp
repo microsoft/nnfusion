@@ -24,20 +24,20 @@ REGISTER_OP(DepthwiseConv2dNative)
         // [ batch, in_rows, in_cols, in_depth ]
         const Shape& input_shape = gnode->get_input_shape(0);
 
-        // [ filter_rows, filter_cols, in_depth, depth_multiplier]
+        // [ filter_rows, filter_cols, in_depth, depth_multiplier ]
         const Shape& filter_shape = gnode->get_input_shape(1);
 
         std::string data_format = op->localOpConfig.getRoot()["data_format"];
         bool is_nhwc = (data_format == "NHWC");
 
         const int64_t in_depth = is_nhwc ? input_shape[3] : input_shape[1];
-        NNFUSION_CHECK(in_depth == (is_nhwc ? filter_shape[2] : filter_shape[0]));
-        const int64_t depth_multiplier = is_nhwc ? filter_shape[3] : filter_shape[1];
+        NNFUSION_CHECK(in_depth == filter_shape[2]);
+        const int64_t depth_multiplier = filter_shape[3];
         const int64_t out_depth = in_depth * depth_multiplier;
         const int64_t input_rows = is_nhwc ? input_shape[1] : input_shape[2];
         const int64_t input_cols = is_nhwc ? input_shape[2] : input_shape[3];
-        const int64_t filter_rows = is_nhwc ? filter_shape[0] : filter_shape[2];
-        const int64_t filter_cols = is_nhwc ? filter_shape[1] : filter_shape[3];
+        const int64_t filter_rows = filter_shape[0];
+        const int64_t filter_cols = filter_shape[1];
         const int64_t batch = input_shape[0];
 
         std::vector<int64_t> strides = op->localOpConfig.getRoot()["strides"];
@@ -88,7 +88,7 @@ REGISTER_OP(DepthwiseConv2dNative)
         const std::string data_format = is_nhwc ? "nhwc" : "nchw";
 
         nnfusion::op::OpConfig::any config;
-        config["input1_layout"] = is_nhwc ? "[KH, KW, C, 0]" : "[C, 0, KH, KW]";
+        config["input1_layout"] = "[KH, KW, C, 0]";
         config["output0_layout"] = is_nhwc ? "[N, HO, WO, C]" : "[N, C, HO, WO]";
         config["height"] = is_nhwc ? in_shape[1] : in_shape[2];
         config["width"] = is_nhwc ? in_shape[2] : in_shape[3];

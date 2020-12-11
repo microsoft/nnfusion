@@ -34,6 +34,10 @@ namespace nnfusion
             if (it == configs.end() || it->second.f_translate_v2 == nullptr)
                 return "";
 
+            auto antares_template = it->second.f_translate_v2(gnode);
+            if (antares_template.empty())
+                return "";
+
             op::OpConfig::any io_config;
             auto input_template =
                 R"( "@input@" : { "dtype" : "@input_dtype@", "shape" : @input_shape@} )";
@@ -48,8 +52,11 @@ namespace nnfusion
                 auto input_alias = "input" + to_string(real_input_id++);
                 op::create_inputs_definition_from_tensor(
                     gnode->get_input_tensor_ptr(in_id), input_alias, input_config, "input");
-                input_code = input_code + (input_code.empty() ? "" : ", ") +
-                             op::create_code_from_template(input_template, input_config);
+                if (antares_template.find(input_alias) != std::string::npos)
+                {
+                    input_code = input_code + (input_code.empty() ? "" : ", ") +
+                                 op::create_code_from_template(input_template, input_config);
+                }
                 io_config[input_alias] = input_alias;
             }
             for (int out_id = 0; out_id < gnode->get_output_size(); ++out_id)
@@ -58,9 +65,6 @@ namespace nnfusion
                 io_config[output_alias] = output_alias;
             }
 
-            auto antares_template = it->second.f_translate_v2(gnode);
-            if (antares_template.empty())
-                return "";
             std::string expression_code =
                 op::create_code_from_template(antares_template, io_config);
 

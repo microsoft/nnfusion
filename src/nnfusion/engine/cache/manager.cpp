@@ -130,8 +130,8 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
     NNFUSION_CHECK(SQLITE_OK == sqlite3_finalize(pStmt));
     if (fetched.size() > 0)
     {
-        NNFUSION_LOG(INFO) << fetched.size() << " cached kernel fetched " << identifier
-                           << " on: " << device_type;
+        NNFUSION_LOG(DEBUG) << fetched.size() << " cached kernel fetched " << identifier
+                            << " on: " << device_type;
     }
     else
     {

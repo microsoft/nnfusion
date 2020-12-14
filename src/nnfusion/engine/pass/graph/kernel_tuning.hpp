@@ -23,7 +23,8 @@ namespace nnfusion
             private:
                 std::vector<std::shared_ptr<nnfusion::graph::GNode>>
                     get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph);
-                bool insert_to_kernel_cache(std::shared_ptr<nnfusion::graph::Graph>& graph);
+                bool insert_to_kernel_cache(
+                    const std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes);
             };
         }
     }

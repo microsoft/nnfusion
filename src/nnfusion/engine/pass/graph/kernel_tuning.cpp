@@ -223,7 +223,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
         exit(0);
     }
 
-    insert_to_kernel_cache(graph);
+    insert_to_kernel_cache(nodes);
 
     return true;
 }
@@ -275,7 +275,7 @@ bool KernelTuning::register_antares_kernel()
     return true;
 }
 
-bool KernelTuning::insert_to_kernel_cache(std::shared_ptr<nnfusion::graph::Graph>& graph)
+bool KernelTuning::insert_to_kernel_cache(const std::vector<std::shared_ptr<GNode>>& nodes)
 {
     auto cache_manager = std::make_shared<cache::KernelCacheManager>();
     if (!cache_manager->is_valid())
@@ -285,7 +285,6 @@ bool KernelTuning::insert_to_kernel_cache(std::shared_ptr<nnfusion::graph::Graph
         return true;
     }
 
-    std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
     for (auto gnode : nodes)
     {
         shared_ptr<KernelContext> ctx(new KernelContext(gnode));

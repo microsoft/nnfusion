@@ -25,7 +25,8 @@ TEST(nnfusion_engine_profiler, basic_utils)
 
     // Filter out the kernels meeting the requirement;
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(gnode->get_op_type(), CUDA_GPU, DT_FLOAT);
+        KernelRegistry::Global()->FindKernelRegistrations(
+            gnode->get_op_type(), CUDA_GPU, element::f32);
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
 
     // Gnerate Test data

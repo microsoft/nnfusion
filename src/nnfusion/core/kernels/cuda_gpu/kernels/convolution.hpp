@@ -22,6 +22,7 @@ namespace nnfusion
                 bool require_cudnn_handle() override { return true; }
             private:
                 nnfusion::Shape input_shape, filter_shape, output_shape;
+                element::Type input_type, filter_type, output_type, conv_type;
                 nnfusion::Strides window_dilation_strides, window_movement_strides,
                     data_dilation_strides;
                 nnfusion::CoordinateDiff padding_below_diff, padding_above_diff;

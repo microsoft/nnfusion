@@ -36,7 +36,7 @@ int main(int argc, char** argv)
                 op_name,
                 nnfusion::kernels::Name(op_name)
                     .Device(CUDA_GPU)
-                    .TypeConstraint(DT_FLOAT)
+                    .TypeConstraint(element::f32)
                     .Tag("antares")
                     .Priority(9)
                     .KernelFactory([](shared_ptr<nnfusion::kernels::KernelContext> context)

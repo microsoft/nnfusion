@@ -23,7 +23,8 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
                                                  IProfilingRuntime::Pointer runtime)
 {
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(gnode->get_op_type(), devtype, DT_FLOAT);
+        KernelRegistry::Global()->FindKernelRegistrations(
+            gnode->get_op_type(), devtype, element::f32);
 
     // Skip since only one candidate or constant
     if (kernel_regs.size() == 1 || gnode->is_constant())
@@ -140,12 +141,13 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 {
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(gnode->get_op_type(), devtype, DT_FLOAT);
+        KernelRegistry::Global()->FindKernelRegistrations(
+            gnode->get_op_type(), devtype, element::f32);
 
     if (devtype == ROCM_GPU)
     {
         for (auto it : KernelRegistry::Global()->FindKernelRegistrations(
-                 gnode->get_op_type(), CUDA_GPU, DT_FLOAT))
+                 gnode->get_op_type(), CUDA_GPU, element::f32))
             kernel_regs.push_back(it);
     }
 
@@ -260,7 +262,8 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
                                         NNFusion_DeviceType devtype)
 {
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(gnode->get_op_type(), devtype, DT_FLOAT);
+        KernelRegistry::Global()->FindKernelRegistrations(
+            gnode->get_op_type(), devtype, element::f32);
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
     std::vector<nlohmann::json> functions;
 

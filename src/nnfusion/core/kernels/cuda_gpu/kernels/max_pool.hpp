@@ -24,8 +24,8 @@ namespace nnfusion
                 shared_ptr<KernelContext> kernel_ctx;
                 nnfusion::Shape input_shape, output_shape, window_shape, padding_below,
                     padding_above;
+                element::Type input_type, output_type;
                 nnfusion::Strides window_stride;
-                string input_type, output_type;
 
                 size_t window_width, window_stride_width, input_width, output_width;
             };
@@ -41,10 +41,10 @@ namespace nnfusion
                 bool require_cudnn_handle() override { return true; }
             private:
                 shared_ptr<KernelContext> kernel_ctx;
+                element::Type input_type, output_type;
                 nnfusion::Shape input_shape, output_shape, window_shape, padding_below,
                     padding_above;
                 nnfusion::Strides window_stride;
-                string input_type, output_type;
             };
         } // namespace cuda
     }     // namespace kernels

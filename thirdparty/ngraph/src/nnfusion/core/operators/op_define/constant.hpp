@@ -109,8 +109,9 @@ namespace nnfusion
                     << nnfusion::shape_size(m_shape) << ").";
 
                 DataBuffer buf(element_type);
+                size_t shape_size = nnfusion::shape_size(m_shape);
 
-                buf.loadFromStrings(values);
+                buf.loadFromStrings(values, shape_size);
 
                 buf.dump(m_data);
             }

@@ -278,10 +278,10 @@ atomic_add(output0 + x_offset, __ldg(input1 + y_offset));
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
-REGISTER_KERNEL_EMITTER("GatherND",                                                   // op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel"), // attrs
-                        cuda::GatherND)                                               // constructor
+REGISTER_KERNEL_EMITTER("GatherND",                                                       // op_name
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel"), // attrs
+                        cuda::GatherND) // constructor
 
-REGISTER_KERNEL_EMITTER("GatherNDGrad",                                               // op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel"), // attrs
-                        cuda::GatherNDGrad)                                           // constructor
+REGISTER_KERNEL_EMITTER("GatherNDGrad",                                                   // op_name
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel"), // attrs
+                        cuda::GatherNDGrad) // constructor

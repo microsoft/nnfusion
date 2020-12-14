@@ -270,17 +270,6 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 
     if (identifier != "")
     {
-        /* legacy kernel selection code
-        // Todo: more tags and policy to be added
-        // std::set<std::string> tags = {};
-        // auto fetched_kernel = cache_manager->fetch_with_tags(identifier, platform.front(), tags);
-        // if (fetched_kernel != nullptr)
-        // {
-        //     NNFUSION_CHECK(!fetched_kernel->function.is_null());
-        //     functions.push_back(fetched_kernel->function);
-        // }
-        */
-
         // fetch all available kernel entries from kernel cache DB
         auto fetched = cache_manager->fetch_all(identifier, platform.front());
 
@@ -312,13 +301,13 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
             {
                 if (fetch_entry->source == "Antares")
                 {
-                    if (fetch_entry->miscs["antares"]["device_name"] == FLAGS_fproduct_name)
+                    if (fetch_entry->miscs["antares"]["device_name"] != FLAGS_fproduct_name)
                     {
                         continue;
                     }
                     // supported op set: +element-wise
                     if (nnfusion::kernels::cuda::CudaElementOpMap.find(fetch_entry->op_type) ==
-                            nnfusion::kernels::cuda::CudaElementOpMap.end() ||
+                            nnfusion::kernels::cuda::CudaElementOpMap.end() &&
                         AntaresOpSet.find(fetch_entry->op_type) == AntaresOpSet.end())
                     {
                         continue;
@@ -367,9 +356,8 @@ bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
     auto cache_manager = std::make_shared<cache::KernelCacheManager>();
     if (!cache_manager->is_valid())
     {
-        NNFUSION_LOG(INFO) << "No valid kernel cache, default selector will be used";
-        auto selector = DefaultKernelSelector();
-        return selector.run_on_graph(graph);
+        NNFUSION_LOG(INFO) << "No valid kernel cache, FetchBasedSelector will be skipped";
+        return true;
     }
     // auto dev_name = FLAGS_fdefault_device.c_str();
     // NNFusion_DeviceType default_device = nnfusion::get_device_type(dev_name);

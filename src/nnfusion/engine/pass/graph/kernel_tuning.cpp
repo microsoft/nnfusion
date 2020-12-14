@@ -202,11 +202,6 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
                     status->status = (compelete_flag == string::npos) ? "tuning" : "completed";
                 }
             }
-            if (status->status != "completed")
-            {
-                NNFUSION_LOG(INFO) << gnode->get_op_type() << ", gnode: " << gnode->get_name()
-                                   << ", ir: " << ir;
-            }
 
             if (status->status == "" || status->status.empty())
             {

@@ -290,7 +290,7 @@ bool KernelTuning::insert_to_kernel_cache(const std::vector<std::shared_ptr<GNod
         shared_ptr<KernelContext> ctx(new KernelContext(gnode));
         std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
             KernelRegistry::Global()->FindKernelRegistrations(
-                gnode->get_op_type(), CUDA_GPU, DT_FLOAT);
+                gnode->get_op_type(), CUDA_GPU, element::f32);
 
         for (auto kernel_reg : kernel_regs)
         {

@@ -35,39 +35,40 @@ namespace nnfusion
                 {
                     if (!FLAGS_fantares_codegen_server.empty())
                     {
-                        ir = nnfusion::op::get_translation_v2(ctx->gnode);
-                        if (ir.empty())
-                            ir = nnfusion::op::get_translation(ctx->gnode);
+                        auto ir = nnfusion::op::get_translation(ctx->gnode);
                         if (!ir.empty())
                         {
-                            const char annotation[] = "## @annotation: ";
-                            int pos = ir.find(annotation);
-                            if (pos >= 0)
-                            {
-                                pos += sizeof(annotation) - 1;
-                                options = ir.substr(pos);
-                            }
-
-                            if (options.size() > 0)
-                            {
-                                if (options[0] != '|')
-                                    options = "|" + options;
-                                if (options.back() != '|')
-                                    options += "|";
-                            }
-
                             auto info = m_antares_ke_imp->autogen(ir);
                             antares_code = info.first;
                             m_is_tuned = info.second;
+
+                            std::string annotation = nnfusion::op::get_annotation(ir);
+                            // if is_memcpy, no need to request antares server
+                            if (annotation.find("|memcpy|") != string::npos)
+                            {
+                                is_memcpy = true;
+                            }
+                        }
+                        if (ir.empty())
+                        {
+                            static std::unordered_set<std::string> log_cache;
+                            if (log_cache.count(ctx->gnode->get_op_type()) == 0)
+                            {
+                                NNFUSION_LOG(INFO) << "No Antares Translation for Op: "
+                                                   << ctx->gnode->get_op_type();
+                                log_cache.insert(ctx->gnode->get_op_type());
+                            }
                         }
                     }
                 }
 
+                bool is_eliminative() override;
                 virtual LanguageUnit_p emit_function_body() override;
                 virtual LanguageUnit_p emit_function_call() override;
 
                 AntaresKEImp::Pointer m_antares_ke_imp;
                 std::string antares_code;
+                bool is_memcpy = false;
 
             protected:
                 std::string ir, options;

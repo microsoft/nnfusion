@@ -7,6 +7,7 @@ set(SRC
     constant.cpp
     parameter.cpp
     result.cpp
+    hlsl_langunit.cpp
 )
 
 add_library(kernels_hlsl STATIC ${SRC})

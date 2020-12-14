@@ -619,6 +619,7 @@ bool CudaCodegenPass::collect_stream(std::shared_ptr<InterpreterContext> ctx,
                                      std::shared_ptr<TranslationUnit> tu)
 {
     //stream
+    NNFUSION_CHECK_NOT_NULLPTR(device_async_manager);
     if (device_async_manager && device_async_manager->num_stream() > 0)
     {
         auto stream_decl = device_async_manager->emit_stream_decl();
@@ -628,7 +629,6 @@ bool CudaCodegenPass::collect_stream(std::shared_ptr<InterpreterContext> ctx,
         stream_init->require(stream_decl);
         add_init_and_exit_pair(stream_init, stream_destroy);
     }
-
     //event
     if (device_async_manager && device_async_manager->num_event() > 0)
     {

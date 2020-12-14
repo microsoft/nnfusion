@@ -231,7 +231,7 @@ bool CodeGenerator::codegen()
                 codegen_files.insert(shared_header);
                 std::ofstream file;
                 file.open(shared_header);
-                file << nnfusion::kernels::boilerplate::MIT1->get_code();
+                // file << nnfusion::kernels::boilerplate::MIT1->get_code();
                 file.close();
                 // struct stat buffer;
                 // if (stat(shared_header.c_str(), &buffer) == 0)
@@ -247,14 +247,14 @@ bool CodeGenerator::codegen()
             codegen_files.insert(search);
             std::ofstream file;
             file.open(search);
-            if (search.find(".txt", search.size() - 4) == string::npos)
-            {
-                file << nnfusion::kernels::boilerplate::MIT1->get_code();
-            }
-            else
-            {
-                file << nnfusion::kernels::boilerplate::MIT2->get_code();
-            }
+            // if (search.find(".txt", search.size() - 4) == string::npos)
+            // {
+            //     file << nnfusion::kernels::boilerplate::MIT1->get_code();
+            // }
+            // else
+            // {
+            //     file << nnfusion::kernels::boilerplate::MIT2->get_code();
+            // }
 
             if (files_include_shared.find(search) != files_include_shared.end())
             {
@@ -283,6 +283,22 @@ bool CodeGenerator::codegen()
             executed.insert(search_name);
         }
     }
+
+    for (auto search : codegen_files)
+    {
+        std::ofstream file;
+        file.open(search, std::ios::app);
+        if (search.find(".txt", search.size() - 4) == string::npos)
+        {
+            file << nnfusion::kernels::boilerplate::MIT1->get_code();
+        }
+        else
+        {
+            file << nnfusion::kernels::boilerplate::MIT2->get_code();
+        }
+        file.close();
+    }
+
     return true;
 }
 

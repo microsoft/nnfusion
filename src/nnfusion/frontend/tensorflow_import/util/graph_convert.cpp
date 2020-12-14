@@ -833,23 +833,18 @@ namespace nnfusion
                 BatchedOpParamToNGraph(is_nhwc, input_gnode->get_shape(), ng_image_shape);
                 BatchedOpParamToNGraph(is_nhwc, tf_dilations, ng_dilations);
 
-                auto reshape_input_gnode = BatchToNGraph(is_nhwc, input_gnode);
-                auto default_device = get_device_type(FLAGS_fdefault_device);
-                if (reshape_input_gnode != nullptr && default_device != GENERIC_CPU &&
-                    default_device != HLSL)
-                {
-                    m_graph->add_node(reshape_input_gnode);
-                    m_graph->add_edge(input_gnode, 0, reshape_input_gnode, 0);
-                }
-                else
-                {
-                    reshape_input_gnode = input_gnode;
-                }
-
-                // transpose filter shape from tf format to nnfusion format
-                auto reshape_filter_gnode = Reshape<2, 3, 0, 1>(filter_gnode);
-                m_graph->add_node(reshape_filter_gnode);
-                m_graph->add_edge(filter_gnode, 0, reshape_filter_gnode, 0);
+                // auto reshape_input_gnode = BatchToNGraph(is_nhwc, input_gnode);
+                // auto default_device = get_device_type(FLAGS_fdefault_device);
+                // if (reshape_input_gnode != nullptr && default_device != GENERIC_CPU &&
+                //     default_device != HLSL)
+                // {
+                //     m_graph->add_node(reshape_input_gnode);
+                //     m_graph->add_edge(input_gnode, 0, reshape_input_gnode, 0);
+                // }
+                // else
+                // {
+                //     reshape_input_gnode = input_gnode;
+                // }
 
                 CoordinateDiff ng_padding_below{0, 0};
                 CoordinateDiff ng_padding_above{0, 0};
@@ -873,22 +868,22 @@ namespace nnfusion
                     node.name(), "DepthwiseConv2dNative", op_config);
 
                 auto conv_gnode =
-                    m_graph->add_node_and_edge(generic_op, {input_gnode, reshape_filter_gnode});
+                    m_graph->add_node_and_edge(generic_op, {input_gnode, filter_gnode});
 
-                auto reshape_conv_gnode = BatchToTensorflow(is_nhwc, conv_gnode);
-                if (reshape_conv_gnode != nullptr && default_device != GENERIC_CPU &&
-                    default_device != HLSL)
-                {
-                    m_graph->add_node(reshape_conv_gnode);
-                    m_graph->add_edge(conv_gnode, 0, reshape_conv_gnode, 0);
-                }
-                else
-                {
-                    reshape_conv_gnode = conv_gnode;
-                }
+                // auto reshape_conv_gnode = BatchToTensorflow(is_nhwc, conv_gnode);
+                // if (reshape_conv_gnode != nullptr && default_device != GENERIC_CPU &&
+                //     default_device != HLSL)
+                // {
+                //     m_graph->add_node(reshape_conv_gnode);
+                //     m_graph->add_edge(conv_gnode, 0, reshape_conv_gnode, 0);
+                // }
+                // else
+                // {
+                //     reshape_conv_gnode = conv_gnode;
+                // }
                 // reshape_conv_gnode->get_op_ptr()->set_name(node.name());
-                reshape_conv_gnode->set_name(node.name());
-                NamedNodeVector ret{{node.name(), reshape_conv_gnode}};
+                conv_gnode->set_name(node.name());
+                NamedNodeVector ret{{node.name(), conv_gnode}};
                 return ret;
             }
 
@@ -3409,6 +3404,30 @@ namespace nnfusion
                 {"ApplyAdam", TranslateApplyAdamOp},
                 {"Unpack", TranslateUnpackOp}};
 
+            bool check_model_availability(const tensorflow::GraphDef* graph_proto)
+            {
+                auto op_configs = op::get_op_configs();
+                const size_t num_nodes = graph_proto->node_size();
+                std::unordered_set<std::string> unknown_ops;
+                for (size_t n = 0; n < num_nodes; ++n)
+                {
+                    std::string op_type = graph_proto->node(n).op();
+                    if (TRANSLATE_OP_MAP.find(op_type) == TRANSLATE_OP_MAP.end() &&
+                        op_configs.find(op_type) == op_configs.end())
+                    {
+                        unknown_ops.insert(op_type);
+                    }
+                }
+                if (unknown_ops.size() > 0)
+                {
+                    for (auto& op_type : unknown_ops)
+                    {
+                        NNFUSION_LOG(ERROR) << "Unsupported tf op: " << op_type;
+                    }
+                    return false;
+                }
+                return true;
+            }
             struct InputInfo
             {
                 explicit InputInfo(const std::string& node_name,
@@ -3428,6 +3447,8 @@ namespace nnfusion
                 : tf_graph_proto{&proto}
             {
                 NNFUSION_LOG(INFO) << "Converting Tensorflow Graph";
+
+                NNFUSION_CHECK(check_model_availability(tf_graph_proto));
 
                 m_graph = std::make_shared<nnfusion::graph::Graph>();
 

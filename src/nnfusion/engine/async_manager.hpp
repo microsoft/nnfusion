@@ -14,6 +14,7 @@ namespace nnfusion
         class DeviceStreamAsyncManager;
         class HostAsyncManager;
         class CUDAAsyncManager;
+        class HLSLAsyncManager;
         class Stream;
         class Event;
         struct AsyncExecutionInfo;
@@ -61,6 +62,7 @@ class nnfusion::async::Event
 public:
     friend class AsyncManager;
     friend class CUDAAsyncManager;
+    friend class HLSLAsyncManager;
     size_t get_event_id() const { return m_event_id; }
     const shared_ptr<Stream>& get_stream() const { return m_stream; }
     const shared_ptr<nnfusion::op::Op>& get_op() const { return m_op; }
@@ -159,6 +161,27 @@ protected:
         : DeviceStreamAsyncManager(graph)
     {
         m_device_type = CUDA_GPU;
+    }
+};
+
+class nnfusion::async::HLSLAsyncManager : public nnfusion::async::DeviceStreamAsyncManager
+{
+public:
+    friend class AsyncManagerFactory;
+    LanguageUnit_p emit_stream_decl() override;
+    LanguageUnit_p emit_event_decl() override;
+    LanguageUnit_p emit_stream_init() override;
+    LanguageUnit_p emit_event_init() override;
+    LanguageUnit_p emit_event_wait(shared_ptr<Stream> stream, shared_ptr<Event> event) override;
+    LanguageUnit_p emit_event_record(shared_ptr<Event> event) override;
+    LanguageUnit_p emit_stream_destroy() override;
+    LanguageUnit_p emit_event_destroy() override;
+
+protected:
+    HLSLAsyncManager(std::shared_ptr<nnfusion::graph::Graph> graph)
+        : DeviceStreamAsyncManager(graph)
+    {
+        m_device_type = HLSL;
     }
 };
 

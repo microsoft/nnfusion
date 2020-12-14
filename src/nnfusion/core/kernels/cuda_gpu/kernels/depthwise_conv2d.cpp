@@ -13,7 +13,7 @@ cuda::DepthwiseConv2dNative::DepthwiseConv2dNative(shared_ptr<KernelContext> ctx
     auto op = static_pointer_cast<nnfusion::op::GenericOp>(ctx->gnode->get_op_ptr());
 
     const Shape input_shape = Shape(ctx->inputs[0]->get_shape());
-    // [ in_depth, depth_multiplier, filter_rows, filter_cols ]
+    // [ filter_rows, filter_cols, in_depth, depth_multiplier]
     const Shape filter_shape = Shape(ctx->inputs[1]->get_shape());
     const Shape output_shape = Shape(ctx->outputs[0]->get_shape());
 
@@ -25,13 +25,13 @@ cuda::DepthwiseConv2dNative::DepthwiseConv2dNative(shared_ptr<KernelContext> ctx
     bool is_nhwc = (data_format == "NHWC");
 
     const int64_t in_depth = is_nhwc ? input_shape[3] : input_shape[1];
-    NNFUSION_CHECK(in_depth == filter_shape[0]);
-    const int64_t depth_multiplier = filter_shape[1];
+    NNFUSION_CHECK(in_depth == filter_shape[2]);
+    const int64_t depth_multiplier = filter_shape[3];
     const int64_t out_depth = in_depth * depth_multiplier;
     const int64_t input_rows = is_nhwc ? input_shape[1] : input_shape[2];
     const int64_t input_cols = is_nhwc ? input_shape[2] : input_shape[3];
-    const int64_t filter_rows = filter_shape[2];
-    const int64_t filter_cols = filter_shape[3];
+    const int64_t filter_rows = filter_shape[0];
+    const int64_t filter_cols = filter_shape[1];
     const int64_t batch = input_shape[0];
 
     args.batch = batch;
@@ -52,10 +52,6 @@ cuda::DepthwiseConv2dNative::DepthwiseConv2dNative(shared_ptr<KernelContext> ctx
 
 LanguageUnit_p cuda::DepthwiseConv2dNative::emit_function_body()
 {
-    // deprecated due to the change of op_define, return nullptr
-    return nullptr;
-
-    // deprecated due to the change of op_define, the following kernel emitter assumes filter shape [ filter_rows, filter_cols, in_depth, depth_multiplier ]
     if (data_format == "NHWC")
     {
         return emit_DepthwiseConv2dGPUKernelNHWC();
@@ -100,7 +96,7 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNHWC()
          thread_id += blockDim.x * gridDim.x)
     {
         // Compute the indexes of this thread in the output.
-        const int out_channel = thread_id % out_depth;
+        const int out_channel = (int)thread_id % out_depth;
         const int out_col = (thread_id / out_depth) % out_width;
         const int out_row = (thread_id / out_depth / out_width) % out_height;
         const int batch = thread_id / out_depth / out_width / out_height;
@@ -229,7 +225,7 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNCHW()
         //
         // THIS IS PROBABLY WRONG, we are not doing coalesced reads
         // into the input, because of the depth multiplier division...
-        const int out_col = thread_id % out_width;
+        const int out_col = (int)thread_id % out_width;
         const int out_row = (thread_id / out_width) % out_height;
         const int out_channel = (thread_id / out_width / out_height) % out_depth;
         const int batch = thread_id / out_width / out_height / out_depth;

@@ -10,7 +10,7 @@ using namespace nnfusion::pass::graph;
 // It's not encouraging to use the blockfusion level 2 because it is still an experimental feature and is under development
 DEFINE_int32(
     fblockfusion_level,
-    0,
+    1,
     "BlockFusion optimization level: 0: disable, 1: wavefront, 2: wavefront with wave merge");
 DEFINE_bool(fblockfusion_interplay,
             true,

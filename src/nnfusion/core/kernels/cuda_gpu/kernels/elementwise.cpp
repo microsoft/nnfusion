@@ -9,7 +9,7 @@ using namespace nnfusion::kernels;
 #define REGISTER_EW_KERNEL(OP_NAME)                                                                \
     REGISTER_KERNEL_EMITTER(                                                                       \
         "" #OP_NAME "",                                                                            \
-        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("element_wise").Priority(2),                 \
+        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("element_wise").Priority(2),             \
         cuda::ElementWise<nnfusion::op::OP_NAME>);
 
 REGISTER_EW_KERNEL(Abs)

@@ -14,6 +14,7 @@ namespace nnfusion
             {
                 switch (tf_dt)
                 {
+                case tensorflow::DataType::DT_HALF: *ng_et = nnfusion::element::f16; break;
                 case tensorflow::DataType::DT_FLOAT: *ng_et = nnfusion::element::f32; break;
                 case tensorflow::DataType::DT_DOUBLE: *ng_et = nnfusion::element::f64; break;
                 case tensorflow::DataType::DT_INT8: *ng_et = nnfusion::element::i8; break;

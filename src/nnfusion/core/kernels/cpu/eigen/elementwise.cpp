@@ -7,9 +7,10 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 #define REGISTER_EW_KERNEL(OP_NAME)                                                                \
-    REGISTER_KERNEL_EMITTER("" #OP_NAME "",                                                        \
-                            Device(GENERIC_CPU).TypeConstraint(DT_FLOAT).Tag("eigen").Priority(4), \
-                            cpu::ElementwiseEigen<nnfusion::op::OP_NAME>);
+    REGISTER_KERNEL_EMITTER(                                                                       \
+        "" #OP_NAME "",                                                                            \
+        Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("eigen").Priority(4),                 \
+        cpu::ElementwiseEigen<nnfusion::op::OP_NAME>);
 
 REGISTER_EW_KERNEL(Abs)
 REGISTER_EW_KERNEL(Acos)

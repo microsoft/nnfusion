@@ -649,12 +649,12 @@ private:
                         if (n_device_type != GENERIC_CPU)
                         {
                             kernel_reg = KernelRegistry::Global()->FindKernelRegistration(
-                                "ElementWiseFused", CUDA_GPU, DT_FLOAT);
+                                "ElementWiseFused", CUDA_GPU, element::f32);
                         }
                         else
                         {
                             kernel_reg = KernelRegistry::Global()->FindKernelRegistration(
-                                "ElementwiseFused", GENERIC_CPU, DT_FLOAT);
+                                "ElementwiseFused", GENERIC_CPU, element::f32);
                         }
                         NNFUSION_CHECK_NOT_NULLPTR(kernel_reg);
                         auto ctx = std::make_shared<KernelContext>();

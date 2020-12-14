@@ -71,6 +71,6 @@ void BlockFusionFused::set_launch_config()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "BlockFusionFused",                                                       // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
+    "BlockFusionFused",                                                           // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
     cuda::BlockFusionFused)

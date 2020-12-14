@@ -372,6 +372,6 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_dependency()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "DepthwiseConv2dNative",                                                  // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::DepthwiseConv2dNative)                                              // constructor
+    "DepthwiseConv2dNative",                                                      // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+    cuda::DepthwiseConv2dNative)                                                  // constructor

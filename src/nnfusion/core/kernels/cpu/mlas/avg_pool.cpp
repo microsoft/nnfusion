@@ -108,6 +108,6 @@ LanguageUnit_p cpu::AvgPoolMlas::emit_dependency()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "AvgPool",                                                            // op_name
-    Device(GENERIC_CPU).TypeConstraint(DT_FLOAT).Tag("mlas").Priority(6), // attrs
-    cpu::AvgPoolMlas)                                                     // constructor
+    "AvgPool",                                                                // op_name
+    Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("mlas").Priority(6), // attrs
+    cpu::AvgPoolMlas)                                                         // constructor

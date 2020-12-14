@@ -161,6 +161,7 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
+    projgen->lup_codegen->require(macro::HALF_MAX);
 
     return;
 }
@@ -345,7 +346,7 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
             else
             {
                 auto kernel_reg = KernelRegistry::Global()->FindKernelRegistration(
-                    "AnyOP", device_type(), DT_FLOAT);
+                    "AnyOP", device_type(), element::f32);
                 NNFUSION_CHECK(kernel_reg != nullptr) << "AnyOp Kernel not found, op="
                                                       << ins->getGNode()->get_op_type();
                 shared_ptr<KernelContext> ctx(new KernelContext(ins->getGNode()));
@@ -803,6 +804,9 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
     lu_header << declaration::typedef_int->get_code() << "\n";
     if (device_type() == CUDA_GPU || device_type() == ROCM_GPU)
         lu_header << header::cuda->get_code();
+    // TODO only include this if half is used
+    if (device_type() == CUDA_GPU)
+        lu_header << header::cuda_fp16->get_code();
 
     lu_header << "extern \"C\" int kernel_entry(";
     std::string params = get_kernel_entry_paras(tu);
@@ -838,6 +842,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
     re_main->require(header::limits);
 
     re_main->require(header::cuda_prof_api);
+    // re_main->require(header::cuda_fp16);
     re_main->require(macro::CUDA_SAFE_CALL);
 
     lu_main << "#include \"nnfusion_rt.h\"\n";

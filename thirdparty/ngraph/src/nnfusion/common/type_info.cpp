@@ -18,6 +18,7 @@
 
 const nnfusion::TypeInfo::TypeDispatch nnfusion::TypeInfo::dispatcher{
     {"char", std::make_shared<nnfusion::TypeInfo_Impl<char>>()},
+    {"half", std::make_shared<nnfusion::TypeInfo_Impl<element::half>>()},
     {"float", std::make_shared<nnfusion::TypeInfo_Impl<float>>()},
     {"double", std::make_shared<nnfusion::TypeInfo_Impl<double>>()},
     {"int8_t", std::make_shared<nnfusion::TypeInfo_Impl<int8_t>>()},

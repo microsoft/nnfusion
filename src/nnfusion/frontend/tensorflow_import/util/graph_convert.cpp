@@ -59,6 +59,9 @@ namespace nnfusion
                             config[entry.first] = "float32";
                             break;
                         case ::tensorflow::DataType::DT_INT32: config[entry.first] = "int32"; break;
+                        case ::tensorflow::DataType::DT_HALF:
+                            config[entry.first] = "float16";
+                            break;
                         default: NNFUSION_CHECK(false) << "Unrecognized data type: " << dtype;
                         }
                     }
@@ -165,7 +168,7 @@ namespace nnfusion
                 NNFUSION_CHECK(status);
                 nnfusion::element::Type nnfusion_et;
                 status = TFDataTypeToNNFusionElementType(dtype, &nnfusion_et);
-                NNFUSION_CHECK(status);
+                NNFUSION_CHECK(status) << "DataType " << dtype << " is not supported.";
                 tensorflow::TensorShapeProto tf_shape = node.attr().at("shape").shape();
                 nnfusion::Shape ng_shape;
                 status = TFTensorShapeToNGraphShape(tf_shape, &ng_shape);

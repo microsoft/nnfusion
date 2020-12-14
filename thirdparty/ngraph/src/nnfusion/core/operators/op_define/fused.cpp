@@ -175,5 +175,5 @@ void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes)
     NNFUSION_LOG(INFO) << fused_op_ir2;
 
     // plan_rule = "## @: " + plan_rule;
-    plan_rule = "## @: plan/advance_fusion";
+    plan_rule = "";
 }

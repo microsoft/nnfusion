@@ -28,8 +28,9 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
                                                              std::string _device_type,
                                                              std::string _device_name,
                                                              int _fusion_level,
-                                                             bool _flag_interplay)
-    : BlockFusionOptimizer(g, _device_type)
+                                                             bool _flag_interplay,
+                                                             bool _flag_check_correctness)
+    : BlockFusionOptimizer(g, _device_type, _flag_check_correctness)
 {
     m_nodes.resize(m_graph->get_max_node_id());
     m_device_name = _device_name;
@@ -408,7 +409,10 @@ void BlockFusionWavefrontOptimizer::MergeGroups(
             double merged_result = GroupProfiler(merged);
             NNFUSION_LOG(INFO) << "runtime profiler, merged " << merged_result << "\n";
             NNFUSION_LOG(INFO) << "runtime profiler, original " << result + cur_result << "\n";
-            if (merged_result < result + cur_result)
+
+            // merged_result == 0 may indicate kernel failure during execution
+            if (merged_result < result + cur_result &&
+                std::abs(merged_result - (double)0.0) > (double)1e-5)
             {
                 groups->at(group_index - 1) = merged;
                 groups->erase(groups->begin() + group_index);
@@ -486,6 +490,25 @@ bool BlockFusionWavefrontOptimizer::SkipGroupOnProfilingResult(
                 << "BlockFusion: skip group, fused_estimation_time >= normal_execution_time";
             return true;
         }
+    }
+
+    if (profiling_result.profile_codegen)
+    {
+        // skip group when fused_execution_time == 0 which may indicate kernel execution failure
+        if (std::abs(profiling_result.fused_execution_time - (double)0.0) < (double)1e-5)
+        {
+            NNFUSION_LOG(INFO) << "BlockFusion: skip group, fused_execution_time == 0, which may "
+                                  "indicate kernel execution failure";
+            return true;
+        }
+
+        // skip group when fused_execution_time > normal_execution_time
+        // if (profiling_result.fused_execution_time > profiling_result.normal_execution_time)
+        // {
+        //     NNFUSION_LOG(INFO)
+        //         << "BlockFusion: skip group, fused_execution_time > normal_execution_time";
+        //     return true;
+        // }
     }
 
     return false;
@@ -583,10 +606,15 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
     auto kernel = std::dynamic_pointer_cast<KernelEmitter>(code_generator_p);
     auto ctx = code_generator.get_kernel_context();
 
-    if (m_fusion_level >= 2)
+    if (m_check_correctness || m_fusion_level >= 2)
     {
         blockfusion_profiler.set_profiling_context(virtual_device_p, code_generator_p);
-        if (SkipGroupOnProfilingResult(blockfusion_profiler.get_profiling_result()))
+        auto profiling_result = blockfusion_profiler.get_profiling_result();
+        if (!profiling_result.profile_codegen)
+        {
+            return -1;
+        }
+        if (SkipGroupOnProfilingResult(profiling_result))
         {
             return -1;
         }

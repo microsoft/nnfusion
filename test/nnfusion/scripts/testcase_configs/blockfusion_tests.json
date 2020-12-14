@@ -1,0 +1,26 @@
+{
+    "testcases": [
+        {
+            "testcase": "blockfusion_cases #1",
+            "tag": [
+                "correctness"
+            ],
+            "filename": "pipeline/blockfusion_tests/frozen_lstm_l2_s2_h256.const_folded.pb",
+            "type": "naive_case_single_line",
+            "flag" : "-fblockfusion_level=1 -fkernel_fusion_level=3",
+            "output": "8.373596e-02 -5.215559e-02 -1.740153e-02 -7.653429e-02 2.820292e-02 -1.190480e-01 -3.083209e-02 -1.919657e-02 -7.112463e-02 2.378533e-02  .. (size = 256, ends with 4.930504e-02);",
+            "comment": "Naive json descriptor for test case."
+        },
+        {
+            "testcase": "blockfusion_cases #2",
+            "tag": [
+                "correctness_cuda_only"
+            ],
+            "filename": "pipeline/blockfusion_tests/frozen_lstm_l2_s2_h256.const_folded.pb",
+            "type": "naive_case_single_line",
+            "flag" : "-fblockfusion_level=2 -fkernel_fusion_level=3",
+            "output": "8.373596e-02 -5.215559e-02 -1.740153e-02 -7.653429e-02 2.820292e-02 -1.190480e-01 -3.083209e-02 -1.919657e-02 -7.112463e-02 2.378533e-02  .. (size = 256, ends with 4.930504e-02);",
+            "comment": "Naive json descriptor for test case."
+        }
+    ]
+}

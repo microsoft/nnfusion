@@ -61,7 +61,7 @@ bool AssignAsyncInfoPass::run_on_graph(std::shared_ptr<Graph>& graph)
     }
     else
     {
-        throw nnfusion::errors::NotSupported("Not Supported Device Type");
+        assign_default_info(graph);
     }
 
     NNFUSION_LOG(INFO) << "run async-------------------------------";
@@ -896,6 +896,24 @@ void AssignAsyncInfoPass::kernel_prof_based_assign_thread_info(std::shared_ptr<G
     }
 
     NNFUSION_LOG(INFO) << "assign thread info-------------------------------";
+}
+
+void AssignAsyncInfoPass::assign_default_info(std::shared_ptr<Graph>& graph)
+{
+    auto host_async_manager = AsyncManagerFactory::get_host_async_manager(graph, GENERIC_CPU);
+    auto device_async_manager = AsyncManagerFactory::get_device_stream_async_manager(
+        graph, nnfusion::get_device_type(FLAGS_fdefault_device));
+    for (auto gnode : graph->get_nodes())
+    {
+        (*gnode)["Async_info"] = AsyncExecutionInfo();
+        auto& async_info = (*gnode)["Async_info"].as<AsyncExecutionInfo>();
+        NNFUSION_CHECK((*gnode)["DeviceID"].is_valid());
+        NNFUSION_CHECK((*gnode)["DeviceType"].is_valid());
+        int device_id = (*gnode)["DeviceID"].as<int>();
+        auto device_type = (*gnode)["DeviceType"].as<NNFusion_DeviceType>();
+        async_info.execution_thread = host_async_manager->set_stream(device_id, "default");
+        async_info.execution_stream = device_async_manager->set_stream(0, "default");
+    }
 }
 
 KernelEmitter::Pointer

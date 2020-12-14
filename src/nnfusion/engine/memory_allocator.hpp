@@ -164,6 +164,27 @@ namespace nnfusion
         }
     };
 
+    class HLSLMemoryAllocator : public MemoryAllocator
+    {
+        friend class MemoryAllocatorFactory;
+
+    public:
+        LanguageUnit_p emit_memory_init() override;
+        LanguageUnit_p emit_memory_alloc() override;
+        LanguageUnit_p emit_memory_free() override;
+        LanguageUnit_p emit_memory_set(int value = 0) override;
+
+    private:
+        HLSLMemoryAllocator(size_t alignment = 1,
+                            bool disable_reuse = false,
+                            NNFusion_DeviceType device_type = HLSL,
+                            size_t device_id = 0,
+                            const std::string& symbol = "")
+            : MemoryAllocator(alignment, disable_reuse, device_type, device_id, symbol)
+        {
+        }
+    };
+
     class MemoryAllocatorFactory
     {
     public:

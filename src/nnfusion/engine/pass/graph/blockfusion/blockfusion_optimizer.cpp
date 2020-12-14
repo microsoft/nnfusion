@@ -19,8 +19,8 @@ using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
 
 const size_t BlockFusionWavefrontOptimizer::DEFAULT_GROUP_ID = -1;
-const size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
-const size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
+size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
+size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
 const size_t BlockFusionWavefrontOptimizer::RESOURCE_CAPACITY =
     4 * 80; // volta max parallelism: 4 * #SM
 
@@ -28,8 +28,9 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
                                                              std::string _device_type,
                                                              std::string _device_name,
                                                              int _fusion_level,
-                                                             bool _flag_interplay)
-    : BlockFusionOptimizer(g, _device_type)
+                                                             bool _flag_interplay,
+                                                             bool _flag_check_correctness)
+    : BlockFusionOptimizer(g, _device_type, _flag_check_correctness)
 {
     m_nodes.resize(m_graph->get_max_node_id());
     m_device_name = _device_name;
@@ -38,6 +39,11 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
 
     m_kernel_db = std::make_shared<cache::KernelCacheManager>();
     m_db_ready = m_kernel_db->is_valid() ? true : false;
+
+    if (m_device_type == "ROCm")
+    {
+        MAX_GROUP = 10;
+    }
 }
 
 bool BlockFusionWavefrontOptimizer::Optimize()
@@ -319,6 +325,67 @@ void BlockFusionWavefrontOptimizer::SplitGroup(
     }
 }
 
+bool BlockFusionWavefrontOptimizer::CheckGroupMergeable(std::shared_ptr<FusionGroup> prev_group,
+                                                        std::shared_ptr<FusionGroup> succ_group)
+{
+    std::unordered_set<int64_t> prev_nodes;
+    std::unordered_set<int64_t> succ_nodes;
+    for (int i = 0; i < prev_group->nodes.size(); i++)
+    {
+        prev_nodes.insert(prev_group->nodes[i]);
+    }
+    for (int i = 0; i < succ_group->nodes.size(); i++)
+    {
+        succ_nodes.insert(succ_group->nodes[i]);
+    }
+
+    std::unordered_set<int64_t> frontier;
+    for (int i = 0; i < prev_group->nodes.size(); i++)
+    {
+        auto gnode = m_nodes[prev_group->nodes[i]]->node;
+        for (const auto& out_edge : gnode->get_out_edges())
+        {
+            auto dst_id = out_edge->get_dst()->get_id();
+            if (prev_nodes.find(dst_id) == prev_nodes.end() &&
+                succ_nodes.find(dst_id) == succ_nodes.end())
+            {
+                frontier.insert(dst_id);
+            }
+        }
+    }
+
+    std::queue<int64_t> ready;
+    std::unordered_set<int64_t> vis;
+    for (auto item : frontier)
+    {
+        ready.push(item);
+        vis.insert(item);
+    }
+    while (!ready.empty())
+    {
+        auto node_id = ready.front();
+        ready.pop();
+        auto gnode = m_nodes[node_id]->node;
+
+        // prev_group->B->...->succ_group, cannot merge these two groups
+        if (succ_nodes.find(node_id) != succ_nodes.end())
+        {
+            NNFUSION_LOG(INFO) << "BlockFusion: cannot merge group due to nodes between two groups";
+            return false;
+        }
+
+        for (const auto& out_edge : gnode->get_out_edges())
+        {
+            auto dst_id = out_edge->get_dst()->get_id();
+            if (vis.find(dst_id) == vis.end())
+            {
+                ready.push(dst_id);
+            }
+        }
+    }
+    return true;
+}
+
 void BlockFusionWavefrontOptimizer::MergeGroups(
     std::shared_ptr<std::vector<std::shared_ptr<FusionGroup>>> groups)
 {
@@ -330,7 +397,7 @@ void BlockFusionWavefrontOptimizer::MergeGroups(
         auto target = groups->at(group_index - 1);
         auto current = groups->at(group_index);
         double cur_result = GroupProfiler(current);
-        if (target->merge)
+        if (target->merge && CheckGroupMergeable(target, current))
         {
             std::shared_ptr<FusionGroup> merged = std::make_shared<FusionGroup>(target);
             merged->nodes.insert(merged->nodes.end(), current->nodes.begin(), current->nodes.end());
@@ -342,7 +409,10 @@ void BlockFusionWavefrontOptimizer::MergeGroups(
             double merged_result = GroupProfiler(merged);
             NNFUSION_LOG(INFO) << "runtime profiler, merged " << merged_result << "\n";
             NNFUSION_LOG(INFO) << "runtime profiler, original " << result + cur_result << "\n";
-            if (merged_result < result + cur_result)
+
+            // merged_result == 0 may indicate kernel failure during execution
+            if (merged_result < result + cur_result &&
+                std::abs(merged_result - (double)0.0) > (double)1e-5)
             {
                 groups->at(group_index - 1) = merged;
                 groups->erase(groups->begin() + group_index);
@@ -420,6 +490,25 @@ bool BlockFusionWavefrontOptimizer::SkipGroupOnProfilingResult(
                 << "BlockFusion: skip group, fused_estimation_time >= normal_execution_time";
             return true;
         }
+    }
+
+    if (profiling_result.profile_codegen)
+    {
+        // skip group when fused_execution_time == 0 which may indicate kernel execution failure
+        if (std::abs(profiling_result.fused_execution_time - (double)0.0) < (double)1e-5)
+        {
+            NNFUSION_LOG(INFO) << "BlockFusion: skip group, fused_execution_time == 0, which may "
+                                  "indicate kernel execution failure";
+            return true;
+        }
+
+        // skip group when fused_execution_time > normal_execution_time
+        // if (profiling_result.fused_execution_time > profiling_result.normal_execution_time)
+        // {
+        //     NNFUSION_LOG(INFO)
+        //         << "BlockFusion: skip group, fused_execution_time > normal_execution_time";
+        //     return true;
+        // }
     }
 
     return false;
@@ -517,10 +606,15 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
     auto kernel = std::dynamic_pointer_cast<KernelEmitter>(code_generator_p);
     auto ctx = code_generator.get_kernel_context();
 
-    if (m_fusion_level >= 2)
+    if (m_check_correctness || m_fusion_level >= 2)
     {
         blockfusion_profiler.set_profiling_context(virtual_device_p, code_generator_p);
-        if (SkipGroupOnProfilingResult(blockfusion_profiler.get_profiling_result()))
+        auto profiling_result = blockfusion_profiler.get_profiling_result();
+        if (!profiling_result.profile_codegen)
+        {
+            return -1;
+        }
+        if (SkipGroupOnProfilingResult(profiling_result))
         {
             return -1;
         }

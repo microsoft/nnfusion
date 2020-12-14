@@ -31,8 +31,9 @@ void BlockFusionProfiler::set_profiling_context(
     }
 }
 
-blockfusion::ProfilingResult BlockFusionProfiler::get_codegen_profiling_result(
-    BlockFusionCudaCodegen::Pointer codegen_context)
+bool BlockFusionProfiler::get_codegen_profiling_result(
+    BlockFusionCudaCodegen::Pointer codegen_context,
+    blockfusion::ProfilingResult& codegen_profiling)
 {
     NNFUSION_CHECK_NOT_NULLPTR(codegen_context);
     auto kernel = std::dynamic_pointer_cast<KernelEmitter>(codegen_context);
@@ -51,15 +52,19 @@ blockfusion::ProfilingResult BlockFusionProfiler::get_codegen_profiling_result(
 
     NNFUSION_LOG(INFO) << "Profiling BlockFusionCudaCodegen";
 
-    // profiling fused_execution_time, enable by uncommenting the code block
+    // profiling fused_execution_time
     // TODO(lingm): support different devices
     nnfusion::profiler::IProfilingRuntime::Pointer runtime =
-        nnfusion::profiler::get_default_runtime(NNFusion_DeviceType::CUDA_GPU);
+        nnfusion::profiler::CudaDefaultRuntime::Runtime();
+    NNFUSION_CHECK(runtime->check_env());
     nnfusion::profiler::ProfilingContext::Pointer pctx =
         std::make_shared<nnfusion::profiler::ProfilingContext>(kernel);
     nnfusion::profiler::Profiler prof(runtime, pctx);
     if (!prof.execute())
+    {
         NNFUSION_LOG(INFO) << "Kernel Failed.";
+        return false;
+    }
     else
     {
         double fused_execution_time = pctx->result.get_device_avg() * 1000;
@@ -71,7 +76,8 @@ blockfusion::ProfilingResult BlockFusionProfiler::get_codegen_profiling_result(
     result.num_parameters = kernel->m_context->inputs.size() + kernel->m_context->outputs.size() +
                             kernel->m_context->tensors.size();
 
-    return result;
+    codegen_profiling = result;
+    return true;
 }
 
 blockfusion::ProfilingResult BlockFusionProfiler::get_profiling_result()
@@ -101,11 +107,21 @@ blockfusion::ProfilingResult BlockFusionProfiler::get_profiling_result()
 
     if (blockfusion_codegen != nullptr)
     {
-        auto codegen_profiling = get_codegen_profiling_result(this->blockfusion_codegen);
+        blockfusion::ProfilingResult codegen_profiling;
+        auto success = get_codegen_profiling_result(this->blockfusion_codegen, codegen_profiling);
 
-        profiling_result.profile_codegen = true;
-        profiling_result.num_parameters = codegen_profiling.num_parameters;
-        profiling_result.fused_execution_time = codegen_profiling.fused_execution_time;
+        if (success)
+        {
+            profiling_result.profile_codegen = true;
+            profiling_result.num_parameters = codegen_profiling.num_parameters;
+            profiling_result.fused_execution_time = codegen_profiling.fused_execution_time;
+        }
+        else
+        {
+            profiling_result.profile_codegen = false;
+            profiling_result.num_parameters = 0;
+            profiling_result.fused_execution_time = 0;
+        }
     }
     else
     {

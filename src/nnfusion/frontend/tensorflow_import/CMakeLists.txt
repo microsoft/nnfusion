@@ -11,8 +11,8 @@ add_library(tensorflow_import STATIC
         util/graph_convert.hpp
 	util/util.cpp
         util/util.hpp
-        # util/bcast.hpp
-        # util/bcast.cpp
+        util/bcast.hpp
+        util/bcast.cpp
         ops/const.cpp
         ops/const.hpp
         tensorflow_base.cpp

@@ -14,7 +14,7 @@ target_include_directories(kernels_registration SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
 target_link_libraries(kernels_registration PRIVATE
-    nnfusion_common nnfusion_util nnfusion_graph nnfusion_operators ${CURL_LIBRARIES}
+    nnfusion_common nnfusion_graph nnfusion_operators ${CURL_LIBRARIES}
 )
 target_compile_options(kernels_registration PRIVATE "-fPIC")
 

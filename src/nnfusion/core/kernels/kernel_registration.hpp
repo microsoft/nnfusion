@@ -4,7 +4,7 @@
 #pragma once
 
 #include "kernel_emitter.hpp"
-#include "ngraph/src/nnfusion/common/type/element_type.hpp"
+#include "nnfusion/common/type/element_type.hpp"
 
 namespace nnfusion
 {

@@ -149,7 +149,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
                 {
                     // no need to submit new tuning job
                     auto compelete_flag = response.find("Antares Tuning Completed in ");
-                    status->status = (compelete_flag == string::npos) ? "tuning" : "compeleted";
+                    status->status = (compelete_flag == string::npos) ? "tuning" : "completed";
                 }
             }
 
@@ -160,8 +160,8 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
                 status->status = "submitted";
             }
 
-            status->status == "compeleted" ? tuned_kernels.push_back(status)
-                                           : tuning_kernels.push_back(status);
+            status->status == "completed" ? tuned_kernels.push_back(status)
+                                          : tuning_kernels.push_back(status);
         }
     }
     print_tuning_results(tuned_kernels, tuning_kernels);

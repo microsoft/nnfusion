@@ -21,8 +21,9 @@
 
 #pragma once
 
-#include <memory>
-#include "softmax.hpp"
+#include "core/node.hpp"
+#include "core/tensor.hpp"
+#include "nnfusion/frontend/util/evaluator.hpp"
 
 namespace nnfusion
 {
@@ -33,20 +34,30 @@ namespace nnfusion
             namespace set_1
             {
                 NamedNodeVector
-                    TranslateLogSoftmaxOp(const onnx::NodeProto& node_proto,
-                                          const NodeMap& all_ng_nodes,
-                                          std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                    TranslateConstantOfShapeOp(const onnx::NodeProto& node_proto,
+                                               const NodeMap& all_ng_nodes,
+                                               std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                    auto named_node = TranslateSoftmaxOp(node_proto, all_ng_nodes, m_graph)[0];
-                    auto log_gnode = m_graph->add_node_and_edge(std::make_shared<op::Log>(),
-                                                                {named_node.gnode_index});
-                    NamedNodeVector ret{{node_proto.output(0), log_gnode}};
-                    return ret;
+                    GNodeIndexVector input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+                    auto input = input_indexes[0];
+                    std::vector<int64> output_shape;
+                    NNFUSION_CHECK(GetValueFromNGraphOp(input.gnode, &output_shape));
+
+                    Node node(node_proto);
+                    auto value = node.get_attribute_value<Tensor>("value");
+                    NNFUSION_CHECK(nnfusion::shape_size(value.get_shape()) == 1);
+                    auto const_op =
+                        make_constant_op(onnx::TensorProto_DataType(value),
+                                         Shape(std::begin(output_shape), std::end(output_shape)),
+                                         value);
+
+                    auto const_gnode = m_graph->add_node_and_edge(const_op, graph::GNodeVector({}));
+
+                    return {{node_proto.output(0), const_gnode}};
                 }
 
             } // namespace set_1
-
-        } //namespace onnx_import
+        }     //namespace onnx_import
 
     } // namespace frontend
 

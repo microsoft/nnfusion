@@ -4,12 +4,6 @@
 #pragma once
 
 #include "graph_pass_base.hpp"
-#include "nnfusion/common/common.hpp"
-#include "nnfusion/core/kernels/cache/cache_emitter.hpp"
-#include "nnfusion/engine/cache/manager.hpp"
-#include "nnfusion/engine/op.hpp"
-#include "nnfusion/engine/pass/graph/kernel_selection.hpp"
-#include "nnfusion/engine/profiler/profiler.hpp"
 
 namespace nnfusion
 {

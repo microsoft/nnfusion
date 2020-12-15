@@ -19,6 +19,7 @@ using namespace nnfusion::pass::graph;
 DEFINE_int64(fkernel_tuning_steps, 0, "Enable automatic kernel tuning for maximum N steps.");
 DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
+DECLARE_string(fproduct_name);
 
 struct TuningStatus
 {
@@ -92,6 +93,55 @@ void print_tuning_results(std::vector<std::shared_ptr<TuningStatus>> tuned_kerne
     NNFUSION_LOG(INFO) << ss.str();
 }
 
+std::vector<std::shared_ptr<GNode>>
+    KernelTuning::get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph)
+{
+    NNFUSION_CHECK(graph != nullptr);
+
+    auto cache_manager = std::make_shared<cache::KernelCacheManager>();
+    if (!cache_manager->is_valid())
+    {
+        NNFUSION_LOG(INFO) << "No valid kernel cache, all the kernels will be tuned";
+        return graph->get_nodes();
+    }
+
+    std::vector<std::shared_ptr<GNode>> ret;
+    std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
+
+    for (auto gnode : nodes)
+    {
+        if (!(*gnode)["DeviceType"].is_valid())
+        {
+            NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass："
+                                  << gnode->get_name();
+        }
+        auto n_device_type = (*gnode)["DeviceType"].as<NNFusion_DeviceType>();
+        NNFUSION_CHECK(n_device_type != UNKNOWN);
+
+        shared_ptr<KernelContext> ctx(new KernelContext(gnode));
+        auto identifier = ctx->generate_identifier();
+        auto device_type = get_device_str(n_device_type);
+        std::string source = "Antares";
+        auto fetched = cache_manager->fetch_with_source(identifier, device_type, source);
+
+        bool tune_flag = true;
+        for (auto fetch : fetched)
+        {
+            if (fetch->miscs["antares"]["device_name"] == FLAGS_fproduct_name &&
+                fetch->miscs["antares"]["planned_steps"] >= FLAGS_fkernel_tuning_steps)
+            {
+                tune_flag = false;
+            }
+        }
+        if (tune_flag)
+        {
+            ret.push_back(gnode);
+        }
+    }
+
+    return ret;
+}
+
 bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
     if (FLAGS_fantares_mode)
@@ -109,7 +159,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     std::vector<std::shared_ptr<TuningStatus>> tuned_kernels;
     std::vector<std::shared_ptr<TuningStatus>> tuning_kernels;
 
-    std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
+    std::vector<std::shared_ptr<GNode>> nodes = get_tuning_candidates(graph);
     for (auto gnode : nodes)
     {
         if (!(*gnode)["DeviceType"].is_valid())
@@ -149,7 +199,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
                 {
                     // no need to submit new tuning job
                     auto compelete_flag = response.find("Antares Tuning Completed in ");
-                    status->status = (compelete_flag == string::npos) ? "tuning" : "compeleted";
+                    status->status = (compelete_flag == string::npos) ? "tuning" : "completed";
                 }
             }
 
@@ -160,8 +210,8 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
                 status->status = "submitted";
             }
 
-            status->status == "compeleted" ? tuned_kernels.push_back(status)
-                                           : tuning_kernels.push_back(status);
+            status->status == "completed" ? tuned_kernels.push_back(status)
+                                          : tuning_kernels.push_back(status);
         }
     }
     print_tuning_results(tuned_kernels, tuning_kernels);
@@ -172,6 +222,8 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
             << "There are pending tuning kernels. Please retry the compilation later!";
         exit(0);
     }
+
+    insert_to_kernel_cache(nodes);
 
     return true;
 }
@@ -219,6 +271,38 @@ bool KernelTuning::register_antares_kernel()
                     return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(context);
                 })
                 .Build());
+    }
+    return true;
+}
+
+bool KernelTuning::insert_to_kernel_cache(const std::vector<std::shared_ptr<GNode>>& nodes)
+{
+    auto cache_manager = std::make_shared<cache::KernelCacheManager>();
+    if (!cache_manager->is_valid())
+    {
+        NNFUSION_LOG(INFO)
+            << "No valid kernel cache, tuned kernels will not be inserted to kernel cache DB";
+        return true;
+    }
+
+    for (auto gnode : nodes)
+    {
+        shared_ptr<KernelContext> ctx(new KernelContext(gnode));
+        std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
+            KernelRegistry::Global()->FindKernelRegistrations(
+                gnode->get_op_type(), CUDA_GPU, element::f32);
+
+        for (auto kernel_reg : kernel_regs)
+        {
+            if (kernel_reg->m_tag == "antares")
+            {
+                auto antares_kernel = kernel_reg->m_factory(ctx);
+                auto kernel_cache_entry = antares_kernel->get_kernel_cache_entry();
+
+                // overwrite existing kernel entries
+                cache_manager->insert_kernel_entry(kernel_cache_entry, true);
+            }
+        }
     }
     return true;
 }

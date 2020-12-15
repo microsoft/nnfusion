@@ -5,6 +5,7 @@
 #include "gnode_device_dispatcher.hpp"
 #include "kernel_selection.hpp"
 #include "nnfusion/core/graph/util/numpy_transpose.hpp"
+#include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/operators/op_define/dot.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 #include "runtime_const_folding_pass.hpp"
@@ -18,8 +19,8 @@ using namespace nnfusion::pass::graph;
 
 namespace
 {
-    using nnfusion::cache::kernel;
-    nnfusion::cache::kernel fetch_best_kernel(
+    using nnfusion::cache::KernelEntry;
+    nnfusion::cache::KernelEntry fetch_best_kernel(
         const string& identifier,
         const string& platform,
         const set<string>& tags, // should exactly match every tag, no more no less
@@ -27,15 +28,15 @@ namespace
         const string& product_name)
     {
         auto fetched = cache_manager->fetch_all(identifier, platform);
-        std::vector<kernel> matched_kernels;
-        kernel best_kernel;
-        best_kernel.function = "";
-        for (auto matched_kernel : fetched)
+        std::vector<KernelEntry> matched_kernels;
+        KernelEntry best_kernel;
+        for (auto matched_kernel_p : fetched)
         {
+            auto matched_kernel = *matched_kernel_p;
             if (matched_kernel.tags == tags)
             {
                 bool is_better = false;
-                if (best_kernel.function == "")
+                if (best_kernel.function.is_null())
                 {
                     is_better = true;
                 }
@@ -57,12 +58,13 @@ namespace
         return best_kernel;
     }
 
-    kernels::KernelEmitter::Pointer generate_func_point(shared_ptr<GNode> gnode, string func_str)
+    kernels::KernelEmitter::Pointer generate_func_point(shared_ptr<GNode> gnode,
+                                                        nnfusion::cache::KernelEntry_p kernel_entry)
     {
         shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-        if (func_str != "")
+        if (kernel_entry != nullptr)
         {
-            auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(ctx, func_str);
+            auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, kernel_entry);
             if (kernel->get_or_emit_source())
             {
                 return kernel;
@@ -72,17 +74,6 @@ namespace
     }
 
     string get_product_name() { return FLAGS_fproduct_name; }
-    // convert NNFusion device type to db platform
-    string devtype2platform(NNFusion_DeviceType device_type)
-    {
-        switch (device_type)
-        {
-        case NNFusion_DeviceType::CUDA_GPU: { return "CUDA";
-        }
-        default: { return "";
-        }
-        }
-    }
 }
 
 bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
@@ -141,7 +132,7 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
         // }
 
         shared_ptr<KernelContext> ctx(new KernelContext(it));
-        std::string identifier = generate_identifier(ctx);
+        std::string identifier = ctx->generate_identifier();
         if (identifier == "")
         {
             continue;
@@ -157,7 +148,7 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
                 break;
             }
             shared_ptr<KernelContext> cur_ctx(new KernelContext(out_edge->get_dst()));
-            std::string cur_identifier = generate_identifier(ctx);
+            std::string cur_identifier = ctx->generate_identifier();
             if (cur_identifier != identifier)
             {
                 different_reference = true;
@@ -174,11 +165,11 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
             continue;
         }
 
-        auto platform = devtype2platform((*it)["DeviceType"].as<NNFusion_DeviceType>());
+        auto platform = nnfusion::get_device_str((*it)["DeviceType"].as<NNFusion_DeviceType>());
         auto product_name = get_product_name();
-        nnfusion::cache::kernel dot_kernel =
+        nnfusion::cache::KernelEntry dot_kernel =
             fetch_best_kernel(identifier, platform, set<string>{}, cache_manager, product_name);
-        nnfusion::cache::kernel transpose_dot_kernel = fetch_best_kernel(
+        nnfusion::cache::KernelEntry transpose_dot_kernel = fetch_best_kernel(
             identifier, platform, set<string>{"transB"}, cache_manager, product_name);
         // no profiling time
         if (dot_kernel.profile.find(product_name) == dot_kernel.profile.end() ||
@@ -217,7 +208,8 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
             NNFUSION_CHECK(dot);
             dot->get_transpose_B() = true;
 
-            auto func_p = generate_func_point(dst_node, transpose_dot_kernel.function);
+            auto func_p = generate_func_point(
+                dst_node, std::make_shared<nnfusion::cache::KernelEntry>(transpose_dot_kernel));
             NNFUSION_CHECK(func_p);
             if (func_p)
                 (*dst_node)["Kernel_Selection_Result"] =

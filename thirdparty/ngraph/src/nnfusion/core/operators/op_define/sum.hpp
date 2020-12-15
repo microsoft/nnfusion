@@ -73,6 +73,20 @@ namespace nnfusion
             ///
             /// \param reduction_axes The axis positions (0-based) to be eliminated.
             Sum(const nnfusion::AxisSet& reduction_axes);
+
+            virtual nnfusion::json serialize()
+            {
+                nnfusion::json _json;
+                _json["reduction_axes"] = this->m_reduction_axes;
+                return std::move(_json);
+            }
+
+            virtual void deserialize(const nnfusion::json& _json)
+            {
+                this->m_reduction_axes.clear();
+                for (auto ax : _json["reduction_axes"])
+                    this->m_reduction_axes.insert((int)ax);
+            }
         };
     }
 }

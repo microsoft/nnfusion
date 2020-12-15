@@ -32,6 +32,7 @@
 
 #include "util/annotations.hpp"
 
+#include "nlohmann/json.hpp"
 #include "nnfusion/util/util.hpp"
 
 #include "nnfusion/common/partial_shape.hpp"
@@ -39,6 +40,8 @@
 
 namespace nnfusion
 {
+    using json = nlohmann::json;
+
     namespace graph
     {
         class GNode;
@@ -76,6 +79,20 @@ namespace nnfusion
             {
                 Op* op_ptr = op.get();
                 return std::type_index(typeid(*this)) == std::type_index(typeid(*op_ptr));
+            }
+
+            // Used for: 1) Infershape/Translation; 2) Kernel DB Attrs (e.g. get_op_ptr()->serialize().dump()); 3) Checkpoint to file;
+            virtual nnfusion::json serialize()
+            {
+                throw std::runtime_error("Serialize method is not defined for operator type: " +
+                                         m_op_type);
+            }
+
+            // Used for: 1) Build/Restore node properties from file;
+            virtual void deserialize(const nnfusion::json& stat)
+            {
+                throw std::runtime_error("Deserialize method is not defined for operator type: " +
+                                         m_op_type);
             }
 
             virtual bool is_parameter() const;

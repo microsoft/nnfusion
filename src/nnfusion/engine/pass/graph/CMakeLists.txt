@@ -3,6 +3,7 @@
 
 
 add_subdirectory(blockfusion)
+add_subdirectory(autodiff)
 
 set(SRC
     assign_layout_pass.cpp
@@ -32,5 +33,5 @@ target_include_directories(nnfusion_engine_pass_graph SYSTEM PUBLIC
 target_compile_options(nnfusion_engine_pass_graph PRIVATE "-fPIC")
 
 target_link_libraries(nnfusion_engine_pass_graph PRIVATE nnfusion_common nnfusion_engine_pass_graph_blockfusion
-gflags ${CURL_LIBRARIES}
+gflags ${CURL_LIBRARIES} nnfusion_engine_pass_graph_autodiff
 )

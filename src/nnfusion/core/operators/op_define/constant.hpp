@@ -22,8 +22,8 @@
 #include <sstream>
 
 #include "../util/tensor_op.hpp"
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/common/type/bfloat16.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/common/type/element_type.hpp"
 #include "nnfusion/common/util.hpp"
 #include "nnfusion/core/graph/gnode.hpp"

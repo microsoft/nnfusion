@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <limits>
 
-#include "ngraph/src/nnfusion/common/type/element_type.hpp"
 #include "nnfusion/common/common.hpp"
 #include "nnfusion/core/kernels/antares_ke_imp.hpp"
 

@@ -265,6 +265,12 @@ bool KernelTuning::register_antares_kernel()
         std::string op_name = pair.first;
         std::vector<NNFusion_DeviceType> devs{CUDA_GPU, GENERIC_CPU, HLSL};
 
+        // skip op in BlockList
+        if (BlockList.find(op_name) != BlockList.end())
+        {
+            continue;
+        }
+
         kernels::KernelRegistrar kernel_registrar_cuda(
             op_name,
             kernels::Name(op_name)

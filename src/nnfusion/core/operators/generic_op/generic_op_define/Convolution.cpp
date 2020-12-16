@@ -48,6 +48,7 @@ REGISTER_OP(Convolution)
         const auto& kernel_size_w =
             is_nchw ? curr->get_input_shape(1)[3] : curr->get_input_shape(1)[1];
         const auto& in_shape = curr->get_input_shape(0);
+        const auto& out_shape = curr->get_output_shape(0);
         const std::string data_format = is_nchw ? "nchw" : "nhwc";
         NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
         NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
@@ -58,10 +59,8 @@ REGISTER_OP(Convolution)
             is_nchw ? "[N, C, " + HO + ", " + WO + "]" : "[N, " + HO + ", " + WO + ", C]";
         config["input1_layout"] = is_nchw ? "[F, C, KH, KW]" : "[KH, KW, C, F]";
         config["output0_layout"] = is_nchw ? "[N, F, HO, WO]" : "[N, HO, WO, F]";
-        config["height"] = is_nchw ? (in_shape[2] + 2 * padding_h - kernel_size_h) / stride_h + 1
-                                   : (in_shape[1] + 2 * padding_h - kernel_size_h) / stride_h + 1;
-        config["width"] = is_nchw ? (in_shape[3] + 2 * padding_w - kernel_size_w) / stride_w + 1
-                                  : (in_shape[2] + 2 * padding_w - kernel_size_w) / stride_w + 1;
+        config["height"] = is_nchw ? out_shape[2] : out_shape[1];
+        config["width"] = is_nchw ? out_shape[3] : out_shape[2];
         config["pad_0"] = to_string(padding_h);
         config["pad_1"] = to_string(padding_w);
         config["input0_layout"] = op::create_code_from_template(shape_template, config);

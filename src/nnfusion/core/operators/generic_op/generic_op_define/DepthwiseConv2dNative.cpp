@@ -93,16 +93,15 @@ REGISTER_OP(DepthwiseConv2dNative)
         const auto& kernel_size_h = curr->get_input_shape(1)[0];
         const auto& kernel_size_w = curr->get_input_shape(1)[1];
         const auto& in_shape = curr->get_input_shape(0);
+        const auto& out_shape = curr->get_output_shape(0);
         const std::string data_format = is_nhwc ? "nhwc" : "nchw";
         NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
         NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
         nnfusion::op::OpConfig::any config;
         config["input1_layout"] = "[KH, KW, C, 0]";
         config["output0_layout"] = is_nhwc ? "[N, HO, WO, C]" : "[N, C, HO, WO]";
-        config["height"] = is_nhwc ? (in_shape[1] + 2 * padding_h - kernel_size_h) / stride_h + 1
-                                   : (in_shape[2] + 2 * padding_h - kernel_size_h) / stride_h + 1;
-        config["width"] = is_nhwc ? (in_shape[2] + 2 * padding_w - kernel_size_w) / stride_w + 1
-                                  : (in_shape[3] + 2 * padding_w - kernel_size_w) / stride_w + 1;
+        config["height"] = is_nhwc ? out_shape[1] : out_shape[2];
+        config["width"] = is_nhwc ? out_shape[2] : out_shape[3];
         config["pad_0"] = to_string(padding_h);
         config["pad_1"] = to_string(padding_w);
         std::string HO = "-@pad_0@ + KH + HO * " + to_string(stride_h);

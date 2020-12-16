@@ -227,4 +227,4 @@ def parse(code, parameters):
         func_sig + "{\n" + "int SYNC_COUNT = 0;\n" + \
         sync_code + print_sync + "}"
 
-    return shared_memory, new_code, sync_code, signature[-1]
+    return func_body, shared_memory, new_code, sync_code, signature[-1]

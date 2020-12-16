@@ -74,7 +74,7 @@ namespace nnfusion
             }
             std::vector<shared_ptr<const KernelRegistration>> available_kernels =
                 KernelRegistry::Global()->FindKernelRegistrations(
-                    gnode->get_op_type(), dev_t, DT_FLOAT);
+                    gnode->get_op_type(), dev_t, element::f32);
             shared_ptr<KernelContext> ctx(new KernelContext(gnode));
             bool kernel_found = false;
             for (auto& kernel_reg : available_kernels)

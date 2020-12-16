@@ -17,24 +17,27 @@ std::vector<int> cuda::compute_strides(const std::vector<int>& shape)
     return strides;
 }
 
-std::string cuda::get_cudnn_datatype(std::string dtype)
+std::string cuda::get_cudnn_datatype(element::Type dtype)
 {
     static const std::unordered_map<std::string, std::string> datatype_map{
+        {"half", "CUDNN_DATA_HALF"},
         {"float", "CUDNN_DATA_FLOAT"},
         {"double", "CUDNN_DATA_DOUBLE"},
         {"int8_t", "CUDNN_DATA_INT8"},
         {"int32_t", "CUDNN_DATA_INT32"}};
-    auto p = datatype_map.find(dtype);
+    auto p = datatype_map.find(dtype.c_type_string());
     NNFUSION_CHECK(p != datatype_map.end()) << dtype << " is not supported by cuDNN";
 
     return p->second;
 }
 
-LanguageUnit_p cuda::cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& shape, string desc)
+LanguageUnit_p cuda::cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& shape,
+                                                        string desc,
+                                                        element::Type type)
 {
     LanguageUnit_p _lu(new LanguageUnit);
     auto& lu = *_lu;
-    string data_type = "CUDNN_DATA_FLOAT"; //cuda::get_cudnn_datatype(type);
+    string data_type = cuda::get_cudnn_datatype(type);
     string tensor_format = "CUDNN_TENSOR_NCHW";
     lu << "cudnnTensorDescriptor_t " << desc << ";\n";
     lu << "CUDNN_SAFE_CALL(cudnnCreateTensorDescriptor(&" << desc << "));\n";
@@ -91,12 +94,13 @@ LanguageUnit_p cuda::cudnn_tensor_descriptor_from_shape(const nnfusion::Shape& s
     return _lu;
 }
 
-LanguageUnit_p cuda::get_cudnn_filter_descriptor(const Shape& shape, string desc)
+LanguageUnit_p
+    cuda::get_cudnn_filter_descriptor(const Shape& shape, string desc, element::Type type)
 {
     LanguageUnit_p _lu(new LanguageUnit);
     auto& lu = *_lu;
 
-    string data_type = "CUDNN_DATA_FLOAT"; //cuda::get_cudnn_datatype(type);
+    string data_type = cuda::get_cudnn_datatype(type);
     string tensor_format = "CUDNN_TENSOR_NCHW";
     lu << "cudnnFilterDescriptor_t " << desc << ";\n";
     lu << "CUDNN_SAFE_CALL(cudnnCreateFilterDescriptor(&" << desc << "));\n";
@@ -143,12 +147,13 @@ LanguageUnit_p cuda::get_cudnn_filter_descriptor(const Shape& shape, string desc
 LanguageUnit_p cuda::get_cudnn_convolution_descriptor(const Shape& padding,
                                                       const Strides& window_movement_strides,
                                                       const Strides& window_dilation_strides,
-                                                      string desc)
+                                                      string desc,
+                                                      element::Type type)
 {
     LanguageUnit_p _lu(new LanguageUnit);
     auto& lu = *_lu;
 
-    string data_type = "CUDNN_DATA_FLOAT"; //cuda::get_cudnn_datatype(type);
+    string data_type = cuda::get_cudnn_datatype(type);
     string tensor_format = "CUDNN_TENSOR_NCHW";
     lu << "cudnnConvolutionDescriptor_t " << desc << ";\n";
     lu << "CUDNN_SAFE_CALL(cudnnCreateConvolutionDescriptor(&" << desc << "));\n";

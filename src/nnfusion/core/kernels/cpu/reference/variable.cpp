@@ -67,6 +67,6 @@ namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
-REGISTER_KERNEL_EMITTER("Variable",                                   //op_name
-                        Device(GENERIC_CPU).TypeConstraint(DT_FLOAT), //attrs
-                        cpu::Variable)                                // constructor
+REGISTER_KERNEL_EMITTER("Variable",                                       //op_name
+                        Device(GENERIC_CPU).TypeConstraint(element::f32), //attrs
+                        cpu::Variable)                                    // constructor

@@ -22,31 +22,32 @@
 #pragma once
 
 #include <memory>
+#include "softmax.hpp"
 
-#include "ngraph/node.hpp"
-#include "ngraph/node_vector.hpp"
-#include "nnfusion/core/operators/log.hpp"
-
-#include "../op/softmax.hpp"
-#include "core/node.hpp"
-
-namespace ngraph
+namespace nnfusion
 {
-    namespace onnx_import
+    namespace frontend
     {
-        namespace op
+        namespace onnx_import
         {
             namespace set_1
             {
-                inline NodeVector log_softmax(const Node& node)
+                NamedNodeVector
+                    TranslateLogSoftmaxOp(const onnx::NodeProto& node_proto,
+                                          const NodeMap& all_ng_nodes,
+                                          std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                    return {std::make_shared<ngraph::op::Log>(softmax(node).at(0))};
+                    auto named_node = TranslateSoftmaxOp(node_proto, all_ng_nodes, m_graph)[0];
+                    auto log_gnode = m_graph->add_node_and_edge(std::make_shared<op::Log>(),
+                                                                {named_node.gnode_index});
+                    NamedNodeVector ret{{node_proto.output(0), log_gnode}};
+                    return ret;
                 }
 
             } // namespace set_1
 
-        } //namespace op
+        } //namespace onnx_import
 
-    } // namespace onnx_import
+    } // namespace frontend
 
-} // namespace ngraph
+} // namespace nnfusion

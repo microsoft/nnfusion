@@ -65,6 +65,7 @@ namespace nnfusion
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 REGISTER_KERNEL_EMITTER("InvertPermutation",
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Priority(
-                            2), // TODO: this op input and output will all be int
+                        Device(CUDA_GPU)
+                            .TypeConstraint(element::f32)
+                            .Priority(2), // TODO: this op input and output will all be int
                         cuda::InvertPermutation)

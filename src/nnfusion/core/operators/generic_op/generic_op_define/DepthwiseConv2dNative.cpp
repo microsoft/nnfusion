@@ -115,7 +115,7 @@ REGISTER_OP(DepthwiseConv2dNative)
         if (padding_h || padding_w)
         {
             auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @height@, " + WO + " >= 0, " +
-                                WO + " < @width@], 0.0)";
+                                WO + " < @width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
             pad_cond = op::create_code_from_template(pad_template, config);
         }
         config["pad_cond"] = pad_cond;

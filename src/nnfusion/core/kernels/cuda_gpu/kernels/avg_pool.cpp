@@ -50,8 +50,8 @@ cuda::AvgPool1D::AvgPool1D(shared_ptr<KernelContext> ctx)
     padding_above = nnfusion::Shape(avg_pool->get_padding_above());
     window_stride = nnfusion::Strides(avg_pool->get_window_movement_strides());
     include_pad = avg_pool->get_include_padding_in_avg_computation();
-    input_type = ctx->inputs[0]->get_element_type().c_type_string();
-    output_type = ctx->outputs[0]->get_element_type().c_type_string();
+    input_type = ctx->inputs[0]->get_element_type();
+    output_type = ctx->outputs[0]->get_element_type();
 
     // NNFUSION_CHECK(input_shape.size() == 3)
     //     << "Input shape size of AvgPool1D is invalid, shape size: " << input_shape.size()
@@ -265,16 +265,16 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
     padding_above = nnfusion::Shape(avg_pool->get_padding_above());
     window_stride = nnfusion::Strides(avg_pool->get_window_movement_strides());
     include_pad = avg_pool->get_include_padding_in_avg_computation();
-    input_type = ctx->inputs[0]->get_element_type().c_type_string();
-    output_type = ctx->outputs[0]->get_element_type().c_type_string();
+    input_type = ctx->inputs[0]->get_element_type();
+    output_type = ctx->outputs[0]->get_element_type();
 
     NNFUSION_CHECK(input_shape.size() == 4 || input_shape.size() == 5)
         << "Input shape size of AvgPoolmD is invalid, shape size: " << input_shape.size()
         << "expected 4 or 5";
 
     std::stringstream tag;
-    tag << "cudnn_avgpool_dtype_" << output_type << "_i" << join(input_shape, "_") << "_o"
-        << join(output_shape, "_") << "_ws" << join(window_stride, "_") << "_wst"
+    tag << "cudnn_avgpool_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
+        << "_o" << join(output_shape, "_") << "_ws" << join(window_stride, "_") << "_wst"
         << join(window_stride, "_") << "_pb" << join(padding_below, "_") << "_pb"
         << join(padding_above, "_");
     custom_tag = tag.str();
@@ -288,8 +288,8 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
     auto cudnn_avg_type = include_pad ? "CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING"
                                       : "CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING";
 
-    auto input_desc = cudnn_tensor_descriptor_from_shape(input_shape, "input_desc");
-    auto output_desc = cudnn_tensor_descriptor_from_shape(output_shape, "output_desc");
+    auto input_desc = cudnn_tensor_descriptor_from_shape(input_shape, "input_desc", input_type);
+    auto output_desc = cudnn_tensor_descriptor_from_shape(output_shape, "output_desc", output_type);
     lu << input_desc->get_code();
     lu << output_desc->get_code();
 
@@ -404,11 +404,11 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_signature()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "AvgPool",                                                                // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::AvgPool1D)                                                          // constructor
+    "AvgPool",                                                                    // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+    cuda::AvgPool1D)                                                              // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "AvgPool",                                                                 // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cudnn_kernel").Priority(2), // attrs
-    cuda::AvgPoolmD)                                                           // constructor
+    "AvgPool",                                                                     // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
+    cuda::AvgPoolmD)                                                               // constructor

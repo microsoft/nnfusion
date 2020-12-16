@@ -110,6 +110,6 @@ LanguageUnit_p cpu::MaxPoolMlas::emit_dependency()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "MaxPool",                                                            // op_name
-    Device(GENERIC_CPU).TypeConstraint(DT_FLOAT).Tag("mlas").Priority(6), // attrs
-    cpu::MaxPoolMlas)                                                     // constructor
+    "MaxPool",                                                                // op_name
+    Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("mlas").Priority(6), // attrs
+    cpu::MaxPoolMlas)                                                         // constructor

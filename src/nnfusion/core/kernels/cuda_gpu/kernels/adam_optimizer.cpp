@@ -113,5 +113,5 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 REGISTER_KERNEL_EMITTER("AdamOptimizer",
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel"),
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel"),
                         cuda::AdamOptimizer)

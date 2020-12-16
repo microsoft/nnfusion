@@ -12,10 +12,11 @@ REGISTER_OP(Sum)
                 ret += ", N" + std::to_string(ax);
             return "[" + (axes.empty() ? "N" : ret.substr(2)) + "]";
         };
+        auto attrs = curr->get_op_ptr()->serialize();
 
-        auto _op = static_pointer_cast<nnfusion::op::Sum>(curr->get_op_ptr());
         auto input_shape = curr->get_input_shape(0);
-        auto axes = _op->get_reduction_axes();
+        std::vector<int> _axes = attrs["reduction_axes"];
+        auto axes = std::set<int>(_axes.begin(), _axes.end());
 
         std::set<int> input_ax, output_ax;
         size_t reduce_size = 1L;
@@ -129,6 +130,5 @@ REGISTER_OP(Sum)
                  {"output_shape", vector_to_string(curr->get_output_shape(0))},
                  {"axis", vector_to_string(axes)}});
         }
-
     });
     */

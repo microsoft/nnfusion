@@ -176,7 +176,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     if (FLAGS_fantares_mode)
     {
         // register antares kernels anyway here in case kernel selection pass will use them
-        // register_antares_kernel();
+        register_antares_kernel();
     }
 
     if (FLAGS_fkernel_tuning_steps <= 0 || FLAGS_fantares_codegen_server == "" ||

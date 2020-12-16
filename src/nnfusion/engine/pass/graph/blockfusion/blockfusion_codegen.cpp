@@ -1002,8 +1002,8 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_function_body_default()
 
 LanguageUnit_p BlockFusionCudaCodegen::emit_function_body()
 {
-    NNFUSION_LOG(INFO) << "BlockFusionCudaCodegen: codegen optimization level: "
-                       << this->codegen_opt_level;
+    NNFUSION_LOG(DEBUG) << "BlockFusionCudaCodegen: codegen optimization level: "
+                        << this->codegen_opt_level;
     LanguageUnit_p _lu;
     if (this->codegen_opt_level == 1)
     {
@@ -1016,7 +1016,7 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_function_body()
 
     if (_lu == nullptr)
     {
-        NNFUSION_LOG(INFO)
+        NNFUSION_LOG(DEBUG)
             << "BlockFusionCudaCodegen: codegen optimization failed, fallback to default style";
         _lu = emit_function_body_default();
     }

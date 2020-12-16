@@ -453,6 +453,8 @@ namespace nnfusion
                         if (m_output_names.find(named_gnode.name) != m_output_names.end())
                         {
                             // TODO: should specify which output of current gnode
+                            named_gnode.gnode_index.gnode->get_output_tensor_ptr(0)->set_name(
+                                named_gnode.name);
                             m_graph_outputs.emplace_back(named_gnode.gnode_index.gnode);
                         }
                     }

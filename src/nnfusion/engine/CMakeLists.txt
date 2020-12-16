@@ -36,7 +36,6 @@ target_link_libraries(nnfusion_backend PRIVATE
     kernels_cpu
     kernels_hlsl
     nnfusion_cache_manager
-    kernels_cache
     nnfusion_engine_profiler
     ngraph_backend
     ${NoWholeArchiveFlag} 

@@ -31,6 +31,7 @@
 #include "op/cast.hpp"
 #include "op/clip.hpp"
 #include "op/concat.hpp"
+#include "op/const_of_shape.hpp"
 #include "op/constant.hpp"
 #include "op/conv.hpp"
 #include "op/div_grad.hpp"
@@ -44,6 +45,7 @@
 #include "op/index_reduce.hpp"
 #include "op/layer_norm.hpp"
 #include "op/leaky_relu.hpp"
+#include "op/log_softmax.hpp"
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
 #include "op/memory_copy.hpp"
@@ -149,6 +151,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Clip", 1, TranslateClipOp);
                 REGISTER_OPERATOR("Concat", 1, TranslateConcatOp);
                 REGISTER_OPERATOR("Constant", 1, TranslateConstantOp);
+                REGISTER_OPERATOR("ConstantOfShape", 1, TranslateConstantOfShapeOp);
                 REGISTER_OPERATOR("Conv", 1, TranslateConvOp);
                 REGISTER_OPERATOR("Cos", 1, TranslateUnaryOp<op::Cos>);
                 REGISTER_OPERATOR("Div", 1, TranslateLegacyBinaryOp<op::Divide>);
@@ -180,7 +183,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("LeakyRelu", 1, TranslateLeakyReluOp);
                 REGISTER_OPERATOR("Less", 1, TranslateBinaryOp<op::Less>);
                 REGISTER_OPERATOR("Log", 1, TranslateUnaryOp<op::Log>);
-                //REGISTER_OPERATOR("LogSoftmax", 1, log_softmax);
+                REGISTER_OPERATOR("LogSoftmax", 1, TranslateLogSoftmaxOp);
                 //REGISTER_OPERATOR("LRN", 1, lrn);
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);

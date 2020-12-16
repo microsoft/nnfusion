@@ -20,5 +20,4 @@ target_compile_options(kernels_registration PRIVATE "-fPIC")
 
 add_subdirectory(cuda_gpu)
 add_subdirectory(cpu)
-add_subdirectory(cache)
 add_subdirectory(hlsl)

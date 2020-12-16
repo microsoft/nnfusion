@@ -146,34 +146,53 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
                                        << node->get_name();
         return false;
     }
+
     auto emitted_kernel =
         (*node)["Kernel_Selection_Result"].as<pair<NNFusion_DeviceType, KernelEmitter::Pointer>>();
-    KernelEmitter::Pointer kernel = nullptr;
+    KernelEmitter::Pointer kernel = emitted_kernel.second;
 
     // constant kernel emitter will write file to save weights, skip to do it when codegen.
     if (node->is_constant())
     {
         return false;
     }
-    else if (!emitted_kernel.second->is_emitted())
+
+    // skip non-emitted kernels
+    if (!emitted_kernel.second->is_emitted())
     {
         NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before this pass:"
                                        << node->get_name();
         return false;
     }
-    else
+
+    if (std::dynamic_pointer_cast<BlockCudaEmitter>(kernel) == nullptr)
     {
-        kernel = emitted_kernel.second;
-        if (std::dynamic_pointer_cast<BlockCudaEmitter>(kernel) == nullptr)
+        NNFUSION_LOG(INFO) << "Operator " << node->get_name()
+                           << " is not BlockCudaEmitter, skip in BlockFusion";
+        return false;
+    }
+
+    // TODO(lingm): process shared_memory and local_thread_sync for AntaresCudaKernelEmitter
+    if (std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel) != nullptr)
+    {
+        auto function_body = kernel->get_or_emit_source()->body_unit->get_code();
+        if (function_body.find("__shared__") != std::string::npos ||
+            function_body.find("__syncthreads") != std::string::npos)
         {
-            NNFUSION_LOG(INFO) << "Operator skept in block fusion: " << node->get_name();
+            NNFUSION_LOG(INFO) << "Operator " << node->get_name()
+                               << " is AntaresCudaKernelEmitter with shared_memory or "
+                                  "local_thread_sync, not support in BlockFusion yet, skip";
             return false;
         }
-        cur_group->nodes.push_back(node_id);
-        cur_group->block_kernels.push_back(kernel);
-        cur_group->duration.push_back(10);
-        return true;
     }
+
+    cur_group->nodes.push_back(node_id);
+    cur_group->block_kernels.push_back(kernel);
+
+    // TODO(lingm): use profiling information when the new profiler is ready
+    cur_group->duration.push_back(10);
+
+    return true;
 }
 
 std::shared_ptr<std::vector<std::shared_ptr<BlockFusionWavefrontOptimizer::FusionGroup>>>
@@ -465,28 +484,28 @@ double BlockFusionWavefrontOptimizer::GroupProfiler(const std::shared_ptr<Fusion
 bool BlockFusionWavefrontOptimizer::SkipGroupOnProfilingResult(
     blockfusion::ProfilingResult profiling_result)
 {
-    NNFUSION_LOG(INFO) << "profiling result:\n" << profiling_result.get_debug_string();
+    NNFUSION_LOG(DEBUG) << "profiling result:\n" << profiling_result.get_debug_string();
 
     if (profiling_result.profile_device)
     {
         // skip group when there is only one kernel in this group
         if (profiling_result.num_kernels <= 1)
         {
-            NNFUSION_LOG(INFO) << "BlockFusion: skip group, num_kernels <= 1";
+            NNFUSION_LOG(DEBUG) << "BlockFusion: skip group, num_kernels <= 1";
             return true;
         }
 
         // skip group when there are too many large kernels in this group
         if (profiling_result.num_large_kernels >= profiling_result.num_kernels)
         {
-            NNFUSION_LOG(INFO) << "BlockFusion: skip group, too many large kernels";
+            NNFUSION_LOG(DEBUG) << "BlockFusion: skip group, too many large kernels";
             return true;
         }
 
         // skip group when BlockFusion gets no gain
         if (profiling_result.fused_estimation_time >= profiling_result.normal_execution_time)
         {
-            NNFUSION_LOG(INFO)
+            NNFUSION_LOG(DEBUG)
                 << "BlockFusion: skip group, fused_estimation_time >= normal_execution_time";
             return true;
         }
@@ -497,15 +516,15 @@ bool BlockFusionWavefrontOptimizer::SkipGroupOnProfilingResult(
         // skip group when fused_execution_time == 0 which may indicate kernel execution failure
         if (std::abs(profiling_result.fused_execution_time - (double)0.0) < (double)1e-5)
         {
-            NNFUSION_LOG(INFO) << "BlockFusion: skip group, fused_execution_time == 0, which may "
-                                  "indicate kernel execution failure";
+            NNFUSION_LOG(DEBUG) << "BlockFusion: skip group, fused_execution_time == 0, which may "
+                                   "indicate kernel execution failure";
             return true;
         }
 
         // skip group when fused_execution_time > normal_execution_time
         // if (profiling_result.fused_execution_time > profiling_result.normal_execution_time)
         // {
-        //     NNFUSION_LOG(INFO)
+        //     NNFUSION_LOG(DEBUG)
         //         << "BlockFusion: skip group, fused_execution_time > normal_execution_time";
         //     return true;
         // }
@@ -539,20 +558,20 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
             {
                 auto node = m_nodes[group->nodes.at(i)]->node;
                 std::shared_ptr<KernelContext> ctx(new KernelContext(node));
-                std::string identifier = generate_identifier(ctx);
+                std::string identifier = ctx->generate_identifier();
                 auto fetched_kernel =
-                    m_kernel_db->fetch_with_tags(identifier, "CUDA", set<string>{}, true);
-                if (fetched_kernel.function != "")
+                    m_kernel_db->fetch_with_tags(identifier, "CUDA_GPU", set<string>{}, true);
+                if (fetched_kernel != nullptr)
                 {
-                    auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(
-                        ctx, fetched_kernel.function);
+                    auto kernel =
+                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, fetched_kernel);
                     kernel->get_or_emit_source();
                     group->block_kernels[i] = kernel;
-                    group->duration[i] = fetched_kernel.profile[m_device_name];
+                    group->duration[i] = fetched_kernel->profile[m_device_name];
                     NNFUSION_LOG(DEBUG) << "fetched kernel " << identifier << " with resource "
-                                        << fetched_kernel.resource << " and profiled on "
+                                        << fetched_kernel->resource << " and profiled on "
                                         << m_device_name << " in "
-                                        << fetched_kernel.profile[m_device_name] << "us";
+                                        << fetched_kernel->profile[m_device_name] << "us";
                 }
             }
         }

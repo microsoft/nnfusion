@@ -15,7 +15,6 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
 {
     if (FLAGS_fantares_codegen_server == "")
         return std::make_pair("", false); // FLAGS_fantares_codegen_server = "10.150.145.98:8881";
-
     std::string response;
     bool tuned = false;
     auto it = code_cache.find(expr);

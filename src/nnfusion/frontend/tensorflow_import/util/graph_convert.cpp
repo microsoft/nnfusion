@@ -14,7 +14,7 @@
 
 DECLARE_string(fdefault_device);
 DEFINE_bool(fantares_mode, false, "Enable antares mode.");
-
+DEFINE_bool(fnchw, true, "Convert dataformat to nchw.");
 // todo: add control edge ?
 namespace nnfusion
 {
@@ -637,11 +637,12 @@ namespace nnfusion
                 BatchedOpParamToNGraph(is_nhwc, tf_strides, ng_strides);
                 BatchedOpParamToNGraph(is_nhwc, input_gnode->get_shape(), ng_image_shape);
                 BatchedOpParamToNGraph(is_nhwc, tf_ksize, ng_kernel_shape);
-
-                auto reshape_gnode = BatchToNGraph(is_nhwc, input_gnode);
-                if (reshape_gnode != nullptr && FLAGS_fdefault_device != "CPU" &&
-                    FLAGS_fdefault_device != "dxcompute")
+                auto device = get_device_type(FLAGS_fdefault_device);
+                std::shared_ptr<GNode> reshape_gnode;
+                if (is_nhwc && FLAGS_fnchw)
                 {
+                    reshape_gnode = BatchToNGraph(is_nhwc, input_gnode);
+                    NNFUSION_CHECK_NOT_NULLPTR(reshape_gnode);
                     // Set data format as "NCHW", since have transposed the data from "NHWC" to "NCHW".
                     tf_data_format = "NCHW";
                     m_graph->add_node(reshape_gnode);
@@ -672,11 +673,11 @@ namespace nnfusion
                                                                           ng_padding_above,
                                                                           tf_data_format);
                 auto maxpool_gnode = m_graph->add_node_and_edge(maxpool_op, {reshape_gnode});
-
-                auto reshape_maxpool_gnode = BatchToTensorflow(is_nhwc, maxpool_gnode);
-                if (reshape_maxpool_gnode != nullptr && FLAGS_fdefault_device != "CPU" &&
-                    FLAGS_fdefault_device != "dxcompute")
+                std::shared_ptr<GNode> reshape_maxpool_gnode;
+                if (is_nhwc && FLAGS_fnchw)
                 {
+                    reshape_maxpool_gnode = BatchToTensorflow(is_nhwc, maxpool_gnode);
+                    NNFUSION_CHECK_NOT_NULLPTR(reshape_maxpool_gnode);
                     m_graph->add_node(reshape_maxpool_gnode);
                     m_graph->add_edge(maxpool_gnode, 0, reshape_maxpool_gnode, 0);
                 }
@@ -726,10 +727,11 @@ namespace nnfusion
                 BatchedOpParamToNGraph(is_nhwc, input_gnode->get_shape(), ng_image_shape);
                 BatchedOpParamToNGraph(is_nhwc, tf_dilations, ng_dilations);
 
-                auto reshape_input_gnode = BatchToNGraph(is_nhwc, input_gnode);
-                if (reshape_input_gnode != nullptr && FLAGS_fdefault_device != "CPU" &&
-                    FLAGS_fdefault_device != "dxcompute")
+                std::shared_ptr<GNode> reshape_input_gnode;
+                if (FLAGS_fnchw && is_nhwc)
                 {
+                    reshape_input_gnode = BatchToNGraph(is_nhwc, input_gnode);
+                    NNFUSION_CHECK_NOT_NULLPTR(reshape_input_gnode);
                     m_graph->add_node(reshape_input_gnode);
                     m_graph->add_edge(input_gnode, 0, reshape_input_gnode, 0);
                 }
@@ -742,8 +744,7 @@ namespace nnfusion
                 ng_kernel_shape[0] = filter_shape[0];
                 ng_kernel_shape[1] = filter_shape[1];
                 auto reshape_filter_gnode = Reshape<3, 2, 0, 1>(filter_gnode);
-                if (!is_nhwc ||
-                    (FLAGS_fdefault_device != "CPU" && FLAGS_fdefault_device != "dxcompute"))
+                if (!is_nhwc || FLAGS_fnchw)
                 {
                     // Set data format as "NCHW", since have transposed the data from "NHWC" to "NCHW".
                     tf_data_format = "NCHW";
@@ -773,10 +774,11 @@ namespace nnfusion
                 auto conv_gnode = m_graph->add_node_and_edge(
                     conv_op, {reshape_input_gnode, reshape_filter_gnode});
 
-                auto reshape_conv_gnode = BatchToTensorflow(is_nhwc, conv_gnode);
-                if (reshape_conv_gnode != nullptr && FLAGS_fdefault_device != "CPU" &&
-                    FLAGS_fdefault_device != "dxcompute")
+                std::shared_ptr<GNode> reshape_conv_gnode;
+                if (FLAGS_fnchw && is_nhwc)
                 {
+                    reshape_conv_gnode = BatchToTensorflow(is_nhwc, conv_gnode);
+                    NNFUSION_CHECK_NOT_NULLPTR(reshape_conv_gnode);
                     m_graph->add_node(reshape_conv_gnode);
                     m_graph->add_edge(conv_gnode, 0, reshape_conv_gnode, 0);
                 }
@@ -1152,7 +1154,7 @@ namespace nnfusion
                                                << " instead";
 
                 int max_inputs = INT_MAX - 1;
-                if (FLAGS_fdefault_device == "ROCm")
+                if (get_device_type(FLAGS_fdefault_device) == ROCM_GPU)
                     max_inputs = 60;
 
                 std::vector<GNodeVector> group_gnodes;

@@ -34,11 +34,12 @@ REGISTER_OP(Sum)
             expression += " where N in 1";
 
         // FIXME: Need to include annotation
-        // if (reduce_size == 1L)
-        //     expression += " ## @annotation: memcpy";
+        if (reduce_size == 1L)
+            expression += " ## @: memcpy";
 
         return expression;
-    })
+    });
+/*
     .translate([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto _op = static_pointer_cast<nnfusion::op::Sum>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
@@ -130,3 +131,4 @@ REGISTER_OP(Sum)
         }
 
     });
+    */

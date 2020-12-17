@@ -15,7 +15,6 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
 {
     if (FLAGS_fantares_codegen_server == "")
         return std::make_pair("", false); // FLAGS_fantares_codegen_server = "10.150.145.98:8881";
-
     std::string response;
     bool tuned = false;
     auto it = code_cache.find(expr);
@@ -37,7 +36,7 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
         }
         tuned = response.find("\n// Saved Perf =") != std::string::npos;
 
-        // NNFUSION_LOG(INFO) << "[Autogen] " << expr << " (tuned = " << tuned << ")";
+        NNFUSION_LOG(INFO) << "[Autogen] " << expr << " (tuned = " << tuned << ")";
         code_cache[expr] = std::make_pair(response, tuned);
         return std::make_pair(std::move(response), tuned);
     }

@@ -5,6 +5,7 @@
 
 REGISTER_OP(Reshape)
     .infershape(nnfusion::op::infershape::unimplemented_and_not_used)
+    /*
     .translate([](std::shared_ptr<graph::GNode> gnode) -> std::string {
         auto op = static_pointer_cast<nnfusion::op::Reshape>(gnode->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << gnode->get_op_ptr()->get_op_type();
@@ -39,6 +40,7 @@ REGISTER_OP(Reshape)
         }
         return expression + (memcpy_annotation ? " ## @annotation: memcpy" : "");
     })
+    */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto expression_template =
             R"( @output0@@output0_layout@ = @input0@@input0_layout@ @conditions@; )";
@@ -46,6 +48,8 @@ REGISTER_OP(Reshape)
         auto op = static_pointer_cast<nnfusion::op::Reshape>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
+        std::string expression_code;
+        bool memcpy_annotation = false;
         if (op->get_is_transpose())
         {
             op::OpConfig::any config;
@@ -59,8 +63,12 @@ REGISTER_OP(Reshape)
             }
             config["output0_layout"] = vector_to_string<std::vector<std::string>>(output_layout);
             config["conditions"] = "";
-            auto expression_code = op::create_code_from_template(expression_template, config);
-            return expression_code;
+            expression_code = op::create_code_from_template(expression_template, config);
+            for (int i = 0; i < input_order.size(); ++i)
+                if (input_order[i] != i)
+                    break;
+                else if (i + 1 == input_order.size())
+                    memcpy_annotation = true;
         }
         else
         {
@@ -136,11 +144,13 @@ REGISTER_OP(Reshape)
             if (!condition.empty())
                 condition = "where " + condition;
 
-            auto expression_code = op::create_code_from_template(
+            expression_code = op::create_code_from_template(
                 expression_template,
                 {{"output0_layout", vector_to_string<std::vector<std::string>>(output_layout)},
                  {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
                  {"conditions", condition}});
-            return expression_code;
+
+            memcpy_annotation = true;
         }
+        return expression_code + (memcpy_annotation ? " ## @: memcpy" : "");
     });

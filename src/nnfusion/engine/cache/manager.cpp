@@ -28,6 +28,20 @@ KernelCacheManager::KernelCacheManager()
     {
         m_path = FLAGS_fkernel_cache_path;
     }
+    {
+        size_t pos = m_path.find_last_of("/");
+        if (pos != std::string::npos && pos != (m_path.size() - 1))
+        {
+            std::string cache_folder = m_path.substr(0, pos);
+
+            struct stat s;
+            if (stat(cache_folder.c_str(), &s) != 0)
+            {
+                std::string cmd_create_folder = "mkdir -p " + cache_folder;
+                system(cmd_create_folder.c_str());
+            }
+        }
+    }
 
     if (!kernel_cache)
     {
@@ -52,7 +66,9 @@ CREATE TABLE IF NOT EXISTS KernelCache(
         }
         else
         {
-            NNFUSION_LOG(NNFUSION_WARNING) << "Invalid path to kernel cache: " << m_path;
+            NNFUSION_LOG(ERROR) << "Invalid path to kernel cache: " << m_path << ", "
+                                << sqlite3_errmsg(kernel_cache)
+                                << ", kernel cache will be disabled";
             kernel_cache = nullptr;
         }
     }

@@ -12,6 +12,39 @@ def prod(a):
 
 
 def prepare_file(signature, code, config, path, parse=False):
+    profile_makefile = r'''
+# Gencode arguments
+# SMS ?= 30 35 37 50 52 60 61 70 75
+SMS ?= 70
+
+ifeq ($(GENCODE_FLAGS),)
+# Generate SASS code for each SM architecture listed in $(SMS)
+$(foreach sm,$(SMS),$(eval GENCODE_FLAGS += -gencode arch=compute_$(sm),code=sm_$(sm)))
+
+# Generate PTX code from the highest SM architecture in $(SMS) to guarantee forward-compatibility
+HIGHEST_SM := $(lastword $(sort $(SMS)))
+ifneq ($(HIGHEST_SM),)
+GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
+endif
+endif
+
+cc = nvcc ${GENCODE_FLAGS} -std=c++11 -I /usr/local/cuda/samples/common/inc $(LIBRARIES)
+
+prom = profile
+deps = kernel.cuh
+src = $(shell find ./ -name "*.cu")
+obj = $(src:%.cu=%.o)
+
+$(prom) : $(obj)
+		$(cc) -o $(prom) $(obj)
+
+%.o : %.cu $(deps)
+		$(cc) $(CFLAGS) -c $< -o $@
+
+clean:
+		rm -rf $(obj) $(prom)
+'''
+
     kernel_cuh = r'''
 #pragma once
 
@@ -90,6 +123,13 @@ __init_input__
   return 0;
 }'''.replace("__step__", "1" if parse else "100")
 
+    if os.path.exists(path) != True:
+        os.makedirs(path)
+
+    if os.path.exists(path + "Makefile") != True:
+        with open(path + "Makefile", "w+") as f:
+            f.write(profile_makefile)
+
     bytes_count = [0]
     for shape in config["in_shape"]+config["out_shape"]:
         bytes_count.append(prod(shape)*4 + bytes_count[-1])
@@ -125,7 +165,7 @@ def log_sync(kernel, path):
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=path, shell=True)
     syncthreads, _ = process.communicate()
     num_sync = re.compile(r'Amount of syncthreads logged: (\d+)')
-    return num_sync.search(str(syncthreads)).group(1)
+    return int(num_sync.search(str(syncthreads)).group(1))
 
 
 def profile(kernel, path):

@@ -5,6 +5,7 @@
 
 REGISTER_OP(Pad)
     .infershape(nnfusion::op::infershape::unimplemented_and_not_used)
+    /*
     .translate([](std::shared_ptr<graph::GNode> gnode) -> std::string {
         NNFUSION_CHECK(2 == gnode->get_input_size());
         auto op = static_pointer_cast<nnfusion::op::Pad>(gnode->get_op_ptr());
@@ -55,6 +56,7 @@ REGISTER_OP(Pad)
         }
         return expression;
     })
+    */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
 
         NNFUSION_CHECK(2 == curr->get_input_size());
@@ -123,5 +125,23 @@ REGISTER_OP(Pad)
         op_config["conditions"] = conditions;
         op_config["output0_layout"] = vector_to_string<std::vector<std::string>>(output0_layout);
 
-        return op::create_code_from_template(ir_template, op_config);
+        expression = op::create_code_from_template(ir_template, op_config);
+        bool pad_zero = true;
+        for (auto i : op->get_padding_below())
+        {
+            if (i != 0)
+                pad_zero = false;
+        }
+
+        for (auto i : op->get_padding_above())
+        {
+            if (i != 0)
+                pad_zero = false;
+        }
+
+        if (pad_zero)
+        {
+            expression += " ## @: memcpy";
+        }
+        return expression;
     });

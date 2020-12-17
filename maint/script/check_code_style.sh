@@ -11,7 +11,7 @@ pushd "${PWD}/../../" > /dev/null
 
 EXITCODE=0
 
-for SRC_FILE in $(( find . -path './thirdparty' -prune -o -path './artifacts' -prune -o -path './build' -prune -o -type f -and \( -name '*.cpp' -or -name '*.hpp' \)  ; find './thirdparty/ngraph' -type f -and \( -name '*.cpp' -or -name '*.hpp' \) ) | cat); do
+for SRC_FILE in $(( find . -path './thirdparty' -prune -o -path './artifacts' -prune -o -path './build' -prune -o -type f -and \( -name '*.cpp' -or -name '*.hpp' \) ) | cat); do
     if "${CLANG_FORMAT}" -style=file -output-replacements-xml "${SRC_FILE}" 2>&1 | grep -v "Is a directory" | grep -c "<replacement " >/dev/null; then
         echo "[ERROR] Require: ${CLANG_FORMAT}" -style=file -i "${SRC_FILE}"
         EXITCODE=1

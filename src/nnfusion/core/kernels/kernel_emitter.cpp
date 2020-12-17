@@ -61,6 +61,31 @@ KernelEmitter::KernelEmitter(shared_ptr<KernelContext> ctx, string kernel_type)
 {
 }
 
+NNFusion_DeviceType KernelEmitter::get_device_type()
+{
+    if (m_kernel_type == "cuda" || m_kernel_type == "cuda_lib")
+    {
+        return NNFusion_DeviceType::CUDA_GPU;
+    }
+    else if (m_kernel_type == "cpu")
+    {
+        return NNFusion_DeviceType::GENERIC_CPU;
+    }
+    else if (m_kernel_type == "hlsl")
+    {
+        return NNFusion_DeviceType::HLSL;
+    }
+    else if (m_kernel_type == "rocm")
+    {
+        return NNFusion_DeviceType::ROCM_GPU;
+    }
+    else if (m_kernel_type == "graphcore")
+    {
+        return NNFusion_DeviceType::GraphCore;
+    }
+    return NNFusion_DeviceType::UNKNOWN;
+}
+
 LanguageUnit_p KernelEmitter::emit_function_name()
 {
     LanguageUnit_p _lu(new LanguageUnit("function_name"));
@@ -290,4 +315,167 @@ const shared_ptr<nnfusion::descriptor::Tensor>
 
     NNFUSION_LOG(INFO) << "Tensor allocated:\t" << name << ", shape is:" << shape;
     return m_context->tensors.back();
+}
+
+shared_ptr<nnfusion::cache::KernelEntry>
+    KernelEmitter::get_kernel_cache_entry(shared_ptr<nnfusion::cache::KernelEntry> kernel_entry)
+{
+    if (kernel_entry == nullptr)
+    {
+        kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
+    }
+    FunctionUnit_p func_p = this->get_or_emit_source();
+
+    if (kernel_entry->key == "")
+    {
+        kernel_entry->key = func_p->body_unit->get_code();
+    }
+
+    if (kernel_entry->identifier == "")
+    {
+        kernel_entry->identifier = m_context->generate_identifier();
+    }
+
+    if (kernel_entry->op_type == "")
+    {
+        kernel_entry->op_type = m_context->gnode->get_op_type();
+    }
+
+    if (kernel_entry->attributes.is_null())
+    {
+        kernel_entry->attributes = nlohmann::json();
+    }
+
+    if (kernel_entry->source == "")
+    {
+        kernel_entry->source = "NNFusion";
+    }
+
+    if (kernel_entry->device_type == "")
+    {
+        kernel_entry->device_type = get_device_str(this->get_device_type());
+    }
+
+    if (kernel_entry->function.is_null())
+    {
+        kernel_entry->function = nlohmann::json();
+    }
+    if (kernel_entry->function.find("function_signature") == kernel_entry->function.end())
+    {
+        kernel_entry->function["function_signature"] = func_p->signature_unit->get_code();
+    }
+    if (kernel_entry->function.find("function_body") == kernel_entry->function.end())
+    {
+        kernel_entry->function["function_body"] = func_p->body_unit->get_code();
+    }
+    if (kernel_entry->function.find("function_dep") == kernel_entry->function.end())
+    {
+        kernel_entry->function["function_dep"] = func_p->dep_unit->get_code();
+    }
+
+    if (kernel_entry->tags.size() == 0)
+    {
+        kernel_entry->tags = std::set<std::string>();
+    }
+    kernel_entry->tags.insert("KernelEmitter");
+
+    if (kernel_entry->miscs.is_null())
+    {
+        kernel_entry->miscs = nlohmann::json();
+    }
+
+    return kernel_entry;
+}
+
+template <typename Iter>
+std::string item_join(Iter begin,
+                      Iter end,
+                      std::string const& separator,
+                      std::function<std::string(Iter)> f_item)
+{
+    std::ostringstream result;
+    if (begin != end)
+        result << f_item(begin++);
+    while (begin != end)
+        result << separator << f_item(begin++);
+    return result.str();
+}
+
+std::string nnfusion::kernels::KernelContext::generate_identifier()
+{
+    auto ctx = this;
+
+    std::string op_type = ctx->gnode->get_op_type();
+
+    // identifier of pattern substitution kernel was generated before
+    if (op_type == "Matched_Pattern")
+        return (*ctx->gnode)["identifier"].as<std::string>();
+
+    // Todo: more spec to be added
+    std::string identifier("");
+
+    // operator type as identifier
+    identifier += op_type;
+
+    // shapes of input and output tensors as identifier
+    std::function<std::string(std::vector<size_t>::const_iterator)> f_shape =
+        [](std::vector<size_t>::const_iterator s) { return to_string(*s); };
+    std::function<std::string(std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>>::iterator)>
+        f_tensor =
+            [&f_shape](std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>>::iterator t) {
+                auto& shape = (*t)->get_shape();
+                return item_join(shape.begin(), shape.end(), ",", f_shape);
+            };
+    identifier += item_join(ctx->inputs.begin(), ctx->inputs.end(), ";", f_tensor);
+    identifier += ";" + item_join(ctx->outputs.begin(), ctx->outputs.end(), ";", f_tensor);
+
+    // data types of input tensors as identifier
+    for (int i = 0; i < ctx->dtypes.size(); ++i)
+    {
+        identifier += ctx->dtypes[i];
+    }
+
+    if (op_type == "Convolution")
+    {
+        auto conv = std::dynamic_pointer_cast<op::Convolution>(ctx->gnode->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(conv);
+        std::stringstream str;
+        str << conv->get_window_movement_strides();
+        str << conv->get_window_dilation_strides();
+        str << conv->get_padding_below();
+        identifier += str.str();
+    }
+    else if (op_type == "AvgPool")
+    {
+        auto avgpool = std::dynamic_pointer_cast<op::AvgPool>(ctx->gnode->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(avgpool);
+        std::stringstream str;
+        str << avgpool->get_window_shape();
+        str << avgpool->get_window_movement_strides();
+        str << avgpool->get_padding_below();
+        identifier += str.str();
+    }
+    else if (op_type == "MaxPool")
+    {
+        auto maxpool = std::dynamic_pointer_cast<op::MaxPool>(ctx->gnode->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(maxpool);
+        std::stringstream str;
+        str << maxpool->get_window_shape();
+        str << maxpool->get_window_movement_strides();
+        str << maxpool->get_padding_below();
+        identifier += str.str();
+    }
+    else if (op_type == "Dot")
+    {
+        ///\todo encode dot attrs, stay the same with db importor
+        // auto dot = std::dynamic_pointer_cast<op::Dot>(ctx->gnode->get_op_ptr());
+        // NNFUSION_CHECK_NOT_NULLPTR(dot);
+        // std::stringstream str;
+        // str << dot->get_transpose_A();
+        // str << dot->get_transpose_B();
+        // ///\todo: need to encode dot reduction_axes_count?
+        // identifier += str.str();
+    }
+
+    return identifier;
 }

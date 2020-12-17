@@ -5,6 +5,7 @@
 
 REGISTER_OP(MaxPool)
     .infershape(nnfusion::op::infershape::unimplemented_and_not_used)
+    /*
     .translate([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto _op = static_pointer_cast<nnfusion::op::MaxPool>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
@@ -24,6 +25,7 @@ REGISTER_OP(MaxPool)
              {"stride", vector_to_string(stride)},
              {"padding", vector_to_string(padding)}});
     })
+    */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto _op = static_pointer_cast<nnfusion::op::MaxPool>(curr->get_op_ptr());
         auto& output_shape = curr->get_output_shape(0);

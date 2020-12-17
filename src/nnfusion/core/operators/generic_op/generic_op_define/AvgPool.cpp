@@ -88,7 +88,7 @@ REGISTER_OP(AvgPool)
             when_condition = ".when([" + when_condition + "], 0.0)";
         }
 
-        conditions = when_condition + where_condition;
+        conditions = when_condition + " " + where_condition;
 
         op::OpConfig::any op_config;
         op_config["input0_layout"] = input0_layout;

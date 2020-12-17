@@ -13,7 +13,7 @@
 
 #include "cpu_runtime.hpp"
 #include "cuda_runtime.hpp"
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "profiling_runtime.hpp"

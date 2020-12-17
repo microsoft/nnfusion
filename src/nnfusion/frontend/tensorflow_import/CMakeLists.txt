@@ -11,8 +11,8 @@ add_library(tensorflow_import STATIC
         util/graph_convert.hpp
 	util/util.cpp
         util/util.hpp
-        # util/bcast.hpp
-        # util/bcast.cpp
+        util/bcast.hpp
+        util/bcast.cpp
         ops/const.cpp
         ops/const.hpp
         tensorflow_base.cpp
@@ -30,7 +30,7 @@ endif()
 set_property(TARGET tensorflow_import PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(tensorflow_import PRIVATE ${TFPROTO_INCLUDE} ${CMAKE_CURRENT_SOURCE_DIR} ${GLOBAL_INCLUDE_PATH}
     SYSTEM PRIVATE ${Protobuf_INCLUDE_DIR})
-target_link_libraries(tensorflow_import PRIVATE ${Protobuf_LIBRARIES} ${ONNX_PROTO_LIBRARY} nnfusion_operators nnfusion_graph ngraph_tensorflow_import)
+target_link_libraries(tensorflow_import PRIVATE ${Protobuf_LIBRARIES} ${ONNX_PROTO_LIBRARY} nnfusion_operators nnfusion_graph)
 
 set_property(TARGET tensorflow_import_interface PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(tensorflow_import_interface PRIVATE ${TFPROTO_INCLUDE} {CMAKE_CURRENT_BINARY_DIR} ${GLOBAL_INCLUDE_PATH}

@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"

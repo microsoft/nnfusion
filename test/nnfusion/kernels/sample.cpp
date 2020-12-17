@@ -12,7 +12,7 @@
 #include <vector>
 #include "../test_util/common.hpp"
 #include "gtest/gtest.h"
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/core/operators/op_define/pad.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 

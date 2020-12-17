@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "const.hpp"
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/core/operators/op_define/constant.hpp"
 #include "stdint.h"
 

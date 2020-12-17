@@ -21,6 +21,8 @@ DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
 
+const std::unordered_set<std::string> KernelTuning::BlockList = {};
+
 struct TuningStatus
 {
     TuningStatus(std::shared_ptr<GNode> gnode)
@@ -108,6 +110,7 @@ std::vector<std::shared_ptr<GNode>>
     std::vector<std::shared_ptr<GNode>> ret;
     std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
 
+    std::unordered_set<std::string> translated_irs;
     for (auto gnode : nodes)
     {
         if (!(*gnode)["DeviceType"].is_valid())
@@ -118,6 +121,32 @@ std::vector<std::shared_ptr<GNode>>
         auto n_device_type = (*gnode)["DeviceType"].as<NNFusion_DeviceType>();
         NNFUSION_CHECK(n_device_type != UNKNOWN);
 
+        // filter ops in BlockList
+        if (BlockList.find(gnode->get_op_type()) != BlockList.end())
+        {
+            continue;
+        }
+
+        auto ir = nnfusion::op::get_translation(gnode);
+        // NNFUSION_LOG(DEBUG) << gnode->get_op_type() << ", ir: " << ir;
+
+        // filter unimplemented irs
+        if (ir.empty())
+        {
+            continue;
+        }
+
+        // dedupe ops with the same ir
+        if (!ir.empty())
+        {
+            if (translated_irs.find(ir) != translated_irs.end())
+            {
+                continue;
+            }
+            translated_irs.insert(ir);
+        }
+
+        // filter ops existing in kernel cache DB
         shared_ptr<KernelContext> ctx(new KernelContext(gnode));
         auto identifier = ctx->generate_identifier();
         auto device_type = get_device_str(n_device_type);
@@ -206,6 +235,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
             if (status->status == "" || status->status.empty())
             {
                 // submit a new tuning task
+                NNFUSION_LOG(INFO) << gnode->get_op_type() << ", ir: " << ir;
                 auto response = send_tuning_request(ir, FLAGS_fkernel_tuning_steps);
                 status->status = "submitted";
             }
@@ -234,6 +264,12 @@ bool KernelTuning::register_antares_kernel()
     {
         std::string op_name = pair.first;
         std::vector<NNFusion_DeviceType> devs{CUDA_GPU, GENERIC_CPU, HLSL};
+
+        // skip op in BlockList
+        if (BlockList.find(op_name) != BlockList.end())
+        {
+            continue;
+        }
 
         kernels::KernelRegistrar kernel_registrar_cuda(
             op_name,

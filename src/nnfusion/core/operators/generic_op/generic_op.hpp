@@ -88,7 +88,10 @@ namespace nnfusion
                     return false;
                 for (auto& func : f_constraits)
                     if (!func(getRoot()))
+                    {
+                        NNFUSION_LOG(INFO) << "________________";
                         return false;
+                    }
                 return true;
             }
 

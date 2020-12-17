@@ -344,6 +344,12 @@ bool KernelTuning::insert_to_kernel_cache(const std::vector<std::shared_ptr<GNod
             {
                 auto antares_kernel = kernel_reg->m_factory(ctx);
                 auto kernel_cache_entry = antares_kernel->get_kernel_cache_entry();
+                if (kernel_cache_entry == nullptr)
+                {
+                    NNFUSION_LOG(INFO)
+                        << "Invalid kernel_cache_entry, will not insert to kernel cache: "
+                        << gnode->get_name();
+                }
 
                 // overwrite existing kernel entries
                 cache_manager->insert_kernel_entry(kernel_cache_entry, true);

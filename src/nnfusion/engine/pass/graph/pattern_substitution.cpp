@@ -1,16 +1,9 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
+// Microsoft (c) 2019, NNFusion Team
 
 #include "pattern_substitution.hpp"
 #include <queue>
-#include "nnfusion/common/common.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
-#include "nnfusion/core/operators/op_define/constant.hpp"
 #include "nnfusion/core/operators/op_define/noop.hpp"
-#include "nnfusion/engine/cache/manager.hpp"
-#include "nnfusion/engine/op.hpp"
-#include "nnfusion/engine/pass/graph/kernel_selection.hpp"
-#include "nnfusion/engine/profiler/profiler.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;
@@ -19,17 +12,14 @@ using namespace nnfusion::profiler;
 DEFINE_bool(fpattern_substitution,
             true,
             "Substitute listed patterns with more efficient implementations");
-DEFINE_bool(fbiasadd_fix,
-            false,
-            "Fix biasadd shape for TVM Conv2d-Add fusion in pattern_substitution_pass");
 
 // Only serial pattern supported in current implementation
 // The substitution directly applied to computation graph, no back propagation involved
 const static std::vector<std::vector<std::string>> PATTERNS = {
-    // {"Convolution", "BatchNormInference", "Relu"},
-    // {"Convolution", "BatchNormInference", "Add"},
-    // {"Convolution", "BatchNormInference"},
-    // Conv-BN-Relu is converted into Conv-Add-Relu
+    {"Convolution", "BatchNormInference", "Relu"},
+    {"Convolution", "BatchNormInference", "Add"},
+    {"Convolution", "BatchNormInference"},
+    // {"Convolution", "Add", "Reshape", "Relu"},
     {"Convolution", "Add", "Relu"},
     {"Convolution", "Relu"}};
 
@@ -56,7 +46,7 @@ namespace
         size_t ready_inputs;
         bool visited;
     };
-} // namespace
+}
 
 class PatternOptimizer
 {
@@ -138,16 +128,15 @@ private:
         for (auto m_tn : matched)
         {
             std::shared_ptr<KernelContext> ctx(new KernelContext(m_tn->node));
-            identifier += ctx->generate_identifier();
+            identifier += generate_identifier(ctx);
         }
         if (identifier != "")
         {
             // Todo: more tags, more platform
-            std::set<std::string> tags = {};
+            std::set<std::string> tags = {"fast"};
             auto fetched_kernel = kernel_db->fetch_with_tags(identifier, "CUDA", tags);
-            if (fetched_kernel != nullptr)
+            if (fetched_kernel.function != "")
             {
-                NNFUSION_CHECK(fetched_kernel->function != "");
                 NNFUSION_LOG(INFO) << "Substitution applied: " << identifier;
                 return Substitution(matched, identifier);
             }
@@ -168,55 +157,21 @@ private:
         m_graph->add_node(subs_node);
         int next_input_id = 0;
         int next_output_id = 0;
-
-        auto front_node = matched.front()->node;
-        for (size_t i = 0; i < front_node->get_input_size(); i++)
+        for (const auto& in_edge : matched.front()->node->get_in_edges())
         {
-            const auto in_edge = front_node->get_in_edge(i);
-            subs_node->set_input(next_input_id, front_node->get_inputs().at(i));
-            m_graph->add_edge(
-                in_edge->get_src(), in_edge->get_src_output(), subs_node, next_input_id);
-            next_input_id++;
+            auto input_id = in_edge->is_control_edge() ? Graph::kControlSlot : next_input_id++;
+            if (input_id != Graph::kControlSlot)
+            {
+                subs_node->set_input(
+                    input_id, matched.front()->node->get_inputs().at(in_edge->get_dst_input()));
+            }
+            m_graph->add_edge(in_edge->get_src(), in_edge->get_src_output(), subs_node, input_id);
         }
-
-        for (const auto& in_edge : front_node->get_in_edges())
-            if (in_edge->is_control_edge())
-                m_graph->add_edge(
-                    in_edge->get_src(), in_edge->get_src_output(), subs_node, Graph::kControlSlot);
 
         for (auto m_node : matched)
         {
             // bias as extra inputs
             // here we apply the BN folding to remove computation
-
-            // biasadd fix for TVM conv-biasadd fusion due to different implementation of BiasAdd in NNFusion and TVM
-            if (m_node->node->get_op_type() == "Add" && FLAGS_fbiasadd_fix)
-            {
-                if (m_pattern[0] == "Convolution" && m_pattern[1] == "Add")
-                {
-                    auto add_node = m_node->node;
-                    auto add_bias_node = add_node->get_in_edge(1)->get_src();
-                    auto add_bias_const_ptr = std::dynamic_pointer_cast<nnfusion::op::Constant>(
-                        add_bias_node->get_op_ptr());
-                    auto dtype = add_node->get_input_element_type(1);
-                    std::vector<double> add_bias = ExtractConstantData(add_bias_const_ptr, dtype);
-                    auto bias_shape = add_node->get_input_shape(1);
-                    std::shared_ptr<op::Constant> new_add_bias_op_ptr;
-                    if (dtype == element::f32)
-                    {
-                        auto add_bias_converted = ConvertAddBias<float>(add_bias, bias_shape);
-                        new_add_bias_op_ptr = std::make_shared<op::Constant>(
-                            dtype, add_node->get_input_shape(1), add_bias_converted.data());
-                    }
-                    else
-                    {
-                        NNFUSION_CHECK_FAIL() << "Not support DataType " << dtype;
-                    }
-                    auto new_add_bias_gnode = std::make_shared<nnfusion::graph::GNode>(
-                        new_add_bias_op_ptr, GNodeVector());
-                    m_graph->replace_node(add_bias_node, new_add_bias_gnode, false);
-                }
-            }
             if (m_node->node->get_op_type() == "BatchNormInference" ||
                 m_node->node->get_op_type() == "Add")
             {
@@ -270,111 +225,6 @@ private:
         m_nodes[id] = std::make_shared<TaggedNode>();
         m_nodes[id]->node = subs_node;
         return id;
-    }
-
-    std::vector<double> ExtractConstantData(const std::shared_ptr<op::Constant> ptr,
-                                            const element::Type& dtype)
-    {
-        if (dtype == element::f64)
-        {
-            auto data_vec = ptr->get_vector<double>();
-            std::vector<double> ret;
-            for (auto i = 0; i < data_vec.size(); i++)
-            {
-                ret.push_back((double)data_vec[i]);
-            }
-            return ret;
-        }
-        else if (dtype == element::f32)
-        {
-            auto data_vec = ptr->get_vector<float>();
-            std::vector<double> ret;
-            for (auto i = 0; i < data_vec.size(); i++)
-            {
-                ret.push_back((double)data_vec[i]);
-            }
-            return ret;
-        }
-        else if (dtype == element::bf16)
-        {
-            auto data_vec = bfloat16::to_float_vector(ptr->get_vector<bfloat16>());
-            std::vector<double> ret;
-            for (auto i = 0; i < data_vec.size(); i++)
-            {
-                ret.push_back((double)data_vec[i]);
-            }
-            return ret;
-        }
-        else if (dtype == element::i64)
-        {
-            auto data_vec = ptr->get_vector<float>();
-            std::vector<double> ret;
-            for (auto i = 0; i < data_vec.size(); i++)
-            {
-                ret.push_back((double)data_vec[i]);
-            }
-            return ret;
-        }
-        else if (dtype == element::i32)
-        {
-            auto data_vec = ptr->get_vector<float>();
-            std::vector<double> ret;
-            for (auto i = 0; i < data_vec.size(); i++)
-            {
-                ret.push_back((double)data_vec[i]);
-            }
-            return ret;
-        }
-        else if (dtype == element::i16)
-        {
-            auto data_vec = ptr->get_vector<float>();
-            std::vector<double> ret;
-            for (auto i = 0; i < data_vec.size(); i++)
-            {
-                ret.push_back((double)data_vec[i]);
-            }
-            return ret;
-        }
-        else if (dtype == element::i8)
-        {
-            auto data_vec = ptr->get_vector<float>();
-            std::vector<double> ret;
-            for (auto i = 0; i < data_vec.size(); i++)
-            {
-                ret.push_back((double)data_vec[i]);
-            }
-            return ret;
-        }
-
-        NNFUSION_CHECK_FAIL() << "Not support DataType " << dtype;
-        std::vector<double> ret;
-        return ret;
-    }
-
-    template <typename T>
-    std::vector<T> ConvertAddBias(const std::vector<double>& bias, const nnfusion::Shape bias_shape)
-    {
-        std::vector<T> bias_output;
-        bias_output.resize(bias.size());
-
-        auto n = bias_shape[0];
-        auto c = bias_shape[1];
-        auto h = bias_shape[2];
-        auto w = bias_shape[3];
-
-        std::vector<double> bias_extracted;
-        bias_extracted.resize(c);
-        for (auto i = 0; i < c; i++)
-        {
-            bias_extracted[i] = bias[i * h * w];
-        }
-
-        for (auto i = 0; i < bias.size(); i++)
-        {
-            bias_output[i] = (T)bias_extracted[i % c];
-        }
-
-        return bias_output;
     }
 
     std::shared_ptr<Graph> m_graph;

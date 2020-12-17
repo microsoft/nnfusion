@@ -1,6 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
+// Microsoft (c) 2020, NNFusion Team
 #include "codegen_langunit.hpp"
 
 LU_DEFINE(nnfusion::codegen::cmake::cblas,
@@ -41,30 +39,27 @@ find_package(Threads REQUIRED)
 target_link_libraries(${TARGET_NAME} Threads::Threads)
 )");
 
-LU_DEFINE(nnfusion::codegen::cmake::super_scaler,
+LU_DEFINE(nnfusion::codegen::cmake::superscaler_cuda,
           R"(
-find_package(MPI)
-include_directories(${MPI_INCLUDE_PATH})
-find_library(SUPER_SCALER_LIBRARIES libsuper_scaler.so ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${TARGET_NAME} 
-    ${MPI_LIBRARIES}
-    ${SUPER_SCALER_LIBRARIES}
-    nccl)   
+if (NOT TARGET superscaler)
+set(TARGET_GPU_PLATFORM "CUDA" CACHE STRING "Choose your GPU platform: CUDA or ROCm")
+include(superscaler/superscaler.cmake)
+endif()
+target_link_libraries(${TARGET_NAME} superscaler)
 )");
 
-LU_DEFINE(nnfusion::codegen::cmake::rocm_super_scaler,
+LU_DEFINE(nnfusion::codegen::cmake::superscaler_rocm,
           R"(
-find_package(MPI)
-include_directories(${MPI_INCLUDE_PATH})
-find_library(ssrocm libsuper_scaler_rocm.so ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${TARGET_NAME}
-    ${MPI_LIBRARIES}
-    ${ssrocm}
+if (NOT TARGET superscaler)
+set(TARGET_GPU_PLATFORM "ROCm" CACHE STRING "Choose your GPU platform: CUDA or ROCm")
+include(superscaler/superscaler.cmake)
+endif()
+target_link_libraries(${TARGET_NAME} superscaler)
 )");
 
 LU_DEFINE(nnfusion::codegen::cmake::cuda_lib,
           R"(
-link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
+link_directories(/usr/local/cuda/lib64)
 
 find_path(CUDNN_INCLUDE_DIR cudnn.h
     HINTS ${CUDA_TOOLKIT_ROOT_DIR}
@@ -76,12 +71,7 @@ find_library(CUDNN_LIBRARY cudnn
     HINTS ${CUDA_TOOLKIT_ROOT_DIR}
     PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
 
-find_library(CUDA_cuda_LIBRARY cuda ${CUDA_TOOLKIT_ROOT_DIR}/lib64/stubs)
-find_library(CUDA_cudart_LIBRARY libcudart.so ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
-
 target_link_libraries(${TARGET_NAME}
-    ${CUDA_cuda_LIBRARY}
-    ${CUDA_cudart_LIBRARY}
     ${CUDA_LIBRARIES}
     ${CUDA_CUBLAS_LIBRARIES}
     ${CUDNN_LIBRARY})

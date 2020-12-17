@@ -1,5 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
+// Microsoft (c) 2020, NNFusion Team
 
 #pragma once
 
@@ -39,6 +38,8 @@ namespace nnfusion
                                            std::shared_ptr<TranslationUnit> tu);
             virtual bool collect_stream(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu) override;
+            virtual bool collect_mem(std::shared_ptr<InterpreterContext> ctx,
+                                     std::shared_ptr<TranslationUnit> tu) override;
             virtual bool collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                        std::shared_ptr<TranslationUnit> tu) override;
             virtual std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>

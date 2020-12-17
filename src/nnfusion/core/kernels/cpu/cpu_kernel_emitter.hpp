@@ -1,6 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
+// Microsoft (c) 2019, NNFusion Team
 #pragma once
 #include "nnfusion/common/descriptor/layout/tensor_layout.hpp"
 #include "nnfusion/common/descriptor/tensor.hpp"
@@ -91,14 +89,13 @@ namespace nnfusion
                         }
                     }
                 }
-
-                bool is_eliminative() override;
                 virtual LanguageUnit_p emit_function_body() override;
                 virtual LanguageUnit_p emit_dependency() override;
+                bool is_eliminative() override;
 
                 AntaresKEImp::Pointer m_antares_ke_imp;
                 std::string antares_code;
-                bool is_memcpy = false;
+                bool is_memcpy;
             };
 
             class SimdKernelEmitter : public CpuKernelEmitter

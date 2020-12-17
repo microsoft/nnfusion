@@ -1,6 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
+// Microsoft (c) 2019, Wenxiang
 #pragma once
 #include "nnfusion/core/kernels/common_langunit.hpp"
 
@@ -13,15 +11,13 @@ namespace nnfusion
             LU_DECLARE(cuda);
             LU_DECLARE(cublas);
             LU_DECLARE(cudnn);
-            LU_DECLARE(super_scaler);
+            LU_DECLARE(superscaler);
             LU_DECLARE(cupti);
             LU_DECLARE(cuda_prof_api);
-            LU_DECLARE(cuda_fp16);
         } // namespace header
 
         namespace macro
         {
-            LU_DECLARE(HALF_MAX);
             LU_DECLARE(CUDA_SAFE_CALL_NO_THROW);
             LU_DECLARE(CUDA_SAFE_CALL);
             LU_DECLARE(CUDNN_SAFE_CALL_NO_THROW);
@@ -44,7 +40,6 @@ namespace nnfusion
             LU_DECLARE(num_SMs);
             LU_DECLARE(cuda_reduce_primitive);
             LU_DECLARE(cuda_layer_norm);
-            LU_DECLARE(cuda_fp16_scale);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

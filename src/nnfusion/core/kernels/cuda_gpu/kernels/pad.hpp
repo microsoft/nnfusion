@@ -1,6 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
+// Microsoft (c) 2019, NNFusion Team
 #pragma once
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"

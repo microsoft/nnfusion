@@ -1,5 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
+// Microsoft (c) 2019, NNFusion Team
 
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 

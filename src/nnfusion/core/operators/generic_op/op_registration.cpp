@@ -1,5 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
+// Microsoft (c) 2019, NNFusion Team
 
 #include "generic_op.hpp"
 

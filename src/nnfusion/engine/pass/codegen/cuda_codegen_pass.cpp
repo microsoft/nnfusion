@@ -1,6 +1,3 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
 #include "cuda_codegen_pass.hpp"
 #include "codegen_langunit.hpp"
 #include "codegenerator_helper.hpp"
@@ -12,6 +9,8 @@
 #include "nnfusion/core/kernels/cuda_gpu/cuda_langunit.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
+
+#include <regex>
 
 using namespace nnfusion;
 using namespace nnfusion::graph;
@@ -26,8 +25,6 @@ DECLARE_int64(fkernels_files_number);
 DECLARE_bool(frt_const_folding);
 DECLARE_string(fcuda_init_stream);
 DECLARE_bool(fextern_result_memory);
-DECLARE_int32(fwarmup_step);
-DECLARE_int32(frun_step);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -52,7 +49,7 @@ void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
         }
     }
 
-    superscaler_enable = global_required.count("header::super_scaler") > 0;
+    superscaler_enable = global_required.count("header::superscaler") > 0;
     return;
 }
 
@@ -65,13 +62,6 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->pwd = m_codegen_folder;
     projgen->lup_codegen->write_to = "nnfusion_rt.cu";
     auto& copy_templates = projgen->lup_codegen->copy_templates;
-    if (superscaler_enable)
-    {
-        copy_templates.emplace_back("super_scaler/super_scaler.h", "./super_scaler.h");
-        NNFUSION_LOG(NNFUSION_WARNING) << "libsuper_scaler.so should be copied from "
-                                          "(build)/src/tools/nnfusion/templates/super_scaler/";
-        copy_templates.emplace_back("super_scaler/libsuper_scaler.so", "./libsuper_scaler.so");
-    }
 
     copy_templates.emplace_back("image_tests/image_test.cpp", "./image_tests/image_test.cpp");
     copy_templates.emplace_back("image_tests/CMakeLists_cuda.txt", "./image_tests/CMakeLists.txt");
@@ -97,11 +87,34 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         copy_folder.push_back(threadpool_path);
     }
 
+    if (superscaler_enable)
+    {
+        std::string superscaler_path = std::string(path) + std::string("/superscaler");
+        copy_folder.push_back(superscaler_path);
+    }
+
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
-        lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
-        lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
+        if (superscaler_enable)
+        {
+            lu_init_begin << "\nextern \"C\" void cuda_init(const char* resource_dir)\n{\n";
+            lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
+            lu_init_begin <<
+                R"(int device_id;
+int host_id;
+sc_init(resource_dir);
+sc_get_host_id(&host_id);
+sc_get_device_id(&device_id);
+printf("[host_id: %d device_id: %d] is running\n", host_id, device_id);
+CUDA_SAFE_CALL(cudaSetDevice(device_id));
+)";
+        }
+        else
+        {
+            lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
+            lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
+        }
     }
 
     auto& lu_init_end = *(projgen->lup_init->end);
@@ -115,20 +128,6 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         lu_exec_begin << "\nextern \"C\" int kernel_entry(" << params << ")\n{\n";
     }
 
-    auto& lu_exec_init = *(projgen->lup_exec->begin);
-    {
-        auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
-        lu_exec_init << "// kernel_entry_init\n";
-        // emit memset
-        for (const auto& allocator : allocator_list)
-        {
-            if (allocator.first.find("memset") != std::string::npos)
-            {
-                lu_exec_init << allocator.second->emit_memory_set(0)->get_code();
-            }
-        }
-    }
-
     auto& lu_exec_end = *(projgen->lup_exec->end);
     {
         lu_exec_end << "return 0;\n";
@@ -138,10 +137,20 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     auto& lu_exit_begin = *(projgen->lup_exit->begin);
     {
         lu_exit_begin << "\nextern \"C\" void cuda_free()\n{\n";
+        if (superscaler_enable)
+        {
+            lu_exit_begin <<
+                R"(int device_id;
+sc_get_device_id(&device_id);
+CUDA_SAFE_CALL(cudaSetDevice(device_id));
+)";
+        }
     }
 
     auto& lu_exit_end = *(projgen->lup_exit->end);
     {
+        if (superscaler_enable)
+            lu_exit_end << "sc_finalize();\n";
         lu_exit_end << "}\n\n";
     }
 
@@ -161,7 +170,6 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
-    projgen->lup_codegen->require(macro::HALF_MAX);
 
     return;
 }
@@ -276,7 +284,10 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 std::string std_thread_func_call = std::string("auto ") + std_thread_func_name +
                                                    std::string(" = std::bind") + thread_call_str;
                 lu_new_caller << std_thread_func_call;
-                std::string t_threadpool_call = std::string("schedule_thread_pool->Schedule(");
+                std::string t_threadpool_call =
+                    (superscaler_enable && thread_name != "dev0_thread")
+                        ? std::string("superscaler_schedule_thread->Schedule(")
+                        : std::string("schedule_thread_pool->Schedule(");
                 t_threadpool_call += (std_thread_func_name + std::string(");\n"));
                 lu_new_caller << t_threadpool_call;
             }
@@ -287,6 +298,13 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 lu_begin << "extern \"C\" void " << thread_name << "(";
                 lu_begin << thread_call_paras << ")\n{\n";
+                if (superscaler_enable)
+                {
+                    lu_begin << R"(int device_id;
+sc_get_device_id(&device_id);
+CUDA_SAFE_CALL(cudaSetDevice(device_id));
+)";
+                }
             }
 
             LanguageUnit_p end =
@@ -346,7 +364,7 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
             else
             {
                 auto kernel_reg = KernelRegistry::Global()->FindKernelRegistration(
-                    "AnyOP", device_type(), element::f32);
+                    "AnyOP", device_type(), DT_FLOAT);
                 NNFUSION_CHECK(kernel_reg != nullptr) << "AnyOp Kernel not found, op="
                                                       << ins->getGNode()->get_op_type();
                 shared_ptr<KernelContext> ctx(new KernelContext(ins->getGNode()));
@@ -383,12 +401,6 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
              pairs.end(),
              [](std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& a,
                 std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& b) {
-                 if (a.first.find("default_") != string::npos)
-                     return false;
-
-                 if (b.first.find("default") != string::npos)
-                     return false;
-
                  int pos_a = a.first.find("async_");
                  int pos_b = b.first.find("async_");
                  if (pos_a >= 0 && pos_b >= 0)
@@ -400,8 +412,10 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
                      d2 = d2.substr(0, d2.find(delimiter));
                      return std::stoi(d1) < std::stoi(d2);
                  }
-
-                 return a.first > b.first;
+                 else
+                 {
+                     return a.first > b.first;
+                 }
              });
     }
 
@@ -572,7 +586,7 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     {
         if (ins->getKernel()->is_eliminative())
         {
-            lu << "// eliminated: " << func_call;
+            lu << "// eliminated\n";
         }
         else
         {
@@ -618,17 +632,32 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
 bool CudaCodegenPass::collect_stream(std::shared_ptr<InterpreterContext> ctx,
                                      std::shared_ptr<TranslationUnit> tu)
 {
+    std::regex r(R"(CUDA_SAFE_CALL\(cudaSetDevice\(\d)");
+
     //stream
-    NNFUSION_CHECK_NOT_NULLPTR(device_async_manager);
     if (device_async_manager && device_async_manager->num_stream() > 0)
     {
         auto stream_decl = device_async_manager->emit_stream_decl();
         auto stream_init = device_async_manager->emit_stream_init();
         auto stream_destroy = device_async_manager->emit_stream_destroy();
 
-        stream_init->require(stream_decl);
-        add_init_and_exit_pair(stream_init, stream_destroy);
+        string stream_init_code_old = stream_init->get_code();
+        string stream_destroy_code_old = stream_destroy->get_code();
+        string stream_init_code =
+            (superscaler_enable ? std::regex_replace(stream_init_code_old, r, "// $0")
+                                : stream_init_code_old);
+        string stream_destroy_code =
+            (superscaler_enable ? std::regex_replace(stream_destroy_code_old, r, "// $0")
+                                : stream_destroy_code_old);
+        LanguageUnit_p stream_init_lu(
+            new LanguageUnit(stream_init->get_symbol(), stream_init_code));
+        LanguageUnit_p stream_destroy_lu(
+            new LanguageUnit(stream_destroy->get_symbol(), stream_destroy_code));
+
+        stream_init_lu->require(stream_decl);
+        add_init_and_exit_pair(stream_init_lu, stream_destroy_lu);
     }
+
     //event
     if (device_async_manager && device_async_manager->num_event() > 0)
     {
@@ -636,8 +665,69 @@ bool CudaCodegenPass::collect_stream(std::shared_ptr<InterpreterContext> ctx,
         auto event_init = device_async_manager->emit_event_init();
         auto event_destroy = device_async_manager->emit_event_destroy();
 
-        event_init->require(event_decl);
-        add_init_and_exit_pair(event_init, event_destroy);
+        string event_init_code_old = event_init->get_code();
+        string event_destroy_code_old = event_destroy->get_code();
+        string event_init_code =
+            (superscaler_enable ? std::regex_replace(event_init_code_old, r, "// $0")
+                                : event_init_code_old);
+        string event_destroy_code =
+            (superscaler_enable ? std::regex_replace(event_destroy_code_old, r, "// $0")
+                                : event_destroy_code_old);
+
+        LanguageUnit_p event_init_lu(new LanguageUnit(event_init->get_symbol(), event_init_code));
+        LanguageUnit_p event_destroy_lu(
+            new LanguageUnit(event_destroy->get_symbol(), event_destroy_code));
+
+        event_init_lu->require(event_decl);
+        add_init_and_exit_pair(event_init_lu, event_destroy_lu);
+    }
+
+    return true;
+}
+
+bool CudaCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
+                                  std::shared_ptr<TranslationUnit> tu)
+{
+    if (!tu)
+        return false;
+    auto mem_pair = create_init_and_exit_pair<LanguageUnitwithVec, LanguageUnitwithVec>("MEM_ALLOC",
+                                                                                        "MEM_FREE");
+    auto lup_mem_alloc = mem_pair.first;
+    auto lup_mem_free = mem_pair.second;
+    auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
+
+    size_t total_alloc = 0;
+    for (const auto& allocator : allocator_list)
+    {
+        total_alloc += allocator.second->max_allocated();
+    }
+    LanguageUnit_p total = std::make_shared<LanguageUnit>(
+        "total_memory", "// total memory:" + to_string(total_alloc) + "\n");
+    lup_mem_alloc->unit_vec.push_back(total);
+
+    std::regex r(R"(CUDA_SAFE_CALL\(cudaSetDevice\(\d)");
+
+    for (const auto& allocator : allocator_list)
+    {
+        auto init = allocator.second->emit_memory_init();
+        auto alloc = allocator.second->emit_memory_alloc();
+        auto free = allocator.second->emit_memory_free();
+
+        string alloc_code_old = alloc->get_code();
+        string free_code_old = free->get_code();
+
+        string alloc_code =
+            (superscaler_enable ? std::regex_replace(alloc_code_old, r, "// $0") : alloc_code_old);
+        string free_code =
+            (superscaler_enable ? std::regex_replace(free_code_old, r, "// $0") : free_code_old);
+
+        LanguageUnit_p alloc_lu(new LanguageUnit(alloc->get_symbol(), alloc_code));
+        LanguageUnit_p free_lu(new LanguageUnit(free->get_symbol(), free_code));
+
+        lup_mem_alloc->unit_vec.push_back(alloc_lu);
+        lup_mem_alloc->require(init);
+        lup_mem_free->unit_vec.push_back(free_lu);
+        lup_mem_free->require(init);
     }
 
     return true;
@@ -670,23 +760,13 @@ bool CudaCodegenPass::modify_codegen()
         lu_dropout_free << dropout_name << "_free();\n";
     }
 
-    if (global_required.count("header::super_scaler"))
-    {
-        projgen->lup_exec->unit_vec.push_back(
-            std::make_shared<LanguageUnit>("super_scaler_sync", "super_scaler_sync();\n"));
-        auto super_scaler_pair = create_init_and_exit_pair<LanguageUnit, LanguageUnit>(
-            "super_scaler_init", "super_scaler_final");
-        auto& lu_ss_init = *(super_scaler_pair.first);
-        lu_ss_init << "super_scaler_initialization();\n";
-        auto& lu_ss_final = *(super_scaler_pair.second);
-        lu_ss_final << "super_scaler_finalization();\n";
-    }
-
     // multi-thread
     if (host_async_manager && host_async_manager->num_non_default_stream() > 0)
     {
         projgen->lup_codegen->require(header::threadpool);
         projgen->lup_codegen->require(declaration::schedule_thread_pool);
+        if (superscaler_enable)
+            projgen->lup_codegen->require(declaration::superscaler_schedule_thread);
         projgen->lup_codegen->require(header::barrier);
         // auto thread_decl = host_async_manager->emit_stream_decl();
         // projgen->lup_codegen->require(thread_decl);
@@ -722,6 +802,25 @@ bool CudaCodegenPass::modify_codegen()
         auto& lu_schedule_thread_pool_del = *lup_schedule_thread_pool_del;
         {
             lu_schedule_thread_pool_del << "delete schedule_thread_pool;\n";
+        }
+
+        if (superscaler_enable)
+        {
+            auto superscaler_schedule_thread_pair =
+                create_init_and_exit_pair<LanguageUnit, LanguageUnit>(
+                    "init_superscaler_schedule_thread", "del_superscaler_schedule_thread");
+            auto lup_superscaler_schedule_thread_pair_init = superscaler_schedule_thread_pair.first;
+            auto lup_superscaler_schedule_thread_pair_del = superscaler_schedule_thread_pair.second;
+
+            auto& lu_superscaler_schedule_thread_init = *lup_superscaler_schedule_thread_pair_init;
+            {
+                lu_superscaler_schedule_thread_init
+                    << "superscaler_schedule_thread = new concurrency::NumaAwareThreadPool(1,1);\n";
+            }
+            auto& lu_superscaler_schedule_thread_del = *lup_superscaler_schedule_thread_pair_del;
+            {
+                lu_superscaler_schedule_thread_del << "delete superscaler_schedule_thread;\n";
+            }
         }
     }
 
@@ -800,20 +899,21 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
 
     auto& lu_header = *lup_header;
     //generate include header file
+    lu_header << "// Microsoft (c) 2020\n";
     lu_header << "#pragma once\n";
     lu_header << declaration::typedef_int->get_code() << "\n";
     if (device_type() == CUDA_GPU || device_type() == ROCM_GPU)
         lu_header << header::cuda->get_code();
-    // TODO only include this if half is used
-    if (device_type() == CUDA_GPU)
-        lu_header << header::cuda_fp16->get_code();
 
     lu_header << "extern \"C\" int kernel_entry(";
     std::string params = get_kernel_entry_paras(tu);
     lu_header << params;
     lu_header << ");\n";
 
-    lu_header << "extern \"C\" void cuda_init();\n";
+    if (superscaler_enable)
+        lu_header << "extern \"C\" void cuda_init(const char*);\n";
+    else
+        lu_header << "extern \"C\" void cuda_init();\n";
 
     lu_header << "extern \"C\" void cuda_free();\n";
 
@@ -839,10 +939,8 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
     re_main->require(header::stdio);
     re_main->require(header::sstream);
     re_main->require(header::stdexcept);
-    re_main->require(header::limits);
 
     re_main->require(header::cuda_prof_api);
-    // re_main->require(header::cuda_fp16);
     re_main->require(macro::CUDA_SAFE_CALL);
 
     lu_main << "#include \"nnfusion_rt.h\"\n";
@@ -859,10 +957,17 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
     LanguageUnit d2hcopy("d2hcopy");
     LanguageUnit fillval("fillval");
 
-    lu_main << "int main(void)";
+    lu_main << "int main(int argc, char *argv[])";
     lu_main.block_begin();
     {
-        lu_main << "\ncuda_init();\n\n";
+        if (superscaler_enable)
+        {
+            lu_main << "\nif(!argv[1]) {throw std::runtime_error(\"superscaler resource dir is not "
+                       "given!\"); }\n\n";
+            lu_main << "\ncuda_init(argv[1]);\n\n";
+        }
+        else
+            lu_main << "\ncuda_init();\n\n";
 
         for (size_t i = 0; i < tu->arg.size(); i++)
         {
@@ -932,7 +1037,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
             else
                 params.push_back("&" + tv->get_name());
         }
-        int warm_step = FLAGS_fwarmup_step, test_step = FLAGS_frun_step;
+        int warm_step = 5, test_step = 100;
         if (FLAGS_fcodegen_debug)
         {
             warm_step = 0;
@@ -960,14 +1065,9 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main.block_end();
 
         lu_main << "\n//GPU time measurement\n";
-        lu_main << "float ms_max = std::numeric_limits<float>::min();\n";
-        lu_main << "float ms_min = std::numeric_limits<float>::max();\n";
-        lu_main << "float ms_total, ms_i;\n";
-        lu_main << "cudaEvent_t start, stop, start_i, stop_i;\n";
+        lu_main << "cudaEvent_t start, stop;\n";
         lu_main << "cudaEventCreate(&start);\n";
         lu_main << "cudaEventCreate(&stop);\n";
-        lu_main << "cudaEventCreate(&start_i);\n";
-        lu_main << "cudaEventCreate(&stop_i);\n";
 
         lu_main << "\n//time measurement\n";
         lu_main << "cudaEventRecord(start);\n\n";
@@ -978,17 +1078,11 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "for (int i_=0; i_<steps; i_++)\n";
         lu_main.block_begin();
 
-        lu_main << "cudaEventRecord(start_i, 0);\n";
         lu_main << h2dcopy.get_code();
         // kernel launch
         lu_main << "kernel_entry(" << join(params, ", ") << ");\n";
 
-        lu_main << "cudaEventRecord(stop_i, 0);\n";
-        lu_main << "cudaEventSynchronize(stop_i);\n";
-        lu_main << "cudaEventElapsedTime(&ms_i, start_i, stop_i);\n";
-        lu_main << "printf(\"Iteration time %f ms\\n\", ms_i);\n";
-        lu_main << "if (ms_i > ms_max)  ms_max = ms_i;\n";
-        lu_main << "if (ms_i < ms_min) ms_min = ms_i;\n";
+        // lu_main << d2hcopy.get_code();
 
         lu_main.block_end();
         lu_main << "cudaProfilerStop();\n";
@@ -996,9 +1090,9 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "//time measurement\n";
         lu_main << "\ncudaEventRecord(stop);\n";
         lu_main << "cudaEventSynchronize(stop);\n";
-        lu_main << "cudaEventElapsedTime(&ms_total, start, stop);\n";
-        lu_main << "printf(\"Summary: [min, max, mean] = [%f, %f, %f] ms\\n\",  ms_min, ms_max, "
-                   "ms_total/steps);\n";
+        lu_main << "float milliseconds = 0;\n";
+        lu_main << "cudaEventElapsedTime(&milliseconds, start, stop);\n";
+        lu_main << "printf(\"function execution time: %f ms\\n\", milliseconds/steps);\n";
         lu_main << "\n//free context\n";
 
         for (size_t i = 0; i < tu->arg.size(); i++)
@@ -1054,7 +1148,6 @@ cmake_minimum_required(VERSION 3.5)
 
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
-SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75" CACHE STRING "target architecture")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -1065,7 +1158,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 find_package(CUDA)
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}  -ftemplate-depth=4096 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O2")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
 )";
@@ -1076,10 +1169,10 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
 
         lu << "list(APPEND SRC ${kernels} shared" << m_kernel_suffix << ")\n";
 
-        lu << "include_directories(${CMAKE_SOURCE_DIR})\n\n";
+        lu << "include_directories(${CMAKE_BINARY_DIR})\n\n";
     }
 
-    lu << "cuda_add_library(${TARGET_NAME} SHARED ${SRC})\n";
+    lu << "cuda_add_library(${TARGET_NAME} ${SRC})\n";
 
     // Prepare submodule
     {
@@ -1098,16 +1191,24 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
             lu << nnfusion::codegen::cmake::threads->get_code();
         }
 
-        if (global_required.count("header::super_scaler") > 0)
+        if (superscaler_enable)
         {
-            // add super_scaler
-            lu << nnfusion::codegen::cmake::super_scaler->get_code();
+            // add superscaler
+            lu << nnfusion::codegen::cmake::superscaler_cuda->get_code();
         }
     }
 
     lu << R"(
 cuda_add_executable(main_test main_test.cpp)   
 target_link_libraries(main_test ${TARGET_NAME}) 
+
+if(EXISTS "${CMAKE_BINARY_DIR}/Constant")
+else()
+add_custom_command(
+    TARGET ${TARGET_NAME}
+    POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Constant ${CMAKE_BINARY_DIR}/Constant
+)
+endif()
 )";
     return;
 }

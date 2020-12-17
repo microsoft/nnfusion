@@ -1,5 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
+// Microsoft (c) 2019, NNFusion Team
 
 #include "pad.hpp"
 
@@ -138,7 +137,7 @@ KernelRegistrar kernel_registrar0(
     "Pad",
     Name("Pad")
         .Device(CUDA_GPU)
-        .TypeConstraint(element::f32)
+        .TypeConstraint(DT_FLOAT)
         .Tag("cuda_kernel")
         .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
             return make_shared<cuda::Pad>(context);
@@ -147,6 +146,6 @@ KernelRegistrar kernel_registrar0(
 */
 
 REGISTER_KERNEL_EMITTER(
-    "Pad",                                                                        // op_name
-    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::Pad)                                                                    // constructor
+    "Pad",                                                                    // op_name
+    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
+    cuda::Pad)                                                                // constructor

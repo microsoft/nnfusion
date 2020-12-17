@@ -1,7 +1,6 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
 //----------------------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
 #pragma once
@@ -109,17 +108,17 @@ namespace nnfusion
                 if (runtime->check_env())
                 {
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), ROCM_GPU, element::f32);
+                        gnode->get_op_type(), ROCM_GPU, DT_FLOAT);
                     if (kernel_regs.size() == 0)
                         kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                            gnode->get_op_type(), CUDA_GPU, element::f32);
+                            gnode->get_op_type(), CUDA_GPU, DT_FLOAT);
                 }
                 else
                 {
                     runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
                     NNFUSION_CHECK(runtime->check_env());
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), CUDA_GPU, element::f32);
+                        gnode->get_op_type(), CUDA_GPU, DT_FLOAT);
                 }
 
                 bool const_infer_success = false;

@@ -1,5 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
+// Microsoft (c) 2019, NNFusion Team
 
 #include "op_inplace_pass.hpp"
 #include "nnfusion/core/graph/gnode.hpp"
@@ -48,27 +47,10 @@ bool OpInplacePass::run_on_graph(std::shared_ptr<Graph>& graph)
             AddInplace(op, 0, 0, false);
         }
 
-        else if (node->get_op_type() == "Reshape")
+        else if (node->get_op_type() == "AllReduce")
         {
-            auto op = std::dynamic_pointer_cast<nnfusion::op::Reshape>(node->get_op_ptr());
-            auto output_shape = op->get_output_shape();
-            size_t output_size = shape_size(output_shape);
-            if (!op->get_is_layout_change() || output_size < 2)
-            {
-                AddInplace(op, 0, 0, false);
-            }
-        }
-
-        else if (node->get_op_type() == "Broadcast")
-        {
-            auto op = std::dynamic_pointer_cast<nnfusion::op::Broadcast>(node->get_op_ptr());
-            auto& axes = op->get_broadcast_axes();
-            auto arg_shape = node->get_input_shape(0);
-            auto result_shape = node->get_output_shape(0);
-            if (axes.empty() || shape_size(arg_shape) == shape_size(result_shape))
-            {
-                AddInplace(op, 0, 0, false);
-            }
+            auto op = std::dynamic_pointer_cast<Op>(node->get_op_ptr());
+            AddInplace(op, 0, 0, false);
         }
 
         else if (nnfusion::op::get_annotation(nnfusion::op::get_translation(node))

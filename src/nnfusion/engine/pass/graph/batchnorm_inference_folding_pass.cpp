@@ -1,5 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
+// Microsoft (c) 2019, NNFusion Team
 
 #include "batchnorm_inference_folding_pass.hpp"
 #include <queue>
@@ -132,7 +131,7 @@ private:
         for (auto m_tn : matched)
         {
             std::shared_ptr<KernelContext> ctx(new KernelContext(m_tn->node));
-            identifier += ctx->generate_identifier();
+            identifier += generate_identifier(ctx);
         }
 
         NNFUSION_LOG(INFO) << "BatchNormInference folding pattern found: " << identifier;
@@ -403,13 +402,13 @@ private:
             {
                 auto output_id =
                     bn_out_edge->is_control_edge() ? Graph::kControlSlot : next_output_id++;
-                if (output_id != Graph::kControlSlot && output_id == 0)
+                if (output_id != Graph::kControlSlot)
                 {
                     add_node->set_output(output_id,
                                          bn_node->get_outputs().at(bn_out_edge->get_src_output()));
                 }
                 m_graph->add_edge(
-                    add_node, 0, bn_out_edge->get_dst(), bn_out_edge->get_dst_input());
+                    add_node, output_id, bn_out_edge->get_dst(), bn_out_edge->get_dst_input());
             }
             m_graph->remove_node(bn_node);
 
@@ -640,13 +639,13 @@ private:
             {
                 auto output_id =
                     bn_out_edge->is_control_edge() ? Graph::kControlSlot : next_output_id++;
-                if (output_id != Graph::kControlSlot && output_id == 0)
+                if (output_id != Graph::kControlSlot)
                 {
                     new_add_gnode->set_output(
                         output_id, bn_node->get_outputs().at(bn_out_edge->get_src_output()));
                 }
                 m_graph->add_edge(
-                    new_add_gnode, 0, bn_out_edge->get_dst(), bn_out_edge->get_dst_input());
+                    new_add_gnode, output_id, bn_out_edge->get_dst(), bn_out_edge->get_dst_input());
             }
             m_graph->remove_node(bn_node);
 
@@ -806,13 +805,13 @@ private:
             {
                 auto output_id =
                     bn_out_edge->is_control_edge() ? Graph::kControlSlot : next_output_id++;
-                if (output_id != Graph::kControlSlot && output_id == 0)
+                if (output_id != Graph::kControlSlot)
                 {
                     new_add_gnode->set_output(
                         output_id, bn_node->get_outputs().at(bn_out_edge->get_src_output()));
                 }
                 m_graph->add_edge(
-                    new_add_gnode, 0, bn_out_edge->get_dst(), bn_out_edge->get_dst_input());
+                    new_add_gnode, output_id, bn_out_edge->get_dst(), bn_out_edge->get_dst_input());
             }
             m_graph->remove_node(bn_node);
 
@@ -886,8 +885,6 @@ bool BatchNormInferenceFoldingPass::run_on_graph(std::shared_ptr<nnfusion::graph
     bool folding_flag = FLAGS_fbatchnorm_inference_folding;
     if (folding_flag)
     {
-        NNFUSION_LOG(INFO) << "batchnorm inference folding Pass starts up for Graph: "
-                           << graph->get_name();
         for (auto pattern : BN_FOLDING_PATTERNS)
         {
             BatchNormInferenceOptimizer optimizer(graph, pattern);
@@ -898,8 +895,6 @@ bool BatchNormInferenceFoldingPass::run_on_graph(std::shared_ptr<nnfusion::graph
             auto const_folding_optimizer = RuntimeConstantFoldingPass();
             const_folding_optimizer.run_on_graph(graph);
         }
-        NNFUSION_LOG(INFO) << "batchnorm inference folding Pass ends for Graph: "
-                           << graph->get_name();
     }
     return true;
 }

@@ -1,6 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
+// Microsoft (c) 2019, NNFusion Team
 #pragma once
 #include "nnfusion/core/kernels/common_langunit.hpp"
 
@@ -31,6 +29,7 @@ namespace nnfusion
             LU_DECLARE(eigen_global_thread_pool_device);
             LU_DECLARE(worker_thread_pool);
             LU_DECLARE(schedule_thread_pool);
+            LU_DECLARE(superscaler_schedule_thread);
         }
     } // namespace kernels
 } // namespace nnfusion

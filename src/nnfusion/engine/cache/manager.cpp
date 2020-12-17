@@ -19,7 +19,6 @@ DEFINE_string(fproduct_name,
 
 using namespace nnfusion::cache;
 
-// sqlite3* KernelCacheManager::kernel_cache = NULL;
 sqlite3* KernelCacheManager::kernel_cache = nullptr;
 KernelCacheManager::KernelCacheManager()
 {

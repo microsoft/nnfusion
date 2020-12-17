@@ -71,6 +71,12 @@ shared_ptr<nnfusion::cache::KernelEntry>
         kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
     }
     FunctionUnit_p func_p = this->get_or_emit_source();
+    if (func_p == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "Cannot generate kernel_cache_entry due to invalid KernelEmitter: "
+                            << m_context->gnode->get_name();
+        return nullptr;
+    }
 
     if (kernel_entry->device_type == "")
     {
@@ -200,7 +206,9 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
 {
     GENERIC_OP_LOGGING();
     if (antares_code.empty())
+    {
         return nullptr;
+    }
 
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
@@ -258,6 +266,12 @@ shared_ptr<nnfusion::cache::KernelEntry> cuda::BlockCudaEmitter::get_kernel_cach
         kernel_entry = shared_ptr<nnfusion::cache::KernelEntry>();
     }
     FunctionUnit_p func_p = this->get_or_emit_source();
+    if (func_p == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "Cannot generate kernel_cache_entry due to invalid KernelEmitter: "
+                            << m_context->gnode->get_name();
+        return nullptr;
+    }
 
     // only support kernels without shared_memory and local_thread_sync yet
     {
@@ -315,6 +329,12 @@ shared_ptr<nnfusion::cache::KernelEntry> cuda::AntaresCudaKernelEmitter::get_ker
         kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
     }
     FunctionUnit_p func_p = this->get_or_emit_source();
+    if (func_p == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "Cannot generate kernel_cache_entry due to invalid KernelEmitter: "
+                            << m_context->gnode->get_name();
+        return nullptr;
+    }
 
     if (kernel_entry->source == "")
     {

@@ -220,6 +220,11 @@ namespace nnfusion
 #endif
                         {
                             auto info = m_antares_ke_imp->autogen(ir);
+                            if (info.first == "")
+                            {
+                                NNFUSION_LOG(INFO) << "No Antares codegen for IR: " << ir;
+                                return;
+                            }
                             antares_code = info.first;
                             m_is_tuned = info.second;
 

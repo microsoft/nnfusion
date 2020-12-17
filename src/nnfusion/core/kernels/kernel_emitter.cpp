@@ -325,6 +325,12 @@ shared_ptr<nnfusion::cache::KernelEntry>
         kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
     }
     FunctionUnit_p func_p = this->get_or_emit_source();
+    if (func_p == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "Cannot generate kernel_cache_entry due to invalid KernelEmitter: "
+                            << m_context->gnode->get_name();
+        return nullptr;
+    }
 
     if (kernel_entry->key == "")
     {

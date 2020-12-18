@@ -77,12 +77,18 @@ CREATE TABLE IF NOT EXISTS KernelCache(
 
     if (SupportOpList.size() == 0)
     {
-        // kernels::cuda::CudaElementOpMap + {"Dot", "Convolution", "AvgPool", "MaxPool"}
+        // kernels::cuda::CudaElementOpMap + {"Dot", "Convolution", "AvgPool", "MaxPool", "Fused_Convolution_Relu", "Fused_Convolution_Add_Relu", "Matched_Pattern"}
         for (auto it : kernels::cuda::CudaElementOpMap)
         {
             SupportOpList.insert(it.first);
         }
-        SupportOpList.insert({"Dot", "Convolution", "AvgPool", "MaxPool"});
+        SupportOpList.insert({"Dot",
+                              "Convolution",
+                              "AvgPool",
+                              "MaxPool",
+                              "Fused_Convolution_Relu",
+                              "Fused_Convolution_Add_Relu",
+                              "Matched_Pattern"});
     }
 }
 

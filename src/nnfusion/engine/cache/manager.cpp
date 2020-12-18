@@ -5,6 +5,7 @@
 #include <limits>
 #include <pwd.h>
 #include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/core/kernels/cuda_gpu/cuda_common_ops.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
@@ -18,6 +19,8 @@ DEFINE_string(fproduct_name,
               "Device product name, like 'GeForce GTX 1080 Ti', 'Tesla V100-PCIE-16GB'");
 
 using namespace nnfusion::cache;
+
+std::unordered_set<std::string> KernelCacheManager::SupportOpList;
 
 sqlite3* KernelCacheManager::kernel_cache = nullptr;
 KernelCacheManager::KernelCacheManager()
@@ -71,6 +74,16 @@ CREATE TABLE IF NOT EXISTS KernelCache(
             kernel_cache = nullptr;
         }
     }
+
+    if (SupportOpList.size() == 0)
+    {
+        // kernels::cuda::CudaElementOpMap + {"Dot", "Convolution", "AvgPool", "MaxPool"}
+        for (auto it : kernels::cuda::CudaElementOpMap)
+        {
+            SupportOpList.insert(it.first);
+        }
+        SupportOpList.insert({"Dot", "Convolution", "AvgPool", "MaxPool"});
+    }
 }
 
 KernelCacheManager::~KernelCacheManager()
@@ -108,6 +121,14 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
             nlohmann::json::parse(std::string((char*)sqlite3_column_text(pStmt, 6)));
         fetched_kernel->miscs =
             nlohmann::json::parse(std::string((char*)sqlite3_column_text(pStmt, 8)));
+
+        if (SupportOpList.find(fetched_kernel->op_type) == SupportOpList.end())
+        {
+            NNFUSION_LOG(DEBUG) << "Unsupported op_type: " << fetched_kernel->op_type
+                                << ", ingore this fetch";
+            fetched.clear();
+            break;
+        }
 
         // parse input tags
         size_t pos = 0;
@@ -231,7 +252,18 @@ std::vector<KernelEntry_p> KernelCacheManager::fetch_with_source(std::string ide
 }
 bool KernelCacheManager::insert_kernel_entry(const KernelEntry_p kernel_entry, bool overwrite)
 {
-    NNFUSION_CHECK_NOT_NULLPTR(kernel_entry);
+    if (kernel_entry == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "kernel_entry is nullptr, unable to insert into kernel cache DB";
+        return false;
+    }
+
+    if (SupportOpList.find(kernel_entry->op_type) == SupportOpList.end())
+    {
+        NNFUSION_LOG(DEBUG) << "Unsupported op_type: " << kernel_entry->op_type
+                            << ", unable to insert into kernel cache DB";
+        return false;
+    }
 
     NNFUSION_LOG(DEBUG) << "Trying to insert kernel " << kernel_entry->identifier
                         << " on DeviceType: " << kernel_entry->device_type;

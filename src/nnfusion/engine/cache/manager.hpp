@@ -60,6 +60,10 @@ namespace nnfusion
                                                          std::string source);
             bool insert_kernel_entry(const KernelEntry_p kernel_entry, bool overwrite = false);
             bool is_valid() { return kernel_cache != nullptr; }
+        public:
+            // TODO(lingm): SupportOpList depends on the correctness of the KernelContext identifier
+            static std::unordered_set<std::string> SupportOpList;
+
         private:
             std::string m_path;
             static sqlite3* kernel_cache;

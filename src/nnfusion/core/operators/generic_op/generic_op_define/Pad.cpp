@@ -87,31 +87,40 @@ REGISTER_OP(Pad)
         auto output0_shape = curr->get_output_shape(0);
         auto output0_layout = op::create_layout_from_dims(output0_shape);
         auto padding_below = op->get_padding_below();
+        auto padding_above = op->get_padding_above();
+        auto padding_interior = op->get_padding_interior();
 
         std::vector<std::string> input0_layout;
         std::string conditions;
         std::string when_condition;
         std::string where_condition;
 
+        NNFUSION_CHECK(padding_below.size() == padding_above.size());
         for (int d = 0; d < padding_below.size(); ++d)
         {
             if (padding_below[d] > 0)
             {
                 std::string in = "-" + to_string(padding_below[d]) + " + " + output0_layout[d];
                 input0_layout.push_back(in);
-                when_condition += (when_condition.empty() ? "" : " , ") + in + " >= 0, " + in +
-                                  " < " + to_string(input0_shape[d]);
-                where_condition += (where_condition.empty() ? "" : " , ") + output0_layout[d] +
-                                   " in " + to_string(output0_shape[d]);
+
+                when_condition += (when_condition.empty() ? "" : " , ") + in + " >= 0";
             }
             else
             {
                 input0_layout.push_back(output0_layout[d]);
             }
+
+            if (padding_above[d] > 0)
+            {
+                when_condition += (when_condition.empty() ? "" : " , ") + input0_layout[d] + " < " +
+                                  to_string(input0_shape[d]);
+            }
+            where_condition += (where_condition.empty() ? "" : " , ") + output0_layout[d] + " in " +
+                               to_string(output0_shape[d]);
         }
         if (!when_condition.empty())
         {
-            when_condition = ".when([" + when_condition + "], @input1@[0])";
+            when_condition = ".when([" + when_condition + "], const(0).cast(@input0@.dtype()))";
         }
         if (!where_condition.empty())
         {

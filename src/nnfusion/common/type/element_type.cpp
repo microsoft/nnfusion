@@ -90,6 +90,39 @@ bool element::Type::nnfusion_element_type_to_dtype_string(const element::Type& n
     return true;
 }
 
+bool element::Type::nnfusion_element_type_to_pbtype(const element::Type& ng_et,
+                                                    nnfusion::serialize::PBType& dtype)
+{
+    if (ng_et == element::boolean)
+        dtype = nnfusion::serialize::PBType::DT_BOOL;
+    else if (ng_et == element::character)
+        dtype = nnfusion::serialize::PBType::DT_CHAR;
+    else if (ng_et == element::f32)
+        dtype = nnfusion::serialize::PBType::DT_FLOAT;
+    else if (ng_et == element::f64)
+        dtype = nnfusion::serialize::PBType::DT_DOUBLE;
+    else if (ng_et == element::i8)
+        dtype = nnfusion::serialize::PBType::DT_INT8;
+    else if (ng_et == element::i16)
+        dtype = nnfusion::serialize::PBType::DT_INT16;
+    else if (ng_et == element::i32)
+        dtype = nnfusion::serialize::PBType::DT_INT32;
+    else if (ng_et == element::i64)
+        dtype = nnfusion::serialize::PBType::DT_INT64;
+    else if (ng_et == element::u8)
+        dtype = nnfusion::serialize::PBType::DT_UINT8;
+    else if (ng_et == element::u16)
+        dtype = nnfusion::serialize::PBType::DT_UINT16;
+    else if (ng_et == element::u32)
+        dtype = nnfusion::serialize::PBType::DT_UINT32;
+    else if (ng_et == element::u64)
+        dtype = nnfusion::serialize::PBType::DT_UINT64;
+    else
+        return false;
+
+    return true;
+}
+
 element::Type::Type(
     size_t bitwidth, bool is_real, bool is_signed, bool is_quantized, const std::string& cname)
     : m_bitwidth{bitwidth}

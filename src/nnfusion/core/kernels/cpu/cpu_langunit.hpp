@@ -31,6 +31,7 @@ namespace nnfusion
             LU_DECLARE(eigen_global_thread_pool_device);
             LU_DECLARE(worker_thread_pool);
             LU_DECLARE(schedule_thread_pool);
+            LU_DECLARE(superscaler_schedule_thread);
         }
     } // namespace kernels
 } // namespace nnfusion

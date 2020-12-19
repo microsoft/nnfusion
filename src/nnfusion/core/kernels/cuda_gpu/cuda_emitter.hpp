@@ -157,7 +157,7 @@ namespace nnfusion
                     }
                 }
 
-                virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
+            virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
                     shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr) override;
 
             public:
@@ -208,6 +208,8 @@ namespace nnfusion
                     GENERIC_OP_LOGGING();
                     if (!FLAGS_fantares_codegen_server.empty())
                     {
+                        NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
+
                         auto ir = nnfusion::op::get_translation(ctx->gnode);
 #if 0
                         std::unordered_set<std::string> wl = {
@@ -215,9 +217,8 @@ namespace nnfusion
                           "Dot", "Elementwise", "GatherV2", "MaxPool", "OneHot", "Pad", "Relu", "Reshape", "Tile", "Reverse", "Shape", "Slice", "Sum",
                         };
                         if (!ir.empty() && wl.count(ctx->gnode->get_op_type()))
-#else
-                        if (!ir.empty())
 #endif
+                        if (!ir.empty())
                         {
                             auto info = m_antares_ke_imp->autogen(ir);
                             antares_code = info.first;

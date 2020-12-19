@@ -83,6 +83,8 @@ endif()
 set(GLOBAL_INCLUDE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty
+    # for proto headers
+    ${PROJECT_BINARY_DIR}/src
 )
 
 include_directories(

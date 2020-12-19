@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.	// Microsoft (c) 2020, NNFUSION Team
+// Copyright (c) Microsoft Corporation.	
 // Licensed under the MIT License.
 
 #pragma once

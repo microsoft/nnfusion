@@ -1,4 +1,6 @@
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.	// Microsoft (c) 2019, NNFusion Team
+// Licensed under the MIT License.
+
 #include <iostream>
 #include <stdexcept>
 #include <stdio.h>

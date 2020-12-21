@@ -157,7 +157,7 @@ namespace nnfusion
                     }
                 }
 
-            virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
+                virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
                     shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr) override;
 
             public:

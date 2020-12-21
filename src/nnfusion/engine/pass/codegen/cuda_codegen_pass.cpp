@@ -660,7 +660,7 @@ bool CudaCodegenPass::collect_stream(std::shared_ptr<InterpreterContext> ctx,
     //stream
     NNFUSION_CHECK_NOT_NULLPTR(device_async_manager);
     if (device_async_manager && device_async_manager->num_stream() > 0)
-    
+
     {
         auto stream_decl = device_async_manager->emit_stream_decl();
         auto stream_init = device_async_manager->emit_stream_init();
@@ -682,7 +682,6 @@ bool CudaCodegenPass::collect_stream(std::shared_ptr<InterpreterContext> ctx,
 
     return true;
 }
-
 
 bool CudaCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
                                   std::shared_ptr<TranslationUnit> tu)

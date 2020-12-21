@@ -34,8 +34,6 @@
 
 #include "nnfusion/engine/pass/codegen/cuda_codegen_pass.hpp"
 
-
-
 using namespace nnfusion;
 using namespace nnfusion::engine;
 using namespace nnfusion::pass::graph;

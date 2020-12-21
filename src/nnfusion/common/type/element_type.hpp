@@ -25,8 +25,8 @@
 #include <string>
 #include <vector>
 
-#include "nnfusion/common/serialize/pbtypes.pb.h"
 #include "half/include/half.hpp"
+#include "nnfusion/common/serialize/pbtypes.pb.h"
 #include "nnfusion/common/type/bfloat16.hpp"
 #include "nnfusion/util/errors.hpp"
 
@@ -81,8 +81,8 @@ namespace nnfusion
             bool operator<(const Type& other) const;
             friend std::ostream& operator<<(std::ostream&, const Type&);
             static std::vector<const Type*> get_known_types();
-            static bool nnfusion_element_type_to_pbtype(const Type &ng_et,
-                                                        nnfusion::serialize::PBType &dtype);
+            static bool nnfusion_element_type_to_pbtype(const Type& ng_et,
+                                                        nnfusion::serialize::PBType& dtype);
             static bool nnfusion_element_type_to_dtype_string(const Type& ng_et,
                                                               std::string& dtype);
 

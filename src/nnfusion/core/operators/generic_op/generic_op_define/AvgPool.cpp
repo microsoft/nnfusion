@@ -29,9 +29,10 @@ REGISTER_OP(AvgPool)
         auto _op = static_pointer_cast<nnfusion::op::AvgPool>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
+        // auto ir_template =
+        //     R"( temp0@output0_layout@ +=! @input0@@input0_layout@@conditions@; @output0@@output0_layout@ = temp0@output0_layout@ / @div@;)";
         auto ir_template =
-            R"( temp0@output0_layout@ +=! @input0@@input0_layout@@conditions@; @output0@@output0_layout@ = temp0@output0_layout@ * @div@;)";
-
+            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@ / ((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) / ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0])) @where_condition@;)";
         const auto& input0_shape = curr->get_input_shape(0);
         const auto& output0_shape = curr->get_output_shape(0);
         const auto& kernel = _op->get_window_shape();
@@ -94,7 +95,17 @@ REGISTER_OP(AvgPool)
         op_config["input0_layout"] = input0_layout;
         op_config["output0_layout"] = output0_layout;
         op_config["conditions"] = conditions;
-        op_config["div"] = 1.0 / (kernel[0] * kernel[1]);
+        op_config["div"] = kernel[0] * kernel[1];
+        op_config["stride_h"] = stride[0];
+        op_config["stride_w"] = stride[1];
+        op_config["H_top"] = input0_shape[input0_shape.size() - 2];
+        op_config["W_top"] = input0_shape[input0_shape.size() - 1];
+        op_config["KH_top"] = kernel[0];
+        op_config["KW_top"] = kernel[1];
+        op_config["pad_h"] = padding_below[0];
+        op_config["pad_w"] = padding_below[1];
+        op_config["where_condition"] = where_condition;
+        op_config["when_condition"] = when_condition;
 
         return op::create_code_from_template(ir_template, op_config);
     });

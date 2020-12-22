@@ -19,13 +19,13 @@ This guide is tested under Ubuntu 16.04 & 18.04, with or without Nvidia/AMD GPU 
     `mkdir build && cd build && cmake .. && make -j6`
 4. Use nnfusion CLI:
 
-    Nnfusion CLI could be installed in system by make install, or use `./build/src/tools/nnfusion/nnfusion` instead. You can refer to [NNFusion Client Tutorial](https://github.com/microsoft/nnfusion/wiki/4.3-NNFusion-CLI-Interface) to learn about NNFusion client.
+    Nnfusion CLI could be installed in system by make install, or use `./build/src/tools/nnfusion/nnfusion` instead. You can refer to [NNFusion Client Tutorial](https://github.com/microsoft/nnfusion/blob/master/docs/NNFusion-CLI-Interface.md) to learn about NNFusion client.
 
 5. Run test:
 
-    Please see [End to End Test](https://github.com/microsoft/nnfusion/wiki/2.1-End-to-end-Test).
+    Please see [End to End Test](https://github.com/microsoft/nnfusion/blob/master/docs/End-to-end-Test.md).
 
-After building and installing NNFusion, please refer to [Compile Guide and Tool Usage](https://github.com/microsoft/nnfusion/wiki/3.-Compile-a-Tensorflow-model-with-NNFusion) to learn how to compile or optimize a DNN model.
+After building and installing NNFusion, please refer to [Compile Guide and Tool Usage](https://github.com/microsoft/nnfusion/blob/master/docs/Compile-a-Tensorflow-model-with-NNFusion.md) to learn how to compile or optimize a DNN model.
 
 
 

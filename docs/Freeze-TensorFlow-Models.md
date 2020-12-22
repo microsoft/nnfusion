@@ -2,7 +2,7 @@
 
 **nnf_tf_freezer** is a tool that can freeze a tensorflow model into a protobuf file. It can run tensorflow constant folding the frozen graph. To compare the performance of tensorflow with nnfusion, you could also use this tool to feed the frozen graph (a protobuf file) to tensorflow.
 
-If you want to use PyTorch model, please refer to [Freeze PyTorch Model](https://github.com/microsoft/nnfusion/wiki/1.2-Freeze-PyTorch-Model).
+If you want to use PyTorch model, please refer to [Freeze PyTorch Model](https://github.com/microsoft/nnfusion/blob/master/docs/Freeze-PyTorch-Model.md).
 
 ## requirement
 * python >= 3.6
@@ -11,7 +11,7 @@ If you want to use PyTorch model, please refer to [Freeze PyTorch Model](https:/
 ## Use nnf_tf_freezer to freeze a tensorflow model
 
 ### step1:
-Download [nnf_tf_freezer.py](https://github.com/microsoft/nnfusion/blob/yuqxia/tf_freeze_tool/models/tensorflow/nnf_tf_freezer/nnf_tf_freezer.py), and import `nnf_tf_freezer`.
+Download [nnf_tf_freezer.py](https://github.com/microsoft/nnfusion/blob/master/models/tensorflow/nnf_tf_freezer/nnf_tf_freezer.py), and import `nnf_tf_freezer`.
 
 ### step2: 
 Construct your model, and define the `inputs : List[tf.placeholder]` and `outputs : List[tf.identity]` of the model graph. For training model, we use `tf.train.GradientDescentOptimizer(learning_rate=1e-4) ` as our default optimizer. You may also pass other `optimizer ：tf.train.Optimizer` to nnf_tf_freezer. 

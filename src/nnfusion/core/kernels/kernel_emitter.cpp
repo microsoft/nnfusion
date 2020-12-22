@@ -459,6 +459,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         str << avgpool->get_window_shape();
         str << avgpool->get_window_movement_strides();
         str << avgpool->get_padding_below();
+        str << avgpool->get_padding_above();
         identifier += str.str();
     }
     else if (op_type == "MaxPool")
@@ -469,6 +470,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         str << maxpool->get_window_shape();
         str << maxpool->get_window_movement_strides();
         str << maxpool->get_padding_below();
+        str << maxpool->get_padding_above();
         identifier += str.str();
     }
     else if (op_type == "Dot")

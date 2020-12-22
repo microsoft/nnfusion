@@ -5,6 +5,7 @@
 
 REGISTER_OP(Pad)
     .infershape(nnfusion::op::infershape::unimplemented_and_not_used)
+    /*
     .translate([](std::shared_ptr<graph::GNode> gnode) -> std::string {
         NNFUSION_CHECK(2 == gnode->get_input_size());
         auto op = static_pointer_cast<nnfusion::op::Pad>(gnode->get_op_ptr());
@@ -55,6 +56,7 @@ REGISTER_OP(Pad)
         }
         return expression;
     })
+    */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
 
         NNFUSION_CHECK(2 == curr->get_input_size());
@@ -85,31 +87,40 @@ REGISTER_OP(Pad)
         auto output0_shape = curr->get_output_shape(0);
         auto output0_layout = op::create_layout_from_dims(output0_shape);
         auto padding_below = op->get_padding_below();
+        auto padding_above = op->get_padding_above();
+        auto padding_interior = op->get_padding_interior();
 
         std::vector<std::string> input0_layout;
         std::string conditions;
         std::string when_condition;
         std::string where_condition;
 
+        NNFUSION_CHECK(padding_below.size() == padding_above.size());
         for (int d = 0; d < padding_below.size(); ++d)
         {
             if (padding_below[d] > 0)
             {
                 std::string in = "-" + to_string(padding_below[d]) + " + " + output0_layout[d];
                 input0_layout.push_back(in);
-                when_condition += (when_condition.empty() ? "" : " , ") + in + " >= 0, " + in +
-                                  " < " + to_string(input0_shape[d]);
-                where_condition += (where_condition.empty() ? "" : " , ") + output0_layout[d] +
-                                   " in " + to_string(output0_shape[d]);
+
+                when_condition += (when_condition.empty() ? "" : " , ") + in + " >= 0";
             }
             else
             {
                 input0_layout.push_back(output0_layout[d]);
             }
+
+            if (padding_above[d] > 0)
+            {
+                when_condition += (when_condition.empty() ? "" : " , ") + input0_layout[d] + " < " +
+                                  to_string(input0_shape[d]);
+            }
+            where_condition += (where_condition.empty() ? "" : " , ") + output0_layout[d] + " in " +
+                               to_string(output0_shape[d]);
         }
         if (!when_condition.empty())
         {
-            when_condition = ".when([" + when_condition + "], @input1@[0])";
+            when_condition = ".when([" + when_condition + "], const(0).cast(@input0@.dtype()))";
         }
         if (!where_condition.empty())
         {
@@ -123,5 +134,23 @@ REGISTER_OP(Pad)
         op_config["conditions"] = conditions;
         op_config["output0_layout"] = vector_to_string<std::vector<std::string>>(output0_layout);
 
-        return op::create_code_from_template(ir_template, op_config);
+        expression = op::create_code_from_template(ir_template, op_config);
+        bool pad_zero = true;
+        for (auto i : op->get_padding_below())
+        {
+            if (i != 0)
+                pad_zero = false;
+        }
+
+        for (auto i : op->get_padding_above())
+        {
+            if (i != 0)
+                pad_zero = false;
+        }
+
+        if (pad_zero)
+        {
+            expression += " ## @: memcpy";
+        }
+        return expression;
     });

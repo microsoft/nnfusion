@@ -6,7 +6,6 @@
 #include "autodiff_pass.hpp"
 #include "batchnorm_inference_folding_pass.hpp"
 #include "blockfusion_pass.hpp"
-#include "codegen_dxcompute_pass.hpp"
 #include "codegen_graphcore_pass.hpp"
 #include "common_subexpression_elimination_pass.hpp"
 #include "dot_transpose_pass.hpp"

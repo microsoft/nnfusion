@@ -13,8 +13,8 @@ This page lists some commonly-used frozen models that are well tested with NNFus
 | Inception_v3 | inference   | frozen | 1.14 | [frozen_inception3_infer_batch_1.const_folded.pb](https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_inception3_infer_batch_1.const_folded.pb)
 | LSTM-L10-L100-H256 | inference   | frozen | 1.14 | [frozen_lstm_infer_batch_1.const_folded.pb](https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_lstm_infer_batch_1.const_folded.pb)
 | LSTM-L8-S8-H256 | inference | frozen | 1.14 | [frozen_lstm_l8s8h256_bs1.pb](https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_lstm_l8s8h256_bs1.pb) | 
-| BERT_large | inference | frozen | 1.14 | [frozen_bert_large.const_folded.pb](https://nnfusion.blob.core.windows.net/models/frozen_bert_large.const_folded.pb) | 
-| BERT_large_L2 | inference | frozen | 1.14 | [frozen_bert_large_layer_2.const_folded.pb](https://nnfusion.blob.core.windows.net/models/frozen_bert_large_layer_2.const_folded.pb) | 
+| BERT_large | inference | frozen | 1.14 | [frozen_bert_large.const_folded.pb](https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_bert_large.const_folded.pb) | 
+| BERT_large_L2 | inference | frozen | 1.14 | [frozen_bert_large_layer_2.const_folded.pb](https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_bert_large_layer_2.const_folded.pb) | 
 
 ## Usage Example: Compile LSTM model on CUDA
 

@@ -32,7 +32,7 @@ REGISTER_OP(AvgPool)
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         auto ir_template1 =
-            R"( temp0@output0_layout@ +=! @input0@@input0_layout@ @where_condition@; @output0@@output0_layout@ = temp0@output0_layout@ / @div@;)";
+            R"( mediate0@output0_layout@ +=! @input0@@input0_layout@ @where_condition@; @output0@@output0_layout@ = mediate0@output0_layout@ / @div@;)";
         auto ir_template2 =
             R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@ / ((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) / ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0])) @where_condition@;)";
         const auto& input0_shape = curr->get_input_shape(0);
@@ -114,7 +114,7 @@ REGISTER_OP(AvgPool)
         if (padding_below[0] == 0 && padding_below[1] == 0 && padding_above[0] == 0 &&
             padding_above[1] == 0)
         {
-            return op::create_code_from_template(ir_template2, op_config);
+            return op::create_code_from_template(ir_template1, op_config);
         }
         else
         {

@@ -21,7 +21,8 @@ DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
 
-const std::unordered_set<std::string> KernelTuning::BlockList = {};
+// TODO: fix DepthwiseConv2dNative Antares IR bug
+const std::unordered_set<std::string> KernelTuning::BlockList = {"DepthwiseConv2dNative"};
 
 struct TuningStatus
 {

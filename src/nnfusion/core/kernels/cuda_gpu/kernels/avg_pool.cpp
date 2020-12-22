@@ -274,7 +274,7 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
 
     std::stringstream tag;
     tag << "cudnn_avgpool_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
-        << "_o" << join(output_shape, "_") << "_ws" << join(window_stride, "_") << "_wst"
+        << "_o" << join(output_shape, "_") << "_ws" << join(window_shape, "_") << "_wst"
         << join(window_stride, "_") << "_pb" << join(padding_below, "_") << "_pb"
         << join(padding_above, "_");
     custom_tag = tag.str();

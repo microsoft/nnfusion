@@ -5,6 +5,7 @@
 #include <limits>
 #include <pwd.h>
 #include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/core/kernels/cuda_gpu/cuda_common_ops.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
@@ -19,7 +20,8 @@ DEFINE_string(fproduct_name,
 
 using namespace nnfusion::cache;
 
-// sqlite3* KernelCacheManager::kernel_cache = NULL;
+std::unordered_set<std::string> KernelCacheManager::SupportOpList;
+
 sqlite3* KernelCacheManager::kernel_cache = nullptr;
 KernelCacheManager::KernelCacheManager()
 {
@@ -27,6 +29,20 @@ KernelCacheManager::KernelCacheManager()
     if (FLAGS_fkernel_cache_path != "")
     {
         m_path = FLAGS_fkernel_cache_path;
+    }
+    {
+        size_t pos = m_path.find_last_of("/");
+        if (pos != std::string::npos && pos != (m_path.size() - 1))
+        {
+            std::string cache_folder = m_path.substr(0, pos);
+
+            struct stat s;
+            if (stat(cache_folder.c_str(), &s) != 0)
+            {
+                std::string cmd_create_folder = "mkdir -p " + cache_folder;
+                system(cmd_create_folder.c_str());
+            }
+        }
     }
 
     if (!kernel_cache)
@@ -52,9 +68,27 @@ CREATE TABLE IF NOT EXISTS KernelCache(
         }
         else
         {
-            NNFUSION_LOG(NNFUSION_WARNING) << "Invalid path to kernel cache: " << m_path;
+            NNFUSION_LOG(ERROR) << "Invalid path to kernel cache: " << m_path << ", "
+                                << sqlite3_errmsg(kernel_cache)
+                                << ", kernel cache will be disabled";
             kernel_cache = nullptr;
         }
+    }
+
+    if (SupportOpList.size() == 0)
+    {
+        // kernels::cuda::CudaElementOpMap + {"Dot", "Convolution", "AvgPool", "MaxPool", "Fused_Convolution_Relu", "Fused_Convolution_Add_Relu", "Matched_Pattern"}
+        for (auto it : kernels::cuda::CudaElementOpMap)
+        {
+            SupportOpList.insert(it.first);
+        }
+        SupportOpList.insert({"Dot",
+                              "Convolution",
+                              "AvgPool",
+                              "MaxPool",
+                              "Fused_Convolution_Relu",
+                              "Fused_Convolution_Add_Relu",
+                              "Matched_Pattern"});
     }
 }
 
@@ -93,6 +127,14 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
             nlohmann::json::parse(std::string((char*)sqlite3_column_text(pStmt, 6)));
         fetched_kernel->miscs =
             nlohmann::json::parse(std::string((char*)sqlite3_column_text(pStmt, 8)));
+
+        if (SupportOpList.find(fetched_kernel->op_type) == SupportOpList.end())
+        {
+            NNFUSION_LOG(DEBUG) << "Unsupported op_type: " << fetched_kernel->op_type
+                                << ", ingore this fetch";
+            fetched.clear();
+            break;
+        }
 
         // parse input tags
         size_t pos = 0;
@@ -216,7 +258,18 @@ std::vector<KernelEntry_p> KernelCacheManager::fetch_with_source(std::string ide
 }
 bool KernelCacheManager::insert_kernel_entry(const KernelEntry_p kernel_entry, bool overwrite)
 {
-    NNFUSION_CHECK_NOT_NULLPTR(kernel_entry);
+    if (kernel_entry == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "kernel_entry is nullptr, unable to insert into kernel cache DB";
+        return false;
+    }
+
+    if (SupportOpList.find(kernel_entry->op_type) == SupportOpList.end())
+    {
+        NNFUSION_LOG(DEBUG) << "Unsupported op_type: " << kernel_entry->op_type
+                            << ", unable to insert into kernel cache DB";
+        return false;
+    }
 
     NNFUSION_LOG(DEBUG) << "Trying to insert kernel " << kernel_entry->identifier
                         << " on DeviceType: " << kernel_entry->device_type;

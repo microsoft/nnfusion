@@ -21,7 +21,8 @@ DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
 
-const std::unordered_set<std::string> KernelTuning::BlockList = {};
+// TODO: fix DepthwiseConv2dNative Antares IR bug
+const std::unordered_set<std::string> KernelTuning::BlockList = {"DepthwiseConv2dNative"};
 
 struct TuningStatus
 {
@@ -100,14 +101,7 @@ std::vector<std::shared_ptr<GNode>>
 {
     NNFUSION_CHECK(graph != nullptr);
 
-    auto cache_manager = std::make_shared<cache::KernelCacheManager>();
-    if (!cache_manager->is_valid())
-    {
-        NNFUSION_LOG(INFO) << "No valid kernel cache, all the kernels will be tuned";
-        return graph->get_nodes();
-    }
-
-    std::vector<std::shared_ptr<GNode>> ret;
+    std::vector<std::shared_ptr<GNode>> candidates;
     std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
 
     std::unordered_set<std::string> translated_irs;
@@ -146,29 +140,46 @@ std::vector<std::shared_ptr<GNode>>
             translated_irs.insert(ir);
         }
 
-        // filter ops existing in kernel cache DB
-        shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-        auto identifier = ctx->generate_identifier();
-        auto device_type = get_device_str(n_device_type);
-        std::string source = "Antares";
-        auto fetched = cache_manager->fetch_with_source(identifier, device_type, source);
+        candidates.push_back(gnode);
+    }
 
-        bool tune_flag = true;
-        for (auto fetch : fetched)
+    // filter ops existing in kernel cache DB
+    {
+        auto cache_manager = std::make_shared<cache::KernelCacheManager>();
+        if (!cache_manager->is_valid())
         {
-            if (fetch->miscs["antares"]["device_name"] == FLAGS_fproduct_name &&
-                fetch->miscs["antares"]["planned_steps"] >= FLAGS_fkernel_tuning_steps)
-            {
-                tune_flag = false;
-            }
+            NNFUSION_LOG(INFO) << "No valid kernel cache, all the kernels will be tuned";
         }
-        if (tune_flag)
+        else
         {
-            ret.push_back(gnode);
+            std::vector<std::shared_ptr<GNode>> non_cached_candidates;
+            for (auto gnode : candidates)
+            {
+                shared_ptr<KernelContext> ctx(new KernelContext(gnode));
+                auto identifier = ctx->generate_identifier();
+                auto device_type = get_device_str((*gnode)["DeviceType"].as<NNFusion_DeviceType>());
+                std::string source = "Antares";
+                auto fetched = cache_manager->fetch_with_source(identifier, device_type, source);
+
+                bool tune_flag = true;
+                for (auto fetch : fetched)
+                {
+                    if (fetch->miscs["antares"]["device_name"] == FLAGS_fproduct_name &&
+                        fetch->miscs["antares"]["planned_steps"] >= FLAGS_fkernel_tuning_steps)
+                    {
+                        tune_flag = false;
+                    }
+                }
+                if (tune_flag)
+                {
+                    non_cached_candidates.push_back(gnode);
+                }
+            }
+            candidates = non_cached_candidates;
         }
     }
 
-    return ret;
+    return candidates;
 }
 
 bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
@@ -334,6 +345,12 @@ bool KernelTuning::insert_to_kernel_cache(const std::vector<std::shared_ptr<GNod
             {
                 auto antares_kernel = kernel_reg->m_factory(ctx);
                 auto kernel_cache_entry = antares_kernel->get_kernel_cache_entry();
+                if (kernel_cache_entry == nullptr)
+                {
+                    NNFUSION_LOG(INFO)
+                        << "Invalid kernel_cache_entry, will not insert to kernel cache: "
+                        << gnode->get_name();
+                }
 
                 // overwrite existing kernel entries
                 cache_manager->insert_kernel_entry(kernel_cache_entry, true);

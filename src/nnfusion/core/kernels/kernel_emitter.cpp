@@ -325,6 +325,12 @@ shared_ptr<nnfusion::cache::KernelEntry>
         kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
     }
     FunctionUnit_p func_p = this->get_or_emit_source();
+    if (func_p == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "Cannot generate kernel_cache_entry due to invalid KernelEmitter: "
+                            << m_context->gnode->get_name();
+        return nullptr;
+    }
 
     if (kernel_entry->key == "")
     {
@@ -453,6 +459,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         str << avgpool->get_window_shape();
         str << avgpool->get_window_movement_strides();
         str << avgpool->get_padding_below();
+        str << avgpool->get_padding_above();
         identifier += str.str();
     }
     else if (op_type == "MaxPool")
@@ -463,6 +470,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         str << maxpool->get_window_shape();
         str << maxpool->get_window_movement_strides();
         str << maxpool->get_padding_below();
+        str << maxpool->get_padding_above();
         identifier += str.str();
     }
     else if (op_type == "Dot")

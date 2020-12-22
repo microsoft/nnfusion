@@ -34,6 +34,9 @@ If you want to freeze a bert inference model, run constant folding to the frozen
 ```
 python3 tf_freeze_graph_example.py --model_name=bert --frozen_graph=bert.pb --const_folding --run_graph --run_const_folded_graph
 ```
+
+If you want to try low precision model, you can add `--to_fp16` option when freezing model in above example. NNFusion will generate low precision kernel accordingly when compiling. For now, only alexnet and vgg11 models are tested.
+
 It will generate two files under current directory:  `bert.pb` (the original version) and `bert.const_folded.pb` (the constant-folded version). And you will see the output of this model and a summary of tensorflow performance which looks like:
 ```
 Updated:

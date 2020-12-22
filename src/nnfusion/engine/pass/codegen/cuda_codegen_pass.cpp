@@ -418,12 +418,6 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
              pairs.end(),
              [](std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& a,
                 std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& b) {
-                 if (a.first.find("default_") != string::npos)
-                     return false;
-
-                 if (b.first.find("default") != string::npos)
-                     return false;
-
                  int pos_a = a.first.find("async_");
                  int pos_b = b.first.find("async_");
                  if (pos_a >= 0 && pos_b >= 0)
@@ -660,15 +654,28 @@ bool CudaCodegenPass::collect_stream(std::shared_ptr<InterpreterContext> ctx,
     //stream
     NNFUSION_CHECK_NOT_NULLPTR(device_async_manager);
     if (device_async_manager && device_async_manager->num_stream() > 0)
-
     {
         auto stream_decl = device_async_manager->emit_stream_decl();
         auto stream_init = device_async_manager->emit_stream_init();
         auto stream_destroy = device_async_manager->emit_stream_destroy();
 
-        stream_init->require(stream_decl);
-        add_init_and_exit_pair(stream_init, stream_destroy);
+        string stream_init_code_old = stream_init->get_code();
+        string stream_destroy_code_old = stream_destroy->get_code();
+        string stream_init_code =
+            (superscaler_enable ? std::regex_replace(stream_init_code_old, r, "// $0")
+                                : stream_init_code_old);
+        string stream_destroy_code =
+            (superscaler_enable ? std::regex_replace(stream_destroy_code_old, r, "// $0")
+                                : stream_destroy_code_old);
+        LanguageUnit_p stream_init_lu(
+            new LanguageUnit(stream_init->get_symbol(), stream_init_code));
+        LanguageUnit_p stream_destroy_lu(
+            new LanguageUnit(stream_destroy->get_symbol(), stream_destroy_code));
+
+        stream_init_lu->require(stream_decl);
+        add_init_and_exit_pair(stream_init_lu, stream_destroy_lu);
     }
+
     //event
     if (device_async_manager && device_async_manager->num_event() > 0)
     {
@@ -676,8 +683,21 @@ bool CudaCodegenPass::collect_stream(std::shared_ptr<InterpreterContext> ctx,
         auto event_init = device_async_manager->emit_event_init();
         auto event_destroy = device_async_manager->emit_event_destroy();
 
-        event_init->require(event_decl);
-        add_init_and_exit_pair(event_init, event_destroy);
+        string event_init_code_old = event_init->get_code();
+        string event_destroy_code_old = event_destroy->get_code();
+        string event_init_code =
+            (superscaler_enable ? std::regex_replace(event_init_code_old, r, "// $0")
+                                : event_init_code_old);
+        string event_destroy_code =
+            (superscaler_enable ? std::regex_replace(event_destroy_code_old, r, "// $0")
+                                : event_destroy_code_old);
+
+        LanguageUnit_p event_init_lu(new LanguageUnit(event_init->get_symbol(), event_init_code));
+        LanguageUnit_p event_destroy_lu(
+            new LanguageUnit(event_destroy->get_symbol(), event_destroy_code));
+
+        event_init_lu->require(event_decl);
+        add_init_and_exit_pair(event_init_lu, event_destroy_lu);
     }
 
     return true;

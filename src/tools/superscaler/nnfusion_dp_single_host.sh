@@ -22,12 +22,12 @@ echo $PWD
 NUM_PROCS_SAME_HOST=${DEPLOYMENT_CONFIG##*:}
 NNFUSION_EXE='./src/tools/nnfusion/nnfusion'
 DUMPED_GRAPH_FILENAME='graph'
-SUPERSCALER_COMPILING_OPTIONS="-fadd_sc_allreduce=true -fadd_sc_allreduce_fusion=true -fsc_allreduce_fusion_size=268435456 -fenable_export_graph=true -fnnfusion_graph_path=$DUMPED_GRAPH_FILENAME.pb"
+SUPERSCALER_COMPILING_OPTIONS="-fadd_sc_allreduce=true -fenable_export_graph=true -fnnfusion_graph_path=$DUMPED_GRAPH_FILENAME.pb"
 COMPILE_CMD="$NNFUSION_EXE $MODEL_FILE_PATH $MODEL_COMPILING_OPTIONS $SUPERSCALER_COMPILING_OPTIONS"
 
 echo "-- Creating build dir for compiling NNFusion model"
 rm -fr build && mkdir build && cd build && cp -r ../nnf_py . 
-pushd ../../../../../../../NNFusion > /dev/null
+pushd ../../../../../.. > /dev/null
 echo "-- Building NNFusion"
 rm -fr build && mkdir build && cd build && cmake .. > /dev/null
 make -j > /dev/null || make
@@ -37,7 +37,6 @@ echo "-- Dumping NNFusion graph"
 python src/tools/serialize/nnfusion_serialize_tool.py $DUMPED_GRAPH_FILENAME.pb $DUMPED_GRAPH_FILENAME.pbtxt > /dev/null 2>&1
 #copy generated resources
 cp -r nnfusion_rt/cuda_codegen/* $OLD_PWD/build
-cp -r para_info.json $OLD_PWD/build
 cp -r $DUMPED_GRAPH_FILENAME.pbtxt $OLD_PWD/build
 popd > /dev/null
 

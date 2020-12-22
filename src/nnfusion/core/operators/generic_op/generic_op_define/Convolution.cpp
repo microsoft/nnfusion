@@ -41,6 +41,8 @@ REGISTER_OP(Convolution)
         const auto& stride_h = _op->get_window_movement_strides()[0];
         const auto& stride_w = _op->get_window_movement_strides()[1];
         const auto& is_nchw = _op->get_data_format() == "NCHW";
+        const auto& padding_below = _op->get_padding_below();
+        const auto& padding_above = _op->get_padding_above();
         const auto& padding_h = _op->get_padding_below()[0];
         const auto& padding_w = _op->get_padding_below()[1];
         const auto& kernel_size_h =
@@ -52,6 +54,8 @@ REGISTER_OP(Convolution)
         const std::string data_format = is_nchw ? "nchw" : "nhwc";
         NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
         NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
+        NNFUSION_CHECK(padding_below == padding_above)
+            << "Asymetric padding is not supported by now.";
         nnfusion::op::OpConfig::any config;
         std::string HO = "-@pad_0@ + KH + HO * " + to_string(stride_h);
         std::string WO = "-@pad_1@ + KW + WO * " + to_string(stride_w);

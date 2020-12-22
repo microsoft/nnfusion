@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #include "cuda_codegen_pass.hpp"
 #include "codegen_langunit.hpp"
 #include "codegenerator_helper.hpp"

@@ -1,6 +1,6 @@
 execute_process(
   COMMAND
-    python -c
+    python3 -c
     "import superscaler as _; print(_.__path__[0])"
   OUTPUT_VARIABLE SUPERSCALER_INSTALLATION_PATH
   OUTPUT_STRIP_TRAILING_WHITESPACE)

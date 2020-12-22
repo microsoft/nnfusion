@@ -34,7 +34,7 @@ make -j > /dev/null || make
 echo "-- Compiling model $MODEL_FILE_PATH"
 eval $COMPILE_CMD > /dev/null
 echo "-- Dumping NNFusion graph"
-python src/tools/serialize/nnfusion_serialize_tool.py $DUMPED_GRAPH_FILENAME.pb $DUMPED_GRAPH_FILENAME.pbtxt > /dev/null 2>&1
+python3 src/tools/serialize/nnfusion_serialize_tool.py $DUMPED_GRAPH_FILENAME.pb $DUMPED_GRAPH_FILENAME.pbtxt > /dev/null 2>&1
 #copy generated resources
 cp -r nnfusion_rt/cuda_codegen/* $OLD_PWD/build
 cp -r $DUMPED_GRAPH_FILENAME.pbtxt $OLD_PWD/build
@@ -44,7 +44,7 @@ popd > /dev/null
 sed  -i 's/.*cuda_add_library.*/set(CMAKE_POSITION_INDEPENDENT_CODE ON)\ncuda_add_library(${TARGET_NAME} SHARED ${SRC})/' CMakeLists.txt
 
 echo "-- Generating superscaler runnig plan"
-python -c "from superscaler.nnfusion import generate_data_parallelism_plan; \
+python3 -c "from superscaler.nnfusion import generate_data_parallelism_plan; \
            generate_data_parallelism_plan(\"$DUMPED_GRAPH_FILENAME.pbtxt\", \
                                    ${NUM_PROCS_SAME_HOST}, \
                                    \"${CLUSTER_SPEC_FILE}\", \

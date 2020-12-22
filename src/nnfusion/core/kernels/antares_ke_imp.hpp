@@ -20,6 +20,7 @@ namespace nnfusion
             static double get_perf(const std::string& response);
             static std::pair<int, int> get_tuning_step(const std::string& response);
             static std::string get_device_name(const std::string& response);
+            static std::vector<nnfusion::Shape> get_output_shapes(const std::string& response);
         };
     } // namespace kernels
 } // namespace nnfusion

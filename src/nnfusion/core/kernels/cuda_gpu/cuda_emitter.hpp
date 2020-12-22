@@ -225,6 +225,41 @@ namespace nnfusion
                                 NNFUSION_LOG(INFO) << "No Antares codegen for IR: " << ir;
                                 return;
                             }
+                            { // check output_shapes of NNFusion and Antares, fallback when shapes mismatch.
+                                auto antares_output_shapes =
+                                    AntaresKEImp::get_output_shapes(info.first);
+                                bool flag_match = true;
+
+                                if (antares_output_shapes.size() == 0)
+                                {
+                                    flag_match = false;
+                                }
+
+                                if (antares_output_shapes.size() != ctx->outputs.size())
+                                {
+                                    flag_match = false;
+                                }
+                                else
+                                {
+                                    for (int i = 0; i < antares_output_shapes.size(); i++)
+                                    {
+                                        if (antares_output_shapes[i] !=
+                                            ctx->outputs[i]->get_shape())
+                                        {
+                                            flag_match = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!flag_match)
+                                {
+                                    NNFUSION_LOG(ERROR)
+                                        << "Infershapes of gnode " << ctx->gnode->get_name()
+                                        << " do not match in NNFusion and Antares, fallback";
+                                    return;
+                                }
+                            }
+
                             antares_code = info.first;
                             m_is_tuned = info.second;
 

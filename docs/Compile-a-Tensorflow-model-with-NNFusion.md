@@ -3,13 +3,13 @@
 The goal of this tutorial is to illustrate how to compile and optimize a DNN model, and demonstrate the performance improvement with NNFusion.
 
 ### Build & install NNFusion
-We assume you already built and installed NNFusion in your environment with a CUDA GPU equipped, see supported CUDA GPUs from [Before Started](https://github.com/microsoft/nnfusion/wiki/1.-Before-Started) page.
-Please refer [Build Guide](https://github.com/microsoft/nnfusion/wiki/2.-Build-Guide) for more information on how to build and install NNFusion.
+We assume you already built and installed NNFusion in your environment with a CUDA GPU equipped, see supported CUDA GPUs from [Before Started](https://github.com/microsoft/nnfusion/blob/master/docs/Before-Started.md) page.
+Please refer [Build Guide](https://github.com/microsoft/nnfusion/blob/master/docs/Build-Guide.md) for more information on how to build and install NNFusion.
 
 ###  Prepare model
 
 We will use a simple TensorFlow LSTM inference model as an example ([models/tensorflow/lstm.py](https://github.com/microsoft/nnfusion/tree/master/models/tensorflow/lstm.py)), which has 8 layers of LSTM cells with sequence length of 8 and hidden size of 256.
-Since the input of NNFusion is TensorFlow frozen model, we first need to use TensorFlow built-in freezing functionality to freeze this model into a protobuf file. The detailed instruction on how to freeze a model can refer [Freeze TensorFlow model]().
+Since the input of NNFusion is TensorFlow frozen model, we first need to use TensorFlow built-in freezing functionality to freeze this model into a protobuf file. The detailed instruction on how to freeze a model can refer [Freeze TensorFlow model](https://github.com/microsoft/nnfusion/blob/master/docs/Freeze-TensorFlow-Models.md).
 
 Here in this tutorial, we can just download a frozen version from our model zoo:
 

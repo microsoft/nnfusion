@@ -1,4 +1,4 @@
-*Note:* In this tutorial, we assume nnfusion cli has been installed as [Build Guide](https://github.com/microsoft/nnfusion/wiki/Build-Guide).
+*Note:* In this tutorial, we assume nnfusion cli has been installed as [Build Guide](https://github.com/microsoft/nnfusion/blob/master/docs/Build-Guide.md).
 
 NNFusion leverages ONNX to support PyTorch. So this tutorial focuses on how to freeze an ONNX model from PyTorch source code. You could get NNFusion supported ONNX ops [here](https://github.com/microsoft/nnfusion/blob/master/src/nnfusion/frontend/onnx_import/ops_bridge.cpp).
 

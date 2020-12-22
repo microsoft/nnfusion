@@ -13,12 +13,13 @@
 ## Highlight features
 - Provide a full-stack optimization mechanism, including:
   - Data-flow graph optimizations, e.g., CSE, compile-time constant folding, etc.
-  - Model-specific kernel selection, kernel co-scheduling and kernel fusion
-  - Static memory layout and placement optimizations
+  - Model-specific kernel selection, kernel co-scheduling，kernel fusion and auto kernel tuner integration.
+  - Static memory layout and placement optimizations.
 - Provide ahead-of-time and source-to-source (model-to-code) compilation to reduce runtime overhead and remove library/framework dependencies.
-- Support popular DNN model formats including TensorFlow and ONNX as input models
+- Support popular DNN model formats including TensorFlow and ONNX as input models.
 - Support customized optimization in an easier and more efficient way, e.g., directly replacing hand-crafted kernels on the generated human-readable code.
-- Support commonly used devices like CUDA GPUs, and ROCm GPUs
+- Support commonly used devices like CUDA GPUs, ROCm GPUs and CPU.
+- Support parallel training via [SuperScaler](https://github.com/microsoft/SuperScaler)
 
 ## Get Started
 ### Quick Start with Docker Image
@@ -90,6 +91,8 @@ Iteration time 2.732960 ms
 Summary: [min, max, mean] = [2.724704, 2.968352, 2.921987] ms
 ```
 For more detailed information on NNFusion usage, please refer to [NNFusion Usage](https://github.com/microsoft/nnfusion/blob/master/docs/Compile-a-Tensorflow-model-with-NNFusion.md).
+
+For TensorFlow users, you can refer to [Kernel Tuner Tutorial](https://github.com/microsoft/nnfusion/blob/master/docs/Compile-a-model-with-kernel-tuning-enabled.md) to learn how to compile a TensorFlow model and tune each operator in this model to generate the end-to-end source code.
 
 ### Build from Source Code
 Researchers or contributors who want to do more research on optimizing model compilation, you can build NNFusion from source code.

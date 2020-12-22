@@ -1,7 +1,7 @@
 This is the contribution guide for NNFusion project on Github.
 ## Before contributing your code:
-Read [Build Guide](https://github.com/microsoft/nnfusion/wiki/2.-Build-Guide) to know how to build your code in your dev machine.    
-Read [Coding Guide](https://github.com/microsoft/nnfusion/wiki/4.2-Coding-Guide) to know how to modify source code.
+Read [Build Guide](https://github.com/microsoft/nnfusion/blob/master/docs/Build-Guide.md) to know how to build your code in your dev machine.    
+Read [Coding Guide](https://github.com/microsoft/nnfusion/blob/master/docs/Coding-Guide.md) to know how to modify source code.
 
 ## Their are two ways of contributing your code through pull requests:
 If you are a member of NNFusion team, you can 

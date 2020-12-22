@@ -57,5 +57,6 @@ Please make sure the lib version or OS version is correct.
 | AMD Vega 20         |
 
 After you check all the dependencies, versions of OS and etc. You are ready to use NNFusion to compile your model.
-NNFusion support models of pb and ONNX format. Please refer to [Freeze TensorFlow Model](https://github.com/microsoft/nnfusion/wiki/1.1-Freeze-TensorFlow-Models) and [Freeze PyTorch Model](https://github.com/microsoft/nnfusion/wiki/1.2-Freeze-PyTorch-Model)
-Refer to [Build Guide](https://github.com/microsoft/nnfusion/wiki/2.-Build-Guide) to learn how to compile and install NNFusion.
+NNFusion support models of pb and ONNX format. Please refer to [Freeze TensorFlow Model](https://github.com/microsoft/nnfusion/blob/master/docs/Freeze-TensorFlow-Models.md) and [Freeze PyTorch Model](https://github.com/microsoft/nnfusion/blob/master/docs/Freeze-PyTorch-Model.md).
+
+Refer to [Build Guide](https://github.com/microsoft/nnfusion/blob/master/docs/Build-Guide.md) to learn how to compile and install NNFusion.

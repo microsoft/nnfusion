@@ -55,7 +55,7 @@ def test_runner():
     tensor1 = torch.ones([5, 1, 28, 28], dtype=torch.float32, device="cuda:0")
     tensor2 = torch.ones([3, 1, 28, 28], dtype=torch.float32, device="cuda:0")
     tensor3 = torch.ones([5, 1, 28, 28], dtype=torch.float32, device="cuda:0")
-    nnf_flags = {"training_mode": 1}
+    nnf_flags = {"training_mode": 1, "codegen_debug": 1}
     runner = Runner(model, codegen_flags=nnf_flags)
     point1 = time.time()
     out1 = runner(tensor1)[0].cpu().numpy()
@@ -76,8 +76,8 @@ def train_mnist():
     device = "cuda:0"
     batch_size = 5
 
-    trainer = Trainer(model, loss_func, device)
-    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size)
+    trainer = Trainer(model, loss_func, device=device)
+    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size, shuffle=False)
     print("feeding")
     i = 0
     for i, batch in enumerate(train_loader):
@@ -123,7 +123,7 @@ def eval():
 
 
 if __name__ == "__main__":
-    test_session()
+    # test_session()
     test_runner()
-    train_mnist()
-    eval()
+    # train_mnist()
+    # eval()

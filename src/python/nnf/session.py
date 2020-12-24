@@ -7,10 +7,12 @@ import copy
 import tempfile
 import torch
 import json
+import logging
 from .utils import cd, execute
 from .executor import Executor
 from .description import IODescription, ModelDescription, generate_sample
 
+logger = logging.getLogger(__name__)
 
 def generate_output_desc(model, input_desc, device="cpu"):
     fake_inputs = [generate_sample(desc, device) for desc in input_desc]
@@ -59,8 +61,6 @@ def modify_nnfusion_rt(rt_dir):
         # remove cudaDevice reset in cuda_init()
         command = "sed -i '/cudaDeviceReset()/s:^://:'" + " " + "nnfusion_rt.cu"
         execute(command)
-
-        # early return in Debug()
 
 
 def build(rt_dir):
@@ -204,6 +204,7 @@ class Session(object):
         if workdir:
             self._dir_ctx = None
             self._workdir = workdir
+            os.makedirs(workdir, exist_ok=True)
         else:
             self._dir_ctx = tempfile.TemporaryDirectory(prefix="nnf_")
             self._workdir = self._dir_ctx.name
@@ -215,8 +216,6 @@ class Session(object):
         ## codegen
         self._codegen_flags = {"extern_result_memory": 1}
         self._codegen_flags.update(codegen_flags or {})
-        if self._codegen_flags.get("codegen_debug"):
-            raise Exception("codegen_debug not supported yet")
         self._executor = self._create_executor()
 
     def _create_executor(self):
@@ -288,9 +287,19 @@ class Session(object):
             index = int(self._nnf_inputs[key]["id"])
             self._feed_tensors[index] = value
         self._executor(tensors=self._feed_tensors)
+        assert self.is_weights_nan() is False
         return [
             self._feed_tensors[index] for index in self._nnf_outputs_indexes
         ]
+
+    def is_weights_nan(self):
+        have_nan = False
+        for name, weight in self._torch_weights.items():
+            if bool(torch.isnan(weight).any()) or bool(torch.isinf(weight).any()):
+                logger.error("Nan or inf found in {}".format(name))
+                # logger.error(weight)
+                have_nan = True
+        return have_nan
 
 
 if __name__ == "__main__":

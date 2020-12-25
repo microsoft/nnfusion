@@ -8,12 +8,12 @@
 - Developers who want to deploy their pre-trained model as framework-free source codes with minimum library dependencies.
 - Researchers who want to quickly try new compiler optimization ideas or customize optimizations on some specific models.
 
-### [NNFusion v0.1 has been released!](https://github.com/microsoft/nnfusion/releases/tag/v0.1):raised_hands:
+### [NNFusion v0.2 has been released!](https://github.com/microsoft/nnfusion/releases/tag/v0.2):raised_hands:
 
 ## Highlight features
 - Provide a full-stack optimization mechanism, including:
   - Data-flow graph optimizations, e.g., CSE, compile-time constant folding, etc.
-  - Model-specific kernel selection, kernel co-scheduling，kernel fusion and auto kernel tuner integration.
+  - Model-specific kernel selection, kernel co-scheduling, kernel fusion and auto kernel tuner integration.
   - Static memory layout and placement optimizations.
 - Provide ahead-of-time and source-to-source (model-to-code) compilation to reduce runtime overhead and remove library/framework dependencies.
 - Support popular DNN model formats including TensorFlow and ONNX as input models.

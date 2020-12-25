@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-
+add_subdirectory(serialize)
 set(SRC
     languageunit.cpp
     type_info.cpp

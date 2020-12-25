@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <fstream>
 #include <memory>
 #include <vector>
 #include "gedge.hpp"
@@ -125,6 +126,7 @@ namespace nnfusion
             void set_temporary_pool_size(size_t);
 
             size_t get_memory_io();
+            bool serialize_to_file(const std::string& file_path);
 
         private:
             // Map from node ids to allocated nodes.  nodes_[id] may be nullptr if

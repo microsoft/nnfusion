@@ -101,5 +101,27 @@ namespace nnfusion
 
             return options;
         }
+
+        // +        std::string get_annotation(std::string translation)
+        // +        {
+        // +            std::string options;
+        // +            const char annotation[] = "## @annotation: ";
+        // +            int pos = translation.find(annotation);
+        // +            if (pos >= 0)
+        // +            {
+        // +                pos += sizeof(annotation) - 1;
+        // +                options = translation.substr(pos);
+        // +            }
+        // +
+        // +            if (options.size() > 0)
+        // +            {
+        // +                if (options[0] != '|')
+        // +                    options = "|" + options;
+        // +                if (options.back() != '|')
+        // +                    options += "|";
+        // +            }
+        // +
+        // +            return options;
+        // +        }
     } // namespace op
 } // namespace nnfusion

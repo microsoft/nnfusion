@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package nnfusion.serialize;
+
+import "node_def.proto";
+
+option cc_enable_arenas = true;
+
+// Represents the graph of operations
+message GraphDef {
+  repeated NodeDef node = 1;
+  int32 version = 2;
+}

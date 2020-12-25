@@ -30,6 +30,7 @@ namespace nnfusion
             using infersharedmemory_func_t = void (*)(std::shared_ptr<graph::GNode> gnode);
             using translate_func_t = std::string (*)(std::shared_ptr<graph::GNode> gnode);
             using translate_func_t_v2 = std::string (*)(std::shared_ptr<graph::GNode> gnode);
+            std::string get_annotation(std::string translation);
 
             // OpConfig(): f_infershape(infershape::copy_shape_from_inputs) { }
 

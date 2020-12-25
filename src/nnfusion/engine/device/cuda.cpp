@@ -14,6 +14,7 @@
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
+#include "nnfusion/engine/pass/graph/graph_serialization_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
@@ -22,6 +23,7 @@
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
+#include "nnfusion/engine/pass/graph/superscaler_dataparallelism_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
 
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
@@ -49,6 +51,10 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<GemmFusionPass>());
     g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
     g_passes->push_back(make_shared<AssignLayoutPass>());
+    //superscaler pass
+    g_passes->push_back(make_shared<SuperScalerDataParallelismPass>());
+    g_passes->push_back(make_shared<GraphSerializationPass>());
+
     g_passes->push_back(make_shared<OpInplacePass>());
 
     g_passes->push_back(make_shared<PatternSubstitutionPass>());

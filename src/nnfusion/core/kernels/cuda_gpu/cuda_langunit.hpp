@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.	// Microsoft (c) 2019, Wenxiang
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 #pragma once

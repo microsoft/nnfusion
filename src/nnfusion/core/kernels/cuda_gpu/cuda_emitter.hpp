@@ -217,8 +217,9 @@ namespace nnfusion
                           "Dot", "Elementwise", "GatherV2", "MaxPool", "OneHot", "Pad", "Relu", "Reshape", "Tile", "Reverse", "Shape", "Slice", "Sum",
                         };
                         if (!ir.empty() && wl.count(ctx->gnode->get_op_type()))
-#endif
+#else
                         if (!ir.empty())
+#endif
                         {
                             auto info = m_antares_ke_imp->autogen(ir);
                             antares_code = info.first;

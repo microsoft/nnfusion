@@ -31,12 +31,19 @@ REGISTER_BACKWARD_TRANSLATOR(Power).translator([](std::shared_ptr<GNode> forward
     auto y = get_node_input(forward_node, 1);
     auto z = get_node_output(forward_node, 0);
 
-    auto base_deri = graph->add_node_and_edge(std::make_shared<op::PowerBackwardBase>(), {x, y});
+    auto base_deri = graph->add_node_and_edge(
+        std::make_shared<op::GenericOp>(
+            forward_node->get_name() + "_base_deri", "PowerBackwardBase", op::OpConfig::any()),
+        {x, y});
     auto x_grad = graph->add_node_and_edge(std::make_shared<op::Multiply>(),
                                            {outputs_grad[0], GNodeIndex{base_deri, 0}});
 
-    auto exp_deri = graph->add_node_and_edge(std::make_shared<op::PowerBackwardExponent>(), {x, y});
-    auto y_grad = graph->add_node_and_edge(std::make_shared<op::Multiply>(), {outputs_grad[0], GNodeIndex{exp_deri, 0}});
+    auto exp_deri = graph->add_node_and_edge(
+        std::make_shared<op::GenericOp>(
+            forward_node->get_name() + "_exp_deri", "PowerBackwardExponent", op::OpConfig::any()),
+        {x, y});
+    auto y_grad = graph->add_node_and_edge(std::make_shared<op::Multiply>(),
+                                           {outputs_grad[0], GNodeIndex{exp_deri, 0}});
     return GNodeIndexVector{GNodeIndex{x_grad}, GNodeIndex{y_grad}};
 });
 

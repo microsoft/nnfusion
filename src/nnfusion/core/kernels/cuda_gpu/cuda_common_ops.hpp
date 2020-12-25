@@ -46,8 +46,13 @@ namespace nnfusion
                 {"Tan", cuda_op("tanf", "", "")},
                 {"Tanh", cuda_op("tanhf", "", "")},
                 {"Power", cuda_op("powf", "", "")},
-                {"PowerBackwardBase", cuda_op("power_backward_base", "x1 != 0 ? x1 * powf(x0, x1 - 1) : 0", "")},
-                {"PowerBackwardExponent", cuda_op("power_backward_exponent", "x0 > 0 ? powf(x0, x1) * logf(x0) : (x0 == 0 ? (x1 >= 0 ? 0 : CUDART_INF_F) : 0 /* CUDART_NAN_F */)", "")}, // it should be nan when base < 0, but we keep it as 0 to pass debug
+                {"PowerBackwardBase",
+                 cuda_op("power_backward_base", "x1 != 0 ? x1 * powf(x0, x1 - 1) : 0", "")},
+                {"PowerBackwardExponent",
+                 cuda_op("power_backward_exponent",
+                         "x0 > 0 ? powf(x0, x1) * logf(x0) : (x0 == 0 ? (x1 >= 0 ? 0 : "
+                         "CUDART_INF_F) : 0 /* CUDART_NAN_F */)",
+                         "")}, // it should be nan when base < 0, but we keep it as 0 to pass debug
                 {"Subtract", cuda_op("subtractf", "x0-x1", "atomicSub")},
                 {"Divide", cuda_op("fdividef", "", "")},
                 {"DivNoNan", cuda_op("divnonan", "x1 != 0 ? fdividef(x0, x1) : 0", "")},

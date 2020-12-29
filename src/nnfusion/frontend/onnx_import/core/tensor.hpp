@@ -22,7 +22,7 @@
 #pragma once
 
 #include "../util/util.hpp"
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 
 namespace nnfusion
 {

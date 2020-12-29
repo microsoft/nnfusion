@@ -33,6 +33,11 @@ LanguageUnit_p cuda::get_math_kernel(const std::string& name,
         writer << ")\n";
         writer << "{\n";
         writer.indent++;
+        if (name == "convert" && data_types[num_inputs] == "half" && data_types[0] == "int64_t")
+        {
+            writer << "return (long long)" + math_kernel << ";\n";
+        }
+        else
         {
             writer << "return " + math_kernel << ";\n";
         }

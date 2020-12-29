@@ -134,6 +134,7 @@ namespace nnfusion
                 REGISTER_EMPTY_DOMAIN("ai.onnx.ml");
                 REGISTER_EMPTY_DOMAIN("com.microsoft");
                 REGISTER_EMPTY_DOMAIN("com.microsoft.mlfeaturizers");
+                REGISTER_EMPTY_DOMAIN("ai.onnx.preview.training");
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
                 REGISTER_OPERATOR("Acos", 1, TranslateUnaryOp<op::Acos>);
                 REGISTER_OPERATOR("AdamOptimizer", 1, TranslateAdamOptimizerOp);

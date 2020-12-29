@@ -28,8 +28,8 @@
 #include <vector>
 
 #include "../onnx_base.hpp"
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/common/common.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 
 namespace nnfusion
 {

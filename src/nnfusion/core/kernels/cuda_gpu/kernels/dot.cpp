@@ -86,7 +86,7 @@ LanguageUnit_p cuda::Dot::emit_function_body()
         // matrix * vector
         else if ((arg0_shape.size() == 2) && (arg1_shape.size() == 1) && (reduction_axes == 1))
         {
-            lu << "const float alpha = 1.0;\n const float beta = 0;\n";
+            lu << "const float alpha = 1.0;\n const float beta = 0.;\n";
             lu << "CUBLAS_SAFE_CALL(cublasSgemv(cublas_handle, ";
             if (trans_A)
                 lu << "CUBLAS_OP_N, " << arg0_shape[0] << ", " << arg0_shape[1] << ", ";
@@ -107,7 +107,7 @@ LanguageUnit_p cuda::Dot::emit_function_body()
             int n = trans_A ? arg0_shape[1] : arg0_shape[0];
             int k = trans_A ? arg0_shape[0] : arg0_shape[1];
 
-            lu << "const float alpha = 1.0;\nconst float beta = 0;\n";
+            lu << "const float alpha = 1.0;\nconst float beta = 0.;\n";
 
             lu << "CUBLAS_SAFE_CALL(cublasSgemm(cublas_handle,"
                << (trans_B ? " CUBLAS_OP_T," : " CUBLAS_OP_N,")
@@ -186,7 +186,7 @@ LanguageUnit_p cuda::Dot::emit_function_body()
                 }
             }
 
-            lu << "const float alpha = 1.0;\nconst float beta = 0;\n";
+            lu << "const float alpha = 1.0;\nconst float beta = 0.;\n";
 
             lu << "CUBLAS_SAFE_CALL(cublasSgemm(cublas_handle,"
                << " CUBLAS_OP_N,"
@@ -261,89 +261,84 @@ LanguageUnit_p cuda::Dot::emit_function_body()
         //     << " static_cast<float*>(output0),"
         //     << " 1));\n";
         // }
-        // else if ((arg0_shape.size() == 2) && (arg1_shape.size() == 2) && (reduction_axes == 1) &&
-        //         (trans_A || trans_B))
-        // {
-        //     int m = trans_B ? arg1_shape[0] : arg1_shape[1];
-        //     int n = trans_A ? arg0_shape[1] : arg0_shape[0];
-        //     int k = trans_A ? arg0_shape[0] : arg0_shape[1];
-
-        //     lu << "const half alpha = 1.0;\nconst half beta = 0;\n";
-
-        //     lu << "CUBLAS_SAFE_CALL(cublasHgemm(cublas_handle,"
-        //     << (trans_B ? " CUBLAS_OP_T," : " CUBLAS_OP_N,")
-        //     << (trans_A ? " CUBLAS_OP_T," : " CUBLAS_OP_N,") << " " << m << ","
-        //     << " " << n << ","
-        //     << " " << k << ","
-        //     << " &alpha,"
-        //     << " static_cast<const half*>(input1),"
-        //     << " " << arg1_shape[1] << ","
-        //     << " static_cast<const half*>(input0),"
-        //     << " " << arg0_shape[1] << ","
-        //     << " &beta,"
-        //     << " static_cast<half*>(output0),"
-        //     << " " << m << "));\n";
-        // } else {
-        size_t axes_for_m_count = arg0_shape.size() - reduction_axes;
-        size_t axes_for_n_count = arg1_shape.size() - reduction_axes;
-        size_t axes_for_k_count = reduction_axes;
-        size_t m = 1;
-        size_t n = 1;
-        size_t k = 1;
-
-        // check if input and output size correct
-        // check and calculate k for arg0 and arg1
-        size_t arg0_k_idx = axes_for_m_count; // first axe in arg0 for k
-        size_t arg1_k_idx = 0;                // first axe in arg1 for k
-
-        for (size_t i = 0; i < axes_for_k_count; i++)
+        if ((arg0_shape.size() == 2) && (arg1_shape.size() == 2) && (reduction_axes == 1) &&
+            (trans_A || trans_B))
         {
-            k *= arg0_shape[arg0_k_idx];
-            if (arg0_shape[arg0_k_idx++] != arg1_shape[arg1_k_idx++])
-            {
-                std::vector<std::string> arg_vec{"arg0", "arg1"};
-                std::vector<nnfusion::Shape> shape_vec{arg0_shape, arg1_shape};
+            int m = trans_B ? arg1_shape[0] : arg1_shape[1];
+            int n = trans_A ? arg0_shape[1] : arg0_shape[0];
+            int k = trans_A ? arg0_shape[0] : arg0_shape[1];
 
-                NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
-                                      << nnfusion::join(shape_vec) << " respectively, at Node "
-                                      << m_context->gnode->get_name()
-                                      << ", do not match for dot op";
-            }
+            lu << "const half alpha = 1.0;\nconst half beta = 0.;\n";
+
+            lu << "CUBLAS_SAFE_CALL(cublasHgemm(cublas_handle,"
+               << (trans_B ? " CUBLAS_OP_T," : " CUBLAS_OP_N,")
+               << (trans_A ? " CUBLAS_OP_T," : " CUBLAS_OP_N,") << " " << m << ","
+               << " " << n << ","
+               << " " << k << ","
+               << " &alpha,"
+               << " static_cast<const half*>(input1),"
+               << " " << arg1_shape[1] << ","
+               << " static_cast<const half*>(input0),"
+               << " " << arg0_shape[1] << ","
+               << " &beta,"
+               << " static_cast<half*>(output0),"
+               << " " << m << "));\n";
         }
-        // check and calculate m for arg0 and out
-        size_t arg0_m_idx = 0; // first axe in arg0 for m
-        size_t out_m_idx = 0;  // first axe in out for m
-        for (size_t i = 0; i < axes_for_m_count; i++)
+        else
         {
-            m *= arg0_shape[arg0_m_idx];
-            if (arg0_shape[arg0_m_idx++] != out_shape[out_m_idx++])
-            {
-                std::vector<std::string> arg_vec{"arg0", "output"};
-                std::vector<nnfusion::Shape> shape_vec{arg0_shape, out_shape};
+            size_t axes_for_m_count = arg0_shape.size() - reduction_axes;
+            size_t axes_for_n_count = arg1_shape.size() - reduction_axes;
+            size_t axes_for_k_count = reduction_axes;
+            size_t m = 1;
+            size_t n = 1;
+            size_t k = 1;
 
-                NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
-                                      << nnfusion::join(shape_vec) << " respectively, at Node "
-                                      << m_context->gnode->get_name()
-                                      << ", do not match for dot op";
-            }
-        }
-        // check and calculate n for arg1 and out
-        size_t arg1_n_idx = axes_for_k_count; // first axe in arg1 for n
-        size_t out_n_idx = axes_for_m_count;  // first axe in arg1 for n
-        for (size_t i = 0; i < axes_for_n_count; i++)
-        {
-            n *= arg1_shape[arg1_n_idx];
-            if (arg1_shape[arg1_n_idx++] != out_shape[out_n_idx++])
-            {
-                std::vector<std::string> arg_vec{"arg1", "output"};
-                std::vector<nnfusion::Shape> shape_vec{arg1_shape, out_shape};
+            // check if input and output size correct
+            // check and calculate k for arg0 and arg1
+            size_t arg0_k_idx = axes_for_m_count; // first axe in arg0 for k
+            size_t arg1_k_idx = 0;                // first axe in arg1 for k
 
-                NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
-                                      << nnfusion::join(shape_vec) << " respectively, at Node "
-                                      << m_context->gnode->get_name()
-                                      << ", do not match for dot op";
+            for (size_t i = 0; i < axes_for_k_count; i++)
+            {
+                k *= arg0_shape[arg0_k_idx];
+                if (arg0_shape[arg0_k_idx++] != arg1_shape[arg1_k_idx++])
+                {
+                    std::vector<std::string> arg_vec{"arg0", "arg1"};
+                    std::vector<nnfusion::Shape> shape_vec{arg0_shape, arg1_shape};
+
+                    NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
+                                          << nnfusion::join(shape_vec) << " respectively, at Node "
+                                          << m_context->gnode->get_name()
+                                          << ", do not match for dot op";
+                }
             }
-        }
+            // check and calculate m for arg0 and out
+            size_t arg0_m_idx = 0; // first axe in arg0 for m
+            size_t out_m_idx = 0;  // first axe in out for m
+            for (size_t i = 0; i < axes_for_m_count; i++)
+            {
+                m *= arg0_shape[arg0_m_idx];
+                if (arg0_shape[arg0_m_idx++] != out_shape[out_m_idx++])
+                {
+                    std::vector<std::string> arg_vec{"arg0", "output"};
+                    std::vector<nnfusion::Shape> shape_vec{arg0_shape, out_shape};
+
+                    NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
+                                          << nnfusion::join(shape_vec) << " respectively, at Node "
+                                          << m_context->gnode->get_name()
+                                          << ", do not match for dot op";
+                }
+            }
+            // check and calculate n for arg1 and out
+            size_t arg1_n_idx = axes_for_k_count; // first axe in arg1 for n
+            size_t out_n_idx = axes_for_m_count;  // first axe in arg1 for n
+            for (size_t i = 0; i < axes_for_n_count; i++)
+            {
+                n *= arg1_shape[arg1_n_idx];
+                if (arg1_shape[arg1_n_idx++] != out_shape[out_n_idx++])
+                {
+                    std::vector<std::string> arg_vec{"arg1", "output"};
+                    std::vector<nnfusion::Shape> shape_vec{arg1_shape, out_shape};
 
         lu << "const half alpha = 1.0f;\nconst half beta = 0.f;\n";
 
@@ -527,7 +522,7 @@ LanguageUnit_p cuda::Dot::emit_function_body()
     }
     else
     {
-        NNFUSION_CHECK_FAIL() << "Unsupported datatype " << dtype << " for nernel dot.";
+        NNFUSION_CHECK_FAIL() << "Unsupported datatype " << dtype << " for kernel dot.";
     }
     //lu.block_end();
     return _lu;

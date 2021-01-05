@@ -105,21 +105,21 @@ namespace nnfusion
                 nnfusion::profiler::IProfilingRuntime::Pointer runtime = nullptr;
                 std::vector<shared_ptr<const KernelRegistration>> kernel_regs;
 
-                runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
+                runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
                 if (runtime->check_env())
                 {
+                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                        gnode->get_op_type(), CUDA_GPU, element::f32);
+                }
+                else
+                {
+                    runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
+                    NNFUSION_CHECK(runtime->check_env());
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
                         gnode->get_op_type(), ROCM_GPU, element::f32);
                     if (kernel_regs.size() == 0)
                         kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
                             gnode->get_op_type(), CUDA_GPU, element::f32);
-                }
-                else
-                {
-                    runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
-                    NNFUSION_CHECK(runtime->check_env());
-                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), CUDA_GPU, element::f32);
                 }
 
                 bool const_infer_success = false;

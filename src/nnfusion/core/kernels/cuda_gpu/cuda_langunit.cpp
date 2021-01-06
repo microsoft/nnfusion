@@ -15,6 +15,7 @@ LU_DEFINE(header::superscaler, "#include \"superscaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
 LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>\n");
+LU_DEFINE(header::cub, "#include <cub/cub.cuh>\n");
 
 // Macro
 LU_DEFINE(macro::HALF_MAX,
@@ -946,5 +947,200 @@ void HostApplyLayerNorm(
       n1, n2,
       float(epsilon),
       gamma, beta);
+}
+)");
+
+LU_DEFINE(declaration::compute_mask_index, R"(
+template <unsigned TPB>
+__global__ void MaskIndexKernelSmall(int sequence_length, const int* mask, int* mask_index) {
+  using BlockReduce = cub::BlockReduce<int, TPB>;
+  __shared__ typename BlockReduce::TempStorage temp_storage;
+
+  // blockIdx.x is b
+  const int offset = blockIdx.x * sequence_length;  // batch strides of sequence_length
+
+  cub::Min min;
+  int thread_data(sequence_length);
+
+  const int idx = offset + threadIdx.x;
+  if (threadIdx.x < sequence_length) {
+    const int val = mask[idx];
+    if (val == 0)  // masked position: report thread idx
+    {
+      thread_data = threadIdx.x;
+    }
+  }
+
+  const auto min_index = BlockReduce(temp_storage).Reduce(thread_data, min);
+
+  if (threadIdx.x == 0) {
+    mask_index[blockIdx.x] = min_index;
+  }
+}
+
+template <unsigned TPB>
+__global__ void MaskIndexKernel(int sequence_length, const int* mask, int* mask_index) {
+  using BlockReduce = cub::BlockReduce<int, TPB>;
+  __shared__ typename BlockReduce::TempStorage temp_storage;
+
+  // blockIdx.x is b
+  const int offset = blockIdx.x * sequence_length;  // batch strides of sequence_length
+
+  cub::Min min;
+  int thread_data(sequence_length);
+
+  for (int i = threadIdx.x; i < sequence_length; i += TPB) {
+    const int idx = offset + i;
+    const int val = mask[idx];
+    if (val == 0)  // masked position: report thread idx
+    {
+      thread_data = min(thread_data, i);
+    }
+  }
+
+  const auto min_index = BlockReduce(temp_storage).Reduce(thread_data, min);
+
+  if (threadIdx.x == 0) {
+    mask_index[blockIdx.x] = min_index;
+  }
+}
+
+inline bool ComputeMaskIndex(cudaStream_t stream, const int sequence_length, const int batch_size, const int* mask, int* mask_index) {
+  // Mask idx is of length batch_size and assumes the valid region is contiguous starting
+  // from the beginning of the sequence
+
+  // Assume n = batch_size x sequence_length
+  if (sequence_length <= 32) {
+    MaskIndexKernelSmall<32><<<batch_size, 32, 0, stream>>>(sequence_length, mask, mask_index);
+  } else if (sequence_length <= 128) {
+    MaskIndexKernelSmall<128><<<batch_size, 128, 0, stream>>>(sequence_length, mask, mask_index);
+  } else if (sequence_length == 384) {
+    MaskIndexKernelSmall<384><<<batch_size, 384, 0, stream>>>(sequence_length, mask, mask_index);
+  } else {
+    MaskIndexKernel<256><<<batch_size, 256, 0, stream>>>(sequence_length, mask, mask_index);
+  }
+}
+)");
+
+LU_DEFINE(declaration::embed_skip_layer_norm, R"(
+template <>
+__device__ inline float Rsqrt(const float& x) {
+  return rsqrtf(x);
+}
+
+template <>
+__device__ inline half Rsqrt(const half& x) {
+#if __CUDA_ARCH__ >= 530 || !defined(__CUDA_ARCH__)
+  return hrsqrt(x);
+#else
+  return half(rsqrtf(float(x)));
+#endif
+}
+
+struct KeyValuePairSum {
+  __device__ inline cub::KeyValuePair<float, float> operator()(const cub::KeyValuePair<float, float>& a, const cub::KeyValuePair<float, float>& b) {
+    return cub::KeyValuePair<float, float>(a.key + b.key, a.value + b.value);
+  }
+
+  __device__ inline cub::KeyValuePair<half, half> operator()(const cub::KeyValuePair<half, half>& a, const cub::KeyValuePair<half, half>& b) {
+    const half2 a2 = __halves2half2(a.key, a.value);
+    const half2 b2 = __halves2half2(b.key, b.value);
+    const half2 res = AddHalf2(a2, b2);
+    return cub::KeyValuePair<half, half>(res.x, res.y);
+  }
+
+  __device__ inline cub::KeyValuePair<half2, half2> operator()(const cub::KeyValuePair<half2, half2>& a, const cub::KeyValuePair<half2, half2>& b) {
+    return cub::KeyValuePair<half2, half2>(AddHalf2(a.key, b.key), AddHalf2(a.value, b.value));
+  }
+};
+
+template <typename T, int TPB>
+__device__ inline void LayerNorm(
+    const cub::KeyValuePair<T, T>& thread_data, const int ld, const int offset, const T* beta, 
+    const T* gamma, const T epsilon, T* output) {
+  // Assuming thread_data is already divided by ld
+
+  using BlockReduce = cub::BlockReduce<cub::KeyValuePair<T, T>, TPB>;
+  __shared__ typename BlockReduce::TempStorage temp_storage;
+  __shared__ T mu;      // mean
+  __shared__ T rsigma;  // 1 / std.dev.
+
+  KeyValuePairSum pair_sum;
+  const auto sum_kv = BlockReduce(temp_storage).Reduce(thread_data, pair_sum);
+
+  if (threadIdx.x == 0) {
+    mu = sum_kv.key;
+    rsigma = Rsqrt(sum_kv.value - mu * mu + epsilon);
+  }
+  __syncthreads();
+
+  for (int i = threadIdx.x; i < ld; i += TPB) {
+    const int idx = offset + i;
+    const T val = output[idx];
+    const T g(gamma[i]);
+    const T b(beta[i]);
+    output[idx] = g * (val - mu) * rsigma + b;
+  }
+}
+
+template <typename T, unsigned TPB>
+__global__ void EmbedLayerNormKernel(
+    int hidden_size, const int* input_ids, const int* segment_ids, const T* beta, const T* gamma,
+    const T* word_embedding, const T* position_embedding, const T* segment_embedding,
+    const T epsilon, T* output) {
+  KeyValuePairSum pair_sum;
+  // 1. lookup word and segment of the block
+  // blockIdx.x = position in the sequence
+  // blockIdx.y = batch
+  // gridDim.x = sequence_length
+  // gridDim.y = batch_size
+  __shared__ int word_id;
+  __shared__ int segment_id;
+
+  const T rld = T(1.f / hidden_size);
+  const int sequence_position = blockIdx.y * gridDim.x + blockIdx.x;
+  if (threadIdx.x == 0) {
+    word_id = input_ids[sequence_position];
+    segment_id = segment_ids[sequence_position];
+  }
+  __syncthreads();
+
+  // 2. load pos/segment/word embeddings and add them toghether
+  // offset into embeddings is given by word_id * hidden_size
+  const int position_offset = blockIdx.x * hidden_size;
+  const int word_offset = word_id * hidden_size;
+  const int segment_offset = segment_id * hidden_size;
+  // the output offset is given by b * (sequence_length * hidden_size) + s * hidden_size
+  const int output_offset = sequence_position * hidden_size;
+
+  cub::KeyValuePair<T, T> thread_data(0, 0);
+
+  for (int it = threadIdx.x; it < hidden_size; it += TPB) {
+    const T w(word_embedding[word_offset + it]);
+    const T t(segment_embedding[segment_offset + it]);
+    const T p(position_embedding[position_offset + it]);
+    const T val = w + t + p;
+
+    output[output_offset + it] = val;
+    const T rldval = rld * val;
+    thread_data = pair_sum(thread_data, cub::KeyValuePair<T, T>(rldval, rldval * val));
+  }
+
+  // 3. layer norm on the sum
+  LayerNorm<T, TPB>(thread_data, hidden_size, output_offset, beta, gamma, epsilon, output);
+}
+
+template <typename T>
+bool EmbedSkipLayerNorm(
+    cudaStream_t stream, int hidden_size, int batch_size, int sequence_length,
+    const int* input_ids, const int* segment_ids, const T* beta, const T* gamma,
+    const T* word_embedding, const T* position_embedding, const T* segment_embedding,
+    const T epsilon, T* output) {
+  constexpr int tpb = 256;
+  const dim3 grid(sequence_length, batch_size, 1);
+  const dim3 block(tpb, 1, 1);
+
+  EmbedLayerNormKernel<T, tpb>
+      <<<grid, block, 0, stream>>>(hidden_size, input_ids, segment_ids, beta, gamma, word_embedding, position_embedding, segment_embedding, epsilon, output);
 }
 )");

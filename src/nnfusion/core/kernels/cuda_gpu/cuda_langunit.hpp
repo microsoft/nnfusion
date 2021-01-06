@@ -17,6 +17,7 @@ namespace nnfusion
             LU_DECLARE(cupti);
             LU_DECLARE(cuda_prof_api);
             LU_DECLARE(cuda_fp16);
+            LU_DECLARE(cub);
         } // namespace header
 
         namespace macro
@@ -45,6 +46,8 @@ namespace nnfusion
             LU_DECLARE(cuda_reduce_primitive);
             LU_DECLARE(cuda_layer_norm);
             LU_DECLARE(cuda_fp16_scale);
+            LU_DECLARE(compute_mask_index);
+            LU_DECLARE(embed_skip_layer_norm);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

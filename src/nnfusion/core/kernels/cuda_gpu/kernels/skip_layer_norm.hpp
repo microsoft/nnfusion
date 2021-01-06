@@ -12,10 +12,10 @@ namespace nnfusion
     {
         namespace cuda
         {
-            class EmbedLayerNorm : public CudaLibEmitter
+            class SkipLayerNorm : public CudaLibEmitter
             {
             public:
-                EmbedLayerNorm(shared_ptr<KernelContext> ctx);
+                SkipLayerNorm(shared_ptr<KernelContext> ctx);
 
                 LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;
@@ -24,8 +24,9 @@ namespace nnfusion
             private:
                 shared_ptr<nnfusion::op::GenericOp> generic_op;
                 element::Type dtype;
-                size_t batch_size, sequence_length, hidden_size;
+                size_t sequence_length, hidden_size;
                 float epsilon;
+                int element_count;
             };
 
         } // namespace cuda

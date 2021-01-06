@@ -951,6 +951,9 @@ void HostApplyLayerNorm(
 )");
 
 LU_DEFINE(declaration::ort_layer_norm, R"(
+template <typename T>
+__device__ inline T Rsqrt(const T& x);
+
 template <>
 __device__ inline float Rsqrt(const float& x) {
   return rsqrtf(x);
@@ -962,6 +965,14 @@ __device__ inline half Rsqrt(const half& x) {
   return hrsqrt(x);
 #else
   return half(rsqrtf(float(x)));
+#endif
+}
+
+__device__ inline half2 AddHalf2(const half2 a, const half2 b) {
+#if __CUDA_ARCH__ >= 530 || !defined(__CUDA_ARCH__)
+  return __hadd2(a, b);
+#else
+  return __halves2half2(__hadd(a.x, b.x), __hadd(a.y, b.y));
 #endif
 }
 
@@ -1010,4 +1021,33 @@ __device__ inline void LayerNorm(
     output[idx] = g * (val - mu) * rsigma + b;
   }
 }
+
+template <typename T, int TPB>
+__device__ inline void LayerNormSmall(const T val, const cub::KeyValuePair<T, T>& thread_data, const int ld, const int idx,
+                                      const T* beta, const T* gamma, const T epsilon, T* output) {
+  // Assuming thread_data is already divided by ld
+  // Small settings: the block covers the leading dimension TPB >= ld. The input
+  // value is available in a register
+
+  using BlockReduce = cub::BlockReduce<cub::KeyValuePair<T, T>, TPB>;
+  __shared__ typename BlockReduce::TempStorage temp_storage;
+  __shared__ T mu;      // mean
+  __shared__ T rsigma;  // 1 / std.dev.
+
+  KeyValuePairSum pair_sum;
+  const auto sum_kv = BlockReduce(temp_storage).Reduce(thread_data, pair_sum);
+
+  if (threadIdx.x == 0) {
+    mu = sum_kv.key;
+    rsigma = Rsqrt(sum_kv.value - mu * mu + epsilon);
+  }
+  __syncthreads();
+
+  if (threadIdx.x < ld) {
+    const T g(gamma[threadIdx.x]);
+    const T b(beta[threadIdx.x]);
+    output[idx] = g * (val - mu) * rsigma + b;
+  }
+}
+
 )")

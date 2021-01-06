@@ -64,6 +64,8 @@
 #include "op/transpose.hpp"
 #include "op/unaryop.hpp"
 #include "op/unsqueeze.hpp"
+#include "op/skip_layer_norm.hpp"
+#include "op/embed_layer_norm.hpp"
 
 #include "ops_bridge.hpp"
 
@@ -159,6 +161,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("DivGrad", 1, TranslateDivGradOp);
                 REGISTER_OPERATOR("Dropout", 1, TranslateDropoutOp);
                 //REGISTER_OPERATOR("Elu", 1, elu);
+                REGISTER_DOMAIN_OPERATOR(
+                    "com.microsoft", "EmbedLayerNormalization", 1, TranslateEmbedLayerNormOp);
                 REGISTER_OPERATOR("Equal", 1, TranslateBinaryOp<op::Equal>);
                 REGISTER_OPERATOR("Erf", 1, TranslateUnaryOp<op::Erf>);
                 REGISTER_OPERATOR("ErfGrad", 1, TranslateErfGradOp);
@@ -221,6 +225,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("Sin", 1, TranslateUnaryOp<op::Sin>);
                 REGISTER_OPERATOR("Slice", 1, TranslateSliceOp);
                 REGISTER_OPERATOR("Slice", 10, TranslateSliceOp);
+                REGISTER_DOMAIN_OPERATOR(
+                    "com.microsoft", "SkipLayerNormalization", 1, TranslateSkipLayerNormOp);
                 REGISTER_OPERATOR("Softmax", 1, TranslateSoftmaxOp);
                 REGISTER_OPERATOR(
                     "SoftmaxCrossEntropyLoss", 1, TranslateSparseSoftmaxCrossEntropyOp);

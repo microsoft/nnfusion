@@ -26,6 +26,7 @@
 #include <unordered_map>
 
 #include "op/adam_optimizer.hpp"
+#include "op/attention.hpp"
 #include "op/batch_norm.hpp"
 #include "op/binaryop.hpp"
 #include "op/cast.hpp"
@@ -36,6 +37,7 @@
 #include "op/conv.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
+#include "op/embed_layer_norm.hpp"
 #include "op/erf_grad.hpp"
 #include "op/expand.hpp"
 #include "op/flatten.hpp"
@@ -54,6 +56,7 @@
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
 #include "op/shape.hpp"
+#include "op/skip_layer_norm.hpp"
 #include "op/slice.hpp"
 #include "op/softmax.hpp"
 #include "op/split.hpp"
@@ -64,8 +67,6 @@
 #include "op/transpose.hpp"
 #include "op/unaryop.hpp"
 #include "op/unsqueeze.hpp"
-#include "op/skip_layer_norm.hpp"
-#include "op/embed_layer_norm.hpp"
 
 #include "ops_bridge.hpp"
 
@@ -146,6 +147,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ArgMax", 1, TranslateIndexReductionOp<op::ArgMax>);
                 REGISTER_OPERATOR("Asin", 1, TranslateUnaryOp<op::Asin>);
                 REGISTER_OPERATOR("Atan", 1, TranslateUnaryOp<op::Atan>);
+                REGISTER_DOMAIN_OPERATOR("com.microsoft", "Attention", 1, TranslateAttentionOp);
                 REGISTER_OPERATOR("AveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("BatchNormalization", 1, TranslateBatchNormOp);
                 REGISTER_OPERATOR("Cast", 1, TranslateCastOp);

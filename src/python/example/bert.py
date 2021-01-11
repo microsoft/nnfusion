@@ -118,7 +118,7 @@ def pytorch_train_bert():
     # please download imdb data by yourself:
     # >wget http://ai.stanford.edu/\~amaas/data/sentiment/aclImdb_v1.tar.gz
     # >tar -xf aclImdb_v1.tar.gz
-    imdb_data_dir = "/data/zimiao/downloads/aclImdb"
+    imdb_data_dir = "/path/to/aclImdb"
     train_dataset, _, _ = process_data(imdb_data_dir)
     train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
 

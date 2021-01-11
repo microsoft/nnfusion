@@ -7,6 +7,7 @@ sys.path.insert(1, os.path.abspath("./src/python"))
 import time
 import numpy as np
 import torch
+torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
 from nnf.session import Session
@@ -123,7 +124,7 @@ def eval():
 
 
 if __name__ == "__main__":
-    # test_session()
+    test_session()
     test_runner()
-    # train_mnist()
-    # eval()
+    train_mnist()
+    eval()

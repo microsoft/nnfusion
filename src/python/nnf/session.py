@@ -14,6 +14,7 @@ from .description import IODescription, ModelDescription, generate_sample
 
 logger = logging.getLogger(__name__)
 
+
 def generate_output_desc(model, input_desc, device="cpu"):
     fake_inputs = [generate_sample(desc, device) for desc in input_desc]
     model_copy = copy.deepcopy(model).to(device)
@@ -232,9 +233,11 @@ class Session(object):
         flags_str = "-f {} ".format(self._model_format)
         flags_str += " ".join(
             ["-f{}={}".format(k, v) for k, v in self._codegen_flags.items()])
+
         codegen(self._onnx_model_path, flags_str, self._workdir)
         modify_nnfusion_rt(rt_dir)
         build(rt_dir)
+
         param_file = os.path.join(rt_dir, "para_info.json")
         self._binding_exectuor_inputs(param_file)
         return Executor(rt_dir)
@@ -295,7 +298,8 @@ class Session(object):
     def is_weights_nan(self):
         have_nan = False
         for name, weight in self._torch_weights.items():
-            if bool(torch.isnan(weight).any()) or bool(torch.isinf(weight).any()):
+            if bool(torch.isnan(weight).any()) or bool(
+                    torch.isinf(weight).any()):
                 logger.error("Nan or inf found in {}".format(name))
                 # logger.error(weight)
                 have_nan = True

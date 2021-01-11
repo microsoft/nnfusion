@@ -65,7 +65,7 @@ LanguageUnit_p cuda::Attention::emit_function_body()
         const @dtype@ alpha = 1.0f;
         const @dtype@ beta = 0.f;
         CUBLAS_SAFE_CALL(cublasSetMathMode(cublas_handle, CUBLAS_TENSOR_OP_MATH));
-        CUBLAS_SAFE_CALL(@cublasHgemm@(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, @n@, @m@, 1, &alpha, 
+        CUBLAS_SAFE_CALL(@cublasGemm@(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, @n@, @m@, 1, &alpha, 
         reinterpret_cast<const @dtype@*>(input2), @n@, reinterpret_cast<const @dtype@*>(@ones_tensor@), 
         1, &beta, @gemm_tensor@, @n@));
 
@@ -73,11 +73,11 @@ LanguageUnit_p cuda::Attention::emit_function_body()
         CUDA_SAFE_CALL(cudaMalloc(&workspace_ptr, @workspace_size@));
         cudaStream_t stream = nullptr;
         CUBLAS_SAFE_CALL(cublasGetStream(cublas_handle, &stream));
-        QkvToContext(cublas_handle, stream,
+        QkvToContext<@dtype@>(cublas_handle, stream,
                         @batch_size@, @sequence_length@, @num_heads@, @head_size@, @element_size@,
-                        reinterpret_cast<const @dtype@*>(input0), reinterpret_cast<@dtype@*>(output0), reinterpret_cast<@dtype@*>(workspace_ptr),
+                        reinterpret_cast<@dtype@*>(input0), reinterpret_cast<@dtype@*>(output0), reinterpret_cast<@dtype@*>(workspace_ptr),
                         @input3@, @is_unidirectional@,
-                        @past_sequence_length@, reinterpret_cast<const @dtype@*>(@input4@), reinterpret_cast<@dtype@*>(@present@), @use_2d_attention_mask@, @mask_start@);
+                        @past_sequence_length@, @input4@, @output1@, @use_2d_attention_mask@, @mask_start@);
 
     )",
         {{"n", 3 * hidden_size},
@@ -95,10 +95,9 @@ LanguageUnit_p cuda::Attention::emit_function_body()
          {"element_size", dtype.size()},
          {"past_sequence_length", past_sequence_length},
          {"is_unidirectional", unidirectional},
-         {"input3", (m_context->inputs.size() >= 4) ? "input3" : "nullptr"},
-         {"input3_shape", (m_context->inputs.size() >= 4) ? "input3" : "nullptr"},
-         {"input4", (m_context->inputs.size() == 5) ? "input4" : "nullptr"},
-         {"present", (m_context->outputs.size() > 1) ? "output1" : "nullptr"},
+         {"input3", (m_context->inputs.size() >= 4) ? "reinterpret_cast<const int*>(input3)" : "nullptr"},
+         {"input4", (m_context->inputs.size() == 5) ? (dtype == element::f16) ? "reinterpret_cast<half*>(input4)" : "reinterpret_cast<float*>(input4)" : "nullptr"},
+         {"present", (m_context->outputs.size() > 1) ? "reinterpret_cast<const int*>(output1)" : "nullptr"},
          {"workspace_size", workspace_size},
          {"use_2d_attention_mask", use_2d_attention_mask},
          {"mask_start", mask_start}});

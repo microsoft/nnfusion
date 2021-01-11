@@ -1053,6 +1053,12 @@ __device__ inline void LayerNormSmall(const T val, const cub::KeyValuePair<T, T>
 )");
 
 LU_DEFINE(declaration::ort_qkv_to_context, R"(
+template <class INT, class INT2>
+static INT CeilDiv(INT a, INT2 b)  // ceil(a/b)
+{
+  return (INT)(((size_t)a + (size_t)b - 1) / (size_t)b);  // these size_t casts are necessary since b may be INT_MAX (for maxGridSize[])
+}
+
 static size_t AlignTo(size_t a, size_t b) {
   return CeilDiv(a, b) * b;
 }
@@ -1602,7 +1608,7 @@ void LaunchConcatPastToPresent(cudaStream_t stream,
   }
 }
 
-cublasStatus_t inline CublasGemmStridedBatched(
+void inline CublasGemmStridedBatched(
     cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb,
     int m, int n, int k, const float alpha,
     const float* A, int lda, long long int strideA, const float* B, int ldb, long long int strideB,
@@ -1611,7 +1617,7 @@ cublasStatus_t inline CublasGemmStridedBatched(
       handle, transa, transb, m, n, k, &alpha, A, lda, strideA, B, ldb, strideB, &beta, C, ldc, strideC, batchCount);
 }
 
-cublasStatus_t inline CublasGemmStridedBatched(
+void inline CublasGemmStridedBatched(
     cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb,
     int m, int n, int k, const half alpha,
     const half* A, int lda, long long int strideA, const half* B, int ldb, long long int strideB,
@@ -1622,7 +1628,7 @@ cublasStatus_t inline CublasGemmStridedBatched(
 
 template <typename T>
 bool QkvToContext(
-    cublasHandle_t& cublas, cudaStream_t stream,
+    cublasHandle_t cublas, cudaStream_t stream,
     const int batch_size, const int sequence_length, const int num_heads, const int head_size, const size_t element_size,
     const T* input, T* output, T* workspace,
     const int* mask_index,
@@ -1654,8 +1660,6 @@ bool QkvToContext(
   const int present_size_per_batch = all_sequence_length * head_size;
   if (nullptr != present) {
     LaunchConcatPastToPresent(stream, all_sequence_length, sequence_length, batch_size, head_size, num_heads, past, k, present);
-    }
-
     // update pointers to present_k and present_v.
     k = present;
     v = present + batches * present_size_per_batch;
@@ -1684,7 +1688,6 @@ bool QkvToContext(
   CublasGemmStridedBatched(
           cublas, CUBLAS_OP_N, CUBLAS_OP_N, head_size, sequence_length, all_sequence_length, 1.f, v, head_size, present_size_per_batch,
           scratch2, all_sequence_length, temp_matrix_size, 0.f, scratch3, head_size, size_per_batch, batches);
-  }
 
   // scratch3 is BxNxSxH, transpose to output BxSxNxH
   LaunchTransCtx(stream, sequence_length, batch_size, head_size, num_heads, scratch3, output);

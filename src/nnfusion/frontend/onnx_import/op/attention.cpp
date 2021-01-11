@@ -21,7 +21,7 @@ namespace nnfusion
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     Node node(node_proto);
                     auto num_heads = node.get_attribute_value<std::int64_t>("num_heads");
-                    auto unidirectional = node.get_attribute_value<std::int64_t>("unidirectional");
+                    auto unidirectional = node.get_attribute_value<std::int64_t>("unidirectional", 0);
                     nnfusion::op::OpConfig::any myConfig;
                     myConfig["num_heads"] = num_heads;
                     myConfig["unidirectional"] = (bool)(unidirectional != 0);

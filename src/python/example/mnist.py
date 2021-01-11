@@ -56,7 +56,7 @@ def test_runner():
     tensor1 = torch.ones([5, 1, 28, 28], dtype=torch.float32, device="cuda:0")
     tensor2 = torch.ones([3, 1, 28, 28], dtype=torch.float32, device="cuda:0")
     tensor3 = torch.ones([5, 1, 28, 28], dtype=torch.float32, device="cuda:0")
-    nnf_flags = {"training_mode": 1, "codegen_debug": 1}
+    nnf_flags = {"training_mode": 1}
     runner = Runner(model, codegen_flags=nnf_flags)
     point1 = time.time()
     out1 = runner(tensor1)[0].cpu().numpy()

@@ -290,7 +290,7 @@ class Session(object):
             index = int(self._nnf_inputs[key]["id"])
             self._feed_tensors[index] = value
         self._executor(tensors=self._feed_tensors)
-        assert self.is_weights_nan() is False
+        # assert self.is_weights_nan() is False
         return [
             self._feed_tensors[index] for index in self._nnf_outputs_indexes
         ]

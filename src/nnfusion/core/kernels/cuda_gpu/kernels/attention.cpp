@@ -78,6 +78,7 @@ LanguageUnit_p cuda::Attention::emit_function_body()
                         reinterpret_cast<@dtype@*>(input0), reinterpret_cast<@dtype@*>(output0), reinterpret_cast<@dtype@*>(workspace_ptr),
                         @input3@, @is_unidirectional@,
                         @past_sequence_length@, @input4@, @output1@, @use_2d_attention_mask@, @mask_start@);
+        CUDA_SAFE_CALL(cudaFree(workspace_ptr));
 
     )",
         {{"n", 3 * hidden_size},
@@ -86,7 +87,6 @@ LanguageUnit_p cuda::Attention::emit_function_body()
          {"cublasGemm", (dtype == element::f16) ? "cublasHgemm" : "cublasSgemm"},
          {"ones_tensor", ones_tensor->get_name()},
          {"gemm_tensor", gemm_tensor->get_name()},
-         //{"workspace_tensor", workspace_tensor->get_name()},
          {"unidirectional", unidirectional},
          {"batch_size", batch_size},
          {"sequence_length", sequence_length},
@@ -97,7 +97,7 @@ LanguageUnit_p cuda::Attention::emit_function_body()
          {"is_unidirectional", unidirectional},
          {"input3", (m_context->inputs.size() >= 4) ? "reinterpret_cast<const int*>(input3)" : "nullptr"},
          {"input4", (m_context->inputs.size() == 5) ? (dtype == element::f16) ? "reinterpret_cast<half*>(input4)" : "reinterpret_cast<float*>(input4)" : "nullptr"},
-         {"present", (m_context->outputs.size() > 1) ? "reinterpret_cast<const int*>(output1)" : "nullptr"},
+         {"output1", (m_context->outputs.size() > 1) ? "reinterpret_cast<const int*>(output1)" : "nullptr"},
          {"workspace_size", workspace_size},
          {"use_2d_attention_mask", use_2d_attention_mask},
          {"mask_start", mask_start}});
@@ -110,6 +110,7 @@ LanguageUnit_p cuda::Attention::emit_dependency()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
+    _lu->require(header::math_constants);
     _lu->require(declaration::ort_qkv_to_context);
     _lu->require(header::cublas);
     _lu->require(macro::CUBLAS_SAFE_CALL);

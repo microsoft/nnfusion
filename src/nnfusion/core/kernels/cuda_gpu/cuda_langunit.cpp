@@ -1628,7 +1628,7 @@ void inline CublasGemmStridedBatched(
 }
 
 template <typename T>
-bool QkvToContext(
+void QkvToContext(
     cublasHandle_t cublas, cudaStream_t stream,
     const int batch_size, const int sequence_length, const int num_heads, const int head_size, const size_t element_size,
     const T* input, T* output, T* workspace,

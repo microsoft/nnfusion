@@ -30,7 +30,7 @@ namespace nnfusion
                 bool unidirectional;
                 bool use_2d_attention_mask;
                 std::string mask_start = "nullptr";
-                std::shared_ptr<nnfusion::descriptor::Tensor> gemm_tensor, ones_tensor;
+                std::shared_ptr<nnfusion::descriptor::Tensor> workspace_tensor;
             };
 
         } // namespace cuda

@@ -45,6 +45,9 @@ cuda::QkvtoCtx::QkvtoCtx(shared_ptr<KernelContext> ctx)
     size_t bytesAligned = ((bytes + alignment - 1) / alignment) * alignment;
     workspace_size =
         3 * batch_size * sequence_length * num_heads * head_size * dtype.size() + 2 * bytesAligned;
+    workspace_size =
+        3 * batch_size * sequence_length * num_heads * head_size  + 2 * len;
+    workspace_tensor = allocate_tensor(Shape({workspace_size}), dtype);
 }
 
 LanguageUnit_p cuda::QkvtoCtx::emit_function_body()
@@ -54,16 +57,16 @@ LanguageUnit_p cuda::QkvtoCtx::emit_function_body()
 
     auto code = nnfusion::op::create_code_from_template(
         R"(      
-        void *workspace_ptr = NULL;
-        CUDA_SAFE_CALL(cudaMalloc(&workspace_ptr, @workspace_size@));
+        // void *workspace_ptr = NULL;
+        // CUDA_SAFE_CALL(cudaMalloc(&workspace_ptr, @workspace_size@));
         cudaStream_t stream = nullptr;
         CUBLAS_SAFE_CALL(cublasGetStream(cublas_handle, &stream));
         QkvToContext<@dtype@>(cublas_handle, stream,
                         @batch_size@, @sequence_length@, @num_heads@, @head_size@, @element_size@,
-                        reinterpret_cast<@dtype@*>(input0), reinterpret_cast<@dtype@*>(output0), reinterpret_cast<@dtype@*>(workspace_ptr),
+                        reinterpret_cast<@dtype@*>(input0), reinterpret_cast<@dtype@*>(output0), reinterpret_cast<@dtype@*>(@workspace_ptr@),
                         @input1@, @is_unidirectional@,
                         @past_sequence_length@, @input2@, @output1@, @use_2d_attention_mask@, @mask_start@);
-        CUDA_SAFE_CALL(cudaFree(workspace_ptr));
+        // CUDA_SAFE_CALL(cudaFree(workspace_ptr));
 
     )",
         {{"n", 3 * hidden_size},
@@ -90,7 +93,8 @@ LanguageUnit_p cuda::QkvtoCtx::emit_function_body()
           (m_context->outputs.size() > 1) ? "reinterpret_cast<const int*>(output1)" : "nullptr"},
          {"workspace_size", workspace_size},
          {"use_2d_attention_mask", use_2d_attention_mask},
-         {"mask_start", mask_start}});
+         {"mask_start", mask_start},
+         {"workspace_ptr", workspace_tensor->get_name()}});
 
     lu << code << "\n";
     return _lu;

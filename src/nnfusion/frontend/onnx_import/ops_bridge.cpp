@@ -34,6 +34,7 @@
 #include "op/const_of_shape.hpp"
 #include "op/constant.hpp"
 #include "op/conv.hpp"
+#include "op/conv_transpose.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
 #include "op/erf_grad.hpp"
@@ -249,6 +250,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Transpose", 1, TranslateTransposeOp);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "TransposeMatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("Unsqueeze", 1, TranslateUnsqueezeOp);
+                REGISTER_OPERATOR("ConvTranspose", 1, TranslateConvTransposeOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

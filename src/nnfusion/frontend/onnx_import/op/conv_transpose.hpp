@@ -36,7 +36,8 @@ namespace nnfusion
                                                          const NodeMap& all_ng_nodes,
                                                          std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                    // std::shared_ptr<op::Convolution>
+                    Node node(node_proto);
+                    int64_t groups = node.get_attribute_value<int64_t>("group", 1);
                     return NamedNodeVector();
                 }
             } // namespace set_1

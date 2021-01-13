@@ -15,7 +15,7 @@ message(STATUS "")
 # STEP.0 Global Options
 #-----------------------------------------------------------------------------------------------
 option(NNFUSION "Enable NNFusion backend." TRUE)
-option(DEBUG_ENABLE "Enable debug mode" FALSE)
+option(DEBUG_ENABLE "Enable debug mode" TRUE)
 option(CODE_COVERAGE_ENABLE "Enable code coverage." FALSE)
 option(ONNX_FRONTEND "Enable ONNX frontend." TRUE)
 option(TENSORFLOW_FRONTEND "Enable Tensorflow frontend." TRUE)

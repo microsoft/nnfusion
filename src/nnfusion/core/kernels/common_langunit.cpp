@@ -21,6 +21,8 @@ LU_DEFINE(header::cstring, "#include <cstring>\n");
 LU_DEFINE(header::stdlib, "#include <stdlib.h>\n");
 LU_DEFINE(header::chrono, "#include <chrono>\n");
 LU_DEFINE(header::limits, "#include <limits>\n");
+LU_DEFINE(header::iostream, "#include <iostream>\n");
+LU_DEFINE(header::windows, "#include <windows.h>\n");
 
 // Macro
 LU_DEFINE(macro::NNFUSION_DEBUG, "#define NNFUSION_DEBUG\n");

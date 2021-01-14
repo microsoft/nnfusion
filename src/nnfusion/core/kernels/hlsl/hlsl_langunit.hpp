@@ -11,6 +11,7 @@ namespace nnfusion
         namespace header
         {
             LU_DECLARE(systems);
+            LU_DECLARE(D3D12APIWrapper);
 
         } // namespace header
 
@@ -23,6 +24,7 @@ namespace nnfusion
         namespace declaration
         {
             LU_DECLARE(antares_hlsl_dll);
+            LU_DECLARE(antares_hlsl_dll_cpp);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

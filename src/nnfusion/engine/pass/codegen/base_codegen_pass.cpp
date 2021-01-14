@@ -99,7 +99,7 @@ void BaseCodegenPass::add_init_and_exit_pair(LanguageUnit_p lup_in_init, Languag
     //add to init
     projgen->lup_init->unit_vec.push_back(lup_in_init);
     //add to exit
-    projgen->lup_exit->unit_vec.push_back(lup_in_exit);
+    projgen->lup_exit->unit_vec.push_front(lup_in_exit);
 
     return;
 }

@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "memory_allocator.hpp"
-
+DECLARE_string(fhlsl_codegen_type);
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)
     : m_size{size}
     , m_state{state}
@@ -395,11 +395,25 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_init()
     auto& lu = *_lu;
     if (m_max_allocated > 0)
     {
-        lu << "static IntPtr " << this->get_name() << "_memory_pool;\n";
+        if (FLAGS_fhlsl_codegen_type == "cpp")
+        {
+            lu << "void* " << this->get_name() << "_memory_pool;\n";
+        }
+        else
+        {
+            lu << "static IntPtr " << this->get_name() << "_memory_pool;\n";
+        }
 
         for (auto tensor : m_allocated_tensors)
         {
-            lu << "static IntPtr " << tensor->get_name() << ";\n";
+            if (FLAGS_fhlsl_codegen_type == "cpp")
+            {
+                lu << "void* " << tensor->get_name() << ";\n";
+            }
+            else
+            {
+                lu << "static IntPtr " << tensor->get_name() << ";\n";
+            }
         }
     }
     return _lu;
@@ -415,8 +429,16 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
         for (auto tensor : m_allocated_tensors)
         {
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
-            lu << tensor->get_name() << " = IntPtr.Add(" << this->get_name() << "_memory_pool, "
-               << tensor->get_pool_offset() << ");\n";
+            if (FLAGS_fhlsl_codegen_type == "cpp")
+            {
+                lu << tensor->get_name() << " = (char*)" << this->get_name() << "_memory_pool + "
+                   << tensor->get_pool_offset() << ";\n";
+            }
+            else
+            {
+                lu << tensor->get_name() << " = IntPtr.Add(" << this->get_name() << "_memory_pool, "
+                   << tensor->get_pool_offset() << ");\n";
+            }
         }
     }
     return _lu;

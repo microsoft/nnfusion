@@ -58,6 +58,7 @@ namespace nnfusion
                 {"DivNoNan", cuda_op("divnonan", "x1 != 0 ? fdividef(x0, x1) : 0", "")},
                 {"Sign", cuda_op("sign", "(x0 > 0) - (x0 < 0)", "")},
                 {"Convert", cuda_op("convert", "x0", "")},
+                // {"Convert", cuda_op("convert<std::remove_reference<decltype(*input0)>::type, std::remove_reference<decltype(*output0)>::type>", "x0", "")},
                 {"Equal", cuda_op("equal", "x0 == x1", "")},
                 {"NotEqual", cuda_op("not_equal", "x0 != x1", "")},
                 {"Gelu", cuda_op("gelu", "x0 * normcdff(x0)", "")},

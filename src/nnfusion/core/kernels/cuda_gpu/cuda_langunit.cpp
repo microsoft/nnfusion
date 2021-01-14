@@ -277,7 +277,15 @@ void nnfusionHalfScale(half *x, half *alpha, size_t len)
 {
     nnfusionHalfScaleKernel<<<(len+255)/256, 256>>>(x, alpha, len);
 }
-  )")
+  )");
+
+LU_DEFINE(declaration::cuda_convert_template,
+          R"(template<typename InT, typename OutT>
+__device__ __forceinline__ OutT convert(InT x0)
+{
+    return x0;
+}
+)");
 
 LU_DEFINE_EXTEND(declaration::cuda_reduce_primitive,
                  R"(

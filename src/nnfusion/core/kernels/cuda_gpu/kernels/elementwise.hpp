@@ -70,13 +70,13 @@ namespace nnfusion
                             lu << "if (" << tid << " >= " << bound << ") return;";
 
                         {
-                            std::string invoke_name = op;
+                            std::string invoke_func = op;
                             if (m_context->gnode->get_op_type() == "Convert")
                             {
-                                invoke_name +=
+                                invoke_func +=
                                     "<" + data_types.at(0) + ", " + data_types.at(1) + ">";
                             }
-                            lu << "output0[" << tid << "] = " << invoke_name << "(";
+                            lu << "output0[" << tid << "] = " << invoke_func << "(";
                             for (size_t i = 0; i < num_inputs - 1; i++)
                             {
                                 lu << "input" << i << "[" << tid << "], ";

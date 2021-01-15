@@ -224,10 +224,24 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
                 }
             }
 
-            auto op_kernel = get_op_kernel(kernel_emitter->m_context);
-            if (op_kernel.second != nullptr)
+            std::string invoke_func;
+            if (kernel_emitter->m_context->gnode->get_op_type() == "Convert")
             {
-                lu.require(op_kernel.second);
+                lu.require(declaration::cuda_convert_template);
+                invoke_func =
+                    "convert<" +
+                    kernel_emitter->m_context->inputs[0]->get_element_type().c_type_string() +
+                    ", " +
+                    kernel_emitter->m_context->outputs[0]->get_element_type().c_type_string() + ">";
+            }
+            else
+            {
+                auto op_kernel = get_op_kernel(kernel_emitter->m_context);
+                if (op_kernel.second != nullptr)
+                {
+                    lu.require(op_kernel.second);
+                }
+                invoke_func = op_kernel.first;
             }
             local_tensors[out_tw->get_name()] = "temp" + std::to_string(temp_tensor_id++);
             std::vector<std::string> input_args;
@@ -245,7 +259,7 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
                 }
             }
             lu << out_tw->get_element_type().c_type_string() << " "
-               << local_tensors[out_tw->get_name()] << " = " << op_kernel.first << "("
+               << local_tensors[out_tw->get_name()] << " = " << invoke_func << "("
                << join(input_args, ", ") << ");\n";
         }
     }

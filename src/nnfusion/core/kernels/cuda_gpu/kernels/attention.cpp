@@ -10,41 +10,33 @@ cuda::Attention::Attention(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
     , generic_op(static_pointer_cast<nnfusion::op::GenericOp>(ctx->gnode->get_op_ptr()))
 {
-    // input: input, weight, bias, mask_index(optional), past(optional)
+    // input: input, mask_index(optional), past(optional)
     auto input_tensor = m_context->inputs[0];
     auto input_shape = input_tensor->get_shape();
 
     dtype = input_tensor->get_element_type();
-    batch_size = input_shape[0];
-    sequence_length = input_shape[1];
-    hidden_size = input_shape[2];
-
     auto& cfg = generic_op->localOpConfig.getRoot();
     num_heads = cfg["num_heads"];
+    batch_size = cfg["batch_size"];
+    sequence_length = cfg["sequence_length"];
+    past_sequence_length = cfg["past_sequence_length"];
+    head_size = cfg["head_size"];
     unidirectional = cfg["unidirectional"];
-    head_size = hidden_size / num_heads;
+    hidden_size = num_heads * head_size;
 
-    gemm_tensor = allocate_tensor(Shape({batch_size * sequence_length, 3 * hidden_size}), dtype);
-    ones_tensor = allocate_tensor(Shape({batch_size * sequence_length}), dtype);
-
-    if (m_context->inputs.size() > 3)
+    if (m_context->inputs.size() > 1)
     {
-        if (m_context->inputs[3]->get_shape()[0] > batch_size)
+        if (m_context->inputs[1]->get_shape()[0] > batch_size)
         {
-            mask_start = "input3 + " + to_string(batch_size);
+            mask_start = "reinterpret_cast<const int*>(input1 + " + to_string(batch_size) + ")";
         }
     }
 
-    if (m_context->inputs.size() > 4)
-    {
-        past_sequence_length = m_context->inputs[4]->get_shape()[3];
-    }
-
     use_2d_attention_mask =
-        (m_context->inputs.size() == 5 && m_context->inputs[3]->get_shape().size() == 2);
+        (m_context->inputs.size() >= 2 && m_context->inputs[1]->get_shape().size() == 2);
     if (use_2d_attention_mask || unidirectional)
         NNFUSION_CHECK(sequence_length + past_sequence_length <= 1024)
-            << "Attention CUDA operator does not supported 2D attention mask or unidirectional "
+            << "Attention CUDA operator does not supported 2D Attention mask or unidirectional "
                "with total sequence length > 1024.";
     size_t len =
         batch_size * num_heads * sequence_length * (sequence_length + past_sequence_length);
@@ -53,6 +45,8 @@ cuda::Attention::Attention(shared_ptr<KernelContext> ctx)
     size_t bytesAligned = ((bytes + alignment - 1) / alignment) * alignment;
     workspace_size =
         3 * batch_size * sequence_length * num_heads * head_size * dtype.size() + 2 * bytesAligned;
+    workspace_size = 3 * batch_size * sequence_length * num_heads * head_size + 2 * len;
+    workspace_tensor = allocate_tensor(Shape({workspace_size}), dtype);
 }
 
 LanguageUnit_p cuda::Attention::emit_function_body()
@@ -61,39 +55,19 @@ LanguageUnit_p cuda::Attention::emit_function_body()
     auto& lu = *_lu;
 
     auto code = nnfusion::op::create_code_from_template(
-        R"(
-        const @dtype@ alpha = 1.0f;
-        const @dtype@ beta = 0.f;
-        CUDA_SAFE_CALL(cudaMemset(@ones_tensor@,1,@ones_tensor_size@));
-        CUBLAS_SAFE_CALL(cublasSetMathMode(cublas_handle, CUBLAS_TENSOR_OP_MATH));
-        CUBLAS_SAFE_CALL(@cublasGemm@(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, @n@, @m@, 1, &alpha, 
-        reinterpret_cast<const @dtype@*>(input2), @n@, reinterpret_cast<const @dtype@*>(@ones_tensor@), 
-        1, &beta, @gemm_tensor@, @n@));
-
-        CUBLAS_SAFE_CALL(@cublasGemm@(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, @n@, @m@, @k@, &alpha, 
-        reinterpret_cast<const @dtype@*>(input1), @n@, reinterpret_cast<const @dtype@*>(input0), 
-        @k@, &alpha, @gemm_tensor@, @n@));
-
-        void *workspace_ptr = NULL;
-        CUDA_SAFE_CALL(cudaMalloc(&workspace_ptr, @workspace_size@));
-        cudaStream_t stream = nullptr;
-        CUBLAS_SAFE_CALL(cublasGetStream(cublas_handle, &stream));
-        QkvToContext<@dtype@>(cublas_handle, stream,
-                        @batch_size@, @sequence_length@, @num_heads@, @head_size@, @element_size@,
-                        reinterpret_cast<@dtype@*>(@gemm_tensor@), reinterpret_cast<@dtype@*>(output0), reinterpret_cast<@dtype@*>(workspace_ptr),
-                        @input3@, @is_unidirectional@,
-                        @past_sequence_length@, @input4@, @output1@, @use_2d_attention_mask@, @mask_start@);
-        CUDA_SAFE_CALL(cudaFree(workspace_ptr));
-
+        R"(      
+cudaStream_t stream = nullptr;
+CUBLAS_SAFE_CALL(cublasGetStream(cublas_handle, &stream));
+QkvToContext<@dtype@>(cublas_handle, stream,
+                @batch_size@, @sequence_length@, @num_heads@, @head_size@, @element_size@,
+                reinterpret_cast<@dtype@*>(input0), reinterpret_cast<@dtype@*>(output0), reinterpret_cast<@dtype@*>(@workspace_ptr@),
+                @input1@, @is_unidirectional@,
+                @past_sequence_length@, @input2@, @output1@, @use_2d_attention_mask@, @mask_start@);
     )",
         {{"n", 3 * hidden_size},
          {"m", batch_size * sequence_length},
          {"k", hidden_size},
          {"dtype", (dtype == element::f16) ? "half" : "float"},
-         {"cublasGemm", (dtype == element::f16) ? "cublasHgemm" : "cublasSgemm"},
-         {"ones_tensor", ones_tensor->get_name()},
-         {"gemm_tensor", gemm_tensor->get_name()},
-         {"unidirectional", unidirectional},
          {"batch_size", batch_size},
          {"sequence_length", sequence_length},
          {"num_heads", num_heads},
@@ -101,19 +75,18 @@ LanguageUnit_p cuda::Attention::emit_function_body()
          {"element_size", dtype.size()},
          {"past_sequence_length", past_sequence_length},
          {"is_unidirectional", unidirectional},
-         {"input3",
-          (m_context->inputs.size() >= 4) ? "reinterpret_cast<const int*>(input3)" : "nullptr"},
-         {"input4",
-          (m_context->inputs.size() == 5)
-              ? (dtype == element::f16) ? "reinterpret_cast<half*>(input4)"
-                                        : "reinterpret_cast<float*>(input4)"
+         {"input1",
+          (m_context->inputs.size() >= 2) ? "reinterpret_cast<const int*>(input1)" : "nullptr"},
+         {"input2",
+          (m_context->inputs.size() == 3)
+              ? (dtype == element::f16) ? "reinterpret_cast<half*>(input2)"
+                                        : "reinterpret_cast<float*>(input2)"
               : "nullptr"},
          {"output1",
           (m_context->outputs.size() > 1) ? "reinterpret_cast<const int*>(output1)" : "nullptr"},
-         {"workspace_size", workspace_size},
          {"use_2d_attention_mask", use_2d_attention_mask},
          {"mask_start", mask_start},
-         {"ones_tensor_size", ones_tensor->size()}});
+         {"workspace_ptr", workspace_tensor->get_name()}});
 
     lu << code << "\n";
     return _lu;

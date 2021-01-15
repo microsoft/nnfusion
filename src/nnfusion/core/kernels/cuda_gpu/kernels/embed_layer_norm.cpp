@@ -39,12 +39,12 @@ LanguageUnit_p cuda::EmbedLayerNorm::emit_function_body()
 
     auto code = nnfusion::op::create_code_from_template(
         R"(
-        EmbedSkipLayerNorm<@dtype@>(
-        stream, @hidden_size@, @batch_size@, @sequence_length@, input0, input1,
-        reinterpret_cast<const @dtype@*>(input6), reinterpret_cast<const @dtype@*>(input5),
-        reinterpret_cast<const @dtype@*>(input2), reinterpret_cast<const @dtype@*>(input3), 
-        reinterpret_cast<const @dtype@*>(input4), @expression1@@epsilon@@expression2@,
-        reinterpret_cast<@dtype@*>(output0));
+EmbedSkipLayerNorm<@dtype@>(
+stream, @hidden_size@, @batch_size@, @sequence_length@, input0, input1,
+reinterpret_cast<const @dtype@*>(input6), reinterpret_cast<const @dtype@*>(input5),
+reinterpret_cast<const @dtype@*>(input2), reinterpret_cast<const @dtype@*>(input3), 
+reinterpret_cast<const @dtype@*>(input4), @expression1@@epsilon@@expression2@,
+reinterpret_cast<@dtype@*>(output0));
     )",
         {{"hidden_size", hidden_size},
          {"batch_size", batch_size},

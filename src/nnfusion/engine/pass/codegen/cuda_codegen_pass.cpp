@@ -98,6 +98,12 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         copy_folder.push_back(superscaler_path);
     }
 
+    if (global_required.count("header::cub") > 0)
+    {
+        std::string cub_path = std::string(path) + std::string("/cub");
+        copy_folder.push_back(cub_path);
+    }
+
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
@@ -1245,6 +1251,11 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
         {
             // add superscaler
             lu << nnfusion::codegen::cmake::superscaler_cuda->get_code();
+        }
+
+        if (global_required.count("header::cub") > 0)
+        {
+            lu << nnfusion::codegen::cmake::cub->get_code();
         }
     }
 

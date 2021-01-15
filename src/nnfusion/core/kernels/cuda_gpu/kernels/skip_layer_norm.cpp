@@ -29,17 +29,17 @@ LanguageUnit_p cuda::SkipLayerNorm::emit_function_body()
 
     auto code = nnfusion::op::create_code_from_template(
         R"(
-        ComputeSkipLayerNorm(
-        stream,
-        @hidden_size@,
-        @element_count@,
-        reinterpret_cast<const @dtype@*>(input0),
-        reinterpret_cast<const @dtype@*>(input1),
-        reinterpret_cast<const @dtype@*>(input3),
-        reinterpret_cast<const @dtype@*>(input2),
-        reinterpret_cast<const @dtype@*>(@input4@),
-        @expression1@@epsilon@@expression2@,
-        reinterpret_cast<@dtype@*>(output0));
+ComputeSkipLayerNorm(
+stream,
+@hidden_size@,
+@element_count@,
+reinterpret_cast<const @dtype@*>(input0),
+reinterpret_cast<const @dtype@*>(input1),
+reinterpret_cast<const @dtype@*>(input3),
+reinterpret_cast<const @dtype@*>(input2),
+reinterpret_cast<const @dtype@*>(@input4@),
+@expression1@@epsilon@@expression2@,
+reinterpret_cast<@dtype@*>(output0));
     )",
         {{"hidden_size", hidden_size},
          {"element_count", element_count},

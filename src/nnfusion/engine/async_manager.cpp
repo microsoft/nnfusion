@@ -378,7 +378,7 @@ LanguageUnit_p HLSLAsyncManager::emit_stream_init()
                 {
                     lu << "auto " << stream->get_name() << " = dxStreamCreate();\n";
                 }
-                else // c#
+                else if (FLAGS_fhlsl_codegen_type == "csharp")
                 {
                     lu << "var " << stream->get_name() << " = dxStreamCreate();\n";
                 }
@@ -400,7 +400,7 @@ LanguageUnit_p HLSLAsyncManager::emit_event_init()
             {
                 lu << "auto " << event->get_name() << "= dxEventCreate();\n";
             }
-            else
+            else if (FLAGS_fhlsl_codegen_type == "csharp")
             {
                 lu << "var " << event->get_name() << "= dxEventCreate();\n";
             }
@@ -425,7 +425,7 @@ LanguageUnit_p HLSLAsyncManager::emit_event_record(shared_ptr<Event> event)
         {
             lu << "dxEventRecord(" << event->get_name() << ", 0);\n";
         }
-        else
+        else if (FLAGS_fhlsl_codegen_type == "csharp")
         {
             lu << "dxEventRecord(" << event->get_name() << ", IntPtr.Zero);\n";
         }

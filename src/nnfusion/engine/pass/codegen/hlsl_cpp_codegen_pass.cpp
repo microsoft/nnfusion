@@ -28,23 +28,32 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     // setup lup_codegen execution info
     projgen->lup_codegen->pwd = m_codegen_folder;
     projgen->lup_codegen->write_to = "Main.cpp";
-    auto& copy_templates = projgen->lup_codegen->copy_templates;
-    // copy_templates.emplace_back("dxcompute/D3D12APIWrapper.h", "./D3D12APIWrapper.h");
+
+    //copy folder
+    auto& copy_folder = projgen->lup_codegen->copy_folder;
+    char exe_path[PATH_MAX];
+    size_t count = readlink("/proc/self/exe", exe_path, PATH_MAX);
+    const char* path;
+    if (count != -1)
+    {
+        path = dirname(exe_path);
+    }
+    else
+    {
+        throw nnfusion::errors::RuntimeError("Failed to get the directory of executable file.\n");
+    }
+
+    std::string Direct3DWinNN_path =
+        std::string(path) + std::string("/templates/dxcompute/Direct3DWinNN");
+    copy_folder.push_back(Direct3DWinNN_path);
+    std::string Direct3DXBoxNN_path =
+        std::string(path) + std::string("/templates/dxcompute/Direct3DXBoxNN");
+    copy_folder.push_back(Direct3DXBoxNN_path);
 
     projgen->lup_codegen->require(lup_main);
     lup_main->require(projgen->lup_init);
     lup_main->require(projgen->lup_exec);
     lup_main->require(projgen->lup_exit);
-    // projgen->lup_codegen->remove(projgen->lup_init);
-    // projgen->lup_codegen->remove(projgen->lup_exec);
-    // projgen->lup_codegen->remove(projgen->lup_exit);
-    // projgen->lup_exit->remove(projgen->lup_exec);
-    // projgen->lup_exec->remove(projgen->lup_init);
-    // lup_program->unit_vec.push_back(lup_member);
-    // lup_program->unit_vec.push_back(projgen->lup_init);
-    // lup_program->unit_vec.push_back(projgen->lup_exec);
-    // lup_program->unit_vec.push_back(projgen->lup_exit);
-    // lup_program->unit_vec.push_back(lup_main);
 
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
@@ -57,51 +66,51 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         lu_init_end << "dxStreamSynchronize(0);\n";
         lu_init_end << "}\n\n";
     }
-    {
-        LanguageUnit_p lib_init = std::make_shared<LanguageUnit>("lib_init", R"(
-libtestdll = LoadLibrary(L"antares_hlsl_v0.1_x64.dll");
-if (!libtestdll) 
-{
-    fprintf(stderr, "Cannot find antares_hlsl_v0.1_x64.dll !\n");
-    exit(1);
-}
+    //     {
+    //         LanguageUnit_p lib_init = std::make_shared<LanguageUnit>("lib_init", R"(
+    // libtestdll = LoadLibrary(L"antares_hlsl_v0.1_x64.dll");
+    // if (!libtestdll)
+    // {
+    //     fprintf(stderr, "Cannot find antares_hlsl_v0.1_x64.dll !\n");
+    //     exit(1);
+    // }
 
-dxInit = (int (*)(int flags))GetProcAddress(libtestdll, "dxInit");
+    // dxInit = (int (*)(int flags))GetProcAddress(libtestdll, "dxInit");
 
-dxStreamCreate = (void* (*)())GetProcAddress(libtestdll, "dxStreamCreate");
-dxStreamDestroy = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamDestroy");
-dxStreamSubmit = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamSubmit");
-dxStreamSynchronize = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamSynchronize");
+    // dxStreamCreate = (void* (*)())GetProcAddress(libtestdll, "dxStreamCreate");
+    // dxStreamDestroy = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamDestroy");
+    // dxStreamSubmit = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamSubmit");
+    // dxStreamSynchronize = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamSynchronize");
 
-dxMemAlloc = (void* (*)(size_t bytes))GetProcAddress(libtestdll, "dxMemAlloc");
-dxMemFree = (int (*)(void* dptr))GetProcAddress(libtestdll, "dxMemFree");
-dxMemcpyHtoDAsync = (int (*)(void* dst, void* src, size_t bytes, void* hStream))GetProcAddress(libtestdll, "dxMemcpyHtoDAsync");
-dxMemcpyDtoHAsync = (int (*)(void* dst, void* src, size_t bytes, void* hStream))GetProcAddress(libtestdll, "dxMemcpyDtoHAsync");
+    // dxMemAlloc = (void* (*)(size_t bytes))GetProcAddress(libtestdll, "dxMemAlloc");
+    // dxMemFree = (int (*)(void* dptr))GetProcAddress(libtestdll, "dxMemFree");
+    // dxMemcpyHtoDAsync = (int (*)(void* dst, void* src, size_t bytes, void* hStream))GetProcAddress(libtestdll, "dxMemcpyHtoDAsync");
+    // dxMemcpyDtoHAsync = (int (*)(void* dst, void* src, size_t bytes, void* hStream))GetProcAddress(libtestdll, "dxMemcpyDtoHAsync");
 
-dxShaderLoad = (void* (*)(const char* src, int* num_inputs, int* num_outputs))GetProcAddress(libtestdll, "dxShaderLoad");
-dxShaderUnload = (int (*)(void* hShader))GetProcAddress(libtestdll, "dxShaderUnload");
-dxShaderGetProperty = (int (*)(void* hShader, int arg_index, size_t * num_elements, size_t * type_size, const char** dtype_name))GetProcAddress(libtestdll, "dxShaderGetProperty");
-dxShaderLaunchAsync = (int (*)(void* hShader, void** buffers, void* hStream))GetProcAddress(libtestdll, "dxShaderLaunchAsync");
+    // dxShaderLoad = (void* (*)(const char* src, int* num_inputs, int* num_outputs))GetProcAddress(libtestdll, "dxShaderLoad");
+    // dxShaderUnload = (int (*)(void* hShader))GetProcAddress(libtestdll, "dxShaderUnload");
+    // dxShaderGetProperty = (int (*)(void* hShader, int arg_index, size_t * num_elements, size_t * type_size, const char** dtype_name))GetProcAddress(libtestdll, "dxShaderGetProperty");
+    // dxShaderLaunchAsync = (int (*)(void* hShader, void** buffers, void* hStream))GetProcAddress(libtestdll, "dxShaderLaunchAsync");
 
-dxEventCreate = (void* (*)())GetProcAddress(libtestdll, "dxEventCreate");
-dxEventRecord = (int (*)(void* hEvent, void* hStream))GetProcAddress(libtestdll, "dxEventRecord");
-dxEventElapsedTime = (float (*)(void* hStart, void* hStop))GetProcAddress(libtestdll, "dxEventElapsedTime");
-dxEventDestroy = (int (*)(void* hEvent))GetProcAddress(libtestdll, "dxEventDestroy");
+    // dxEventCreate = (void* (*)())GetProcAddress(libtestdll, "dxEventCreate");
+    // dxEventRecord = (int (*)(void* hEvent, void* hStream))GetProcAddress(libtestdll, "dxEventRecord");
+    // dxEventElapsedTime = (float (*)(void* hStart, void* hStop))GetProcAddress(libtestdll, "dxEventElapsedTime");
+    // dxEventDestroy = (int (*)(void* hEvent))GetProcAddress(libtestdll, "dxEventDestroy");
 
-if (!dxShaderLoad)
-{
-    std::cout << "no valid dxShaderLoad func" << std::endl;
-    exit(1);
-}
-        )");
+    // if (!dxShaderLoad)
+    // {
+    //     std::cout << "no valid dxShaderLoad func" << std::endl;
+    //     exit(1);
+    // }
+    //         )");
 
-        LanguageUnit_p lib_free =
-            std::make_shared<LanguageUnit>("lib_free", "FreeLibrary(libtestdll);\n");
+    //         LanguageUnit_p lib_free =
+    //             std::make_shared<LanguageUnit>("lib_free", "FreeLibrary(libtestdll);\n");
 
-        lib_init->require(declaration::antares_hlsl_dll_cpp);
-        lib_free->require(declaration::antares_hlsl_dll_cpp);
-        add_init_and_exit_pair(lib_init, lib_free);
-    }
+    //         lib_init->require(declaration::antares_hlsl_dll_cpp);
+    //         lib_free->require(declaration::antares_hlsl_dll_cpp);
+    //         add_init_and_exit_pair(lib_init, lib_free);
+    //     }
 
     auto& lu_exec_begin = *(projgen->lup_exec->begin);
     {
@@ -141,9 +150,10 @@ if (!dxShaderLoad)
     projgen->lup_codegen->require(header::sstream);
     projgen->lup_codegen->require(header::stdio);
     projgen->lup_codegen->require(header::windows);
-    // projgen->lup_codegen->require(header::D3D12APIWrapper);
-    LanguageUnit_p num_inputs_outputs =
-        std::make_shared<LanguageUnit>("num_inputs_outputs", "int num_inputs, num_outputs;\n");
+    projgen->lup_codegen->require(header::D3D12APIWrapper);
+    projgen->lup_codegen->require(macro::OutputDebugStringA);
+    LanguageUnit_p num_inputs_outputs = std::make_shared<LanguageUnit>(
+        "declaration::num_inputs_outputs", "int num_inputs, num_outputs;\n");
     projgen->lup_codegen->require(num_inputs_outputs);
 
     generate_main(ctx, tu);
@@ -363,10 +373,16 @@ void HLSLCPPCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
     for (size_t i = 0; i < tu->out.size(); i++)
     {
         auto& tensor = *tu->out[i];
-        lu_ << "std::cout << \"" << tensor.get_name() << "_host = [\" << " << tensor.get_name()
-            << "_host[0] << \", \" << " << tensor.get_name() << "_host[1] << \",  .., \" << "
-            << tensor.get_name() << "_host[" << tensor.get_tensor_layout()->get_size()
-            << "-1] << \"]\" << std::endl;";
+        // lu_ << "std::cout << \"" << tensor.get_name() << "_host = [\" << " << tensor.get_name()
+        //     << "_host[0] << \", \" << " << tensor.get_name() << "_host[1] << \",  .., \" << "
+        //     << tensor.get_name() << "_host[" << tensor.get_tensor_layout()->get_size()
+        //     << "-1] << \"]\" << std::endl;";
+
+        lu_ << "std::string result = \"" << tensor.get_name() << "_host = [\" + std::to_string("
+            << tensor.get_name() << "_host[0]) + \", \" + std::to_string(" << tensor.get_name()
+            << "_host[1]) + \",  .., \" + std::to_string(" << tensor.get_name() << "_host["
+            << tensor.get_tensor_layout()->get_size() << "-1]) + \"]\\n\";\n";
+        lu_ << "OutputDebugStringA(result.c_str());\n";
     }
 
     lu_ << "\n//free context\n";
@@ -423,4 +439,110 @@ void HLSLCPPCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> c
     // }
 
     return;
+}
+
+bool HLSLCPPCodegenPass::after_projgen()
+{
+    BaseCodegenPass::after_projgen();
+    struct stat s;
+    std::string cmd;
+
+    std::string main_path = m_codegen_folder + projgen->lup_codegen->write_to;
+    std::string Direct3DWinNN_path = m_codegen_folder + std::string("Direct3DWinNN/");
+    std::string Direct3DXBoxNN_path = m_codegen_folder + std::string("Direct3DXBoxNN/");
+    if (stat(main_path.c_str(), &s) == 0)
+    {
+        cmd = std::string("cp -f ") + main_path + " " + Direct3DWinNN_path;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy Main.cpp to Direct3DWinNN folder.\n");
+        }
+
+        cmd = std::string("cp -f ") + main_path + " " + Direct3DXBoxNN_path;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy Main.cpp to Direct3DXBoxNN folder.\n");
+        }
+
+        cmd = std::string("rm -f ") + main_path;
+        if (0 != system(cmd.c_str()))
+        {
+            NNFUSION_LOG(INFO) << get_current_dir_name() << main_path;
+            throw nnfusion::errors::RuntimeError("Failed to remove Main.cpp.\n");
+        }
+    }
+    else
+    {
+        throw nnfusion::errors::RuntimeError("Failed to codegen Main.cpp.\n");
+    }
+
+    std::string constant_folder = m_codegen_folder + std::string("Constant/");
+    if (stat(constant_folder.c_str(), &s) == 0)
+    {
+        cmd = std::string("cp -rf ") + constant_folder + " " + Direct3DWinNN_path;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy Constant folder to Direct3DWinNN folder.\n");
+        }
+
+        cmd = std::string("cp -rf ") + constant_folder + " " + Direct3DXBoxNN_path;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy Constant folder to Direct3DXBoxNN folder.\n");
+        }
+
+        cmd = std::string("rm -rf ") + constant_folder;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError("Failed to remove Constant folder.\n");
+        }
+    }
+
+    if (stat(m_kernel_folder.c_str(), &s) == 0)
+    {
+        cmd = std::string("cp -rf ") + m_kernel_folder + " " + Direct3DWinNN_path;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy kernel folder to Direct3DWinNN folder.\n");
+        }
+
+        cmd = std::string("cp -rf ") + m_kernel_folder + " " + Direct3DXBoxNN_path;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy kernel folder to Direct3DXBoxNN folder.\n");
+        }
+
+        cmd = std::string("rm -rf ") + m_kernel_folder;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError("Failed to remove kernel folder.\n");
+        }
+    }
+
+    std::string vs_folder1 = Direct3DWinNN_path + std::string(".vs/");
+    if (stat(vs_folder1.c_str(), &s) == 0)
+    {
+        cmd = std::string("rm -rf ") + vs_folder1;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError("Failed to remove .vs folder.\n");
+        }
+    }
+
+    std::string vs_folder2 = Direct3DXBoxNN_path + std::string(".vs/");
+    if (stat(vs_folder2.c_str(), &s) == 0)
+    {
+        cmd = std::string("rm -rf ") + vs_folder2;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError("Failed to remove .vs folder.\n");
+        }
+    }
+    return true;
 }

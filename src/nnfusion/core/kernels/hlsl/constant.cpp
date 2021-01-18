@@ -10,7 +10,6 @@
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-DECLARE_bool(fhlsl_csharp_codegen);
 DECLARE_string(fhlsl_codegen_type);
 namespace nnfusion
 {
@@ -45,7 +44,7 @@ namespace nnfusion
 
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
                     auto& writer = *_lu;
-                    if (FLAGS_fhlsl_codegen_type == "csharp" || FLAGS_fhlsl_csharp_codegen)
+                    if (FLAGS_fhlsl_codegen_type == "csharp")
                     {
                         writer << "var byteArray = File.ReadAllBytes(path);\n";
                         writer << "dxMemcpyHtoDAsync(output0, "
@@ -123,7 +122,7 @@ namespace nnfusion
                         {
                             ss << "void* input" << i;
                         }
-                        else
+                        else if (FLAGS_fhlsl_codegen_type == "csharp")
                         {
                             ss << "IntPtr input" << i;
                         }
@@ -138,7 +137,7 @@ namespace nnfusion
                         {
                             ss << "void* output" << i;
                         }
-                        else
+                        else if (FLAGS_fhlsl_codegen_type == "csharp")
                         {
                             ss << "IntPtr output" << i;
                         }

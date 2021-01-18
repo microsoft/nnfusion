@@ -38,6 +38,7 @@ namespace nnfusion
             std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu) override;
             void set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu) override;
+            virtual bool after_projgen() override;
             CodegenMainBlockUnit_p lup_main;
         };
     }

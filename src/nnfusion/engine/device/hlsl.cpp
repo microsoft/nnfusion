@@ -37,14 +37,14 @@ using namespace nnfusion;
 using namespace nnfusion::engine;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::pass;
-DEFINE_bool(fhlsl_csharp_codegen, false, "hlsl csharp codegen");
+
 DEFINE_string(fhlsl_codegen_type,
               "default",
               "choose hlsl codegen type from [default(will be deprecated), csharp, cpp]");
 HLSLEngine::HLSLEngine()
     : Engine()
 {
-    if (FLAGS_fhlsl_csharp_codegen || FLAGS_fhlsl_codegen_type == "csharp")
+    if (FLAGS_fhlsl_codegen_type == "csharp")
     {
         g_passes->push_back(make_shared<CSEPass>());
         g_passes->push_back(make_shared<AutodiffPass>());

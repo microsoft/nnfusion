@@ -17,7 +17,7 @@ namespace nnfusion
 
         namespace macro
         {
-            // LU_DECLARE(CUDA_SAFE_CALL_NO_THROW);
+            LU_DECLARE(OutputDebugStringA);
 
         } // namespace macro
 

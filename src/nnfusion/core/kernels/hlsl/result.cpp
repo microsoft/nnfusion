@@ -79,7 +79,7 @@ namespace nnfusion
                         {
                             ss << "void* input" << i;
                         }
-                        else
+                        else if (FLAGS_fhlsl_codegen_type == "csharp")
                         {
                             ss << "IntPtr input" << i;
                         }
@@ -94,7 +94,7 @@ namespace nnfusion
                         {
                             ss << "void* output" << i;
                         }
-                        else
+                        else if (FLAGS_fhlsl_codegen_type == "csharp")
                         {
                             ss << "IntPtr output" << i;
                         }

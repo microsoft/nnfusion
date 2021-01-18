@@ -5,7 +5,6 @@
 #define __ANTARES_D3D12_WRAPPER__
 
 #define __EXPORT__ extern "C" __declspec(dllexport)
-//#define __EXPORT__  
 
 __EXPORT__ int    dxInit(int flags);
 

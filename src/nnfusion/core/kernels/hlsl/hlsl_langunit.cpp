@@ -26,6 +26,14 @@ using System.Diagnostics;
 
 LU_DEFINE(header::D3D12APIWrapper, "#include \"D3D12APIWrapper.h\"\n");
 
+//Macro
+LU_DEFINE(macro::OutputDebugStringA, R"(
+#ifndef _GAMING_XBOX_SCARLETT
+#define OutputDebugStringA printf
+#endif
+
+)");
+
 // Declaration
 LU_DEFINE(declaration::antares_hlsl_dll,
           R"(

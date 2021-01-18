@@ -399,7 +399,7 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_init()
         {
             lu << "void* " << this->get_name() << "_memory_pool;\n";
         }
-        else
+        else if (FLAGS_fhlsl_codegen_type == "csharp")
         {
             lu << "static IntPtr " << this->get_name() << "_memory_pool;\n";
         }
@@ -410,7 +410,7 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_init()
             {
                 lu << "void* " << tensor->get_name() << ";\n";
             }
-            else
+            else if (FLAGS_fhlsl_codegen_type == "csharp")
             {
                 lu << "static IntPtr " << tensor->get_name() << ";\n";
             }
@@ -434,7 +434,7 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
                 lu << tensor->get_name() << " = (char*)" << this->get_name() << "_memory_pool + "
                    << tensor->get_pool_offset() << ";\n";
             }
-            else
+            else if (FLAGS_fhlsl_codegen_type == "csharp")
             {
                 lu << tensor->get_name() << " = IntPtr.Add(" << this->get_name() << "_memory_pool, "
                    << tensor->get_pool_offset() << ");\n";

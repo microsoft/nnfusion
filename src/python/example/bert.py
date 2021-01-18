@@ -10,6 +10,7 @@ os.environ["PATH"] = os.path.abspath(
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import numpy as np
+np.random.seed(0)
 import torch
 torch.manual_seed(0)
 from torch import nn
@@ -98,20 +99,15 @@ def process_data(imdb_data_dir):
     test_texts, test_labels = read_imdb_split(
         os.path.join(imdb_data_dir, "test"))
 
-    train_texts, val_texts, train_labels, val_labels = train_test_split(
-        train_texts, train_labels, test_size=.2)
-
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
     train_encodings = tokenizer(train_texts, truncation=True, padding=True)
-    val_encodings = tokenizer(val_texts, truncation=True, padding=True)
     test_encodings = tokenizer(test_texts, truncation=True, padding=True)
 
     train_dataset = IMDbDataset(train_encodings, train_labels)
-    val_dataset = IMDbDataset(val_encodings, val_labels)
     test_dataset = IMDbDataset(test_encodings, test_labels)
 
-    return train_dataset, val_dataset, test_dataset
+    return train_dataset, test_dataset
 
 
 def pytorch_train_bert():
@@ -119,7 +115,7 @@ def pytorch_train_bert():
     # >wget http://ai.stanford.edu/\~amaas/data/sentiment/aclImdb_v1.tar.gz
     # >tar -xf aclImdb_v1.tar.gz
     imdb_data_dir = "/path/to/aclImdb"
-    train_dataset, _, _ = process_data(imdb_data_dir)
+    train_dataset, _ = process_data(imdb_data_dir)
     train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
 
     device = torch.device(
@@ -134,7 +130,7 @@ def pytorch_train_bert():
 
     sum_loss = 0
     sum_iter = 0
-    for epoch in range(100):
+    for epoch in range(3):
         for i, batch in enumerate(train_loader):
             if sum_iter == 100:
                 print("Epoch {}, batch {}，loss {}".format(
@@ -164,7 +160,7 @@ def train_bert():
     # >wget http://ai.stanford.edu/\~amaas/data/sentiment/aclImdb_v1.tar.gz
     # >tar -xf aclImdb_v1.tar.gz
     imdb_data_dir = "/path/to/aclImdb"
-    train_dataset, _, _ = process_data(imdb_data_dir)
+    train_dataset, _ = process_data(imdb_data_dir)
     train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
 
     device = "cuda:0"
@@ -175,12 +171,12 @@ def train_bert():
     model.eval()
     wrapper = WrapperModel(model)
 
-    codegen_flags = {"kernel_fusion_level": 0, "blockfusion_level": 0}
+    codegen_flags = {"blockfusion_level": 0}
     trainer = Trainer(wrapper, device=device, codegen_flags=codegen_flags)
 
     sum_nnf_loss = 0
     sum_iter = 0
-    for epoch in range(100):
+    for epoch in range(3):
         for i, batch in enumerate(train_loader):
             if sum_iter == 100:
                 print("Epoch {}, batch {}, nnf_loss {}".format(
@@ -197,7 +193,41 @@ def train_bert():
             sum_nnf_loss += nnf_loss
             sum_iter += 1
 
+    torch.save(model.state_dict(), "/tmp/bert.pt")
+
+def np_softmax(x):
+    e_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
+    return e_x / e_x.sum(axis=-1, keepdims=True)
+
+def eval():
+    # load model
+    device = "cuda:0"
+    model = BertForSequenceClassification.from_pretrained(
+        'bert-base-uncased', return_dict=True).to(device)
+    model.load_state_dict(torch.load("/tmp/bert.pt"))
+    model.eval()
+
+    # prepare data
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    text_batch = ["I love Pixar.", "I don't care for Pixar."]
+    encoding = tokenizer(text_batch,
+                         return_tensors='pt',
+                         padding=True,
+                         truncation=True)
+    input_ids = encoding['input_ids'].to(device)
+    attention_mask = encoding['attention_mask'].to(device)
+
+    out = model(input_ids,
+                attention_mask=attention_mask)
+    logits = out.logits.cpu().detach().numpy()
+    conf = np_softmax(logits)
+    pred = np.argmax(conf, axis=-1)
+
+    for i, sentence in enumerate(text_batch):
+        print("Comment {} is {}, confidence {:.3f}: \"{}\"".format(i, "positive" if pred[i] == 1 else "negative", conf[i, pred[i]], sentence))
 
 if __name__ == "__main__":
-    # test_runner()
+    test_runner()
+    # pytorch_train_bert()
     train_bert()
+    eval()

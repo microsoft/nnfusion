@@ -195,9 +195,11 @@ def train_bert():
 
     torch.save(model.state_dict(), "/tmp/bert.pt")
 
+
 def np_softmax(x):
     e_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
     return e_x / e_x.sum(axis=-1, keepdims=True)
+
 
 def eval():
     # load model
@@ -217,14 +219,16 @@ def eval():
     input_ids = encoding['input_ids'].to(device)
     attention_mask = encoding['attention_mask'].to(device)
 
-    out = model(input_ids,
-                attention_mask=attention_mask)
+    out = model(input_ids, attention_mask=attention_mask)
     logits = out.logits.cpu().detach().numpy()
     conf = np_softmax(logits)
     pred = np.argmax(conf, axis=-1)
 
     for i, sentence in enumerate(text_batch):
-        print("Comment {} is {}, confidence {:.3f}: \"{}\"".format(i, "positive" if pred[i] == 1 else "negative", conf[i, pred[i]], sentence))
+        print("Comment {} is {}, confidence {:.3f}: \"{}\"".format(
+            i, "positive" if pred[i] == 1 else "negative", conf[i, pred[i]],
+            sentence))
+
 
 if __name__ == "__main__":
     test_runner()

@@ -102,13 +102,13 @@ namespace nnfusion
                         return ss.str();
                     };
 
-                    writer << "size_t nthreads = " << shape_size(result_shape) << ";";
+                    writer << "size_t nthreads = " << shape_size(result_shape) << ";\n";
 
                     writer << expand_vector_uint32("strides", strides)
                            << expand_vector_int("stride_magic", stride_magic)
                            << expand_vector_int("stride_shift", stride_shift)
                            << expand_vector_uint32("reduced_strides", reduced_strides)
-                           << "const int tid = blockDim.x*blockIdx.x + threadIdx.x;\n";
+                           << "const int tid = blockDim.x * blockIdx.x + threadIdx.x;\n";
                     writer << "if (tid < nthreads)\n";
                     writer.block_begin();
                     {

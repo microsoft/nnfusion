@@ -249,9 +249,8 @@ namespace nnfusion
             {
                 static constexpr const char* op = "power_backward_exponent";
                 static constexpr const char* math_kernel =
-                    "x0 > 0 ? powf(x0, x1) * logf(x0) : (x0 == 0 ? (x1 >= 0 ? 0 : 1.0/0.0 /* "
-                    "CUDART_INF_F */) : "
-                    "0 /* CUDART_NAN_F */)";
+                    "x0 > 0 ? powf(x0, x1) * logf(x0) : (x0 == 0 ? (x1 >= 0 ? 0 : CUDART_INF_F) : "
+                    "CUDART_NAN_F)";
             };
 
             template <>

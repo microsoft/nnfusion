@@ -124,7 +124,7 @@ void cuda::coordinate_transform_to_multi_d(CodeWriter& writer,
                << "coordinate_product, " << i_stride_magic << brace_open << i << brace_close << ", "
                << i_stride_shift << brace_open << i << brace_close << ");\n";
         writer << "coordinate_product -= (" << o_coordinates << i << " * " << i_strides
-                   << brace_open << i << brace_close << ");\n";
+               << brace_open << i << brace_close << ");\n";
     }
 }
 

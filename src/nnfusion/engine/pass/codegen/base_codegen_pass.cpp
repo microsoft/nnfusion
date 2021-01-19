@@ -11,6 +11,7 @@ using namespace nnfusion::codegen;
 
 DECLARE_bool(fkernels_as_files);
 DECLARE_int64(fkernels_files_number);
+DECLARE_bool(fcustomized_mem_imp);
 
 bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
                           std::shared_ptr<TranslationUnit> tu)
@@ -227,4 +228,41 @@ bool BaseCodegenPass::after_projgen()
     }
 
     return true;
+}
+
+std::pair<LanguageUnit_p, LanguageUnit_p>
+    BaseCodegenPass::get_customized_mem_imp(nnfusion::ir::Instruction::Pointer ins)
+{
+    LanguageUnit_p lup_alloc(new LanguageUnit(ins->name() + "_alloc"));
+    LanguageUnit_p lup_free(new LanguageUnit(ins->name() + "_free"));
+    if (FLAGS_fcustomized_mem_imp)
+    {
+        if ((*ins)["MemoryInfo"].is_valid())
+        {
+            nnfusion::pass::MemoryInfo mem_info =
+                (*ins)["MemoryInfo"].as<nnfusion::pass::MemoryInfo>();
+            for (auto tensor : mem_info.alloc_new)
+            {
+                *lup_alloc << tensor->get_name() << " = MemoryAlloc(" << tensor->size() << ");\n";
+            }
+
+            for (auto tensor : mem_info.alloc_ref)
+            {
+                auto root = tensor->get_root_tensor();
+                NNFUSION_CHECK_NOT_NULLPTR(root);
+                size_t offset = tensor->get_pool_offset() - root->get_pool_offset();
+                if (offset == 0)
+                    *lup_alloc << tensor->get_name() << " = " << root->get_name() << ";\n";
+                else
+                    *lup_alloc << tensor->get_name() << " = MemoryRef(" << root->get_name() << ", "
+                               << offset << ");\n";
+            }
+
+            for (auto tensor : mem_info.free)
+            {
+                *lup_free << "MemoryFree(" << tensor->get_name() << ");\n";
+            }
+        }
+    }
+    return std::make_pair(lup_alloc, lup_free);
 }

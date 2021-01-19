@@ -30,6 +30,7 @@ DECLARE_string(fcuda_init_stream);
 DECLARE_bool(fextern_result_memory);
 DECLARE_int32(fwarmup_step);
 DECLARE_int32(frun_step);
+DECLARE_bool(fcustomized_mem_imp);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -288,7 +289,11 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 #endif
             }
             LanguageUnit_p kernel_func_call = func_call_codegen(ins, func_call_only, call_str);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).second);
         }
 
         if (thread_name != "default_thread")

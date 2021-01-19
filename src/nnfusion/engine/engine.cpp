@@ -13,6 +13,7 @@ DEFINE_int32(frun_step, 100, "Run step.");
 DEFINE_int32(min_log_level,
              1,
              "Minimum logging level: 0 - debug; 1 - info; 2 - warning; 3 - error; 4 - fatal;");
+DEFINE_bool(fcustomized_mem_imp, false, "Use customized memory implementation in codegen files;");
 
 using namespace nnfusion;
 

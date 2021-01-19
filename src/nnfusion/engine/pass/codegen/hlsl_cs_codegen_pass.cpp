@@ -20,6 +20,7 @@ DECLARE_int32(fwarmup_step);
 DECLARE_int32(frun_step);
 DECLARE_bool(fcodegen_debug);
 DECLARE_bool(fextern_result_memory);
+DECLARE_bool(fcustomized_mem_imp);
 
 void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -226,7 +227,11 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
             LanguageUnit_p kernel_func_call =
                 std::make_shared<LanguageUnit>(fu->call_unit->get_symbol(), call_str);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).second);
         }
 
         if (thread_name != "default_thread")

@@ -17,7 +17,6 @@ namespace nnfusion
             std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> alloc_new;
             std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> alloc_ref;
             std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> free;
-            std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> free_at_last;
         };
 
         ///\brief Obsoleted MemoryLayout pass doesn't support tensor allcoated

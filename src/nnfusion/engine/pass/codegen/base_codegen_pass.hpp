@@ -98,6 +98,7 @@ namespace nnfusion
             std::string m_codegen_folder;
             std::string m_kernel_folder;
             std::string m_kernel_suffix;
+            std::unordered_set<std::shared_ptr<nnfusion::descriptor::Tensor>> free_at_last;
         };
     }
 }

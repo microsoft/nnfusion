@@ -93,6 +93,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                 {
                     ref_tensors.push_back(tensor);
                     mem_info.alloc_ref.push_back(tensor);
+                    auto root = tensor->get_root_tensor();
                 }
                 else
                 {
@@ -125,7 +126,6 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                 {
                     // persistent tensor will not be reused
                     auto root_tensor = tensor->get_root_tensor();
-                    NNFUSION_LOG(INFO) << tensor->get_name();
                     if ((!root_tensor && !tensor->is_persistent() && !tensor->is_parameter()) ||
                         (root_tensor && !root_tensor->is_persistent() &&
                          !root_tensor->is_parameter()))
@@ -134,13 +134,6 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                         auto allocator = maf->get_allocator(root_tensor ? root_tensor : tensor);
                         allocator->free(tensor);
                         mem_info.free.push_back(root_tensor ? root_tensor : tensor);
-                    }
-                    else
-                    {
-                        if (root_tensor && !root_tensor->is_parameter())
-                            mem_info.free_at_last.push_back(root_tensor);
-                        else if (!root_tensor && !tensor->is_parameter())
-                            mem_info.free_at_last.push_back(tensor);
                     }
                 }
             }

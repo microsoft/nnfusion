@@ -93,7 +93,14 @@ class IMDbDataset(torch.utils.data.Dataset):
         return len(self.labels)
 
 
-def process_data(imdb_data_dir):
+def process_data():
+    if not os.path.exists("aclImdb/README"):
+        os.system(
+            "wget http://ai.stanford.edu/\~amaas/data/sentiment/aclImdb_v1.tar.gz"
+        )
+        os.system("tar -xf aclImdb_v1.tar.gz")
+        os.system("rm aclImdb_v1.tar.gz")
+    imdb_data_dir = "./aclImdb"
     train_texts, train_labels = read_imdb_split(
         os.path.join(imdb_data_dir, "train"))
     test_texts, test_labels = read_imdb_split(
@@ -111,11 +118,7 @@ def process_data(imdb_data_dir):
 
 
 def pytorch_train_bert():
-    # please download imdb data by yourself:
-    # >wget http://ai.stanford.edu/\~amaas/data/sentiment/aclImdb_v1.tar.gz
-    # >tar -xf aclImdb_v1.tar.gz
-    imdb_data_dir = "/path/to/aclImdb"
-    train_dataset, _ = process_data(imdb_data_dir)
+    train_dataset, _ = process_data()
     train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
 
     device = torch.device(
@@ -156,18 +159,14 @@ def pytorch_train_bert():
 
 
 def train_bert():
-    # please download imdb data by yourself:
-    # >wget http://ai.stanford.edu/\~amaas/data/sentiment/aclImdb_v1.tar.gz
-    # >tar -xf aclImdb_v1.tar.gz
-    imdb_data_dir = "/path/to/aclImdb"
-    train_dataset, _ = process_data(imdb_data_dir)
+    train_dataset, _ = process_data()
     train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
 
     device = "cuda:0"
     model = BertForSequenceClassification.from_pretrained('bert-base-uncased',
                                                           return_dict=True)
     model.to(device)
-    #TODO: should switch to train(), but nnf dropout kernel is not ready
+    #TODO: should switch to train() once nnf dropout kernel ready
     model.eval()
     wrapper = WrapperModel(model)
 
@@ -228,6 +227,7 @@ def eval():
         print("Comment {} is {}, confidence {:.3f}: \"{}\"".format(
             i, "positive" if pred[i] == 1 else "negative", conf[i, pred[i]],
             sentence))
+    assert pred[0] == 1 and pred[1] == 0
 
 
 if __name__ == "__main__":

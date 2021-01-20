@@ -49,6 +49,7 @@
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
 #include "op/memory_copy.hpp"
+#include "op/non_zero.hpp"
 #include "op/one_hot.hpp"
 #include "op/pool.hpp"
 #include "op/reduce.hpp"
@@ -132,6 +133,7 @@ namespace nnfusion
                 REGISTER_EMPTY_DOMAIN("com.microsoft.nchwc");
                 REGISTER_EMPTY_DOMAIN("ai.onnx.training");
                 REGISTER_EMPTY_DOMAIN("ai.onnx.ml");
+                REGISTER_EMPTY_DOMAIN("ai.onnx.preview.training");
                 REGISTER_EMPTY_DOMAIN("com.microsoft");
                 REGISTER_EMPTY_DOMAIN("com.microsoft.mlfeaturizers");
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
@@ -196,6 +198,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Mul", 1, TranslateLegacyBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Mul", 7, TranslateBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);
+                REGISTER_OPERATOR("NonZero", 1, TranslateNonZeroOp);
                 REGISTER_OPERATOR("Not", 1, TranslateUnaryOp<op::Not>);
                 REGISTER_OPERATOR("OneHot", 1, TranslateOneHotOp);
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);

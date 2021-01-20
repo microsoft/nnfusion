@@ -27,12 +27,23 @@ REGISTER_BACKWARD_TRANSLATOR(Parameter).translator([](std::shared_ptr<GNode> for
     ///\todo support other optimizer, support scheduled learning rate
     if (parameter_op->require_grad())
     {
+        std::unordered_set<std::shared_ptr<GNode>> param_consumers;
+        for (const auto& consumer_edge : forward_node->get_out_edges())
+        {
+            param_consumers.insert(consumer_edge->get_dst());
+        }
+
         nnfusion::op::OpConfig::any myConfig;
-        myConfig["learning_rate"] = 0.001;
+        myConfig["learning_rate"] = 0.0001;
         auto opt_op = std::make_shared<nnfusion::op::GenericOp>(
             forward_node->get_name() + "_sgd", "ApplyGradient", myConfig);
         auto opt_node =
             graph->add_node_and_edge(opt_op, {get_node_output(forward_node, 0), outputs_grad[0]});
+
+        for (auto consumer : param_consumers)
+        {
+            graph->add_edge(consumer, -1, opt_node, -1);
+        }
         graph_outputs.push_back(opt_node);
     }
     else

@@ -37,6 +37,8 @@ namespace nnfusion
         class Tan;
         class Tanh;
         class Power;
+        class PowerBackwardBase;
+        class PowerBackwardExponent;
         class Subtract;
         class Divide;
         class Sign;
@@ -233,6 +235,22 @@ namespace nnfusion
             {
                 static constexpr const char* op = "powf";
                 static constexpr const char* math_kernel = nullptr;
+            };
+
+            template <>
+            struct CudaOpMap<nnfusion::op::PowerBackwardBase>
+            {
+                static constexpr const char* op = "power_backward_base";
+                static constexpr const char* math_kernel = "x1 != 0 ? x1 * powf(x0, x1 - 1) : 0";
+            };
+
+            template <>
+            struct CudaOpMap<nnfusion::op::PowerBackwardExponent>
+            {
+                static constexpr const char* op = "power_backward_exponent";
+                static constexpr const char* math_kernel =
+                    "x0 > 0 ? powf(x0, x1) * logf(x0) : (x0 == 0 ? (x1 >= 0 ? 0 : 1.0/0.0 /* "
+                    "CUDART_INF_F */) : 0.0/0.0 /* CUDART_NAN_F */)";
             };
 
             template <>

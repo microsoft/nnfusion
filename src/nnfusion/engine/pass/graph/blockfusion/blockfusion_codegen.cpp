@@ -110,7 +110,8 @@ std::shared_ptr<KernelContext> BlockFusionCudaCodegen::FuseContext()
         auto gnode = kernel_emitter->m_context->gnode;
         for (const auto& in_edge : gnode->get_in_edges())
         {
-            if (nodes_in_group.find(in_edge->get_src()->get_id()) == nodes_in_group.end())
+            if (!in_edge->is_control_edge() &&
+                nodes_in_group.find(in_edge->get_src()->get_id()) == nodes_in_group.end())
             {
                 auto tv = gnode->get_input_tensor_ptr(in_edge->get_dst_input());
                 NNFUSION_CHECK_NOT_NULLPTR(tv);
@@ -129,7 +130,8 @@ std::shared_ptr<KernelContext> BlockFusionCudaCodegen::FuseContext()
 
         for (const auto& out_edge : gnode->get_out_edges())
         {
-            if (nodes_in_group.find(out_edge->get_dst()->get_id()) == nodes_in_group.end())
+            if (!out_edge->is_control_edge() &&
+                nodes_in_group.find(out_edge->get_dst()->get_id()) == nodes_in_group.end())
             {
                 auto tv = gnode->get_output_tensor_ptr(out_edge->get_src_output());
                 NNFUSION_CHECK_NOT_NULLPTR(tv);

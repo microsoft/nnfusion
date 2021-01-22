@@ -38,6 +38,7 @@ namespace nnfusion
                 {
                     Node node(node_proto);
                     int64_t groups = node.get_attribute_value<int64_t>("group", 1);
+                    NNFUSION_CHECK(groups == 1) << "'group' attribute is not supported now!";
                     return NamedNodeVector();
                 }
             } // namespace set_1

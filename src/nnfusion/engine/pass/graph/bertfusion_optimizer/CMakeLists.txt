@@ -1,0 +1,17 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+
+set(SRC
+   attention_fusion_optimizer.cpp
+)
+
+add_library(nnfusion_engine_pass_graph_bertfusion STATIC ${SRC})
+target_include_directories(nnfusion_engine_pass_graph_bertfusion SYSTEM PUBLIC
+    ${GLOBAL_INCLUDE_PATH}
+)
+target_compile_options(nnfusion_engine_pass_graph_bertfusion PRIVATE "-fPIC")
+
+target_link_libraries(nnfusion_engine_pass_graph_bertfusion PRIVATE nnfusion_common
+gflags
+)

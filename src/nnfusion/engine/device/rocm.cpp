@@ -8,6 +8,7 @@
 #include "nnfusion/engine/pass/graph/assign_layout_pass.hpp"
 #include "nnfusion/engine/pass/graph/autodiff_pass.hpp"
 #include "nnfusion/engine/pass/graph/batchnorm_inference_folding_pass.hpp"
+#include "nnfusion/engine/pass/graph/bertfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/blockfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/common_subexpression_elimination_pass.hpp"
 #include "nnfusion/engine/pass/graph/dot_transpose_pass.hpp"
@@ -42,6 +43,7 @@ ROCmEngine::ROCmEngine()
 {
     g_passes->push_back(make_shared<CSEPass>());
     g_passes->push_back(make_shared<AutodiffPass>());
+    g_passes->push_back(make_shared<BertFusionPass>());
     g_passes->push_back(make_shared<GradientWeightMappingPass>());
     g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
     g_passes->push_back(make_shared<MultiReshapeFoldingPass>());

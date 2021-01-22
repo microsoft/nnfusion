@@ -45,6 +45,7 @@ namespace nnfusion
             LU_DECLARE(cuda_reduce_primitive);
             LU_DECLARE(cuda_layer_norm);
             LU_DECLARE(cuda_fp16_scale);
+            LU_DECLARE(cuda_convert_template);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

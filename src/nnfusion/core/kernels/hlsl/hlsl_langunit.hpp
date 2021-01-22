@@ -22,7 +22,7 @@ namespace nnfusion
 
         namespace declaration
         {
-            LU_DECLARE(antares_hlsl_dll);
+            LU_DECLARE(antares_hlsl_dll_cs);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

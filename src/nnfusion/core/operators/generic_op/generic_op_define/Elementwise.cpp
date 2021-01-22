@@ -34,6 +34,8 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Tan", element_op("tan", "")},
     {"Tanh", element_op("tanh", "")},
     {"Power", element_op("pow", "")},
+    {"PowerBackwardBase", element_op("power_backward_base", "")},
+    {"PowerBackwardExponent", element_op("power_backward_exponent", "")},
     {"Add", element_op("add", "x0 + x1")},
     {"Subtract", element_op("subtract", "x0 - x1")},
     {"Multiply", element_op("mul", "x0 * x1")},
@@ -149,6 +151,8 @@ REGISTER_ELEM_OP(Rsqrt)
 REGISTER_ELEM_OP(Tan)
 REGISTER_ELEM_OP(Tanh)
 REGISTER_ELEM_OP(Power)
+REGISTER_ELEM_OP(PowerBackwardBase)
+REGISTER_ELEM_OP(PowerBackwardExponent)
 //REGISTER_ELEM_OP(Add)
 REGISTER_ELEM_OP(Subtract)
 REGISTER_ELEM_OP(Multiply)

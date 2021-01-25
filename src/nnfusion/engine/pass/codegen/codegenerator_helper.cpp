@@ -12,6 +12,8 @@ using namespace nnfusion::codegenerator;
 using namespace nnfusion::kernels;
 using namespace nnfusion::async;
 
+DECLARE_string(fhlsl_codegen_type);
+
 LanguageUnit_p extern_function(LanguageUnit_p lu)
 {
 }
@@ -315,7 +317,9 @@ HLSLFunctionFile_p
     def << fu->comment_unit->get_code();
     string sig = fu->get_specialized_signature();
 
-    def << "static " << sig << "\n";
+    if (FLAGS_fhlsl_codegen_type == "csharp")
+        def << "static ";
+    def << sig << "\n";
     def.block_begin();
     def << fu->body_unit->get_code() << "\n";
     def.block_end();

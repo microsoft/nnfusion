@@ -21,7 +21,7 @@ using namespace nnfusion::kernels;
 
 DEFINE_bool(fmem_trace, false, "Record and dump memory trace.");
 DEFINE_string(fmem_log_path, "memory.log", "The file path of memory log.");
-DECLARE_bool(fhlsl_csharp_codegen);
+DECLARE_string(fhlsl_codegen_type);
 
 bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -45,6 +45,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
     {
         for (auto ins : *iterator)
         {
+            MemoryInfo mem_info;
             auto gnode = ins->getGNode();
             // do not allocate parameter tensors.
             if (gnode && gnode->is_parameter())
@@ -57,7 +58,6 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                      std::pair<std::shared_ptr<descriptor::Tensor>, size_t>>
                 in_place_outputs;
             std::unordered_set<std::shared_ptr<descriptor::Tensor>> alloc_temp;
-
             if (auto kernel = ins->getKernel())
             {
                 NNFUSION_CHECK_NOT_NULLPTR(kernel->m_context);
@@ -82,7 +82,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             // The output of output nodes refers to the input, so there is NO need
             // to allocate memory space for output of output nodes.
             if (!gnode || !gnode->get_op_ptr()->is_output() ||
-                (gnode->get_op_ptr()->is_output() && FLAGS_fhlsl_csharp_codegen))
+                (gnode->get_op_ptr()->is_output() && FLAGS_fhlsl_codegen_type != "default"))
                 newlist.insert(ins->liveness_new_list.begin(), ins->liveness_new_list.end());
 
             // Allocate in two passes to make sure ref-tensors is after non-ref-tensors
@@ -92,12 +92,15 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                 if (in_place_outputs.count(tensor))
                 {
                     ref_tensors.push_back(tensor);
+                    mem_info.alloc_ref.push_back(tensor);
+                    auto root = tensor->get_root_tensor();
                 }
                 else
                 {
                     auto allocator = maf->get_allocator(tensor);
                     tensor->set_pool(allocator->get_name());
                     allocator->allocate(tensor);
+                    mem_info.alloc_new.push_back(tensor);
                 }
             }
 
@@ -122,11 +125,15 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                 for (std::shared_ptr<descriptor::Tensor> tensor : freelist)
                 {
                     // persistent tensor will not be reused
-                    if (!tensor->is_persistent() && !tensor->is_parameter())
+                    auto root_tensor = tensor->get_root_tensor();
+                    if ((!root_tensor && !tensor->is_persistent() && !tensor->is_parameter()) ||
+                        (root_tensor && !root_tensor->is_persistent() &&
+                         !root_tensor->is_parameter()))
                     {
-                        auto root_tensor = tensor->get_root_tensor();
+                        // auto root_tensor = tensor->get_root_tensor();
                         auto allocator = maf->get_allocator(root_tensor ? root_tensor : tensor);
                         allocator->free(tensor);
+                        mem_info.free.push_back(root_tensor ? root_tensor : tensor);
                     }
                 }
             }
@@ -141,6 +148,8 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                 }
                 mem_log << "\n";
             }
+
+            (*ins)["MemoryInfo"] = mem_info;
         }
     }
 

@@ -6,10 +6,11 @@
 
 #include "hlsl_kernel_emitter.hpp"
 #include "nnfusion/common/languageunit.hpp"
+#include "nnfusion/core/kernels/common_langunit.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-DECLARE_bool(fhlsl_csharp_codegen);
+DECLARE_string(fhlsl_codegen_type);
 namespace nnfusion
 {
     namespace kernels
@@ -43,10 +44,27 @@ namespace nnfusion
 
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
                     auto& writer = *_lu;
-                    writer << "var byteArray = File.ReadAllBytes(path);\n";
-                    writer << "dxMemcpyHtoDAsync(output0, "
-                              "Marshal.UnsafeAddrOfPinnedArrayElement(byteArray, 0), bytes, "
-                              "IntPtr.Zero);\n";
+                    if (FLAGS_fhlsl_codegen_type == "csharp")
+                    {
+                        writer << "var byteArray = File.ReadAllBytes(path);\n";
+                        writer << "dxMemcpyHtoDAsync(output0, "
+                                  "Marshal.UnsafeAddrOfPinnedArrayElement(byteArray, 0), bytes, "
+                                  "IntPtr.Zero);\n";
+                    }
+                    else
+                    {
+                        writer << "std::ifstream bin_file(path, std::ios::in | std::ios::binary);\n"
+                               << "if(bin_file.fail())\n"
+                               << "{\n"
+                               << "\tstd::cout << \"Load Constant failed.\\n\" << std::endl;\n"
+                               << "\texit(1);\n"
+                               << "}\n"
+                               << "char* tmp_mem = new char[bytes];\n"
+                               << "bin_file.read(tmp_mem, bytes);\n"
+                               << "dxMemcpyHtoDAsync(output0, tmp_mem, bytes, 0);\n"
+                               << "bin_file.close();\n";
+                    }
+
                     return _lu;
                 }
 
@@ -56,7 +74,7 @@ namespace nnfusion
                     auto& lu = *_lu;
 
                     auto curr = m_context->gnode;
-                    if (FLAGS_fhlsl_csharp_codegen)
+                    if (FLAGS_fhlsl_codegen_type != "default")
                     {
                         vector<string> names;
                         names.insert(names.end(),
@@ -100,7 +118,14 @@ namespace nnfusion
                     {
                         stringstream ss;
                         // ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
-                        ss << "IntPtr input" << i;
+                        if (FLAGS_fhlsl_codegen_type == "cpp")
+                        {
+                            ss << "void* input" << i;
+                        }
+                        else if (FLAGS_fhlsl_codegen_type == "csharp")
+                        {
+                            ss << "IntPtr input" << i;
+                        }
                         params.push_back(ss.str());
                     }
 
@@ -108,12 +133,28 @@ namespace nnfusion
                     {
                         stringstream ss;
                         // ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
-                        ss << "IntPtr output" << i;
+                        if (FLAGS_fhlsl_codegen_type == "cpp")
+                        {
+                            ss << "void* output" << i;
+                        }
+                        else if (FLAGS_fhlsl_codegen_type == "csharp")
+                        {
+                            ss << "IntPtr output" << i;
+                        }
+
                         params.push_back(ss.str());
                     }
 
                     lu << "void "
-                       << "(string path, int bytes, " << join(params, ", ") << ")";
+                       << "(std::string path, int bytes, " << join(params, ", ") << ")";
+                    return _lu;
+                }
+
+                LanguageUnit_p emit_dependency() override
+
+                {
+                    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+                    _lu->require(header::fstream);
                     return _lu;
                 }
 

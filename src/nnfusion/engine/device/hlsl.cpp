@@ -4,6 +4,7 @@
 #include "hlsl.hpp"
 #include "degree_based_visitor.hpp"
 #include "nnfusion/engine/pass/codegen/hlsl_codegen_pass.hpp"
+#include "nnfusion/engine/pass/codegen/hlsl_cpp_codegen_pass.hpp"
 #include "nnfusion/engine/pass/codegen/hlsl_cs_codegen_pass.hpp"
 #include "nnfusion/engine/pass/graph/assign_async_info_pass.hpp"
 #include "nnfusion/engine/pass/graph/assign_layout_pass.hpp"
@@ -36,11 +37,14 @@ using namespace nnfusion;
 using namespace nnfusion::engine;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::pass;
-DEFINE_bool(fhlsl_csharp_codegen, false, "hlsl csharp codegen");
+
+DEFINE_string(fhlsl_codegen_type,
+              "default",
+              "choose hlsl codegen type from [default(will be deprecated), csharp, cpp]");
 HLSLEngine::HLSLEngine()
     : Engine()
 {
-    if (FLAGS_fhlsl_csharp_codegen)
+    if (FLAGS_fhlsl_codegen_type == "csharp")
     {
         g_passes->push_back(make_shared<CSEPass>());
         g_passes->push_back(make_shared<AutodiffPass>());
@@ -77,6 +81,44 @@ HLSLEngine::HLSLEngine()
 
         // Do codegen
         m_passes->push_back(make_shared<HLSLCSCodegenPass>());
+    }
+    else if (FLAGS_fhlsl_codegen_type == "cpp")
+    {
+        g_passes->push_back(make_shared<CSEPass>());
+        g_passes->push_back(make_shared<AutodiffPass>());
+        g_passes->push_back(make_shared<GradientWeightMappingPass>());
+        g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
+        g_passes->push_back(make_shared<MultiReshapeFoldingPass>());
+        g_passes->push_back(make_shared<VectorDotTransposePass>());
+        g_passes->push_back(make_shared<GemmFusionPass>());
+        g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
+        g_passes->push_back(make_shared<AssignLayoutPass>());
+        g_passes->push_back(make_shared<OpInplacePass>());
+
+        // Kernel selection
+        g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelTuning>());
+        g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
+        g_passes->push_back(make_shared<FetchBasedSelector>());
+        g_passes->push_back(make_shared<DefaultKernelSelector>());
+
+        // Assign stream passes
+        g_passes->push_back(make_shared<AssignAsyncInfoPass>());
+
+        // Visitor
+        // g_visitor = make_shared<DegreeBasedVisitor>();
+        g_visitor = make_shared<ReversedDFSVisitor>();
+
+        // extract graph signature
+        m_passes->push_back(make_shared<ExtractGraphSignature>());
+        // Do tensor allocation plan
+        m_passes->push_back(make_shared<TensorDeviceDispatcher>());
+        m_passes->push_back(make_shared<TensorLivenessAnalysis>());
+        m_passes->push_back(make_shared<InplaceTensorAnalysis>());
+        m_passes->push_back(make_shared<AssignTensorMemoryLayout>(64, false));
+
+        // Do codegen
+        m_passes->push_back(make_shared<HLSLCPPCodegenPass>());
     }
     else
     {

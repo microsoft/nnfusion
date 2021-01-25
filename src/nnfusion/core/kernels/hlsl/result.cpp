@@ -9,7 +9,7 @@
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-DECLARE_bool(fhlsl_csharp_codegen);
+DECLARE_string(fhlsl_codegen_type);
 
 namespace nnfusion
 {
@@ -28,7 +28,7 @@ namespace nnfusion
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
-                    if (FLAGS_fhlsl_csharp_codegen)
+                    if (FLAGS_fhlsl_codegen_type != "default")
                     {
                         auto& lu = *_lu;
                         lu << "output0 = input0;\n";
@@ -43,7 +43,7 @@ namespace nnfusion
 
                     auto curr = m_context->gnode;
 
-                    if (FLAGS_fhlsl_csharp_codegen)
+                    if (FLAGS_fhlsl_codegen_type != "default")
                     {
                         vector<string> names;
                         names.insert(names.end(),
@@ -75,7 +75,14 @@ namespace nnfusion
                     {
                         stringstream ss;
                         // ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
-                        ss << "IntPtr input" << i;
+                        if (FLAGS_fhlsl_codegen_type == "cpp")
+                        {
+                            ss << "void* input" << i;
+                        }
+                        else if (FLAGS_fhlsl_codegen_type == "csharp")
+                        {
+                            ss << "IntPtr input" << i;
+                        }
                         params.push_back(ss.str());
                     }
 
@@ -83,7 +90,15 @@ namespace nnfusion
                     {
                         stringstream ss;
                         // ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
-                        ss << "IntPtr output" << i;
+                        if (FLAGS_fhlsl_codegen_type == "cpp")
+                        {
+                            ss << "void* output" << i;
+                        }
+                        else if (FLAGS_fhlsl_codegen_type == "csharp")
+                        {
+                            ss << "IntPtr output" << i;
+                        }
+
                         params.push_back(ss.str());
                     }
 

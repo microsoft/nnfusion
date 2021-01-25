@@ -83,5 +83,11 @@ REGISTER_OP(GatherV2)
         op_config["input1_layout"] = vector_to_string<std::vector<std::string>>(input1_layout);
         op_config["input0_layout_right"] = input0_layout_right;
 
+        if(input1_layout.empty())
+        {
+            op_config["input1"] = "0";
+            op_config["input1_layout"] = "";
+        }
+
         return op::create_code_from_template(ir_template, op_config);
     });

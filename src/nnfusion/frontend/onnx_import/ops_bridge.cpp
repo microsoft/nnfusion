@@ -55,6 +55,7 @@
 #include "op/pool.hpp"
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
+#include "op/resize.hpp"
 #include "op/shape.hpp"
 #include "op/slice.hpp"
 #include "op/softmax.hpp"
@@ -254,6 +255,8 @@ namespace nnfusion
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "TransposeMatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("Unsqueeze", 1, TranslateUnsqueezeOp);
                 REGISTER_OPERATOR("ConvTranspose", 1, TranslateConvTransposeOp);
+                REGISTER_OPERATOR("Resize", 1, TranslateResizeOp);
+                REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

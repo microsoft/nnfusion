@@ -56,6 +56,8 @@ add_library(onnx_import STATIC
         op/transpose.cpp
         op/gemm.hpp
         op/gemm.cpp
+        op/resize.hpp
+        op/resize.cpp
         # ${ops_source}
         util/broadcasting.cpp
         util/graph_convert.cpp

@@ -44,8 +44,8 @@ REGISTER_OP(Concat)
         auto offset = 0;
         auto recursive_input_template =
             R"( @input@@input_layout@.when(@dim@ < @offset@, @recursive@) )";
-        auto final_input_template = R"( @input@@input_layout@ )";
-        std::string inputs_body = R"( @recursive@ )";
+        auto final_input_template = R"(@input@@input_layout@)";
+        std::string inputs_body = R"(@recursive@)";
         for (int in_id = 0; in_id < curr->get_input_size(); ++in_id)
         {
             std::vector<std::string> in_data_layout(data_layout);

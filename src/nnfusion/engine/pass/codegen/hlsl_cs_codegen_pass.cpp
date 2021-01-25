@@ -74,7 +74,7 @@ void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     auto& lu_exit_end = *(projgen->lup_exit->end);
     {
-        lu_exit_end << "}\n\n";
+        lu_exit_end << "UnloadHlslImportedDll();\n}\n\n";
     }
 
     auto& lu_main_begin = *(lup_main->begin);
@@ -98,7 +98,7 @@ void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         lup_program_end << "}\n\n";
     }
 
-    lup_member->unit_vec.push_back(declaration::antares_hlsl_dll);
+    lup_member->unit_vec.push_back(declaration::antares_hlsl_dll_cs);
 
     // add requirement
     projgen->lup_codegen->require(header::systems);

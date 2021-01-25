@@ -7,6 +7,7 @@ sys.path.insert(1, os.path.abspath("./src/python"))
 import time
 import numpy as np
 import torch
+torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
 from nnf.session import Session
@@ -76,8 +77,8 @@ def train_mnist():
     device = "cuda:0"
     batch_size = 5
 
-    trainer = Trainer(model, loss_func, device)
-    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size)
+    trainer = Trainer(model, loss_func, device=device)
+    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size, shuffle=False)
     print("feeding")
     i = 0
     for i, batch in enumerate(train_loader):

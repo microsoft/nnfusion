@@ -25,6 +25,7 @@ namespace nnfusion
                 bool FuseSubGraph(std::shared_ptr<nnfusion::graph::GNode> starting_node,
                                   std::shared_ptr<nnfusion::graph::GNode> ending_node,
                                   size_t hidden_size);
+                bool RemoveNodes();
                 bool ReverseFindPath(
                     std::shared_ptr<nnfusion::graph::GNode> node,
                     std::vector<std::string>& pattern,
@@ -55,6 +56,7 @@ namespace nnfusion
                     GetorCreateMaskIndex(std::shared_ptr<nnfusion::graph::GNode> mask_input);
 
                 std::map<std::string, std::shared_ptr<nnfusion::graph::GNode>> mask_index_map;
+                std::unordered_set<std::shared_ptr<nnfusion::graph::GNode>> nodes_to_remove;
             };
 
         } // namespace graph

@@ -63,8 +63,8 @@ REGISTER_OP(Convolution)
             is_nchw ? "[N, C, " + HO + ", " + WO + "]" : "[N, " + HO + ", " + WO + ", C]";
         config["input1_layout"] = is_nchw ? "[F, C, KH, KW]" : "[KH, KW, C, F]";
         config["output0_layout"] = is_nchw ? "[N, F, HO, WO]" : "[N, HO, WO, F]";
-        config["height"] = is_nchw ? in_shape[2] : in_shape[1];
-        config["width"] = is_nchw ? in_shape[3] : in_shape[2];
+        config["height"] = is_nchw ? out_shape[2] : out_shape[1];
+        config["width"] = is_nchw ? out_shape[3] : out_shape[2];
         config["pad_0"] = to_string(padding_h);
         config["pad_1"] = to_string(padding_w);
         config["input0_layout"] = op::create_code_from_template(shape_template, config);
@@ -72,9 +72,11 @@ REGISTER_OP(Convolution)
         std::string pad_cond;
         if (padding_h || padding_w)
         {
-            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @height@, " + WO + " >= 0, " +
+            config["in_height"] = is_nchw ? in_shape[2] : in_shape[1];
+            config["in_width"] = is_nchw ? in_shape[3] : in_shape[2];
+            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @in_height@, " + WO + " >= 0, " +
                                 WO +
-                                " < @width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
+                                " < @in_width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
             pad_cond = op::create_code_from_template(pad_template, config);
         }
         config["pad_cond"] = pad_cond;

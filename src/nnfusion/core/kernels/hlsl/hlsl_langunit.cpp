@@ -24,6 +24,16 @@ using System.Diagnostics;
 
 )");
 
+LU_DEFINE(header::D3D12APIWrapper, "#include \"D3D12APIWrapper.h\"\n");
+
+//Macro
+LU_DEFINE(macro::OutputDebugStringA, R"(
+#ifndef _GAMING_XBOX_SCARLETT
+#define OutputDebugStringA printf
+#endif
+
+)");
+
 // Declaration
 LU_DEFINE(declaration::antares_hlsl_dll_cs,
           R"(
@@ -93,5 +103,28 @@ public static void UnloadHlslImportedDll()
         }
     }
 }
+
+)");
+
+LU_DEFINE(declaration::antares_hlsl_dll_cpp, R"(
+HMODULE libtestdll;
+
+int (*dxInit)(int flags);
+void* (*dxStreamCreate)();
+int (*dxStreamDestroy)(void* hStream);
+int (*dxStreamSubmit)(void* hStream);
+int (*dxStreamSynchronize)(void* hStream);
+void* (*dxMemAlloc)(size_t bytes);
+int (*dxMemFree)(void* dptr);
+int (*dxMemcpyHtoDAsync)(void* dst, void* src, size_t bytes, void* hStream);
+int (*dxMemcpyDtoHAsync)(void* dst, void* src, size_t bytes, void* hStream);
+void* (*dxShaderLoad)(const char* src, int* num_inputs, int* num_outputs);
+int (*dxShaderUnload)(void* hShader);
+int (*dxShaderGetProperty)(void* hShader, int arg_index, size_t* num_elements, size_t* type_size, const char** dtype_name);
+int (*dxShaderLaunchAsync)(void* hShader, void** buffers, void* hStream);
+void* (*dxEventCreate)();
+int (*dxEventRecord)(void* hEvent, void* hStream);
+float (*dxEventElapsedTime)(void* hStart, void* hStop);
+int (*dxEventDestroy)(void* hEvent);
 
 )");

@@ -30,6 +30,7 @@ DECLARE_bool(fkernels_as_files);
 DECLARE_int64(fkernels_files_number);
 DECLARE_bool(frt_const_folding);
 DECLARE_bool(fextern_result_memory);
+DECLARE_bool(fcustomized_mem_imp);
 
 void CpuCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                        std::shared_ptr<TranslationUnit> tu)
@@ -499,7 +500,11 @@ bool CpuCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             }
 
             LanguageUnit_p kernel_func_call = func_call_codegen(ins, func_call_only, function_call);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).second);
             ++cpu_func_count;
         }
 

@@ -34,13 +34,7 @@ namespace nnfusion
             {
                 NamedNodeVector TranslateConvTransposeOp(const onnx::NodeProto& node_proto,
                                                          const NodeMap& all_ng_nodes,
-                                                         std::shared_ptr<nnfusion::graph::Graph> m_graph)
-                {
-                    Node node(node_proto);
-                    int64_t groups = node.get_attribute_value<int64_t>("group", 1);
-                    NNFUSION_CHECK(groups == 1) << "'group' attribute is not supported now!";
-                    return NamedNodeVector();
-                }
+                                                         std::shared_ptr<nnfusion::graph::Graph> m_graph);
             } // namespace set_1
         }     // namespace onnx_import
     }         // namespace frontend

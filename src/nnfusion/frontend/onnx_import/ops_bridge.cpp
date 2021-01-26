@@ -34,7 +34,7 @@
 #include "op/const_of_shape.hpp"
 #include "op/constant.hpp"
 #include "op/conv.hpp"
-#include "op/conv_transpose.hpp"
+#include "op/conv_trans.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
 #include "op/erf_grad.hpp"

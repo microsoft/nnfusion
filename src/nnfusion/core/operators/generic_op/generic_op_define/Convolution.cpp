@@ -63,8 +63,8 @@ REGISTER_OP(Convolution)
             is_nchw ? "[N, C, " + HO + ", " + WO + "]" : "[N, " + HO + ", " + WO + ", C]";
         config["input1_layout"] = is_nchw ? "[F, C, KH, KW]" : "[KH, KW, C, F]";
         config["output0_layout"] = is_nchw ? "[N, F, HO, WO]" : "[N, HO, WO, F]";
-        config["height"] = is_nchw ? out_shape[2] : out_shape[1];
-        config["width"] = is_nchw ? out_shape[3] : out_shape[2];
+        config["height"] = is_nchw ? in_shape[2] : in_shape[1];
+        config["width"] = is_nchw ? in_shape[3] : in_shape[2];
         config["pad_0"] = to_string(padding_h);
         config["pad_1"] = to_string(padding_w);
         config["input0_layout"] = op::create_code_from_template(shape_template, config);

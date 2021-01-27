@@ -58,6 +58,10 @@ add_library(onnx_import STATIC
         op/gemm.cpp
         op/resize.hpp
         op/resize.cpp
+        op/conv.hpp
+        op/conv.cpp
+        op/shape.hpp
+        op/shape.cpp
         op/conv_trans.hpp
         op/conv_trans.cpp
         # ${ops_source}

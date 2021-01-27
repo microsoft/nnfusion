@@ -38,7 +38,7 @@ REGISTER_OP(ConvTranspose)
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
     })
     .translate_v2([](std::shared_ptr<graph::GNode> gnode) -> std::string {
-        auto expr_tmpl = R"( mediate0[C, F, KW, KH] = @input1@[C, F, KH, KW]; @output0@[N, F, WO, HO] +=! @input0@[N, C, (-@pad_h@ + HO + KH) // @stride_h@, (-@pad_w@ + WO + KW) // @stride_w@].when([(-@pad_h@ + HO + KH) // @stride_h@ >= 0, (-@pad_h@ + HO + KH) // @stride_h@ < @in_height@, (-@pad_w@ + WO + KW) // @stride_w@ >= 0, (-@pad_w@ + WO + KW) // @stride_w@ < @in_width@, (-@pad_h@ + HO + KH) % @stride_h@ == 0, (-@pad_w@ + WO + KW) % @stride_w@ == 0], const(0.0).cast(@input0@[0, 0, 0, 0].dtype())) * mediate0[C, F, KH, KW] where HO in @out_height@, WO in @out_width@; ## @: plan/convfwd_nchw_v1 )";
+        auto expr_tmpl = R"( mediate0[C, F, KW, KH] = @input1@[C, F, KH, KW]; @output0@[N, F, HO, WO] +=! @input0@[N, C, (-@pad_h@ + HO + KH) // @stride_h@, (-@pad_w@ + WO + KW) // @stride_w@].when([(-@pad_h@ + HO + KH) // @stride_h@ >= 0, (-@pad_h@ + HO + KH) // @stride_h@ < @in_height@, (-@pad_w@ + WO + KW) // @stride_w@ >= 0, (-@pad_w@ + WO + KW) // @stride_w@ < @in_width@, (-@pad_h@ + HO + KH) % @stride_h@ == 0, (-@pad_w@ + WO + KW) % @stride_w@ == 0], const(0.0).cast(@input0@[0, 0, 0, 0].dtype())) * mediate0[C, F, KH, KW] where HO in @out_height@, WO in @out_width@; ## @: plan/convfwd_nchw_v1 )";
 
         auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         Shape kernel_shape = op->localOpConfig.getRoot()["kernel_shape"];

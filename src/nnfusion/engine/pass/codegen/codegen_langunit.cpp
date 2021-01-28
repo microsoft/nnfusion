@@ -96,6 +96,14 @@ include_directories(
 target_link_libraries(${TARGET_NAME} /opt/rocm/lib/libMIOpen.so /opt/rocm/lib/librocblas.so) 
 )");
 
+LU_DEFINE(nnfusion::codegen::cmake::cub, R"(
+if (NOT TARGET CUB)
+include(cub/cub.cmake)
+endif()
+add_dependencies(${TARGET_NAME} CUB)
+include_directories(${CUB_INCLUDE_DIR})
+)");
+
 LU_DEFINE(nnfusion::codegen::helper::debug,
           R"(
 

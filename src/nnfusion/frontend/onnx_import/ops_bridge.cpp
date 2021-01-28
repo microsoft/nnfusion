@@ -26,6 +26,7 @@
 #include <unordered_map>
 
 #include "op/adam_optimizer.hpp"
+#include "op/attention.hpp"
 #include "op/batch_norm.hpp"
 #include "op/binaryop.hpp"
 #include "op/cast.hpp"
@@ -36,6 +37,7 @@
 #include "op/conv.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
+#include "op/embed_layer_norm.hpp"
 #include "op/erf_grad.hpp"
 #include "op/expand.hpp"
 #include "op/flatten.hpp"
@@ -55,6 +57,7 @@
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
 #include "op/shape.hpp"
+#include "op/skip_layer_norm.hpp"
 #include "op/slice.hpp"
 #include "op/softmax.hpp"
 #include "op/split.hpp"
@@ -146,6 +149,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ArgMax", 1, TranslateIndexReductionOp<op::ArgMax>);
                 REGISTER_OPERATOR("Asin", 1, TranslateUnaryOp<op::Asin>);
                 REGISTER_OPERATOR("Atan", 1, TranslateUnaryOp<op::Atan>);
+                REGISTER_DOMAIN_OPERATOR("com.microsoft", "Attention", 1, TranslateAttentionOp);
                 REGISTER_OPERATOR("AveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("BatchNormalization", 1, TranslateBatchNormOp);
                 REGISTER_OPERATOR("Cast", 1, TranslateCastOp);
@@ -161,6 +165,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("DivGrad", 1, TranslateDivGradOp);
                 REGISTER_OPERATOR("Dropout", 1, TranslateDropoutOp);
                 //REGISTER_OPERATOR("Elu", 1, elu);
+                REGISTER_DOMAIN_OPERATOR(
+                    "com.microsoft", "EmbedLayerNormalization", 1, TranslateEmbedLayerNormOp);
                 REGISTER_OPERATOR("Equal", 1, TranslateBinaryOp<op::Equal>);
                 REGISTER_OPERATOR("Erf", 1, TranslateUnaryOp<op::Erf>);
                 REGISTER_OPERATOR("ErfGrad", 1, TranslateErfGradOp);
@@ -224,6 +230,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("Sin", 1, TranslateUnaryOp<op::Sin>);
                 REGISTER_OPERATOR("Slice", 1, TranslateSliceOp);
                 REGISTER_OPERATOR("Slice", 10, TranslateSliceOp);
+                REGISTER_DOMAIN_OPERATOR(
+                    "com.microsoft", "SkipLayerNormalization", 1, TranslateSkipLayerNormOp);
                 REGISTER_OPERATOR("Softmax", 1, TranslateSoftmaxOp);
                 REGISTER_OPERATOR(
                     "SoftmaxCrossEntropyLoss", 1, TranslateSparseSoftmaxCrossEntropyOp);

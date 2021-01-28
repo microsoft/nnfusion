@@ -20,11 +20,11 @@
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
-#include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
 #include "nnfusion/engine/pass/graph/multi_reshape_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
+#include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
 
@@ -51,13 +51,13 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<AutodiffPass>());
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
         g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
-        g_passes->push_back(make_shared<ReduceFusionPass>());
         g_passes->push_back(make_shared<MultiReshapeFoldingPass>());
         g_passes->push_back(make_shared<VectorDotTransposePass>());
         g_passes->push_back(make_shared<GemmFusionPass>());
         g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
         g_passes->push_back(make_shared<AssignLayoutPass>());
         g_passes->push_back(make_shared<OpInplacePass>());
+        g_passes->push_back(make_shared<ReduceFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
@@ -90,13 +90,13 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<AutodiffPass>());
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
         g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
-        g_passes->push_back(make_shared<ReduceFusionPass>());
         g_passes->push_back(make_shared<MultiReshapeFoldingPass>());
         g_passes->push_back(make_shared<VectorDotTransposePass>());
         g_passes->push_back(make_shared<GemmFusionPass>());
         g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
         g_passes->push_back(make_shared<AssignLayoutPass>());
         g_passes->push_back(make_shared<OpInplacePass>());
+        g_passes->push_back(make_shared<ReduceFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());

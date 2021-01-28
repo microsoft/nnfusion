@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "const.hpp"
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 #include "nnfusion/core/operators/op_define/constant.hpp"
 #include "stdint.h"
 
@@ -167,72 +167,66 @@ namespace nnfusion
                 // int_val, float_val, etc.
                 if (tensor_content_size == 0)
                 {
+#define GET_VALUES(type)                                                                           \
+    do                                                                                             \
+    {                                                                                              \
+        const void* dat = nullptr;                                                                 \
+        for (size_t i = 0; i < n_elements; ++i)                                                    \
+        {                                                                                          \
+            if (tensor.type##_val_size() == 1)                                                     \
+            {                                                                                      \
+                dat = reinterpret_cast<const void*>(&tensor.type##_val()[0]);                      \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                dat = reinterpret_cast<const void*>(&tensor.type##_val()[i]);                      \
+            }                                                                                      \
+            values->setElement(i, dat);                                                            \
+        }                                                                                          \
+    } while (0)
+
                     values->resize(n_elements);
-                    for (size_t i = 0; i < n_elements; i++)
+                    auto& tensor = node.attr().at("value").tensor();
+                    size_t val_size;
+                    if (dt == tensorflow::DT_INT32)
                     {
-                        auto& tensor = node.attr().at("value").tensor();
-                        const void* dat = nullptr;
-                        switch (dt)
+                        GET_VALUES(int);
+                    }
+                    else if (dt == tensorflow::DT_INT64)
+                    {
+                        GET_VALUES(int64);
+                    }
+                    else if (dt == tensorflow::DT_BOOL)
+                    {
+                        GET_VALUES(bool);
+                    }
+                    else if (dt == tensorflow::DT_HALF)
+                    {
+                        GET_VALUES(half);
+                    }
+                    else if (dt == tensorflow::DT_FLOAT)
+                    {
+                        GET_VALUES(float);
+                    }
+                    else if (dt == tensorflow::DT_DOUBLE)
+                    {
+                        GET_VALUES(double);
+                    }
+                    else if (dt == tensorflow::DT_STRING)
+                    {
+                        values->resize(tensor.string_val()[0].length());
+                        auto it = tensor.string_val()[0].begin();
+                        for (size_t j = 0; it != tensor.string_val()[0].end(); ++j, ++it)
                         {
-                        // TODO(amprocte/NGRAPH-2502): there are more element types to support
-                        // here
-                        case tensorflow::DT_INT32:
-                            dat = reinterpret_cast<const void*>(&(tensor.int_val_size() == 1
-                                                                      ? tensor.int_val()[0]
-                                                                      : tensor.int_val()[i]));
-                            values->setElement(i, dat);
-                            break;
-                        case tensorflow::DT_INT64:
-                            dat = reinterpret_cast<const void*>(&(tensor.int64_val_size() == 1
-                                                                      ? tensor.int64_val()[0]
-                                                                      : tensor.int64_val()[i]));
-                            values->setElement(i, dat);
-                            break;
-                        case tensorflow::DT_FLOAT:
-                            dat = reinterpret_cast<const void*>(&(tensor.float_val_size() == 1
-                                                                      ? tensor.float_val()[0]
-                                                                      : tensor.float_val()[i]));
-                            values->setElement(i, dat);
-                            break;
-                        case tensorflow::DT_BOOL:
-                            dat = reinterpret_cast<const void*>(&(tensor.bool_val_size() == 1
-                                                                      ? tensor.bool_val()[0]
-                                                                      : tensor.bool_val()[i]));
-                            values->setElement(i, dat);
-                            break;
-                        case tensorflow::DT_DOUBLE:
-                            dat = reinterpret_cast<const void*>(&(tensor.double_val_size() == 1
-                                                                      ? tensor.double_val()[0]
-                                                                      : tensor.double_val()[i]));
-                            values->setElement(i, dat);
-                            break;
-                        case tensorflow::DT_STRING:
-                            if (i > 0)
-                            {
-                                // TODO: only support one dimension for string type now
-                                return false;
-                            }
-                            {
-                                values->resize(tensor.string_val()[0].length());
-                                auto it = tensor.string_val()[0].begin();
-                                for (size_t j = 0; it != tensor.string_val()[0].end(); ++j, ++it)
-                                {
-                                    values->setElement(j, reinterpret_cast<const void*>(&it));
-                                }
-                            }
-                            break;
-                        default:
-                            return false;
-                            // NGRAPH_VLOG(0)
-                            //     << "Const node has empty tensor and we don't know how to "
-                            //        "handle this element type";
-                            // NGRAPH_VLOG(0) << node.DebugString();
-                            // NGRAPH_VLOG(0) << shape.DebugString();
-                            // return errors::Unimplemented("Encountered unknown element type ",
-                            //                              DataType_Name(dt),
-                            //                              " on an empty tensor");
+                            values->setElement(j, reinterpret_cast<const void*>(&it));
                         }
                     }
+                    else
+                    {
+                        return false;
+                    }
+
+#undef GET_VALUES
                 }
                 else
                 {
@@ -310,56 +304,6 @@ namespace nnfusion
                 return true;
             }
 
-            /*
-            const std::map<tensorflow::DataType,
-                           std::pair<std::function<bool(const tensorflow::NodeDef&,
-                                                        nnfusion::element::Type,
-                                                        std::shared_ptr<nnfusion::op::Op>*)>,
-                                     const nnfusion::element::Type>>&
-                TF_NGRAPH_CONST_MAP()
-            {
-                static const std::map<
-                    tensorflow::DataType,
-                    std::pair<std::function<bool(const tensorflow::NodeDef&,
-                                                 nnfusion::element::Type,
-                                                 std::shared_ptr<nnfusion::op::Op>*)>,
-                              const nnfusion::element::Type>>
-                    the_map = {
-                        {tensorflow::DataType::DT_FLOAT,
-                         std::make_pair(MakeConstOp<float>, nnfusion::element::f32)},
-                        {tensorflow::DataType::DT_DOUBLE,
-                         std::make_pair(MakeConstOp<double>, nnfusion::element::f64)},
-                        {tensorflow::DataType::DT_INT8,
-                         std::make_pair(MakeConstOp<int8>, nnfusion::element::i8)},
-                        {tensorflow::DataType::DT_INT16,
-                         std::make_pair(MakeConstOp<int16>, nnfusion::element::i16)},
-                        // {tensorflow::DataType::DT_QINT8,
-                        //   std::make_pair(MakeConstOp<google::protobuf::qint8>, nnfusion::element::i8)},
-                        // {tensorflow::DataType::DT_QUINT16,
-                        //   std::make_pair(MakeConstOp<google::protobuf::quint8>, nnfusion::element::u8)},
-                        {tensorflow::DataType::DT_INT32,
-                         std::make_pair(MakeConstOp<int32>, nnfusion::element::i32)},
-                        {tensorflow::DataType::DT_INT64,
-                         std::make_pair(MakeConstOp<int64>, nnfusion::element::i64)},
-                        {tensorflow::DataType::DT_UINT8,
-                         std::make_pair(MakeConstOp<uint8>, nnfusion::element::u8)},
-                        {tensorflow::DataType::DT_UINT16,
-                         std::make_pair(MakeConstOp<uint16>, nnfusion::element::u16)},
-                        {tensorflow::DataType::DT_UINT32,
-                         std::make_pair(MakeConstOp<uint32>, nnfusion::element::u32)},
-                        {tensorflow::DataType::DT_UINT64,
-                         std::make_pair(MakeConstOp<uint64>, nnfusion::element::u64)},
-                        {tensorflow::DataType::DT_BOOL,
-                         std::make_pair(MakeConstOp<bool, char>, nnfusion::element::boolean)},
-                        {tensorflow::DataType::DT_STRING,
-                         std::make_pair(MakeConstOp<std::string, char>,
-                                        nnfusion::element::character)}};
-                // TODO: data type string unsupport now, bert model has string type const op used for assert
-
-                return the_map;
-            }
-            */
-
             NamedNodeVector TranslateConstOp(const tensorflow::NodeDef& node,
                                              const NodeMap& all_ng_nodes,
                                              std::shared_ptr<nnfusion::graph::Graph> m_graph)
@@ -372,7 +316,9 @@ namespace nnfusion
 
                 try
                 {
-                    const auto& type = TF_NGRAPH_CONST_MAP.at(dtype);
+                    element::Type type;
+                    result = TFDataTypeToNNFusionElementType(dtype, &type);
+                    NNFUSION_CHECK(result);
                     result = MakeConstOp(node, type, &ng_node);
                     NNFUSION_CHECK(result);
                 }
@@ -387,20 +333,6 @@ namespace nnfusion
 
                 return ret;
             }
-
-            const std::map<tensorflow::DataType, element::Type> TF_NGRAPH_CONST_MAP = {
-                {tensorflow::DataType::DT_FLOAT, nnfusion::element::f32},
-                {tensorflow::DataType::DT_DOUBLE, nnfusion::element::f64},
-                {tensorflow::DataType::DT_INT8, nnfusion::element::i8},
-                {tensorflow::DataType::DT_INT16, nnfusion::element::i16},
-                {tensorflow::DataType::DT_INT32, nnfusion::element::i32},
-                {tensorflow::DataType::DT_INT64, nnfusion::element::i64},
-                {tensorflow::DataType::DT_UINT8, nnfusion::element::u8},
-                {tensorflow::DataType::DT_UINT16, nnfusion::element::u16},
-                {tensorflow::DataType::DT_UINT32, nnfusion::element::u32},
-                {tensorflow::DataType::DT_UINT64, nnfusion::element::u64},
-                {tensorflow::DataType::DT_BOOL, nnfusion::element::boolean},
-                {tensorflow::DataType::DT_STRING, nnfusion::element::character}};
         } // namespace tensorflow_import
     }     // namespace frontend
 } // namespace nnfusion

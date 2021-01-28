@@ -82,7 +82,8 @@ void GraphEvaluate::create_profiling_contexts(shared_ptr<GNode> gnode)
         return;
     }
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(gnode->get_op_type(), dev_type, DT_FLOAT);
+        KernelRegistry::Global()->FindKernelRegistrations(
+            gnode->get_op_type(), dev_type, element::f32);
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
 
     for (auto kernel_reg : kernel_regs)

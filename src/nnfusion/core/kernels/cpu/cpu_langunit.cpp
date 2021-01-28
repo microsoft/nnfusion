@@ -27,3 +27,5 @@ LU_DEFINE(declaration::worker_thread_pool,
           "concurrency::NumaAwareThreadPool *worker_thread_pool;\n")
 LU_DEFINE(declaration::schedule_thread_pool,
           "concurrency::NumaAwareThreadPool *schedule_thread_pool;\n")
+LU_DEFINE(declaration::superscaler_schedule_thread,
+          "concurrency::NumaAwareThreadPool *superscaler_schedule_thread;\n")

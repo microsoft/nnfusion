@@ -12,6 +12,8 @@ using namespace nnfusion::codegenerator;
 using namespace nnfusion::kernels;
 using namespace nnfusion::async;
 
+DECLARE_string(fhlsl_codegen_type);
+
 LanguageUnit_p extern_function(LanguageUnit_p lu)
 {
 }
@@ -300,4 +302,41 @@ using namespace reference_common;
     src << "\n";
     src << this->get_code();
     src.close();
+}
+
+HLSLFunctionFile_p
+    HLSLFunctionFile::convert_from(std::shared_ptr<nnfusion::kernels::KernelEmitter> kernel)
+{
+    FunctionUnit_p fu = kernel->get_or_emit_source();
+    LanguageUnit_p lu = make_shared<LanguageUnit>();
+    LanguageUnit& def = *lu;
+
+    for (auto& sym : fu->dep_unit->local_symbol)
+        def.require(sym.second);
+
+    def << fu->comment_unit->get_code();
+    string sig = fu->get_specialized_signature();
+
+    if (FLAGS_fhlsl_codegen_type == "csharp")
+        def << "static ";
+    def << sig << "\n";
+    def.block_begin();
+    def << fu->body_unit->get_code() << "\n";
+    def.block_end();
+
+    LanguageUnit dec("dec");
+    {
+        if (sig.find("extern ") != 0)
+            sig = "extern " + sig;
+        dec << "\n" << sig << ";\n";
+    }
+
+    string sname = fu->name_unit->get_code();
+    def.change_symbol(sname);
+    auto func_def = make_shared<HLSLFunctionFile>(dec.get_code(), lu);
+    func_def->header_code = func_def->get_extern_declare();
+    func_def->source_code = func_def->get_code();
+    func_def->extern_decl_unit = std::make_shared<LanguageUnit>(
+        func_def->symbol + "_extern_decl_unit", func_def->get_extern_declare());
+    return func_def;
 }

@@ -12,10 +12,11 @@ REGISTER_OP(Sum)
                 ret += ", N" + std::to_string(ax);
             return "[" + (axes.empty() ? "N" : ret.substr(2)) + "]";
         };
+        auto attrs = curr->get_op_ptr()->serialize();
 
-        auto _op = static_pointer_cast<nnfusion::op::Sum>(curr->get_op_ptr());
         auto input_shape = curr->get_input_shape(0);
-        auto axes = _op->get_reduction_axes();
+        std::vector<int> _axes = attrs["reduction_axes"];
+        auto axes = std::set<int>(_axes.begin(), _axes.end());
 
         std::set<int> input_ax, output_ax;
         size_t reduce_size = 1L;
@@ -34,11 +35,12 @@ REGISTER_OP(Sum)
             expression += " where N in 1";
 
         // FIXME: Need to include annotation
-        // if (reduce_size == 1L)
-        //     expression += " ## @annotation: memcpy";
+        if (reduce_size == 1L)
+            expression += " ## @: memcpy";
 
         return expression;
-    })
+    });
+/*
     .translate([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto _op = static_pointer_cast<nnfusion::op::Sum>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
@@ -128,5 +130,5 @@ REGISTER_OP(Sum)
                  {"output_shape", vector_to_string(curr->get_output_shape(0))},
                  {"axis", vector_to_string(axes)}});
         }
-
     });
+    */

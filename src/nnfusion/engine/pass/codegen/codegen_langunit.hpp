@@ -15,10 +15,11 @@ namespace nnfusion
             LU_DECLARE(mlas);
             LU_DECLARE(threadpool);
             LU_DECLARE(threads);
-            LU_DECLARE(super_scaler);
-            LU_DECLARE(rocm_super_scaler);
+            LU_DECLARE(superscaler_cuda);
+            LU_DECLARE(superscaler_rocm);
             LU_DECLARE(cuda_lib);
             LU_DECLARE(rocm_lib);
+            LU_DECLARE(cub);
         } // namespace cmake
         namespace helper
         {

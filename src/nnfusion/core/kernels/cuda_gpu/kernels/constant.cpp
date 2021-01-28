@@ -39,9 +39,9 @@ namespace nnfusion
                     bin_file.write((const char*)op->get_data_ptr(), op->get_data_size());
                     bin_file.close();
 
-                    NNFUSION_LOG(INFO) << "Emitting Constant [" << const_name << "], {"
-                                       << op->get_unique_name() << "}, (" << op->get_data_size()
-                                       << "), " << op->get_type();
+                    // NNFUSION_LOG(INFO) << "Emitting Constant [" << const_name << "], {"
+                    //                    << op->get_unique_name() << "}, (" << op->get_data_size()
+                    //                    << "), " << op->get_type();
 
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
                     auto& writer = *_lu;
@@ -119,6 +119,6 @@ namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
-REGISTER_KERNEL_EMITTER("Constant",                                            //op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Priority(2), //attrs
-                        cuda::Constant)                                        // constructor
+REGISTER_KERNEL_EMITTER("Constant",                                                //op_name
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Priority(2), //attrs
+                        cuda::Constant)                                            // constructor

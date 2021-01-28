@@ -226,7 +226,7 @@ double ReferenceRuntime::invoke(const ProfilingContext::Pointer& ke, void** inpu
     auto& gnode = ke->kernel->m_context->gnode;
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
         KernelRegistry::Global()->FindKernelRegistrations(
-            gnode->get_op_type(), GENERIC_CPU, DT_FLOAT);
+            gnode->get_op_type(), GENERIC_CPU, element::f32);
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
 
     bool has_valid_kernel = false;

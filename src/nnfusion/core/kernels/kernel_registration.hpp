@@ -4,6 +4,7 @@
 #pragma once
 
 #include "kernel_emitter.hpp"
+#include "nnfusion/common/type/element_type.hpp"
 
 namespace nnfusion
 {
@@ -24,7 +25,7 @@ namespace nnfusion
 
             // Specify the data (inputs/outputs) types this kernel supports
             // Return *this
-            KernelRegistration& TypeConstraint(const DataType data_type);
+            KernelRegistration& TypeConstraint(const element::Type data_type);
 
             // Add an arbitrary user-defined tag on the kernel to allow the operator
             // to choose this kernel
@@ -57,7 +58,7 @@ namespace nnfusion
             friend class KernelRegistry;
             string m_op_name;
             NNFusion_DeviceType m_device_type;
-            DataType m_data_type;
+            element::Type m_data_type;
             string m_tag;
             Factory m_factory;
             size_t m_priority = 0;
@@ -79,11 +80,11 @@ namespace nnfusion
             shared_ptr<const KernelRegistration>
                 FindKernelRegistration(const string op_name,
                                        const NNFusion_DeviceType& device_type,
-                                       const DataType data_type);
+                                       const element::Type data_type);
             std::vector<shared_ptr<const KernelRegistration>>
                 FindKernelRegistrations(const string op_name,
                                         const NNFusion_DeviceType& device_type,
-                                        const DataType data_type);
+                                        const element::Type data_type);
             shared_ptr<const KernelRegistration>
                 KernelSelect(std::vector<shared_ptr<const KernelRegistration>>& matched_regs);
 

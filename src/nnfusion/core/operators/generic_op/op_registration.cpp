@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#include <algorithm>
 #include "generic_op.hpp"
-
 namespace nnfusion
 {
     namespace op
@@ -68,7 +68,7 @@ namespace nnfusion
             std::string expression_code =
                 op::create_code_from_template(antares_template, io_config);
 
-            int plan_pos = expression_code.find("## @:");
+            int plan_pos = expression_code.find("## @");
             std::string plan =
                 (std::string::npos == plan_pos) ? "" : expression_code.substr(plan_pos);
             expression_code = expression_code.substr(0, plan_pos);
@@ -82,12 +82,13 @@ namespace nnfusion
         std::string get_annotation(std::string translation)
         {
             std::string options;
-            const char annotation[] = "## @annotation: ";
+            const char annotation[] = "## @: ";
             int pos = translation.find(annotation);
             if (pos >= 0)
             {
                 pos += sizeof(annotation) - 1;
                 options = translation.substr(pos);
+                std::replace(options.begin(), options.end(), '.', '|');
             }
 
             if (options.size() > 0)
@@ -100,5 +101,27 @@ namespace nnfusion
 
             return options;
         }
+
+        // +        std::string get_annotation(std::string translation)
+        // +        {
+        // +            std::string options;
+        // +            const char annotation[] = "## @annotation: ";
+        // +            int pos = translation.find(annotation);
+        // +            if (pos >= 0)
+        // +            {
+        // +                pos += sizeof(annotation) - 1;
+        // +                options = translation.substr(pos);
+        // +            }
+        // +
+        // +            if (options.size() > 0)
+        // +            {
+        // +                if (options[0] != '|')
+        // +                    options = "|" + options;
+        // +                if (options.back() != '|')
+        // +                    options += "|";
+        // +            }
+        // +
+        // +            return options;
+        // +        }
     } // namespace op
 } // namespace nnfusion

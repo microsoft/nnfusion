@@ -7,8 +7,8 @@
 
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
-#include "ngraph/src/nnfusion/common/type/data_buffer.hpp"
-#include "ngraph/src/nnfusion/common/type/element_type.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
+#include "nnfusion/common/type/element_type.hpp"
 
 namespace nnfusion
 {

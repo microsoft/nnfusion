@@ -8,17 +8,18 @@
 - Developers who want to deploy their pre-trained model as framework-free source codes with minimum library dependencies.
 - Researchers who want to quickly try new compiler optimization ideas or customize optimizations on some specific models.
 
-### [NNFusion v0.1 has been released!](https://github.com/microsoft/nnfusion/releases/tag/v0.1):raised_hands:
+### [NNFusion v0.2 has been released!](https://github.com/microsoft/nnfusion/releases/tag/v0.2):raised_hands:
 
 ## Highlight features
 - Provide a full-stack optimization mechanism, including:
   - Data-flow graph optimizations, e.g., CSE, compile-time constant folding, etc.
-  - Model-specific kernel selection, kernel co-scheduling and kernel fusion
-  - Static memory layout and placement optimizations
+  - Model-specific kernel selection, kernel co-scheduling, kernel fusion and auto kernel tuner integration.
+  - Static memory layout and placement optimizations.
 - Provide ahead-of-time and source-to-source (model-to-code) compilation to reduce runtime overhead and remove library/framework dependencies.
-- Support popular DNN model formats including TensorFlow and ONNX as input models
+- Support popular DNN model formats including TensorFlow and ONNX as input models.
 - Support customized optimization in an easier and more efficient way, e.g., directly replacing hand-crafted kernels on the generated human-readable code.
-- Support commonly used devices like CUDA GPUs, and ROCm GPUs
+- Support commonly used devices like CUDA GPUs, ROCm GPUs and CPU.
+- Support parallel training via [SuperScaler](https://github.com/microsoft/SuperScaler)
 
 ## Get Started
 ### Quick Start with Docker Image
@@ -32,7 +33,7 @@ We will use a simple TensorFlow LSTM inference model as an example. You can down
 
 `wget https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_lstm_l8s8h256_bs1.pb`
 
-To use your own model to get started, please refer to [Supported Models](https://github.com/microsoft/nnfusion/blob/master/models/tensorflow/README.md) to see whether it is supported and freeze your model according to [Freeze Your Model](https://github.com/microsoft/nnfusion/wiki/1.1-Freeze-TensorFlow-Models).
+To use your own model to get started, please refer to [Supported Models](https://github.com/microsoft/nnfusion/blob/master/models/tensorflow/README.md) to see whether it is supported and freeze your model according to [Freeze Your Model](https://github.com/microsoft/nnfusion/blob/master/docs/Freeze-TensorFlow-Models.md).
 
 1. Pull docker image
 `docker pull nnfusion/cuda:10.2-cudnn7-devel-ubuntu18.04`
@@ -89,14 +90,16 @@ Iteration time 2.730208 ms
 Iteration time 2.732960 ms
 Summary: [min, max, mean] = [2.724704, 2.968352, 2.921987] ms
 ```
-For more detailed information on NNFusion usage, please refer to [NNFusion Usage](https://github.com/microsoft/nnfusion/wiki/3.-Compile-a-Tensorflow-model-with-NNFusion).
+For more detailed information on NNFusion usage, please refer to [NNFusion Usage](https://github.com/microsoft/nnfusion/blob/master/docs/Compile-a-Tensorflow-model-with-NNFusion.md).
+
+For TensorFlow users, you can refer to [Kernel Tuner Tutorial](https://github.com/microsoft/nnfusion/blob/master/docs/Compile-a-model-with-kernel-tuning-enabled.md) to learn how to compile a TensorFlow model and tune each operator in this model to generate the end-to-end source code.
 
 ### Build from Source Code
 Researchers or contributors who want to do more research on optimizing model compilation, you can build NNFusion from source code.
 To build from source code, please read the following documents:
-1. Read [Before Started](https://github.com/microsoft/nnfusion/wiki/1.-Before-Started) page to see supported CUDA GPUs and required libs. 
-2. Read [Build Guide](https://github.com/microsoft/nnfusion/wiki/2.-Build-Guide) for more information on how to build and install NNFusion in your native system or in the docker container.
-3. After building and installing NNFusion, please refer to [Compile Guide and Tool Usage](https://github.com/microsoft/nnfusion/wiki/3.-Compile-a-Tensorflow-model-with-NNFusion) to learn how to compile or optimize a DNN model.
+1. Read [Before Started](https://github.com/microsoft/nnfusion/blob/master/docs/Before-Started.md) page to see supported CUDA GPUs and required libs. 
+2. Read [Build Guide](https://github.com/microsoft/nnfusion/blob/master/docs/Build-Guide.md) for more information on how to build and install NNFusion in your native system or in the docker container.
+3. After building and installing NNFusion, please refer to [Compile Guide and Tool Usage](https://github.com/microsoft/nnfusion/blob/master/docs/Compile-a-Tensorflow-model-with-NNFusion.md) to learn how to compile or optimize a DNN model.
 
 ### Speedups on benchmarks
 
@@ -108,7 +111,7 @@ This project welcomes contributions and suggestions.  Most contributions require
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
 the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
 
-To contribute, please refer to [Contribution Guide](https://github.com/microsoft/nnfusion/wiki/4.-Guide-for-Contributors) to see more details.
+To contribute, please refer to [Contribution Guide](https://github.com/microsoft/nnfusion/blob/master/docs/Contribution-Guide.md) to see more details.
 
 When you submit a pull request, a CLA bot will automatically determine whether you need to provide
 a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions

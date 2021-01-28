@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "kernel_registration.hpp"
+#include "nnfusion/common/type/element_type.hpp"
 #include "nnfusion/util/util.hpp"
 
 using namespace nnfusion;
@@ -18,7 +19,7 @@ KernelRegistration& KernelRegistration::Device(const NNFusion_DeviceType device_
     return *this;
 }
 
-KernelRegistration& KernelRegistration::TypeConstraint(const DataType data_type)
+KernelRegistration& KernelRegistration::TypeConstraint(const element::Type data_type)
 {
     m_data_type = data_type;
     return *this;
@@ -55,9 +56,9 @@ bool KernelRegistry::RegisterKernel(const string op_name,
                                     shared_ptr<KernelRegistration> registration)
 {
     m_kernel_registry.insert(std::make_pair(op_name, registration));
-    NNFUSION_LOG(INFO) << "Registered kernel for Opeartor: " << op_name
-                       << ", tag: " << registration->m_tag
-                       << " , dev type: " << nnfusion::get_device_str(registration->m_device_type);
+    // NNFUSION_LOG(INFO) << "Registered kernel for Opeartor: " << op_name
+    //                    << ", tag: " << registration->m_tag
+    //                    << " , dev type: " << nnfusion::get_device_str(registration->m_device_type);
 
     return true;
 }
@@ -72,7 +73,7 @@ shared_ptr<const KernelRegistration>
 }
 
 shared_ptr<const KernelRegistration> KernelRegistry::FindKernelRegistration(
-    const string op_name, const NNFusion_DeviceType& device_type, const DataType data_type)
+    const string op_name, const NNFusion_DeviceType& device_type, const element::Type data_type)
 {
     std::vector<shared_ptr<const KernelRegistration>> matched_regs;
     auto regs = m_kernel_registry.equal_range(op_name);
@@ -97,7 +98,7 @@ shared_ptr<const KernelRegistration> KernelRegistry::FindKernelRegistration(
 }
 
 std::vector<shared_ptr<const KernelRegistration>> KernelRegistry::FindKernelRegistrations(
-    const string op_name, const NNFusion_DeviceType& device_type, const DataType data_type)
+    const string op_name, const NNFusion_DeviceType& device_type, const element::Type data_type)
 {
     std::vector<shared_ptr<const KernelRegistration>> matched_regs;
     auto regs = m_kernel_registry.equal_range(op_name);

@@ -5,6 +5,7 @@
 
 DECLARE_string(fdefault_device);
 DECLARE_int32(fnum_non_cpu);
+DECLARE_string(fhlsl_codegen_type);
 
 using namespace nnfusion::async;
 
@@ -23,9 +24,14 @@ Stream::Stream(size_t stream_id,
     }
     else
     {
-        if (is_default_stream() && (device_type == CUDA_GPU || device_type == ROCM_GPU))
+        if (is_default_stream() && (device_type == CUDA_GPU || device_type == ROCM_GPU ||
+                                    FLAGS_fhlsl_codegen_type != "csharp"))
         {
             m_name = "0";
+        }
+        else if (is_default_stream() && device_type == HLSL)
+        {
+            m_name = "IntPtr.Zero";
         }
         else
         {
@@ -342,6 +348,130 @@ LanguageUnit_p HostAsyncManager::emit_event_reset()
     return _lu;
 }
 
+LanguageUnit_p HLSLAsyncManager::emit_stream_decl()
+{
+    LanguageUnit_p _lu(
+        new LanguageUnit("declaration::" + get_device_str(m_device_type) + "_stream_decl"));
+    auto& lu = *_lu;
+    return _lu;
+}
+LanguageUnit_p HLSLAsyncManager::emit_event_decl()
+{
+    LanguageUnit_p _lu(
+        new LanguageUnit("declaration::" + get_device_str(m_device_type) + "_event_decl"));
+    auto& lu = *_lu;
+    return _lu;
+}
+LanguageUnit_p HLSLAsyncManager::emit_stream_init()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_device_str(m_device_type) + "_stream_init"));
+    auto& lu = *_lu;
+    lu << "// create streams\n";
+    for (auto& info : m_dev_stream)
+    {
+        for (auto stream : info.second)
+        {
+            // HLSL default stream(0) need not to be created.
+            if (!stream->is_default_stream())
+            {
+                if (FLAGS_fhlsl_codegen_type == "cpp")
+                {
+                    lu << "auto " << stream->get_name() << " = dxStreamCreate();\n";
+                }
+                else if (FLAGS_fhlsl_codegen_type == "csharp")
+                {
+                    lu << "var " << stream->get_name() << " = dxStreamCreate();\n";
+                }
+            }
+        }
+    }
+    return _lu;
+}
+LanguageUnit_p HLSLAsyncManager::emit_event_init()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_device_str(m_device_type) + "_event_init"));
+    auto& lu = *_lu;
+    lu << " // create events\n";
+    for (auto info : m_dev_event)
+    {
+        for (auto event : info.second)
+        {
+            if (FLAGS_fhlsl_codegen_type == "cpp")
+            {
+                lu << "auto " << event->get_name() << "= dxEventCreate();\n";
+            }
+            else if (FLAGS_fhlsl_codegen_type == "csharp")
+            {
+                lu << "var " << event->get_name() << "= dxEventCreate();\n";
+            }
+        }
+    }
+    return _lu;
+}
+
+LanguageUnit_p HLSLAsyncManager::emit_event_wait(shared_ptr<Stream> stream, shared_ptr<Event> event)
+{
+    nnfusion::errors::NotSupported("HLSL async manager does not support event wait api.");
+}
+
+LanguageUnit_p HLSLAsyncManager::emit_event_record(shared_ptr<Event> event)
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_device_str(m_device_type) + "_event_record"));
+    auto& lu = *_lu;
+
+    if (event->get_stream()->is_default_stream())
+    {
+        if (FLAGS_fhlsl_codegen_type == "cpp")
+        {
+            lu << "dxEventRecord(" << event->get_name() << ", 0);\n";
+        }
+        else if (FLAGS_fhlsl_codegen_type == "csharp")
+        {
+            lu << "dxEventRecord(" << event->get_name() << ", IntPtr.Zero);\n";
+        }
+    }
+    else
+    {
+        lu << "dxEventRecord(" << event->get_name() << ", " << event->get_stream()->get_name()
+           << ");\n";
+    }
+    // event->set_recorded();
+
+    return _lu;
+}
+
+LanguageUnit_p HLSLAsyncManager::emit_stream_destroy()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_device_str(m_device_type) + "_stream_del"));
+    auto& lu = *_lu;
+    for (auto& info : m_dev_stream)
+    {
+        for (auto stream : info.second)
+        {
+            // HLSL default stream(0) need not to be destroyed.
+            if (stream->get_symbol() != "default")
+            {
+                lu << "dxStreamDestroy(" << stream->get_name() << ");\n";
+            }
+        }
+    }
+    return _lu;
+}
+
+LanguageUnit_p HLSLAsyncManager::emit_event_destroy()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_device_str(m_device_type) + "_event_del"));
+    auto& lu = *_lu;
+    for (auto& info : m_dev_event)
+    {
+        for (auto event : info.second)
+        {
+            lu << "dxEventDestroy(" << event->get_name() << ");\n";
+        }
+    }
+    return _lu;
+}
+
 std::unordered_map<std::string, HostAsyncManager*> AsyncManagerFactory::m_host_async_manager;
 std::unordered_map<std::string, DeviceStreamAsyncManager*>
     AsyncManagerFactory::m_device_stream_async_manager;
@@ -391,6 +521,11 @@ DeviceStreamAsyncManager* AsyncManagerFactory::get_device_stream_async_manager(
         case ROCM_GPU:
         {
             device_stream_async_manager = new CUDAAsyncManager(graph);
+            break;
+        }
+        case HLSL:
+        {
+            device_stream_async_manager = new HLSLAsyncManager(graph);
             break;
         }
         default: nnfusion::errors::NotSupported("Unsupported device stream async manager.");

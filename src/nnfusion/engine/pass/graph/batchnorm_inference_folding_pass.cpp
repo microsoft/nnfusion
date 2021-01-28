@@ -132,7 +132,7 @@ private:
         for (auto m_tn : matched)
         {
             std::shared_ptr<KernelContext> ctx(new KernelContext(m_tn->node));
-            identifier += generate_identifier(ctx);
+            identifier += ctx->generate_identifier();
         }
 
         NNFUSION_LOG(INFO) << "BatchNormInference folding pattern found: " << identifier;
@@ -886,6 +886,8 @@ bool BatchNormInferenceFoldingPass::run_on_graph(std::shared_ptr<nnfusion::graph
     bool folding_flag = FLAGS_fbatchnorm_inference_folding;
     if (folding_flag)
     {
+        NNFUSION_LOG(INFO) << "batchnorm inference folding Pass starts up for Graph: "
+                           << graph->get_name();
         for (auto pattern : BN_FOLDING_PATTERNS)
         {
             BatchNormInferenceOptimizer optimizer(graph, pattern);
@@ -896,6 +898,8 @@ bool BatchNormInferenceFoldingPass::run_on_graph(std::shared_ptr<nnfusion::graph
             auto const_folding_optimizer = RuntimeConstantFoldingPass();
             const_folding_optimizer.run_on_graph(graph);
         }
+        NNFUSION_LOG(INFO) << "batchnorm inference folding Pass ends for Graph: "
+                           << graph->get_name();
     }
     return true;
 }

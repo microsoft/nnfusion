@@ -13,13 +13,17 @@ namespace nnfusion
             LU_DECLARE(cuda);
             LU_DECLARE(cublas);
             LU_DECLARE(cudnn);
-            LU_DECLARE(super_scaler);
+            LU_DECLARE(superscaler);
             LU_DECLARE(cupti);
             LU_DECLARE(cuda_prof_api);
+            LU_DECLARE(cuda_fp16);
+            LU_DECLARE(cub);
+            LU_DECLARE(math_constants);
         } // namespace header
 
         namespace macro
         {
+            LU_DECLARE(HALF_MAX);
             LU_DECLARE(CUDA_SAFE_CALL_NO_THROW);
             LU_DECLARE(CUDA_SAFE_CALL);
             LU_DECLARE(CUDNN_SAFE_CALL_NO_THROW);
@@ -42,6 +46,11 @@ namespace nnfusion
             LU_DECLARE(num_SMs);
             LU_DECLARE(cuda_reduce_primitive);
             LU_DECLARE(cuda_layer_norm);
+            LU_DECLARE(cuda_fp16_scale);
+            LU_DECLARE(ort_layer_norm);
+            LU_DECLARE(ort_qkv_to_context);
+            LU_DECLARE(cuda_convert_template);
+
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

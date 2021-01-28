@@ -335,7 +335,7 @@ using namespace nnfusion::kernels;
 
 #define REGISTER_GPU_KERNEL(KEY, OP_NAME)                                                          \
     REGISTER_KERNEL_EMITTER(KEY,                                                                   \
-                            Device(ROCM_GPU).TypeConstraint(DT_FLOAT).Priority(4),                 \
+                            Device(ROCM_GPU).TypeConstraint(element::f32).Priority(4),             \
                             cuda::RocmReduce<nnfusion::op::OP_NAME>)
 
 REGISTER_GPU_KERNEL("Sum", Add)

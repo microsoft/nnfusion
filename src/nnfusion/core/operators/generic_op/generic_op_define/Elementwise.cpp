@@ -34,11 +34,16 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Tan", element_op("tan", "")},
     {"Tanh", element_op("tanh", "")},
     {"Power", element_op("pow", "")},
+    {"PowerBackwardBase", element_op("power_backward_base", "")},
+    {"PowerBackwardExponent", element_op("power_backward_exponent", "")},
     {"Add", element_op("add", "x0 + x1")},
     {"Subtract", element_op("subtract", "x0 - x1")},
     {"Multiply", element_op("mul", "x0 * x1")},
     {"Divide", element_op("fdivide", "x0 / x1")},
-    {"DivNoNan", element_op("divnonan", "(x0 / x1).when([x1 != 0], 0)")},
+    {"DivNoNan",
+     element_op(
+         "divnonan",
+         "(x0 / x1).when([x1 != const(0).cast(x1.dtype())], const(0).cast(input1[].dtype()))")},
     {"Square", element_op("square", "x0 * x0")},
     {"Negative", element_op("negative", "-x0")},
     {"Select", element_op("select", "x2.when([x0 == 0], x1)")},
@@ -52,9 +57,12 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"ReluBackprop", element_op("relu_backprop", "x1.when([x0 > 0], const(0).cast(x1.dtype()))")},
     {"Relu6Backprop",
      element_op("relu_backprop", "x1.when([x0 > 0, x0 < 6], const(0).cast(x1.dtype()))")},
-    {"Sigmoid", element_op("sigmoid", "1 / (1 + (-x0).call(`exp`))")},
+    {"Sigmoid",
+     element_op("sigmoid",
+                "const(1).cast(x0.dtype()) / (const(1).cast(x0.dtype()) + (-x0).call(`exp`))")},
     {"SigmoidBackprop",
-     element_op("sigmoid_backprop", "x1 / (2 + (-x0).call(`exp`) + (x0).call(`exp`))")},
+     element_op("sigmoid_backprop",
+                "x1 / (const(2).cast(x0.dtype()) + (-x0).call(`exp`) + (x0).call(`exp`))")},
     {"Equal", element_op("equal", "x0 == x1")},
     {"NotEqual", element_op("not_equal", "x0 != x1")},
     {"Greater", element_op("greater", "x0 > x1")},
@@ -143,6 +151,8 @@ REGISTER_ELEM_OP(Rsqrt)
 REGISTER_ELEM_OP(Tan)
 REGISTER_ELEM_OP(Tanh)
 REGISTER_ELEM_OP(Power)
+REGISTER_ELEM_OP(PowerBackwardBase)
+REGISTER_ELEM_OP(PowerBackwardExponent)
 //REGISTER_ELEM_OP(Add)
 REGISTER_ELEM_OP(Subtract)
 REGISTER_ELEM_OP(Multiply)

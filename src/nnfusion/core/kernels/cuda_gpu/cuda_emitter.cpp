@@ -63,6 +63,40 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     return _lu;
 }
 
+shared_ptr<nnfusion::cache::KernelEntry>
+    cuda::CudaEmitter::get_kernel_cache_entry(shared_ptr<nnfusion::cache::KernelEntry> kernel_entry)
+{
+    if (kernel_entry == nullptr)
+    {
+        kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
+    }
+    FunctionUnit_p func_p = this->get_or_emit_source();
+    if (func_p == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "Cannot generate kernel_cache_entry due to invalid KernelEmitter: "
+                            << m_context->gnode->get_name();
+        return nullptr;
+    }
+
+    if (kernel_entry->device_type == "")
+    {
+        kernel_entry->device_type = "CUDA_GPU";
+    }
+
+    if (kernel_entry->function.find("grid_dim") == kernel_entry->function.end())
+    {
+        kernel_entry->function["grid_dim"] = {m_gridDim.x, m_gridDim.y, m_gridDim.z};
+    }
+    if (kernel_entry->function.find("block_dim") == kernel_entry->function.end())
+    {
+        kernel_entry->function["block_dim"] = {m_blockDim.x, m_blockDim.y, m_blockDim.z};
+    }
+
+    kernel_entry->tags.insert("CudaEmitter");
+
+    return KernelEmitter::get_kernel_cache_entry(kernel_entry);
+}
+
 LanguageUnit_p cuda::BlockCudaEmitter::emit_device_function_signature()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_sig"));
@@ -172,7 +206,9 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
 {
     GENERIC_OP_LOGGING();
     if (antares_code.empty())
+    {
         return nullptr;
+    }
 
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
@@ -222,6 +258,55 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
     return _lu;
 }
 
+shared_ptr<nnfusion::cache::KernelEntry> cuda::BlockCudaEmitter::get_kernel_cache_entry(
+    shared_ptr<nnfusion::cache::KernelEntry> kernel_entry)
+{
+    if (kernel_entry == nullptr)
+    {
+        kernel_entry = shared_ptr<nnfusion::cache::KernelEntry>();
+    }
+    FunctionUnit_p func_p = this->get_or_emit_source();
+    if (func_p == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "Cannot generate kernel_cache_entry due to invalid KernelEmitter: "
+                            << m_context->gnode->get_name();
+        return nullptr;
+    }
+
+    // only support kernels without shared_memory and local_thread_sync yet
+    {
+        std::string function_body = func_p->body_unit->get_code();
+        if (function_body.find("__shared__") != std::string::npos ||
+            function_body.find("__syncthreads") != std::string::npos)
+        {
+            NNFUSION_LOG(INFO) << "BlockCudaEmitter::get_kernel_cache_entry only supports "
+                                  "kernels without shared_memory and "
+                                  "local_thread_sync yet, fallback to CudaEmitter";
+            return CudaEmitter::get_kernel_cache_entry(kernel_entry);
+        }
+    }
+
+    if (kernel_entry->function.find("num_syncthreads") == kernel_entry->function.end())
+    {
+        kernel_entry->function["num_syncthreads"] = num_local_thread_sync;
+    }
+    if (kernel_entry->function.find("shared_memory") == kernel_entry->function.end())
+    {
+        kernel_entry->function["shared_memory"]["symbol"] = shared_memory_log.symbol;
+        kernel_entry->function["shared_memory"]["dtype"] = shared_memory_log.dtype;
+        kernel_entry->function["shared_memory"]["size"] = shared_memory_log.size;
+    }
+    if (kernel_entry->function.find("block_function_body") == kernel_entry->function.end())
+    {
+        // TODO(lingm): process function_body with ply to extract shared_memory
+        kernel_entry->function["block_function_body"] = func_p->body_unit->get_code();
+    }
+
+    kernel_entry->tags.insert("BlockCudaEmitter");
+
+    return CudaEmitter::get_kernel_cache_entry(kernel_entry);
+}
+
 LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_dependency()
 {
     GENERIC_OP_LOGGING();
@@ -234,4 +319,137 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_dependency()
 bool cuda::AntaresCudaKernelEmitter::is_eliminative()
 {
     return (is_memcpy && m_context->inputs[0]->is_same_address(m_context->outputs[0]));
+}
+
+shared_ptr<nnfusion::cache::KernelEntry> cuda::AntaresCudaKernelEmitter::get_kernel_cache_entry(
+    shared_ptr<nnfusion::cache::KernelEntry> kernel_entry)
+{
+    if (kernel_entry == nullptr)
+    {
+        kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
+    }
+    FunctionUnit_p func_p = this->get_or_emit_source();
+    if (func_p == nullptr)
+    {
+        NNFUSION_LOG(ERROR) << "Cannot generate kernel_cache_entry due to invalid KernelEmitter: "
+                            << m_context->gnode->get_name();
+        return nullptr;
+    }
+
+    if (kernel_entry->source == "")
+    {
+        kernel_entry->source = "Antares";
+    }
+
+    kernel_entry->miscs["antares"]["time"] =
+        nnfusion::kernels::AntaresKEImp::get_perf(this->antares_code) * 1000000; // sec to ms
+    kernel_entry->miscs["antares"]["device_name"] =
+        nnfusion::kernels::AntaresKEImp::get_device_name(this->antares_code);
+    auto tuning_step = nnfusion::kernels::AntaresKEImp::get_tuning_step(this->antares_code);
+    kernel_entry->miscs["antares"]["step_produced"] = tuning_step.first;
+    kernel_entry->miscs["antares"]["planned_steps"] = tuning_step.second;
+
+    // kernel_entry->miscs["antares"]["antares_response"] = this->antares_code;
+
+    return BlockCudaEmitter::get_kernel_cache_entry(kernel_entry);
+}
+
+LanguageUnit_p cuda::CacheCudaEmitter::emit_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_sig"));
+    auto& lu = *_lu;
+
+    std::stringstream ss;
+    ss.str(kernel_entry.function["function_signature"]);
+    lu << ss.str();
+
+    return _lu;
+}
+
+LanguageUnit_p cuda::CacheCudaEmitter::emit_function_body()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+    auto& lu = *_lu;
+
+    std::stringstream ss;
+    ss.str(kernel_entry.function["function_body"]);
+    lu << ss.str();
+
+    return _lu;
+}
+
+LanguageUnit_p cuda::CacheCudaEmitter::emit_dependency()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+
+    // Todo: load dependency from kernel cache
+    // *_lu << kernel_entry.function["function_dep"];
+    _lu->require(header::cuda);
+    return _lu;
+}
+
+void cuda::CacheCudaEmitter::set_launch_config()
+{
+    auto func = kernel_entry.function;
+    m_gridDim = dim3(func["grid_dim"][0], func["grid_dim"][1], func["grid_dim"][2]);
+    m_blockDim = dim3(func["block_dim"][0], func["block_dim"][1], func["block_dim"][2]);
+}
+
+LanguageUnit_p cuda::CacheBlockCudaEmitter::emit_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_sig"));
+    auto& lu = *_lu;
+
+    std::stringstream ss;
+    ss.str(kernel_entry.function["function_signature"]);
+    lu << ss.str();
+
+    return _lu;
+}
+
+LanguageUnit_p cuda::CacheBlockCudaEmitter::emit_function_body()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+    auto& lu = *_lu;
+
+    auto func = kernel_entry.function;
+
+    NNFUSION_CHECK(func.find("shared_memory") != func.end());
+    if (func["shared_memory"].size() > 0)
+    { // Todo: offload the code conversion effort to users
+        for (size_t i = 0; i < func["shared_memory"]["symbol"].size(); i++)
+        {
+            emit_alloc_shared(lu,
+                              func["shared_memory"]["symbol"][i],
+                              func["shared_memory"]["dtype"][i],
+                              func["shared_memory"]["size"][i]);
+        }
+    }
+
+    NNFUSION_CHECK(func.find("num_syncthreads") != func.end());
+    num_local_thread_sync = func["num_syncthreads"];
+
+    lu.block_begin();
+    std::stringstream ss;
+    ss.str(func["block_function_body"]);
+    lu << ss.str() << "\n";
+    lu.block_end();
+    return _lu;
+}
+
+LanguageUnit_p cuda::CacheBlockCudaEmitter::emit_dependency()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+
+    // Todo: load dependency from kernel cache
+    // *_lu << kernel_entry.function["function_dep"];
+    _lu->require(header::cuda);
+    return _lu;
+}
+
+void cuda::CacheBlockCudaEmitter::set_launch_config()
+{
+    auto func = kernel_entry.function;
+    m_gridDim = dim3(func["grid_dim"][0], func["grid_dim"][1], func["grid_dim"][2]);
+    m_blockDim = dim3(func["block_dim"][0], func["block_dim"][1], func["block_dim"][2]);
 }

@@ -115,9 +115,9 @@ LanguageUnit_p cuda::Gather1D::emit_dependency()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "GatherV2",                                                               // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::Gather1D)                                                           // constructor
+    "GatherV2",                                                                   // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+    cuda::Gather1D)                                                               // constructor
 
 cuda::Gather1DGrad::Gather1DGrad(shared_ptr<KernelContext> ctx)
     : BlockCudaEmitter(ctx)
@@ -228,6 +228,6 @@ LanguageUnit_p cuda::Gather1DGrad::emit_dependency()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "GatherGrad",                                                             // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::Gather1DGrad)                                                       // constructor
+    "GatherGrad",                                                                 // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+    cuda::Gather1DGrad)                                                           // constructor

@@ -189,21 +189,59 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
 
             if (!cuda_kernel)
             {
+                bool check_flag = false;
+
                 auto ir_kernel =
                     std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel_emitter);
-                if (!ir_kernel ||
-                    CudaElementOpMap.find(ir_kernel->m_context->gnode->get_op_type()) ==
+                if (ir_kernel &&
+                    CudaElementOpMap.find(ir_kernel->m_context->gnode->get_op_type()) !=
                         CudaElementOpMap.end())
+                {
+                    check_flag = true;
+                }
+
+                auto cache_kernel = std::dynamic_pointer_cast<CacheCudaEmitter>(kernel_emitter);
+                if (cache_kernel &&
+                    CudaElementOpMap.find(cache_kernel->m_context->gnode->get_op_type()) !=
+                        CudaElementOpMap.end())
+                {
+                    check_flag = true;
+                }
+
+                auto cache_block_kernel =
+                    std::dynamic_pointer_cast<CacheBlockCudaEmitter>(kernel_emitter);
+                if (cache_block_kernel &&
+                    CudaElementOpMap.find(cache_block_kernel->m_context->gnode->get_op_type()) !=
+                        CudaElementOpMap.end())
+                {
+                    check_flag = true;
+                }
+
+                if (!check_flag)
                 {
                     NNFUSION_CHECK_FAIL() << "Illegal element-wise kernel: "
                                           << kernel_emitter->m_context->gnode->get_op_type();
                 }
             }
 
-            auto op_kernel = get_op_kernel(kernel_emitter->m_context);
-            if (op_kernel.second != nullptr)
+            std::string invoke_func;
+            if (kernel_emitter->m_context->gnode->get_op_type() == "Convert")
             {
-                lu.require(op_kernel.second);
+                lu.require(declaration::cuda_convert_template);
+                invoke_func =
+                    "convert<" +
+                    kernel_emitter->m_context->inputs[0]->get_element_type().c_type_string() +
+                    ", " +
+                    kernel_emitter->m_context->outputs[0]->get_element_type().c_type_string() + ">";
+            }
+            else
+            {
+                auto op_kernel = get_op_kernel(kernel_emitter->m_context);
+                if (op_kernel.second != nullptr)
+                {
+                    lu.require(op_kernel.second);
+                }
+                invoke_func = op_kernel.first;
             }
             local_tensors[out_tw->get_name()] = "temp" + std::to_string(temp_tensor_id++);
             std::vector<std::string> input_args;
@@ -221,7 +259,7 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
                 }
             }
             lu << out_tw->get_element_type().c_type_string() << " "
-               << local_tensors[out_tw->get_name()] << " = " << op_kernel.first << "("
+               << local_tensors[out_tw->get_name()] << " = " << invoke_func << "("
                << join(input_args, ", ") << ");\n";
         }
     }
@@ -340,6 +378,6 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
 }
 
 REGISTER_KERNEL_EMITTER(
-    "ElementWiseFused",                                                       // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
+    "ElementWiseFused",                                                           // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
     cuda::ElementWiseFused)

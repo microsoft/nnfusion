@@ -41,25 +41,22 @@ find_package(Threads REQUIRED)
 target_link_libraries(${TARGET_NAME} Threads::Threads)
 )");
 
-LU_DEFINE(nnfusion::codegen::cmake::super_scaler,
+LU_DEFINE(nnfusion::codegen::cmake::superscaler_cuda,
           R"(
-find_package(MPI)
-include_directories(${MPI_INCLUDE_PATH})
-find_library(SUPER_SCALER_LIBRARIES libsuper_scaler.so ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${TARGET_NAME} 
-    ${MPI_LIBRARIES}
-    ${SUPER_SCALER_LIBRARIES}
-    nccl)   
+if (NOT TARGET superscaler)
+set(TARGET_GPU_PLATFORM "CUDA" CACHE STRING "Choose your GPU platform: CUDA or ROCm")
+include(superscaler/superscaler.cmake)
+endif()
+target_link_libraries(${TARGET_NAME} superscaler)
 )");
 
-LU_DEFINE(nnfusion::codegen::cmake::rocm_super_scaler,
+LU_DEFINE(nnfusion::codegen::cmake::superscaler_rocm,
           R"(
-find_package(MPI)
-include_directories(${MPI_INCLUDE_PATH})
-find_library(ssrocm libsuper_scaler_rocm.so ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${TARGET_NAME}
-    ${MPI_LIBRARIES}
-    ${ssrocm}
+if (NOT TARGET superscaler)
+set(TARGET_GPU_PLATFORM "ROCm" CACHE STRING "Choose your GPU platform: CUDA or ROCm")
+include(superscaler/superscaler.cmake)
+endif()
+target_link_libraries(${TARGET_NAME} superscaler)
 )");
 
 LU_DEFINE(nnfusion::codegen::cmake::cuda_lib,
@@ -97,6 +94,14 @@ include_directories(
     /opt/rocm/hipsparse/include)
 
 target_link_libraries(${TARGET_NAME} /opt/rocm/lib/libMIOpen.so /opt/rocm/lib/librocblas.so) 
+)");
+
+LU_DEFINE(nnfusion::codegen::cmake::cub, R"(
+if (NOT TARGET CUB)
+include(cub/cub.cmake)
+endif()
+add_dependencies(${TARGET_NAME} CUB)
+include_directories(${CUB_INCLUDE_DIR})
 )");
 
 LU_DEFINE(nnfusion::codegen::helper::debug,

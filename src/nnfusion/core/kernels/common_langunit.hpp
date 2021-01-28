@@ -35,6 +35,8 @@ namespace nnfusion
             LU_DECLARE(stdlib);
             LU_DECLARE(chrono);
             LU_DECLARE(limits);
+            LU_DECLARE(iostream);
+            LU_DECLARE(windows);
         }
 
         namespace macro

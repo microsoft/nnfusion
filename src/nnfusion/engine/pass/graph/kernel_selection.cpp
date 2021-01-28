@@ -12,13 +12,9 @@ using namespace nnfusion;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::profiler;
 
-// Register_Tag(Enable_Kernel_Selection, bool);
-// Register_Tag(Kernel_Selection_Device, NNFusion_DeviceType);
-// Register_Tag(Kernel_Selection_Result, vector<pair<NNFusion_DeviceType, KernelEmitter>>);
-
-DEFINE_bool(fkernel_selection, true, "Select kernel before codegen.");
-DEFINE_bool(fkernel_tunning, false, "Tunning and choose best kernel when do kernel selection.");
+DEFINE_bool(fkernel_selection, false, "Select 'best' kernel based on the profiling information.");
 DECLARE_bool(fantares_mode);
+DECLARE_string(fproduct_name);
 
 pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
     ProfilingBasedKernelSelector::profiling_best(shared_ptr<GNode> gnode,
@@ -26,7 +22,8 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
                                                  IProfilingRuntime::Pointer runtime)
 {
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(gnode->get_op_type(), devtype, DT_FLOAT);
+        KernelRegistry::Global()->FindKernelRegistrations(
+            gnode->get_op_type(), devtype, element::f32);
 
     // Skip since only one candidate or constant
     if (kernel_regs.size() == 1 || gnode->is_constant())
@@ -76,8 +73,8 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 
 bool ProfilingBasedKernelSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
-    bool enable_tuning = FLAGS_fkernel_tunning;
-    if (!enable_tuning)
+    bool enable_selection = FLAGS_fkernel_selection;
+    if (!enable_selection)
         return true;
 
     // auto dev_name = FLAGS_fdefault_device.c_str();
@@ -143,12 +140,13 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 {
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(gnode->get_op_type(), devtype, DT_FLOAT);
+        KernelRegistry::Global()->FindKernelRegistrations(
+            gnode->get_op_type(), devtype, element::f32);
 
     if (devtype == ROCM_GPU)
     {
         for (auto it : KernelRegistry::Global()->FindKernelRegistrations(
-                 gnode->get_op_type(), CUDA_GPU, DT_FLOAT))
+                 gnode->get_op_type(), CUDA_GPU, element::f32))
             kernel_regs.push_back(it);
     }
 
@@ -234,7 +232,6 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 
 bool DefaultKernelSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
-    register_antares_kernel();
     // std::vector<std::shared_ptr<GNode>> nodes = graph->get_ordered_ops();
     std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
     for (auto it : nodes)
@@ -258,137 +255,95 @@ bool DefaultKernelSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>
     return true;
 }
 
-template <typename Iter>
-std::string item_join(Iter begin,
-                      Iter end,
-                      std::string const& separator,
-                      std::function<std::string(Iter)> f_item)
-{
-    std::ostringstream result;
-    if (begin != end)
-        result << f_item(begin++);
-    while (begin != end)
-        result << separator << f_item(begin++);
-    return result.str();
-}
-
-std::string nnfusion::pass::graph::generate_identifier(const shared_ptr<KernelContext>& ctx)
-{
-    std::string op_type = ctx->gnode->get_op_type();
-
-    // identifier of pattern substitution kernel was generated before
-    if (op_type == "Matched_Pattern")
-        return (*ctx->gnode)["identifier"].as<std::string>();
-
-    // Todo: more spec to be added
-    std::string identifier("");
-
-    // operator type as identifier
-    identifier += op_type;
-
-    // shapes of input and output tensors as identifier
-    std::function<std::string(std::vector<size_t>::const_iterator)> f_shape =
-        [](std::vector<size_t>::const_iterator s) { return to_string(*s); };
-    std::function<std::string(std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>>::iterator)>
-        f_tensor =
-            [&f_shape](std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>>::iterator t) {
-                auto& shape = (*t)->get_shape();
-                return item_join(shape.begin(), shape.end(), ",", f_shape);
-            };
-    identifier += item_join(ctx->inputs.begin(), ctx->inputs.end(), ";", f_tensor);
-    identifier += ";" + item_join(ctx->outputs.begin(), ctx->outputs.end(), ";", f_tensor);
-
-    // data types of input tensors as identifier
-    for (int i = 0; i < ctx->dtypes.size(); ++i)
-    {
-        identifier += ctx->dtypes[i];
-    }
-
-    if (op_type == "Convolution")
-    {
-        auto conv = std::dynamic_pointer_cast<op::Convolution>(ctx->gnode->get_op_ptr());
-        NNFUSION_CHECK_NOT_NULLPTR(conv);
-        std::stringstream str;
-        str << conv->get_window_movement_strides();
-        str << conv->get_window_dilation_strides();
-        str << conv->get_padding_below();
-        identifier += str.str();
-    }
-    else if (op_type == "AvgPool")
-    {
-        auto avgpool = std::dynamic_pointer_cast<op::AvgPool>(ctx->gnode->get_op_ptr());
-        NNFUSION_CHECK_NOT_NULLPTR(avgpool);
-        std::stringstream str;
-        str << avgpool->get_window_shape();
-        str << avgpool->get_window_movement_strides();
-        str << avgpool->get_padding_below();
-        identifier += str.str();
-    }
-    else if (op_type == "MaxPool")
-    {
-        auto maxpool = std::dynamic_pointer_cast<op::MaxPool>(ctx->gnode->get_op_ptr());
-        NNFUSION_CHECK_NOT_NULLPTR(maxpool);
-        std::stringstream str;
-        str << maxpool->get_window_shape();
-        str << maxpool->get_window_movement_strides();
-        str << maxpool->get_padding_below();
-        identifier += str.str();
-    }
-    else if (op_type == "Dot")
-    {
-        ///\todo encode dot attrs, stay the same with db importor
-        // auto dot = std::dynamic_pointer_cast<op::Dot>(ctx->gnode->get_op_ptr());
-        // NNFUSION_CHECK_NOT_NULLPTR(dot);
-        // std::stringstream str;
-        // str << dot->get_transpose_A();
-        // str << dot->get_transpose_B();
-        // ///\todo: need to encode dot reduction_axes_count?
-        // identifier += str.str();
-    }
-
-    return identifier;
-}
-
 pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
     FetchBasedSelector::fetch_inventory(shared_ptr<cache::KernelCacheManager> cache_manager,
                                         shared_ptr<GNode> gnode,
                                         NNFusion_DeviceType devtype)
 {
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(gnode->get_op_type(), devtype, DT_FLOAT);
+        KernelRegistry::Global()->FindKernelRegistrations(
+            gnode->get_op_type(), devtype, element::f32);
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-    std::vector<std::string> functions;
+    std::vector<nlohmann::json> functions;
 
-    std::string identifier = generate_identifier(ctx);
+    std::string identifier = ctx->generate_identifier();
     // Todo: platform interface to be coordinated with nnfusion devtype
-    std::vector<std::string> platform = {"CUDA"};
+    const std::vector<std::string> SUPPORT_PLATFORM = {"CUDA_GPU"};
 
-    if (identifier != "")
+    if (identifier != "" &&
+        find(SUPPORT_PLATFORM.begin(), SUPPORT_PLATFORM.end(), get_device_str(devtype)) !=
+            SUPPORT_PLATFORM.end())
     {
-        // Todo: more tags and policy to be added
-        std::set<std::string> tags = {};
-        auto fetched_kernel = cache_manager->fetch_with_tags(identifier, platform.front(), tags);
-        if (fetched_kernel.function != "")
+        // fetch all available kernel entries from kernel cache DB
+        auto fetched = cache_manager->fetch_all(identifier, get_device_str(devtype));
+
+        // emit External kernels
         {
-            functions.push_back(fetched_kernel.function);
-        }
-    }
-    if (functions.size() != 0)
-    {
-        // Todo: more policy to be added
-        for (auto func : functions)
-        {
-            auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(ctx, func);
-            if (kernel->get_or_emit_source())
+            for (auto kernel_entry : fetched)
             {
-                return std::make_pair(devtype, kernel);
+                if (kernel_entry->source == "External")
+                {
+                    NNFUSION_CHECK(kernel_entry->tags.find("BlockCudaEmitter") !=
+                                   kernel_entry->tags.end());
+                    auto kernel =
+                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, kernel_entry);
+                    if (kernel->get_or_emit_source())
+                    {
+                        return std::make_pair(devtype, kernel);
+                    }
+                }
+            }
+        }
+
+        // emit Antares kernels: select the fastest tuned kernel
+        {
+            nnfusion::cache::KernelEntry_p kernel_entry = nullptr;
+            double kernel_time = 1000000000;
+            for (auto fetch_entry : fetched)
+            {
+                if (fetch_entry->source == "Antares")
+                {
+                    if (fetch_entry->miscs["antares"]["device_name"] != FLAGS_fproduct_name)
+                    {
+                        continue;
+                    }
+                    if (fetch_entry->miscs["antares"]["planned_steps"] > 0)
+                    {
+                        if (kernel_entry == nullptr ||
+                            fetch_entry->miscs["antares"]["time"] < kernel_time)
+                        {
+                            kernel_entry = fetch_entry;
+                            kernel_time = fetch_entry->miscs["antares"]["time"];
+                        }
+                    }
+                }
+            }
+            if (kernel_entry != nullptr)
+            {
+                if (kernel_entry->tags.find("BlockCudaEmitter") != kernel_entry->tags.end())
+                {
+                    auto kernel =
+                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, kernel_entry);
+                    if (kernel->get_or_emit_source())
+                    {
+                        return std::make_pair(devtype, kernel);
+                    }
+                }
+                else
+                {
+                    NNFUSION_CHECK(kernel_entry->tags.find("CudaEmitter") !=
+                                   kernel_entry->tags.end());
+                    auto kernel =
+                        std::make_shared<kernels::cuda::CacheCudaEmitter>(ctx, kernel_entry);
+                    if (kernel->get_or_emit_source())
+                    {
+                        return std::make_pair(devtype, kernel);
+                    }
+                }
             }
         }
     }
-    else
-    {
-        return std::make_pair(devtype, nullptr);
-    }
+    return std::make_pair(devtype, nullptr);
 }
 
 bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
@@ -396,9 +351,8 @@ bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
     auto cache_manager = std::make_shared<cache::KernelCacheManager>();
     if (!cache_manager->is_valid())
     {
-        NNFUSION_LOG(INFO) << "No valid kernel cache, default selector will be used";
-        auto selector = DefaultKernelSelector();
-        return selector.run_on_graph(graph);
+        NNFUSION_LOG(INFO) << "No valid kernel cache, FetchBasedSelector will be skipped";
+        return true;
     }
     // auto dev_name = FLAGS_fdefault_device.c_str();
     // NNFusion_DeviceType default_device = nnfusion::get_device_type(dev_name);
@@ -422,49 +376,5 @@ bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
         }
     }
 
-    return true;
-}
-
-bool DefaultKernelSelector::register_antares_kernel()
-{
-    for (auto pair : nnfusion::op::get_op_configs())
-    {
-        std::string op_name = pair.first;
-        std::vector<NNFusion_DeviceType> devs{CUDA_GPU, GENERIC_CPU, HLSL};
-
-        KernelRegistrar kernel_registrar_cuda(
-            op_name,
-            Name(op_name)
-                .Device(CUDA_GPU)
-                .TypeConstraint(DT_FLOAT)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
-                    return make_shared<cuda::AntaresCudaKernelEmitter>(context);
-                })
-                .Build());
-        KernelRegistrar kernel_registrar_cpu(
-            op_name,
-            Name(op_name)
-                .Device(GENERIC_CPU)
-                .TypeConstraint(DT_FLOAT)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
-                    return make_shared<cpu::AntaresCpuKernelEmitter>(context);
-                })
-                .Build());
-        KernelRegistrar kernel_registrar_hlsl(
-            op_name,
-            Name(op_name)
-                .Device(HLSL)
-                .TypeConstraint(DT_FLOAT)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<KernelContext> context) -> shared_ptr<KernelEmitter> {
-                    return make_shared<hlsl::AntaresHLSLKernelEmitter>(context);
-                })
-                .Build());
-    }
     return true;
 }

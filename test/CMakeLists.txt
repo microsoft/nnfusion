@@ -31,8 +31,6 @@ list(APPEND SRC ${nnfusion_core_files}
 
 add_executable(unit-test ${SRC})
 
-target_link_libraries(unit-test PRIVATE ngraph_testutil_files)
-
 target_include_directories(unit-test PRIVATE ".")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")

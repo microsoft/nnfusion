@@ -9,7 +9,7 @@ using namespace nnfusion::kernels;
 #define REGISTER_EW_KERNEL(OP_NAME)                                                                \
     REGISTER_KERNEL_EMITTER(                                                                       \
         "" #OP_NAME "",                                                                            \
-        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("element_wise").Priority(2),                 \
+        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("element_wise").Priority(2),             \
         cuda::ElementWise<nnfusion::op::OP_NAME>);
 
 REGISTER_EW_KERNEL(Abs)
@@ -33,6 +33,8 @@ REGISTER_EW_KERNEL(Square)
 REGISTER_EW_KERNEL(Tan)
 REGISTER_EW_KERNEL(Tanh)
 REGISTER_EW_KERNEL(Power)
+REGISTER_EW_KERNEL(PowerBackwardBase)
+REGISTER_EW_KERNEL(PowerBackwardExponent)
 REGISTER_EW_KERNEL(Subtract)
 REGISTER_EW_KERNEL(Divide)
 REGISTER_EW_KERNEL(DivNoNan)

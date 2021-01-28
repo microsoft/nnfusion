@@ -66,13 +66,13 @@ namespace nnfusion
                     return result.str();
                 }
 
-                inline int get_type_id(nnfusion::element::Type type)
-                {
-                    // TODO: fill more type cases
-                    if (type == nnfusion::element::f32)
-                        return DT_FLOAT;
-                    throw std::runtime_error("Not supported element type.");
-                }
+                // inline int get_type_id(nnfusion::element::Type type)
+                // {
+                //     // TODO: fill more type cases
+                //     if (type == nnfusion::element::f32)
+                //         return DT_FLOAT;
+                //     throw std::runtime_error("Not supported element type.");
+                // }
 
                 template <class T>
                 inline std::shared_ptr<T> get_op_object(std::shared_ptr<GNode>& curr)

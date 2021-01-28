@@ -96,7 +96,7 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNHWC()
          thread_id += blockDim.x * gridDim.x)
     {
         // Compute the indexes of this thread in the output.
-        const int out_channel = thread_id % out_depth;
+        const int out_channel = (int)thread_id % out_depth;
         const int out_col = (thread_id / out_depth) % out_width;
         const int out_row = (thread_id / out_depth / out_width) % out_height;
         const int batch = thread_id / out_depth / out_width / out_height;
@@ -225,7 +225,7 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNCHW()
         //
         // THIS IS PROBABLY WRONG, we are not doing coalesced reads
         // into the input, because of the depth multiplier division...
-        const int out_col = thread_id % out_width;
+        const int out_col = (int)thread_id % out_width;
         const int out_row = (thread_id / out_width) % out_height;
         const int out_channel = (thread_id / out_width / out_height) % out_depth;
         const int batch = thread_id / out_width / out_height / out_depth;
@@ -372,6 +372,6 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_dependency()
 }
 
 REGISTER_KERNEL_EMITTER(
-    "DepthwiseConv2dNative",                                                  // op_name
-    Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::DepthwiseConv2dNative)                                              // constructor
+    "DepthwiseConv2dNative",                                                      // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+    cuda::DepthwiseConv2dNative)                                                  // constructor

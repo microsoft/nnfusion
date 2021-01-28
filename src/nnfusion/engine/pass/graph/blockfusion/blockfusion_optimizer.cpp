@@ -19,8 +19,8 @@ using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
 
 const size_t BlockFusionWavefrontOptimizer::DEFAULT_GROUP_ID = -1;
-const size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
-const size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
+size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
+size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
 const size_t BlockFusionWavefrontOptimizer::RESOURCE_CAPACITY =
     4 * 80; // volta max parallelism: 4 * #SM
 
@@ -28,8 +28,9 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
                                                              std::string _device_type,
                                                              std::string _device_name,
                                                              int _fusion_level,
-                                                             bool _flag_interplay)
-    : BlockFusionOptimizer(g, _device_type)
+                                                             bool _flag_interplay,
+                                                             bool _flag_check_correctness)
+    : BlockFusionOptimizer(g, _device_type, _flag_check_correctness)
 {
     m_nodes.resize(m_graph->get_max_node_id());
     m_device_name = _device_name;
@@ -38,6 +39,11 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
 
     m_kernel_db = std::make_shared<cache::KernelCacheManager>();
     m_db_ready = m_kernel_db->is_valid() ? true : false;
+
+    if (m_device_type == "ROCm")
+    {
+        MAX_GROUP = 10;
+    }
 }
 
 bool BlockFusionWavefrontOptimizer::Optimize()
@@ -140,34 +146,53 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
                                        << node->get_name();
         return false;
     }
+
     auto emitted_kernel =
         (*node)["Kernel_Selection_Result"].as<pair<NNFusion_DeviceType, KernelEmitter::Pointer>>();
-    KernelEmitter::Pointer kernel = nullptr;
+    KernelEmitter::Pointer kernel = emitted_kernel.second;
 
     // constant kernel emitter will write file to save weights, skip to do it when codegen.
     if (node->is_constant())
     {
         return false;
     }
-    else if (!emitted_kernel.second->is_emitted())
+
+    // skip non-emitted kernels
+    if (!emitted_kernel.second->is_emitted())
     {
         NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before this pass:"
                                        << node->get_name();
         return false;
     }
-    else
+
+    if (std::dynamic_pointer_cast<BlockCudaEmitter>(kernel) == nullptr)
     {
-        kernel = emitted_kernel.second;
-        if (std::dynamic_pointer_cast<BlockCudaEmitter>(kernel) == nullptr)
+        NNFUSION_LOG(INFO) << "Operator " << node->get_name()
+                           << " is not BlockCudaEmitter, skip in BlockFusion";
+        return false;
+    }
+
+    // TODO(lingm): process shared_memory and local_thread_sync for AntaresCudaKernelEmitter
+    if (std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel) != nullptr)
+    {
+        auto function_body = kernel->get_or_emit_source()->body_unit->get_code();
+        if (function_body.find("__shared__") != std::string::npos ||
+            function_body.find("__syncthreads") != std::string::npos)
         {
-            NNFUSION_LOG(INFO) << "Operator skept in block fusion: " << node->get_name();
+            NNFUSION_LOG(INFO) << "Operator " << node->get_name()
+                               << " is AntaresCudaKernelEmitter with shared_memory or "
+                                  "local_thread_sync, not support in BlockFusion yet, skip";
             return false;
         }
-        cur_group->nodes.push_back(node_id);
-        cur_group->block_kernels.push_back(kernel);
-        cur_group->duration.push_back(10);
-        return true;
     }
+
+    cur_group->nodes.push_back(node_id);
+    cur_group->block_kernels.push_back(kernel);
+
+    // TODO(lingm): use profiling information when the new profiler is ready
+    cur_group->duration.push_back(10);
+
+    return true;
 }
 
 std::shared_ptr<std::vector<std::shared_ptr<BlockFusionWavefrontOptimizer::FusionGroup>>>
@@ -319,6 +344,67 @@ void BlockFusionWavefrontOptimizer::SplitGroup(
     }
 }
 
+bool BlockFusionWavefrontOptimizer::CheckGroupMergeable(std::shared_ptr<FusionGroup> prev_group,
+                                                        std::shared_ptr<FusionGroup> succ_group)
+{
+    std::unordered_set<int64_t> prev_nodes;
+    std::unordered_set<int64_t> succ_nodes;
+    for (int i = 0; i < prev_group->nodes.size(); i++)
+    {
+        prev_nodes.insert(prev_group->nodes[i]);
+    }
+    for (int i = 0; i < succ_group->nodes.size(); i++)
+    {
+        succ_nodes.insert(succ_group->nodes[i]);
+    }
+
+    std::unordered_set<int64_t> frontier;
+    for (int i = 0; i < prev_group->nodes.size(); i++)
+    {
+        auto gnode = m_nodes[prev_group->nodes[i]]->node;
+        for (const auto& out_edge : gnode->get_out_edges())
+        {
+            auto dst_id = out_edge->get_dst()->get_id();
+            if (prev_nodes.find(dst_id) == prev_nodes.end() &&
+                succ_nodes.find(dst_id) == succ_nodes.end())
+            {
+                frontier.insert(dst_id);
+            }
+        }
+    }
+
+    std::queue<int64_t> ready;
+    std::unordered_set<int64_t> vis;
+    for (auto item : frontier)
+    {
+        ready.push(item);
+        vis.insert(item);
+    }
+    while (!ready.empty())
+    {
+        auto node_id = ready.front();
+        ready.pop();
+        auto gnode = m_nodes[node_id]->node;
+
+        // prev_group->B->...->succ_group, cannot merge these two groups
+        if (succ_nodes.find(node_id) != succ_nodes.end())
+        {
+            NNFUSION_LOG(INFO) << "BlockFusion: cannot merge group due to nodes between two groups";
+            return false;
+        }
+
+        for (const auto& out_edge : gnode->get_out_edges())
+        {
+            auto dst_id = out_edge->get_dst()->get_id();
+            if (vis.find(dst_id) == vis.end())
+            {
+                ready.push(dst_id);
+            }
+        }
+    }
+    return true;
+}
+
 void BlockFusionWavefrontOptimizer::MergeGroups(
     std::shared_ptr<std::vector<std::shared_ptr<FusionGroup>>> groups)
 {
@@ -330,7 +416,7 @@ void BlockFusionWavefrontOptimizer::MergeGroups(
         auto target = groups->at(group_index - 1);
         auto current = groups->at(group_index);
         double cur_result = GroupProfiler(current);
-        if (target->merge)
+        if (target->merge && CheckGroupMergeable(target, current))
         {
             std::shared_ptr<FusionGroup> merged = std::make_shared<FusionGroup>(target);
             merged->nodes.insert(merged->nodes.end(), current->nodes.begin(), current->nodes.end());
@@ -342,7 +428,10 @@ void BlockFusionWavefrontOptimizer::MergeGroups(
             double merged_result = GroupProfiler(merged);
             NNFUSION_LOG(INFO) << "runtime profiler, merged " << merged_result << "\n";
             NNFUSION_LOG(INFO) << "runtime profiler, original " << result + cur_result << "\n";
-            if (merged_result < result + cur_result)
+
+            // merged_result == 0 may indicate kernel failure during execution
+            if (merged_result < result + cur_result &&
+                std::abs(merged_result - (double)0.0) > (double)1e-5)
             {
                 groups->at(group_index - 1) = merged;
                 groups->erase(groups->begin() + group_index);
@@ -395,31 +484,50 @@ double BlockFusionWavefrontOptimizer::GroupProfiler(const std::shared_ptr<Fusion
 bool BlockFusionWavefrontOptimizer::SkipGroupOnProfilingResult(
     blockfusion::ProfilingResult profiling_result)
 {
-    NNFUSION_LOG(INFO) << "profiling result:\n" << profiling_result.get_debug_string();
+    NNFUSION_LOG(DEBUG) << "profiling result:\n" << profiling_result.get_debug_string();
 
     if (profiling_result.profile_device)
     {
         // skip group when there is only one kernel in this group
         if (profiling_result.num_kernels <= 1)
         {
-            NNFUSION_LOG(INFO) << "BlockFusion: skip group, num_kernels <= 1";
+            NNFUSION_LOG(DEBUG) << "BlockFusion: skip group, num_kernels <= 1";
             return true;
         }
 
         // skip group when there are too many large kernels in this group
         if (profiling_result.num_large_kernels >= profiling_result.num_kernels)
         {
-            NNFUSION_LOG(INFO) << "BlockFusion: skip group, too many large kernels";
+            NNFUSION_LOG(DEBUG) << "BlockFusion: skip group, too many large kernels";
             return true;
         }
 
         // skip group when BlockFusion gets no gain
         if (profiling_result.fused_estimation_time >= profiling_result.normal_execution_time)
         {
-            NNFUSION_LOG(INFO)
+            NNFUSION_LOG(DEBUG)
                 << "BlockFusion: skip group, fused_estimation_time >= normal_execution_time";
             return true;
         }
+    }
+
+    if (profiling_result.profile_codegen)
+    {
+        // skip group when fused_execution_time == 0 which may indicate kernel execution failure
+        if (std::abs(profiling_result.fused_execution_time - (double)0.0) < (double)1e-5)
+        {
+            NNFUSION_LOG(DEBUG) << "BlockFusion: skip group, fused_execution_time == 0, which may "
+                                   "indicate kernel execution failure";
+            return true;
+        }
+
+        // skip group when fused_execution_time > normal_execution_time
+        // if (profiling_result.fused_execution_time > profiling_result.normal_execution_time)
+        // {
+        //     NNFUSION_LOG(DEBUG)
+        //         << "BlockFusion: skip group, fused_execution_time > normal_execution_time";
+        //     return true;
+        // }
     }
 
     return false;
@@ -450,20 +558,20 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
             {
                 auto node = m_nodes[group->nodes.at(i)]->node;
                 std::shared_ptr<KernelContext> ctx(new KernelContext(node));
-                std::string identifier = generate_identifier(ctx);
+                std::string identifier = ctx->generate_identifier();
                 auto fetched_kernel =
-                    m_kernel_db->fetch_with_tags(identifier, "CUDA", set<string>{}, true);
-                if (fetched_kernel.function != "")
+                    m_kernel_db->fetch_with_tags(identifier, "CUDA_GPU", set<string>{}, true);
+                if (fetched_kernel != nullptr)
                 {
-                    auto kernel = std::make_shared<kernels::cuda::CacheBlockCudaKernel>(
-                        ctx, fetched_kernel.function);
+                    auto kernel =
+                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, fetched_kernel);
                     kernel->get_or_emit_source();
                     group->block_kernels[i] = kernel;
-                    group->duration[i] = fetched_kernel.profile[m_device_name];
+                    group->duration[i] = fetched_kernel->profile[m_device_name];
                     NNFUSION_LOG(DEBUG) << "fetched kernel " << identifier << " with resource "
-                                        << fetched_kernel.resource << " and profiled on "
+                                        << fetched_kernel->resource << " and profiled on "
                                         << m_device_name << " in "
-                                        << fetched_kernel.profile[m_device_name] << "us";
+                                        << fetched_kernel->profile[m_device_name] << "us";
                 }
             }
         }
@@ -517,10 +625,15 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
     auto kernel = std::dynamic_pointer_cast<KernelEmitter>(code_generator_p);
     auto ctx = code_generator.get_kernel_context();
 
-    if (m_fusion_level >= 2)
+    if (m_check_correctness || m_fusion_level >= 2)
     {
         blockfusion_profiler.set_profiling_context(virtual_device_p, code_generator_p);
-        if (SkipGroupOnProfilingResult(blockfusion_profiler.get_profiling_result()))
+        auto profiling_result = blockfusion_profiler.get_profiling_result();
+        if (!profiling_result.profile_codegen)
+        {
+            return -1;
+        }
+        if (SkipGroupOnProfilingResult(profiling_result))
         {
             return -1;
         }

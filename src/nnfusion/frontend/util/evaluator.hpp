@@ -109,17 +109,17 @@ namespace nnfusion
                 if (runtime->check_env())
                 {
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), ROCM_GPU, DT_FLOAT);
+                        gnode->get_op_type(), ROCM_GPU, element::f32);
                     if (kernel_regs.size() == 0)
                         kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                            gnode->get_op_type(), CUDA_GPU, DT_FLOAT);
+                            gnode->get_op_type(), CUDA_GPU, element::f32);
                 }
                 else
                 {
                     runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
                     NNFUSION_CHECK(runtime->check_env());
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), CUDA_GPU, DT_FLOAT);
+                        gnode->get_op_type(), CUDA_GPU, element::f32);
                 }
 
                 bool const_infer_success = false;

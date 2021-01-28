@@ -54,7 +54,7 @@ namespace nnfusion
                     padding_above;
                 nnfusion::Strides window_stride;
                 bool include_pad;
-                string input_type, output_type;
+                element::Type input_type, output_type;
 
                 // Precompute for fast constant memory access.
                 int HW, DHW, CDHW, PQ, MPQ, KMPQ, RS, TRS;
@@ -78,7 +78,7 @@ namespace nnfusion
                     padding_above;
                 nnfusion::Strides window_stride;
                 bool include_pad;
-                string input_type, output_type;
+                element::Type input_type, output_type;
             };
         } // namespace cuda
     }     // namespace kernels

@@ -77,6 +77,6 @@ namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
-REGISTER_KERNEL_EMITTER("Variable",                                            //op_name
-                        Device(CUDA_GPU).TypeConstraint(DT_FLOAT).Priority(2), //attrs
-                        cuda::Variable)                                        // constructor
+REGISTER_KERNEL_EMITTER("Variable",                                                //op_name
+                        Device(CUDA_GPU).TypeConstraint(element::f32).Priority(2), //attrs
+                        cuda::Variable)                                            // constructor

@@ -96,6 +96,8 @@ namespace nnfusion
             }
         };
 
+        using ProfilingResult_p = std::shared_ptr<ProfilingResult>;
+
         /* ===== different types of block_executor_instructions begin ===== */
 
         class BlockExecutorInstructionExecuteBlock : public BlockExecutorInstruction

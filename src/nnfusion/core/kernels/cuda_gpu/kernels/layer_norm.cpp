@@ -46,14 +46,29 @@ namespace nnfusion
                         n2 *= input_shape[i];
                     }
 
+                    nnfusion::element::Type dtype = m_context->inputs[0]->get_element_type();
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
                     auto& lu = *_lu;
-                    lu << "HostApplyLayerNorm(output0,"
-                       << " output1,"
-                       << " output2,"
-                       << " input0," << n1 << "," << n2 << "," << eps << ","
-                       << " input1,"
-                       << " input2);\n";
+                    // lu << "HostApplyLayerNorm(output0,"
+                    //    << " output1,"
+                    //    << " output2,"
+                    //    << " input0," << n1 << "," << n2 << "," << eps << ","
+                    //    << " input1,"
+                    //    << " input2);\n";
+
+                    auto code = nnfusion::op::create_code_from_template(
+                        R"(
+HostApplyLayerNorm<@dtype@>(
+output0, output1, output2, input0, @n1@, @n2@, @expression1@@eps@@expression2@, input1, input2);
+    )",
+                        {{"n1", n1},
+                         {"n2", n2},
+                         {"dtype", (dtype == element::f16) ? "half" : "float"},
+                         {"expression1", (dtype == element::f16) ? "__float2half_rn(" : ""},
+                         {"expression2", (dtype == element::f16) ? ")" : ""},
+                         {"eps", eps}});
+
+                    lu << code << "\n";
                     return _lu;
                 }
 

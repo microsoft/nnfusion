@@ -19,23 +19,27 @@ namespace nnfusion
 
                 {
                 }
-                bool Optimize() override;
+                // bool Optimize() override;
 
             private:
+                bool CheckStartingNode(std::shared_ptr<nnfusion::graph::GNode> node) override;
+                bool FindSubGraph(std::shared_ptr<nnfusion::graph::GNode> starting_node,
+                                  std::shared_ptr<BertFusionGroup> bertfusion_group) override;
+                bool FuseSubGraph(std::shared_ptr<BertFusionGroup> bertfusion_group) override;
+
                 bool FuseSubGraph(std::shared_ptr<nnfusion::graph::GNode> starting_node,
                                   std::shared_ptr<nnfusion::graph::GNode> ending_node,
                                   size_t hidden_size);
-                bool RemoveNodes();
-                bool ReverseFindPath(
-                    std::shared_ptr<nnfusion::graph::GNode> node,
-                    std::vector<std::string>& pattern,
-                    std::vector<std::vector<std::shared_ptr<nnfusion::graph::GNode>>>& all_paths);
-                void ReverseSearch(
-                    std::shared_ptr<nnfusion::graph::GNode> node,
-                    std::vector<std::string>& pattern,
-                    size_t idx,
-                    std::vector<std::vector<std::shared_ptr<nnfusion::graph::GNode>>>& all_paths,
-                    std::vector<std::shared_ptr<nnfusion::graph::GNode>>& path);
+                // bool FindPath(
+                //     std::shared_ptr<nnfusion::graph::GNode> node,
+                //     std::vector<std::string>& pattern,
+                //     std::vector<std::vector<std::shared_ptr<nnfusion::graph::GNode>>>& all_paths, bool reverse);
+                // void Search(
+                //     std::shared_ptr<nnfusion::graph::GNode> node,
+                //     std::vector<std::string>& pattern,
+                //     size_t idx,
+                //     std::vector<std::vector<std::shared_ptr<nnfusion::graph::GNode>>>& all_paths,
+                //     std::vector<std::shared_ptr<nnfusion::graph::GNode>>& path, bool reverse);
                 std::shared_ptr<nnfusion::graph::GNode>
                     MergeQkvWeights(std::shared_ptr<nnfusion::graph::GNode> q_weight,
                                     std::shared_ptr<nnfusion::graph::GNode> k_weight,

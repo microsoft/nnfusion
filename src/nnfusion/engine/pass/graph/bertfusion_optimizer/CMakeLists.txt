@@ -3,7 +3,9 @@
 
 
 set(SRC
+   bertfusion_optimizer.cpp
    attention_fusion_optimizer.cpp
+   layernorm_fusion_optimizer.cpp
 )
 
 add_library(nnfusion_engine_pass_graph_bertfusion STATIC ${SRC})

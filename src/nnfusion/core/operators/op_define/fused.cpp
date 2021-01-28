@@ -186,7 +186,8 @@ std::string Fused::get_plan_rule()
     }
     else if (plan_rules.size() > 1)
     {
-        return plan_expr + "plan/multi_reduce";
+        // return plan_expr + "plan/multi_reduce";
+        return plan_expr;
     }
     return plan_expr;
 }

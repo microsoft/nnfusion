@@ -47,6 +47,7 @@ void BertFusionOptimizer::Search(std::shared_ptr<GNode> node,
                                  std::vector<std::shared_ptr<GNode>>& path,
                                  bool reverse)
 {
+    // NNFUSION_LOG(INFO) << "=========" << idx << " " << pattern.size() << path.size();
     if (idx == pattern.size() && path.size() == pattern.size())
     {
         all_paths.push_back(path);
@@ -77,9 +78,14 @@ void BertFusionOptimizer::Search(std::shared_ptr<GNode> node,
 
             if (sub_node->get_op_type() == pattern[idx])
             {
+                // NNFUSION_LOG(INFO) << sub_node->get_op_type() << " : " << pattern[idx];
                 path.push_back(sub_node);
                 Search(sub_node, pattern, idx + 1, all_paths, path, reverse);
                 path.pop_back();
+            }
+            else
+            {
+                // NNFUSION_LOG(INFO) << sub_node->get_op_type() << " : " << pattern[idx];
             }
         }
     }

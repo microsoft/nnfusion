@@ -11,10 +11,10 @@ namespace nnfusion
     {
         namespace graph
         {
-            class LayerNormFusionOptimizer : public BertFusionOptimizer
+            class EmbedLayerNormFusionOptimizer : public BertFusionOptimizer
             {
             public:
-                LayerNormFusionOptimizer(std::shared_ptr<nnfusion::graph::Graph> graph)
+                EmbedLayerNormFusionOptimizer(std::shared_ptr<nnfusion::graph::Graph> graph)
                     : BertFusionOptimizer(graph)
 
                 {
@@ -25,10 +25,6 @@ namespace nnfusion
                 bool FindSubGraph(std::shared_ptr<nnfusion::graph::GNode> starting_node,
                                   std::shared_ptr<BertFusionGroup> bertfusion_group) override;
                 bool FuseSubGraph(std::shared_ptr<BertFusionGroup> bertfusion_group) override;
-                bool FindReduceMean(
-                    std::shared_ptr<nnfusion::graph::GNode> node,
-                    std::shared_ptr<BertFusionGroup> bertfusion_group,
-                    std::vector<std::vector<std::shared_ptr<nnfusion::graph::GNode>>>& main_path);
             };
 
         } // namespace graph

@@ -458,23 +458,6 @@ __device__ static float reduceSum(float val, int tid, int blockSize, float* shm)
 
 LU_DEFINE_EXTEND(declaration::cuda_layer_norm,
                  R"(
-template <typename T>
-__device__ inline T Rsqrt(const T& x);
-
-template <>
-__device__ inline float Rsqrt(const float& x) {
-  return rsqrtf(x);
-}
-
-template <>
-__device__ inline half Rsqrt(const half& x) {
-#if __CUDA_ARCH__ >= 530 || !defined(__CUDA_ARCH__)
-  return hrsqrt(x);
-#else
-  return half(rsqrtf(float(x)));
-#endif
-}
-
 // Check compute capability
 const int GPU_WARP_SIZE = 32;
 const uint64_t MAX_GRID_Y = 65535;
@@ -982,23 +965,6 @@ void HostApplyLayerNorm(
 )");
 
 LU_DEFINE(declaration::ort_layer_norm, R"(
-template <typename T>
-__device__ inline T Rsqrt(const T& x);
-
-template <>
-__device__ inline float Rsqrt(const float& x) {
-  return rsqrtf(x);
-}
-
-template <>
-__device__ inline half Rsqrt(const half& x) {
-#if __CUDA_ARCH__ >= 530 || !defined(__CUDA_ARCH__)
-  return hrsqrt(x);
-#else
-  return half(rsqrtf(float(x)));
-#endif
-}
-
 __device__ inline half2 AddHalf2(const half2 a, const half2 b) {
 #if __CUDA_ARCH__ >= 530 || !defined(__CUDA_ARCH__)
   return __hadd2(a, b);
@@ -1722,5 +1688,24 @@ void QkvToContext(
 
   // scratch3 is BxNxSxH, transpose to output BxSxNxH
   LaunchTransCtx(stream, sequence_length, batch_size, head_size, num_heads, scratch3, output);
+}
+)");
+
+LU_DEFINE(declaration::math_Rsqrt, R"(
+template <typename T>
+__device__ inline T Rsqrt(const T& x);
+
+template <>
+__device__ inline float Rsqrt(const float& x) {
+  return rsqrtf(x);
+}
+
+template <>
+__device__ inline half Rsqrt(const half& x) {
+#if __CUDA_ARCH__ >= 530 || !defined(__CUDA_ARCH__)
+  return hrsqrt(x);
+#else
+  return half(rsqrtf(float(x)));
+#endif
 }
 )");

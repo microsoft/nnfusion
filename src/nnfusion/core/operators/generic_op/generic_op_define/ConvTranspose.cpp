@@ -43,13 +43,15 @@ REGISTER_OP(ConvTranspose)
         auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         Shape kernel_shape = op->localOpConfig.getRoot()["kernel_shape"];
         Strides strides = op->localOpConfig.getRoot()["strides"];
+        Strides pads_above = op->localOpConfig.getRoot()["padding_above"];
+        // Strides pads_below = op->localOpConfig.getRoot()["padding_below"];
 
         const auto& in_shape = gnode->get_input_shape(0);
         const auto& out_shape = gnode->get_output_shape(0);
 
         nnfusion::op::OpConfig::any config;
-        config["pad_h"] = to_string(kernel_shape[0] / 2);
-        config["pad_w"] = to_string(kernel_shape[1] / 2);
+        config["pad_h"] = to_string(kernel_shape[0] / 2) + " + " + to_string(pads_above[0]);
+        config["pad_w"] = to_string(kernel_shape[1] / 2) + " + " + to_string(pads_above[1]);
         config["stride_h"] = to_string(strides[0]);
         config["stride_w"] = to_string(strides[1]);
         config["out_height"] = to_string(out_shape[2]);

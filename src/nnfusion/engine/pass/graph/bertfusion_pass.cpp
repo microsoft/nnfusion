@@ -6,6 +6,7 @@
 #include "bertfusion_optimizer/bertfusion_optimizer.hpp"
 #include "bertfusion_optimizer/embedlayernorm_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/layernorm_fusion_optimizer.hpp"
+#include "bertfusion_optimizer/skiplayernorm_fusion_optimizer.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;
@@ -53,6 +54,19 @@ bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph
         else
         {
             NNFUSION_LOG(INFO) << "BertEmbedLayerNormFusion Optimization Done.";
+        }
+    }
+
+    if (FLAGS_fskiplayernorm_fusion)
+    {
+        auto optimizer = std::make_shared<SkipLayerNormFusionOptimizer>(graph);
+        if (!optimizer->Optimize())
+        {
+            NNFUSION_LOG(NNFUSION_WARNING) << "SkipLayerNormFusion Optimization failed.";
+        }
+        else
+        {
+            NNFUSION_LOG(INFO) << "SkipLayerNormFusion Optimization Done.";
         }
     }
 

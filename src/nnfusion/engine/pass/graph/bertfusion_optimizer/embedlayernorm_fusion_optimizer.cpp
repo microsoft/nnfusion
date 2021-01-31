@@ -28,7 +28,7 @@ bool EmbedLayerNormFusionOptimizer::FindSubGraph(std::shared_ptr<GNode> starting
     if (!FindPath(starting_node, pattern_segment, all_paths_segment, true) ||
         all_paths_segment.size() != 1)
     {
-        NNFUSION_LOG(NNFUSION_WARNING) << "Failed to find path to segement embedding";
+        // NNFUSION_LOG(NNFUSION_WARNING) << "Failed to find path to segement embedding";
         return false;
     }
 
@@ -124,7 +124,7 @@ bool EmbedLayerNormFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup
 
     NNFUSION_CHECK(layernorm->get_op_type() == "LayerNorm");
     auto layernorm_op = std::dynamic_pointer_cast<op::GenericOp>(layernorm->get_op_ptr());
-    auto gama = layernorm->get_in_edge(1)->get_src();
+    auto gamma = layernorm->get_in_edge(1)->get_src();
     auto beta = layernorm->get_in_edge(2)->get_src();
 
     std::shared_ptr<GNode> input_id_int32 = input_id;
@@ -161,7 +161,7 @@ bool EmbedLayerNormFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup
                                                             GNodeIndex{word_embedding, 0},
                                                             GNodeIndex{position_ebedding, 0},
                                                             GNodeIndex{segment_ebedding, 0},
-                                                            GNodeIndex{gama, 0},
+                                                            GNodeIndex{gamma, 0},
                                                             GNodeIndex{beta, 0}});
 
     // replace edge

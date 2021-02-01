@@ -19,6 +19,7 @@ namespace nnfusion
             LU_DECLARE(superscaler_rocm);
             LU_DECLARE(cuda_lib);
             LU_DECLARE(rocm_lib);
+            LU_DECLARE(cub);
         } // namespace cmake
         namespace helper
         {

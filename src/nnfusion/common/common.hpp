@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <cstdlib>
+#include <deque>
 #include <fstream>
 #include <functional>
 #include <iostream>

@@ -12,6 +12,13 @@ namespace nnfusion
 {
     namespace pass
     {
+        struct MemoryInfo
+        {
+            std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> alloc_new;
+            std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> alloc_ref;
+            std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> free;
+        };
+
         ///\brief Obsoleted MemoryLayout pass doesn't support tensor allcoated
         /// by KernelEmitter, thus this class is to fix the problem.
         /// Follows this order:

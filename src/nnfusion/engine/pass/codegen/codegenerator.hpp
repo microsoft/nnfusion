@@ -25,7 +25,7 @@ namespace nnfusion
             virtual void execute(bool append = true) override;
             virtual void collect_requirement();
 
-            std::vector<LanguageUnit_p> unit_vec;
+            std::deque<LanguageUnit_p> unit_vec;
         };
 
         using LanguageUnitwithVec_p = std::shared_ptr<LanguageUnitwithVec>;

@@ -5,6 +5,7 @@
 
 DECLARE_string(fdefault_device);
 DECLARE_int32(fnum_non_cpu);
+DECLARE_string(fhlsl_codegen_type);
 
 using namespace nnfusion::async;
 
@@ -23,7 +24,8 @@ Stream::Stream(size_t stream_id,
     }
     else
     {
-        if (is_default_stream() && (device_type == CUDA_GPU || device_type == ROCM_GPU))
+        if (is_default_stream() && (device_type == CUDA_GPU || device_type == ROCM_GPU ||
+                                    FLAGS_fhlsl_codegen_type != "csharp"))
         {
             m_name = "0";
         }
@@ -372,7 +374,14 @@ LanguageUnit_p HLSLAsyncManager::emit_stream_init()
             // HLSL default stream(0) need not to be created.
             if (!stream->is_default_stream())
             {
-                lu << "var " << stream->get_name() << " = dxStreamCreate();\n";
+                if (FLAGS_fhlsl_codegen_type == "cpp")
+                {
+                    lu << "auto " << stream->get_name() << " = dxStreamCreate();\n";
+                }
+                else if (FLAGS_fhlsl_codegen_type == "csharp")
+                {
+                    lu << "var " << stream->get_name() << " = dxStreamCreate();\n";
+                }
             }
         }
     }
@@ -387,7 +396,14 @@ LanguageUnit_p HLSLAsyncManager::emit_event_init()
     {
         for (auto event : info.second)
         {
-            lu << "var " << event->get_name() << "= dxEventCreate();\n";
+            if (FLAGS_fhlsl_codegen_type == "cpp")
+            {
+                lu << "auto " << event->get_name() << "= dxEventCreate();\n";
+            }
+            else if (FLAGS_fhlsl_codegen_type == "csharp")
+            {
+                lu << "var " << event->get_name() << "= dxEventCreate();\n";
+            }
         }
     }
     return _lu;
@@ -404,10 +420,21 @@ LanguageUnit_p HLSLAsyncManager::emit_event_record(shared_ptr<Event> event)
     auto& lu = *_lu;
 
     if (event->get_stream()->is_default_stream())
-        lu << "dxEventRecord(" << event->get_name() << ", IntPtr.Zero);\n";
+    {
+        if (FLAGS_fhlsl_codegen_type == "cpp")
+        {
+            lu << "dxEventRecord(" << event->get_name() << ", 0);\n";
+        }
+        else if (FLAGS_fhlsl_codegen_type == "csharp")
+        {
+            lu << "dxEventRecord(" << event->get_name() << ", IntPtr.Zero);\n";
+        }
+    }
     else
+    {
         lu << "dxEventRecord(" << event->get_name() << ", " << event->get_stream()->get_name()
            << ");\n";
+    }
     // event->set_recorded();
 
     return _lu;

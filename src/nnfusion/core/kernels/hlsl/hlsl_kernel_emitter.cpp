@@ -7,7 +7,7 @@
 #include "nnfusion/util/logging.hpp"
 using namespace nnfusion;
 using namespace nnfusion::kernels;
-DECLARE_bool(fhlsl_csharp_codegen);
+DECLARE_string(fhlsl_codegen_type);
 
 LanguageUnit_p hlsl::HLSLKernelEmitter::emit_dependency()
 {
@@ -33,7 +33,7 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
     auto& lu = *_lu;
 
-    if (FLAGS_fhlsl_csharp_codegen)
+    if (FLAGS_fhlsl_codegen_type != "default")
     {
         vector<string> names;
         names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());

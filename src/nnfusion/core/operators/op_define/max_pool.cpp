@@ -86,6 +86,46 @@ void MaxPool::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
                                                                    m_data_format));
 }
 
+void MaxPool::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
+{
+    auto& input_shape = gnode->get_input_shape(0);
+    auto& output_shape = gnode->get_output_shape(0);
+    size_t ws = get_window_shape()[0];
+    for (auto w : get_window_shape())
+    {
+        if (w != ws)
+            return;
+    }
+    for (auto s : get_window_movement_strides())
+    {
+        if (s != ws)
+            return;
+    }
+
+    for (auto p : get_padding_below())
+    {
+        if (p != 0)
+            return;
+    }
+
+    for (auto p : get_padding_above())
+    {
+        if (p != 0)
+            return;
+    }
+
+    m_shared_memory.clear();
+    int channel = get_data_format() == "NCHW" ? 1 : 3;
+    m_shared_memory.clear();
+    for (size_t i = 0; i < output_shape.size(); i++)
+    {
+        if (i == channel || i == 0)
+            m_shared_memory.push_back(1);
+        else
+            m_shared_memory.push_back(ws);
+    }
+}
+
 MaxPoolBackprop::MaxPoolBackprop(const nnfusion::Shape& window_shape,
                                  const nnfusion::Strides& window_movement_strides,
                                  const nnfusion::Shape& padding_below,

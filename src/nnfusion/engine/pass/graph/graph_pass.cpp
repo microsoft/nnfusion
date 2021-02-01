@@ -18,6 +18,7 @@
 #include "multi_reshape_folding_pass.hpp"
 #include "op_inplace_pass.hpp"
 #include "pattern_substitution.hpp"
+#include "reduce_fusion_pass.hpp"
 #include "runtime_const_folding_pass.hpp"
 #include "vector_dot_transpose_pass.hpp"
 using namespace nnfusion::pass::graph;

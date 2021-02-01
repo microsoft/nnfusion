@@ -5,6 +5,7 @@
 #include "bertfusion_optimizer/attention_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/bertfusion_optimizer.hpp"
 #include "bertfusion_optimizer/embedlayernorm_fusion_optimizer.hpp"
+#include "bertfusion_optimizer/gelu_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/layernorm_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/skiplayernorm_fusion_optimizer.hpp"
 
@@ -15,10 +16,12 @@ DEFINE_bool(fattention_fusion, false, "");
 DEFINE_bool(flayernorm_fusion, false, "");
 DEFINE_bool(fembedlayernorm_fusion, false, "");
 DEFINE_bool(fskiplayernorm_fusion, false, "");
+DEFINE_bool(fgelu_fusion, false, "");
+DEFINE_bool(fenable_all_bert_fusion, false, "");
 
 bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
-    if (FLAGS_flayernorm_fusion)
+    if (FLAGS_flayernorm_fusion || FLAGS_fenable_all_bert_fusion)
     {
         auto optimizer = std::make_shared<LayerNormFusionOptimizer>(graph);
         if (!optimizer->Optimize())
@@ -31,7 +34,7 @@ bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph
         }
     }
 
-    if (FLAGS_fattention_fusion)
+    if (FLAGS_fattention_fusion || FLAGS_fenable_all_bert_fusion)
     {
         auto optimizer = std::make_shared<AttentionFusionOptimizer>(graph);
         if (!optimizer->Optimize())
@@ -44,7 +47,7 @@ bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph
         }
     }
 
-    if (FLAGS_fembedlayernorm_fusion)
+    if (FLAGS_fembedlayernorm_fusion || FLAGS_fenable_all_bert_fusion)
     {
         auto optimizer = std::make_shared<EmbedLayerNormFusionOptimizer>(graph);
         if (!optimizer->Optimize())
@@ -57,7 +60,7 @@ bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph
         }
     }
 
-    if (FLAGS_fskiplayernorm_fusion)
+    if (FLAGS_fskiplayernorm_fusion || FLAGS_fenable_all_bert_fusion)
     {
         auto optimizer = std::make_shared<SkipLayerNormFusionOptimizer>(graph);
         if (!optimizer->Optimize())
@@ -70,5 +73,17 @@ bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph
         }
     }
 
+    if (FLAGS_fgelu_fusion || FLAGS_fenable_all_bert_fusion)
+    {
+        auto optimizer = std::make_shared<GeluFusionOptimizer>(graph);
+        if (!optimizer->Optimize())
+        {
+            NNFUSION_LOG(NNFUSION_WARNING) << "GeluFusion Optimization failed.";
+        }
+        else
+        {
+            NNFUSION_LOG(INFO) << "GeluFusion Optimization Done.";
+        }
+    }
     return true;
 }

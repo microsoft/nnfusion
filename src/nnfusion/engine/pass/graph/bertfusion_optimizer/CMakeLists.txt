@@ -5,6 +5,7 @@
 set(SRC
    bertfusion_optimizer.cpp
    attention_fusion_optimizer.cpp
+   gelu_fusion_optimizer.cpp
    layernorm_fusion_optimizer.cpp
    embedlayernorm_fusion_optimizer.cpp
    skiplayernorm_fusion_optimizer.cpp

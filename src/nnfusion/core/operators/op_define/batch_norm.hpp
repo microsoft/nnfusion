@@ -82,7 +82,7 @@ namespace nnfusion
             BatchNormInference(double eps);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
-
+            void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override;
             double get_eps_value() const { return m_epsilon; }
         private:
             static constexpr size_t INPUT_GAMMA = 0;

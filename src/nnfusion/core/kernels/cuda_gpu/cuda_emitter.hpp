@@ -248,16 +248,21 @@ namespace nnfusion
                                         if (antares_output_shapes[i] !=
                                             ctx->outputs[i]->get_shape())
                                         {
+                                            NNFUSION_LOG(INFO)
+                                                << "NNFusion shape: "
+                                                << ctx->outputs[i]->get_shape()
+                                                << ", Antares shape: " << antares_output_shapes[i];
                                             flag_match = false;
                                             break;
                                         }
                                     }
                                 }
+
                                 if (!flag_match)
                                 {
                                     NNFUSION_LOG(ERROR)
                                         << "Infershapes of gnode " << ctx->gnode->get_name()
-                                        << " do not match in NNFusion and Antares, fallback";
+                                        << " do not match in NNFusion and Antares, fallback ";
                                     return;
                                 }
                             }
@@ -270,6 +275,16 @@ namespace nnfusion
                             if (annotation.find("|memcpy|") != string::npos)
                             {
                                 is_memcpy = true;
+                            }
+
+                            if (annotation.find("|inplace_wg}") != string::npos)
+                            {
+                                if (!ctx->annotations)
+                                    ctx->annotations = std::make_shared<Annotations>();
+                                // TODO: we use inplace_annotation to implement the reference_tensor, i.e., the
+                                // output 0 shares the same address with input 0
+                                // need to add a new annotation type or ref_tensor mechanism in the future
+                                ctx->annotations->add_in_place_oi_pair({0, 0, false});
                             }
                         }
                         if (ir.empty())

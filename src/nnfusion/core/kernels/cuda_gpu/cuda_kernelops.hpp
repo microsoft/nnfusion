@@ -307,7 +307,7 @@ namespace nnfusion
             struct CudaOpMap<nnfusion::op::Gelu>
             {
                 static constexpr const char* op = "gelu";
-                static constexpr const char* math_kernel = "x0 * normcdff(x0)";
+                static constexpr const char* math_kernel = "_Gelu(x0)";
             };
 
             template <>

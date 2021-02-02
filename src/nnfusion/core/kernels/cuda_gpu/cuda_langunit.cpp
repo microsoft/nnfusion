@@ -287,6 +287,19 @@ __device__ __forceinline__ OutT convert(InT x0)
 {
     return x0;
 }
+
+template <>
+__device__ __forceinline__ half convert(int64_t a)
+{
+    return 	__ll2half_rn((long long)a);
+}
+
+template <>
+__device__ __forceinline__ int64_t convert(half a)
+{
+    return 	__half2ll_rn(a);
+}
+
 )");
 
 LU_DEFINE_EXTEND(declaration::cuda_reduce_primitive,
@@ -1707,5 +1720,24 @@ __device__ inline half Rsqrt(const half& x) {
 #else
   return half(rsqrtf(float(x)));
 #endif
+}
+)");
+
+LU_DEFINE(declaration::math_Gelu, R"(
+template <typename T>
+__device__ __inline__ T _Normcdf(T a);
+
+template <>
+__device__ __inline__ float _Normcdf(float a) { return normcdff(a); }
+
+template <>
+__device__ __inline__ double _Normcdf(double a) { return normcdf(a); }
+
+template <>
+__device__ __inline__ half _Normcdf(half a) { return half(normcdff((float)a)); }
+
+template <typename T>
+__device__ __inline__ T _Gelu(T a) {
+  return a * _Normcdf(a);
 }
 )");

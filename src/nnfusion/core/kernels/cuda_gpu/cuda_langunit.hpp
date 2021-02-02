@@ -51,6 +51,7 @@ namespace nnfusion
             LU_DECLARE(ort_qkv_to_context);
             LU_DECLARE(cuda_convert_template);
             LU_DECLARE(math_Rsqrt);
+            LU_DECLARE(math_Gelu);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

@@ -62,6 +62,7 @@ namespace nnfusion
                                << "char* tmp_mem = new char[bytes];\n"
                                << "bin_file.read(tmp_mem, bytes);\n"
                                << "dxMemcpyHtoDAsync(output0, tmp_mem, bytes, 0);\n"
+                               << "delete []tmp_mem;\n"
                                << "bin_file.close();\n";
                     }
 

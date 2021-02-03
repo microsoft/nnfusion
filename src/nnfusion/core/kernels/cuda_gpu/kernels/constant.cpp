@@ -56,6 +56,7 @@ namespace nnfusion
                            << "bin_file.read(tmp_mem, " << op->get_data_size() << ");\n"
                            << "cudaMemcpyAsync(output0, tmp_mem, " << op->get_data_size()
                            << ", cudaMemcpyHostToDevice, stream);\n"
+                           << "delete []tmp_mem;\n"
                            << "bin_file.close();\n";
                     return _lu;
                 }

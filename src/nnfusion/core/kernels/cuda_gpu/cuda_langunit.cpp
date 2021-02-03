@@ -1901,9 +1901,3 @@ __device__ __forceinline__ T WARP_SHFL_DOWN(T value, unsigned int delta, int wid
 #endif
 }
 )");
-
-// add dependency
-declaration::cuda_layer_norm->require(declaration::warp);
-declaration::ort_softmax->require(declaration::warp);
-declaration::ort_layer_norm->require(declaration::math_Rsqrt);
-declaration::cuda_layer_norm->require(declaration::math_Rsqrt);

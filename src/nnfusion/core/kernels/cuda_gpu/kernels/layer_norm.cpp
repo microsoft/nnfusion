@@ -79,7 +79,8 @@ output0, output1, output2, input0, @n1@, @n2@, @expression1@@eps@@expression2@, 
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
                     _lu->require(header::cuda);
                     _lu->require(declaration::cuda_layer_norm);
-                    // declaration::cuda_layer_norm->require(declaration::math_Rsqrt);
+                    declaration::cuda_layer_norm->require(declaration::math_Rsqrt);
+                    declaration::cuda_layer_norm->require(declaration::warp);
                     return _lu;
                 }
             };

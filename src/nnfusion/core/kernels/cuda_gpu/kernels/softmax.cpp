@@ -129,7 +129,10 @@ LanguageUnit_p cuda::Softmax::emit_dependency()
     //_lu->require(declaration::cudnn_handle);
     _lu->require(macro::CUDNN_SAFE_CALL);
     if (D <= 1024 && D * dtype.size() <= 4096)
+    {
         _lu->require(declaration::ort_softmax);
+        declaration::ort_softmax->require(declaration::warp);
+    }
     return _lu;
 }
 

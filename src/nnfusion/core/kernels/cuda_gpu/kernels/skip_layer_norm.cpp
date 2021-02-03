@@ -29,7 +29,7 @@ LanguageUnit_p cuda::SkipLayerNorm::emit_function_body()
 
     auto code = nnfusion::op::create_code_from_template(
         R"(
-ComputeSkipLayerNorm(
+ComputeSkipLayerNorm<@dtype@>(
 stream,
 @hidden_size@,
 @element_count@,

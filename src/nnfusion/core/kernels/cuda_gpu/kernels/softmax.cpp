@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "softmax.hpp"
+#include "../cuda_cudnn.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 using namespace nnfusion;
@@ -13,7 +14,26 @@ cuda::Softmax::Softmax(shared_ptr<KernelContext> ctx)
     auto node = static_pointer_cast<nnfusion::op::Softmax>(ctx->gnode->get_op_ptr());
     input_shape = nnfusion::Shape(ctx->inputs[0]->get_shape());
     output_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
+    dtype = m_context->inputs[0]->get_element_type();
+    is_log_softmax = node->is_in_log_space();
     algorithm = node->is_in_log_space() ? "CUDNN_SOFTMAX_LOG" : "CUDNN_SOFTMAX_ACCURATE";
+    auto axisset = node->get_axes();
+    size_t axis = output_shape.size() - 1;
+    if (axisset.size() == 1)
+        axis = *std::begin(axisset);
+    N = 1;
+    D = 1;
+    for (size_t i = 0; i < input_shape.size(); i++)
+    {
+        if (i < axis)
+        {
+            N *= input_shape[i];
+        }
+        else
+        {
+            D *= input_shape[i];
+        }
+    }
 }
 
 LanguageUnit_p
@@ -22,7 +42,8 @@ LanguageUnit_p
 {
     LanguageUnit_p _lu(new LanguageUnit);
     auto& lu = *_lu;
-    string data_type = "CUDNN_DATA_FLOAT"; //cuda::get_cudnn_datatype(type);
+    // element::Type type = m_context->inputs[0]->get_element_type();
+    string data_type = cuda::get_cudnn_datatype(dtype);
     string tensor_format = "CUDNN_TENSOR_NCHW";
     lu << "cudnnTensorDescriptor_t " << desc << ";\n";
     lu << "CUDNN_SAFE_CALL(cudnnCreateTensorDescriptor(&" << desc << "));\n";
@@ -59,6 +80,21 @@ LanguageUnit_p cuda::Softmax::emit_function_body()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
 
+    if (D <= 1024 && D * dtype.size() <= 4096)
+    {
+        auto code = nnfusion::op::create_code_from_template(
+            R"(
+dispatch_softmax_forward<@dtype@, @dtype@, float, @is_log_softmax@>(stream, output0, input0, @D@, @D@, @N@);
+    )",
+            {{"dtype", (dtype == element::f16) ? "half" : "float"},
+             {"is_log_softmax", is_log_softmax},
+             {"D", D},
+             {"N", N}});
+
+        lu << code << "\n";
+        return _lu;
+    }
+
     auto input_tensor_desc =
         cudnn_tensor_descriptor_from_shape_for_softmax(input_shape, "input_tensor_desc");
     auto output_tensor_desc =
@@ -92,6 +128,8 @@ LanguageUnit_p cuda::Softmax::emit_dependency()
     _lu->require(header::cudnn);
     //_lu->require(declaration::cudnn_handle);
     _lu->require(macro::CUDNN_SAFE_CALL);
+    if (D <= 1024 && D * dtype.size() <= 4096)
+        _lu->require(declaration::ort_softmax);
     return _lu;
 }
 
@@ -125,9 +163,16 @@ LanguageUnit_p cuda::Softmax::emit_function_signature()
         ss << m_context->tensors[i]->get_name();
         params.push_back(ss.str());
     }
-
-    lu << "void "
-       << "(cudnnHandle_t cudnn_handle, " << join(params, ", ") << ")";
+    if (D <= 1024 && D * dtype.size() <= 4096)
+    {
+        lu << "void "
+           << "(cudaStream_t stream, " << join(params, ", ") << ")";
+    }
+    else
+    {
+        lu << "void "
+           << "(cudnnHandle_t cudnn_handle, " << join(params, ", ") << ")";
+    }
     return _lu;
 }
 

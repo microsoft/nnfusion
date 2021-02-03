@@ -28,6 +28,9 @@ namespace nnfusion
                 shared_ptr<KernelContext> kernel_ctx;
                 nnfusion::Shape input_shape, output_shape;
                 std::string algorithm;
+                int N, D;
+                element::Type dtype;
+                bool is_log_softmax;
             };
 
             class SoftmaxGrad : public CudaLibEmitter

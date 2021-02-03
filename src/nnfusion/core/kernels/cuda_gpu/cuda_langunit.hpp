@@ -52,6 +52,7 @@ namespace nnfusion
             LU_DECLARE(cuda_convert_template);
             LU_DECLARE(math_Rsqrt);
             LU_DECLARE(math_Gelu);
+            LU_DECLARE(ort_softmax);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

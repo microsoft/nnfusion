@@ -35,21 +35,28 @@ BlockFusionCudaCodegen::BlockFusionCudaCodegen(shared_ptr<KernelContext> ctx,
     }
 
     // dedupe block_kernels
+    // key: signature (data type) + device_function_body (kernel code)
     if (this->is_dedupe_block_kernels == true)
     {
         for (int kernel_id = 0; kernel_id < block_executor_program.block_kernels.size();
              kernel_id++)
         {
-            std::string block_kernel_body = block_executor_program.block_kernels[kernel_id]
-                                                ->emit_device_function_body()
-                                                ->get_code();
+            std::string block_kernel_key = block_executor_program.block_kernels[kernel_id]
+                                               ->get_or_emit_source()
+                                               ->signature_unit->get_code() +
+                                           block_executor_program.block_kernels[kernel_id]
+                                               ->emit_device_function_body()
+                                               ->get_code();
             for (int deduped_kernel_id = 0; deduped_kernel_id < kernel_id; deduped_kernel_id++)
             {
-                std::string deduped_kernel_body =
+                std::string deduped_kernel_key =
+                    block_executor_program.block_kernels[deduped_kernel_id]
+                        ->get_or_emit_source()
+                        ->signature_unit->get_code() +
                     block_executor_program.block_kernels[deduped_kernel_id]
                         ->emit_device_function_body()
                         ->get_code();
-                if (block_kernel_body == deduped_kernel_body)
+                if (block_kernel_key == deduped_kernel_key)
                 {
                     deduped_kernel_id_map[kernel_id] = deduped_kernel_id;
                     break;

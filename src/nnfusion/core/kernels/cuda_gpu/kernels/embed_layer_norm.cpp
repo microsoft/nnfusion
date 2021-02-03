@@ -127,7 +127,6 @@ void EmbedSkipLayerNorm(
 }
     )";
     ort_embed_layer_norm->require(declaration::ort_layer_norm);
-    declaration::ort_layer_norm->require(declaration::math_Rsqrt);
     _lu->require(ort_embed_layer_norm);
 
     LanguageUnit_p ort_compute_mask_index(new LanguageUnit("declaration::ort_compute_mask_index"));

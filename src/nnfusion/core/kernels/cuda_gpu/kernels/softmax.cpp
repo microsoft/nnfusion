@@ -132,6 +132,7 @@ LanguageUnit_p cuda::Softmax::emit_dependency()
     {
         _lu->require(declaration::ort_softmax);
         declaration::ort_softmax->require(declaration::warp);
+        _lu->require(header::limits);
     }
     return _lu;
 }

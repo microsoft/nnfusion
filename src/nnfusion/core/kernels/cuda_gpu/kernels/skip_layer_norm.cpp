@@ -131,7 +131,7 @@ void ComputeSkipLayerNorm(
 }
     )";
     ort_skip_layer_norm->require(declaration::ort_layer_norm);
-    // declaration::ort_layer_norm->require(declaration::math_Rsqrt);
+    declaration::ort_layer_norm->require(declaration::math_Rsqrt);
     _lu->require(ort_skip_layer_norm);
     return _lu;
 }

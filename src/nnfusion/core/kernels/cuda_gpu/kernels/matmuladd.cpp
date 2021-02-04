@@ -38,7 +38,7 @@ LanguageUnit_p cuda::MatMulAdd::emit_function_body()
     auto code = nnfusion::op::create_code_from_template(
         R"(
 const @dtype@ alpha = 1.0;
-const @dtype@ beta = 0;
+const @dtype@ beta = 1.0;
 CUBLAS_SAFE_CALL(@cublasgemm@(cublas_handle, 
                 @transb@, 
                 @transa@,
@@ -50,11 +50,11 @@ if (output0 != input2)
 {
     cudaStream_t stream = nullptr;
     CUBLAS_SAFE_CALL(cublasGetStream(cublas_handle, &stream));
-    CUDA_SAFE_CALL(cudaMemcpyAsync(output0, input2, @buffer@, cudaMemcpyDeviceToDevice, stream));\n";
+    CUDA_SAFE_CALL(cudaMemcpyAsync(output0, input2, @buffer@, cudaMemcpyDeviceToDevice, stream));
 }
 
     )",
-        {{"@cublasgemm@", (dtype == element::f16) ? "cublasHgemm" : "cublasSgemm"},
+        {{"cublasgemm", (dtype == element::f16) ? "cublasHgemm" : "cublasSgemm"},
          {"transb", trans_B ? "CUBLAS_OP_T" : "CUBLAS_OP_N"},
          {"transa", trans_A ? "CUBLAS_OP_T" : "CUBLAS_OP_N"},
          {"dtype", (dtype == element::f16) ? "half" : "float"},

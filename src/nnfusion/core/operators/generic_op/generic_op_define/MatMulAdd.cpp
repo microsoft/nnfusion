@@ -4,8 +4,8 @@
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 REGISTER_OP(MatMulAdd)
-    .attr<bool>("Trans_A", false)
-    .attr<bool>("Trans_B", false)
+    .attr<bool>("trans_A", false)
+    .attr<bool>("trans_B", false)
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         //AB + C
         auto generic_op = static_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
@@ -31,5 +31,5 @@ REGISTER_OP(MatMulAdd)
         NNFUSION_CHECK(C_shape[0] == m && C_shape[1] == n);
 
         gnode->set_output_type_and_shape(
-            0, gnode->get_input_element_type(0), gnode->get_input_shape(0));
+            0, gnode->get_input_element_type(2), gnode->get_input_shape(2));
     });

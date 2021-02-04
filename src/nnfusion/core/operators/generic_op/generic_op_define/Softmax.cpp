@@ -29,7 +29,7 @@ REGISTER_OP(Softmax)
         }
 
         auto expression_template =
-            R"( temp0@temp_layout@ >=! input0@input0_layout@; temp1@temp_layout@ +=! (input0@input0_layout@ - temp0@temp_layout@).call(`exp`); output0@input0_layout@ = (input0@input0_layout@  - temp0@temp_layout@).call(`exp`) / temp1@temp_layout@; )";
+            R"( mediate0@temp_layout@ >=! input0@input0_layout@; mediate1@temp_layout@ +=! (input0@input0_layout@ - mediate0@temp_layout@).call(`exp`); output0@input0_layout@ = (input0@input0_layout@  - mediate0@temp_layout@).call(`exp`) / mediate1@temp_layout@; )";
 
         std::string expression_code = op::create_code_from_template(
             expression_template,

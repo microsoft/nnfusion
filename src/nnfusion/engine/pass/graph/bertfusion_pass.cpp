@@ -7,6 +7,7 @@
 #include "bertfusion_optimizer/embedlayernorm_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/gelu_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/layernorm_fusion_optimizer.hpp"
+#include "bertfusion_optimizer/matmuladd_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/skiplayernorm_fusion_optimizer.hpp"
 
 using namespace nnfusion;
@@ -17,6 +18,7 @@ DEFINE_bool(flayernorm_fusion, false, "");
 DEFINE_bool(fembedlayernorm_fusion, false, "");
 DEFINE_bool(fskiplayernorm_fusion, false, "");
 DEFINE_bool(fgelu_fusion, false, "");
+DEFINE_bool(fmatmuladd_fusion, false, "");
 DEFINE_bool(fenable_all_bert_fusion, false, "");
 
 bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
@@ -83,6 +85,19 @@ bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph
         else
         {
             NNFUSION_LOG(INFO) << "GeluFusion Optimization Done.";
+        }
+    }
+
+    if (FLAGS_fmatmuladd_fusion || FLAGS_fenable_all_bert_fusion)
+    {
+        auto optimizer = std::make_shared<MatMulAddFusionOptimizer>(graph);
+        if (!optimizer->Optimize())
+        {
+            NNFUSION_LOG(NNFUSION_WARNING) << "MatMulAddFusion Optimization failed.";
+        }
+        else
+        {
+            NNFUSION_LOG(INFO) << "MatMulAddFusion Optimization Done.";
         }
     }
     return true;

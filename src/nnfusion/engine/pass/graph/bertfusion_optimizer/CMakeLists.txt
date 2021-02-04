@@ -9,6 +9,7 @@ set(SRC
    layernorm_fusion_optimizer.cpp
    embedlayernorm_fusion_optimizer.cpp
    skiplayernorm_fusion_optimizer.cpp
+   matmuladd_fusion_optimizer.cpp
 )
 
 add_library(nnfusion_engine_pass_graph_bertfusion STATIC ${SRC})

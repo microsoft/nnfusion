@@ -277,7 +277,7 @@ namespace nnfusion
                                 is_memcpy = true;
                             }
 
-                            if (annotation.find("|inplace_wg}") != string::npos)
+                            if (annotation.find("|inplace_wg|") != string::npos)
                             {
                                 if (!ctx->annotations)
                                     ctx->annotations = std::make_shared<Annotations>();

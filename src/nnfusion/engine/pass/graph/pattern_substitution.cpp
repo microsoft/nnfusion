@@ -6,6 +6,7 @@
 #include "nnfusion/common/common.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/core/operators/op_define/constant.hpp"
+#include "nnfusion/core/operators/op_define/fused.hpp"
 #include "nnfusion/core/operators/op_define/noop.hpp"
 #include "nnfusion/engine/cache/manager.hpp"
 #include "nnfusion/engine/op.hpp"
@@ -39,7 +40,12 @@ REGISTER_OP(Matched_Pattern)
         // auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         // Shape out_shape = op->localOpConfig.getRoot()["out_shape"];
         // gnode->set_output_type_and_shape(0, element::f32, out_shape);
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        auto _op = static_pointer_cast<nnfusion::op::Fused>(curr->get_op_ptr());
+        return _op->get_fused_ir2() + _op->get_plan_rule();
     });
+;
 
 namespace
 {

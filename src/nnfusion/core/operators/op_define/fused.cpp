@@ -80,14 +80,14 @@ std::string retarget_expr_mediates(std::string expr,
 void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes)
 {
     // DEBUG: Preprint the IR list of all gnodes
-    NNFUSION_LOG(INFO) << "Fusion IR list";
-    for (auto& m_node : gnodes)
-    {
-        auto& configs = get_op_configs();
-        auto it = configs.find(m_node->get_op_ptr()->get_op_type());
-        NNFUSION_CHECK(it->second.f_translate_v2) << m_node->get_op_type();
-        NNFUSION_LOG(INFO) << it->second.f_translate_v2(m_node);
-    }
+    // NNFUSION_LOG(INFO) << "Fusion IR list";
+    // for (auto& m_node : gnodes)
+    // {
+    //     auto& configs = get_op_configs();
+    //     auto it = configs.find(m_node->get_op_ptr()->get_op_type());
+    //     NNFUSION_CHECK(it->second.f_translate_v2) << m_node->get_op_type();
+    //     NNFUSION_LOG(INFO) << it->second.f_translate_v2(m_node);
+    // }
 
     std::unordered_map<std::shared_ptr<graph::GNode>, std::vector<std::string>> outputs_info_dict;
     std::unordered_map<std::shared_ptr<graph::GNode>, std::vector<std::string>> inputs_info_dict;
@@ -167,13 +167,27 @@ void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes)
         fused_op_ir2 = fused_op_ir2 + mediate_expr.substr(0, rule_split);
         if (rule_split != std::string::npos)
         {
-            plan_rule = plan_rule + mediate_expr.substr(rule_split + 5);
+            auto extra_plan = mediate_expr.substr(rule_split + 5);
+            if (extra_plan.find_first_not_of(" ") != std::string::npos)
+                plan_rules.push_back(extra_plan);
         }
     }
 
     // DEBUG: Print fused IR
     // NNFUSION_LOG(INFO) << fused_op_ir2;
-
+}
+std::string Fused::get_plan_rule()
+{
     // plan_rule = "## @: " + plan_rule;
-    plan_rule = "";
+    std::string plan_expr = "## @: ";
+    if (plan_rules.size() == 1)
+    {
+        return plan_expr + plan_rules[0];
+    }
+    else if (plan_rules.size() > 1)
+    {
+        // return plan_expr + "plan/multi_reduce";
+        return plan_expr;
+    }
+    return plan_expr;
 }

@@ -174,6 +174,46 @@ Convolution::Convolution()
 {
 }
 
+void Convolution::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
+{
+    for (auto s : get_window_movement_strides())
+    {
+        if (s != 1)
+            return;
+    }
+
+    for (auto d : get_window_dilation_strides())
+    {
+        if (d != 1)
+            return;
+    }
+
+    for (auto p : get_padding_below())
+    {
+        if (p != 0)
+            return;
+    }
+
+    for (auto p : get_padding_above())
+    {
+        if (p != 0)
+            return;
+    }
+
+    m_shared_memory.clear();
+    const Shape& input_shape = gnode->get_input_shape(0);
+    int channel = get_data_format() == "NCHW" ? 1 : 3;
+    auto input_channel_count = input_shape[channel];
+
+    for (size_t i = 0; i < gnode->get_output_shape(0).size(); i++)
+    {
+        if (i == channel)
+            m_shared_memory.push_back(input_channel_count);
+        else
+            m_shared_memory.push_back(1);
+    }
+}
+
 ConvolutionBackpropData::ConvolutionBackpropData(
     const Shape& data_batch_shape,
     const nnfusion::Strides& window_movement_strides_forward,

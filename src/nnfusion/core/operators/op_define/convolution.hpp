@@ -99,7 +99,7 @@ namespace nnfusion
             Convolution();
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
-
+            void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override;
             /// \return The window movement strides.
             const nnfusion::Strides& get_window_movement_strides() const
             {

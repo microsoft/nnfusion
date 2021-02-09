@@ -101,6 +101,61 @@ namespace nnfusion
                 bool is_memcpy = false;
             };
 
+            class CustomCPUKernelEmitter : public CpuKernelEmitter
+            {
+            public:
+                CustomCPUKernelEmitter(shared_ptr<KernelContext> ctx)
+                    : CpuKernelEmitter(ctx)
+                {
+                    auto op_config =
+                        nnfusion::op::lookup_op_config(m_context->gnode->get_op_type());
+                    is_memcpy = op_config.get("is_memcpy");
+                }
+
+                virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
+                    shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr) override
+                {
+                    if (kernel_entry == nullptr)
+                    {
+                        kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
+                    }
+                    if (kernel_entry->source == "")
+                    {
+                        kernel_entry->source = "Custom";
+                    }
+                    return CpuKernelEmitter::get_kernel_cache_entry(kernel_entry);
+                }
+
+                bool is_eliminative() override
+                {
+                    return (is_memcpy &&
+                            m_context->inputs[0]->is_same_address(m_context->outputs[0]));
+                }
+                LanguageUnit_p emit_function_body() override
+                {
+                    std::string body_code;
+                    auto op_config =
+                        nnfusion::op::lookup_op_config(m_context->gnode->get_op_type());
+                    if (op_config.f_kernel_funcs.count("GENERIC_CPU") > 0)
+                        body_code = op_config.f_kernel_funcs["GENERIC_CPU"](m_context->gnode);
+                    if (body_code == "")
+                        return nullptr;
+                    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+                    auto& lu = *_lu;
+                    lu.block_begin();
+                    lu << body_code << "\n";
+                    lu.block_end();
+                    return _lu;
+                }
+                LanguageUnit_p emit_dependency() override
+                {
+                    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+                    return _lu;
+                }
+
+                bool is_memcpy = false;
+            };
+
             class SimdKernelEmitter : public CpuKernelEmitter
             {
             public:

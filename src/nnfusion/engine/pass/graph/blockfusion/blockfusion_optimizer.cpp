@@ -39,11 +39,6 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
 
     m_kernel_db = std::make_shared<cache::KernelCacheManager>();
     m_db_ready = m_kernel_db->is_valid() ? true : false;
-
-    if (m_device_type == "ROCm")
-    {
-        MAX_GROUP = 10;
-    }
 }
 
 bool BlockFusionWavefrontOptimizer::Optimize()
@@ -73,10 +68,12 @@ bool BlockFusionWavefrontOptimizer::Optimize()
             case 1:
                 // legacy implementation of group split is not compatible with group_sync
                 // codes researved for ROCm
+                // TODO: need to refactor the following implementation
                 NNFUSION_CHECK(m_device_type == "ROCm");
                 auto nodes = group->nodes;
                 auto sub_group = group->sub_group;
                 auto block_kernels = group->block_kernels;
+                auto duration = group->duration;
                 std::shared_ptr<FusionGroup> sub_group_left = std::make_shared<FusionGroup>();
                 std::shared_ptr<FusionGroup> sub_group_right = std::make_shared<FusionGroup>();
                 size_t group_index = sub_group.size() / 2;
@@ -92,6 +89,10 @@ bool BlockFusionWavefrontOptimizer::Optimize()
                         block_kernels.begin(), block_kernels.begin() + node_index);
                     sub_group_right->block_kernels = std::vector<std::shared_ptr<KernelEmitter>>(
                         block_kernels.begin() + node_index, block_kernels.end());
+                    sub_group_left->duration =
+                        std::vector<float>(duration.begin(), duration.begin() + node_index);
+                    sub_group_right->duration =
+                        std::vector<float>(duration.begin() + node_index, duration.end());
                     if (FuseGroupOnGraph(sub_group_left) != 1)
                     {
                         if (FuseGroupOnGraph(sub_group_right) == 1)

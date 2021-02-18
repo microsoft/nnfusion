@@ -34,6 +34,7 @@ namespace nnfusion
             Concat(size_t concatenation_axis);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
+            void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override;
 
             /// \return The concatenation axis.
             size_t get_concatenation_axis() const { return m_concatenation_axis; }

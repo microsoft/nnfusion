@@ -31,6 +31,7 @@ namespace nnfusion
             ElementwiseArithmetic(const std::string& node_type);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
+            void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override;
         };
     }
 }

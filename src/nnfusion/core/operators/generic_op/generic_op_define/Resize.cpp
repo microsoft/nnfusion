@@ -44,7 +44,10 @@ REGISTER_OP(Resize)
         std::string cond;
         for (int d = 0; d < input_layout.size(); ++d)
         {
-            input_layout[d] = input_layout[d] + " // " + to_string(int(scales[d]));
+            if(scales[d] > 1)
+                input_layout[d] = input_layout[d] + " // " + to_string(int(scales[d]));
+            else
+                input_layout[d] = input_layout[d] + " * " + to_string(int(1 / scales[d]));
             cond += (cond.empty() ? "" : ", ") + output_layout[d] + " in " + to_string(output_shape[d]);
         }
         

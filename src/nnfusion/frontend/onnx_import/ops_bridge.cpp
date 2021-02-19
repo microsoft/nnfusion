@@ -70,6 +70,7 @@
 #include "op/transpose.hpp"
 #include "op/unaryop.hpp"
 #include "op/unsqueeze.hpp"
+#include "op/where.hpp"
 
 #include "ops_bridge.hpp"
 
@@ -265,6 +266,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ConvTranspose", 1, TranslateConvTransposeOp);
                 REGISTER_OPERATOR("Resize", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);
+                REGISTER_OPERATOR("Where", 1, TranslateWhereOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

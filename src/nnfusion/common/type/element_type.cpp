@@ -59,7 +59,7 @@ bool element::Type::nnfusion_element_type_to_dtype_string(const element::Type& n
                                                           std::string& dtype)
 {
     if (ng_et == element::boolean)
-        dtype = "char";
+        dtype = "int8";
     else if (ng_et == element::character)
         dtype = "char";
     else if (ng_et == element::f16)

@@ -77,6 +77,12 @@ bool OpInplacePass::run_on_graph(std::shared_ptr<Graph>& graph)
             AddInplace(op, 0, 0, false);
         }
 
+        else if (node->get_op_type() == "MatMulAdd")
+        {
+            auto op = std::dynamic_pointer_cast<GenericOp>(node->get_op_ptr());
+            AddInplace(op, 0, 2, false);
+        }
+
         else if (nnfusion::op::get_annotation(nnfusion::op::get_translation(node))
                      .find("|memcpy|") != string::npos)
         {

@@ -211,7 +211,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);
                 REGISTER_OPERATOR("Pow", 1, TranslateBinaryOp<op::Power>);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
-                REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
+                // REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
                 //REGISTER_OPERATOR("Reciprocal", 1, reciprocal);
                 //REGISTER_OPERATOR("ReduceLogSum", 1, reduce_log_sum);
                 //REGISTER_OPERATOR("ReduceLogSumExp", 1, reduce_log_sum_exp);

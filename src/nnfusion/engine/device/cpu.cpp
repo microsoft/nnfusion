@@ -43,8 +43,8 @@ CpuEngine::CpuEngine()
 {
     g_passes->push_back(make_shared<CSEPass>());
     g_passes->push_back(make_shared<AutodiffPass>());
-    g_passes->push_back(make_shared<BertFusionPass>());
     g_passes->push_back(make_shared<GradientWeightMappingPass>());
+    g_passes->push_back(make_shared<BertFusionPass>());
     g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
     g_passes->push_back(make_shared<MultiReshapeFoldingPass>());
     g_passes->push_back(make_shared<VectorDotTransposePass>());

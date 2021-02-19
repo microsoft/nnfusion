@@ -45,6 +45,7 @@ namespace nnfusion
                     GetorCreateMaskIndex(std::shared_ptr<nnfusion::graph::GNode> mask_input);
 
                 std::map<std::string, std::shared_ptr<nnfusion::graph::GNode>> mask_index_map;
+                std::map<std::string, std::shared_ptr<nnfusion::graph::GNode>> qkv_weight_map;
             };
 
         } // namespace graph

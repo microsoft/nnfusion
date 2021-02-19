@@ -320,7 +320,15 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
     auto v_weight = v_dot->get_in_edge(1)->get_src();
     size_t hidden_size = input_node->get_output_shape(0)[2];
     auto qkv_weight_node = MergeQkvWeights(q_weight, k_weight, v_weight, hidden_size, true);
-    bertfusion_group->nodes_to_remove.insert({q_weight, k_weight, v_weight});
+    std::vector<std::shared_ptr<GNode>> qkv_weights{q_weight, k_weight, v_weight};
+    for (auto weight : qkv_weights)
+    {
+        if (weight->get_out_edges().size() == 1)
+        {
+            bertfusion_group->nodes_to_remove.insert(weight);
+        }
+    }
+    // bertfusion_group->nodes_to_remove.insert({q_weight, k_weight, v_weight});
 
     // 3. merge qkv bias
     auto q_bias_broadcast = q_add->get_in_edge(1)->get_src();
@@ -330,8 +338,20 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
     auto v_bias_broadcast = v_add->get_in_edge(1)->get_src();
     auto v_bias = v_bias_broadcast->get_in_edge(0)->get_src();
     auto qkv_bias_node = MergeQkvWeights(q_bias, k_bias, v_bias, hidden_size, false);
-    bertfusion_group->nodes_to_remove.insert(
-        {q_bias, k_bias, v_bias, q_bias_broadcast, k_bias_broadcast, v_bias_broadcast});
+
+    std::vector<std::shared_ptr<GNode>> qkv_bias_broadcast{
+        q_bias_broadcast, k_bias_broadcast, k_bias_broadcast};
+
+    for (auto bias : qkv_bias_broadcast)
+    {
+        if (bias->get_out_edges().size() == 1)
+        {
+            bertfusion_group->nodes_to_remove.insert(bias);
+        }
+    }
+
+    // bertfusion_group->nodes_to_remove.insert(
+    //     {q_bias, k_bias, v_bias, q_bias_broadcast, k_bias_broadcast, k_bias_broadcast});
 
     // 4. create broadcast node
     auto broadcasted_op = std::make_shared<op::Broadcast>(
@@ -386,7 +406,24 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
         }
     }
 
-    return RemoveNodes(bertfusion_group->nodes_to_remove);
+    if (!RemoveNodes(bertfusion_group->nodes_to_remove))
+    {
+        NNFUSION_LOG(NNFUSION_WARNING) << "remove nodes failed.";
+    }
+    std::unordered_set<std::shared_ptr<GNode>> remove_at_last;
+    if (q_bias->get_out_edges().size() == 0)
+    {
+        remove_at_last.insert(q_bias);
+    }
+    if (k_bias->get_out_edges().size() == 0)
+    {
+        remove_at_last.insert(k_bias);
+    }
+    if (v_bias->get_out_edges().size() == 0)
+    {
+        remove_at_last.insert(v_bias);
+    }
+    return RemoveNodes(remove_at_last);
 }
 
 std::shared_ptr<GNode> AttentionFusionOptimizer::MergeQkvWeights(std::shared_ptr<GNode> q_weight,
@@ -395,6 +432,13 @@ std::shared_ptr<GNode> AttentionFusionOptimizer::MergeQkvWeights(std::shared_ptr
                                                                  size_t hidden_size,
                                                                  bool is_matmul)
 {
+    // Lookup in map, and return the mask index if created.
+    std::string name = q_weight->get_name() + k_weight->get_name() + v_weight->get_name();
+    auto search = qkv_weight_map.find(name);
+    if (search != qkv_weight_map.end())
+    {
+        return search->second;
+    }
     auto q_weight_op = std::dynamic_pointer_cast<op::Constant>(q_weight->get_op_ptr());
     auto k_weight_op = std::dynamic_pointer_cast<op::Constant>(k_weight->get_op_ptr());
     auto v_weight_op = std::dynamic_pointer_cast<op::Constant>(v_weight->get_op_ptr());
@@ -432,6 +476,8 @@ std::shared_ptr<GNode> AttentionFusionOptimizer::MergeQkvWeights(std::shared_ptr
     new_qkv_weight_op->set_name("mergedqkv" + q_weight_op->get_name());
     std::shared_ptr<GNode> new_qkv_weight_gnode =
         m_graph->add_node_and_edge(new_qkv_weight_op, GNodeVector());
+    qkv_weight_map.insert(
+        std::pair<std::string, std::shared_ptr<GNode>>(name, new_qkv_weight_gnode));
     return new_qkv_weight_gnode;
 }
 

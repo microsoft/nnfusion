@@ -61,7 +61,7 @@ namespace nnfusion
                 // {"Convert", cuda_op("convert<std::remove_reference<decltype(*input0)>::type, std::remove_reference<decltype(*output0)>::type>", "x0", "")},
                 {"Equal", cuda_op("equal", "x0 == x1", "")},
                 {"NotEqual", cuda_op("not_equal", "x0 != x1", "")},
-                {"Gelu", cuda_op("gelu", "x0 * normcdff(x0)", "")},
+                {"Gelu", cuda_op("gelu", "_Gelu(x0)", "")},
                 {"Greater", cuda_op("greater", "x0 > x1", "")},
                 {"GreaterEq", cuda_op("greater_equal", "x0 >= x1", "")},
                 {"Less",

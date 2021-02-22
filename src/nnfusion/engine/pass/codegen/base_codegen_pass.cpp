@@ -277,3 +277,29 @@ std::pair<LanguageUnit_p, LanguageUnit_p>
         projgen->lup_exit->unit_vec.push_front(lup_free_at_last);
     return std::make_pair(lup_alloc, lup_free);
 }
+
+nnfusion::LanguageUnit_p BaseCodegenPass::codegen_mem_ref(KernelEmitter::Pointer kernel)
+{
+    if (!kernel || FLAGS_fcustomized_mem_imp)
+        return nullptr;
+    LanguageUnit_p _lu(new LanguageUnit(kernel->get_function_name() + "_mem_ref"));
+    auto& lu = *_lu;
+    bool empty = true;
+    if (auto annotations = kernel->m_context->annotations)
+    {
+        for (auto oi_pair : annotations->get_in_place_oi_pairs())
+        {
+            if (oi_pair.force_inplace == true)
+            {
+                auto input = kernel->m_context->inputs[oi_pair.input];
+                auto output = kernel->m_context->outputs[oi_pair.output];
+                lu << output->get_name() << " = " << input->get_name() << ";\n";
+                empty = false;
+            }
+        }
+    }
+
+    if (empty)
+        return nullptr;
+    return _lu;
+}

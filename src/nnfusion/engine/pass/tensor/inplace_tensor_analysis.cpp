@@ -253,10 +253,10 @@ bool InplaceTensorAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
                                 continue;
                             }
 
-                            if (input_gnode->is_parameter())
-                            {
-                                continue;
-                            }
+                            // if (input_gnode->is_parameter())
+                            // {
+                            //     continue;
+                            // }
 
                             // skip pair with constant output tensor, as this might be used by runtime constant folding
                             if (output->is_constant())
@@ -269,7 +269,7 @@ bool InplaceTensorAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
                             // Otherwise, it is safe to do inplace reuse.
                             if (ins->liveness_new_list.count(output) != 0)
                             {
-                                if (!oi_pair.destructive ||
+                                if (oi_pair.force_inplace || !oi_pair.destructive ||
                                     ///\todo uncomment below after correctness
                                     // if ((!oi_pair.destructive && !output->is_persistent()) ||
                                     (!input_gnode->is_constant() && !input->is_persistent() &&

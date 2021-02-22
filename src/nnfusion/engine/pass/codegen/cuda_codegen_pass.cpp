@@ -578,6 +578,10 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         }
     }
 
+    auto mem_ref = codegen_mem_ref(kernel);
+    if (mem_ref != nullptr)
+        lu << codegen_mem_ref(kernel)->get_code();
+
     if (ins->name() == "Memcpy")
     {
         //string stream_name = async_info.execution_stream->get_name();

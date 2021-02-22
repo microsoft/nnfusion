@@ -297,6 +297,13 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
 
         for (auto tensor : m_allocated_tensors)
         {
+            if (tensor->get_pool_offset() == SIZE_MAX)
+            {
+                NNFUSION_LOG(NNFUSION_WARNING)
+                    << tensor->get_name()
+                    << " may refer an external tensor, nnfusion omits its memory allocation.";
+                lu << "// ";
+            }
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
             lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
                << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
@@ -375,6 +382,13 @@ LanguageUnit_p nnfusion::HostMemoryAllocator::emit_memory_alloc()
         for (auto tensor : m_allocated_tensors)
         {
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
+            if (tensor->get_pool_offset() == SIZE_MAX)
+            {
+                NNFUSION_LOG(NNFUSION_WARNING)
+                    << tensor->get_name()
+                    << " may refer an external tensor, nnfusion omits its memory allocation.";
+                lu << "// ";
+            }
             lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
                << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
                << ");\n";
@@ -446,6 +460,13 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
         for (auto tensor : m_allocated_tensors)
         {
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
+            if (tensor->get_pool_offset() == SIZE_MAX)
+            {
+                NNFUSION_LOG(NNFUSION_WARNING)
+                    << tensor->get_name()
+                    << " may refer an external tensor, nnfusion omits its memory allocation.";
+                lu << "// ";
+            }
             if (FLAGS_fhlsl_codegen_type == "cpp")
             {
                 lu << tensor->get_name() << " = (char*)" << this->get_name() << "_memory_pool + "

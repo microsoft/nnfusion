@@ -253,10 +253,10 @@ bool InplaceTensorAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
                                 continue;
                             }
 
-                            // if (input_gnode->is_parameter())
-                            // {
-                            //     continue;
-                            // }
+                            if (input_gnode->is_parameter() && !oi_pair.force_inplace)
+                            {
+                                continue;
+                            }
 
                             // skip pair with constant output tensor, as this might be used by runtime constant folding
                             if (output->is_constant())

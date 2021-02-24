@@ -94,8 +94,6 @@ REGISTER_OP(DepthwiseConv2dNative)
         const auto& kernel_size_w = curr->get_input_shape(1)[1];
         const auto& in_shape = curr->get_input_shape(0);
         const auto& out_shape = curr->get_output_shape(0);
-        const auto& padding_h1 = int64_t(_op->localOpConfig.getRoot()["padding_after"][0]);
-        const auto& padding_w1 = int64_t(_op->localOpConfig.getRoot()["padding_after"][1]);
         const std::string data_format = is_nhwc ? "nhwc" : "nchw";
         NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
         NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";

@@ -214,6 +214,10 @@ namespace nnfusion
                 {
                     *values = GetValueFromConstOp<float, T>(ng_constant_op);
                 }
+                else if (ng_element_type == nnfusion::element::f16)
+                {
+                    *values = GetValueFromConstOp<element::half, T>(ng_constant_op);
+                }
                 else if (ng_element_type == nnfusion::element::f64)
                 {
                     *values = GetValueFromConstOp<double, T>(ng_constant_op);

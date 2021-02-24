@@ -52,8 +52,8 @@ class nnf_tf_freezer(object):
             sess.run(tf.global_variables_initializer())
             if self.is_training:
                 logits = outputs[0] # assume outputs[0] is logits
-                labels =  tf.placeholder(tf.int32, shape=[logits.shape[0], ], name="nnfusion/labels")
-                inputs += labels
+                labels = tf.placeholder(tf.int32, shape=[logits.shape[0], ], name="nnfusion/labels")
+                inputs += [labels]
                 if self.const_folding:
                     loss = tf.identity(tf.identity(tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits), name="nnfusion/loss"), name="nnfusion/loss_identity")
                 else:
@@ -62,7 +62,7 @@ class nnf_tf_freezer(object):
                 if optimizer:
                     opt = optimizer
                 else:
-                    opt = tf.train.GradientDescentOptimizer(learning_rate=1e-4) 
+                    opt = tf.train.GradientDescentOptimizer(learning_rate=1e-4)
                 grads = opt.compute_gradients(loss)
                 train_op = opt.apply_gradients(grads)
 

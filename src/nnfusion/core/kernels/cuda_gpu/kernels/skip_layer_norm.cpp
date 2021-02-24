@@ -29,7 +29,7 @@ LanguageUnit_p cuda::SkipLayerNorm::emit_function_body()
 
     auto code = nnfusion::op::create_code_from_template(
         R"(
-ComputeSkipLayerNorm(
+ComputeSkipLayerNorm<@dtype@>(
 stream,
 @hidden_size@,
 @element_count@,
@@ -131,6 +131,7 @@ void ComputeSkipLayerNorm(
 }
     )";
     ort_skip_layer_norm->require(declaration::ort_layer_norm);
+    declaration::ort_layer_norm->require(declaration::math_Rsqrt);
     _lu->require(ort_skip_layer_norm);
     return _lu;
 }

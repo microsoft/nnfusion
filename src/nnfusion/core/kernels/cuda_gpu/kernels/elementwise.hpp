@@ -43,6 +43,12 @@ namespace nnfusion
                     if (m_context->gnode->get_op_type() == "Convert")
                     {
                         lu.require(declaration::cuda_convert_template);
+                        lu.require(header::cublas);
+                    }
+                    else if (m_context->gnode->get_op_type() == "Gelu")
+                    {
+                        lu.require(declaration::math_Gelu);
+                        lu.require(header::cublas);
                     }
                     else if (iter->second.math_kernel != "")
                     {

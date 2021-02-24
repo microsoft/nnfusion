@@ -14,6 +14,7 @@
 #include "nnfusion/engine/pass/graph/common_subexpression_elimination_pass.hpp"
 #include "reversed_dfs_visitor.hpp"
 
+#include "nnfusion/engine/pass/graph/bertfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"

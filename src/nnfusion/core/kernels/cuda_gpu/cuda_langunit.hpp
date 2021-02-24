@@ -50,7 +50,10 @@ namespace nnfusion
             LU_DECLARE(ort_layer_norm);
             LU_DECLARE(ort_qkv_to_context);
             LU_DECLARE(cuda_convert_template);
-
+            LU_DECLARE(math_Rsqrt);
+            LU_DECLARE(math_Gelu);
+            LU_DECLARE(ort_softmax);
+            LU_DECLARE(warp);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

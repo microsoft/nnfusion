@@ -228,6 +228,7 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
             if (kernel_emitter->m_context->gnode->get_op_type() == "Convert")
             {
                 lu.require(declaration::cuda_convert_template);
+                lu.require(header::cublas);
                 invoke_func =
                     "convert<" +
                     kernel_emitter->m_context->inputs[0]->get_element_type().c_type_string() +
@@ -240,6 +241,11 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
                 if (op_kernel.second != nullptr)
                 {
                     lu.require(op_kernel.second);
+                    if (kernel_emitter->m_context->gnode->get_op_type() == "Gelu")
+                    {
+                        op_kernel.second->require(declaration::math_Gelu);
+                        op_kernel.second->require(header::cublas);
+                    }
                 }
                 invoke_func = op_kernel.first;
             }

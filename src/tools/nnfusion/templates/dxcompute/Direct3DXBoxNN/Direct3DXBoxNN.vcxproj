@@ -277,8 +277,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Xbox.Scarlett.x64'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
-<<<<<<< HEAD
-=======
   <ItemGroup>
     <Content Include="HLSL\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -289,7 +287,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
->>>>>>> origin/master
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

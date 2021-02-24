@@ -32,7 +32,7 @@ namespace nnfusion
                 LanguageUnit_p emit_function_body() override
                 {
                     nnfusion::codegen::create_folder(folder);
-                    const_name = m_context->outputs[0]->get_name();
+                    const_name = m_context->outputs[0]->get_name() + ".bin";
 
                     const void* dptr = op->get_data_ptr();
                     size_t size = op->get_data_size();

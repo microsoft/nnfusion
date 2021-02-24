@@ -43,7 +43,8 @@ namespace nnfusion
                     nnfusion::op::OpConfig::any op_config;
 
                     auto where_op = std::make_shared<op::GenericOp>(node_name, "Where", op_config);
-                    auto where_gnode = m_graph->add_node_and_edge(where_op, {cond_gnode, x_gnode, y_gnode});
+                    auto where_gnode =
+                        m_graph->add_node_and_edge(where_op, {cond_gnode, x_gnode, y_gnode});
 
                     return {{node_proto.output(0), GNodeIndex(where_gnode)}};
                 }

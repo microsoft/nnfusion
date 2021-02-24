@@ -39,7 +39,6 @@ namespace nnfusion
                     auto x_gnode = input_indices[0];
                     auto scales_gnode = input_indices[2];
 
-
                     Node node(node_proto);
                     std::string mode = node.get_attribute_value<std::string>("mode", "nearest");
                     std::transform(mode.begin(), mode.end(), mode.begin(), ::toupper);
@@ -47,8 +46,10 @@ namespace nnfusion
                     op_config["method"] = mode;
 
                     auto node_name = node_proto.output(0);
-                    auto resize_op = std::make_shared<nnfusion::op::GenericOp>(node_name, "Resize", op_config);
-                    auto resize_gnode = m_graph->add_node_and_edge(resize_op, {x_gnode, scales_gnode});
+                    auto resize_op =
+                        std::make_shared<nnfusion::op::GenericOp>(node_name, "Resize", op_config);
+                    auto resize_gnode =
+                        m_graph->add_node_and_edge(resize_op, {x_gnode, scales_gnode});
                     return NamedNodeVector{{node_proto.output(0), resize_gnode}};
                 }
             } // namespace set_1

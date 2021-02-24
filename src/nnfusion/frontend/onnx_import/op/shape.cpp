@@ -42,7 +42,7 @@ namespace nnfusion
                     NamedNodeVector ret{{node_proto.output(0), gnode}};
                     return ret;
                 }
-                
+
             } // namespace set_1
 
         } //namespace op

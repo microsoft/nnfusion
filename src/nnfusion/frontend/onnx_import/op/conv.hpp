@@ -34,13 +34,13 @@ namespace nnfusion
             namespace set_1
             {
                 std::unordered_map<std::string, std::vector<int64_t>>
-                        extract_conv_attrs(nnfusion::frontend::onnx_import::Node node,
-                                           const Shape& filters_shape);
+                    extract_conv_attrs(nnfusion::frontend::onnx_import::Node node,
+                                       const Shape& filters_shape);
 
-                std::shared_ptr<nnfusion::graph::GNode> 
-                        attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
-                                          std::shared_ptr<nnfusion::graph::GNode> conv_node,
-                                          std::shared_ptr<nnfusion::graph::Graph> m_graph);
+                std::shared_ptr<nnfusion::graph::GNode>
+                    attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
+                                      std::shared_ptr<nnfusion::graph::GNode> conv_node,
+                                      std::shared_ptr<nnfusion::graph::Graph> m_graph);
 
                 std::string assign_data_format(nnfusion::Shape data_shape);
 

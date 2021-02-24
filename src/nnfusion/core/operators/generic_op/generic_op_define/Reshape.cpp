@@ -144,7 +144,9 @@ REGISTER_OP(Reshape)
             if (!condition.empty())
                 condition = "where " + condition;
 
-            auto input_layout_str = curr->get_input_shape(0).empty() ? "[]" : vector_to_string<std::vector<std::string>>(input_layout);
+            auto input_layout_str = curr->get_input_shape(0).empty()
+                                        ? "[]"
+                                        : vector_to_string<std::vector<std::string>>(input_layout);
 
             expression_code = op::create_code_from_template(
                 expression_template,

@@ -24,7 +24,6 @@
 #include <unordered_map>
 #include "nnfusion/frontend/onnx_import/util/broadcasting.hpp"
 
-
 namespace nnfusion
 {
     namespace frontend
@@ -35,41 +34,36 @@ namespace nnfusion
             {
                 std::unordered_map<std::string, std::vector<int64_t>>
                     extract_conv_attrs(nnfusion::frontend::onnx_import::Node node,
-                                        const Shape& filters_shape)
+                                       const Shape& filters_shape)
                 {
                     std::unordered_map<std::string, std::vector<int64_t>> conv_attrs;
-                    conv_attrs["kernel_shape"] =
-                        node.get_attribute_value<std::vector<int64_t>>(
-                            "kernel_shape",
-                            std::vector<int64_t>{static_cast<int64_t>(filters_shape.at(
-                                                        filters_shape.size() - 2)),
-                                                    static_cast<int64_t>(filters_shape.at(
-                                                        filters_shape.size() - 1))});
-                    conv_attrs["strides"] =
-                        node.get_attribute_value<std::vector<int64_t>>(
-                            "strides", std::vector<int64_t>(conv_attrs["kernel_shape"] .size(), 1));
-                    conv_attrs["dilations"] =
-                        node.get_attribute_value<std::vector<int64_t>>(
-                            "dilations", std::vector<int64_t>(conv_attrs["kernel_shape"] .size(), 1));
+                    conv_attrs["kernel_shape"] = node.get_attribute_value<std::vector<int64_t>>(
+                        "kernel_shape",
+                        std::vector<int64_t>{
+                            static_cast<int64_t>(filters_shape.at(filters_shape.size() - 2)),
+                            static_cast<int64_t>(filters_shape.at(filters_shape.size() - 1))});
+                    conv_attrs["strides"] = node.get_attribute_value<std::vector<int64_t>>(
+                        "strides", std::vector<int64_t>(conv_attrs["kernel_shape"].size(), 1));
+                    conv_attrs["dilations"] = node.get_attribute_value<std::vector<int64_t>>(
+                        "dilations", std::vector<int64_t>(conv_attrs["kernel_shape"].size(), 1));
                     conv_attrs["pads"] = node.get_attribute_value<std::vector<int64_t>>(
-                        "pads", std::vector<int64_t>(conv_attrs["kernel_shape"] .size() * 2, 0));
+                        "pads", std::vector<int64_t>(conv_attrs["kernel_shape"].size() * 2, 0));
                     return conv_attrs;
                 }
 
-                
-                std::shared_ptr<nnfusion::graph::GNode> 
-                        attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
-                                          std::shared_ptr<nnfusion::graph::GNode> conv_node,
-                                          std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                std::shared_ptr<nnfusion::graph::GNode>
+                    attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
+                                      std::shared_ptr<nnfusion::graph::GNode> conv_node,
+                                      std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                        auto bc_op = std::make_shared<op::Broadcast>(
-                            conv_node->get_shape(),
-                            nnfusion::frontend::onnx_import::calculate_broadcast_axes(
-                                conv_node->get_shape(), bias_index.get_shape(), 1));
-                        auto broadcasted_bias = m_graph->add_node_and_edge(bc_op, {bias_index});
-                        auto bias_node = m_graph->add_node_and_edge(std::make_shared<op::Add>(),
-                                                                    {conv_node, broadcasted_bias});
-                        return bias_node;
+                    auto bc_op = std::make_shared<op::Broadcast>(
+                        conv_node->get_shape(),
+                        nnfusion::frontend::onnx_import::calculate_broadcast_axes(
+                            conv_node->get_shape(), bias_index.get_shape(), 1));
+                    auto broadcasted_bias = m_graph->add_node_and_edge(bc_op, {bias_index});
+                    auto bias_node = m_graph->add_node_and_edge(std::make_shared<op::Add>(),
+                                                                {conv_node, broadcasted_bias});
+                    return bias_node;
                 }
 
                 std::string assign_data_format(nnfusion::Shape data_shape)
@@ -122,13 +116,18 @@ namespace nnfusion
                         NNFUSION_CHECK_FAIL() << "auto_pad not supported";
                     }
 
-                    Shape kernel_shape = Shape(conv_attrs["kernel_shape"].begin(), conv_attrs["kernel_shape"].end());
-                    Strides strides = Strides(conv_attrs["strides"].begin(), conv_attrs["strides"].end());
-                    Strides dilations = Strides(conv_attrs["dilations"].begin(), conv_attrs["dilations"].end());
-                    CoordinateDiff padding_above = CoordinateDiff(
-                        conv_attrs["pads"].begin(), conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2);
-                    CoordinateDiff padding_below = CoordinateDiff(
-                        conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2, conv_attrs["pads"].end());
+                    Shape kernel_shape =
+                        Shape(conv_attrs["kernel_shape"].begin(), conv_attrs["kernel_shape"].end());
+                    Strides strides =
+                        Strides(conv_attrs["strides"].begin(), conv_attrs["strides"].end());
+                    Strides dilations =
+                        Strides(conv_attrs["dilations"].begin(), conv_attrs["dilations"].end());
+                    CoordinateDiff padding_above =
+                        CoordinateDiff(conv_attrs["pads"].begin(),
+                                       conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2);
+                    CoordinateDiff padding_below =
+                        CoordinateDiff(conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2,
+                                       conv_attrs["pads"].end());
 
                     std::string conv_data_format = assign_data_format(data_shape);
 

@@ -406,7 +406,7 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
         }
     }
 
-    if (!RemoveNodes(bertfusion_group->nodes_to_remove))
+    if (!RemoveNodes(bertfusion_group->nodes_to_remove, attention_gnode))
     {
         NNFUSION_LOG(NNFUSION_WARNING) << "remove nodes failed.";
     }
@@ -423,7 +423,7 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
     {
         remove_at_last.insert(v_bias);
     }
-    return RemoveNodes(remove_at_last);
+    return RemoveNodes(remove_at_last, qkv_bias_node);
 }
 
 std::shared_ptr<GNode> AttentionFusionOptimizer::MergeQkvWeights(std::shared_ptr<GNode> q_weight,

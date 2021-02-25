@@ -60,10 +60,13 @@ bool LayerNormFusionOptimizer::FindSubGraph(std::shared_ptr<GNode> starting_node
     auto reducemean1 = reducemean1_mainpath[0].back();
 
     // find path to reducemean2
-    std::vector<std::string> pattern_to_reducemean2 = {
+    std::vector<std::string> pattern_to_reducemean2_1 = {
         reducemean1->get_op_type(), "Reshape", "Broadcast", "Subtract", "Power"};
+    std::vector<std::string> pattern_to_reducemean2_2 = {
+        reducemean1->get_op_type(), "Reshape", "Broadcast", "Subtract", "Convert", "Power"};
     std::vector<std::vector<std::shared_ptr<GNode>>> all_paths_to_reducemean2;
-    if (!FindPath(reducemean1, pattern_to_reducemean2, all_paths_to_reducemean2, false) ||
+    if ((!FindPath(reducemean1, pattern_to_reducemean2_1, all_paths_to_reducemean2, false) &&
+         !FindPath(reducemean1, pattern_to_reducemean2_2, all_paths_to_reducemean2, false)) ||
         all_paths_to_reducemean2.size() != 1)
     {
         NNFUSION_LOG(NNFUSION_WARNING) << "Failed to find path to the second reducemean subgraph";
@@ -78,18 +81,18 @@ bool LayerNormFusionOptimizer::FindSubGraph(std::shared_ptr<GNode> starting_node
     }
 
     auto power = all_paths_to_reducemean2[0].back();
-    auto power_broadcast = power->get_in_edge(1)->get_src();
-    if (power_broadcast->get_in_edges().empty() ||
-        !power_broadcast->get_in_edge(0)->get_src()->is_constant())
-    {
-        NNFUSION_LOG(NNFUSION_WARNING) << "Failed to find path to the second reducemean subgraph";
-        return false;
-    }
+    // auto power_broadcast = power->get_in_edge(1)->get_src();
+    // if (power_broadcast->get_in_edges().empty() ||
+    //     !power_broadcast->get_in_edge(0)->get_src()->is_constant())
+    // {
+    //     NNFUSION_LOG(NNFUSION_WARNING) << "Failed to find path to the second reducemean subgraph";
+    //     return false;
+    // }
 
-    auto power_const = power_broadcast->get_in_edge(0)->get_src();
+    // auto power_const = power_broadcast->get_in_edge(0)->get_src();
     bertfusion_group->nodes_to_remove.insert(all_paths_to_reducemean2[0].begin(),
                                              all_paths_to_reducemean2[0].end());
-    bertfusion_group->nodes_to_remove.insert({power, power_broadcast, power_const});
+    // bertfusion_group->nodes_to_remove.insert({power, power_broadcast, power_const});
 
     // find reducemean2
     std::vector<std::vector<std::shared_ptr<GNode>>> reducemean2_mainpath;
@@ -244,7 +247,7 @@ bool LayerNormFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
         }
     }
 
-    return RemoveNodes(bertfusion_group->nodes_to_remove);
+    return RemoveNodes(bertfusion_group->nodes_to_remove, layernorm_gnode);
 }
 
 bool LayerNormFusionOptimizer::FindReduceMean(

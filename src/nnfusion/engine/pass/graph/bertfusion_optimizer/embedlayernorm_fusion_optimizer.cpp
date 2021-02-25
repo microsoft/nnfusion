@@ -177,5 +177,5 @@ bool EmbedLayerNormFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup
         }
     }
 
-    return RemoveNodes(bertfusion_group->nodes_to_remove);
+    return RemoveNodes(bertfusion_group->nodes_to_remove, embedlayernorm_gnode);
 }

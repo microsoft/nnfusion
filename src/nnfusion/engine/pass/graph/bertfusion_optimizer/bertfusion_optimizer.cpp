@@ -91,7 +91,8 @@ void BertFusionOptimizer::Search(std::shared_ptr<GNode> node,
     }
 }
 
-bool BertFusionOptimizer::RemoveNodes(std::unordered_set<std::shared_ptr<GNode>> nodes)
+bool BertFusionOptimizer::RemoveNodes(std::unordered_set<std::shared_ptr<GNode>> nodes,
+                                      std::shared_ptr<GNode> new_node)
 {
     for (auto node : nodes)
     {
@@ -100,6 +101,28 @@ bool BertFusionOptimizer::RemoveNodes(std::unordered_set<std::shared_ptr<GNode>>
             m_graph->remove_node(node);
         }
     }
+
+    return update_graph_outputs(nodes, new_node);
+}
+
+bool BertFusionOptimizer::update_graph_outputs(
+    std::unordered_set<std::shared_ptr<GNode>>& nodes_to_remove, std::shared_ptr<GNode> new_node)
+{
+    nnfusion::graph::GNodeVector updated_outputs;
+    bool replaced = false;
+    for (auto out : m_graph->get_outputs())
+    {
+        if (nodes_to_remove.find(out) == nodes_to_remove.end())
+        {
+            updated_outputs.push_back(out);
+        }
+        else if (!replaced)
+        {
+            updated_outputs.push_back(new_node);
+            replaced = true;
+        }
+    }
+    m_graph->set_outputs(updated_outputs);
 
     return true;
 }

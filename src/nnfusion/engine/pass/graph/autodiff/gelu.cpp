@@ -14,33 +14,15 @@
 // limitations under the License.
 //*****************************************************************************
 
-// Microsoft (c) 2020, NNFusion Team
+#include "backward_registry.hpp"
 
-#pragma once
-
-#include "nnfusion/core/operators/util/elementwise_arithmetic.hpp"
-
-namespace nnfusion
-{
-    namespace op
-    {
-        /// \brief Elementwise cosine operation.
-        class Gelu : public ElementwiseArithmetic
-        {
-        public:
-            /// \brief Constructs a gelu operation.
-            Gelu();
-        };
-
-        /// \brief Elementwise GeluGrad operation.
-        ///
-        class GeluGrad : public ElementwiseArithmetic
-        {
-        public:
-            /// \brief Constructs a GeluGrad operation.
-            ///
-            /// \param arg Node that produces the gelu forward input tensor.
-            GeluGrad();
-        };
-    }
-}
+REGISTER_BACKWARD_TRANSLATOR(Gelu).translator(
+    [](std::shared_ptr<GNode> forward_node,
+       const GNodeIndexVector& outputs_grad,
+       std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {
+        NNFUSION_CHECK(outputs_grad.size() == 1) << "gelu have only 1 output, but "
+                                                 << outputs_grad.size() << " outputs_grad provided";
+        auto x_grad = graph->add_node_and_edge(std::make_shared<op::GeluGrad>(),
+                                               {get_node_output(forward_node, 0), outputs_grad[0]});
+        return GNodeIndexVector{GNodeIndex{x_grad, 0}};
+    });

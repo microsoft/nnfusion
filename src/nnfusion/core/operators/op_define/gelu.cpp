@@ -24,3 +24,8 @@ Gelu::Gelu()
     : ElementwiseArithmetic("Gelu")
 {
 }
+
+GeluGrad::GeluGrad()
+    : ElementwiseArithmetic("GeluGrad")
+{
+}

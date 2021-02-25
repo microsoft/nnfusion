@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <queue>
 #include "nnfusion/common/common.hpp"
 #include "nnfusion/core/graph/gnode.hpp"
@@ -43,7 +44,8 @@ namespace nnfusion
                 virtual bool FindSubGraph(std::shared_ptr<nnfusion::graph::GNode> starting_node,
                                           std::shared_ptr<BertFusionGroup> bertfusion_group) = 0;
                 virtual bool FuseSubGraph(std::shared_ptr<BertFusionGroup> bertfusion_group) = 0;
-                bool RemoveNodes(std::unordered_set<std::shared_ptr<nnfusion::graph::GNode>> nodes);
+                bool RemoveNodes(std::unordered_set<std::shared_ptr<nnfusion::graph::GNode>> nodes,
+                                 std::shared_ptr<nnfusion::graph::GNode> new_node);
                 virtual bool FindPath(
                     std::shared_ptr<nnfusion::graph::GNode> node,
                     std::vector<std::string>& pattern,
@@ -56,6 +58,9 @@ namespace nnfusion
                     std::vector<std::vector<std::shared_ptr<nnfusion::graph::GNode>>>& all_paths,
                     std::vector<std::shared_ptr<nnfusion::graph::GNode>>& path,
                     bool reverse);
+                bool update_graph_outputs(
+                    std::unordered_set<std::shared_ptr<nnfusion::graph::GNode>>& nodes_to_remove,
+                    std::shared_ptr<nnfusion::graph::GNode> new_node);
                 std::shared_ptr<nnfusion::graph::Graph> m_graph;
             };
         }

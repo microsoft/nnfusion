@@ -320,6 +320,11 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
     auto v_weight = v_dot->get_in_edge(1)->get_src();
     size_t hidden_size = input_node->get_output_shape(0)[2];
     auto qkv_weight_node = MergeQkvWeights(q_weight, k_weight, v_weight, hidden_size, true);
+    if (qkv_weight_node == nullptr)
+    {
+        NNFUSION_LOG(NNFUSION_WARNING) << "Failed to merge qkv weights";
+        return false;
+    }
     std::vector<std::shared_ptr<GNode>> qkv_weights{q_weight, k_weight, v_weight};
     for (auto weight : qkv_weights)
     {
@@ -338,6 +343,12 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
     auto v_bias_broadcast = v_add->get_in_edge(1)->get_src();
     auto v_bias = v_bias_broadcast->get_in_edge(0)->get_src();
     auto qkv_bias_node = MergeQkvWeights(q_bias, k_bias, v_bias, hidden_size, false);
+
+    if (qkv_bias_node == nullptr)
+    {
+        NNFUSION_LOG(NNFUSION_WARNING) << "Failed to merge qkv bias";
+        return false;
+    }
 
     std::vector<std::shared_ptr<GNode>> qkv_bias_broadcast{
         q_bias_broadcast, k_bias_broadcast, k_bias_broadcast};
@@ -406,7 +417,7 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
         }
     }
 
-    if (!RemoveNodes(bertfusion_group->nodes_to_remove))
+    if (!RemoveNodes(bertfusion_group->nodes_to_remove, attention_gnode))
     {
         NNFUSION_LOG(NNFUSION_WARNING) << "remove nodes failed.";
     }
@@ -423,7 +434,7 @@ bool AttentionFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
     {
         remove_at_last.insert(v_bias);
     }
-    return RemoveNodes(remove_at_last);
+    return RemoveNodes(remove_at_last, qkv_bias_node);
 }
 
 std::shared_ptr<GNode> AttentionFusionOptimizer::MergeQkvWeights(std::shared_ptr<GNode> q_weight,
@@ -443,10 +454,14 @@ std::shared_ptr<GNode> AttentionFusionOptimizer::MergeQkvWeights(std::shared_ptr
     auto k_weight_op = std::dynamic_pointer_cast<op::Constant>(k_weight->get_op_ptr());
     auto v_weight_op = std::dynamic_pointer_cast<op::Constant>(v_weight->get_op_ptr());
 
-    NNFUSION_CHECK_NOT_NULLPTR(q_weight_op) << q_weight->get_op_type();
-    NNFUSION_CHECK_NOT_NULLPTR(k_weight_op) << k_weight->get_op_type();
-    NNFUSION_CHECK_NOT_NULLPTR(v_weight_op) << v_weight->get_op_type();
+    // NNFUSION_CHECK_NOT_NULLPTR(q_weight_op) << q_weight->get_op_type();
+    // NNFUSION_CHECK_NOT_NULLPTR(k_weight_op) << k_weight->get_op_type();
+    // NNFUSION_CHECK_NOT_NULLPTR(v_weight_op) << v_weight->get_op_type();
 
+    if (!q_weight_op || !k_weight_op || !v_weight_op)
+    {
+        return nullptr;
+    }
     const char* q_weight_dptr = (char*)q_weight_op->get_data_ptr();
     const char* k_weight_dptr = (char*)k_weight_op->get_data_ptr();
     const char* v_weight_dptr = (char*)v_weight_op->get_data_ptr();

@@ -94,5 +94,5 @@ bool MatMulAddFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> ber
         }
     }
 
-    return RemoveNodes(bertfusion_group->nodes_to_remove);
+    return RemoveNodes(bertfusion_group->nodes_to_remove, matmuladd_gnode);
 }

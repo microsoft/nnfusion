@@ -233,7 +233,7 @@ namespace nnfusion
             }
             auto shape = tensor->get_shape();
             if (shape.size() == 0)
-                shape = {};
+                shape = {1};
             config[alias_name + "_shape"] = vector_to_string(shape);
         }
 

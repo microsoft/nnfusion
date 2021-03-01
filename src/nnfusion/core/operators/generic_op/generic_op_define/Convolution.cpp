@@ -72,9 +72,11 @@ REGISTER_OP(Convolution)
         std::string pad_cond;
         if (padding_h || padding_w)
         {
-            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @height@, " + WO + " >= 0, " +
-                                WO +
-                                " < @width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
+            config["in_height"] = is_nchw ? in_shape[2] : in_shape[1];
+            config["in_width"] = is_nchw ? in_shape[3] : in_shape[2];
+            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @in_height@, " + WO +
+                                " >= 0, " + WO +
+                                " < @in_width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
             pad_cond = op::create_code_from_template(pad_template, config);
         }
         config["pad_cond"] = pad_cond;

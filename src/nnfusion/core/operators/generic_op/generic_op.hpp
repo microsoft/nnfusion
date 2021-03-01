@@ -223,6 +223,10 @@ namespace nnfusion
             {
                 config[alias_name + "_dtype"] = "float16";
             }
+            else if (d_type == element::boolean)
+            {
+                config[alias_name + "_dtype"] = "int8";
+            }
             else
             {
                 NNFUSION_CHECK_FAIL() << "Unhandled type: " << d_type;

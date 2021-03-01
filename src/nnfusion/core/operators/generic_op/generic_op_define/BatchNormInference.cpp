@@ -27,6 +27,6 @@ REGISTER_OP(BatchNormInference)
         auto expression =
             "@output0@[N, C, H, W] = @input1@[C] + @input0@[C] * (@input2@[N, C, H, W] - "
             "@input3@[C]) / (" +
-            epsilon + " + @input4@[C]).call('sqrt');";
+            epsilon + " + @input4@[C]).call(`sqrt`);";
         return expression;
     });

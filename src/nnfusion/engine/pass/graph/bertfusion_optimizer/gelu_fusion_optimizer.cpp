@@ -242,5 +242,5 @@ bool GeluFusionOptimizer::FuseSubGraph(std::shared_ptr<BertFusionGroup> bertfusi
         }
     }
 
-    return RemoveNodes(bertfusion_group->nodes_to_remove);
+    return RemoveNodes(bertfusion_group->nodes_to_remove, gelu_gnode);
 }

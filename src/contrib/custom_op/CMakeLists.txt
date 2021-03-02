@@ -6,6 +6,7 @@ file(GLOB native_custom_ops native/*.cpp)
 
 set(SRC
     native/custom_test_op.cpp
+    custom_op.cpp
     ${native_custom_ops}
 )
 
@@ -15,6 +16,11 @@ target_include_directories(contrib_custom_operators SYSTEM PUBLIC
 )
 target_link_libraries(contrib_custom_operators nnfusion_common)
 target_compile_options(contrib_custom_operators PRIVATE "-fPIC")
+
+file( COPY ${CMAKE_CURRENT_SOURCE_DIR}/json
+      DESTINATION ${PROJECT_BINARY_DIR}/custom_op/
+)
+
 
 #install(TARGETS contrib_custom_operators
 #        RUNTIME DESTINATION bin

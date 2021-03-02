@@ -31,10 +31,14 @@ REGISTER_OP(AvgPool)
         auto _op = static_pointer_cast<nnfusion::op::AvgPool>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
-        auto ir_template1 =
-            R"( mediate0@output0_layout@ +=! @input0@@input0_layout@ @where_condition@; @output0@@output0_layout@ = mediate0@output0_layout@ / @div@;)";
-        auto ir_template2 =
-            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@ / ((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) / ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0])) @where_condition@;)";
+        // divide operation goes before add operation, which may cause precision issue.
+        // auto ir_template =
+        //     R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@ / ((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) / ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0])) @where_condition@;)";
+
+        // divide after add operation
+        auto ir_template =
+            R"( mediate0@output0_layout@ +=! @input0@@input0_layout@@when_condition@ @where_condition@; @output0@@output0_layout@ = mediate0@output0_layout@ / (((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) * ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0]))).call('max', [1]);)";
+
         const auto& input0_shape = curr->get_input_shape(0);
         const auto& output0_shape = curr->get_output_shape(0);
         const auto& kernel = _op->get_window_shape();
@@ -64,23 +68,17 @@ REGISTER_OP(AvgPool)
             input0_layout = "[N, C, ";
         }
 
-        std::string H_in = "HO * " + to_string(stride[0]) + " + KH";
-        if (padding_below[0] > 0)
-        {
-            H_in += " - " + to_string(padding_below[0]);
-            when_condition_template += (when_condition_template.empty() ? "" : " , ") + H_in +
-                                       " >= 0, " + H_in + " < " +
-                                       to_string(input0_shape[input0_shape.size() - 2]);
-        }
+        std::string H_in = "(HO * " + to_string(stride[0]) + " + KH";
+        H_in += " - " + to_string(padding_below[0]) + ")";
+        when_condition_template += (when_condition_template.empty() ? "" : " , ") + H_in +
+                                   " >= 0, " + H_in + " < " +
+                                   to_string(input0_shape[input0_shape.size() - 2]);
 
-        std::string W_in = "WO * " + to_string(stride[1]) + " + KW";
-        if (padding_below[1] > 0)
-        {
-            W_in += " - " + to_string(padding_below[1]);
-            when_condition_template += (when_condition_template.empty() ? "" : " , ") + W_in +
-                                       " >= 0, " + W_in + " < " +
-                                       to_string(input0_shape[input0_shape.size() - 1]);
-        }
+        std::string W_in = "(WO * " + to_string(stride[1]) + " + KW";
+        W_in += " - " + to_string(padding_below[1]) + ")";
+        when_condition_template += (when_condition_template.empty() ? "" : " , ") + W_in +
+                                   " >= 0, " + W_in + " < " +
+                                   to_string(input0_shape[input0_shape.size() - 1]);
 
         input0_layout += H_in + " , " + W_in + "]";
 
@@ -111,16 +109,5 @@ REGISTER_OP(AvgPool)
         op_config["when_condition"] =
             op::create_code_from_template(when_condition_template, op_config);
 
-        if (padding_below[0] == 0 && padding_below[1] == 0 && padding_above[0] == 0 &&
-            padding_above[1] == 0)
-        {
-            return op::create_code_from_template(ir_template1, op_config);
-        }
-        else
-        {
-            // For ir_template2, divide operation goes before add operation, which may
-            // cause precision issue.
-            // return op::create_code_from_template(ir_template2, op_config);
-            return "";
-        }
+        return op::create_code_from_template(ir_template, op_config);
     });

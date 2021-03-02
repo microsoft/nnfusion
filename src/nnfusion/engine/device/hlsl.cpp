@@ -14,6 +14,7 @@
 #include "nnfusion/engine/pass/graph/common_subexpression_elimination_pass.hpp"
 #include "reversed_dfs_visitor.hpp"
 
+#include "nnfusion/engine/pass/graph/bertfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
@@ -24,6 +25,7 @@
 #include "nnfusion/engine/pass/graph/multi_reshape_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
+#include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
 
@@ -56,6 +58,7 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
         g_passes->push_back(make_shared<AssignLayoutPass>());
         g_passes->push_back(make_shared<OpInplacePass>());
+        g_passes->push_back(make_shared<ReduceFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
@@ -94,6 +97,7 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
         g_passes->push_back(make_shared<AssignLayoutPass>());
         g_passes->push_back(make_shared<OpInplacePass>());
+        g_passes->push_back(make_shared<ReduceFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
@@ -124,6 +128,7 @@ HLSLEngine::HLSLEngine()
     {
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
         g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
+        g_passes->push_back(make_shared<ReduceFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());

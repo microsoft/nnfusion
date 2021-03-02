@@ -261,10 +261,11 @@ namespace nnfusion
                 }
                 else
                 {
-                    auto softmax_gnode =
-                        TranslateSoftmaxToBasicOp(lhs_gnode, ng_axes_softmax, node.name(), m_graph);
+                    // auto softmax_gnode =
+                    //     TranslateSoftmaxToBasicOp(lhs_gnode, ng_axes_softmax, node.name(), m_graph);
+                    auto softmax_op = std::make_shared<op::Softmax>(ng_axes_softmax);
+                    auto softmax_gnode = m_graph->add_node_and_edge(softmax_op, {lhs_gnode});
                     NNFUSION_CHECK(softmax_gnode->get_shape().size() == 2);
-
                     // OneHot op.
                     nnfusion::op::OpConfig::any onehot_config;
                     onehot_config["axis"] = -1;

@@ -54,6 +54,8 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
     re->require(header::cuda);
     re->require(macro::CUDA_SAFE_CALL);
     re->require(declaration::typedef_int);
+    re->require(macro::HALF_MAX);
+    re->require(header::cublas);
 
     for (auto& it : re->local_symbol)
         if (it.second->symbol.find("header::") != string::npos)
@@ -556,6 +558,8 @@ bool CUPTIRuntime::codegen(const ProfilingContext::Pointer& ke)
     re->require(macro::CUDA_SAFE_CALL);
     re->require(macro::CUPTI_CALL);
     re->require(declaration::typedef_int);
+    re->require(macro::HALF_MAX);
+    re->require(header::cublas);
 
     // Write Dependency
     for (auto& it : re->local_symbol)

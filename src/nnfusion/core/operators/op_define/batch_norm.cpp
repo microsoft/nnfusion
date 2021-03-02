@@ -60,6 +60,11 @@ void BatchNormInference::validate_and_infer_types(std::shared_ptr<graph::GNode> 
     gnode->set_output_type_and_shape(0, result_et, result_batch_shape);
 }
 
+void BatchNormInference::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
+{
+    m_shared_memory.push_back(1);
+}
+
 void BatchNormTraining::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
 {
     nnfusion::element::Type result_et;

@@ -116,6 +116,16 @@ void Broadcast::inner_or_outer_broadcast()
     }
 }
 
+void Broadcast::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
+{
+    m_shared_memory.clear();
+    auto& output_shape = gnode->get_output_shape(0);
+    for (size_t i = 0; i < output_shape.size(); i++)
+    {
+        m_shared_memory.push_back(1);
+    }
+}
+
 BroadcastLike::BroadcastLike(const AxisSet& broadcast_axes)
     : Broadcast("BroadcastLike", {}, {})
     , m_initial_broadcast_axes(broadcast_axes)

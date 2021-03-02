@@ -415,7 +415,16 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
 
     // identifier of pattern substitution kernel was generated before
     if (op_type == "Matched_Pattern")
-        return (*ctx->gnode)["identifier"].as<std::string>();
+    {
+        if ((*ctx->gnode)["identifier"].is_valid())
+        {
+            return (*ctx->gnode)["identifier"].as<std::string>();
+        }
+        else
+        {
+            return "";
+        }
+    }
 
     // Todo: more spec to be added
     std::string identifier("");

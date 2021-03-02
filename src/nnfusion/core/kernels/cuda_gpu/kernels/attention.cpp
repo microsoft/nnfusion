@@ -99,6 +99,7 @@ LanguageUnit_p cuda::Attention::emit_dependency()
     _lu->require(header::math_constants);
     _lu->require(declaration::ort_qkv_to_context);
     _lu->require(header::cublas);
+    _lu->require(header::cub);
     _lu->require(macro::CUBLAS_SAFE_CALL);
     _lu->require(macro::CUDA_SAFE_CALL);
     return _lu;

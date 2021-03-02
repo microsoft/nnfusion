@@ -43,6 +43,7 @@ namespace nnfusion
                     if (m_context->gnode->get_op_type() == "Convert")
                     {
                         lu.require(declaration::cuda_convert_template);
+                        lu.require(header::cublas);
                     }
                     else if (iter->second.math_kernel != "")
                     {
@@ -50,6 +51,11 @@ namespace nnfusion
                             get_math_kernel(op, iter->second.math_kernel, data_types);
                         NNFUSION_CHECK_NOT_NULLPTR(math_kernel);
                         lu.require(math_kernel);
+                        if (m_context->gnode->get_op_type() == "Gelu")
+                        {
+                            math_kernel->require(declaration::math_Gelu);
+                            math_kernel->require(header::cublas);
+                        }
                     }
 
                     auto num_inputs = data_types.size() - 1;

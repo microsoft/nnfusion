@@ -83,5 +83,17 @@ REGISTER_OP(GatherV2)
         op_config["input1_layout"] = vector_to_string<std::vector<std::string>>(input1_layout);
         op_config["input0_layout_right"] = input0_layout_right;
 
+        if (input1_layout.empty())
+        {
+            auto ng_op = curr->get_in_edge(1)->get_src();
+            NNFUSION_CHECK(ng_op->is_constant())
+                << "The GatherV2 scalar mode only support \"indices\" as Constant";
+            auto index =
+                *((int64_t*)std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
+                      ->get_data_ptr());
+            op_config["input1"] = to_string(index);
+            op_config["input1_layout"] = "";
+        }
+
         return op::create_code_from_template(ir_template, op_config);
     });

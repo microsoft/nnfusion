@@ -19,6 +19,7 @@ from transformers import BertForSequenceClassification
 from transformers import BertTokenizer
 from nnf.runner import Runner
 from nnf.trainer import Trainer
+import json
 
 
 class WrapperModel(nn.Module):
@@ -170,7 +171,13 @@ def train_bert():
     model.eval()
     wrapper = WrapperModel(model)
 
-    codegen_flags = {"blockfusion_level": 0}
+    codegen_flags = {
+        "autodiff": True,  # add backward graph
+        "training_mode": True,  # move weight external
+        "extern_result_memory": True,  # move result external
+        "training_optimizer": '\'' + json.dumps({"optimizer": "SGD", "learning_rate": 0.0001}) + '\'',  # training optimizer configs
+        "blockfusion_level": 0,  # TODO: fix blockfusion problem in bert training
+    }
     trainer = Trainer(wrapper, device=device, codegen_flags=codegen_flags)
 
     sum_nnf_loss = 0

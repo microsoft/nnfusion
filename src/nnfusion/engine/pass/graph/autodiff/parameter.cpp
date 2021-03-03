@@ -34,7 +34,8 @@ REGISTER_BACKWARD_TRANSLATOR(Parameter).translator([](std::shared_ptr<GNode> for
         }
 
         nnfusion::op::OpConfig::any myConfig;
-        myConfig["learning_rate"] = 0.0001;
+        myConfig["learning_rate"] =
+            nnfusion::pass::graph::autodiff::training_optimizer_configs["learning_rate"];
         auto opt_op = std::make_shared<nnfusion::op::GenericOp>(
             forward_node->get_name() + "_sgd", "ApplyGradient", myConfig);
         auto opt_node =

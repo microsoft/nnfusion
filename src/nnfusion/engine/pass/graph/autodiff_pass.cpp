@@ -27,6 +27,9 @@
 #include "autodiff_pass.hpp"
 
 DEFINE_bool(fautodiff, false, "Add backward graph.");
+DEFINE_string(ftraining_optimizer,
+              "{}",
+              "Configs for training optimizer (expressed in json string).");
 
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
@@ -37,6 +40,21 @@ bool AutodiffPass::run_on_graph(std::shared_ptr<Graph>& graph)
     bool enable_autodiff = FLAGS_fautodiff;
     if (!enable_autodiff)
         return true;
+
+    nnfusion::pass::graph::autodiff::training_optimizer_configs =
+        nlohmann::json::parse(FLAGS_ftraining_optimizer);
+    {
+        // process training_optimizer_configs
+        // TODO: support other optimizers
+        NNFUSION_CHECK(training_optimizer_configs.find("optimizer") !=
+                       training_optimizer_configs.end())
+            << "Training optimizer should be set in -ftraining_optimizer.";
+        NNFUSION_CHECK(training_optimizer_configs["optimizer"] == "SGD")
+            << "NNFusion only support SGD optimizer yet.";
+        NNFUSION_CHECK(training_optimizer_configs.find("learning_rate") !=
+                       training_optimizer_configs.end())
+            << "Cannot find learning_rate in training_optimizer.";
+    }
 
     // assume graph outputs are loss
     GNodeIndexVector outputs_index;

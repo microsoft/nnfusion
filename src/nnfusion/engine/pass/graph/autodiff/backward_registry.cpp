@@ -18,6 +18,8 @@
 
 using namespace nnfusion::pass::graph::autodiff;
 
+nlohmann::json nnfusion::pass::graph::autodiff::training_optimizer_configs;
+
 void DiffEngine::add_delta(const GNodeIndex& x, const GNodeIndex& grad)
 {
     auto adjoint_it = m_adjoint_map.find(x.gnode);

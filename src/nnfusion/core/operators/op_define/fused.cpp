@@ -70,8 +70,8 @@ std::string retarget_expr_mediates(std::string expr,
     std::string retrgt_expr(expr);
     for (auto& m_cast : mediates_cast)
     {
-        std::regex reg_cast(m_cast.first);
-        retrgt_expr = std::regex_replace(retrgt_expr, reg_cast, m_cast.second);
+        std::regex reg_cast(m_cast.first + "\\[");
+        retrgt_expr = std::regex_replace(retrgt_expr, reg_cast, m_cast.second + "[");
     }
 
     return retrgt_expr;

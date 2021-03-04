@@ -54,7 +54,7 @@ namespace nnfusion
                    const std::string& group = "",
                    int device_id = -1);
 
-            const std::string& get_name() const;
+            const std::string& get_name(bool get_valid_name = true) const;
             void set_name(const std::string& name) { m_name = name; }
             void set_tensor_type(const nnfusion::element::Type& element_type,
                                  const nnfusion::PartialShape& pshape);

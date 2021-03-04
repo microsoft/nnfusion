@@ -54,8 +54,15 @@ nnfusion::descriptor::Tensor::Tensor(const nnfusion::element::Type& element_type
 {
 }
 
-const std::string& nnfusion::descriptor::Tensor::get_name() const
+const std::string& nnfusion::descriptor::Tensor::get_name(bool get_valid_name) const
 {
+    // return original name
+    if (!get_valid_name)
+    {
+        return m_name;
+    }
+
+    // return valid name
     bool is_valid_name = true;
     {
         // check whether tensor name is valid for codegen or not
@@ -88,7 +95,6 @@ const std::string& nnfusion::descriptor::Tensor::get_name() const
             }
         }
     }
-
     if (!is_valid_name)
     {
         return get_unique_name();

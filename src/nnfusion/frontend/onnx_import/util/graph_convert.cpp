@@ -130,13 +130,6 @@ namespace nnfusion
                             }
                         }
                     }
-                    if (indegree.size() > 0)
-                    {
-                        for (auto p : indegree)
-                        {
-                            cout << "Node: " << p.first << ", indegree: " << p.second << endl;
-                        }
-                    }
 
                     NNFUSION_CHECK(sorted_nodes.size() == unsorted_nodes.size())
                         << "Illegal graph found. sorted nodes size: " << sorted_nodes.size()
@@ -494,7 +487,6 @@ namespace nnfusion
             NamedNodeVector GraphConvert::convert_node(const onnx::NodeProto& node_proto)
             {
                 NNFUSION_LOG(INFO) << "convert node: " << node_proto.name();
-                cout << node_proto.op_type() << " " << node_proto.domain() << endl;
                 NamedNodeVector ret = get_convert_func(node_proto.op_type(), node_proto.domain())(
                     node_proto, m_node_map, m_graph);
                 for (int i = 0; i < ret.size(); i++)

@@ -32,7 +32,7 @@ namespace nnfusion
                 LanguageUnit_p emit_function_body() override
                 {
                     nnfusion::codegen::create_folder(folder);
-                    const_name = m_context->outputs[0]->get_name();
+                    const_name = m_context->outputs[0]->get_name() + ".bin";
 
                     const void* dptr = op->get_data_ptr();
                     size_t size = op->get_data_size();
@@ -102,8 +102,8 @@ namespace nnfusion
                         lu << "  NNfusionMemcpy op_" << m_context->output_names[0] << "(device, ts_"
                            << m_context->output_names[0] << ", load_data<"
                            << curr->get_output_element_type(0).c_type_string() << ">(\""
-                           << m_context->output_names[0] << "\", ts_" << m_context->output_names[0]
-                           << ".NumElements()), true);\n\n";
+                           << m_context->output_names[0] << ".bin\", ts_"
+                           << m_context->output_names[0] << ".NumElements()), true);\n\n";
                     }
                     return _lu;
                 }

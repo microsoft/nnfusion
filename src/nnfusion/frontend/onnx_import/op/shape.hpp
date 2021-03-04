@@ -33,17 +33,7 @@ namespace nnfusion
             {
                 NamedNodeVector TranslateShapeOp(const onnx::NodeProto& node_proto,
                                                  const NodeMap& all_ng_nodes,
-                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
-                {
-                    auto data = GetInputIndex(all_ng_nodes, node_proto, 0);
-                    auto data_shape = data.get_shape();
-                    auto op = std::make_shared<op::Constant>(
-                        nnfusion::element::i64, Shape{data_shape.size()}, data_shape);
-                    op->set_name(node_proto.output(0));
-                    auto gnode = m_graph->add_node_and_edge(op, nnfusion::graph::GNodeVector{});
-                    NamedNodeVector ret{{node_proto.output(0), gnode}};
-                    return ret;
-                }
+                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph);
 
             } // namespace set_1
 

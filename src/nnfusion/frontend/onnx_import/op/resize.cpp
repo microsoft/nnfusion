@@ -19,11 +19,8 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
-#pragma once
-
-// #include "../util/reduce_grad.hpp"
-#include "core/node.hpp"
-#include "nnfusion/frontend/onnx_import/onnx_base.hpp"
+#include "resize.hpp"
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 namespace nnfusion
 {
@@ -33,21 +30,28 @@ namespace nnfusion
         {
             namespace set_1
             {
-                std::unordered_map<std::string, std::vector<int64_t>>
-                    extract_conv_attrs(nnfusion::frontend::onnx_import::Node node,
-                                       const Shape& filters_shape);
+                NamedNodeVector TranslateResizeOp(const onnx::NodeProto& node_proto,
+                                                  const NodeMap& all_ng_nodes,
+                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indices = GetAllInputIndex(all_ng_nodes, node_proto);
 
-                std::shared_ptr<nnfusion::graph::GNode>
-                    attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
-                                      std::shared_ptr<nnfusion::graph::GNode> conv_node,
-                                      std::shared_ptr<nnfusion::graph::Graph> m_graph);
+                    auto x_gnode = input_indices[0];
+                    auto scales_gnode = input_indices[2];
 
-                std::string assign_data_format(nnfusion::Shape data_shape);
+                    Node node(node_proto);
+                    std::string mode = node.get_attribute_value<std::string>("mode", "nearest");
+                    std::transform(mode.begin(), mode.end(), mode.begin(), ::toupper);
+                    nnfusion::op::OpConfig::any op_config;
+                    op_config["method"] = mode;
 
-                NamedNodeVector TranslateConvOp(const onnx::NodeProto& node_proto,
-                                                const NodeMap& all_ng_nodes,
-                                                std::shared_ptr<nnfusion::graph::Graph> m_graph);
-
+                    auto node_name = node_proto.output(0);
+                    auto resize_op =
+                        std::make_shared<nnfusion::op::GenericOp>(node_name, "Resize", op_config);
+                    auto resize_gnode =
+                        m_graph->add_node_and_edge(resize_op, {x_gnode, scales_gnode});
+                    return NamedNodeVector{{node_proto.output(0), resize_gnode}};
+                }
             } // namespace set_1
 
         } //namespace onnx_import

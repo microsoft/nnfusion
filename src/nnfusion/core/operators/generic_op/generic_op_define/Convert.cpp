@@ -37,6 +37,7 @@ REGISTER_OP(Convert)
             op->get_convert_element_type(), out_dtype);
         NNFUSION_CHECK(ret == true) << "cast type is not supported: "
                                     << op->get_convert_element_type().c_type_string();
+        out_dtype = out_dtype == "char" ? "int8" : out_dtype;
 
         return op::create_code_from_template(
             "@output0@@data_layout@ = @input0@@data_layout@.cast(`@out_dtype@`);",

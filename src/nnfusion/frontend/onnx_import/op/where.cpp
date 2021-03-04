@@ -19,11 +19,8 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
-#pragma once
-
-// #include "../util/reduce_grad.hpp"
-#include "core/node.hpp"
-#include "nnfusion/frontend/onnx_import/onnx_base.hpp"
+#include "where.hpp"
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 namespace nnfusion
 {
@@ -33,25 +30,25 @@ namespace nnfusion
         {
             namespace set_1
             {
-                std::unordered_map<std::string, std::vector<int64_t>>
-                    extract_conv_attrs(nnfusion::frontend::onnx_import::Node node,
-                                       const Shape& filters_shape);
+                NamedNodeVector TranslateWhereOp(const onnx::NodeProto& node_proto,
+                                                 const NodeMap& all_ng_nodes,
+                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indices = GetAllInputIndex(all_ng_nodes, node_proto);
+                    auto cond_gnode = input_indices[0];
+                    auto x_gnode = input_indices[1];
+                    auto y_gnode = input_indices[2];
 
-                std::shared_ptr<nnfusion::graph::GNode>
-                    attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
-                                      std::shared_ptr<nnfusion::graph::GNode> conv_node,
-                                      std::shared_ptr<nnfusion::graph::Graph> m_graph);
+                    auto node_name = node_proto.output(0);
+                    nnfusion::op::OpConfig::any op_config;
 
-                std::string assign_data_format(nnfusion::Shape data_shape);
+                    auto where_op = std::make_shared<op::GenericOp>(node_name, "Where", op_config);
+                    auto where_gnode =
+                        m_graph->add_node_and_edge(where_op, {cond_gnode, x_gnode, y_gnode});
 
-                NamedNodeVector TranslateConvOp(const onnx::NodeProto& node_proto,
-                                                const NodeMap& all_ng_nodes,
-                                                std::shared_ptr<nnfusion::graph::Graph> m_graph);
-
+                    return {{node_proto.output(0), GNodeIndex(where_gnode)}};
+                }
             } // namespace set_1
-
-        } //namespace onnx_import
-
-    } // namespace frontend
-
+        }     // namespace onnx_import
+    }         // namespace frontend
 } // namespace nnfusion

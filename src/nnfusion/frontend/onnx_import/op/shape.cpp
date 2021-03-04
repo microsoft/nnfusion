@@ -19,11 +19,7 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
-#pragma once
-
-// #include "../util/reduce_grad.hpp"
-#include "core/node.hpp"
-#include "nnfusion/frontend/onnx_import/onnx_base.hpp"
+#include "shape.hpp"
 
 namespace nnfusion
 {
@@ -33,25 +29,24 @@ namespace nnfusion
         {
             namespace set_1
             {
-                std::unordered_map<std::string, std::vector<int64_t>>
-                    extract_conv_attrs(nnfusion::frontend::onnx_import::Node node,
-                                       const Shape& filters_shape);
-
-                std::shared_ptr<nnfusion::graph::GNode>
-                    attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
-                                      std::shared_ptr<nnfusion::graph::GNode> conv_node,
-                                      std::shared_ptr<nnfusion::graph::Graph> m_graph);
-
-                std::string assign_data_format(nnfusion::Shape data_shape);
-
-                NamedNodeVector TranslateConvOp(const onnx::NodeProto& node_proto,
-                                                const NodeMap& all_ng_nodes,
-                                                std::shared_ptr<nnfusion::graph::Graph> m_graph);
+                NamedNodeVector TranslateShapeOp(const onnx::NodeProto& node_proto,
+                                                 const NodeMap& all_ng_nodes,
+                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto data = GetInputIndex(all_ng_nodes, node_proto, 0);
+                    auto data_shape = data.get_shape();
+                    auto op = std::make_shared<op::Constant>(
+                        nnfusion::element::i64, Shape{data_shape.size()}, data_shape);
+                    op->set_name(node_proto.output(0));
+                    auto gnode = m_graph->add_node_and_edge(op, nnfusion::graph::GNodeVector{});
+                    NamedNodeVector ret{{node_proto.output(0), gnode}};
+                    return ret;
+                }
 
             } // namespace set_1
 
-        } //namespace onnx_import
+        } //namespace op
 
-    } // namespace frontend
+    } // namespace onnx_import
 
 } // namespace nnfusion

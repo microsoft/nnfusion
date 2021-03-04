@@ -124,7 +124,7 @@ bool LayerNormFusionOptimizer::FindSubGraph(std::shared_ptr<GNode> starting_node
     auto divide = all_paths_to_last_add[0][5];
     if (divide->get_in_edge(0)->get_src() != subtract)
     {
-        NNFUSION_LOG(NNFUSION_WARNING) << "Failed to find path to  to the last add";
+        NNFUSION_LOG(NNFUSION_WARNING) << "Failed to find path to the last add";
         return false;
     }
 

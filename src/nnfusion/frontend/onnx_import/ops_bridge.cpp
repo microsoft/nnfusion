@@ -35,6 +35,7 @@
 #include "op/const_of_shape.hpp"
 #include "op/constant.hpp"
 #include "op/conv.hpp"
+#include "op/conv_trans.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
 #include "op/embed_layer_norm.hpp"
@@ -57,6 +58,7 @@
 #include "op/range.hpp"
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
+#include "op/resize.hpp"
 #include "op/shape.hpp"
 #include "op/skip_layer_norm.hpp"
 #include "op/slice.hpp"
@@ -69,6 +71,7 @@
 #include "op/transpose.hpp"
 #include "op/unaryop.hpp"
 #include "op/unsqueeze.hpp"
+#include "op/where.hpp"
 
 #include "ops_bridge.hpp"
 
@@ -262,6 +265,10 @@ namespace nnfusion
                 REGISTER_OPERATOR("Transpose", 1, TranslateTransposeOp);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "TransposeMatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("Unsqueeze", 1, TranslateUnsqueezeOp);
+                REGISTER_OPERATOR("ConvTranspose", 1, TranslateConvTransposeOp);
+                REGISTER_OPERATOR("Resize", 1, TranslateResizeOp);
+                REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);
+                REGISTER_OPERATOR("Where", 1, TranslateWhereOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

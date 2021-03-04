@@ -21,9 +21,7 @@
 
 #pragma once
 
-// #include "../util/reduce_grad.hpp"
 #include "core/node.hpp"
-#include "nnfusion/frontend/onnx_import/onnx_base.hpp"
 
 namespace nnfusion
 {
@@ -33,25 +31,10 @@ namespace nnfusion
         {
             namespace set_1
             {
-                std::unordered_map<std::string, std::vector<int64_t>>
-                    extract_conv_attrs(nnfusion::frontend::onnx_import::Node node,
-                                       const Shape& filters_shape);
-
-                std::shared_ptr<nnfusion::graph::GNode>
-                    attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
-                                      std::shared_ptr<nnfusion::graph::GNode> conv_node,
-                                      std::shared_ptr<nnfusion::graph::Graph> m_graph);
-
-                std::string assign_data_format(nnfusion::Shape data_shape);
-
-                NamedNodeVector TranslateConvOp(const onnx::NodeProto& node_proto,
-                                                const NodeMap& all_ng_nodes,
-                                                std::shared_ptr<nnfusion::graph::Graph> m_graph);
-
-            } // namespace set_1
-
-        } //namespace onnx_import
-
-    } // namespace frontend
-
-} // namespace nnfusion
+                NamedNodeVector TranslateResizeOp(const onnx::NodeProto& node_proto,
+                                                  const NodeMap& all_ng_nodes,
+                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph);
+            }
+        }
+    }
+}

@@ -40,10 +40,6 @@ namespace nnfusion
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
 
                     Node node{node_proto};
-                    double max_value =
-                        node.get_attribute_value<double>("max", std::numeric_limits<double>::max());
-                    double min_value = node.get_attribute_value<double>(
-                        "min", std::numeric_limits<double>::lowest());
 
                     std::shared_ptr<nnfusion::graph::GNode> min_value_gnode;
                     if (node_proto.input_size() >= 2)

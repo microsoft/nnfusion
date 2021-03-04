@@ -5,6 +5,7 @@ import torch
 from torch import nn
 import numpy as np
 import copy
+import json
 
 from .runner import Runner
 
@@ -48,12 +49,13 @@ class Trainer(object):
             self.model_with_loss = model
         self.device = device
         trainer_flags = {
-            "autodiff": 1,  # add backward graph
-            "training_mode": 1,  # move weight external
-            "extern_result_memory": 1  # move result external
+            "autodiff": True,  # add backward graph
+            "training_mode": True,  # move weight external
+            "extern_result_memory": True,  # move result external
+            "training_optimizer": '\'' + json.dumps({"optimizer": "SGD", "learning_rate": 0.01}) +'\'',  # training optimizer configs
         }
-        self._codegen_flags = copy.deepcopy(codegen_flags) or {}
-        self._codegen_flags.update(trainer_flags)
+        self._codegen_flags = trainer_flags
+        self._codegen_flags.update(copy.deepcopy(codegen_flags) or {})
         self.runner = Runner(self.model_with_loss,
                              codegen_flags=self._codegen_flags,
                              **kwargs)

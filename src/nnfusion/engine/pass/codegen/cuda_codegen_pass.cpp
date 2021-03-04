@@ -30,6 +30,7 @@ DECLARE_string(fcuda_init_stream);
 DECLARE_bool(fextern_result_memory);
 DECLARE_int32(fwarmup_step);
 DECLARE_int32(frun_step);
+DECLARE_bool(fcustomized_mem_imp);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -96,6 +97,12 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     {
         std::string superscaler_path = std::string(path) + std::string("/superscaler");
         copy_folder.push_back(superscaler_path);
+    }
+
+    if (global_required.count("header::cub") > 0)
+    {
+        std::string cub_path = std::string(path) + std::string("/cub");
+        copy_folder.push_back(cub_path);
     }
 
     // setup main_block
@@ -288,7 +295,11 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 #endif
             }
             LanguageUnit_p kernel_func_call = func_call_codegen(ins, func_call_only, call_str);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).second);
         }
 
         if (thread_name != "default_thread")
@@ -1211,6 +1222,7 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 # set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}  -ftemplate-depth=4096 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O2")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
 )";
 
     if (FLAGS_fkernels_as_files)
@@ -1245,6 +1257,11 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
         {
             // add superscaler
             lu << nnfusion::codegen::cmake::superscaler_cuda->get_code();
+        }
+
+        if (global_required.count("header::cub") > 0)
+        {
+            lu << nnfusion::codegen::cmake::cub->get_code();
         }
     }
 

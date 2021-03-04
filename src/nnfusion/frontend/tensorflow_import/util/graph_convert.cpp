@@ -174,7 +174,15 @@ namespace nnfusion
                 status = TFTensorShapeToNGraphShape(tf_shape, &ng_shape);
                 NNFUSION_CHECK(status);
 
-                auto input_op = std::make_shared<T>(nnfusion_et, ng_shape);
+                shared_ptr<T> input_op;
+                if (node.op() == "VariableV2")
+                {
+                    input_op = std::make_shared<T>(nnfusion_et, ng_shape, false, true);
+                }
+                else
+                {
+                    input_op = std::make_shared<T>(nnfusion_et, ng_shape);
+                }
                 input_op->set_name(node.name());
                 auto input_gnode = m_graph->add_node_and_edge(input_op, GNodeVector({}));
                 NamedNodeVector ret{{node.name(), input_gnode}};
@@ -230,33 +238,34 @@ namespace nnfusion
 
                 nnfusion::AxisSet ng_axes_softmax{lhs_gnode->get_shape().size() - 1};
 
-                // if (!FLAGS_fantares_mode)
-                // {
-                //     auto softmax_op = std::make_shared<op::Softmax>(ng_axes_softmax);
-                //     auto softmax_gnode = m_graph->add_node_and_edge(softmax_op, {lhs_gnode});
-
-                //     auto loss_op = std::make_shared<nnfusion::op::GenericOp>(
-                //         node.name(),
-                //         "CrossEntropyAvgLossWithLabels", // select which existing kernels to use;
-                //         nnfusion::op::OpConfig::any{});
-                //     auto loss_gnode =
-                //         m_graph->add_node_and_edge(loss_op, {softmax_gnode, rhs_gnode});
-
-                //     auto bwd_op = std::make_shared<nnfusion::op::GenericOp>(
-                //         node.name(),
-                //         "CrossEntropyFwdBwdWithSoftmaxBwd", // select which existing kernels to use;
-                //         nnfusion::op::OpConfig::any{});
-                //     auto bwd_gnode = m_graph->add_node_and_edge(bwd_op, {softmax_gnode, rhs_gnode});
-
-                //     NamedNodeVector ret{{node.name(), loss_gnode}, {node.name(), bwd_gnode}};
-                //     return ret;
-                // }
-                // else
+                if (!FLAGS_fantares_mode)
                 {
-                    auto softmax_gnode =
-                        TranslateSoftmaxToBasicOp(lhs_gnode, ng_axes_softmax, node.name(), m_graph);
-                    NNFUSION_CHECK(softmax_gnode->get_shape().size() == 2);
+                    auto softmax_op = std::make_shared<op::Softmax>(ng_axes_softmax);
+                    auto softmax_gnode = m_graph->add_node_and_edge(softmax_op, {lhs_gnode});
 
+                    auto loss_op = std::make_shared<nnfusion::op::GenericOp>(
+                        node.name(),
+                        "CrossEntropyAvgLossWithLabels", // select which existing kernels to use;
+                        nnfusion::op::OpConfig::any{});
+                    auto loss_gnode =
+                        m_graph->add_node_and_edge(loss_op, {softmax_gnode, rhs_gnode});
+
+                    auto bwd_op = std::make_shared<nnfusion::op::GenericOp>(
+                        node.name(),
+                        "CrossEntropyFwdBwdWithSoftmaxBwd", // select which existing kernels to use;
+                        nnfusion::op::OpConfig::any{});
+                    auto bwd_gnode = m_graph->add_node_and_edge(bwd_op, {softmax_gnode, rhs_gnode});
+
+                    NamedNodeVector ret{{node.name(), loss_gnode}, {node.name(), bwd_gnode}};
+                    return ret;
+                }
+                else
+                {
+                    // auto softmax_gnode =
+                    //     TranslateSoftmaxToBasicOp(lhs_gnode, ng_axes_softmax, node.name(), m_graph);
+                    auto softmax_op = std::make_shared<op::Softmax>(ng_axes_softmax);
+                    auto softmax_gnode = m_graph->add_node_and_edge(softmax_op, {lhs_gnode});
+                    NNFUSION_CHECK(softmax_gnode->get_shape().size() == 2);
                     // OneHot op.
                     nnfusion::op::OpConfig::any onehot_config;
                     onehot_config["axis"] = -1;
@@ -3398,7 +3407,8 @@ namespace nnfusion
                 //{"", TranslateTransposeOp},
                 {"Unique", TranslateUniqueOp},
                 {"UnsortedSegmentSum", TranslateUnsortedSegmentSumOp},
-                {"VariableV2", TranslateTensorOp<op::Variable>},
+                // {"VariableV2", TranslateTensorOp<op::Variable>},
+                {"VariableV2", TranslateTensorOp<op::Parameter>},
                 {"Transpose", TranslateTransposeToReshapeOp},
                 {"Square", TranslateUnaryOp<op::Square>},
                 {"Shape", TranslateShapeOp},

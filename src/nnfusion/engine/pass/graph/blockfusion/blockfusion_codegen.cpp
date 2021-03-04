@@ -35,21 +35,28 @@ BlockFusionCudaCodegen::BlockFusionCudaCodegen(shared_ptr<KernelContext> ctx,
     }
 
     // dedupe block_kernels
+    // key: signature (data type) + device_function_body (kernel code)
     if (this->is_dedupe_block_kernels == true)
     {
         for (int kernel_id = 0; kernel_id < block_executor_program.block_kernels.size();
              kernel_id++)
         {
-            std::string block_kernel_body = block_executor_program.block_kernels[kernel_id]
-                                                ->emit_device_function_body()
-                                                ->get_code();
+            std::string block_kernel_key = block_executor_program.block_kernels[kernel_id]
+                                               ->get_or_emit_source()
+                                               ->signature_unit->get_code() +
+                                           block_executor_program.block_kernels[kernel_id]
+                                               ->emit_device_function_body()
+                                               ->get_code();
             for (int deduped_kernel_id = 0; deduped_kernel_id < kernel_id; deduped_kernel_id++)
             {
-                std::string deduped_kernel_body =
+                std::string deduped_kernel_key =
+                    block_executor_program.block_kernels[deduped_kernel_id]
+                        ->get_or_emit_source()
+                        ->signature_unit->get_code() +
                     block_executor_program.block_kernels[deduped_kernel_id]
                         ->emit_device_function_body()
                         ->get_code();
-                if (block_kernel_body == deduped_kernel_body)
+                if (block_kernel_key == deduped_kernel_key)
                 {
                     deduped_kernel_id_map[kernel_id] = deduped_kernel_id;
                     break;
@@ -110,7 +117,8 @@ std::shared_ptr<KernelContext> BlockFusionCudaCodegen::FuseContext()
         auto gnode = kernel_emitter->m_context->gnode;
         for (const auto& in_edge : gnode->get_in_edges())
         {
-            if (nodes_in_group.find(in_edge->get_src()->get_id()) == nodes_in_group.end())
+            if (!in_edge->is_control_edge() &&
+                nodes_in_group.find(in_edge->get_src()->get_id()) == nodes_in_group.end())
             {
                 auto tv = gnode->get_input_tensor_ptr(in_edge->get_dst_input());
                 NNFUSION_CHECK_NOT_NULLPTR(tv);
@@ -129,7 +137,8 @@ std::shared_ptr<KernelContext> BlockFusionCudaCodegen::FuseContext()
 
         for (const auto& out_edge : gnode->get_out_edges())
         {
-            if (nodes_in_group.find(out_edge->get_dst()->get_id()) == nodes_in_group.end())
+            if (!out_edge->is_control_edge() &&
+                nodes_in_group.find(out_edge->get_dst()->get_id()) == nodes_in_group.end())
             {
                 auto tv = gnode->get_output_tensor_ptr(out_edge->get_src_output());
                 NNFUSION_CHECK_NOT_NULLPTR(tv);

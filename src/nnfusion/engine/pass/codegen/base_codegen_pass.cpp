@@ -11,6 +11,7 @@ using namespace nnfusion::codegen;
 
 DECLARE_bool(fkernels_as_files);
 DECLARE_int64(fkernels_files_number);
+DECLARE_bool(fcustomized_mem_imp);
 
 bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
                           std::shared_ptr<TranslationUnit> tu)
@@ -99,7 +100,7 @@ void BaseCodegenPass::add_init_and_exit_pair(LanguageUnit_p lup_in_init, Languag
     //add to init
     projgen->lup_init->unit_vec.push_back(lup_in_init);
     //add to exit
-    projgen->lup_exit->unit_vec.push_back(lup_in_exit);
+    projgen->lup_exit->unit_vec.push_front(lup_in_exit);
 
     return;
 }
@@ -184,7 +185,6 @@ bool BaseCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
         auto init = allocator.second->emit_memory_init();
         auto alloc = allocator.second->emit_memory_alloc();
         auto free = allocator.second->emit_memory_free();
-
         lup_mem_alloc->unit_vec.push_back(alloc);
         lup_mem_alloc->require(init);
         lup_mem_free->unit_vec.push_back(free);
@@ -227,4 +227,53 @@ bool BaseCodegenPass::after_projgen()
     }
 
     return true;
+}
+
+std::pair<LanguageUnit_p, LanguageUnit_p>
+    BaseCodegenPass::get_customized_mem_imp(nnfusion::ir::Instruction::Pointer ins)
+{
+    LanguageUnit_p lup_alloc(new LanguageUnit(ins->name() + "_alloc"));
+    LanguageUnit_p lup_free(new LanguageUnit(ins->name() + "_free"));
+    LanguageUnit_p lup_free_at_last(new LanguageUnit(ins->name() + "_free_at_last"));
+    if (FLAGS_fcustomized_mem_imp)
+    {
+        if ((*ins)["MemoryInfo"].is_valid())
+        {
+            nnfusion::pass::MemoryInfo mem_info =
+                (*ins)["MemoryInfo"].as<nnfusion::pass::MemoryInfo>();
+            for (auto tensor : mem_info.alloc_new)
+            {
+                *lup_alloc << tensor->get_name() << " = MemoryAlloc(" << tensor->get_name() << ", "
+                           << tensor->size() << ");\n";
+                if (tensor->is_persistent() && free_at_last.find(tensor) == free_at_last.end())
+                {
+                    free_at_last.insert(tensor);
+                    *lup_free_at_last << "MemoryFree(" << tensor->get_name() << ");\n";
+                }
+            }
+
+            for (auto tensor : mem_info.alloc_ref)
+            {
+                auto root = tensor->get_root_tensor();
+                NNFUSION_CHECK_NOT_NULLPTR(root);
+                size_t offset = tensor->get_pool_offset() - root->get_pool_offset();
+                *lup_alloc << tensor->get_name() << " = MemoryRef(" << tensor->get_name() << ", "
+                           << root->get_name() << ", " << offset << ");\n";
+                if (root->is_persistent() && free_at_last.find(root) == free_at_last.end())
+                {
+                    free_at_last.insert(root);
+                    *lup_free_at_last << "MemoryFree(" << root->get_name() << ");\n";
+                }
+            }
+
+            for (auto tensor : mem_info.free)
+            {
+                *lup_free << "MemoryFree(" << tensor->get_name() << ");\n";
+            }
+        }
+    }
+
+    if (!lup_free_at_last->get_code().empty())
+        projgen->lup_exit->unit_vec.push_front(lup_free_at_last);
+    return std::make_pair(lup_alloc, lup_free);
 }

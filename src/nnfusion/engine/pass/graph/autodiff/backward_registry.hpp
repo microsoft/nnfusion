@@ -98,6 +98,8 @@ namespace nnfusion
                     config.name(name);
                     return config;
                 }
+
+                extern nlohmann::json training_optimizer_configs;
             }
         }
     }

@@ -30,12 +30,13 @@ namespace nnfusion
 
             void register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes);
             std::string get_fused_ir2() { return fused_op_ir2; };
-            std::string get_plan_rule() { return plan_rule; };
+            std::string get_plan_rule();
+
         protected:
             void assemble_inputs_and_outputs();
 
             std::string fused_op_ir2;
-            std::string plan_rule;
+            std::vector<std::string> plan_rules;
         };
     }
 }

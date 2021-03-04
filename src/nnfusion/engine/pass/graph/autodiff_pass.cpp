@@ -27,6 +27,9 @@
 #include "autodiff_pass.hpp"
 
 DEFINE_bool(fautodiff, false, "Add backward graph.");
+DEFINE_string(ftraining_optimizer,
+              "{}",
+              "Configs for training optimizer (expressed in json string).");
 
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
@@ -38,16 +41,32 @@ bool AutodiffPass::run_on_graph(std::shared_ptr<Graph>& graph)
     if (!enable_autodiff)
         return true;
 
+    nnfusion::pass::graph::autodiff::training_optimizer_configs =
+        nlohmann::json::parse(FLAGS_ftraining_optimizer);
+    {
+        // process training_optimizer_configs
+        // TODO: support other optimizers
+        NNFUSION_CHECK(training_optimizer_configs.find("optimizer") !=
+                       training_optimizer_configs.end())
+            << "Training optimizer should be set in -ftraining_optimizer.";
+        NNFUSION_CHECK(training_optimizer_configs["optimizer"] == "SGD")
+            << "NNFusion only support SGD optimizer yet.";
+        NNFUSION_CHECK(training_optimizer_configs.find("learning_rate") !=
+                       training_optimizer_configs.end())
+            << "Cannot find learning_rate in training_optimizer.";
+    }
+
     // assume graph outputs are loss
     GNodeIndexVector outputs_index;
     GNodeIndexVector outputs_grad;
-    for (auto gnode : graph->get_outputs())
+    for (size_t i = 0; i < graph->get_output_size(); i++)
     {
+        auto gnode = graph->get_outputs()[i];
         NNFUSION_CHECK(gnode->get_output_size() == 1);
         outputs_index.emplace_back(gnode, 0);
         auto one_op =
             std::make_shared<op::Constant>(element::f32, gnode->get_shape(), std::vector<float>{1});
-        one_op->set_name("out_grad");
+        one_op->set_name(gnode->get_name() + "_grad");
         auto one = graph->add_node_and_edge(one_op, GNodeVector());
         outputs_grad.emplace_back(one, 0);
     }

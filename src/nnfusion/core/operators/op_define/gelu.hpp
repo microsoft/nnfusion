@@ -31,5 +31,16 @@ namespace nnfusion
             /// \brief Constructs a gelu operation.
             Gelu();
         };
+
+        /// \brief Elementwise GeluGrad operation.
+        ///
+        class GeluGrad : public ElementwiseArithmetic
+        {
+        public:
+            /// \brief Constructs a GeluGrad operation.
+            ///
+            /// \param arg Node that produces the gelu forward input tensor.
+            GeluGrad();
+        };
     }
 }

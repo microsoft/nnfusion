@@ -57,13 +57,17 @@ LanguageUnit_p cuda::Result::emit_function_body()
     {
         if (FLAGS_fextern_result_memory)
         {
-            auto& dst = m_context->outputs[0];
-            auto& src = m_context->inputs[0];
-            *_lu << dst->get_element_type().c_type_string() << "* " << dst->get_name()
-                 << " = output0;\n";
-            *_lu << src->get_element_type().c_type_string() << "* " << src->get_name()
-                 << " = input0;\n";
-            emit_memcpyDtD(*_lu, dst, src);
+            // auto& dst = m_context->outputs[0];
+            // auto& src = m_context->inputs[0];
+            // *_lu << dst->get_element_type().c_type_string() << "* " << dst->get_name()
+            //      << " = output0;\n";
+            // *_lu << src->get_element_type().c_type_string() << "* " << src->get_name()
+            //      << " = input0;\n";
+            // emit_memcpyDtD(*_lu, dst, src);
+            // *_lu << "CUDA_SAFE_CALL(cudaMemcpyAsync(output0, input0, 4, cudaMemcpyDeviceToDevice, stream));";
+            *_lu << "if (input0 != output0)\n";
+            *_lu << "    CUDA_SAFE_CALL(cudaMemcpyAsync(output0, input0,"
+                 << m_context->outputs[0]->size() << ", cudaMemcpyDeviceToDevice, stream));";
         }
         else
         {

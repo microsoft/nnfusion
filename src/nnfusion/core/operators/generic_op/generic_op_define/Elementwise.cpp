@@ -34,6 +34,8 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Tan", element_op("tan", "")},
     {"Tanh", element_op("tanh", "")},
     {"Power", element_op("pow", "")},
+    {"PowerBackwardBase", element_op("power_backward_base", "")},
+    {"PowerBackwardExponent", element_op("power_backward_exponent", "")},
     {"Add", element_op("add", "x0 + x1")},
     {"Subtract", element_op("subtract", "x0 - x1")},
     {"Multiply", element_op("mul", "x0 * x1")},
@@ -128,6 +130,22 @@ auto trans_elementwise = [&](std::shared_ptr<graph::GNode>& node) {
         .infershape(nnfusion::op::infershape::copy_shape_from_inputs)                              \
         .translate_v2([](std::shared_ptr<graph::GNode> node) -> std::string {                      \
             return trans_elementwise(node);                                                        \
+        })                                                                                         \
+        .infersharedmemory([](std::shared_ptr<graph::GNode> gnode) -> void {                       \
+            auto generic_op =                                                                      \
+                std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());           \
+            std::vector<size_t> shared_memory;                                                     \
+            auto& input_shape = gnode->get_input_shape(0);                                         \
+            auto& output_shape = gnode->get_output_shape(0);                                       \
+            if (input_shape.size() == output_shape.size())                                         \
+            {                                                                                      \
+                shared_memory.clear();                                                             \
+                for (size_t i = 0; i < output_shape.size(); i++)                                   \
+                {                                                                                  \
+                    shared_memory.push_back(1);                                                    \
+                }                                                                                  \
+            }                                                                                      \
+            generic_op->set_shared_memory(shared_memory);                                          \
         });
 
 REGISTER_ELEM_OP(Abs)
@@ -149,6 +167,8 @@ REGISTER_ELEM_OP(Rsqrt)
 REGISTER_ELEM_OP(Tan)
 REGISTER_ELEM_OP(Tanh)
 REGISTER_ELEM_OP(Power)
+REGISTER_ELEM_OP(PowerBackwardBase)
+REGISTER_ELEM_OP(PowerBackwardExponent)
 //REGISTER_ELEM_OP(Add)
 REGISTER_ELEM_OP(Subtract)
 REGISTER_ELEM_OP(Multiply)

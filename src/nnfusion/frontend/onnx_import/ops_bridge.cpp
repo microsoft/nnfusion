@@ -26,6 +26,7 @@
 #include <unordered_map>
 
 #include "op/adam_optimizer.hpp"
+#include "op/attention.hpp"
 #include "op/batch_norm.hpp"
 #include "op/binaryop.hpp"
 #include "op/cast.hpp"
@@ -34,8 +35,10 @@
 #include "op/const_of_shape.hpp"
 #include "op/constant.hpp"
 #include "op/conv.hpp"
+#include "op/conv_trans.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
+#include "op/embed_layer_norm.hpp"
 #include "op/erf_grad.hpp"
 #include "op/expand.hpp"
 #include "op/flatten.hpp"
@@ -49,11 +52,15 @@
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
 #include "op/memory_copy.hpp"
+#include "op/non_zero.hpp"
 #include "op/one_hot.hpp"
 #include "op/pool.hpp"
+#include "op/range.hpp"
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
+#include "op/resize.hpp"
 #include "op/shape.hpp"
+#include "op/skip_layer_norm.hpp"
 #include "op/slice.hpp"
 #include "op/softmax.hpp"
 #include "op/split.hpp"
@@ -64,6 +71,7 @@
 #include "op/transpose.hpp"
 #include "op/unaryop.hpp"
 #include "op/unsqueeze.hpp"
+#include "op/where.hpp"
 
 #include "ops_bridge.hpp"
 
@@ -132,6 +140,7 @@ namespace nnfusion
                 REGISTER_EMPTY_DOMAIN("com.microsoft.nchwc");
                 REGISTER_EMPTY_DOMAIN("ai.onnx.training");
                 REGISTER_EMPTY_DOMAIN("ai.onnx.ml");
+                REGISTER_EMPTY_DOMAIN("ai.onnx.preview.training");
                 REGISTER_EMPTY_DOMAIN("com.microsoft");
                 REGISTER_EMPTY_DOMAIN("com.microsoft.mlfeaturizers");
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
@@ -144,6 +153,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ArgMax", 1, TranslateIndexReductionOp<op::ArgMax>);
                 REGISTER_OPERATOR("Asin", 1, TranslateUnaryOp<op::Asin>);
                 REGISTER_OPERATOR("Atan", 1, TranslateUnaryOp<op::Atan>);
+                REGISTER_DOMAIN_OPERATOR("com.microsoft", "Attention", 1, TranslateAttentionOp);
                 REGISTER_OPERATOR("AveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("BatchNormalization", 1, TranslateBatchNormOp);
                 REGISTER_OPERATOR("Cast", 1, TranslateCastOp);
@@ -159,6 +169,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("DivGrad", 1, TranslateDivGradOp);
                 REGISTER_OPERATOR("Dropout", 1, TranslateDropoutOp);
                 //REGISTER_OPERATOR("Elu", 1, elu);
+                REGISTER_DOMAIN_OPERATOR(
+                    "com.microsoft", "EmbedLayerNormalization", 1, TranslateEmbedLayerNormOp);
                 REGISTER_OPERATOR("Equal", 1, TranslateBinaryOp<op::Equal>);
                 REGISTER_OPERATOR("Erf", 1, TranslateUnaryOp<op::Erf>);
                 REGISTER_OPERATOR("ErfGrad", 1, TranslateErfGradOp);
@@ -196,11 +208,13 @@ namespace nnfusion
                 REGISTER_OPERATOR("Mul", 1, TranslateLegacyBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Mul", 7, TranslateBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);
+                REGISTER_OPERATOR("NonZero", 1, TranslateNonZeroOp);
                 REGISTER_OPERATOR("Not", 1, TranslateUnaryOp<op::Not>);
                 REGISTER_OPERATOR("OneHot", 1, TranslateOneHotOp);
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);
                 REGISTER_OPERATOR("Pow", 1, TranslateBinaryOp<op::Power>);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
+                // REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
                 //REGISTER_OPERATOR("Reciprocal", 1, reciprocal);
                 //REGISTER_OPERATOR("ReduceLogSum", 1, reduce_log_sum);
                 //REGISTER_OPERATOR("ReduceLogSumExp", 1, reduce_log_sum_exp);
@@ -221,6 +235,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("Sin", 1, TranslateUnaryOp<op::Sin>);
                 REGISTER_OPERATOR("Slice", 1, TranslateSliceOp);
                 REGISTER_OPERATOR("Slice", 10, TranslateSliceOp);
+                REGISTER_DOMAIN_OPERATOR(
+                    "com.microsoft", "SkipLayerNormalization", 1, TranslateSkipLayerNormOp);
                 REGISTER_OPERATOR("Softmax", 1, TranslateSoftmaxOp);
                 REGISTER_OPERATOR(
                     "SoftmaxCrossEntropyLoss", 1, TranslateSparseSoftmaxCrossEntropyOp);
@@ -249,6 +265,10 @@ namespace nnfusion
                 REGISTER_OPERATOR("Transpose", 1, TranslateTransposeOp);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "TransposeMatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("Unsqueeze", 1, TranslateUnsqueezeOp);
+                REGISTER_OPERATOR("ConvTranspose", 1, TranslateConvTransposeOp);
+                REGISTER_OPERATOR("Resize", 1, TranslateResizeOp);
+                REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);
+                REGISTER_OPERATOR("Where", 1, TranslateWhereOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

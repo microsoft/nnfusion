@@ -20,6 +20,7 @@ DECLARE_int32(fwarmup_step);
 DECLARE_int32(frun_step);
 DECLARE_bool(fcodegen_debug);
 DECLARE_bool(fextern_result_memory);
+DECLARE_bool(fcustomized_mem_imp);
 
 void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -74,7 +75,7 @@ void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     auto& lu_exit_end = *(projgen->lup_exit->end);
     {
-        lu_exit_end << "}\n\n";
+        lu_exit_end << "UnloadHlslImportedDll();\n}\n\n";
     }
 
     auto& lu_main_begin = *(lup_main->begin);
@@ -98,7 +99,7 @@ void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         lup_program_end << "}\n\n";
     }
 
-    lup_member->unit_vec.push_back(declaration::antares_hlsl_dll);
+    lup_member->unit_vec.push_back(declaration::antares_hlsl_dll_cs);
 
     // add requirement
     projgen->lup_codegen->require(header::systems);
@@ -164,7 +165,8 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                         {
                             // prepare shader
                             LanguageUnit_p shader_decl = std::make_shared<LanguageUnit>(
-                                hShader_name + "_decl", "static IntPtr " + hShader_name + ";\n");
+                                "declaration::" + hShader_name + "_decl",
+                                "static IntPtr " + hShader_name + ";\n");
                             string fname = kernel_func_def->symbol;
                             if (fname.length() > 128)
                             {
@@ -225,7 +227,11 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
             LanguageUnit_p kernel_func_call =
                 std::make_shared<LanguageUnit>(fu->call_unit->get_symbol(), call_str);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
+            if (FLAGS_fcustomized_mem_imp)
+                lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).second);
         }
 
         if (thread_name != "default_thread")

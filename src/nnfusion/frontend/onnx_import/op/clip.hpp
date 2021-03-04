@@ -40,28 +40,44 @@ namespace nnfusion
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
 
                     Node node{node_proto};
-                    double max_value =
-                        node.get_attribute_value<double>("max", std::numeric_limits<double>::max());
-                    double min_value = node.get_attribute_value<double>(
-                        "min", std::numeric_limits<double>::lowest());
 
-                    auto max_value_op = std::make_shared<op::Constant>(
-                        input_gnode->get_element_type(),
-                        nnfusion::Shape{},
-                        std::vector<std::string>{std::to_string(max_value)});
-                    auto max_value_gnode =
-                        m_graph->add_node_and_edge(max_value_op, graph::GNodeVector({}));
-                    max_value_gnode =
-                        make_broadcast_node(max_value_gnode, input_gnode->get_shape(), m_graph);
-
-                    auto min_value_op = std::make_shared<op::Constant>(
-                        input_gnode->get_element_type(),
-                        nnfusion::Shape{},
-                        std::vector<std::string>{std::to_string(min_value)});
-                    auto min_value_gnode =
-                        m_graph->add_node_and_edge(min_value_op, graph::GNodeVector({}));
+                    std::shared_ptr<nnfusion::graph::GNode> min_value_gnode;
+                    if (node_proto.input_size() >= 2)
+                    {
+                        min_value_gnode = GetInputNode(all_ng_nodes, node_proto, 1);
+                    }
+                    else
+                    {
+                        double min_value = node.get_attribute_value<double>(
+                            "min", std::numeric_limits<double>::lowest());
+                        auto min_value_op = std::make_shared<op::Constant>(
+                            input_gnode->get_element_type(),
+                            nnfusion::Shape{},
+                            std::vector<std::string>{std::to_string(min_value)});
+                        min_value_gnode =
+                            m_graph->add_node_and_edge(min_value_op, graph::GNodeVector({}));
+                    }
                     min_value_gnode =
                         make_broadcast_node(min_value_gnode, input_gnode->get_shape(), m_graph);
+
+                    std::shared_ptr<nnfusion::graph::GNode> max_value_gnode;
+                    if (node_proto.input_size() >= 3)
+                    {
+                        max_value_gnode = GetInputNode(all_ng_nodes, node_proto, 2);
+                    }
+                    else
+                    {
+                        double max_value = node.get_attribute_value<double>(
+                            "max", std::numeric_limits<double>::max());
+                        auto max_value_op = std::make_shared<op::Constant>(
+                            input_gnode->get_element_type(),
+                            nnfusion::Shape{},
+                            std::vector<std::string>{std::to_string(max_value)});
+                        max_value_gnode =
+                            m_graph->add_node_and_edge(max_value_op, graph::GNodeVector({}));
+                    }
+                    max_value_gnode =
+                        make_broadcast_node(max_value_gnode, input_gnode->get_shape(), m_graph);
 
                     auto max_op = std::make_shared<op::Maximum>();
                     auto max_gnode =

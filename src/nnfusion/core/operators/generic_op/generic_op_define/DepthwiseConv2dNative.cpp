@@ -77,8 +77,8 @@ REGISTER_OP(DepthwiseConv2dNative)
     */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto ir_template =
-            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
-        auto manual_rule = R"( ## @: plan/depthwise_convfwd_@data_format@_v1 )";
+            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@, KH in @kernel_h@, KW in @kernel_w@; )";
+        // auto manual_rule = R"( ## @: plan/depthwise_convfwd_@data_format@_v1 )";
 
         auto _op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
@@ -102,8 +102,12 @@ REGISTER_OP(DepthwiseConv2dNative)
         config["output0_layout"] = is_nhwc ? "[N, HO, WO, C]" : "[N, C, HO, WO]";
         config["height"] = is_nhwc ? out_shape[1] : out_shape[2];
         config["width"] = is_nhwc ? out_shape[2] : out_shape[3];
+        config["in_height"] = is_nhwc ? in_shape[1] : in_shape[2];
+        config["in_width"] = is_nhwc ? in_shape[2] : in_shape[3];
         config["pad_0"] = to_string(padding_h);
         config["pad_1"] = to_string(padding_w);
+        config["kernel_h"] = to_string(kernel_size_h);
+        config["kernel_w"] = to_string(kernel_size_w);
         std::string HO = "-@pad_0@ + KH + HO * " + to_string(stride_h);
         std::string WO = "-@pad_1@ + KW + WO * " + to_string(stride_w);
         std::string shape_template =
@@ -113,15 +117,16 @@ REGISTER_OP(DepthwiseConv2dNative)
         std::string pad_cond;
         if (padding_h || padding_w)
         {
-            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @height@, " + WO + " >= 0, " +
-                                WO +
-                                " < @width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
+            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @in_height@, " + WO +
+                                " >= 0, " + WO +
+                                " < @in_width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
             pad_cond = op::create_code_from_template(pad_template, config);
         }
         config["pad_cond"] = pad_cond;
 
-        return op::create_code_from_template(ir_template, config) +
-               op::create_code_from_template(manual_rule, {{"data_format", data_format}});
+        // return op::create_code_from_template(ir_template, config) +
+        //        op::create_code_from_template(manual_rule, {{"data_format", data_format}});
+        return op::create_code_from_template(ir_template, config);
     })
     .infersharedmemory([](std::shared_ptr<graph::GNode> gnode) -> void {
         auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());

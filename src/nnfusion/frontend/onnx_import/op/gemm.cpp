@@ -40,7 +40,6 @@ namespace nnfusion
 
                     auto A = input_indexes[0];
                     auto B = input_indexes[1];
-                    auto C = input_indexes[2];
 
                     Node node(node_proto);
                     auto beta_value = node.get_attribute_value<float>("beta", 1.0);
@@ -70,6 +69,7 @@ namespace nnfusion
 
                     if (beta_value != 0)
                     {
+                        auto C = input_indexes[2];
                         auto beta_op = std::make_shared<op::Constant>(
                             element::f32, C.get_shape(), std::vector<float>({beta_value}));
                         auto beta = m_graph->add_node_and_edge(beta_op, graph::GNodeVector({}));

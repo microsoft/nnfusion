@@ -41,3 +41,17 @@ void ElementwiseArithmetic::validate_and_infer_types(std::shared_ptr<graph::GNod
 
     gnode->set_output_type_and_shape(0, args_et, args_pshape);
 }
+
+void ElementwiseArithmetic::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
+{
+    auto& input_shape = gnode->get_input_shape(0);
+    auto& output_shape = gnode->get_output_shape(0);
+    if (input_shape.size() == output_shape.size())
+    {
+        m_shared_memory.clear();
+        for (size_t i = 0; i < output_shape.size(); i++)
+        {
+            m_shared_memory.push_back(1);
+        }
+    }
+}

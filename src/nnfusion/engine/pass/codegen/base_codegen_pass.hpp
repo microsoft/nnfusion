@@ -5,7 +5,7 @@
 
 #include "codegenerator.hpp"
 #include "nnfusion/engine/interpreter.hpp"
-
+#include "nnfusion/engine/pass/tensor/tensor_memory_layout.hpp"
 using namespace nnfusion;
 using namespace nnfusion::graph;
 using namespace nnfusion::codegen;
@@ -90,12 +90,15 @@ namespace nnfusion
                 return std::make_pair(lup_in_init, lup_in_exit);
             }
             virtual NNFusion_DeviceType device_type() { return NNFusion_DeviceType::UNKNOWN; }
+            virtual std::pair<LanguageUnit_p, LanguageUnit_p>
+                get_customized_mem_imp(nnfusion::ir::Instruction::Pointer ins);
             CodeGenerator::Pointer projgen;
             std::unordered_map<string, nnfusion::codegen::CodegenFuncCallsUnit_p> kernel_func_calls;
             std::unordered_map<string, std::pair<std::string, LanguageUnit_p>> kernel_func_defs;
             std::string m_codegen_folder;
             std::string m_kernel_folder;
             std::string m_kernel_suffix;
+            std::unordered_set<std::shared_ptr<nnfusion::descriptor::Tensor>> free_at_last;
         };
     }
 }

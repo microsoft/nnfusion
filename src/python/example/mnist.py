@@ -7,6 +7,7 @@ sys.path.insert(1, os.path.abspath("./src/python"))
 import time
 import numpy as np
 import torch
+torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
 from nnf.session import Session
@@ -14,6 +15,7 @@ from nnf.runner import Runner
 from nnf.description import IODescription, generate_sample
 from nnf.trainer import Trainer
 import data_loader
+import json
 
 os.environ["PATH"] = os.path.abspath(
     "./build/src/tools/nnfusion") + ":" + os.environ["PATH"]
@@ -76,8 +78,15 @@ def train_mnist():
     device = "cuda:0"
     batch_size = 5
 
-    trainer = Trainer(model, loss_func, device)
-    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size)
+    codegen_flags = {
+        "autodiff": True,  # add backward graph
+        "training_mode": True,  # move weight external
+        "extern_result_memory": True,  # move result external
+        "training_optimizer": '\'' + json.dumps({"optimizer": "SGD", "learning_rate": 0.001}) +'\'',  # training optimizer configs
+    }
+
+    trainer = Trainer(model, loss_func, device=device, codegen_flags=codegen_flags)
+    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size, shuffle=False)
     print("feeding")
     i = 0
     for i, batch in enumerate(train_loader):

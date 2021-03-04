@@ -56,6 +56,22 @@ add_library(onnx_import STATIC
         op/transpose.cpp
         op/gemm.hpp
         op/gemm.cpp
+        op/resize.hpp
+        op/resize.cpp
+        op/conv.hpp
+        op/conv.cpp
+        op/shape.hpp
+        op/shape.cpp
+        op/conv_trans.hpp
+        op/conv_trans.cpp
+        op/where.hpp
+        op/where.cpp
+        op/embed_layer_norm.hpp
+        op/embed_layer_norm.cpp
+        op/skip_layer_norm.hpp
+        op/skip_layer_norm.cpp
+        op/attention.hpp
+        op/attention.cpp
         # ${ops_source}
         util/broadcasting.cpp
         util/graph_convert.cpp

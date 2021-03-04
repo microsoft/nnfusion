@@ -59,6 +59,7 @@ const std::string& nnfusion::descriptor::Tensor::get_name(bool get_valid_name) c
     // return original name
     if (!get_valid_name)
     {
+        NNFUSION_CHECK(!m_name.empty()) << "Tensor name cannot be empty.";
         return m_name;
     }
 

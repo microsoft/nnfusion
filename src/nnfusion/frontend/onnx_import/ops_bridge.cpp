@@ -88,6 +88,7 @@ namespace nnfusion
                                         const std::string& domain,
                                         const std::map<std::int64_t, ConvertFunc>& map)
                 {
+                    const static ConvertFunc EMPTY_FUNC = nullptr;
                     int64_t avail_version = version;
                     while (avail_version > 0)
                     {
@@ -97,9 +98,7 @@ namespace nnfusion
                             return it->second;
                         }
                     }
-                    NNFUSION_CHECK_FAIL()
-                        << "Unsupported version: " << (domain.empty() ? "" : domain + ".") << name
-                        << ":" << std::to_string(version);
+                    return EMPTY_FUNC;
                 }
             } // namespace detail
 
@@ -120,7 +119,11 @@ namespace nnfusion
 
                 for (const auto& op : dm->second)
                 {
-                    result.emplace(op.first, detail::find(op.first, version, domain, op.second));
+                    const auto& convert_func = detail::find(op.first, version, domain, op.second);
+                    if (convert_func)
+                    {
+                        result.emplace(op.first, convert_func);
+                    }
                 }
                 return result;
             }
@@ -214,7 +217,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);
                 REGISTER_OPERATOR("Pow", 1, TranslateBinaryOp<op::Power>);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
-                // REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
+                REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
                 //REGISTER_OPERATOR("Reciprocal", 1, reciprocal);
                 //REGISTER_OPERATOR("ReduceLogSum", 1, reduce_log_sum);
                 //REGISTER_OPERATOR("ReduceLogSumExp", 1, reduce_log_sum_exp);

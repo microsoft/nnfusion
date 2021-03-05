@@ -14,7 +14,8 @@
 // limitations under the License.
 //*****************************************************************************
 
-// Microsoft (c) 2019, NNFusion Team
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #pragma once
 
@@ -24,23 +25,26 @@ namespace nnfusion
 {
     struct oi_pair
     {
-        oi_pair(size_t out, size_t in, bool destruct)
+        oi_pair(size_t out, size_t in, bool destruct, bool force_inplace = false)
             : output(out)
             , input(in)
             , destructive(destruct)
             , input_offset(0)
+            , force_inplace(force_inplace)
         {
         }
-        oi_pair(size_t out, size_t in, bool destruct, size_t offset)
+        oi_pair(size_t out, size_t in, bool destruct, size_t offset, bool force_inplace = false)
             : output(out)
             , input(in)
             , destructive(destruct)
             , input_offset(offset)
+            , force_inplace(force_inplace)
         {
         }
         size_t output;
         size_t input;
         bool destructive;
+        bool force_inplace;
         size_t input_offset = 0;
     };
 
@@ -78,4 +82,22 @@ namespace nnfusion
         // map of output-input pairs for which in-place computation is valid
         std::vector<struct oi_pair> m_in_place_oi_pairs;
     };
+
+    template <class T>
+    void AddInplace(T op, size_t output, size_t input, bool destructive, bool force_inplace = false)
+    {
+        auto op_annotations = op->get_op_annotations();
+        if (op_annotations)
+        {
+            // pass-through
+            op_annotations->add_in_place_oi_pair({output, input, destructive, force_inplace});
+        }
+        else
+        {
+            op_annotations = std::make_shared<Annotations>();
+            // pass-through
+            op_annotations->add_in_place_oi_pair({output, input, destructive, force_inplace});
+            op->set_op_annotations(op_annotations);
+        }
+    }
 }

@@ -92,6 +92,7 @@ namespace nnfusion
             virtual NNFusion_DeviceType device_type() { return NNFusion_DeviceType::UNKNOWN; }
             virtual std::pair<LanguageUnit_p, LanguageUnit_p>
                 get_customized_mem_imp(nnfusion::ir::Instruction::Pointer ins);
+            LanguageUnit_p codegen_mem_ref(KernelEmitter::Pointer kernel);
             CodeGenerator::Pointer projgen;
             std::unordered_map<string, nnfusion::codegen::CodegenFuncCallsUnit_p> kernel_func_calls;
             std::unordered_map<string, std::pair<std::string, LanguageUnit_p>> kernel_func_defs;

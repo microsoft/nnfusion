@@ -22,6 +22,7 @@ using namespace nnfusion::kernels;
 DEFINE_bool(fmem_trace, false, "Record and dump memory trace.");
 DEFINE_string(fmem_log_path, "memory.log", "The file path of memory log.");
 DECLARE_string(fhlsl_codegen_type);
+DECLARE_bool(fextern_result_memory);
 
 bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -82,7 +83,8 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             // The output of output nodes refers to the input, so there is NO need
             // to allocate memory space for output of output nodes.
             if (!gnode || !gnode->get_op_ptr()->is_output() ||
-                (gnode->get_op_ptr()->is_output() && FLAGS_fhlsl_codegen_type != "default"))
+                (gnode->get_op_ptr()->is_output() &&
+                 (FLAGS_fhlsl_codegen_type != "default" || !FLAGS_fextern_result_memory)))
                 newlist.insert(ins->liveness_new_list.begin(), ins->liveness_new_list.end());
 
             // Allocate in two passes to make sure ref-tensors is after non-ref-tensors

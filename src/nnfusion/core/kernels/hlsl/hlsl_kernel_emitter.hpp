@@ -48,16 +48,6 @@ namespace nnfusion
                             {
                                 is_memcpy = true;
                             }
-
-                            if (annotation.find("|inplace_wg}") != string::npos)
-                            {
-                                if (!ctx->annotations)
-                                    ctx->annotations = std::make_shared<Annotations>();
-                                // TODO: we use inplace_annotation to implement the reference_tensor, i.e., the
-                                // output 0 shares the same address with input 0
-                                // need to add a new annotation type or ref_tensor mechanism in the future
-                                ctx->annotations->add_in_place_oi_pair({0, 0, false});
-                            }
                         }
                         if (ir.empty())
                         {

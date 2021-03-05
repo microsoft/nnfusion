@@ -203,6 +203,7 @@ class Session(object):
         self._model_desc = ModelDescription(self._input_desc,
                                             self._output_desc)
         if workdir:
+            workdir = os.path.expandvars(os.path.expanduser(workdir))
             self._dir_ctx = None
             self._workdir = workdir
             os.makedirs(workdir, exist_ok=True)
@@ -213,6 +214,7 @@ class Session(object):
         self._onnx_model_path = os.path.join(self._workdir, "nnf.onnx")
         convert_model_to_onnx(self._model, self._model_desc, self._device,
                               self._onnx_model_path)
+        torch.cuda.empty_cache()
 
         ## codegen
         self._codegen_flags = {"extern_result_memory": 1}

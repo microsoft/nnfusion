@@ -34,8 +34,8 @@ namespace nnfusion
             namespace set_1
             {
                 NamedNodeVector TranslateCustomOp(const onnx::NodeProto& node_proto,
-                                                   const NodeMap& all_ng_nodes,
-                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                                                  const NodeMap& all_ng_nodes,
+                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     Node node(node_proto);

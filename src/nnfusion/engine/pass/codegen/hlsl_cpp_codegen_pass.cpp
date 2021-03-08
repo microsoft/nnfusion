@@ -395,7 +395,7 @@ void HLSLCPPCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
     lu_ << "kernel_entry(" << join(params, ", ") << ");\n";
     lu_ << d2hcopy.get_code();
     lu_ << "dxStreamSynchronize(0);\n";
-
+    lu_ << "std::string result;\n";
     for (size_t i = 0; i < tu->out.size(); i++)
     {
         auto& tensor = *tu->out[i];
@@ -403,11 +403,22 @@ void HLSLCPPCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
         //     << "_host[0] << \", \" << " << tensor.get_name() << "_host[1] << \",  .., \" << "
         //     << tensor.get_name() << "_host[" << tensor.get_tensor_layout()->get_size()
         //     << "-1] << \"]\" << std::endl;";
-
-        lu_ << "std::string result = \"" << tensor.get_name() << "_host = [\" + std::to_string("
-            << tensor.get_name() << "_host[0]) + \", \" + std::to_string(" << tensor.get_name()
-            << "_host[1]) + \",  .., \" + std::to_string(" << tensor.get_name() << "_host["
-            << tensor.get_tensor_layout()->get_size() << "-1]) + \"]\\n\";\n";
+        size_t num = std::min(size_t(10), tensor.get_tensor_layout()->get_size());
+        if (num == 1)
+        {
+            lu_ << "result = \"" << tensor.get_name() << "_host = [\" + std::to_string("
+                << tensor.get_name() << "_host[0]) + \"]\\n\";\n";
+        }
+        else
+        {
+            lu_ << "result = \"" << tensor.get_name() << "_host = [";
+            for (size_t j = 0; j < num; j++)
+            {
+                lu_ << "\" + std::to_string(" << tensor.get_name() << "_host[" << j << "]) + \", ";
+            }
+            lu_ << ".., \" + std::to_string(" << tensor.get_name() << "_host["
+                << tensor.get_tensor_layout()->get_size() << "-1]) + \"]\\n\";\n";
+        }
         lu_ << "OutputDebugStringA(result.c_str());\n";
     }
 

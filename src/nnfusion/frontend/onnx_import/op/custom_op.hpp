@@ -33,7 +33,7 @@ namespace nnfusion
         {
             namespace set_1
             {
-                NamedNodeVector TranslateCustomrOp(const onnx::NodeProto& node_proto,
+                NamedNodeVector TranslateCustomOp(const onnx::NodeProto& node_proto,
                                                    const NodeMap& all_ng_nodes,
                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
@@ -123,7 +123,7 @@ namespace nnfusion
                     return ret;
                 }
             } // namespace set_1
-            const static ConvertFunc custom_translator = set_1::TranslateCustomrOp;
+            const static ConvertFunc custom_translator = set_1::TranslateCustomOp;
         } //namespace onnx_import
     }     // namespace frontend
 } // namespace  nnfusion

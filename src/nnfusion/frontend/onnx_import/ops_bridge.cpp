@@ -115,14 +115,16 @@ namespace nnfusion
             {
                 ConvertFuncMap result;
                 auto dm = m_map.find(domain);
-                NNFUSION_CHECK(dm != std::end(m_map)) << "Unknown Domain: " << domain;
-
-                for (const auto& op : dm->second)
+                if (dm != std::end(m_map))
                 {
-                    const auto& convert_func = detail::find(op.first, version, domain, op.second);
-                    if (convert_func)
+                    for (const auto& op : dm->second)
                     {
-                        result.emplace(op.first, convert_func);
+                        const auto& convert_func =
+                            detail::find(op.first, version, domain, op.second);
+                        if (convert_func)
+                        {
+                            result.emplace(op.first, convert_func);
+                        }
                     }
                 }
                 return result;
@@ -140,12 +142,6 @@ namespace nnfusion
 
             OperatorsBridge::OperatorsBridge()
             {
-                REGISTER_EMPTY_DOMAIN("com.microsoft.nchwc");
-                REGISTER_EMPTY_DOMAIN("ai.onnx.training");
-                REGISTER_EMPTY_DOMAIN("ai.onnx.ml");
-                REGISTER_EMPTY_DOMAIN("ai.onnx.preview.training");
-                REGISTER_EMPTY_DOMAIN("com.microsoft");
-                REGISTER_EMPTY_DOMAIN("com.microsoft.mlfeaturizers");
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
                 REGISTER_OPERATOR("Acos", 1, TranslateUnaryOp<op::Acos>);
                 REGISTER_OPERATOR("AdamOptimizer", 1, TranslateAdamOptimizerOp);

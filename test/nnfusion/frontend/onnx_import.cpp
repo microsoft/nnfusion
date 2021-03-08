@@ -467,6 +467,27 @@ TEST(nnfusion_onnx_import, cos_op)
     }
 }
 
+TEST(nnfusion_onnx_import, custom_op)
+{
+    // model ctx: input -> one_hot of depth 10 -> add_one
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/custom_op.onnx"));
+    size_t depth = 10;
+
+    RawInputs raw_inputs;
+    raw_inputs.emplace_back(convert_to_raw(vector<int64_t>{3, 1, 8}));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs[0])};
+
+    vector<float> expect_out(3 * depth, 1);
+    expect_out[0 * depth + 3] += 1;
+    expect_out[1 * depth + 1] += 1;
+    expect_out[2 * depth + 8] += 1;
+
+    EXPECT_TRUE(test::all_close_f(out, expect_out));
+}
+
 TEST(nnfusion_onnx_import, div_op)
 {
     auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/div.onnx"));

@@ -10,6 +10,7 @@
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 DECLARE_string(fhlsl_codegen_type);
+DECLARE_bool(fextern_result_memory);
 
 namespace nnfusion
 {
@@ -23,15 +24,30 @@ namespace nnfusion
                 Result(shared_ptr<KernelContext> ctx)
                     : HLSLKernelEmitter(ctx)
                 {
+                    auto result_op =
+                        static_pointer_cast<nnfusion::op::Result>(ctx->gnode->get_op_ptr());
+                    need_copy_to_host = result_op->needs_copy_to_host();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
-                    if (FLAGS_fhlsl_codegen_type != "default")
+                    if (FLAGS_fhlsl_codegen_type == "csharp")
                     {
-                        auto& lu = *_lu;
-                        lu << "output0 = input0;\n";
+                        *_lu << "output0 = input0;";
+                    }
+                    else if (FLAGS_fhlsl_codegen_type == "cpp")
+                    {
+                        if (FLAGS_fextern_result_memory)
+                        {
+                            *_lu << "if (input0 != output0)\n";
+                            *_lu << "    dxMemcpyDtoDAsync(output0, input0, "
+                                 << m_context->outputs[0]->size() << ", 0);";
+                        }
+                        else
+                        {
+                            *_lu << "*output0 = input0;";
+                        }
                     }
                     return _lu;
                 }
@@ -92,7 +108,10 @@ namespace nnfusion
                         // ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
                         if (FLAGS_fhlsl_codegen_type == "cpp")
                         {
-                            ss << "void* output" << i;
+                            if (need_copy_to_host && !FLAGS_fextern_result_memory)
+                                ss << "void** output" << i;
+                            else
+                                ss << "void* output" << i;
                         }
                         else if (FLAGS_fhlsl_codegen_type == "csharp")
                         {
@@ -106,6 +125,9 @@ namespace nnfusion
                        << "(" << join(params, ", ") << ")";
                     return _lu;
                 }
+
+            private:
+                bool need_copy_to_host;
             };
         }
     }

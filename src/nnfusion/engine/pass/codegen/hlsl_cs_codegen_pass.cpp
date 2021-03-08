@@ -225,6 +225,11 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                            "}, " + stream_name + ");\n";
             }
 
+            if (kernel && kernel->is_eliminative())
+            {
+                call_str = "// " + call_str;
+            }
+
             LanguageUnit_p kernel_func_call =
                 std::make_shared<LanguageUnit>(fu->call_unit->get_symbol(), call_str);
             if (FLAGS_fcustomized_mem_imp)

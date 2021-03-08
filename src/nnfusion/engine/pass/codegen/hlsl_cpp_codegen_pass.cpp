@@ -272,11 +272,19 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
             {
                 call_str = func_name + call_str;
+                if (kernel && kernel->is_eliminative())
+                {
+                    call_str = "// " + call_str;
+                }
             }
             else
             {
                 std::string buffers =
                     "void* args_" + to_string(count) + "[] = { " + call_str + "};\n";
+                if (kernel && kernel->is_eliminative())
+                {
+                    buffers += "// ";
+                }
                 call_str = buffers + "dxShaderLaunchAsync(" + hShader_name + ", args_" +
                            to_string(count) + ", " + stream_name + ");\n";
             }
@@ -338,7 +346,6 @@ void HLSLCPPCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
         lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
             << tensor.get_element_type().c_type_string() << ") * "
             << tensor.get_tensor_layout()->get_size() << ");\n";
-
         fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
                 << tensor.get_name() << "_host[i]= 1;\n";
         h2dcopy << "dxMemcpyHtoDAsync(" << tensor.get_name() << ", " << tensor.get_name()
@@ -354,6 +361,13 @@ void HLSLCPPCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
         lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
             << "_host = new " << tensor.get_element_type().c_type_string() << "["
             << tensor.get_tensor_layout()->get_size() << "];\n";
+        if (FLAGS_fextern_result_memory)
+        {
+            lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
+                << tensor.get_element_type().c_type_string() << ") * "
+                << tensor.get_tensor_layout()->get_size() << ");\n";
+        }
+
         d2hcopy << "dxMemcpyDtoHAsync(" << tensor.get_name() << "_host, " << tensor.get_name()
                 << ", sizeof(" << tensor.get_element_type().c_type_string() << ") * "
                 << tensor.get_tensor_layout()->get_size() << ", nullptr);\n";
@@ -371,7 +385,10 @@ void HLSLCPPCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
     for (int i = 0; i < tu->out.size(); i++)
     {
         auto& tv = tu->out[i];
-        params.push_back(tv->get_name());
+        if (FLAGS_fextern_result_memory)
+            params.push_back(tv->get_name());
+        else
+            params.push_back("&" + tv->get_name());
     }
 
     lu_ << h2dcopy.get_code();
@@ -395,6 +412,20 @@ void HLSLCPPCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
     }
 
     lu_ << "\n//free context\n";
+    for (size_t i = 0; i < tu->arg.size(); i++)
+    {
+        auto& tensor = *tu->arg[i];
+        lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+    }
+
+    if (FLAGS_fextern_result_memory)
+    {
+        for (size_t i = 0; i < tu->out.size(); i++)
+        {
+            auto& tensor = *tu->out[i];
+            lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+        }
+    }
     lu_ << "hlsl_free();\n\n";
 }
 
@@ -417,7 +448,10 @@ std::string HLSLCPPCodegenPass::get_kernel_entry_paras(std::shared_ptr<Translati
         auto tv = tu->out[i];
         string type = tv->get_element_type().c_type_string();
         stringstream ss;
-        ss << "void* " << tv->get_name();
+        if (FLAGS_fextern_result_memory)
+            ss << "void* " << tv->get_name();
+        else
+            ss << "void** " << tv->get_name();
         allocated.insert(tv->get_name());
         params.push_back(ss.str());
     }

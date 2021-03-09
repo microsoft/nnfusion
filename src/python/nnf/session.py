@@ -165,6 +165,7 @@ class Session(object):
                  workdir=None,
                  model_format="onnx",
                  codegen_flags=None,
+                 rebuild=True
                  **kwargs):
         """
         Parameters:

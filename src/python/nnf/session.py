@@ -170,6 +170,7 @@ class Session(object):
                  const_folding=False,
                  build_nnf=True,
                  codegen_flags=None,
+                 rebuild=True
                  **kwargs):
         """
         Parameters:

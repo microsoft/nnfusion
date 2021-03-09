@@ -5,7 +5,7 @@ import torch
 
 
 class IODescription(object):
-    """ A tensor description for PyTorch model input/output.
+    """ A hashable tensor description for PyTorch model input/output.
 
     Attributes:
         name: A string representing tensor name.

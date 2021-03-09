@@ -72,11 +72,6 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
     for (auto& it : re->local_symbol)
         if (it.second->symbol.find("declaration::") != string::npos)
         {
-            // if (it.second->symbol == "declaration::ort_softmax" || it.second->symbol == "declaration::cuda_layer_norm")
-            // {
-            //     writer << declaration::math_Rsqrt->get_code();
-            //     writer << declaration::warp->get_code();
-            // }
             for (auto& sub : it.second->local_symbol)
             {
                 writer << sub.second->get_code();

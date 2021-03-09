@@ -86,7 +86,7 @@ bool OpInplacePass::run_on_graph(std::shared_ptr<Graph>& graph)
         else if (node->get_op_type() == "MatMulAdd")
         {
             auto op = std::dynamic_pointer_cast<GenericOp>(node->get_op_ptr());
-            AddInplace(op, 0, 2, false);
+            AddInplace(op, 0, 2, true);
         }
 
         else if (nnfusion::op::get_annotation(nnfusion::op::get_translation(node))

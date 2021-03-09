@@ -5,7 +5,7 @@
 #include "../cuda_common_ops.hpp"
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"
-
+#include "matmuladd.hpp"
 namespace nnfusion
 {
     namespace kernels
@@ -16,6 +16,7 @@ namespace nnfusion
             class ElementWise : public CudaElementwiseEmitter
             {
             public:
+                friend class nnfusion::kernels::cuda::MatMulAdd;
                 ElementWise(shared_ptr<KernelContext> ctx)
                     : CudaElementwiseEmitter(ctx)
                 {

@@ -58,8 +58,11 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
     re->require(header::cublas);
 
     for (auto& it : re->local_symbol)
+    {
         if (it.second->symbol.find("header::") != string::npos)
             writer << it.second->get_code();
+    }
+
     writer << "\n";
 
     for (auto& it : re->local_symbol)
@@ -68,7 +71,13 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
     writer << "\n";
     for (auto& it : re->local_symbol)
         if (it.second->symbol.find("declaration::") != string::npos)
+        {
+            for (auto& sub : it.second->local_symbol)
+            {
+                writer << sub.second->get_code();
+            }
             writer << it.second->get_code();
+        }
     writer << "\n";
     if (auto kernel = std::dynamic_pointer_cast<CudaLibEmitter>(ke->kernel))
     {
@@ -478,12 +487,13 @@ bool CudaDefaultRuntime::compile(const ProfilingContext::Pointer& ke)
     source_file << ke->source_code->get_code();
     source_file.close();
 
-    int ret =
-        system(("nvcc\t-lcudnn\t-lcublas\t--compiler-options\t'-fPIC\t "
-                "--shared'\t--cudart\tshared\t-O2\t-gencode="
-                "arch=compute_60,code=compute_60\t-gencode=arch=compute_61,code=compute_61\t" +
-                srcname + "\t-o\t" + objname)
-                   .c_str());
+    int ret = system(("nvcc\t-lcudnn\t-lcublas\t--compiler-options\t'-fPIC\t "
+                      "--shared'\t--cudart\tshared\t-O2\t-gencode="
+                      "arch=compute_60,code=compute_60\t-gencode=arch=compute_61,code=compute_61\t-"
+                      "std=c++11\t--expt-relaxed-constexpr\t" +
+                      srcname + "\t-o\t" + objname)
+                         .c_str());
+
     if (ret != 0)
         return false;
     if (!file_exsits(objname))
@@ -573,7 +583,13 @@ bool CUPTIRuntime::codegen(const ProfilingContext::Pointer& ke)
     writer << "\n";
     for (auto& it : re->local_symbol)
         if (it.second->symbol.find("declaration::") != string::npos)
+        {
+            for (auto& sub : it.second->local_symbol)
+            {
+                writer << sub.second->get_code();
+            }
             writer << it.second->get_code();
+        }
     writer << "\n";
 
     string code = R"(#define BUF_SIZE (32 * 1024)
@@ -1008,15 +1024,15 @@ bool CUPTIRuntime::compile(const ProfilingContext::Pointer& ke)
     ofstream source_file(srcname);
     source_file << ke->source_code->get_code();
     source_file.close();
-
-    int ret = system(
-        ("nvcc\t-lcudnn\t-lcublas\t-lcupti\t--compiler-options\t'-fPIC\t "
-         "-I/usr/local/cuda/extras/CUPTI/include\t-L/usr/local/cuda/extras/CUPTI/lib64\t"
-         "--shared'\t--cudart\tshared\t-O2\t-gencode="
-         "arch=compute_60,code=compute_60\t-gencode=arch=compute_61,code=compute_61\t"
-         "-gencode=arch=compute_70,code=compute_70\t-gencode=arch=compute_75,code=compute_75\t" +
-         srcname + "\t-o\t" + objname)
-            .c_str());
+    int ret =
+        system(("nvcc\t-lcudnn\t-lcublas\t-lcupti\t--compiler-options\t'-fPIC\t "
+                "-I/usr/local/cuda/extras/CUPTI/include\t-L/usr/local/cuda/extras/CUPTI/lib64\t"
+                "--shared'\t--cudart\tshared\t-O2\t-gencode="
+                "arch=compute_60,code=compute_60\t-gencode=arch=compute_61,code=compute_61\t"
+                "-gencode=arch=compute_70,code=compute_70\t-gencode=arch=compute_75,code=compute_"
+                "75\t-std=c++11\t--expt-relaxed-constexpr\t" +
+                srcname + "\t-o\t" + objname)
+                   .c_str());
     if (ret != 0)
         return false;
     if (!file_exsits(objname))

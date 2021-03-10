@@ -312,7 +312,7 @@ LanguageUnit_p cuda::Dot::emit_function_body()
     }
     else
     {
-        NNFUSION_CHECK_FAIL() << "Unsupported datatype " << dtype << " for nernel dot."
+        NNFUSION_CHECK_FAIL() << "Unsupported datatype " << dtype << " for nernel dot.";
     }
     //lu.block_end();
     return _lu;

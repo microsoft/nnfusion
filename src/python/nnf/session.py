@@ -11,7 +11,8 @@ import logging
 from .utils import cd, execute
 from .executor import Executor
 from .description import IODescription, ModelDescription, generate_sample
-
+os.environ["PATH"] = os.path.relpath(
+    "../../../build/src/tools/nnfusion") + ":" + os.environ["PATH"]
 logger = logging.getLogger(__name__)
 
 
@@ -168,7 +169,7 @@ class Session(object):
                  workdir=None,
                  model_format="onnx",
                  const_folding=False,
-                 preprocess=True,
+                 codegen=True,
                  codegen_flags=None,
                  **kwargs):
         """
@@ -219,16 +220,15 @@ class Session(object):
             self._workdir = self._dir_ctx.name
         
         self._const_folding = const_folding
-        self._preprocess = preprocess
         ## convert torch model to onnx
-        if self._preprocess:
+        if codegen:
             self._onnx_model_path = os.path.join(self._workdir, "nnf.onnx")
             convert_model_to_onnx(self._model, self._model_desc, self._device,
                                 self._onnx_model_path, self._const_folding)
         torch.cuda.empty_cache()
 
         ## codegen
-        if self._preprocess:
+        if codegen:
             self._codegen_flags = {"extern_result_memory": 1}
             self._codegen_flags.update(codegen_flags or {})
             self._executor = self._create_executor()

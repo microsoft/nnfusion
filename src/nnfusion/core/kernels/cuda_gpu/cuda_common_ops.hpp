@@ -79,6 +79,7 @@ namespace nnfusion
                 {"Not", cuda_op("logical_not", "!x0", "")},
                 {"Negative", cuda_op("negative", "-x0", "")},
                 {"Select", cuda_op("select", "(x0 == 0) ? x2 : x1", "")},
+                {"Where", cuda_op("where", "(x0 == 0) ? x2 : x1", "")},
                 {"ReluBackprop", cuda_op("relu_backprop", "x1 * int(x0 > 0)", "")},
                 {"Relu6Backprop", cuda_op("relu_backprop", "x1 * int(x0 > 0) * int(x0 < 6)", "")},
                 {"And", cuda_op("logical_and", "x0 & x1", "atomicAnd")},

@@ -63,3 +63,13 @@ REGISTER_EW_KERNEL(Nop)
 REGISTER_EW_KERNEL(Sigmoid)
 REGISTER_EW_KERNEL(SigmoidBackprop)
 REGISTER_EW_KERNEL(GeluGrad)
+#undef REGISTER_EW_KERNEL
+
+#define REGISTER_GENERIC_EW_KERNEL(OP_NAME)                                                        \
+    REGISTER_KERNEL_EMITTER(                                                                       \
+        "" #OP_NAME "",                                                                            \
+        Device(CUDA_GPU).TypeConstraint(element::f32).Tag("element_wise").Priority(2),             \
+        cuda::ElementWise<nnfusion::op::GenericOp>);
+
+REGISTER_GENERIC_EW_KERNEL(Where)
+#undef REGISTER_GENERIC_EW_KERNEL

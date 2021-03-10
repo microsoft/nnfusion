@@ -169,7 +169,7 @@ class Session(object):
                  workdir=None,
                  model_format="onnx",
                  const_folding=False,
-                 codegen=True,
+                 build_nnf=True,
                  codegen_flags=None,
                  **kwargs):
         """
@@ -184,7 +184,7 @@ class Session(object):
                 model & code will be stored in a temporary folder, then be cleaned automatically .
             model_format: Intermedia model format, currently only support "onnx".
             const_folding: Do constant folding when converting model to onnx
-            preprocess: Prepare nnfusion code
+            build_nnf: build nnf
             codegen_flags: NNFusion codegen flags, 
                 ref: https://github.com/microsoft/nnfusion/wiki/4.3-NNFusion-CLI-Interface#cli-flags
         """
@@ -220,18 +220,18 @@ class Session(object):
             self._workdir = self._dir_ctx.name
         
         self._const_folding = const_folding
+        self._build_nnf = build_nnf
         ## convert torch model to onnx
-        if codegen:
+        if self._build_nnf:
             self._onnx_model_path = os.path.join(self._workdir, "nnf.onnx")
             convert_model_to_onnx(self._model, self._model_desc, self._device,
                                 self._onnx_model_path, self._const_folding)
         torch.cuda.empty_cache()
 
         ## codegen
-        if codegen:
-            self._codegen_flags = {"extern_result_memory": 1}
-            self._codegen_flags.update(codegen_flags or {})
-            self._executor = self._create_executor()
+        self._codegen_flags = {"extern_result_memory": 1}
+        self._codegen_flags.update(codegen_flags or {})
+        self._executor = self._create_executor()
 
     def _create_executor(self):
         if "cuda" in self._device:
@@ -248,9 +248,10 @@ class Session(object):
         flags_str += " ".join(
             ["-f{}={}".format(k, v) for k, v in self._codegen_flags.items()])
 
-        codegen(self._onnx_model_path, flags_str, self._workdir)
-        modify_nnfusion_rt(rt_dir)
-        build(rt_dir)
+        if self._build_nnf:
+            codegen(self._onnx_model_path, flags_str, self._workdir)
+            modify_nnfusion_rt(rt_dir)
+            build(rt_dir)
 
         param_file = os.path.join(rt_dir, "para_info.json")
         self._binding_exectuor_inputs(param_file)

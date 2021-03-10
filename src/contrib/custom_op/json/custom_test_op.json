@@ -1,0 +1,15 @@
+{
+    "ops": [
+        {
+            "op": "CustomOpTest",
+            "custom_value": 0.001,
+            "custom_bool": false,
+            "input_shapes": [[4, 256], [4, 1024]],
+            "output_shapes":[[4, 256], [4, 1024]],
+            "antares_ir": "output0[M, N] = input0[M, N] * 0.001",
+            "cuda_kernel": "{ int index = blockIdx.x*blockDim.x + threadIdx.x; output0[index] = input0[index] * @custom_value@; }",
+            "launch_config": [[1, 1, 4], [1, 1, 32]],
+            "cpu_kernel": "{ for (int i = 0; i < 1024; i++) output0[i] = input0[i] * @custom_value@; }"
+        }
+    ]
+}

@@ -348,6 +348,65 @@ namespace nnfusion
                 nnfusion::cache::KernelEntry kernel_entry;
             };
 
+            class CustomCudaKernelEmitter : public BlockCudaEmitter
+            {
+            public:
+                CustomCudaKernelEmitter(shared_ptr<KernelContext> ctx)
+                    : BlockCudaEmitter(ctx)
+                {
+                    auto op_config =
+                        nnfusion::op::lookup_op_config(m_context->gnode->get_op_type());
+                    std::vector<int32_t> config = op_config.get("launch_config");
+                    NNFUSION_CHECK(config.size() == 6);
+                    m_gridDim = dim3(config[0], config[1], config[2]);
+                    m_blockDim = dim3(config[3], config[4], config[5]);
+                    is_memcpy = op_config.get("is_memcpy");
+                }
+
+                virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
+                    shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr) override
+                {
+                    if (kernel_entry == nullptr)
+                    {
+                        kernel_entry = std::make_shared<nnfusion::cache::KernelEntry>();
+                    }
+                    if (kernel_entry->source == "")
+                    {
+                        kernel_entry->source = "Custom";
+                    }
+                    return BlockCudaEmitter::get_kernel_cache_entry(kernel_entry);
+                }
+
+                bool is_eliminative() override
+                {
+                    return (is_memcpy &&
+                            m_context->inputs[0]->is_same_address(m_context->outputs[0]));
+                }
+                LanguageUnit_p emit_function_body() override
+                {
+                    std::string body_code;
+                    auto op_config =
+                        nnfusion::op::lookup_op_config(m_context->gnode->get_op_type());
+                    if (op_config.f_kernel_funcs.count("CUDA_GPU") > 0)
+                        body_code = op_config.f_kernel_funcs["CUDA_GPU"](m_context->gnode);
+                    if (body_code == "")
+                        return nullptr;
+                    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+                    auto& lu = *_lu;
+                    lu.block_begin();
+                    lu << body_code << "\n";
+                    lu.block_end();
+                    return _lu;
+                }
+                LanguageUnit_p emit_dependency() override
+                {
+                    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+                    _lu->require(header::cuda);
+                    return _lu;
+                }
+                void set_launch_config() override {}
+                bool is_memcpy = false;
+            };
         } // namespace cuda
     }     // namespace kernels
 } // namespace nnfusion

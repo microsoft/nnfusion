@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <type_traits>
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#include "op/custom_op.hpp"
 #include "ops_bridge.hpp"
 
 DECLARE_bool(ftraining_mode);
@@ -400,6 +401,10 @@ namespace nnfusion
                     std::unordered_map<std::string, int64> domain2version;
                     for (const auto& id : onnx_model_proto->opset_import())
                     {
+                        if (id.domain() == "com.microsoft.nnfusion.custom")
+                        {
+                            continue;
+                        }
                         domain2version[id.domain() == "ai.onnx" ? "" : id.domain()] = id.version();
                     }
                     std::unordered_set<std::string> unknown_ops;
@@ -500,6 +505,10 @@ namespace nnfusion
             const ConvertFunc& GraphConvert::get_convert_func(const std::string& name,
                                                               const std::string& domain) const
             {
+                if (domain == "com.microsoft.nnfusion.custom")
+                {
+                    return custom_translator;
+                }
                 const auto dm = m_domain_convert_func_map.find(domain);
                 NNFUSION_CHECK(dm != std::end(m_domain_convert_func_map)) << "Unknown Domain: "
                                                                           << domain;
@@ -513,6 +522,10 @@ namespace nnfusion
 
             bool GraphConvert::is_operator_available(const onnx::NodeProto& node_proto) const
             {
+                if (node_proto.domain() == "com.microsoft.nnfusion.custom")
+                {
+                    return true;
+                }
                 const auto dm = m_domain_convert_func_map.find(node_proto.domain());
 
                 if (dm == std::end(m_domain_convert_func_map))

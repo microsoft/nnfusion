@@ -13,6 +13,7 @@ using namespace nnfusion::pass::graph;
 using namespace nnfusion::profiler;
 
 DEFINE_bool(fkernel_selection, false, "Select 'best' kernel based on the profiling information.");
+DEFINE_bool(fcustom_kernel, true, "Register custom kernels during kernel selection.");
 DECLARE_bool(fantares_mode);
 DECLARE_string(fproduct_name);
 
@@ -135,10 +136,52 @@ bool ProfilingBasedKernelSelector::run_on_graph(std::shared_ptr<nnfusion::graph:
     return true;
 }
 
+bool DefaultKernelSelector::register_custom_kernel(std::string op, NNFusion_DeviceType devtype)
+{
+    auto iter = nnfusion::op::get_op_configs().find(op);
+    if (iter == nnfusion::op::get_op_configs().end())
+        return false;
+    if (iter->second.f_kernel_funcs.find(get_device_str(devtype)) ==
+        iter->second.f_kernel_funcs.end())
+        return false;
+    KernelRegistration::Factory f;
+    switch (devtype)
+    {
+    case CUDA_GPU:
+    case ROCM_GPU:
+        f = [](shared_ptr<kernels::KernelContext> context) -> shared_ptr<kernels::KernelEmitter> {
+            return make_shared<kernels::cuda::CustomCudaKernelEmitter>(context);
+        };
+        break;
+    case GENERIC_CPU:
+        f = [](shared_ptr<kernels::KernelContext> context) -> shared_ptr<kernels::KernelEmitter> {
+            return make_shared<kernels::cpu::CustomCPUKernelEmitter>(context);
+        };
+        break;
+    // case HLSL:
+    //     f = [](shared_ptr<kernels::KernelContext> context) -> shared_ptr<kernels::KernelEmitter> {
+    //         return make_shared<kernels::cuda::CustomCudaKernelEmitter>(context);
+    //     };
+    //     break;
+    default: NNFUSION_LOG(ERROR) << "Unrecognized device type: " << devtype; return false;
+    }
+
+    kernels::KernelRegistrar kernel_registrar(op,
+                                              kernels::Name(op)
+                                                  .Device(devtype)
+                                                  .TypeConstraint(element::f32)
+                                                  .Tag("custom")
+                                                  .Priority(10)
+                                                  .KernelFactory(f)
+                                                  .Build());
+    return true;
+}
+
 pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
     DefaultKernelSelector::pick_first(shared_ptr<GNode> gnode, NNFusion_DeviceType devtype)
 {
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
+    register_custom_kernel(gnode->get_op_type(), devtype);
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
         KernelRegistry::Global()->FindKernelRegistrations(
             gnode->get_op_type(), devtype, element::f32);

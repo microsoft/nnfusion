@@ -94,7 +94,7 @@ add_library(nnfusion_operators SHARED ${SRC})
 target_include_directories(nnfusion_operators SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
-target_link_libraries(nnfusion_operators nnfusion_common)
+target_link_libraries(nnfusion_operators nnfusion_common contrib_custom_operators)
 target_compile_options(nnfusion_operators PRIVATE "-fPIC")
 
 install(TARGETS nnfusion_operators

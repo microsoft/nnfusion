@@ -80,6 +80,7 @@ namespace
     void build_backward_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     {
         FLAGS_fautodiff = true;
+        FLAGS_ftraining_optimizer = "{\"optimizer\": \"SGD\", \"learning_rate\": 0.1}";
         auto ad_pass = nnfusion::pass::graph::AutodiffPass();
         ad_pass.run_on_graph(graph);
     }

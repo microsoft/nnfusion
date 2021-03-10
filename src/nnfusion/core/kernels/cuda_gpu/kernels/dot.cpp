@@ -285,92 +285,93 @@ LanguageUnit_p cuda::Dot::emit_function_body()
                     std::vector<std::string> arg_vec{"arg1", "output"};
                     std::vector<nnfusion::Shape> shape_vec{arg1_shape, out_shape};
 
-        lu << "const half alpha = 1.0f;\nconst half beta = 0.f;\n";
+                    lu << "const half alpha = 1.0f;\nconst half beta = 0.f;\n";
 
-        lu << "CUBLAS_SAFE_CALL(cublasHgemm(cublas_handle,"
-           << " CUBLAS_OP_N,"
-           << " CUBLAS_OP_N,"
-           << " " << n << ","
-           << " " << m << ","
-           << " " << k << ","
-           << " &alpha,"
-           << " static_cast<const half*>(input1),"
-           << " " << n << ","
-           << " static_cast<const half*>(input0),"
-           << " " << k << ","
-           << " &beta,"
-           << " static_cast<half*>(output0),"
-           << " " << n << "));\n";
-        // }
-        
-    } else {
-        NNFUSION_CHECK_FAIL() << "Unsupported datatype " << dtype << " for nernel dot."
-    }
-    //lu.block_end();
-    return _lu;
-}
+                    lu << "CUBLAS_SAFE_CALL(cublasHgemm(cublas_handle,"
+                       << " CUBLAS_OP_N,"
+                       << " CUBLAS_OP_N,"
+                       << " " << n << ","
+                       << " " << m << ","
+                       << " " << k << ","
+                       << " &alpha,"
+                       << " static_cast<const half*>(input1),"
+                       << " " << n << ","
+                       << " static_cast<const half*>(input0),"
+                       << " " << k << ","
+                       << " &beta,"
+                       << " static_cast<half*>(output0),"
+                       << " " << n << "));\n";
+                    // }
+                }
+                else
+                {
+                    NNFUSION_CHECK_FAIL() << "Unsupported datatype " << dtype << " for nernel dot."
+                }
+                //lu.block_end();
+                return _lu;
+            }
 
-LanguageUnit_p cuda::Dot::emit_dependency()
-{
-    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
-    _lu->require(header::cuda);
-    _lu->require(header::cublas);
-    _lu->require(header::stdexcept);
-    _lu->require(header::sstream);
-    _lu->require(macro::CUBLAS_SAFE_CALL);
-    _lu->require(macro::CUDA_SAFE_CALL);
-    // _lu->require(declaration::cuda_fp16_scale);
-    //_lu->require(declaration::cublas_handle);
-    return _lu;
-}
+            LanguageUnit_p cuda::Dot::emit_dependency()
+            {
+                LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+                _lu->require(header::cuda);
+                _lu->require(header::cublas);
+                _lu->require(header::stdexcept);
+                _lu->require(header::sstream);
+                _lu->require(macro::CUBLAS_SAFE_CALL);
+                _lu->require(macro::CUDA_SAFE_CALL);
+                // _lu->require(declaration::cuda_fp16_scale);
+                //_lu->require(declaration::cublas_handle);
+                return _lu;
+            }
 
-LanguageUnit_p cuda::Dot::emit_function_signature()
-{
-    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
-    auto& lu = *_lu;
+            LanguageUnit_p cuda::Dot::emit_function_signature()
+            {
+                LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
+                auto& lu = *_lu;
 
-    vector<string> params;
-    for (size_t i = 0; i < m_context->inputs.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
-        ss << "input" << i;
-        params.push_back(ss.str());
-    }
+                vector<string> params;
+                for (size_t i = 0; i < m_context->inputs.size(); i++)
+                {
+                    stringstream ss;
+                    ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+                    ss << "input" << i;
+                    params.push_back(ss.str());
+                }
 
-    for (size_t i = 0; i < m_context->outputs.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
-        ss << "output" << i;
-        params.push_back(ss.str());
-    }
+                for (size_t i = 0; i < m_context->outputs.size(); i++)
+                {
+                    stringstream ss;
+                    ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+                    ss << "output" << i;
+                    params.push_back(ss.str());
+                }
 
-    for (size_t i = 0; i < m_context->tensors.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-        // defult name is: "persit0", "persist1" ...
-        ss << m_context->tensors[i]->get_name();
-        params.push_back(ss.str());
-    }
+                for (size_t i = 0; i < m_context->tensors.size(); i++)
+                {
+                    stringstream ss;
+                    ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+                    // defult name is: "persit0", "persist1" ...
+                    ss << m_context->tensors[i]->get_name();
+                    params.push_back(ss.str());
+                }
 
-    lu << "void "
-       << "(cublasHandle_t cublas_handle, " << join(params, ", ") << ")";
-    return _lu;
-}
+                lu << "void "
+                   << "(cublasHandle_t cublas_handle, " << join(params, ", ") << ")";
+                return _lu;
+            }
 
-REGISTER_KERNEL_EMITTER(
-    "Dot",                                                                   // op_name
-    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cublas").Priority(2), // attrs
-    cuda::Dot)                                                               // constructor
+            REGISTER_KERNEL_EMITTER(
+                "Dot",                                                                   // op_name
+                Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cublas").Priority(2), // attrs
+                cuda::Dot) // constructor
 
-REGISTER_KERNEL_EMITTER(
-    "Dot",                                                                   // op_name
-    Device(CUDA_GPU).TypeConstraint(element::f16).Tag("cublas").Priority(2), // attrs
-    cuda::Dot)                                                               // constructor
+            REGISTER_KERNEL_EMITTER(
+                "Dot",                                                                   // op_name
+                Device(CUDA_GPU).TypeConstraint(element::f16).Tag("cublas").Priority(2), // attrs
+                cuda::Dot) // constructor
 
-REGISTER_KERNEL_EMITTER(
-    "Dot",                                                                   // op_name
-    Device(ROCM_GPU).TypeConstraint(element::f32).Tag("cublas").Priority(2), // attrs
-    cuda::Dot)                                                               // constructor
+            REGISTER_KERNEL_EMITTER(
+                "Dot",                                                                   // op_name
+                Device(ROCM_GPU).TypeConstraint(element::f32).Tag("cublas").Priority(2), // attrs
+                cuda::Dot) // constructor

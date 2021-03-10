@@ -46,4 +46,6 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/src/tools/nnfusion/templates DESTINATION b
 install(DIRECTORY ${CMAKE_BINARY_DIR}/src/tools/nnfusion/eigen DESTINATION bin)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/src/tools/nnfusion/threadpool DESTINATION bin)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/src/tools/nnfusion/mlas DESTINATION bin)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/src/tools/nnfusion/cub DESTINATION bin)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/src/tools/nnfusion/superscaler DESTINATION bin)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/test/templates DESTINATION bin)

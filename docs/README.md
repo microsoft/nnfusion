@@ -4,6 +4,7 @@ Welcome to the NNFusion Documents!
    - [Freeze-TensorFlow-Models](Freeze-TensorFlow-Models.md)
    - [Freeze-PyTorch-Model](Freeze-PyTorch-Model.md)
    - [Supported-Models](Supported-Models.md)
+   - [Adding-Custom-Operator](/src/contrib/custom_op/README.md)
 2. [Build-Guide](Build-Guide.md)
    - [End-to-end-Test](End-to-end-Test.md)
 3. [Compile-a-Tensorflow-model-with-NNFusion](Compile-a-Tensorflow-model-with-NNFusion.md)

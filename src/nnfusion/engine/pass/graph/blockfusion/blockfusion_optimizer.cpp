@@ -173,16 +173,18 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
         return false;
     }
 
-    // TODO(lingm): process shared_memory and local_thread_sync for AntaresCudaKernelEmitter
-    if (std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel) != nullptr)
+    // TODO(lingm): process shared_memory and local_thread_sync for AntaresCudaKernelEmitter and CustomCudaKernelEmitter
+    if (std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel) != nullptr ||
+        std::dynamic_pointer_cast<CustomCudaKernelEmitter>(kernel) != nullptr)
     {
         auto function_body = kernel->get_or_emit_source()->body_unit->get_code();
         if (function_body.find("__shared__") != std::string::npos ||
             function_body.find("__syncthreads") != std::string::npos)
         {
-            NNFUSION_LOG(INFO) << "Operator " << node->get_name()
-                               << " is AntaresCudaKernelEmitter with shared_memory or "
-                                  "local_thread_sync, not support in BlockFusion yet, skip";
+            NNFUSION_LOG(INFO)
+                << "Operator " << node->get_name()
+                << " is AntaresCudaKernelEmitter or CustomCudaKernelEmitter with shared_memory or "
+                   "local_thread_sync, not support in BlockFusion yet, skip";
             return false;
         }
     }

@@ -103,6 +103,11 @@ bool SkipLayerNormFusionOptimizer::FindSubGraph(std::shared_ptr<GNode> starting_
             return false;
         }
         auto bias = broadcast->get_in_edge(0)->get_src();
+        if (bias && bias->get_op_type() != "Constant")
+        {
+            NNFUSION_LOG(NNFUSION_WARNING) << "failed to find skiplayernorm subgraph";
+            return false;
+        }
 
         bertfusion_group->fuse_group["inputs"] = {input, skip, bias};
         bertfusion_group->nodes_to_remove.insert({starting_node, add1, add2, broadcast});

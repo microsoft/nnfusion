@@ -106,6 +106,8 @@ std::shared_ptr<KernelContext> BlockFusionCudaCodegen::FuseContext()
     std::unordered_map<std::string, size_t> node_outputs;
     std::unordered_map<std::string, size_t> node_temps;
     std::unordered_set<int64_t> nodes_in_group;
+    std::map<std::string, size_t> fused_tensor_input_map;  // tensor_name -> fused_ctx input id
+    std::map<std::string, size_t> fused_tensor_output_map; // tensor_name -> fused_ctx output id
     for (auto kernel_emitter : ctx->kernels)
     {
         auto gnode = kernel_emitter->m_context->gnode;
@@ -127,6 +129,7 @@ std::shared_ptr<KernelContext> BlockFusionCudaCodegen::FuseContext()
                     node_inputs[tv->get_name()] = 1;
                     ctx->inputs.push_back(tv);
                     ctx->input_names.push_back(tv->get_name());
+                    fused_tensor_input_map[tv->get_name()] = ctx->inputs.size() - 1;
                 }
                 else
                 {
@@ -147,6 +150,7 @@ std::shared_ptr<KernelContext> BlockFusionCudaCodegen::FuseContext()
                     node_outputs[tv->get_name()] = 1;
                     ctx->outputs.push_back(tv);
                     ctx->output_names.push_back(tv->get_name());
+                    fused_tensor_output_map[tv->get_name()] = ctx->outputs.size() - 1;
                 }
                 else
                 {
@@ -194,6 +198,36 @@ std::shared_ptr<KernelContext> BlockFusionCudaCodegen::FuseContext()
                 else
                 {
                     node_temps[tv->get_name()]++;
+                }
+            }
+        }
+    }
+
+    // process inplace annotation
+    for (auto kernel_emitter : ctx->kernels)
+    {
+        if (kernel_emitter->m_context->annotations != nullptr)
+        {
+            auto annotations = kernel_emitter->m_context->annotations->get_in_place_oi_pairs();
+            for (auto annotation : annotations)
+            {
+                auto input_name = kernel_emitter->m_context->inputs[annotation.input]->get_name();
+                auto output_name =
+                    kernel_emitter->m_context->outputs[annotation.output]->get_name();
+                if (fused_tensor_input_map.find(input_name) != fused_tensor_input_map.end() &&
+                    fused_tensor_output_map.find(output_name) != fused_tensor_output_map.end())
+                {
+                    auto input_id = fused_tensor_input_map[input_name];
+                    auto output_id = fused_tensor_output_map[output_name];
+                    if (!ctx->annotations)
+                    {
+                        ctx->annotations = std::make_shared<Annotations>();
+                    }
+                    ctx->annotations->add_in_place_oi_pair({output_id,
+                                                            input_id,
+                                                            annotation.destructive,
+                                                            annotation.input_offset,
+                                                            annotation.force_inplace});
                 }
             }
         }

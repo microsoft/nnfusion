@@ -54,7 +54,7 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
     re->require(header::cuda);
     re->require(macro::CUDA_SAFE_CALL);
     re->require(declaration::typedef_int);
-    re->require(macro::HALF_MAX);
+    // re->require(macro::HALF_MAX);
     re->require(header::cublas);
 
     for (auto& it : re->local_symbol)
@@ -488,7 +488,8 @@ bool CudaDefaultRuntime::compile(const ProfilingContext::Pointer& ke)
     source_file.close();
 
     int ret = system(("nvcc\t-lcudnn\t-lcublas\t--compiler-options\t'-fPIC\t "
-                      "--shared'\t--cudart\tshared\t-O2\t-gencode="
+                      "--shared'\t--cudart\tshared\t-O2\t-gencode=arch=compute_37,code=sm_37\t-"
+                      "gencode=arch=compute_52,code=sm_52\t-gencode="
                       "arch=compute_60,code=compute_60\t-gencode=arch=compute_61,code=compute_61\t-"
                       "std=c++11\t--expt-relaxed-constexpr\t" +
                       srcname + "\t-o\t" + objname)
@@ -568,7 +569,7 @@ bool CUPTIRuntime::codegen(const ProfilingContext::Pointer& ke)
     re->require(macro::CUDA_SAFE_CALL);
     re->require(macro::CUPTI_CALL);
     re->require(declaration::typedef_int);
-    re->require(macro::HALF_MAX);
+    // re->require(macro::HALF_MAX);
     re->require(header::cublas);
 
     // Write Dependency

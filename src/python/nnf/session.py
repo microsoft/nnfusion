@@ -11,8 +11,8 @@ import logging
 from .utils import cd, execute
 from .executor import Executor
 from .description import IODescription, ModelDescription, generate_sample
-# os.environ["PATH"] = os.path.relpath(
-#     "../../../build/src/tools/nnfusion") + ":" + os.environ["PATH"]
+os.environ["PATH"] = os.path.relpath(
+    "../../../build/src/tools/nnfusion") + ":" + os.environ["PATH"]
 logger = logging.getLogger(__name__)
 
 

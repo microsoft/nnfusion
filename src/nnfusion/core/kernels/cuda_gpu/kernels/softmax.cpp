@@ -8,6 +8,7 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
+DEFINE_string(fcuda_device, "", "");
 cuda::Softmax::Softmax(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {
@@ -80,7 +81,7 @@ LanguageUnit_p cuda::Softmax::emit_function_body()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
 
-    if (D <= 1024 && D * dtype.size() <= 4096)
+    if (FLAGS_fcuda_device == "" && D <= 1024 && D * dtype.size() <= 4096)
     {
         auto code = nnfusion::op::create_code_from_template(
             R"(
@@ -128,7 +129,7 @@ LanguageUnit_p cuda::Softmax::emit_dependency()
     _lu->require(header::cudnn);
     //_lu->require(declaration::cudnn_handle);
     _lu->require(macro::CUDNN_SAFE_CALL);
-    if (D <= 1024 && D * dtype.size() <= 4096)
+    if (FLAGS_fcuda_device == "" && D <= 1024 && D * dtype.size() <= 4096)
     {
         _lu->require(declaration::ort_softmax);
         declaration::ort_softmax->require(declaration::warp);
@@ -167,7 +168,7 @@ LanguageUnit_p cuda::Softmax::emit_function_signature()
         ss << m_context->tensors[i]->get_name();
         params.push_back(ss.str());
     }
-    if (D <= 1024 && D * dtype.size() <= 4096)
+    if (FLAGS_fcuda_device == "" && D <= 1024 && D * dtype.size() <= 4096)
     {
         lu << "void "
            << "(cudaStream_t stream, " << join(params, ", ") << ")";

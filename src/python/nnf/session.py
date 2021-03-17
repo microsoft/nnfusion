@@ -26,7 +26,7 @@ def generate_output_desc(model, input_desc, device="cpu"):
         for i, t in enumerate(out))
 
 
-def convert_model_to_onnx(model, model_desc, device, file_name):
+def convert_model_to_onnx(model, model_desc, device, file_name, const_folding):
     model.to(device)
     input_names = [input.name_ for input in model_desc.inputs_]
     output_names = [output.name_ for output in model_desc.outputs_]
@@ -45,7 +45,7 @@ def convert_model_to_onnx(model, model_desc, device, file_name):
                       opset_version=12,
                       _retain_param_name=True,
                       example_outputs=tuple(sample_outputs),
-                      do_constant_folding=False)
+                      do_constant_folding=const_folding)
 
     return model
 
@@ -140,10 +140,13 @@ def validate_nnf_weights(nnf_weights, torch_weights):
 
 
 def validate_nnf_inputs(nnf_inputs, inputs_desc):
-    assert set(nnf_inputs.keys()) == {desc.name_ for desc in inputs_desc}
+    pytorch_inputs_names = {desc.name_ for desc in inputs_desc}
+    nnf_inputs_names = set(nnf_inputs.keys())
+    assert nnf_inputs_names.issubset(pytorch_inputs_names)
     for desc in inputs_desc:
-        assert tuple(desc.shape_) == tuple(nnf_inputs[desc.name_]["shape"])
-        assert desc.dtype_ == str2dtype(nnf_inputs[desc.name_]["dtype"])
+        if desc.name_ in nnf_inputs_names:
+            assert tuple(desc.shape_) == tuple(nnf_inputs[desc.name_]["shape"])
+            assert desc.dtype_ == str2dtype(nnf_inputs[desc.name_]["dtype"])
 
 
 def validate_nnf_outputs(nnf_outputs, outputs_desc):
@@ -164,6 +167,8 @@ class Session(object):
                  output_desc=None,
                  workdir=None,
                  model_format="onnx",
+                 const_folding=False,
+                 build_nnf=True,
                  codegen_flags=None,
                  **kwargs):
         """
@@ -177,6 +182,8 @@ class Session(object):
             workdir: Optional, a string path to generated model & code, if not provided,
                 model & code will be stored in a temporary folder, then be cleaned automatically .
             model_format: Intermedia model format, currently only support "onnx".
+            const_folding: Do constant folding when converting model to onnx
+            build_nnf: build nnf
             codegen_flags: NNFusion codegen flags, 
                 ref: https://github.com/microsoft/nnfusion/wiki/4.3-NNFusion-CLI-Interface#cli-flags
         """
@@ -210,10 +217,14 @@ class Session(object):
         else:
             self._dir_ctx = tempfile.TemporaryDirectory(prefix="nnf_")
             self._workdir = self._dir_ctx.name
+        
+        self._const_folding = const_folding
+        self._build_nnf = build_nnf
         ## convert torch model to onnx
-        self._onnx_model_path = os.path.join(self._workdir, "nnf.onnx")
-        convert_model_to_onnx(self._model, self._model_desc, self._device,
-                              self._onnx_model_path)
+        if self._build_nnf:
+            self._onnx_model_path = os.path.join(self._workdir, "nnf.onnx")
+            convert_model_to_onnx(self._model, self._model_desc, self._device,
+                                self._onnx_model_path, self._const_folding)
         torch.cuda.empty_cache()
 
         ## codegen
@@ -236,9 +247,10 @@ class Session(object):
         flags_str += " ".join(
             ["-f{}={}".format(k, v) for k, v in self._codegen_flags.items()])
 
-        codegen(self._onnx_model_path, flags_str, self._workdir)
-        modify_nnfusion_rt(rt_dir)
-        build(rt_dir)
+        if self._build_nnf:
+            codegen(self._onnx_model_path, flags_str, self._workdir)
+            modify_nnfusion_rt(rt_dir)
+            build(rt_dir)
 
         param_file = os.path.join(rt_dir, "para_info.json")
         self._binding_exectuor_inputs(param_file)
@@ -289,8 +301,9 @@ class Session(object):
             they should be the same as origin PyTorch model forward results.
         """
         for key, value in feed_data.items():
-            index = int(self._nnf_inputs[key]["id"])
-            self._feed_tensors[index] = value
+            if key in self._nnf_inputs:
+                index = int(self._nnf_inputs[key]["id"])
+                self._feed_tensors[index] = value
         self._executor(tensors=self._feed_tensors)
         # assert self.is_weights_nan() is False
         return [

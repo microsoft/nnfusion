@@ -230,6 +230,8 @@ class Session(object):
         ## codegen
         self._codegen_flags = {"extern_result_memory": 1}
         self._codegen_flags.update(codegen_flags or {})
+        if "training_mode" in self._codegen_flags and (self._codegen_flags["training_mode"] != 0 or self._codegen_flags["training_mode"] != False):
+            assert self._const_folding == False
         self._executor = self._create_executor()
 
     def _create_executor(self):

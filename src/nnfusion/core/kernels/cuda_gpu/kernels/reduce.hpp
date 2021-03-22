@@ -90,9 +90,14 @@ namespace nnfusion
                                     reduction_loop_size = input_shape[i];
                                 }
                             }
-                            reduction_split_number =
-                                reduction_loop_size / reduction_split_factor +
-                                ((reduction_loop_size % reduction_split_factor) & 1);
+                            if ((reduction_loop_size % reduction_split_factor) == 0)
+                            {
+                                reduction_split_number = reduction_loop_size / reduction_split_factor;
+                            }
+                            else
+                            {
+                                reduction_split_number = reduction_loop_size / reduction_split_factor + 1;
+                            }
                         }
                     }
 

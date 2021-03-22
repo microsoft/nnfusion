@@ -92,11 +92,13 @@ namespace nnfusion
                             }
                             if ((reduction_loop_size % reduction_split_factor) == 0)
                             {
-                                reduction_split_number = reduction_loop_size / reduction_split_factor;
+                                reduction_split_number =
+                                    reduction_loop_size / reduction_split_factor;
                             }
                             else
                             {
-                                reduction_split_number = reduction_loop_size / reduction_split_factor + 1;
+                                reduction_split_number =
+                                    reduction_loop_size / reduction_split_factor + 1;
                             }
                         }
                     }

@@ -177,6 +177,7 @@ def train_bert():
         "extern_result_memory": True,  # move result external
         "training_optimizer": '\'' + json.dumps({"optimizer": "SGD", "learning_rate": 0.0001}) + '\'',  # training optimizer configs
         "blockfusion_level": 0,  # TODO: fix blockfusion problem in bert training
+        "enable_all_bert_fusion": True,  # enable all bert fusion optimizations
     }
     trainer = Trainer(wrapper, device=device, codegen_flags=codegen_flags)
 

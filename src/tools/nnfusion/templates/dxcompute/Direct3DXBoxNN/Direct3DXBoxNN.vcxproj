@@ -263,11 +263,12 @@
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="runtime.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12APIWrapper.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="runtime.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Xbox.XboxOne.x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Xbox.Scarlett.x64'">Create</PrecompiledHeader>

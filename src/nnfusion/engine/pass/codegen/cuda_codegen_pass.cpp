@@ -31,6 +31,7 @@ DECLARE_bool(fextern_result_memory);
 DECLARE_int32(fwarmup_step);
 DECLARE_int32(frun_step);
 DECLARE_bool(fcustomized_mem_imp);
+DECLARE_bool(fhost_entry);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -160,6 +161,11 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
         lu_exec_end << "}\n\n";
     }
 
+    if (FLAGS_fhost_entry)
+    {
+        fill_exec_host(tu);
+    }
+
     auto& lu_exit_begin = *(projgen->lup_exit->begin);
     {
         lu_exit_begin << "\nextern \"C\" void cuda_free()\n{\n";
@@ -197,7 +203,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
     projgen->lup_codegen->require(macro::HALF_MAX);
-
+    projgen->lup_codegen->require(codegen_device_type());
     return;
 }
 
@@ -453,7 +459,8 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
     return pairs;
 }
 
-std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu)
+std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu,
+                                                    bool is_host)
 {
     unordered_set<string> allocated;
     vector<string> params;
@@ -463,6 +470,10 @@ std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationU
         string type = tv->get_element_type().c_type_string();
         stringstream ss;
         ss << type << "* " << tv->get_name();
+        if (is_host)
+        {
+            ss << "_host";
+        }
         allocated.insert(tv->get_name());
         params.push_back(ss.str());
     }
@@ -472,14 +483,48 @@ std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationU
         auto tv = tu->out[i];
         string type = tv->get_element_type().c_type_string();
         stringstream ss;
-        if (FLAGS_fextern_result_memory)
+        if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
             ss << type << "* " << tv->get_name();
         else
             ss << type << "** " << tv->get_name();
+        if (is_host)
+        {
+            ss << "_host";
+        }
         allocated.insert(tv->get_name());
         params.push_back(ss.str());
     }
     return join(params, ", ");
+}
+
+std::string CudaCodegenPass::get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu,
+                                                   bool is_host)
+{
+    vector<string> args;
+    for (int i = 0; i < tu->arg.size(); i++)
+    {
+        auto& tv = tu->arg[i];
+        auto name = tv->get_name();
+        if (is_host)
+        {
+            name = name + "_host";
+        }
+        args.push_back(name);
+    }
+    for (int i = 0; i < tu->out.size(); i++)
+    {
+        auto& tv = tu->out[i];
+        auto name = tv->get_name();
+        if (is_host)
+        {
+            name = name + "_host";
+        }
+        if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
+            args.push_back(name);
+        else
+            args.push_back("&" + name);
+    }
+    return join(args, ", ");
 }
 
 std::pair<std::string, std::string>
@@ -887,8 +932,7 @@ bool CudaCodegenPass::modify_codegen()
 
     if (FLAGS_fcuda_init_stream != "default")
     {
-        LanguageUnit_p device_sync = std::make_shared<LanguageUnit>(
-            "cudaDeviceSynchronize", "CUDA_SAFE_CALL(cudaDeviceSynchronize());\n");
+        LanguageUnit_p device_sync = get_sync();
         projgen->lup_init->unit_vec.push_back(device_sync);
     }
 
@@ -953,8 +997,9 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
         lu_header << header::cuda->get_code();
     // TODO only include this if half is used
     if (device_type() == CUDA_GPU)
-        lu_header << header::cuda_fp16->get_code();
 
+        lu_header << header::cuda_fp16->get_code();
+    lu_header << "extern \"C\" int get_device_type();\n";
     lu_header << "extern \"C\" int kernel_entry(";
     std::string params = get_kernel_entry_paras(tu);
     lu_header << params;
@@ -1005,8 +1050,6 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         if (it.second->symbol.find("macro::") != string::npos)
             lu_main << it.second->get_code() << "\n";
 
-    LanguageUnit h2dcopy("h2dcopy");
-    LanguageUnit d2hcopy("d2hcopy");
     LanguageUnit fillval("fillval");
 
     lu_main << "int main(int argc, char *argv[])";
@@ -1038,12 +1081,6 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
 
             fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
                     << tensor.get_name() << "_host[i] = 1.0f;\n";
-
-            h2dcopy << "CUDA_SAFE_CALL(cudaMemcpy(" << tensor.get_name() << ", "
-                    << tensor.get_name() << "_host, "
-                    << "sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                    << tensor.get_tensor_layout()->get_size() << ", "
-                    << "cudaMemcpyHostToDevice));\n";
         }
 
         lu_main << "\n//output arguments\n";
@@ -1064,31 +1101,13 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
                         << " sizeof(" << tensor.get_element_type().c_type_string() << ") * "
                         << tensor.get_tensor_layout()->get_size() << "));\n";
             }
-            d2hcopy << "CUDA_SAFE_CALL(cudaMemcpy(" << tensor.get_name() << "_host, "
-                    << tensor.get_name() << ", "
-                    << " sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                    << tensor.get_tensor_layout()->get_size() << ", "
-                    << "cudaMemcpyDeviceToHost));\n";
         }
 
         lu_main << "\n// fill input values\n";
         lu_main << fillval.get_code() << "\n";
-        lu_main << h2dcopy.get_code() << "\n";
+        lu_main << get_h2dcopy(tu)->get_code() << "\n";
 
-        vector<string> params;
-        for (int i = 0; i < tu->arg.size(); i++)
-        {
-            auto& tv = tu->arg[i];
-            params.push_back(tv->get_name());
-        }
-        for (int i = 0; i < tu->out.size(); i++)
-        {
-            auto& tv = tu->out[i];
-            if (FLAGS_fextern_result_memory)
-                params.push_back(tv->get_name());
-            else
-                params.push_back("&" + tv->get_name());
-        }
+        std::string args = get_kernel_entry_args(tu);
         int warm_step = FLAGS_fwarmup_step, test_step = FLAGS_frun_step;
         if (FLAGS_fcodegen_debug)
         {
@@ -1098,10 +1117,10 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "\n//warm up for 5 iters:\n";
         lu_main << "for(int i_=0; i_< " << warm_step << "; i_++)\n";
         lu_main.block_begin();
-        lu_main << h2dcopy.get_code();
-        lu_main << "kernel_entry(" << join(params, ", ") << ");\n";
-        lu_main << d2hcopy.get_code();
-        lu_main << "CUDA_SAFE_CALL(cudaDeviceSynchronize()); \n";
+        lu_main << get_h2dcopy(tu)->get_code();
+        lu_main << "kernel_entry(" << args << ");\n";
+        lu_main << get_d2hcopy(tu)->get_code();
+        lu_main << get_sync()->get_code();
 
         for (size_t i = 0; i < tu->out.size(); i++)
         {
@@ -1136,9 +1155,9 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main.block_begin();
 
         lu_main << "cudaEventRecord(start_i, 0);\n";
-        lu_main << h2dcopy.get_code();
+        lu_main << get_h2dcopy(tu)->get_code();
         // kernel launch
-        lu_main << "kernel_entry(" << join(params, ", ") << ");\n";
+        lu_main << "kernel_entry(" << args << ");\n";
 
         lu_main << "cudaEventRecord(stop_i, 0);\n";
         lu_main << "cudaEventSynchronize(stop_i);\n";
@@ -1272,14 +1291,71 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
     lu << R"(
 cuda_add_executable(main_test main_test.cpp)   
 target_link_libraries(main_test ${TARGET_NAME}) 
-
-if(EXISTS "${CMAKE_BINARY_DIR}/Constant")
-else()
-add_custom_command(
-    TARGET ${TARGET_NAME}
-    POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Constant ${CMAKE_BINARY_DIR}/Constant
-)
-endif()
 )";
     return;
+}
+
+LanguageUnit_p CudaCodegenPass::get_d2hcopy(std::shared_ptr<TranslationUnit> tu)
+{
+    LanguageUnit_p d2hcopy = std::make_shared<LanguageUnit>("d2hcopy");
+    for (size_t i = 0; i < tu->out.size(); i++)
+    {
+        auto& tensor = *tu->out[i];
+        *d2hcopy << "CUDA_SAFE_CALL(cudaMemcpy(" << tensor.get_name() << "_host, "
+                 << tensor.get_name() << ", "
+                 << " sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                 << tensor.get_tensor_layout()->get_size() << ", "
+                 << "cudaMemcpyDeviceToHost));\n";
+    }
+    return d2hcopy;
+}
+
+LanguageUnit_p CudaCodegenPass::get_h2dcopy(std::shared_ptr<TranslationUnit> tu)
+{
+    LanguageUnit_p h2dcopy = std::make_shared<LanguageUnit>("h2dcopy");
+
+    for (size_t i = 0; i < tu->arg.size(); i++)
+    {
+        auto& tensor = *tu->arg[i];
+        *h2dcopy << "CUDA_SAFE_CALL(cudaMemcpy(" << tensor.get_name() << ", " << tensor.get_name()
+                 << "_host, "
+                 << "sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                 << tensor.get_tensor_layout()->get_size() << ", "
+                 << "cudaMemcpyHostToDevice));\n";
+    }
+    return h2dcopy;
+}
+
+LanguageUnit_p CudaCodegenPass::get_sync()
+{
+    return std::make_shared<LanguageUnit>("device_sync",
+                                          "CUDA_SAFE_CALL(cudaDeviceSynchronize());\n");
+}
+void CudaCodegenPass::fill_exec_host(std::shared_ptr<TranslationUnit> tu)
+{
+    auto lup_exec_host = std::make_shared<CodegenMainBlockUnit>("codegen_exec_host");
+    projgen->lup_codegen->require(lup_exec_host);
+    projgen->lup_exit->require(lup_exec_host);
+    lup_exec_host->require(projgen->lup_exec);
+
+    auto& lu_exec_host_begin = *(lup_exec_host->begin);
+    {
+        std::string params = get_kernel_entry_paras(tu, true);
+        lu_exec_host_begin << "\nint kernel_entry_host(" << params << ")\n{\n";
+    }
+
+    auto& lu_exec_host_end = *(lup_exec_host->end);
+    {
+        lu_exec_host_end << "return 0;\n";
+        lu_exec_host_end << "}\n\n";
+    }
+
+    auto& lu_exec_host_vec = lup_exec_host->unit_vec;
+    lu_exec_host_vec.push_back(get_h2dcopy(tu));
+    lu_exec_host_vec.push_back(get_sync());
+    LanguageUnit_p kernel_entry_call = std::make_shared<LanguageUnit>("kernel_entry_call");
+    *kernel_entry_call << "kernel_entry(" << get_kernel_entry_args(tu) << ");\n";
+    lu_exec_host_vec.push_back(kernel_entry_call);
+    lu_exec_host_vec.push_back(get_sync());
+    lu_exec_host_vec.push_back(get_d2hcopy(tu));
 }

@@ -18,6 +18,7 @@ namespace nnfusion
         namespace macro
         {
             LU_DECLARE(OutputDebugStringA);
+            LU_DECLARE(RUNTIME_API);
 
         } // namespace macro
 

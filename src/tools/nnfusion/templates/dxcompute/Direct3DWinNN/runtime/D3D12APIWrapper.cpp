@@ -12,7 +12,7 @@
 #include "D3D12Util.h"
 #include "D3D12APIWrapper.h"
 
-//namespace {
+namespace {
     static bool _USE_DESCRIPTOR_HEAP_ = false;
 
     struct dx_buffer_t
@@ -183,18 +183,20 @@
         assert(static_cast<char*>(vPtr) - static_cast<char*>(iter->first) >= 0);
         return iter;
     }
+}
 
 
 int dxInit(int flags)
 {
     if (!defaultStream)
     {
-        device.Init();
         _USE_DESCRIPTOR_HEAP_ = flags;
         if (_USE_DESCRIPTOR_HEAP_)
             fprintf(stderr, "[INFO] D3D12: Descriptor heap is enabled.\n\n");
         else
             fprintf(stderr, "[INFO] D3D12: Descriptor heap is disabled.\n\n");
+
+        device.Init();
         defaultStream = (void*)1LU;
         defaultStream = dxStreamCreate();
     }
@@ -347,11 +349,12 @@ void* dxShaderLoad(const char* src, int* num_inputs, int* num_outputs)
 
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC computeRootSignatureDesc;
     std::vector<CD3DX12_ROOT_PARAMETER1> computeRootParameters;
+    CD3DX12_DESCRIPTOR_RANGE1 ranges[2];
+
     if (_USE_DESCRIPTOR_HEAP_)
     {
         // Prepare Root
         computeRootParameters.resize(1);
-        CD3DX12_DESCRIPTOR_RANGE1 ranges[2];
         // D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE is needed to disable unproper driver optimization.
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, (uint32_t)hd->inputs.size(), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
         ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, (uint32_t)hd->outputs.size(), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, (uint32_t)hd->inputs.size());
@@ -437,7 +440,7 @@ int dxStreamSubmit(void* hStream)
     if (pStream->state == dx_stream_t::State::INRECORD)
     {
         pStream->state = dx_stream_t::State::SUBMITTED;
-        
+
         // Resolve all query heaps when necessary
         for (auto q : pStream->queryHeapsNeedToResolve)
         {
@@ -448,7 +451,7 @@ int dxStreamSubmit(void* hStream)
         pStream->pCmdList->Close();
         ID3D12CommandList* cmdlists[] = { pStream->pCmdList.Get() };
         device.pCommandQueue->ExecuteCommandLists(1, cmdlists);
-       
+
         // Signal fence.
         pStream->fenceVal = device.SignalFence();
     }
@@ -475,7 +478,7 @@ int dxStreamSynchronize(void* hStream)
 }
 
 
-int dxMemcpyHtoDAsync(void* dst, void* src, size_t bytes, void *hStream)
+int dxMemcpyHtoDAsync(void* dst, void* src, size_t bytes, void* hStream)
 {
     if (!hStream)
         hStream = defaultStream;
@@ -493,13 +496,14 @@ int dxMemcpyHtoDAsync(void* dst, void* src, size_t bytes, void *hStream)
     device.MapAndCopyToResource(deviceCPUSrcX.Get(), src, bytes);
 
     // GPU copy
+    auto pStream = (dx_stream_t*)hStream;
+    assert(pStream->state == dx_stream_t::State::INRECORD);
+
     auto deviceIter = map_device_ptr(dst);
     UINT64 offset = static_cast<char*>(dst) - static_cast<char*>(deviceIter->first);
     auto dst_buffer = (dx_buffer_t*)(deviceIter->second);
-    ComPtr<ID3D12CommandAllocator> pCommandAllocator;
-    ComPtr<ID3D12GraphicsCommandList> pCmdList;
-    IFE(device.pDevice->CreateCommandAllocator(device.CommandListType, IID_GRAPHICS_PPV_ARGS(pCommandAllocator.ReleaseAndGetAddressOf())));
-    IFE(device.pDevice->CreateCommandList(0, device.CommandListType, pCommandAllocator.Get(), nullptr, IID_GRAPHICS_PPV_ARGS(pCmdList.ReleaseAndGetAddressOf())));
+    auto& pCmdList = pStream->pCmdList;
+
     dst_buffer->StateTransition(pCmdList.Get(), D3D12_RESOURCE_STATE_COPY_DEST);
     pCmdList->CopyBufferRegion(dst_buffer->handle.Get(), offset, deviceCPUSrcX.Get(), 0, bytes);
     dst_buffer->StateTransition(pCmdList.Get(), D3D12_RESOURCE_STATE_COMMON);
@@ -511,7 +515,8 @@ int dxMemcpyHtoDAsync(void* dst, void* src, size_t bytes, void *hStream)
     ID3D12CommandList* cmdlists[] = { pCmdList.Get() };
     device.pCommandQueue->ExecuteCommandLists(1, cmdlists);
     device.AwaitExecution();
-    return 0;
+
+    return dxStreamSynchronize(hStream);
 }
 
 int dxMemcpyDtoHAsync(void* dst, void* src, size_t bytes, void* hStream)
@@ -531,13 +536,14 @@ int dxMemcpyDtoHAsync(void* dst, void* src, size_t bytes, void* hStream)
     device.CreateReadbackBuffer(bytes, &deviceCPUSrcX);
 
     // GPU copy
+    auto pStream = (dx_stream_t*)hStream;
+    assert(pStream->state == dx_stream_t::State::INRECORD);
+
     auto deviceIter = map_device_ptr(src);
     UINT64 offset = static_cast<char*>(src) - static_cast<char*>(deviceIter->first);
     auto src_buffer = (dx_buffer_t*)(deviceIter->second);
-    ComPtr<ID3D12CommandAllocator> pCommandAllocator;
-    ComPtr<ID3D12GraphicsCommandList> pCmdList;
-    IFE(device.pDevice->CreateCommandAllocator(device.CommandListType, IID_GRAPHICS_PPV_ARGS(pCommandAllocator.ReleaseAndGetAddressOf())));
-    IFE(device.pDevice->CreateCommandList(0, device.CommandListType, pCommandAllocator.Get(), nullptr, IID_GRAPHICS_PPV_ARGS(pCmdList.ReleaseAndGetAddressOf())));
+
+    auto& pCmdList = pStream->pCmdList;
     src_buffer->StateTransition(pCmdList.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE);
     pCmdList->CopyBufferRegion(deviceCPUSrcX.Get(), 0, src_buffer->handle.Get(), offset, bytes);
     src_buffer->StateTransition(pCmdList.Get(), D3D12_RESOURCE_STATE_COMMON);
@@ -548,7 +554,7 @@ int dxMemcpyDtoHAsync(void* dst, void* src, size_t bytes, void* hStream)
 
     // CPU copy
     device.MapCopyFromResource(deviceCPUSrcX.Get(), dst, bytes);
-    return 0;
+    return dxStreamSynchronize(hStream);
 }
 
 int dxShaderLaunchAsync(void* hShader, void** buffers, void* hStream)
@@ -783,4 +789,3 @@ float dxEventElapsedTime(void* hStart, void* hStop)
     IFE(device.pCommandQueue->GetTimestampFrequency(&GpuFrequency));
     return static_cast<float>(timeStampEnd - timeStampStart) / static_cast<float>(GpuFrequency);
 }
-//}

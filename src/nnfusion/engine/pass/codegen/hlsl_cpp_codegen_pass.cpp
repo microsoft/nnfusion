@@ -21,6 +21,7 @@ DECLARE_int32(frun_step);
 DECLARE_bool(fcodegen_debug);
 DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fcustomized_mem_imp);
+DECLARE_bool(fhost_entry);
 
 void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                     std::shared_ptr<TranslationUnit> tu)
@@ -28,7 +29,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     set_global_member(ctx, tu);
     // setup lup_codegen execution info
     projgen->lup_codegen->pwd = m_codegen_folder;
-    projgen->lup_codegen->write_to = "Main.cpp";
+    projgen->lup_codegen->write_to = "runtime.cpp";
 
     //copy folder
     auto& copy_folder = projgen->lup_codegen->copy_folder;
@@ -51,10 +52,10 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         std::string(path) + std::string("/templates/dxcompute/Direct3DXBoxNN");
     copy_folder.push_back(Direct3DXBoxNN_path);
 
-    projgen->lup_codegen->require(lup_main);
-    lup_main->require(projgen->lup_init);
-    lup_main->require(projgen->lup_exec);
-    lup_main->require(projgen->lup_exit);
+    // projgen->lup_codegen->require(lup_main);
+    // lup_main->require(projgen->lup_init);
+    // lup_main->require(projgen->lup_exec);
+    // lup_main->require(projgen->lup_exit);
 
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
@@ -64,54 +65,9 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     auto& lu_init_end = *(projgen->lup_init->end);
     {
-        lu_init_end << "dxStreamSynchronize(0);\n";
+        lu_init_end << get_sync()->get_code();
         lu_init_end << "}\n\n";
     }
-    //     {
-    //         LanguageUnit_p lib_init = std::make_shared<LanguageUnit>("lib_init", R"(
-    // libtestdll = LoadLibrary(L"antares_hlsl_v0.1_x64.dll");
-    // if (!libtestdll)
-    // {
-    //     fprintf(stderr, "Cannot find antares_hlsl_v0.1_x64.dll !\n");
-    //     exit(1);
-    // }
-
-    // dxInit = (int (*)(int flags))GetProcAddress(libtestdll, "dxInit");
-
-    // dxStreamCreate = (void* (*)())GetProcAddress(libtestdll, "dxStreamCreate");
-    // dxStreamDestroy = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamDestroy");
-    // dxStreamSubmit = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamSubmit");
-    // dxStreamSynchronize = (int (*)(void* hStream))GetProcAddress(libtestdll, "dxStreamSynchronize");
-
-    // dxMemAlloc = (void* (*)(size_t bytes))GetProcAddress(libtestdll, "dxMemAlloc");
-    // dxMemFree = (int (*)(void* dptr))GetProcAddress(libtestdll, "dxMemFree");
-    // dxMemcpyHtoDAsync = (int (*)(void* dst, void* src, size_t bytes, void* hStream))GetProcAddress(libtestdll, "dxMemcpyHtoDAsync");
-    // dxMemcpyDtoHAsync = (int (*)(void* dst, void* src, size_t bytes, void* hStream))GetProcAddress(libtestdll, "dxMemcpyDtoHAsync");
-
-    // dxShaderLoad = (void* (*)(const char* src, int* num_inputs, int* num_outputs))GetProcAddress(libtestdll, "dxShaderLoad");
-    // dxShaderUnload = (int (*)(void* hShader))GetProcAddress(libtestdll, "dxShaderUnload");
-    // dxShaderGetProperty = (int (*)(void* hShader, int arg_index, size_t * num_elements, size_t * type_size, const char** dtype_name))GetProcAddress(libtestdll, "dxShaderGetProperty");
-    // dxShaderLaunchAsync = (int (*)(void* hShader, void** buffers, void* hStream))GetProcAddress(libtestdll, "dxShaderLaunchAsync");
-
-    // dxEventCreate = (void* (*)())GetProcAddress(libtestdll, "dxEventCreate");
-    // dxEventRecord = (int (*)(void* hEvent, void* hStream))GetProcAddress(libtestdll, "dxEventRecord");
-    // dxEventElapsedTime = (float (*)(void* hStart, void* hStop))GetProcAddress(libtestdll, "dxEventElapsedTime");
-    // dxEventDestroy = (int (*)(void* hEvent))GetProcAddress(libtestdll, "dxEventDestroy");
-
-    // if (!dxShaderLoad)
-    // {
-    //     std::cout << "no valid dxShaderLoad func" << std::endl;
-    //     exit(1);
-    // }
-    //         )");
-
-    //         LanguageUnit_p lib_free =
-    //             std::make_shared<LanguageUnit>("lib_free", "FreeLibrary(libtestdll);\n");
-
-    //         lib_init->require(declaration::antares_hlsl_dll_cpp);
-    //         lib_free->require(declaration::antares_hlsl_dll_cpp);
-    //         add_init_and_exit_pair(lib_init, lib_free);
-    //     }
 
     auto& lu_exec_begin = *(projgen->lup_exec->begin);
     {
@@ -125,6 +81,10 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         lu_exec_end << "}\n\n";
     }
 
+    if (FLAGS_fhost_entry)
+    {
+        fill_exec_host(tu);
+    }
     auto& lu_exit_begin = *(projgen->lup_exit->begin);
     {
         lu_exit_begin << "\nvoid hlsl_free()\n{\n";
@@ -135,16 +95,16 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         lu_exit_end << "}\n\n";
     }
 
-    auto& lu_main_begin = *(lup_main->begin);
-    {
-        lu_main_begin << "\nint main()\n{\n";
-    }
+    // auto& lu_main_begin = *(lup_main->begin);
+    // {
+    //     lu_main_begin << "\nint main()\n{\n";
+    // }
 
-    auto& lup_main_end = *(lup_main->end);
-    {
-        lup_main_end << "return 0;\n";
-        lup_main_end << "}\n\n";
-    }
+    // auto& lup_main_end = *(lup_main->end);
+    // {
+    //     lup_main_end << "return 0;\n";
+    //     lup_main_end << "}\n\n";
+    // }
 
     // add requirement
     projgen->lup_codegen->require(header::iostream);
@@ -152,12 +112,15 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(header::stdio);
     projgen->lup_codegen->require(header::windows);
     projgen->lup_codegen->require(header::D3D12APIWrapper);
-    projgen->lup_codegen->require(macro::OutputDebugStringA);
+    projgen->lup_codegen->require(codegen_device_type());
+    // projgen->lup_codegen->require(macro::OutputDebugStringA);
     LanguageUnit_p num_inputs_outputs = std::make_shared<LanguageUnit>(
         "declaration::num_inputs_outputs", "int num_inputs, num_outputs;\n");
     projgen->lup_codegen->require(num_inputs_outputs);
 
-    generate_main(ctx, tu);
+    // add component
+    create_header_file(ctx, tu);
+    create_main_file(ctx, tu);
 
     return;
 }
@@ -238,14 +201,14 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                                    ") {\n    std::cout << \"Invalid Shader Source "
                                                    "for Compilation: " +
                                                    file + "\";\n    exit(1);\n}\n";
-                            std::string unload_str = "dxShaderUnload(" + hShader_name + ");\n";
+                            // std::string unload_str = "dxShaderUnload(" + hShader_name + ");\n";
                             LanguageUnit_p shader_load =
                                 std::make_shared<LanguageUnit>(hShader_name + "_load", load_str);
-                            LanguageUnit_p shader_unload = std::make_shared<LanguageUnit>(
-                                hShader_name + "_unload", unload_str);
+                            // LanguageUnit_p shader_unload = std::make_shared<LanguageUnit>(
+                            //     hShader_name + "_unload", unload_str);
                             shader_load->require(shader_decl);
                             lup_shaders_load->unit_vec.push_back(shader_load);
-                            lup_shaders_unload->unit_vec.push_back(shader_unload);
+                            // lup_shaders_unload->unit_vec.push_back(shader_unload);
                         }
                         else
                         {
@@ -323,124 +286,180 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
     return true;
 }
 
-void HLSLCPPCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
-                                       std::shared_ptr<TranslationUnit> tu)
+void HLSLCPPCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx,
+                                            std::shared_ptr<TranslationUnit> tu)
 {
-    LanguageUnit_p lup_main_content = std::make_shared<LanguageUnit>("main_content");
-    lup_main->unit_vec.push_back(lup_main_content);
-    auto& lu_ = *lup_main_content;
-    lu_ << "\nhlsl_init();\n\n";
+    // LanguageUnit_p lup_header = std::make_shared<LanguageUnit>("codegen_header");
+    projgen->lup_codegen->require(lup_header);
+    lup_header->pwd = m_codegen_folder;
+    lup_header->write_to = "runtime.h";
 
-    LanguageUnit h2dcopy("h2dcopy");
-    LanguageUnit d2hcopy("d2hcopy");
-    LanguageUnit fillval("fillval");
+    lup_header->require(macro::RUNTIME_API);
+    auto& lu_header = *lup_header;
 
-    for (size_t i = 0; i < tu->arg.size(); i++)
+    lu_header << "extern \"C\" RUNTIME_API int get_device_type();\n";
+    lu_header << "extern \"C\" RUNTIME_API int kernel_entry";
+    if (FLAGS_fhost_entry)
+        lu_header << "_host";
+    std::string params = get_kernel_entry_paras(tu, FLAGS_fhost_entry);
+    lu_header << "(" << params << ");\n";
+
+    lu_header << "extern \"C\" RUNTIME_API void hlsl_init();\n";
+
+    lu_header << "extern \"C\" RUNTIME_API void hlsl_free();\n";
+
+    LanguageUnit_p h =
+        std::make_shared<LanguageUnit>("header::runtime.h", "#include \"runtime.h\"\n");
+    projgen->lup_exec->require(h);
+    return;
+}
+
+void HLSLCPPCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
+                                          std::shared_ptr<TranslationUnit> tu)
+{
+    // LanguageUnit_p lup_main_content = std::make_shared<LanguageUnit>("main_content");
+    // lup_main->unit_vec.push_back(lup_main_content);
+    // auto& lu_ = *lup_main_content;
+
+    // LanguageUnit_p lup_main = std::make_shared<LanguageUnit>("codegen_main");
+    projgen->lup_codegen->require(lup_main);
+    lup_main->pwd = m_codegen_folder;
+    lup_main->write_to = "Main.cpp";
+
+    LanguageUnit_p re_main = make_shared<LanguageUnit>("main_include");
+    re_main->require(header::stdio);
+    re_main->require(header::iostream);
+    re_main->require(header::windows);
+    re_main->require(header::fstream);
+    re_main->require(header::sstream);
+    re_main->require(header::chrono);
+    re_main->require(header::ctime);
+    re_main->require(macro::OutputDebugStringA);
+
+    auto& lu_ = *lup_main;
+
+    lu_ << "#include \"runtime.h\"\n";
+
+    for (auto& it : re_main->local_symbol)
+        if (it.second->symbol.find("header::") != string::npos)
+            lu_ << it.second->get_code();
+
+    for (auto& it : re_main->local_symbol)
+        if (it.second->symbol.find("macro::") != string::npos)
+            lu_ << it.second->get_code() << "\n";
+
+    lu_ << "int main()";
+    lu_.block_begin();
     {
-        auto& tensor = *tu->arg[i];
-        //malloc host input arg
-        lu_ << "//input argument\n";
-        lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
-            << "_host = new " << tensor.get_element_type().c_type_string() << "["
-            << tensor.get_tensor_layout()->get_size() << "];\n";
-        lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
-            << tensor.get_element_type().c_type_string() << ") * "
-            << tensor.get_tensor_layout()->get_size() << ");\n";
-        fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
-                << tensor.get_name() << "_host[i]= 1;\n";
-        h2dcopy << "dxMemcpyHtoDAsync(" << tensor.get_name() << ", " << tensor.get_name()
-                << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                << tensor.get_tensor_layout()->get_size() << ", 0);\n";
-    }
+        lu_ << "\nhlsl_init();\n\n";
 
-    for (size_t i = 0; i < tu->out.size(); i++)
-    {
-        auto& tensor = *tu->out[i];
-        //malloc host output arg
-        lu_ << "//output argument\n";
-        lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
-            << "_host = new " << tensor.get_element_type().c_type_string() << "["
-            << tensor.get_tensor_layout()->get_size() << "];\n";
-        if (FLAGS_fextern_result_memory)
+        LanguageUnit fillval("fillval");
+
+        for (size_t i = 0; i < tu->arg.size(); i++)
         {
-            lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
-                << tensor.get_element_type().c_type_string() << ") * "
-                << tensor.get_tensor_layout()->get_size() << ");\n";
-        }
-
-        d2hcopy << "dxMemcpyDtoHAsync(" << tensor.get_name() << "_host, " << tensor.get_name()
-                << ", sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                << tensor.get_tensor_layout()->get_size() << ", nullptr);\n";
-    }
-
-    lu_ << "\n// fill input values\n";
-    lu_ << fillval.get_code() << "\n";
-
-    vector<string> params;
-    for (int i = 0; i < tu->arg.size(); i++)
-    {
-        auto& tv = tu->arg[i];
-        params.push_back(tv->get_name());
-    }
-    for (int i = 0; i < tu->out.size(); i++)
-    {
-        auto& tv = tu->out[i];
-        if (FLAGS_fextern_result_memory)
-            params.push_back(tv->get_name());
-        else
-            params.push_back("&" + tv->get_name());
-    }
-
-    lu_ << h2dcopy.get_code();
-    lu_ << "kernel_entry(" << join(params, ", ") << ");\n";
-    lu_ << d2hcopy.get_code();
-    lu_ << "dxStreamSynchronize(0);\n";
-    lu_ << "std::string result;\n";
-    for (size_t i = 0; i < tu->out.size(); i++)
-    {
-        auto& tensor = *tu->out[i];
-        // lu_ << "std::cout << \"" << tensor.get_name() << "_host = [\" << " << tensor.get_name()
-        //     << "_host[0] << \", \" << " << tensor.get_name() << "_host[1] << \",  .., \" << "
-        //     << tensor.get_name() << "_host[" << tensor.get_tensor_layout()->get_size()
-        //     << "-1] << \"]\" << std::endl;";
-        size_t num = std::min(size_t(10), tensor.get_tensor_layout()->get_size());
-        if (num == 1)
-        {
-            lu_ << "result = \"" << tensor.get_name() << "_host = [\" + std::to_string("
-                << tensor.get_name() << "_host[0]) + \"]\\n\";\n";
-        }
-        else
-        {
-            lu_ << "result = \"" << tensor.get_name() << "_host = [";
-            for (size_t j = 0; j < num; j++)
+            auto& tensor = *tu->arg[i];
+            //malloc host input arg
+            lu_ << "//input argument\n";
+            lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
+                << "_host = new " << tensor.get_element_type().c_type_string() << "["
+                << tensor.get_tensor_layout()->get_size() << "];\n";
+            if (!FLAGS_fhost_entry)
             {
-                lu_ << "\" + std::to_string(" << tensor.get_name() << "_host[" << j << "]) + \", ";
+                lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
+                    << tensor.get_element_type().c_type_string() << ") * "
+                    << tensor.get_tensor_layout()->get_size() << ");\n";
             }
-            lu_ << ".., \" + std::to_string(" << tensor.get_name() << "_host["
-                << tensor.get_tensor_layout()->get_size() << "-1]) + \"]\\n\";\n";
+            fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
+                    << tensor.get_name() << "_host[i]= 1;\n";
         }
-        lu_ << "OutputDebugStringA(result.c_str());\n";
-    }
 
-    lu_ << "\n//free context\n";
-    for (size_t i = 0; i < tu->arg.size(); i++)
-    {
-        auto& tensor = *tu->arg[i];
-        lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
-    }
-
-    if (FLAGS_fextern_result_memory)
-    {
         for (size_t i = 0; i < tu->out.size(); i++)
         {
             auto& tensor = *tu->out[i];
-            lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+            //malloc host output arg
+            lu_ << "//output argument\n";
+            lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
+                << "_host = new " << tensor.get_element_type().c_type_string() << "["
+                << tensor.get_tensor_layout()->get_size() << "];\n";
+            if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
+            {
+                lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
+                    << tensor.get_element_type().c_type_string() << ") * "
+                    << tensor.get_tensor_layout()->get_size() << ");\n";
+            }
         }
+
+        lu_ << "\n// fill input values\n";
+        lu_ << fillval.get_code() << "\n";
+
+        if (FLAGS_fhost_entry)
+        {
+            std::string args = get_kernel_entry_args(tu, true);
+            lu_ << "kernel_entry_host(" << args << ");\n";
+        }
+        else
+        {
+            std::string args = get_kernel_entry_args(tu, false);
+            lu_ << get_h2dcopy(tu)->get_code();
+            lu_ << "kernel_entry(" << args << ");\n";
+            lu_ << get_d2hcopy(tu)->get_code();
+        }
+
+        // lu_ << get_sync()->get_code();
+        lu_ << "std::string result;\n";
+        for (size_t i = 0; i < tu->out.size(); i++)
+        {
+            auto& tensor = *tu->out[i];
+            // lu_ << "std::cout << \"" << tensor.get_name() << "_host = [\" << " << tensor.get_name()
+            //     << "_host[0] << \", \" << " << tensor.get_name() << "_host[1] << \",  .., \" << "
+            //     << tensor.get_name() << "_host[" << tensor.get_tensor_layout()->get_size()
+            //     << "-1] << \"]\" << std::endl;";
+            size_t num = std::min(size_t(10), tensor.get_tensor_layout()->get_size());
+            if (num == 1)
+            {
+                lu_ << "result = \"" << tensor.get_name() << "_host = [\" + std::to_string("
+                    << tensor.get_name() << "_host[0]) + \"]\\n\";\n";
+            }
+            else
+            {
+                lu_ << "result = \"" << tensor.get_name() << "_host = [";
+                for (size_t j = 0; j < num; j++)
+                {
+                    lu_ << "\" + std::to_string(" << tensor.get_name() << "_host[" << j
+                        << "]) + \", ";
+                }
+                lu_ << ".., \" + std::to_string(" << tensor.get_name() << "_host["
+                    << tensor.get_tensor_layout()->get_size() << "-1]) + \"]\\n\";\n";
+            }
+            lu_ << "OutputDebugStringA(result.c_str());\n";
+        }
+
+        lu_ << "\n//free context\n";
+        if (!FLAGS_fhost_entry)
+        {
+            for (size_t i = 0; i < tu->arg.size(); i++)
+            {
+                auto& tensor = *tu->arg[i];
+                lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+            }
+        }
+        if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
+        {
+            for (size_t i = 0; i < tu->out.size(); i++)
+            {
+                auto& tensor = *tu->out[i];
+                lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+            }
+        }
+        lu_ << "hlsl_free();\n\n";
     }
-    lu_ << "hlsl_free();\n\n";
+    lu_.block_end();
+
+    return;
 }
 
-std::string HLSLCPPCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu)
+std::string HLSLCPPCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu,
+                                                       bool is_host)
 {
     unordered_set<string> allocated;
     vector<string> params;
@@ -450,6 +469,10 @@ std::string HLSLCPPCodegenPass::get_kernel_entry_paras(std::shared_ptr<Translati
         string type = tv->get_element_type().c_type_string();
         stringstream ss;
         ss << "void* " << tv->get_name();
+        if (is_host)
+        {
+            ss << "_host";
+        }
         allocated.insert(tv->get_name());
         params.push_back(ss.str());
     }
@@ -459,10 +482,14 @@ std::string HLSLCPPCodegenPass::get_kernel_entry_paras(std::shared_ptr<Translati
         auto tv = tu->out[i];
         string type = tv->get_element_type().c_type_string();
         stringstream ss;
-        if (FLAGS_fextern_result_memory)
+        if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
             ss << "void* " << tv->get_name();
         else
             ss << "void** " << tv->get_name();
+        if (is_host)
+        {
+            ss << "_host";
+        }
         allocated.insert(tv->get_name());
         params.push_back(ss.str());
     }
@@ -501,54 +528,73 @@ bool HLSLCPPCodegenPass::after_projgen()
     struct stat s;
     std::string cmd;
 
-    std::string main_path = m_codegen_folder + projgen->lup_codegen->write_to;
+    std::string runtime_path = m_codegen_folder + projgen->lup_codegen->write_to;
+    std::string runtime_header_path = lup_header->pwd + lup_header->write_to;
+    std::string main_path = lup_main->pwd + lup_main->write_to;
     std::string Direct3DWinNN_path = m_codegen_folder + std::string("Direct3DWinNN/");
     std::string Direct3DXBoxNN_path = m_codegen_folder + std::string("Direct3DXBoxNN/");
-    if (stat(main_path.c_str(), &s) == 0)
+
+    std::string runtime_folder = Direct3DWinNN_path + "runtime/";
+    std::string nnf_desktop_example_folder = Direct3DWinNN_path + "nnf_desktop_example/";
+
+    if (stat(main_path.c_str(), &s) == 0 && stat(runtime_path.c_str(), &s) == 0 &&
+        stat(runtime_header_path.c_str(), &s) == 0)
     {
-        cmd = std::string("cp -f ") + main_path + " " + Direct3DWinNN_path;
+        // copy to Direct3DWinNN
+        cmd =
+            std::string("cp -f ") + runtime_path + " " + runtime_header_path + " " + runtime_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
-                "Failed to copy Main.cpp to Direct3DWinNN folder.\n");
+                "Failed to copy codegen files to Direct3DWinNN runtime folder.\n");
         }
 
-        cmd = std::string("cp -f ") + main_path + " " + Direct3DXBoxNN_path;
+        cmd = std::string("cp -f ") + main_path + " " + nnf_desktop_example_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
-                "Failed to copy Main.cpp to Direct3DXBoxNN folder.\n");
+                "Failed to copy codegen files to Direct3DWinNN nnf_desktop_example folder.\n");
         }
 
-        cmd = std::string("rm -f ") + main_path;
+        // copy to Direct3DXBoxNN
+        cmd = std::string("cp -f ") + main_path + " " + runtime_path + " " + runtime_header_path +
+              " " + Direct3DXBoxNN_path;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy codegen files to Direct3DXBoxNN folder.\n");
+        }
+        // remove files
+        cmd = std::string("rm -f ") + main_path + " " + runtime_path + " " + runtime_header_path;
         if (0 != system(cmd.c_str()))
         {
             NNFUSION_LOG(INFO) << get_current_dir_name() << main_path;
-            throw nnfusion::errors::RuntimeError("Failed to remove Main.cpp.\n");
+            throw nnfusion::errors::RuntimeError("Failed to remove codegen files.\n");
         }
     }
     else
     {
-        throw nnfusion::errors::RuntimeError("Failed to codegen Main.cpp.\n");
+        throw nnfusion::errors::RuntimeError("Failed to codegen files.\n");
     }
 
     std::string constant_folder = m_codegen_folder + std::string("Constant/");
     if (stat(constant_folder.c_str(), &s) == 0)
     {
-        cmd = std::string("cp -rf ") + constant_folder + " " + Direct3DWinNN_path;
+        // copy to Direct3DWinNN
+        cmd = std::string("cp -rf ") + constant_folder + " " + nnf_desktop_example_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
                 "Failed to copy Constant folder to Direct3DWinNN folder.\n");
         }
-
+        // copy to Direct3DXBoxNN
         cmd = std::string("cp -rf ") + constant_folder + " " + Direct3DXBoxNN_path;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
                 "Failed to copy Constant folder to Direct3DXBoxNN folder.\n");
         }
-
+        // remove files
         cmd = std::string("rm -rf ") + constant_folder;
         if (0 != system(cmd.c_str()))
         {
@@ -558,20 +604,21 @@ bool HLSLCPPCodegenPass::after_projgen()
 
     if (stat(m_kernel_folder.c_str(), &s) == 0)
     {
-        cmd = std::string("cp -rf ") + m_kernel_folder + " " + Direct3DWinNN_path;
+        // copy to Direct3DWinNN
+        cmd = std::string("cp -rf ") + m_kernel_folder + " " + nnf_desktop_example_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
                 "Failed to copy kernel folder to Direct3DWinNN folder.\n");
         }
-
+        // copy to Direct3DXBoxNN
         cmd = std::string("cp -rf ") + m_kernel_folder + " " + Direct3DXBoxNN_path;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
                 "Failed to copy kernel folder to Direct3DXBoxNN folder.\n");
         }
-
+        // remove files
         cmd = std::string("rm -rf ") + m_kernel_folder;
         if (0 != system(cmd.c_str()))
         {
@@ -599,4 +646,35 @@ bool HLSLCPPCodegenPass::after_projgen()
         }
     }
     return true;
+}
+
+LanguageUnit_p HLSLCPPCodegenPass::get_d2hcopy(std::shared_ptr<TranslationUnit> tu)
+{
+    LanguageUnit_p d2hcopy = std::make_shared<LanguageUnit>("d2hcopy");
+    for (size_t i = 0; i < tu->out.size(); i++)
+    {
+        auto& tensor = *tu->out[i];
+        *d2hcopy << "dxMemcpyDtoHAsync(" << tensor.get_name() << "_host, " << tensor.get_name()
+                 << ", sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                 << tensor.get_tensor_layout()->get_size() << ", nullptr);\n";
+    }
+    return d2hcopy;
+}
+
+LanguageUnit_p HLSLCPPCodegenPass::get_h2dcopy(std::shared_ptr<TranslationUnit> tu)
+{
+    LanguageUnit_p h2dcopy = std::make_shared<LanguageUnit>("h2dcopy");
+    for (size_t i = 0; i < tu->arg.size(); i++)
+    {
+        auto& tensor = *tu->arg[i];
+        *h2dcopy << "dxMemcpyHtoDAsync(" << tensor.get_name() << ", " << tensor.get_name()
+                 << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                 << tensor.get_tensor_layout()->get_size() << ", 0);\n";
+    }
+    return h2dcopy;
+}
+
+LanguageUnit_p HLSLCPPCodegenPass::get_sync()
+{
+    return std::make_shared<LanguageUnit>("device_sync", "dxStreamSynchronize(0);\n");
 }

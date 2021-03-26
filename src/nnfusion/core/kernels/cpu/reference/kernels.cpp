@@ -2112,12 +2112,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_abs<float>(input0,output0,"
+                    lu << "cpu_reference_abs<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2133,6 +2134,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Abs> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2150,12 +2152,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_acos<float>(input0,output0,"
+                    lu << "cpu_reference_acos<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2171,6 +2174,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Acos> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2188,13 +2192,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << ctx->gnode->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_add<float>(input0,input1,output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_add<" << dtype.c_type_string()
+                       << ">(input0,input1,output0," << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -2209,6 +2214,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Add> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2226,6 +2232,7 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
@@ -2248,6 +2255,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::AllReduce> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2265,12 +2273,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_asin<float>(input0,output0,"
+                    lu << "cpu_reference_asin<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2286,6 +2295,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Asin> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2303,12 +2313,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_atan<float>(input0,output0,"
+                    lu << "cpu_reference_atan<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2324,6 +2335,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Atan> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2341,14 +2353,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_broadcast<float>(input0,output0,Shape({"
-                       << join(m_context->inputs[0]->get_shape()) << "}),Shape({"
-                       << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
+                    lu << "cpu_reference_broadcast<" << dtype.c_type_string()
+                       << ">(input0,output0,Shape({" << join(m_context->inputs[0]->get_shape())
+                       << "}),Shape({" << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
                        << join(op->get_broadcast_axes()) << "}));";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2364,6 +2377,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Broadcast> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2381,12 +2395,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_ceiling<float>(input0,output0,"
+                    lu << "cpu_reference_ceiling<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2402,6 +2417,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Ceiling> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2419,6 +2435,7 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
@@ -2432,7 +2449,8 @@ namespace nnfusion
                         lu << "in_shapes.push_back(Shape({"
                            << join(m_context->inputs[t]->get_shape()) << "}));";
                     }
-                    lu << "cpu_reference_concat<float>(in_args,output0, in_shapes,Shape({"
+                    lu << "cpu_reference_concat<" << dtype.c_type_string()
+                       << ">(in_args,output0, in_shapes,Shape({"
                        << join(m_context->outputs[0]->get_shape()) << "}), "
                        << op->get_concatenation_axis() << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
@@ -2449,6 +2467,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Concat> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2503,6 +2522,7 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
@@ -2526,6 +2546,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Convert> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2543,12 +2564,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_convolution<float>(input0,input1,output0,Shape({"
+                    lu << "cpu_reference_convolution<" << dtype.c_type_string()
+                       << ">(input0,input1,output0,Shape({"
                        << join(m_context->inputs[0]->get_shape()) << "}),Shape({"
                        << join(m_context->inputs[1]->get_shape()) << "}),Shape({"
                        << join(m_context->outputs[0]->get_shape()) << "}),Strides({"
@@ -2571,6 +2594,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Convolution> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2588,12 +2612,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_cos<float>(input0,output0,"
+                    lu << "cpu_reference_cos<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2609,6 +2634,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Cos> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2626,12 +2652,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_cosh<float>(input0,output0,"
+                    lu << "cpu_reference_cosh<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2647,6 +2674,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Cosh> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2664,13 +2692,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_divide<float>(input0,input1,output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_divide<" << dtype.c_type_string()
+                       << ">(input0,input1,output0," << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -2685,6 +2714,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Divide> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2702,13 +2732,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_equal<float>(input0,input1,(char*)output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_equal<" << dtype.c_type_string()
+                       << ">(input0,input1,(char*)output0," << m_context->outputs[0]->size(false)
+                       << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -2723,6 +2755,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Equal> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2740,12 +2773,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_exp<float>(input0,output0,"
+                    lu << "cpu_reference_exp<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2761,6 +2795,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Exp> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2778,12 +2813,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_floor<float>(input0,output0,"
+                    lu << "cpu_reference_floor<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2799,6 +2835,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Floor> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2816,13 +2853,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_greater<float>(input0,input1,(char*)output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_greater<" << dtype.c_type_string()
+                       << ">(input0,input1,(char*)output0," << m_context->outputs[0]->size(false)
+                       << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -2837,6 +2876,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Greater> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2854,13 +2894,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_less<float>(input0,input1,(char*)output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_less<" << dtype.c_type_string()
+                       << ">(input0,input1,(char*)output0," << m_context->outputs[0]->size(false)
+                       << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -2875,6 +2917,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Less> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2892,12 +2935,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_log<float>(input0,output0,"
+                    lu << "cpu_reference_log<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2913,6 +2957,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Log> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2930,15 +2975,16 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_lrn<float>(input0,output0,Shape({"
-                       << join(m_context->inputs[0]->get_shape()) << "})," << (op->get_alpha())
-                       << "," << (op->get_beta()) << "," << (op->get_bias()) << ","
-                       << (op->get_nsize()) << ");";
+                    lu << "cpu_reference_lrn<" << dtype.c_type_string()
+                       << ">(input0,output0,Shape({" << join(m_context->inputs[0]->get_shape())
+                       << "})," << (op->get_alpha()) << "," << (op->get_beta()) << ","
+                       << (op->get_bias()) << "," << (op->get_nsize()) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -2953,6 +2999,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::LRN> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -2970,14 +3017,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_max<float>(input0,output0,Shape({"
-                       << join(m_context->inputs[0]->get_shape()) << "}),Shape({"
-                       << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
+                    lu << "cpu_reference_max<" << dtype.c_type_string()
+                       << ">(input0,output0,Shape({" << join(m_context->inputs[0]->get_shape())
+                       << "}),Shape({" << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
                        << join(op->get_reduction_axes()) << "}));";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -2993,6 +3041,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Max> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3010,13 +3059,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_maximum<float>(input0,input1,output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_maximum<" << dtype.c_type_string()
+                       << ">(input0,input1,output0," << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -3031,6 +3081,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Maximum> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3048,14 +3099,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_min<float>(input0,output0,Shape({"
-                       << join(m_context->inputs[0]->get_shape()) << "}),Shape({"
-                       << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
+                    lu << "cpu_reference_min<" << dtype.c_type_string()
+                       << ">(input0,output0,Shape({" << join(m_context->inputs[0]->get_shape())
+                       << "}),Shape({" << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
                        << join(op->get_reduction_axes()) << "}));";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3071,6 +3123,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Min> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3088,13 +3141,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_minimum<float>(input0,input1,output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_minimum<" << dtype.c_type_string()
+                       << ">(input0,input1,output0," << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -3109,6 +3163,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Minimum> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3126,13 +3181,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_multiply<float>(input0,input1,output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_multiply<" << dtype.c_type_string()
+                       << ">(input0,input1,output0," << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -3147,6 +3203,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Multiply> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3164,12 +3221,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_negate<float>(input0,output0,"
+                    lu << "cpu_reference_negate<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3185,6 +3243,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Negative> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3202,13 +3261,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_power<float>(input0,input1,output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_power<" << dtype.c_type_string()
+                       << ">(input0,input1,output0," << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -3223,6 +3283,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Power> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3240,14 +3301,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_product<float>(input0,output0,Shape({"
-                       << join(m_context->inputs[0]->get_shape()) << "}),Shape({"
-                       << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
+                    lu << "cpu_reference_product<" << dtype.c_type_string()
+                       << ">(input0,output0,Shape({" << join(m_context->inputs[0]->get_shape())
+                       << "}),Shape({" << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
                        << join(op->get_reduction_axes()) << "}));";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3263,6 +3325,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Product> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3280,12 +3343,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_relu<float>(input0,output0,"
+                    lu << "cpu_reference_relu<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3301,6 +3365,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Relu> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3318,12 +3383,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_select<float>(args[0]->get_data_ptr<char>(),input1,input2,"
+                    lu << "cpu_reference_select<" << dtype.c_type_string()
+                       << ">(args[0]->get_data_ptr<char>(),input1,input2,"
                           "output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
@@ -3340,6 +3407,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Select> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3357,12 +3425,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_sigmoid<float>(input0,output0,"
+                    lu << "cpu_reference_sigmoid<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3378,6 +3447,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Sigmoid> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3395,12 +3465,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_sign<float>(input0,output0,"
+                    lu << "cpu_reference_sign<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3416,6 +3487,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Sign> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3433,12 +3505,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_sin<float>(input0,output0,"
+                    lu << "cpu_reference_sin<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3454,6 +3527,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Sin> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3471,12 +3545,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_sinh<float>(input0,output0,"
+                    lu << "cpu_reference_sinh<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3492,6 +3567,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Sinh> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3509,14 +3585,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_slice<float>(input0,output0,Shape({"
-                       << join(m_context->inputs[0]->get_shape()) << "}),Coordinate({"
-                       << join(op->get_lower_bounds()) << "}),Coordinate({"
+                    lu << "cpu_reference_slice<" << dtype.c_type_string()
+                       << ">(input0,output0,Shape({" << join(m_context->inputs[0]->get_shape())
+                       << "}),Coordinate({" << join(op->get_lower_bounds()) << "}),Coordinate({"
                        << join(op->get_upper_bounds()) << "}),Strides({" << join(op->get_strides())
                        << "}),Shape({" << join(m_context->outputs[0]->get_shape()) << "}));";
                     return std::make_shared<LanguageUnit>(std::move(lu));
@@ -3533,6 +3610,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Slice> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3550,14 +3628,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_softmax<float>(input0,output0,Shape({"
-                       << join(m_context->outputs[0]->get_shape()) << "}), AxisSet({"
-                       << join(op->get_axes()) << "}));";
+                    lu << "cpu_reference_softmax<" << dtype.c_type_string()
+                       << ">(input0,output0,Shape({" << join(m_context->outputs[0]->get_shape())
+                       << "}), AxisSet({" << join(op->get_axes()) << "}));";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -3577,6 +3656,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Softmax> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3594,12 +3674,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_sqrt<float>(input0,output0,"
+                    lu << "cpu_reference_sqrt<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3615,6 +3696,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Sqrt> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3632,13 +3714,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_subtract<float>(input0,input1,output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_subtract<" << dtype.c_type_string()
+                       << ">(input0,input1,output0," << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -3653,6 +3736,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Subtract> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3670,14 +3754,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_sum<float>(input0,output0,Shape({"
-                       << join(m_context->inputs[0]->get_shape()) << "}),Shape({"
-                       << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
+                    lu << "cpu_reference_sum<" << dtype.c_type_string()
+                       << ">(input0,output0,Shape({" << join(m_context->inputs[0]->get_shape())
+                       << "}),Shape({" << join(m_context->outputs[0]->get_shape()) << "}),AxisSet({"
                        << join(op->get_reduction_axes()) << "}));";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3693,6 +3778,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Sum> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3710,12 +3796,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_tan<float>(input0,output0,"
+                    lu << "cpu_reference_tan<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3731,6 +3818,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Tan> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3748,12 +3836,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_tanh<float>(input0,output0,"
+                    lu << "cpu_reference_tanh<" << dtype.c_type_string() << ">(input0,output0,"
                        << m_context->outputs[0]->size(false) << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
@@ -3769,6 +3858,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Tanh> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3786,12 +3876,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_batch_norm<float>(" << op->get_eps_value() << ","
+                    lu << "cpu_reference_batch_norm<" << dtype.c_type_string() << ">("
+                       << op->get_eps_value() << ","
                        << "input0, input1, input2, input3, input4, output0, "
                        << "Shape({" << join(m_context->inputs[2]->get_shape()) << "}));";
                     return std::make_shared<LanguageUnit>(std::move(lu));
@@ -3808,6 +3900,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::BatchNormInference> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3825,12 +3918,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_avg_pool<float>(input0,output0,"
+                    lu << "cpu_reference_avg_pool<" << dtype.c_type_string() << ">(input0,output0,"
                        << "Shape({" << join(m_context->inputs[0]->get_shape()) << "}),"
                        << "Shape({" << join(m_context->outputs[0]->get_shape()) << "}),"
                        << "Shape({" << join(op->get_window_shape()) << "}),"
@@ -3852,6 +3946,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::AvgPool> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3869,12 +3964,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_dot<float>(input0,input1,output0,"
+                    lu << "cpu_reference_dot<" << dtype.c_type_string()
+                       << ">(input0,input1,output0,"
                        << "Shape({" << join(m_context->inputs[0]->get_shape()) << "}),"
                        << "Shape({" << join(m_context->inputs[1]->get_shape()) << "}),"
                        << "Shape({" << join(m_context->outputs[0]->get_shape()) << "}),"
@@ -3893,6 +3990,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Dot> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3910,12 +4008,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_max_pool<float>(input0,output0,"
+                    lu << "cpu_reference_max_pool<" << dtype.c_type_string() << ">(input0,output0,"
                        << "Shape({" << join(m_context->inputs[0]->get_shape()) << "}),"
                        << "Shape({" << join(m_context->outputs[0]->get_shape()) << "}),"
                        << "Shape({" << join(op->get_window_shape()) << "}),"
@@ -3936,6 +4035,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::MaxPool> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3953,12 +4053,14 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_pad<float>(input0, input1, output0,"
+                    lu << "cpu_reference_pad<" << dtype.c_type_string()
+                       << ">(input0, input1, output0,"
                        << "Shape({" << join(m_context->inputs[0]->get_shape()) << "}),"
                        << "Shape({" << join(m_context->outputs[0]->get_shape()) << "}),"
                        << "Shape({" << join(op->get_padding_below()) << "}),"
@@ -3978,6 +4080,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Pad> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -3995,12 +4098,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_reshape<float>(input0, output0,"
+                    lu << "cpu_reference_reshape<" << dtype.c_type_string() << ">(input0, output0,"
                        << "Shape({" << join(m_context->inputs[0]->get_shape()) << "}),"
                        << "AxisVector({" << join(op->get_input_order()) << "}),"
                        << "Shape({" << join(m_context->outputs[0]->get_shape()) << "}));";
@@ -4018,6 +4122,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Reshape> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -4035,6 +4140,7 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
@@ -4043,8 +4149,9 @@ namespace nnfusion
 
                     if (FLAGS_fextern_result_memory)
                     {
-                        lu << "cpu_reference_result<float>(input0, output0,"
-                           << shape_size(m_context->outputs[0]->get_shape()) << ");";
+                        lu << "cpu_reference_result<" << dtype.c_type_string()
+                           << ">(input0, output0," << shape_size(m_context->outputs[0]->get_shape())
+                           << ");";
                     }
                     else
                     {
@@ -4064,6 +4171,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Result> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -4081,13 +4189,15 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_less_eq<float>(input0,input1,(char*)output0,"
-                       << m_context->outputs[0]->size(false) << ");";
+                    lu << "cpu_reference_less_eq<" << dtype.c_type_string()
+                       << ">(input0,input1,(char*)output0," << m_context->outputs[0]->size(false)
+                       << ");";
                     return std::make_shared<LanguageUnit>(std::move(lu));
                 }
 
@@ -4102,6 +4212,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::LessEq> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(
@@ -4119,12 +4230,13 @@ namespace nnfusion
                     std::stringstream tag;
                     tag << op->get_name();
                     custom_tag = tag.str();
+                    dtype = ctx->outputs[0]->get_element_type();
                 }
 
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "cpu_reference_reverse<float>(input0,output0,"
+                    lu << "cpu_reference_reverse<" << dtype.c_type_string() << ">(input0,output0,"
                        << "Shape({" << join(m_context->inputs[0]->get_shape()) << "}),"
                        << "Shape({" << join(m_context->outputs[0]->get_shape()) << "}),"
                        << "AxisSet({" << join(op->get_reversed_axes()) << "}));";
@@ -4142,6 +4254,7 @@ namespace nnfusion
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 shared_ptr<op::Reverse> op;
+                element::Type dtype;
             };
 
             REGISTER_KERNEL_EMITTER(

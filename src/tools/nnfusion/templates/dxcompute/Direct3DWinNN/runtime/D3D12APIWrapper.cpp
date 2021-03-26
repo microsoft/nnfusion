@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string>
@@ -145,10 +148,6 @@ namespace {
     static antares::D3DDevice device(false, false);
 #endif
 
-    // Use unique_ptr to ensure the D3D resources are released when app exits.
-    // TODO: Release buffers in somewhere to avoid running out GPU memory.
-    static std::vector<std::unique_ptr<dx_buffer_t>> buffers;
-
     // Allocate individual queries from heaps for higher efficiency.
     // Since they consume little memory, we can release heaps when app exits.
     static std::vector<dx_query_heap_t> globalQueryHeaps;
@@ -156,6 +155,34 @@ namespace {
     // Reuse queries since they are small objects and may be frequently created.
     // Use unique_ptr to grantee it will be released when app exits.
     static std::vector<std::unique_ptr<dx_query_t>> globalFreeQueries;
+
+    static void* defaultStream = nullptr;
+
+    static std::map<void*, void*> memBlocks;
+
+    static std::map<void*, void*>::const_iterator map_device_ptr(void* vPtr)
+    {
+        assert(!memBlocks.empty());
+        auto iter = memBlocks.lower_bound(vPtr);
+        if (iter == memBlocks.end() || size_t(iter->first) > size_t(vPtr))
+            --iter;
+        return iter;
+    }
+
+    static std::vector<std::string> ssplit(const std::string& source, const std::string& delim) {
+        if (!source.size())
+            return {};
+        std::vector<std::string> ret;
+        int it = 0, next;
+        while (next = (int)source.find(delim, it), next >= 0) {
+            if (next > it)
+                ret.push_back(source.substr(it, next - it));
+            it = next + (int)delim.size();
+        }
+        if (it < source.size())
+            ret.push_back(source.substr(it));
+        return std::move(ret);
+    }
 
     static std::string get_between(const std::string& source, const std::string& begin, const std::string& end, const char* def = "")
     {
@@ -169,20 +196,6 @@ namespace {
             return def;
         return source.substr(idx, tail - idx);
     }
-
-    static void* defaultStream = nullptr;
-
-    static std::map<void*, void*> memBlocks;
-
-    static std::map<void*, void*>::const_iterator map_device_ptr(void* vPtr)
-    {
-        assert(memBlocks.empty() == false);
-        auto nextIter = memBlocks.upper_bound(vPtr);
-        assert(nextIter != memBlocks.begin());
-        auto iter = std::prev(nextIter);
-        assert(static_cast<char*>(vPtr) - static_cast<char*>(iter->first) >= 0);
-        return iter;
-    }
 }
 
 
@@ -190,11 +203,13 @@ int dxInit(int flags)
 {
     if (!defaultStream)
     {
+        // flags = 1: enable descriptor heap, no logging
+        // flags = 0: disable descriptor heap, no logging
+        // flags = -1: enable descriptor heap, with logging
+
+        if (flags == -1)
+            fprintf(stderr, "[INFO] D3D12: Descriptor heap is disabled.\n\n"), flags = 1;
         _USE_DESCRIPTOR_HEAP_ = flags;
-        if (_USE_DESCRIPTOR_HEAP_)
-            fprintf(stderr, "[INFO] D3D12: Descriptor heap is enabled.\n\n");
-        else
-            fprintf(stderr, "[INFO] D3D12: Descriptor heap is disabled.\n\n");
 
         device.Init();
         defaultStream = (void*)1LU;
@@ -208,19 +223,16 @@ void* dxMemAlloc(size_t bytes)
     if (dxInit(0) != 0)
         return nullptr;
 
-    std::unique_ptr<dx_buffer_t> buff = std::make_unique<dx_buffer_t>();
+    auto buff = new dx_buffer_t();
     buff->size = bytes;
     device.CreateGPUOnlyResource(bytes, &buff->handle);
     assert(buff->handle.Get() != nullptr);
     buff->state = D3D12_RESOURCE_STATE_COMMON;
 
-    buffers.push_back(std::move(buff));
-    void* devicePtr = buffers.back().get();
-
     void* virtualPtr = VirtualAlloc(nullptr, bytes, MEM_RESERVE, PAGE_NOACCESS);
     assert(virtualPtr != nullptr);
 
-    memBlocks[virtualPtr] = devicePtr;
+    memBlocks[virtualPtr] = buff;
     return virtualPtr;
 }
 
@@ -231,45 +243,15 @@ int dxMemFree(void* vPtr)
     return 0;
 }
 
-int dxShaderGetProperty(void* hShader, int arg_index, size_t* num_elements, size_t* type_size, const char** dtype_name)
-{
-    auto hd = (dx_shader_t*)hShader;
-    size_t count, tsize;
-    std::string dtype;
-    if (arg_index < hd->inputs.size())
-    {
-        count = hd->inputs[arg_index].NumElements();
-        dtype = hd->inputs[arg_index].dtype;
-        tsize = hd->inputs[arg_index].TypeSize();
-    }
-    else
-    {
-        count = hd->outputs[arg_index - hd->inputs.size()].NumElements();
-        dtype = hd->outputs[arg_index - hd->inputs.size()].dtype;
-        tsize = hd->outputs[arg_index - hd->inputs.size()].TypeSize();
-    }
-    if (num_elements != nullptr)
-        *num_elements = count;
-    if (type_size != nullptr)
-        *type_size = tsize;
-    if (dtype_name != nullptr)
-    {
-        static char lastDtypeName[MAX_PATH];
-        strncpy_s(lastDtypeName, dtype.c_str(), sizeof(lastDtypeName));
-        *dtype_name = lastDtypeName;
-    }
-    return 0;
-}
-
-void* dxShaderLoad(const char* src, int* num_inputs, int* num_outputs)
+void* dxShaderLoad_v2(const char* shader_src)
 {
     if (dxInit(0) != 0)
         return nullptr;
 
-    std::string source = src;
+    std::string source = shader_src;
     const char proto[] = "file://";
     if (strncmp(source.c_str(), proto, sizeof(proto) - 1) == 0) {
-        std::ifstream t(src + sizeof(proto) - 1, ios_base::binary);
+        std::ifstream t(source.c_str() + sizeof(proto) - 1, ios_base::binary);
         if (t.fail())
             return nullptr;
         std::string _((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
@@ -285,42 +267,57 @@ void* dxShaderLoad(const char* src, int* num_inputs, int* num_outputs)
     if (computeShader != nullptr)
         handle->bytecode = CD3DX12_SHADER_BYTECODE(computeShader->GetBufferPointer(), computeShader->GetBufferSize());
 #else
-    ComPtr<ID3DBlob> computeShader = nullptr;
-    if (D3DCompile(source.data(), source.size(), NULL, NULL, NULL, "CSMain", "cs_5_1", 0, 0, &computeShader, NULL) >= 0 && computeShader != nullptr)
+    ComPtr<ID3DBlob> computeShader = nullptr, errMsg = nullptr;
+    if (D3DCompile(source.data(), source.size(), NULL, NULL, NULL, "CSMain", "cs_5_1", 0, 0, &computeShader, &errMsg) >= 0 && computeShader != nullptr)
         handle->bytecode = CD3DX12_SHADER_BYTECODE(computeShader.Get());
+    else {
+        auto error_message = (char*)errMsg->GetBufferPointer();
+        fprintf(stderr, "[ERROR] D3D12: Shader Compile Failed: %s\n", error_message);
+    }
 #endif
     if (computeShader == nullptr) {
         //delete handle;
         return nullptr;
     }
 
-    auto ssplit = [](const std::string& source, const std::string& delim) -> std::vector<std::string> {
-        std::vector<std::string> ret;
-        int it = 0, next;
-        while (next = (int)source.find(delim, it), next >= 0) {
-            ret.push_back(source.substr(it, next - it));
-            it = next + (int)delim.size();
-        }
-        ret.push_back(source.substr(it));
-        return std::move(ret);
-    };
+    std::string str_params;
+    std::vector<std::string> arr_params, in_params, out_params;
+    bool legacy_format = (source.size() >= 3 && source.substr(0, 3) == "///");
 
-    auto parse_tensor = [&](const std::string& param) -> dx_tensor_t {
+    if (legacy_format) {
+        str_params = get_between(source, "///", "\n");
+        arr_params = ssplit(str_params, ":");
+        assert(arr_params.size() == 2);
+        in_params = ssplit(arr_params[0], ",");
+        out_params = ssplit(arr_params[1], ",");
+    }
+    else {
+        str_params = get_between(source, " -- ", "\n");
+        arr_params = ssplit(str_params, " -> ");
+        assert(arr_params.size() == 2);
+        in_params = ssplit(arr_params[0] + ", ", "], ");
+        out_params = ssplit(arr_params[1] + ", ", "], ");
+    }
+
+    auto parse_tensor = [&](const std::string & param) -> dx_tensor_t {
         dx_tensor_t ret;
-        auto parts = ssplit(param, "/");
-        for (auto it : ssplit(parts[0], "-"))
+        if (legacy_format) {
+            auto parts = ssplit(param, "/");
+            assert(parts.size() == 3);
+            ret.dtype = parts[1];
+            ret.name = parts[2];
+            for (auto it : ssplit(parts[0], "-"))
+                ret.shape.push_back(std::atoi(it.c_str()));
+            return ret;
+        }
+        auto parts = ssplit(param, ":");
+        ret.name = parts[0];
+        parts = ssplit(parts[1], "[");
+        ret.dtype = parts[0];
+        for (auto it : ssplit(parts[1], ", "))
             ret.shape.push_back(std::atoi(it.c_str()));
-        ret.dtype = parts[1];
-        ret.name = parts[2];
         return ret;
     };
-
-    auto str_params = get_between(source, "///", "\n");
-    auto arr_params = ssplit(str_params, ":");
-    assert(arr_params.size() == 2);
-    auto in_params = ssplit(arr_params[0], ","), out_params = ssplit(arr_params[1], ",");
-    if (in_params.size() == 1 && !in_params[0].size())
-        in_params.clear();
 
     for (int i = 0; i < in_params.size(); ++i)
         handle->inputs.push_back(parse_tensor(in_params[i]));
@@ -335,10 +332,6 @@ void* dxShaderLoad(const char* src, int* num_inputs, int* num_outputs)
     handle->thread[2] = std::atoi(get_between(source, "// [thread_extent] threadIdx.z = ", "\n", "1").c_str());
 
     assert(INT64(handle->thread[0]) * handle->thread[1] * handle->thread[2] <= 1024);
-    if (num_inputs != nullptr)
-        *num_inputs = (int)handle->inputs.size();
-    if (num_outputs != nullptr)
-        *num_outputs = (int)handle->outputs.size();
 
     // Added code to actually create D3D resources needed for shader launch.
     auto& hd = handle;
@@ -387,11 +380,47 @@ void* dxShaderLoad(const char* src, int* num_inputs, int* num_outputs)
     return handle;
 }
 
-int dxShaderUnload(void* hShader)
+void dxShaderUnload(void* hShader)
 {
-    if (hShader != nullptr)
-        delete (dx_shader_t*)hShader;
-    return 0;
+    free(hShader);
+}
+
+void* dxModuleLoad(const char* module_src)
+{
+    std::string source;
+    const char proto[] = "file://";
+    if (strncmp(module_src, proto, sizeof(proto) - 1) == 0) {
+        std::ifstream t(module_src + sizeof(proto) - 1, ios_base::binary);
+        if (t.fail())
+            return nullptr;
+        std::string _((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+        source = std::move(_);
+        module_src = source.c_str();
+    }
+
+    auto& hShaderDict = *(new std::unordered_map<std::string, void*>);
+
+    auto kernel_slices = ssplit(module_src, "-------\n");
+    for (int i = 1; i < kernel_slices.size(); ++i) {
+        auto name = get_between(kernel_slices[i], "// LOCAL: ", " -- ");
+        hShaderDict[name] = dxShaderLoad_v2(kernel_slices[i].c_str());
+    }
+    return &hShaderDict;
+}
+
+void dxModuleUnload(void* hModule)
+{
+    auto& hShaderDict = *(std::unordered_map<std::string, void*>*)hModule;
+    for (auto& it : hShaderDict)
+        dxShaderUnload(it.second);
+    delete& hShaderDict;
+}
+
+void* dxModuleGetShader(void* hModule, const char* fname)
+{
+    auto& dict = *(std::unordered_map<std::string, void*>*)hModule;
+    auto it = dict.find(fname);
+    return it != dict.end() ? it->second : nullptr;
 }
 
 void* dxStreamCreate()
@@ -440,7 +469,7 @@ int dxStreamSubmit(void* hStream)
     if (pStream->state == dx_stream_t::State::INRECORD)
     {
         pStream->state = dx_stream_t::State::SUBMITTED;
-
+        
         // Resolve all query heaps when necessary
         for (auto q : pStream->queryHeapsNeedToResolve)
         {
@@ -451,7 +480,7 @@ int dxStreamSubmit(void* hStream)
         pStream->pCmdList->Close();
         ID3D12CommandList* cmdlists[] = { pStream->pCmdList.Get() };
         device.pCommandQueue->ExecuteCommandLists(1, cmdlists);
-
+       
         // Signal fence.
         pStream->fenceVal = device.SignalFence();
     }
@@ -477,8 +506,39 @@ int dxStreamSynchronize(void* hStream)
     return 0;
 }
 
+int dxMemcpyDtoDAsync(void* dst, void* src, size_t bytes, void* hStream)
+{
+    if (!hStream)
+        hStream = defaultStream;
 
-int dxMemcpyHtoDAsync(void* dst, void* src, size_t bytes, void* hStream)
+    // GPU copy
+    auto pStream = (dx_stream_t*)hStream;
+    assert(pStream->state == dx_stream_t::State::INRECORD);
+
+    auto deviceIter = map_device_ptr(dst), sourceIter = map_device_ptr(src);
+    UINT64 offset = static_cast<char*>(dst) - static_cast<char*>(deviceIter->first);
+    UINT64 offsetSrc = static_cast<char*>(src) - static_cast<char*>(sourceIter->first);
+    auto dst_buffer = (dx_buffer_t*)(deviceIter->second), src_buffer = (dx_buffer_t*)(sourceIter->second);
+    auto& pCmdList = pStream->pCmdList;
+
+    dst_buffer->StateTransition(pCmdList.Get(), D3D12_RESOURCE_STATE_COPY_DEST);
+    pCmdList->CopyBufferRegion(dst_buffer->handle.Get(), offset, src_buffer->handle.Get(), offsetSrc, bytes);
+    dst_buffer->StateTransition(pCmdList.Get(), D3D12_RESOURCE_STATE_COMMON);
+    IFE(pCmdList->Close());
+    return 0;
+
+    // Conservatively ensure all things have been done, though currently not necessary.
+    device.AwaitExecution();
+
+    ID3D12CommandList* cmdlists[] = { pCmdList.Get() };
+    device.pCommandQueue->ExecuteCommandLists(1, cmdlists);
+    device.AwaitExecution();
+
+    return dxStreamSynchronize(hStream);
+}
+
+
+int dxMemcpyHtoDAsync(void* dst, void* src, size_t bytes, void *hStream)
 {
     if (!hStream)
         hStream = defaultStream;
@@ -758,7 +818,7 @@ int dxEventRecord(void* hEvent, void* hStream)
     return 0;
 }
 
-float dxEventElapsedTime(void* hStart, void* hStop)
+float dxEventElapsedSecond(void* hStart, void* hStop)
 {
     auto pQueryStart = (dx_query_t*)hStart;
     auto pQueryEnd = (dx_query_t*)hStop;

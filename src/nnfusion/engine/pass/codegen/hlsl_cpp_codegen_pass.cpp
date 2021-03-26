@@ -114,9 +114,9 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(header::D3D12APIWrapper);
     projgen->lup_codegen->require(codegen_device_type());
     // projgen->lup_codegen->require(macro::OutputDebugStringA);
-    LanguageUnit_p num_inputs_outputs = std::make_shared<LanguageUnit>(
-        "declaration::num_inputs_outputs", "int num_inputs, num_outputs;\n");
-    projgen->lup_codegen->require(num_inputs_outputs);
+    // LanguageUnit_p num_inputs_outputs = std::make_shared<LanguageUnit>(
+    //     "declaration::num_inputs_outputs", "int num_inputs, num_outputs;\n");
+    // projgen->lup_codegen->require(num_inputs_outputs);
 
     // add component
     create_header_file(ctx, tu);
@@ -195,9 +195,14 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                             }
 
                             std::string file = "file://HLSL/" + fname + m_kernel_suffix;
-                            std::string load_str = hShader_name + " = dxShaderLoad(\"" + file +
-                                                   "\", &num_inputs, &num_outputs);\nif (!" +
-                                                   hShader_name +
+                            // std::string load_str = hShader_name + " = dxShaderLoad(\"" + file +
+                            //                        "\", &num_inputs, &num_outputs);\nif (!" +
+                            //                        hShader_name +
+                            //                        ") {\n    std::cout << \"Invalid Shader Source "
+                            //                        "for Compilation: " +
+                            //                        file + "\";\n    exit(1);\n}\n";
+                            std::string load_str = hShader_name + " = dxShaderLoad_v2(\"" + file +
+                                                   "\");\nif (!" + hShader_name +
                                                    ") {\n    std::cout << \"Invalid Shader Source "
                                                    "for Compilation: " +
                                                    file + "\";\n    exit(1);\n}\n";

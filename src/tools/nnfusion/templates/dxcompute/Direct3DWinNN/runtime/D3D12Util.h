@@ -48,7 +48,7 @@ using namespace std;
 using namespace Microsoft::WRL;
 
 
-#define IFE(x)  ((FAILED(x)) ? (printf("Error-line: (%s) %d\n\nPossible Reason:\n\tWindows TDR might be triggered.\n\tTo avoid this, please apply https://github.com/microsoft/antares/blob/master/platforms/c-hlsl/evaluator/AntaresEvalAgent/TDR.reg into Windows registry and reboot your system to take effect.\nIf this is not fixed, please report an issue to https://github.com/microsoft/antares/issues\n\n", __FILE__, __LINE__), abort(), 0): 1)
+#define IFE(x)  ((FAILED(x)) ? (printf("Error-line: (%s) %d\n\nPossible Reason:\n\tWindows TDR might be triggered.\n\tTo avoid this, please download and apply https://github.com/microsoft/antares/releases/download/v0.1.0/antares_hlsl_tdr_v0.1.reg into Windows registry and reboot your system to take effect.\nIf this is not fixed, please report an issue to https://github.com/microsoft/antares/issues\n\n", __FILE__, __LINE__), abort(), 0): 1)
 
 namespace {
 
@@ -686,7 +686,10 @@ namespace antares {
             // Create the DX12 API device object.
             D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
             params.Version = D3D12_SDK_VERSION;
-
+            if (bEnableDebugLayer) {
+                // Enable the debug layer.
+                params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
+            }
             params.GraphicsCommandQueueRingSizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
             params.GraphicsScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
             params.ComputeScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
@@ -1010,8 +1013,8 @@ namespace antares {
     private:
         DXCompiler()
         {
-            IFE(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&m_pLibrary)));
-            IFE(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_pCompiler)));
+            IFE(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(m_pLibrary.ReleaseAndGetAddressOf())));
+            IFE(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(m_pCompiler.ReleaseAndGetAddressOf())));
         }
         DXCompiler(const DXCompiler&) = delete;
         DXCompiler& operator=(const DXCompiler&) = delete;

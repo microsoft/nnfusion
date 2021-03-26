@@ -84,8 +84,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             // The output of output nodes refers to the input, so there is NO need
             // to allocate memory space for output of output nodes.
             if (!gnode || !gnode->get_op_ptr()->is_output() ||
-                (gnode->get_op_ptr()->is_output() &&
-                 (FLAGS_fhlsl_codegen_type != "default" || !FLAGS_fextern_result_memory)))
+                (gnode->get_op_ptr()->is_output() && !FLAGS_fextern_result_memory))
                 newlist.insert(ins->liveness_new_list.begin(), ins->liveness_new_list.end());
 
             // Allocate in two passes to make sure ref-tensors is after non-ref-tensors

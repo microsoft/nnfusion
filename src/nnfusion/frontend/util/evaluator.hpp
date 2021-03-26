@@ -10,7 +10,7 @@
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 #include "nnfusion/frontend/frontend_base.hpp"
-DEFINE_bool(fuse_cpuprofiler, false, "");
+DECLARE_bool(fuse_cpuprofiler);
 namespace nnfusion
 {
     namespace frontend

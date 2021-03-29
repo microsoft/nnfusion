@@ -7,6 +7,7 @@
 #define __EXPORT__ extern "C" __declspec(dllexport)
 
 __EXPORT__ int    dxInit(int flags);
+__EXPORT__ int    dxFinalize();
 
 __EXPORT__ void*  dxStreamCreate();
 __EXPORT__ int    dxStreamDestroy(void* hStream);

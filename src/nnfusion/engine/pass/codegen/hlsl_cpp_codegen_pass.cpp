@@ -92,6 +92,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     auto& lu_exit_end = *(projgen->lup_exit->end);
     {
+        lu_exit_end << "dxFinalize();\n";
         lu_exit_end << "}\n\n";
     }
 
@@ -539,15 +540,16 @@ bool HLSLCPPCodegenPass::after_projgen()
     std::string Direct3DWinNN_path = m_codegen_folder + std::string("Direct3DWinNN/");
     std::string Direct3DXBoxNN_path = m_codegen_folder + std::string("Direct3DXBoxNN/");
 
-    std::string runtime_folder = Direct3DWinNN_path + "runtime/";
+    std::string nnf_desktop_runtime_folder = Direct3DWinNN_path + "runtime/";
     std::string nnf_desktop_example_folder = Direct3DWinNN_path + "nnf_desktop_example/";
-
+    std::string nnf_xbox_runtime_folder = Direct3DXBoxNN_path + "runtime/";
+    std::string nnf_xbox_example_folder = Direct3DXBoxNN_path + "nnf_xbox_example";
     if (stat(main_path.c_str(), &s) == 0 && stat(runtime_path.c_str(), &s) == 0 &&
         stat(runtime_header_path.c_str(), &s) == 0)
     {
         // copy to Direct3DWinNN
-        cmd =
-            std::string("cp -f ") + runtime_path + " " + runtime_header_path + " " + runtime_folder;
+        cmd = std::string("cp -f ") + runtime_path + " " + runtime_header_path + " " +
+              nnf_desktop_runtime_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
@@ -558,16 +560,23 @@ bool HLSLCPPCodegenPass::after_projgen()
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
-                "Failed to copy codegen files to Direct3DWinNN nnf_desktop_example folder.\n");
+                "Failed to copy codegen files to Direct3DXBoxNN example folder.\n");
         }
 
         // copy to Direct3DXBoxNN
-        cmd = std::string("cp -f ") + main_path + " " + runtime_path + " " + runtime_header_path +
-              " " + Direct3DXBoxNN_path;
+        cmd = std::string("cp -f ") + runtime_path + " " + runtime_header_path + " " +
+              nnf_xbox_runtime_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
-                "Failed to copy codegen files to Direct3DXBoxNN folder.\n");
+                "Failed to copy codegen files to Direct3DXBoxNN runtime folder.\n");
+        }
+
+        cmd = std::string("cp -f ") + main_path + " " + nnf_xbox_example_folder;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy codegen files to Direct3DXBoxNN example folder.\n");
         }
         // remove files
         cmd = std::string("rm -f ") + main_path + " " + runtime_path + " " + runtime_header_path;
@@ -593,7 +602,7 @@ bool HLSLCPPCodegenPass::after_projgen()
                 "Failed to copy Constant folder to Direct3DWinNN folder.\n");
         }
         // copy to Direct3DXBoxNN
-        cmd = std::string("cp -rf ") + constant_folder + " " + Direct3DXBoxNN_path;
+        cmd = std::string("cp -rf ") + constant_folder + " " + nnf_xbox_example_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
@@ -617,7 +626,7 @@ bool HLSLCPPCodegenPass::after_projgen()
                 "Failed to copy kernel folder to Direct3DWinNN folder.\n");
         }
         // copy to Direct3DXBoxNN
-        cmd = std::string("cp -rf ") + m_kernel_folder + " " + Direct3DXBoxNN_path;
+        cmd = std::string("cp -rf ") + m_kernel_folder + " " + nnf_xbox_example_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(

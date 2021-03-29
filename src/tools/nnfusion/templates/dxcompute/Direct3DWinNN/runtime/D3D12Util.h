@@ -645,6 +645,22 @@ namespace {
 
 namespace antares {
 
+    // Query heaps are used to allocate query objects.
+    struct dx_query_heap_t
+    {
+        ComPtr<ID3D12QueryHeap> pHeap;
+        ComPtr<ID3D12Resource> pReadbackBuffer;
+        uint32_t curIdx;
+        uint32_t totSize;
+    };
+
+    // Currently queries are only used to query GPU time-stamp.
+    struct dx_query_t
+    {
+        uint32_t heapIdx;
+        uint32_t queryIdxInHeap;
+    };
+
     struct D3DDevice
     {
 #ifndef _GAMING_XBOX_SCARLETT
@@ -658,6 +674,14 @@ namespace antares {
         uint64_t fenceValue = 0;
         bool bEnableDebugLayer = false;
         bool bEnableGPUValidation = false;
+
+        // Allocate individual queries from heaps for higher efficiency.
+        // Since they consume little memory, we can release heaps when app exits.
+        std::vector<dx_query_heap_t> globalQueryHeaps;
+
+        // Reuse queries since they are small objects and may be frequently created.
+        // Use unique_ptr to grantee it will be released when app exits.
+        std::vector<std::unique_ptr<dx_query_t>> globalFreeQueries;
 
         // GPU time stamp query doesn't work on some NVIDIA GPUs with specific drivers, so we switch to DIRECT queue.
 #ifdef _USE_GPU_TIMER_

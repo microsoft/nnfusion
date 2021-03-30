@@ -537,6 +537,7 @@ bool HLSLCPPCodegenPass::after_projgen()
     std::string runtime_path = m_codegen_folder + projgen->lup_codegen->write_to;
     std::string runtime_header_path = lup_header->pwd + lup_header->write_to;
     std::string main_path = lup_main->pwd + lup_main->write_to;
+    std::string para_info_path = m_codegen_folder + "para_info.json";
     std::string Direct3DWinNN_path = m_codegen_folder + std::string("Direct3DWinNN/");
     std::string Direct3DXBoxNN_path = m_codegen_folder + std::string("Direct3DXBoxNN/");
 
@@ -545,7 +546,7 @@ bool HLSLCPPCodegenPass::after_projgen()
     std::string nnf_xbox_runtime_folder = Direct3DXBoxNN_path + "runtime/";
     std::string nnf_xbox_example_folder = Direct3DXBoxNN_path + "nnf_xbox_example";
     if (stat(main_path.c_str(), &s) == 0 && stat(runtime_path.c_str(), &s) == 0 &&
-        stat(runtime_header_path.c_str(), &s) == 0)
+        stat(runtime_header_path.c_str(), &s) == 0 && stat(para_info_path.c_str(), &s) == 0)
     {
         // copy to Direct3DWinNN
         cmd = std::string("cp -f ") + runtime_path + " " + runtime_header_path + " " +
@@ -556,7 +557,8 @@ bool HLSLCPPCodegenPass::after_projgen()
                 "Failed to copy codegen files to Direct3DWinNN runtime folder.\n");
         }
 
-        cmd = std::string("cp -f ") + main_path + " " + nnf_desktop_example_folder;
+        cmd = std::string("cp -f ") + main_path + " " + para_info_path + " " +
+              nnf_desktop_example_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
@@ -572,14 +574,16 @@ bool HLSLCPPCodegenPass::after_projgen()
                 "Failed to copy codegen files to Direct3DXBoxNN runtime folder.\n");
         }
 
-        cmd = std::string("cp -f ") + main_path + " " + nnf_xbox_example_folder;
+        cmd = std::string("cp -f ") + main_path + " " + para_info_path + " " +
+              nnf_xbox_example_folder;
         if (0 != system(cmd.c_str()))
         {
             throw nnfusion::errors::RuntimeError(
                 "Failed to copy codegen files to Direct3DXBoxNN example folder.\n");
         }
         // remove files
-        cmd = std::string("rm -f ") + main_path + " " + runtime_path + " " + runtime_header_path;
+        cmd = std::string("rm -f ") + main_path + " " + runtime_path + " " + runtime_header_path +
+              " " + para_info_path;
         if (0 != system(cmd.c_str()))
         {
             NNFUSION_LOG(INFO) << get_current_dir_name() << main_path;

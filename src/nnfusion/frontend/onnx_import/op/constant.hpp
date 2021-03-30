@@ -65,8 +65,10 @@ namespace nnfusion
                     Node node(node_proto);
                     auto tensor = node.get_attribute_value<Tensor>("value");
 
-                    const auto& func_param = ONNX_CONST_MAP().at(tensor.get_ng_type());
-                    auto op = func_param(tensor.get_ng_type(), tensor);
+                    // const auto& func_param = ONNX_CONST_MAP().at(tensor.get_ng_type());
+                    // auto op = func_param(tensor.get_ng_type(), tensor);
+                    auto op = std::make_shared<op::Constant>(
+                        tensor.get_ng_type(), tensor.get_shape(), tensor.buffer_get_data());
 
                     op->set_name(node_proto.output(0));
                     auto gnode = m_graph->add_node_and_edge(op, graph::GNodeVector({}));

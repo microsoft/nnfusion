@@ -29,6 +29,7 @@
 
 #include "../onnx_base.hpp"
 #include "nnfusion/common/common.hpp"
+#include "nnfusion/common/type/data_buffer.hpp"
 
 namespace nnfusion
 {
@@ -50,6 +51,8 @@ namespace nnfusion
                     auto it = reinterpret_cast<const T*>(raw_data.data());
                     return {it, it + (raw_data.size() / sizeof(T))};
                 }
+
+                DataBuffer buffer_get_data(const onnx::TensorProto& tensor);
 
                 template <typename T>
                 inline std::vector<T> get_data(const onnx::TensorProto& tensor)
@@ -186,7 +189,7 @@ namespace nnfusion
             class Tensor;
             class Node;
 
-            bool ONNXDataTypeToNNFusionElementType(const onnx::TensorProto_DataType onnx_dt,
+            bool ONNXDataTypeToNNFusionElementType(onnx::TensorProto_DataType onnx_dt,
                                                    nnfusion::element::Type* nnfusion_et);
 
             template <typename T>

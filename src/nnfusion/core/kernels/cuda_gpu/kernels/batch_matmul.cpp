@@ -8,6 +8,7 @@
 //   [a] ./new_kernel_0.cpp
 //   [b] ../../../ops/op_define/new_op_0.cpp
 
+#include <string>
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
@@ -52,6 +53,15 @@ namespace nnfusion
                     const nnfusion::Shape& input_shape_0 = m_context->inputs[0]->get_shape();
                     const nnfusion::Shape& input_shape_1 = m_context->inputs[1]->get_shape();
 
+                    element::Type dtype0 = m_context->inputs[0]->get_element_type();
+                    element::Type dtype1 = m_context->inputs[1]->get_element_type();
+                    element::Type dtype2 = m_context->outputs[0]->get_element_type();
+                    NNFUSION_CHECK(dtype0 == dtype1 && dtype1 == dtype2)
+                        << "Unsupported element type combination of (" << dtype0.c_type_string()
+                        << ", " << dtype1.c_type_string() << ") -> " << dtype2.c_type_string()
+                        << ".";
+                    element::Type& dtype = dtype0;
+
                     bool transA = generic_op->localOpConfig.getRoot()["adj_x"]["b"];
                     bool transB = generic_op->localOpConfig.getRoot()["adj_y"]["b"];
                     size_t A1 = 1LU;
@@ -92,10 +102,11 @@ namespace nnfusion
                         stride_b = A2 * A3, ldc = A4, stride_c = A2 * A4;
                     }
 
+                    std::string type = dtype.c_type_string();
                     float alpha = 1.0f, beta = 0.0f;
                     auto code = nnfusion::op::create_code_from_template(
                         R"(
-                        static const float alpha = @alpha@F, beta = @beta@F;
+                        static const @dtype@ alpha = @alpha@, beta = @beta@;
                         // if (!@hCublas@)
                         //     CUBLAS_SAFE_CALL(@api_create@(&@hCublas@));
                         CUBLAS_SAFE_CALL(@api_exec@(
@@ -106,7 +117,9 @@ namespace nnfusion
                         {
                             {"hCublas", "cublas_handle"},
                             {"api_create", "cublasCreate"},
-                            {"api_exec", "cublasSgemmStridedBatched"},
+                            {"api_exec",
+                             dtype == element::f32 ? "cublasSgemmStridedBatched"
+                                                   : "cublasHgemmStridedBatched"},
                             {"transA", transB ? "CUBLAS_OP_T" : "CUBLAS_OP_N"},
                             {"transB", transA ? "CUBLAS_OP_T" : "CUBLAS_OP_N"},
                             {"alpha", alpha},
@@ -121,6 +134,7 @@ namespace nnfusion
                             {"stride_b", stride_b},
                             {"stride_c", stride_c},
                             {"batch", A1},
+                            {"dtype", type},
                         });
 
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));

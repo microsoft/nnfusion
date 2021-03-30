@@ -28,7 +28,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            bool ONNXDataTypeToNNFusionElementType(const onnx::TensorProto_DataType onnx_dt,
+            bool ONNXDataTypeToNNFusionElementType(onnx::TensorProto_DataType onnx_dt,
                                                    nnfusion::element::Type* nnfusion_et)
             {
                 switch (onnx_dt)
@@ -36,8 +36,10 @@ namespace nnfusion
                 case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
                     *nnfusion_et = element::boolean;
                     break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
                 case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
+                    *nnfusion_et = element::f16;
+                    break;
+                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
                     *nnfusion_et = element::f32;
                     break;
                 case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
@@ -86,35 +88,9 @@ namespace nnfusion
                                                            const Shape shape,
                                                            const Tensor& tensor)
             {
-                switch (onnx_et)
-                {
-                case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
-                    return make_constant_op<bool>(element::boolean, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
-                    return make_constant_op<float>(element::f32, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
-                    return make_constant_op<double>(element::f64, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT8:
-                    return make_constant_op<int8_t>(element::i8, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT16:
-                    return make_constant_op<int16_t>(element::i16, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT32:
-                    return make_constant_op<int32_t>(element::i32, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT64:
-                    return make_constant_op<int64_t>(element::i64, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT8:
-                    return make_constant_op<uint8_t>(element::u8, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT16:
-                    return make_constant_op<uint16_t>(element::u16, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT32:
-                    return make_constant_op<uint32_t>(element::u32, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT64:
-                    return make_constant_op<uint64_t>(element::u64, shape, tensor);
-                default:
-                    NNFUSION_CHECK_FAIL() << "unsupported value info element type: "
-                                          << onnx::TensorProto_DataType_Name(onnx_et);
-                }
+                element::Type element_type = tensor.get_ng_type();
+                return std::make_shared<op::Constant>(
+                    element_type, shape, tensor.buffer_get_data());
             }
 
             std::shared_ptr<graph::GNode> GetInputNode(const NodeMap& all_ng_nodes,
@@ -278,6 +254,83 @@ namespace nnfusion
             {
                 return node.get_attribute_value<std::vector<std::size_t>>(
                     name, std::vector<std::size_t>(kernel_shape.size(), 1UL));
+            }
+
+            DataBuffer detail::buffer_get_data(const onnx::TensorProto& tensor)
+            {
+                size_t n_element = 1;
+                element::Type type;
+                bool status;
+                auto onnx_dt = static_cast<onnx::TensorProto_DataType>(tensor.data_type());
+
+                status = ONNXDataTypeToNNFusionElementType(onnx_dt, &type);
+
+                NNFUSION_CHECK(status) << "Unsupported ONNX data_type " << tensor.data_type()
+                                       << " is found";
+
+                DataBuffer buf(type);
+
+                for (auto dim : tensor.dims())
+                {
+                    n_element *= dim;
+                }
+                buf.resize(n_element);
+
+                if (tensor.has_raw_data())
+                {
+                    buf.load(tensor.raw_data().data(), n_element);
+                }
+                else
+                {
+#define GET_VALUE(pb_type, mid_type)                                                               \
+    do                                                                                             \
+    {                                                                                              \
+        const void* dat;                                                                           \
+        mid_type m;                                                                                \
+        NNFUSION_CHECK(n_element == tensor.pb_type##_data_size())                                  \
+            << "Tensor shape is not the same with tensor data_size. (" << n_element                \
+            << " != " << tensor.pb_type##_data_size() << ")";                                      \
+        for (size_t i = 0; i < n_element; ++i)                                                     \
+        {                                                                                          \
+            m = static_cast<mid_type>(tensor.pb_type##_data()[i]);                                 \
+            dat = reinterpret_cast<const void*>(&m);                                               \
+            buf.setElement(i, dat);                                                                \
+        }                                                                                          \
+    } while (0)
+
+                    switch (onnx_dt)
+                    {
+                    case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
+                        GET_VALUE(int32, element::half);
+                        break;
+                    case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
+                        GET_VALUE(float, float);
+                        break;
+                    case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
+                        GET_VALUE(double, double);
+                        break;
+                    case onnx::TensorProto_DataType::TensorProto_DataType_INT32:
+                        GET_VALUE(int32, int32_t);
+                        break;
+                    case onnx::TensorProto_DataType::TensorProto_DataType_INT64:
+                        GET_VALUE(int64, int64_t);
+                        break;
+                    case onnx::TensorProto_DataType::TensorProto_DataType_UINT64:
+                        GET_VALUE(uint64, uint64_t);
+                        break;
+                    case onnx::TensorProto_DataType::TensorProto_DataType_UINT32:
+                    case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
+                    case onnx::TensorProto_DataType::TensorProto_DataType_INT16:
+                    case onnx::TensorProto_DataType::TensorProto_DataType_INT8:
+                    case onnx::TensorProto_DataType::TensorProto_DataType_UINT8:
+                    case onnx::TensorProto_DataType::TensorProto_DataType_UINT16:
+                    default:
+                        NNFUSION_CHECK_FAIL() << "unsupported onnx element type: "
+                                              << onnx::TensorProto_DataType_Name(onnx_dt);
+                    }
+#undef GET_VALUE
+                }
+                return buf;
             }
 
         } // namespace onnx_import

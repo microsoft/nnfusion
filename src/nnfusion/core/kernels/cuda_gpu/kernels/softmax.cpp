@@ -204,7 +204,8 @@ LanguageUnit_p
 {
     LanguageUnit_p _lu(new LanguageUnit);
     auto& lu = *_lu;
-    string data_type = "CUDNN_DATA_FLOAT"; //cuda::get_cudnn_datatype(type);
+    element::Type type = m_context->inputs[0]->get_element_type();
+    string data_type = cuda::get_cudnn_datatype(type);
     string tensor_format = "CUDNN_TENSOR_NCHW";
     lu << "cudnnTensorDescriptor_t " << desc << ";\n";
     lu << "CUDNN_SAFE_CALL(cudnnCreateTensorDescriptor(&" << desc << "));\n";

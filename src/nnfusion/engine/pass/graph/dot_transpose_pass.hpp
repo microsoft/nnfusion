@@ -25,6 +25,6 @@ namespace nnfusion
             public:
                 bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) override;
             };
-        } // namespace pass
-    }     // namespace graph
+        } // namespace graph
+    }     // namespace pass
 } // namespace nnfusion

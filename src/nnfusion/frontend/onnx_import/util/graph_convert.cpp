@@ -143,7 +143,7 @@ namespace nnfusion
                     onnx::ModelProto proto_without_init;
                     proto_without_init.CopyFrom(model_proto);
                     proto_without_init.mutable_graph()->mutable_initializer()->Clear();
-                    NNFUSION_LOG(INFO) << proto_without_init.DebugString();
+                    // NNFUSION_LOG(INFO) << proto_without_init.DebugString();
                 }
 
                 std::string

@@ -16,7 +16,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from nnf.executor import Executor
 import data_loader
-
+logging.basicConfig(format="%(asctime)s:%(levelname)s:%(name)s:%(message)s", level="INFO")
 logger = logging.getLogger(__name__)
 
 def test_executor():
@@ -146,7 +146,7 @@ def train():
             #     sys.exit(0)
             
             if (i + 1) % display_interval == 0:
-                print(f"Epoch {epoch}, Batch {i+1}, NNF loss {sum_nnf_loss/display_interval}, PyTorch loss {sum_pt_loss/display_interval}")
+                logger.info(f"Epoch {epoch}, Batch {i+1}, NNF loss {sum_nnf_loss/display_interval}, PyTorch loss {sum_pt_loss/display_interval}")
                 sum_nnf_loss = 0
                 sum_pt_loss = 0
     print(f"{time.time()-start}s")
@@ -259,6 +259,6 @@ def train_with_faked_data():
 
 if __name__ == "__main__":
     # test_executor()
-    # train()
+    train()
     # pytorch_train()
     # train_with_faked_data()

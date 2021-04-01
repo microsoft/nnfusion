@@ -80,6 +80,7 @@ namespace
     void build_backward_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     {
         FLAGS_fautodiff = true;
+        FLAGS_ftraining_optimizer = "{\"optimizer\": \"SGD\", \"learning_rate\": 0.1}";
         auto ad_pass = nnfusion::pass::graph::AutodiffPass();
         ad_pass.run_on_graph(graph);
     }
@@ -326,4 +327,29 @@ TEST(nnfusion_pass_autodiff, sparse_softmax_cross_entropy)
                                                 0.07443541,
                                                 0.06546833,
                                                 0.03634925}));
+}
+
+TEST(nnfusion_pass_autodiff, gelu)
+{
+    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/gelu.onnx"));
+
+    build_backward_graph(model);
+
+    RawInputs raw_inputs;
+    // a
+    auto a = vector<float>{
+        1.0f, 2.0f, 3.0f, 1.0f, 2.0f, 3.0f, 1.0f, 2.0f, 3.0f,
+    };
+    raw_inputs.emplace_back(convert_to_raw(a));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> a_grad{convert_from_raw<float>(raw_outputs.at(1))};
+
+    EXPECT_TRUE(test::all_close_f(
+        out,
+        vector<float>{0.8413, 1.9545, 2.9960, 0.8413, 1.9545, 2.9960, 0.8413, 1.9545, 2.9960}));
+    EXPECT_TRUE(test::all_close_f(
+        a_grad,
+        vector<float>{1.0833, 1.0852, 1.0119, 1.0833, 1.0852, 1.0119, 1.0833, 1.0852, 1.0119}));
 }

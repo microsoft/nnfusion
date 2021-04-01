@@ -54,9 +54,49 @@ nnfusion::descriptor::Tensor::Tensor(const nnfusion::element::Type& element_type
 {
 }
 
-const std::string& nnfusion::descriptor::Tensor::get_name() const
+const std::string& nnfusion::descriptor::Tensor::get_name(bool get_valid_name) const
 {
-    if (m_name.empty())
+    // return original name
+    if (!get_valid_name)
+    {
+        NNFUSION_CHECK(!m_name.empty()) << "Tensor name cannot be empty.";
+        return m_name;
+    }
+
+    // return valid name
+    bool is_valid_name = true;
+    {
+        // check whether tensor name is valid for codegen or not
+        if (m_name.empty())
+        {
+            is_valid_name = false;
+        }
+        else
+        {
+            // check whether first character is invalid
+            if (!(isalpha(m_name[0]) || m_name[0] == '_'))
+            {
+                is_valid_name = false;
+            }
+
+            // check the rest characters
+            for (size_t i = 1; i < m_name.size(); i++)
+            {
+                if (!(isalnum(m_name[i]) || m_name[i] == '_'))
+                {
+                    is_valid_name = false;
+                    break;
+                }
+            }
+
+            // to avoid conflicts with unique_name
+            if (m_name.find_first_of("tensor_") == 0)
+            {
+                is_valid_name = false;
+            }
+        }
+    }
+    if (!is_valid_name)
     {
         return get_unique_name();
     }

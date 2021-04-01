@@ -29,10 +29,7 @@ namespace nnfusion
                     threads = ctx->inputs[0]->size(false);
                     if (!ctx->annotations)
                         ctx->annotations = std::make_shared<Annotations>();
-                    // TODO: we use inplace_annotation to implement the reference_tensor, i.e., the
-                    // output 0 shares the same address with input 0
-                    // need to add a new annotation type or ref_tensor mechanism in the future
-                    ctx->annotations->add_in_place_oi_pair({0, 0, false});
+                    ctx->annotations->add_in_place_oi_pair({0, 0, true, true});
                 }
 
                 LanguageUnit_p emit_function_body() override
@@ -46,7 +43,7 @@ namespace nnfusion
                     lu << "if (tid < " << threads << ")\n";
                     lu.block_begin();
                     {
-                        lu << "input0[tid] -= " << lr << " * input1[tid];\n";
+                        lu << "output0[tid] -= " << lr << " * input1[tid];\n";
                     }
                     lu.block_end();
                     return _lu;

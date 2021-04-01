@@ -120,14 +120,11 @@ void cuda::coordinate_transform_to_multi_d(CodeWriter& writer,
     writer << "int coordinate_product = " << i_coord_product << ";\n";
     for (size_t i = 0; i < rank; i++)
     {
-        if (i != 0)
-        {
-            writer << "coordinate_product -= (" << o_coordinates << i - 1 << " * " << i_strides
-                   << brace_open << i - 1 << brace_close << ");\n";
-        }
         writer << "int " << o_coordinates << i << " = division_by_invariant_multiplication("
                << "coordinate_product, " << i_stride_magic << brace_open << i << brace_close << ", "
                << i_stride_shift << brace_open << i << brace_close << ");\n";
+        writer << "coordinate_product -= (" << o_coordinates << i << " * " << i_strides
+               << brace_open << i << brace_close << ");\n";
     }
 }
 

@@ -52,6 +52,7 @@ REGISTER_OP(ApplyGradientDescent)
             expression_template,
             {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}, {"lr", lr}});
 
-        return expression_code + " ## @: inplace_wg";
+        AddInplace(gnode->get_op_ptr(), 0, 0, true, true);
+        return expression_code;
     });
 ;

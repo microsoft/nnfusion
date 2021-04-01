@@ -205,9 +205,9 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
             propagate_in_place_output(
                 ctx, NodeOut(input_node, in_edge->get_src_output()), output_name);
         }
-        // NNFUSION_LOG(INFO) << "Output Tensor:\t" << itv->get_name() << "\t with id:" << output_name;
+        // NNFUSION_LOG(INFO) << "Output Tensor:\t" << itv->get_name() << "\t with external_name:" << itv->get_name(false) << "\t with id:" << output_name;
 
-        std::string frontend_name = itv->get_name();
+        std::string frontend_name = itv->get_name(false);
         para_info["output"][frontend_name]["name"] = tv->get_name();
         para_info["output"][frontend_name]["id"] = ss.str();
         para_info["output"][frontend_name]["shape"] = tv->get_shape();

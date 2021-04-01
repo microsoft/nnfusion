@@ -8,6 +8,7 @@
 
 #include "nnfusion/common/common.hpp"
 #include "nnfusion/core/kernels/antares_ke_imp.hpp"
+#include "nnfusion/core/operators/util/annotations.hpp"
 
 #define REGISTER_OP(op_x)                                                                          \
     static nnfusion::op::OpConfig __register_op_##op_x = nnfusion::op::build_op_config(#op_x)

@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <type_traits>
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#include "op/custom_op.hpp"
 #include "ops_bridge.hpp"
 
 DECLARE_bool(ftraining_mode);
@@ -128,13 +129,6 @@ namespace nnfusion
                                     indegree.erase(use);
                                 }
                             }
-                        }
-                    }
-                    if (indegree.size() > 0)
-                    {
-                        for (auto p : indegree)
-                        {
-                            cout << "Node: " << p.first << ", indegree: " << p.second << endl;
                         }
                     }
 
@@ -404,23 +398,35 @@ namespace nnfusion
 
                 // Verify that ONNX graph contains only nodes of available operator types
                 {
-                    std::unordered_set<std::remove_cv<std::remove_reference<decltype(
-                        std::declval<onnx::NodeProto>().op_type())>::type>::type>
-                        unknown_op_types;
+                    std::unordered_map<std::string, int64> domain2version;
+                    for (const auto& id : onnx_model_proto->opset_import())
+                    {
+                        if (id.domain() == "com.microsoft.nnfusion.custom")
+                        {
+                            continue;
+                        }
+                        domain2version[id.domain() == "ai.onnx" ? "" : id.domain()] = id.version();
+                    }
+                    std::unordered_set<std::string> unknown_ops;
                     for (const auto& node_proto : onnx_graph_proto->node())
                     {
                         if (!is_operator_available(node_proto))
                         {
-                            unknown_op_types.insert(node_proto.op_type());
+                            std::string op =
+                                ((node_proto.domain() == "ai.onnx") ? ""
+                                                                    : node_proto.domain() + ".") +
+                                node_proto.op_type() + ":" +
+                                std::to_string(domain2version.at(node_proto.domain()));
+                            unknown_ops.insert(op);
                         }
                     }
-                    if (unknown_op_types.size() > 0)
+                    if (unknown_ops.size() > 0)
                     {
-                        for (auto op_type : unknown_op_types)
+                        for (auto op : unknown_ops)
                         {
-                            NNFUSION_LOG(ERROR) << "Unknown op type: " << op_type;
+                            NNFUSION_LOG(ERROR) << "Unsupported op: " << op;
                         }
-                        NNFUSION_CHECK_FAIL() << "Unknown op count: " << unknown_op_types.size();
+                        NNFUSION_CHECK_FAIL() << "Unsupported op count: " << unknown_ops.size();
                     }
                 }
 
@@ -499,6 +505,10 @@ namespace nnfusion
             const ConvertFunc& GraphConvert::get_convert_func(const std::string& name,
                                                               const std::string& domain) const
             {
+                if (domain == "com.microsoft.nnfusion.custom")
+                {
+                    return custom_translator;
+                }
                 const auto dm = m_domain_convert_func_map.find(domain);
                 NNFUSION_CHECK(dm != std::end(m_domain_convert_func_map)) << "Unknown Domain: "
                                                                           << domain;
@@ -512,6 +522,10 @@ namespace nnfusion
 
             bool GraphConvert::is_operator_available(const onnx::NodeProto& node_proto) const
             {
+                if (node_proto.domain() == "com.microsoft.nnfusion.custom")
+                {
+                    return true;
+                }
                 const auto dm = m_domain_convert_func_map.find(node_proto.domain());
 
                 if (dm == std::end(m_domain_convert_func_map))

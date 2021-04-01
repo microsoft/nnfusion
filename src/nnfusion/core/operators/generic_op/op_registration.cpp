@@ -88,7 +88,8 @@ namespace nnfusion
             {
                 pos += sizeof(annotation) - 1;
                 options = translation.substr(pos);
-                std::replace(options.begin(), options.end(), '.', '|');
+                options.erase(remove(options.begin(), options.end(), ' '), options.end());
+                std::replace(options.begin(), options.end(), ',', '|');
             }
 
             if (options.size() > 0)

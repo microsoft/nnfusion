@@ -8,7 +8,6 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
-DEFINE_string(fcuda_device, "", "");
 cuda::Softmax::Softmax(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {
@@ -34,6 +33,19 @@ cuda::Softmax::Softmax(shared_ptr<KernelContext> ctx)
         {
             D *= input_shape[i];
         }
+    }
+
+    if (!is_log_softmax)
+    {
+        softmax_ori = 0; // oneflow
+    }
+    else if (D <= 1024 && D * dtype.size() <= 4096)
+    {
+        softmax_ori = 1; //ort
+    }
+    else
+    {
+        softmax_ori = 2; //cudnn
     }
 }
 
@@ -80,8 +92,18 @@ LanguageUnit_p cuda::Softmax::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
+    if (softmax_ori == 0)
+    {
+        auto code = nnfusion::op::create_code_from_template(
+            R"(
+DispatchSoftmax<@dtype@>(stream, @N@, @D@, input0, output0);
+    )",
+            {{"dtype", (dtype == element::f16) ? "half" : "float"}, {"D", D}, {"N", N}});
 
-    if (FLAGS_fcuda_device == "" && D <= 1024 && D * dtype.size() <= 4096)
+        lu << code << "\n";
+        return _lu;
+    }
+    else if (softmax_ori == 1)
     {
         auto code = nnfusion::op::create_code_from_template(
             R"(
@@ -95,31 +117,33 @@ dispatch_softmax_forward<@dtype@, @dtype@, float, @is_log_softmax@>(stream, outp
         lu << code << "\n";
         return _lu;
     }
-
-    auto input_tensor_desc =
-        cudnn_tensor_descriptor_from_shape_for_softmax(input_shape, "input_tensor_desc");
-    auto output_tensor_desc =
-        cudnn_tensor_descriptor_from_shape_for_softmax(output_shape, "output_tensor_desc");
-    if (input_tensor_desc == nullptr || output_tensor_desc == nullptr)
+    else
     {
-        return nullptr;
-    }
-    lu << input_tensor_desc->get_code();
-    lu << output_tensor_desc->get_code();
-    lu << "const float alpha = 1.0;\n";
-    lu << "const float beta = 0.0;\n";
-    lu << "CUDNN_SAFE_CALL(cudnnSoftmaxForward(cudnn_handle, " << algorithm << ", "
-       << "CUDNN_SOFTMAX_MODE_INSTANCE, "
-       << "&alpha, "
-       << "input_tensor_desc, "
-       << "input0, "
-       << "&beta, "
-       << "output_tensor_desc, "
-       << "output0));\n";
-    lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(input_tensor_desc));\n";
-    lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(output_tensor_desc));\n";
+        auto input_tensor_desc =
+            cudnn_tensor_descriptor_from_shape_for_softmax(input_shape, "input_tensor_desc");
+        auto output_tensor_desc =
+            cudnn_tensor_descriptor_from_shape_for_softmax(output_shape, "output_tensor_desc");
+        if (input_tensor_desc == nullptr || output_tensor_desc == nullptr)
+        {
+            return nullptr;
+        }
+        lu << input_tensor_desc->get_code();
+        lu << output_tensor_desc->get_code();
+        lu << "const float alpha = 1.0;\n";
+        lu << "const float beta = 0.0;\n";
+        lu << "CUDNN_SAFE_CALL(cudnnSoftmaxForward(cudnn_handle, " << algorithm << ", "
+           << "CUDNN_SOFTMAX_MODE_INSTANCE, "
+           << "&alpha, "
+           << "input_tensor_desc, "
+           << "input0, "
+           << "&beta, "
+           << "output_tensor_desc, "
+           << "output0));\n";
+        lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(input_tensor_desc));\n";
+        lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(output_tensor_desc));\n";
 
-    return _lu;
+        return _lu;
+    }
 }
 
 LanguageUnit_p cuda::Softmax::emit_dependency()
@@ -129,7 +153,13 @@ LanguageUnit_p cuda::Softmax::emit_dependency()
     _lu->require(header::cudnn);
     //_lu->require(declaration::cudnn_handle);
     _lu->require(macro::CUDNN_SAFE_CALL);
-    if (FLAGS_fcuda_device == "" && D <= 1024 && D * dtype.size() <= 4096)
+    if (softmax_ori == 0)
+    {
+        _lu->require(declaration::oneflow_softmax);
+        declaration::oneflow_softmax->require(header::math_constants);
+        declaration::oneflow_softmax->require(header::cub);
+    }
+    else if (softmax_ori == 1)
     {
         _lu->require(declaration::ort_softmax);
         declaration::ort_softmax->require(declaration::warp);
@@ -168,7 +198,7 @@ LanguageUnit_p cuda::Softmax::emit_function_signature()
         ss << m_context->tensors[i]->get_name();
         params.push_back(ss.str());
     }
-    if (FLAGS_fcuda_device == "" && D <= 1024 && D * dtype.size() <= 4096)
+    if (softmax_ori != 2)
     {
         lu << "void "
            << "(cudaStream_t stream, " << join(params, ", ") << ")";

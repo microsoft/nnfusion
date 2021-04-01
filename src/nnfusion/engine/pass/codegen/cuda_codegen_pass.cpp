@@ -1352,10 +1352,11 @@ void CudaCodegenPass::fill_exec_host(std::shared_ptr<TranslationUnit> tu)
 
     auto& lu_exec_host_vec = lup_exec_host->unit_vec;
     lu_exec_host_vec.push_back(get_h2dcopy(tu));
-    lu_exec_host_vec.push_back(get_sync());
+    // lu_exec_host_vec.push_back(get_sync());
     LanguageUnit_p kernel_entry_call = std::make_shared<LanguageUnit>("kernel_entry_call");
     *kernel_entry_call << "kernel_entry(" << get_kernel_entry_args(tu) << ");\n";
     lu_exec_host_vec.push_back(kernel_entry_call);
-    lu_exec_host_vec.push_back(get_sync());
+    // lu_exec_host_vec.push_back(get_sync());
     lu_exec_host_vec.push_back(get_d2hcopy(tu));
+    lu_exec_host_vec.push_back(get_sync());
 }

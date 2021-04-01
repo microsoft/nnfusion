@@ -341,7 +341,8 @@ void HLSLCPPCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ct
     re_main->require(header::chrono);
     re_main->require(header::ctime);
     re_main->require(macro::OutputDebugStringA);
-
+    if (!FLAGS_fhost_entry)
+        re_main->require(header::D3D12APIWrapper);
     auto& lu_ = *lup_main;
 
     lu_ << "#include \"runtime.h\"\n";
@@ -387,9 +388,10 @@ void HLSLCPPCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ct
             lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
                 << "_host = new " << tensor.get_element_type().c_type_string() << "["
                 << tensor.get_tensor_layout()->get_size() << "];\n";
+            lu_ << "void* " << tensor.get_name() << ";\n";
             if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
             {
-                lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
+                lu_ << tensor.get_name() << " = dxMemAlloc(sizeof("
                     << tensor.get_element_type().c_type_string() << ") * "
                     << tensor.get_tensor_layout()->get_size() << ");\n";
             }
@@ -410,8 +412,8 @@ void HLSLCPPCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ct
             lu_ << "kernel_entry(" << args << ");\n";
             lu_ << get_d2hcopy(tu)->get_code();
         }
-
-        // lu_ << get_sync()->get_code();
+        if (!FLAGS_fhost_entry)
+            lu_ << get_sync()->get_code();
         lu_ << "std::string result;\n";
         for (size_t i = 0; i < tu->out.size(); i++)
         {

@@ -196,7 +196,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
-    projgen->lup_codegen->require(macro::HALF_MAX);
+    // projgen->lup_codegen->require(macro::HALF_MAX);
 
     return;
 }
@@ -1211,7 +1211,7 @@ cmake_minimum_required(VERSION 3.5)
 
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
-SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75" CACHE STRING "target architecture")
+SET(CUDA_ARCH "-gencode arch=compute_37,code=sm_37 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75" CACHE STRING "target architecture")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)

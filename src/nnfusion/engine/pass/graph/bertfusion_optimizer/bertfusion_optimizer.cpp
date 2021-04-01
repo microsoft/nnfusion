@@ -120,6 +120,9 @@ bool BertFusionOptimizer::update_graph_outputs(
         else if (!replaced)
         {
             updated_outputs.push_back(new_node);
+            new_node->set_name(out->get_name());
+            new_node->get_output_tensor_ptr(0)->set_name(
+                out->get_output_tensor_ptr(0)->get_name(false));
             replaced = true;
         }
     }

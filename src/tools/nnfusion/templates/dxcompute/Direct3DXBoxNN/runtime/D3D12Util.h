@@ -48,7 +48,7 @@ using namespace std;
 using namespace Microsoft::WRL;
 
 
-#define IFE(x)  ((FAILED(x)) ? (printf("Error-line: (%s) %d\n\nPossible Reason:\n\tWindows TDR might be triggered.\n\tTo avoid this, please apply https://github.com/microsoft/antares/blob/master/platforms/c-hlsl/evaluator/AntaresEvalAgent/TDR.reg into Windows registry and reboot your system to take effect.\nIf this is not fixed, please report an issue to https://github.com/microsoft/antares/issues\n\n", __FILE__, __LINE__), abort(), 0): 1)
+#define IFE(x)  ((FAILED(x)) ? (printf("Error-line: (%s) %d\n\nPossible Reason:\n\tWindows TDR might be triggered.\n\tTo avoid this, please download and apply https://github.com/microsoft/antares/releases/download/v0.1.0/antares_hlsl_tdr_v0.1.reg into Windows registry and reboot your system to take effect.\nIf this is not fixed, please report an issue to https://github.com/microsoft/antares/issues\n\n", __FILE__, __LINE__), abort(), 0): 1)
 
 namespace {
 
@@ -645,6 +645,22 @@ namespace {
 
 namespace antares {
 
+    // Query heaps are used to allocate query objects.
+    struct dx_query_heap_t
+    {
+        ComPtr<ID3D12QueryHeap> pHeap;
+        ComPtr<ID3D12Resource> pReadbackBuffer;
+        uint32_t curIdx;
+        uint32_t totSize;
+    };
+
+    // Currently queries are only used to query GPU time-stamp.
+    struct dx_query_t
+    {
+        uint32_t heapIdx;
+        uint32_t queryIdxInHeap;
+    };
+
     struct D3DDevice
     {
 #ifndef _GAMING_XBOX_SCARLETT
@@ -658,6 +674,14 @@ namespace antares {
         uint64_t fenceValue = 0;
         bool bEnableDebugLayer = false;
         bool bEnableGPUValidation = false;
+
+        // Allocate individual queries from heaps for higher efficiency.
+        // Since they consume little memory, we can release heaps when app exits.
+        std::vector<dx_query_heap_t> globalQueryHeaps;
+
+        // Reuse queries since they are small objects and may be frequently created.
+        // Use unique_ptr to grantee it will be released when app exits.
+        std::vector<std::unique_ptr<dx_query_t>> globalFreeQueries;
 
         // GPU time stamp query doesn't work on some NVIDIA GPUs with specific drivers, so we switch to DIRECT queue.
 #ifdef _USE_GPU_TIMER_
@@ -686,7 +710,10 @@ namespace antares {
             // Create the DX12 API device object.
             D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
             params.Version = D3D12_SDK_VERSION;
-
+            if (bEnableDebugLayer) {
+                // Enable the debug layer.
+                params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
+            }
             params.GraphicsCommandQueueRingSizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
             params.GraphicsScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
             params.ComputeScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
@@ -1010,8 +1037,8 @@ namespace antares {
     private:
         DXCompiler()
         {
-            IFE(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&m_pLibrary)));
-            IFE(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_pCompiler)));
+            IFE(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(m_pLibrary.ReleaseAndGetAddressOf())));
+            IFE(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(m_pCompiler.ReleaseAndGetAddressOf())));
         }
         DXCompiler(const DXCompiler&) = delete;
         DXCompiler& operator=(const DXCompiler&) = delete;

@@ -8,6 +8,7 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DECLARE_bool(fextern_result_memory);
+DECLARE_bool(fhost_entry);
 
 cuda::Result::Result(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
@@ -29,7 +30,7 @@ LanguageUnit_p cuda::Result::emit_function_signature()
 
     vector<string> params;
     params.push_back(m_context->inputs[0]->get_element_type().c_type_string() + "* input0");
-    if (need_copy_to_host && !FLAGS_fextern_result_memory)
+    if (need_copy_to_host && !FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
     {
         params.push_back(m_context->outputs[0]->get_element_type().c_type_string() + "** output0");
     }
@@ -85,6 +86,14 @@ LanguageUnit_p cuda::Result::emit_dependency()
     _lu->require(macro::CUDA_SAFE_CALL);
 
     return _lu;
+}
+
+bool cuda::Result::is_eliminative()
+{
+    if (FLAGS_fhost_entry && m_context->inputs[0]->is_same_address(m_context->outputs[0]))
+        return true;
+    else
+        return false;
 }
 
 REGISTER_KERNEL_EMITTER(

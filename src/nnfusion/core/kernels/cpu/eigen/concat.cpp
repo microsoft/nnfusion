@@ -136,7 +136,7 @@ auto func = [&](int __rank__)
                 out += size;
                 continue;
             }
-            const float* inp = inputs[i] + (skipped_rows * size);
+            const float* inp = reinterpret_cast<float*>(inputs[i] + (skipped_rows * size));
             if (offset > 0)
             {
                 out += offset;
@@ -156,7 +156,7 @@ auto func = [&](int __rank__)
     inp.reserve(@input_num@);
     for (int i = 0; i < @input_num@; ++i)
     {
-        inp.push_back(inputs[i] + skipped_rows * input_strides[i]);
+        inp.push_back(reinterpret_cast<float*>(inputs[i] + skipped_rows * input_strides[i]));
     }
     const int64_t dim0 = @dim0@;
     for (int64_t i = skipped_rows; i < dim0; ++i)

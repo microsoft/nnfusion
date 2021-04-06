@@ -11,7 +11,7 @@
 
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fextern_result_memory);
-
+DECLARE_bool(fhost_entry);
 namespace nnfusion
 {
     namespace kernels
@@ -108,7 +108,8 @@ namespace nnfusion
                         // ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
                         if (FLAGS_fhlsl_codegen_type == "cpp")
                         {
-                            if (need_copy_to_host && !FLAGS_fextern_result_memory)
+                            if (need_copy_to_host && !FLAGS_fextern_result_memory &&
+                                !FLAGS_fhost_entry)
                                 ss << "void** output" << i;
                             else
                                 ss << "void* output" << i;
@@ -124,6 +125,15 @@ namespace nnfusion
                     lu << "void "
                        << "(" << join(params, ", ") << ")";
                     return _lu;
+                }
+
+                bool is_eliminative() override
+                {
+                    if (FLAGS_fhost_entry &&
+                        m_context->inputs[0]->is_same_address(m_context->outputs[0]))
+                        return true;
+                    else
+                        return false;
                 }
 
             private:

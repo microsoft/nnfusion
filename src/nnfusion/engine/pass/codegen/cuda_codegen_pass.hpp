@@ -59,14 +59,21 @@ namespace nnfusion
             {
                 return NNFusion_DeviceType::CUDA_GPU;
             }
-            virtual std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu);
+            virtual std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu,
+                                                       bool is_host = false);
+            virtual std::string get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu,
+                                                      bool is_host = false);
+
             virtual std::pair<std::string, std::string>
                 get_paras_and_args(std::vector<nnfusion::ir::Instruction::Pointer>& ir_vec);
             virtual nnfusion::LanguageUnit_p
                 func_call_codegen(nnfusion::ir::Instruction::Pointer ins,
                                   bool func_call_only = false,
                                   const std::string& func_call = "");
-
+            virtual LanguageUnit_p get_d2hcopy(std::shared_ptr<TranslationUnit> tu);
+            virtual LanguageUnit_p get_h2dcopy(std::shared_ptr<TranslationUnit> tu);
+            virtual LanguageUnit_p get_sync();
+            virtual void fill_exec_host(std::shared_ptr<TranslationUnit> tu);
             nnfusion::async::HostAsyncManager* host_async_manager;
             nnfusion::async::DeviceStreamAsyncManager* device_async_manager;
             unordered_set<string> global_required;

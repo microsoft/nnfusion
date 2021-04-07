@@ -303,3 +303,14 @@ nnfusion::LanguageUnit_p BaseCodegenPass::codegen_mem_ref(KernelEmitter::Pointer
         return nullptr;
     return _lu;
 }
+
+LanguageUnit_p BaseCodegenPass::codegen_device_type()
+{
+    auto lu_devtype = make_shared<LanguageUnit>("device_type");
+    *lu_devtype
+        << "// 0: CUDA_GPU; 1: ROCM_GPU; 2: GENERIC_CPU; 3: HLSL; 4: GraphCore; 5: UNKNOWN\n";
+    *lu_devtype << "int get_device_type()\n{\n";
+    *lu_devtype << "    return " << device_type() << ";\n";
+    *lu_devtype << "}\n";
+    return lu_devtype;
+}

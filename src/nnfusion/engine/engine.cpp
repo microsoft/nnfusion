@@ -14,7 +14,8 @@ DEFINE_int32(min_log_level,
              1,
              "Minimum logging level: 0 - debug; 1 - info; 2 - warning; 3 - error; 4 - fatal;");
 DEFINE_bool(fcustomized_mem_imp, false, "Use customized memory implementation in codegen files;");
-
+DEFINE_bool(fhost_entry, false, "provide entry on host memory");
+DEFINE_bool(fuse_cpuprofiler, false, "");
 using namespace nnfusion;
 
 Engine::Engine()

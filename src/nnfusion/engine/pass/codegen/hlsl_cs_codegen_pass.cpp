@@ -21,6 +21,7 @@ DECLARE_int32(frun_step);
 DECLARE_bool(fcodegen_debug);
 DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fcustomized_mem_imp);
+DECLARE_bool(fhost_entry);
 
 void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -52,7 +53,7 @@ void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     auto& lu_init_end = *(projgen->lup_init->end);
     {
-        lu_init_end << "dxStreamSynchronize(IntPtr.Zero);\n";
+        lu_init_end << get_sync()->get_code();
         lu_init_end << "}\n\n";
     }
 
@@ -68,6 +69,10 @@ void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         lu_exec_end << "}\n\n";
     }
 
+    if (FLAGS_fhost_entry)
+    {
+        fill_exec_host(tu);
+    }
     auto& lu_exit_begin = *(projgen->lup_exit->begin);
     {
         lu_exit_begin << "\nstatic void hlsl_free()\n{\n";
@@ -306,8 +311,6 @@ void HLSLCSCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
     auto& lu_ = *lup_main_content;
     lu_ << "\nhlsl_init();\n\n";
 
-    LanguageUnit h2dcopy("h2dcopy");
-    LanguageUnit d2hcopy("d2hcopy");
     LanguageUnit fillval("fillval");
 
     for (size_t i = 0; i < tu->arg.size(); i++)
@@ -323,10 +326,6 @@ void HLSLCSCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
             << tensor.get_tensor_layout()->get_size() << ");\n";
         fillval << "for (int i = 0; i < " << tensor.get_name() << "_host.Length; ++i) "
                 << tensor.get_name() << "_host[i]= 1;\n";
-        h2dcopy << "dxMemcpyHtoDAsync(" << tensor.get_name()
-                << ", Marshal.UnsafeAddrOfPinnedArrayElement(" << tensor.get_name()
-                << "_host, 0), sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                << tensor.get_tensor_layout()->get_size() << ", IntPtr.Zero);\n";
     }
 
     for (size_t i = 0; i < tu->out.size(); i++)
@@ -337,31 +336,17 @@ void HLSLCSCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
         lu_ << "var " << tensor.get_name() << "_host = new "
             << tensor.get_element_type().c_type_string() << "["
             << tensor.get_tensor_layout()->get_size() << "];\n";
-        d2hcopy << "dxMemcpyDtoHAsync(Marshal.UnsafeAddrOfPinnedArrayElement(" << tensor.get_name()
-                << "_host, 0), " << tensor.get_name() << ", sizeof("
-                << tensor.get_element_type().c_type_string() << ") * "
-                << tensor.get_tensor_layout()->get_size() << ", IntPtr.Zero);\n";
     }
 
     lu_ << "\n// fill input values\n";
     lu_ << fillval.get_code() << "\n";
 
-    vector<string> params;
-    for (int i = 0; i < tu->arg.size(); i++)
-    {
-        auto& tv = tu->arg[i];
-        params.push_back(tv->get_name());
-    }
-    for (int i = 0; i < tu->out.size(); i++)
-    {
-        auto& tv = tu->out[i];
-        params.push_back(tv->get_name());
-    }
+    std::string args = get_kernel_entry_args(tu);
 
-    lu_ << h2dcopy.get_code();
-    lu_ << "kernel_entry(" << join(params, ", ") << ");\n";
-    lu_ << d2hcopy.get_code();
-    lu_ << "dxStreamSynchronize(IntPtr.Zero);\n";
+    lu_ << get_h2dcopy(tu)->get_code();
+    lu_ << "kernel_entry(" << args << ");\n";
+    lu_ << get_d2hcopy(tu)->get_code();
+    lu_ << get_sync()->get_code();
 
     for (size_t i = 0; i < tu->out.size(); i++)
     {
@@ -375,7 +360,8 @@ void HLSLCSCodegenPass::generate_main(std::shared_ptr<InterpreterContext> ctx,
     lu_ << "hlsl_free();\n\n";
 }
 
-std::string HLSLCSCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu)
+std::string HLSLCSCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu,
+                                                      bool is_host)
 {
     unordered_set<string> allocated;
     vector<string> params;
@@ -386,6 +372,10 @@ std::string HLSLCSCodegenPass::get_kernel_entry_paras(std::shared_ptr<Translatio
         stringstream ss;
         // ss << type << "* " << tv->get_name();
         ss << "IntPtr " << tv->get_name();
+        if (is_host)
+        {
+            ss << "_host";
+        }
         allocated.insert(tv->get_name());
         params.push_back(ss.str());
     }
@@ -397,6 +387,10 @@ std::string HLSLCSCodegenPass::get_kernel_entry_paras(std::shared_ptr<Translatio
         stringstream ss;
         // ss << type << "* " << tv->get_name();
         ss << "IntPtr " << tv->get_name();
+        if (is_host)
+        {
+            ss << "_host";
+        }
         allocated.insert(tv->get_name());
         params.push_back(ss.str());
     }
@@ -427,4 +421,38 @@ void HLSLCSCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ct
     // }
 
     return;
+}
+
+LanguageUnit_p HLSLCSCodegenPass::get_d2hcopy(std::shared_ptr<TranslationUnit> tu)
+{
+    LanguageUnit_p d2hcopy = std::make_shared<LanguageUnit>("d2hcopy");
+    for (size_t i = 0; i < tu->out.size(); i++)
+    {
+        auto& tensor = *tu->out[i];
+        *d2hcopy << "dxMemcpyDtoHAsync(Marshal.UnsafeAddrOfPinnedArrayElement(" << tensor.get_name()
+                 << "_host, 0), " << tensor.get_name() << ", sizeof("
+                 << tensor.get_element_type().c_type_string() << ") * "
+                 << tensor.get_tensor_layout()->get_size() << ", IntPtr.Zero);\n";
+    }
+    return d2hcopy;
+}
+
+LanguageUnit_p HLSLCSCodegenPass::get_h2dcopy(std::shared_ptr<TranslationUnit> tu)
+{
+    LanguageUnit_p h2dcopy = std::make_shared<LanguageUnit>("h2dcopy");
+
+    for (size_t i = 0; i < tu->arg.size(); i++)
+    {
+        auto& tensor = *tu->arg[i];
+        *h2dcopy << "dxMemcpyHtoDAsync(" << tensor.get_name()
+                 << ", Marshal.UnsafeAddrOfPinnedArrayElement(" << tensor.get_name()
+                 << "_host, 0), sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                 << tensor.get_tensor_layout()->get_size() << ", IntPtr.Zero);\n";
+    }
+    return h2dcopy;
+}
+
+LanguageUnit_p HLSLCSCodegenPass::get_sync()
+{
+    return std::make_shared<LanguageUnit>("device_sync", "dxStreamSynchronize(IntPtr.Zero);\n");
 }

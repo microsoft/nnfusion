@@ -24,7 +24,8 @@ namespace nnfusion
                 const std::string kernel_suffix = ".hlsl")
                 : CudaCodegenPass(codegen_folder, kernel_folder, kernel_suffix)
             {
-                lup_main = std::make_shared<CodegenMainBlockUnit>("main");
+                lup_main = std::make_shared<LanguageUnit>("codegen_main");
+                lup_header = std::make_shared<LanguageUnit>("codegen_header");
             }
 
         protected:
@@ -33,13 +34,21 @@ namespace nnfusion
             virtual bool collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                        std::shared_ptr<TranslationUnit> tu) override;
             virtual NNFusion_DeviceType device_type() override { return NNFusion_DeviceType::HLSL; }
-            virtual void generate_main(std::shared_ptr<InterpreterContext> ctx,
-                                       std::shared_ptr<TranslationUnit> tu);
-            std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu) override;
+            // virtual void generate_main(std::shared_ptr<InterpreterContext> ctx,
+            //                            std::shared_ptr<TranslationUnit> tu);
+            virtual void create_main_file(std::shared_ptr<InterpreterContext> ctx,
+                                          std::shared_ptr<TranslationUnit> tu) override;
+            virtual void create_header_file(std::shared_ptr<InterpreterContext> ctx,
+                                            std::shared_ptr<TranslationUnit> tu) override;
+            std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu,
+                                               bool is_host = false) override;
             void set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu) override;
             virtual bool after_projgen() override;
-            CodegenMainBlockUnit_p lup_main;
+            virtual LanguageUnit_p get_d2hcopy(std::shared_ptr<TranslationUnit> tu) override;
+            virtual LanguageUnit_p get_h2dcopy(std::shared_ptr<TranslationUnit> tu) override;
+            virtual LanguageUnit_p get_sync() override;
+            LanguageUnit_p lup_main, lup_header;
         };
     }
 }

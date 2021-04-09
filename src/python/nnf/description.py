@@ -1,33 +1,48 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-import torch
-
-
 class IODescription(object):
-    """ A hashable tensor description for PyTorch model input/output.
+    """ A hashable description for NNFusion model input/output.
 
     Attributes:
-        name: A string representing tensor name.
-        shape: A sequence of ints representing tensor shape.
-        dtype: torch.Dtype representing tensor type
-        num_classes: An int if the tensor is a integer and
+        name: A string representing name.
+        shape: A sequence of ints representing shape.
+        dtype: A string representing element type
+        num_classes: An int if the element is a integer and
             in the range of [0, num_classes-1].
     """
     def __init__(self, name, shape, dtype=None, num_classes=None):
-        self.name_ = name
-        self.shape_ = tuple(shape)
-        self.dtype_ = dtype
-        self.num_classes_ = num_classes
+        self._name = name
+        self._shape = tuple(shape)
+        self._dtype = dtype
+        self._num_classes = num_classes
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @property
+    def dtype(self):
+        return self._dtype
+
+    @property
+    def num_classes(self):
+        return self._num_classes
 
     def __hash__(self):
         return hash(
-            (self.name_, tuple(self.shape_), self.dtype_, self.num_classes_))
+            (self.name, tuple(self.shape), self.dtype, self.num_classes))
 
     def __eq__(self, other):
-        return (self.name_, tuple(self.shape_), self.dtype_,
-                self.num_classes_) == (other.name_, tuple(other.shape_),
-                                       other.dtype_, other.num_classes_)
+        if isinstance(other, self.__class__): 
+            return (self.name, tuple(self.shape), self.dtype,
+                    self.num_classes) == (other.name, tuple(other.shape),
+                                        other.dtype, other.num_classes)
+        return False
 
     def __ne__(self, other):
         return not (self == other)
@@ -41,14 +56,5 @@ class ModelDescription(object):
         outputs: A sequence of output IODescription.
     """
     def __init__(self, inputs, outputs):
-        self.inputs_ = inputs
-        self.outputs_ = outputs
-
-
-def generate_sample(desc, device=None):
-    size = [s if isinstance(s, (int)) else 1 for s in desc.shape_]
-    if desc.num_classes_:
-        return torch.randint(0, desc.num_classes_, size,
-                             dtype=desc.dtype_).to(device)
-    else:
-        return torch.ones(size, dtype=desc.dtype_).to(device)
+        self.inputs = inputs
+        self.outputs = outputs

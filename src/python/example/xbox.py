@@ -14,7 +14,10 @@ import torch
 torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import datasets, transforms
+
 from nnf.executor import Executor
+from nnf.data_format import cast_pytorch_tensor, cast_numpy_array
 import data_loader
 logging.basicConfig(format="%(asctime)s:%(levelname)s:%(name)s:%(message)s", level="INFO")
 logger = logging.getLogger(__name__)
@@ -254,11 +257,42 @@ def train_with_faked_data():
     print(f"{time.time()-start}s")
 
 
+def inference():
+    nnf_model_path = r"D:\project\wsl_codegen\nnfusion_rt\dxcompute_codegen\Direct3DWinNN\build"
+    executor = Executor(nnf_model_path)
+    input_name = executor.get_inputs()[0].name
+    output_name = executor.get_outputs()[0].name
+
+    batch_size = 5
+    train_loader = torch.utils.data.DataLoader(
+            datasets.MNIST('./data', train=True, download=True,
+                        transform=transforms.Compose([
+                            transforms.ToTensor(),
+                            transforms.Normalize((0.1307,), (0.3081,))
+                        ])),
+            batch_size=batch_size, shuffle=True)
+    for i, batch in enumerate(train_loader):
+        data_desc = cast_pytorch_tensor(batch[0])
+        
+        out = torch.zeros([batch_size, 10])
+        out_desc = cast_pytorch_tensor(out)
+
+        out2 = np.zeros([batch_size, 10], dtype=np.float32)
+        print(out2.nbytes)
+        out2_desc = cast_numpy_array(out2)
+        
+        executor({input_name: data_desc}, {output_name: out_desc})
+        executor({input_name: data_desc}, {output_name: out2_desc})
+        print(out)
+        print(out2)
+        if i == 5:
+            sys.exit(0)
 
 
 
 if __name__ == "__main__":
     # test_executor()
-    train()
+    #train()
     # pytorch_train()
     # train_with_faked_data()
+    inference()

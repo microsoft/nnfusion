@@ -146,6 +146,10 @@ class Executor(object):
             nnf_rt_free()
 
     def __call__(self, *args, **kwargs):
+        # self.feed_tensors(*args, **kwargs)
+        self.feed_data(*args, **kwargs)
+
+    def feed_data(self, inputs, outputs):
         """
         Execute the kernel_entry in nnf runtime
 
@@ -156,10 +160,6 @@ class Executor(object):
         Returns:
             None
         """
-        # self.feed_tensors(*args, **kwargs)
-        self.feed_data(*args, **kwargs)
-
-    def feed_data(self, inputs, outputs):
         signature = [None] * (len(self.input_descs) + len(self.output_descs))
         params = [None] * (len(self.input_descs) + len(self.output_descs))
         for name, data_format in inputs.items():

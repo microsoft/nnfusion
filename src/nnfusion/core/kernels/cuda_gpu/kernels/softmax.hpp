@@ -31,6 +31,7 @@ namespace nnfusion
                 int N, D;
                 element::Type dtype;
                 bool is_log_softmax;
+                int softmax_ori;
             };
 
             class SoftmaxGrad : public CudaLibEmitter

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+
 class IODescription(object):
     """ A hashable description for NNFusion model input/output.
 
@@ -38,10 +39,10 @@ class IODescription(object):
             (self.name, tuple(self.shape), self.dtype, self.num_classes))
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__): 
+        if isinstance(other, self.__class__):
             return (self.name, tuple(self.shape), self.dtype,
                     self.num_classes) == (other.name, tuple(other.shape),
-                                        other.dtype, other.num_classes)
+                                          other.dtype, other.num_classes)
         return False
 
     def __ne__(self, other):
@@ -56,5 +57,13 @@ class ModelDescription(object):
         outputs: A sequence of output IODescription.
     """
     def __init__(self, inputs, outputs):
-        self.inputs = inputs
-        self.outputs = outputs
+        self._inputs = inputs
+        self._outputs = outputs
+
+    @property
+    def inputs(self):
+        return self._inputs
+
+    @property
+    def outputs(self):
+        return self._outputs

@@ -7,7 +7,7 @@ import numpy as np
 import copy
 import json
 
-from .runner import Runner
+from .runner import PTRunner
 
 
 class ModelWithLoss(nn.Module):
@@ -56,7 +56,7 @@ class Trainer(object):
         }
         self._codegen_flags = trainer_flags
         self._codegen_flags.update(copy.deepcopy(codegen_flags) or {})
-        self.runner = Runner(self.model_with_loss,
+        self.runner = PTRunner(self.model_with_loss,
                              codegen_flags=self._codegen_flags,
                              **kwargs)
 

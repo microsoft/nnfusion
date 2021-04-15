@@ -10,9 +10,9 @@ import torch
 torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
-from nnf.session import Session
-from nnf.runner import Runner
-from nnf.description import IODescription, generate_sample
+from nnf.session import PTSession as Session, generate_sample
+from nnf.runner import PTRunner as Runner
+from nnf.description import IODescription
 from nnf.trainer import Trainer
 import data_loader
 import json
@@ -40,12 +40,12 @@ def test_session():
     model = MLP()
     batch_size = 5
     input_desc = [
-        IODescription("data", [batch_size, 1, 28, 28], torch.float32),
+        IODescription("data", [batch_size, 1, 28, 28], "float32"),
     ]
     device = "cuda:0"
 
     inputs = {
-        desc.name_: generate_sample(input_desc[0], device)
+        desc.name: generate_sample(input_desc[0], device)
         for desc in input_desc
     }
     session = Session(model, input_desc, device)
@@ -79,14 +79,26 @@ def train_mnist():
     batch_size = 5
 
     codegen_flags = {
-        "autodiff": True,  # add backward graph
-        "training_mode": True,  # move weight external
-        "extern_result_memory": True,  # move result external
-        "training_optimizer": '\'' + json.dumps({"optimizer": "SGD", "learning_rate": 0.001}) +'\'',  # training optimizer configs
+        "autodiff":
+        True,  # add backward graph
+        "training_mode":
+        True,  # move weight external
+        "extern_result_memory":
+        True,  # move result external
+        "training_optimizer":
+        '\'' + json.dumps({
+            "optimizer": "SGD",
+            "learning_rate": 0.001
+        }) + '\'',  # training optimizer configs
     }
 
-    trainer = Trainer(model, loss_func, device=device, codegen_flags=codegen_flags)
-    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size, shuffle=False)
+    trainer = Trainer(model,
+                      loss_func,
+                      device=device,
+                      workdir="./tmp",
+                      codegen_flags=codegen_flags)
+    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size,
+                                                       shuffle=False)
     print("feeding")
     i = 0
     for i, batch in enumerate(train_loader):
@@ -132,7 +144,7 @@ def eval():
 
 
 if __name__ == "__main__":
-    test_session()
-    test_runner()
+    # test_session()
+    # test_runner()
     train_mnist()
-    eval()
+    # eval()

@@ -17,6 +17,15 @@ from .data_format import cast_pytorch_tensor
 logger = logging.getLogger(__name__)
 
 
+def generate_sample(desc, device=None):
+    size = [s if isinstance(s, (int)) else 1 for s in desc.shape]
+    if desc.num_classes:
+        return torch.randint(0, desc.num_classes, size,
+                             dtype=desc.dtype).to(device)
+    else:
+        return torch.ones(size, dtype=desc.dtype).to(device)
+
+
 def tensor2desc(pt_tensor, name=""):
     shape = tuple(pt_tensor.shape)
     dtype = str2type[str(pt_tensor.dtype).split(".")[-1]].type_str

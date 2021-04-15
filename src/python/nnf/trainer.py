@@ -26,7 +26,12 @@ class Trainer(object):
     """
     Trainer is a wrapper to train PyTorch model in NNFusion.
     """
-    def __init__(self, model, loss_func=None, device="cuda:0", codegen_flags=None, **kwargs):
+    def __init__(self,
+                 model,
+                 loss_func=None,
+                 device="cuda:0",
+                 codegen_flags=None,
+                 **kwargs):
         """
         It builds a training graph as well as optimizer based on PyTorch model.
         Currently the optimizer is SGD and non-configurable.
@@ -49,16 +54,23 @@ class Trainer(object):
             self.model_with_loss = model
         self.device = device
         trainer_flags = {
-            "autodiff": True,  # add backward graph
-            "training_mode": True,  # move weight external
-            "extern_result_memory": True,  # move result external
-            "training_optimizer": '\'' + json.dumps({"optimizer": "SGD", "learning_rate": 0.01}) +'\'',  # training optimizer configs
+            "autodiff":
+            True,  # add backward graph
+            "training_mode":
+            True,  # move weight external
+            "extern_result_memory":
+            True,  # move result external
+            "training_optimizer":
+            '\'' + json.dumps({
+                "optimizer": "SGD",
+                "learning_rate": 0.01
+            }) + '\'',  # training optimizer configs
         }
         self._codegen_flags = trainer_flags
         self._codegen_flags.update(copy.deepcopy(codegen_flags) or {})
         self.runner = PTRunner(self.model_with_loss,
-                             codegen_flags=self._codegen_flags,
-                             **kwargs)
+                               codegen_flags=self._codegen_flags,
+                               **kwargs)
 
     def __call__(self, *args):
         return self.run_by_nnf(*args)

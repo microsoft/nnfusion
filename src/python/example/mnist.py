@@ -10,12 +10,17 @@ import torch
 torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
+import json
+import tempfile
+
+from nnf.data_format import cast_numpy_array, cast_pytorch_tensor
+from nnf.executor import Executor
 from nnf.session import PTSession as Session, generate_sample
 from nnf.runner import PTRunner as Runner
 from nnf.description import IODescription
 from nnf.trainer import Trainer
+from nnf.utils import cd, execute
 import data_loader
-import json
 
 os.environ["PATH"] = os.path.abspath(
     "./build/src/tools/nnfusion") + ":" + os.environ["PATH"]
@@ -34,6 +39,50 @@ class MLP(nn.Module):
         x = F.relu(self.fc2(x))
         output = F.log_softmax(self.fc3(x), dim=1)
         return output
+
+
+def test_executor():
+    def create_mnist_model(workdir, model, sample_input):
+
+        sample_inputs = [sample_input]
+        torch.onnx.export(model,
+                          tuple(sample_inputs),
+                          os.path.join(workdir, "nnf.onnx"),
+                          input_names=["data"],
+                          output_names=["output"],
+                          opset_version=12,
+                          _retain_param_name=True)
+        from nnf.session import codegen, modify_nnfusion_rt, build
+        codegen(os.path.join(workdir, "nnf.onnx"),
+                "-f onnx -fextern_result_memory=1", workdir)
+        rt_dir = os.path.join(workdir, "nnfusion_rt/cuda_codegen")
+        modify_nnfusion_rt(rt_dir)
+        build(rt_dir)
+
+    # Execute by PyTorch
+    batch_size = 5
+    device = "cuda:0"
+    sample_input = torch.ones((batch_size, 1, 28, 28))
+    model = MLP()
+    pt_out = model(sample_input)
+
+    # Prepare NNFusion model
+    dir_ctx = tempfile.TemporaryDirectory(prefix="nnf_")
+    workdir = dir_ctx.name
+    create_mnist_model(workdir, model.to(device), sample_input.to(device))
+
+    # Execute by NNFusion executor
+    rt_dir = os.path.join(workdir, "nnfusion_rt/cuda_codegen")
+    executor = Executor(rt_dir)
+    input_name = executor.get_inputs()[0].name
+    output_name = executor.get_outputs()[0].name
+    data_desc = cast_pytorch_tensor(sample_input.cuda())
+    nnf_out = torch.ones([batch_size, 10]).cuda()
+    nnf_out_desc = cast_pytorch_tensor(nnf_out)
+    executor({input_name: data_desc}, {output_name: nnf_out_desc})
+
+    # Results from PyTorch and NNFusion should be equal
+    assert torch.allclose(pt_out, nnf_out.cpu())
 
 
 def test_session():
@@ -132,6 +181,7 @@ def eval():
     _, test_loader = data_loader.get_mnist_dataloader(batch_size=1,
                                                       shuffle=False)
 
+    res = []
     for i, batch in enumerate(test_loader):
         with torch.no_grad():
             pred = model(batch[0].to(device))
@@ -139,12 +189,15 @@ def eval():
             print('Image {} is digit "{}", confidence {}'.format(
                 i, np.argmax(prob), np.max(prob)))
 
+        res.append(np.argmax(prob))
         if i == 5:
             break
+    assert tuple(res) == (7, 2, 1, 0, 4, 1)
 
 
 if __name__ == "__main__":
-    # test_session()
-    # test_runner()
+    test_executor()
+    test_session()
+    test_runner()
     train_mnist()
-    # eval()
+    eval()

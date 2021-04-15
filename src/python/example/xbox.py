@@ -278,7 +278,6 @@ def inference():
         out_desc = cast_pytorch_tensor(out)
 
         out2 = np.zeros([batch_size, 10], dtype=np.float32)
-        print(out2.nbytes)
         out2_desc = cast_numpy_array(out2)
         
         executor({input_name: data_desc}, {output_name: out_desc})

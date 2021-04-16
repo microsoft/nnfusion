@@ -9,15 +9,6 @@ import collections
 TypeObject = collections.namedtuple(
     "TypeObject", ["type_str", "c_type", "torch_type", "numpy_type"])
 
-c_float = ctypes.c_float
-c_float_p = ctypes.POINTER(ctypes.c_float)
-c_float_p_p = ctypes.POINTER(ctypes.POINTER(ctypes.c_float))
-c_int = ctypes.c_int
-c_int_p = ctypes.POINTER(ctypes.c_int)
-c_int_p_p = ctypes.POINTER(ctypes.POINTER(ctypes.c_int))
-c_int64 = ctypes.c_int64
-c_int64_p = ctypes.POINTER(ctypes.c_int64)
-
 str2type = {
     "float":
     TypeObject._make(["float32", ctypes.c_float, torch.float32,
@@ -48,24 +39,3 @@ str2type = {
     "uint64":
     TypeObject._make(["uint8", ctypes.c_uint64, None, numpy.uint64]),
 }
-
-dtype2ctype = {
-    torch.float32: c_float_p,
-    torch.int32: c_int_p,
-    torch.int64: c_int64_p
-}
-
-
-def tensor_ptr(tensor):
-    if tensor.dtype not in dtype2ctype:
-        raise Exception("Dtype is not suppported: {}".format(tensor.dtype))
-    tensor_addr = tensor.storage().data_ptr()
-    return ctypes.cast(tensor_addr, dtype2ctype[tensor.dtype])
-
-
-def get_data_addr(tensors):
-    return tuple(tensor_ptr(t) for t in tensors)
-
-
-def deduce_signatrue(tensors):
-    return tuple(dtype2ctype[t.dtype] for t in tensors)

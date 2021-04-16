@@ -22,7 +22,7 @@ class ModelWithLoss(nn.Module):
         return loss
 
 
-class Trainer(object):
+class PTTrainer(object):
     """
     Trainer is a wrapper to train PyTorch model in NNFusion.
     """
@@ -44,7 +44,6 @@ class Trainer(object):
             device: a string representing training device.
             kwargs: arguments for underlying Runner.
         """
-        super(Trainer, self).__init__()
         self.model = model
         self.loss_func = loss_func
         if self.loss_func:

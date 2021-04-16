@@ -18,7 +18,7 @@ from nnf.executor import Executor
 from nnf.session import PTSession as Session, generate_sample
 from nnf.runner import PTRunner as Runner
 from nnf.description import IODescription
-from nnf.trainer import Trainer
+from nnf.trainer import PTTrainer as Trainer
 from nnf.utils import cd, execute
 import data_loader
 

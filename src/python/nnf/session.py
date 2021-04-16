@@ -17,15 +17,6 @@ from .data_format import cast_pytorch_tensor
 logger = logging.getLogger(__name__)
 
 
-def generate_sample(desc, device=None):
-    size = [s if isinstance(s, (int)) else 1 for s in desc.shape]
-    if desc.num_classes:
-        return torch.randint(0, desc.num_classes, size,
-                             dtype=desc.dtype).to(device)
-    else:
-        return torch.ones(size, dtype=desc.dtype).to(device)
-
-
 def tensor2desc(pt_tensor, name=""):
     shape = tuple(pt_tensor.shape)
     dtype = str2type[str(pt_tensor.dtype).split(".")[-1]].type_str
@@ -146,9 +137,9 @@ class PTSession(object):
         self._input_desc = input_desc
         self._device = device
         if output_desc is not None:
+            # TODO: validate output shape/type against real outputs
             self._output_desc = output_desc
         else:
-            # TODO: validate output shape/type against real outputs
             self._output_desc = generate_output_desc(self._model,
                                                      self._input_desc,
                                                      self._device)
@@ -165,7 +156,7 @@ class PTSession(object):
 
         self._const_folding = const_folding
         self._build_nnf = build_nnf
-        ## convert torch model to onnx
+        # convert torch model to onnx
         if self._build_nnf:
             self._onnx_model_path = os.path.join(self._workdir, "nnf.onnx")
             convert_model_to_onnx(self._model, self._model_desc, self._device,
@@ -229,7 +220,7 @@ class PTSession(object):
             else:
                 self._inputs[desc.name] = None
 
-        if self._codegen_flags.get("extern_result_memory") != True:
+        if bool(self._codegen_flags.get("extern_result_memory")) is not True:
             raise Exception("Please add extern_result_memory to codegen flags")
 
         for desc in nnf_outputs:

@@ -6,7 +6,7 @@ import os
 sys.path.insert(1, os.path.abspath("./src/python"))
 os.environ["PATH"] = os.path.abspath(
     "./build/src/tools/nnfusion") + ":" + os.environ["PATH"]
-
+import json
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -17,10 +17,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 from transformers import BertForSequenceClassification
 from transformers import BertTokenizer
-from nnf.runner import Runner
-from nnf.trainer import Trainer
-import json
-
+from nnf.runner import PTRunner as Runner
+from nnf.trainer import PTTrainer as Trainer
 
 class WrapperModel(nn.Module):
     def __init__(self, model):

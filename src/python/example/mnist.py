@@ -3,7 +3,8 @@
 
 import sys
 import os
-sys.path.insert(1, os.path.abspath("./src/python"))
+os.environ["PATH"] = os.path.abspath(
+    "./build/src/tools/nnfusion") + ":" + os.environ["PATH"]
 import time
 import numpy as np
 import torch
@@ -21,9 +22,6 @@ from nnf.description import IODescription
 from nnf.trainer import PTTrainer as Trainer
 from nnf.utils import cd, execute
 import data_loader
-
-os.environ["PATH"] = os.path.abspath(
-    "./build/src/tools/nnfusion") + ":" + os.environ["PATH"]
 
 
 class MLP(nn.Module):

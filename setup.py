@@ -27,7 +27,7 @@ setuptools.setup(
     name="nnfusion",
     version=version,
     author="Microsoft Corporation",
-    author_email="nnfusion@microsoft.com",
+    author_email="nnfusion-team@microsoft.com",
     description="NNFusion is a flexible and efficient DNN compiler",
     long_description=long_description,
     long_description_content_type="text/markdown",

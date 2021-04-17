@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from nnf.trainer import PTTrainer as Trainer
-from nnf.description import IODescription
-from nnf.runner import PTRunner as Runner
-from nnf.session import PTSession as Session, generate_sample
+from nnfusion.trainer import PTTrainer as Trainer
+from nnfusion.description import IODescription
+from nnfusion.runner import PTRunner as Runner
+from nnfusion.session import PTSession as Session, generate_sample
 import data_loader
 import torch.nn.functional as F
 import torch.nn as nn

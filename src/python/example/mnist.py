@@ -14,13 +14,13 @@ import torch.nn.functional as F
 import json
 import tempfile
 
-from nnf.data_format import cast_numpy_array, cast_pytorch_tensor
-from nnf.executor import Executor
-from nnf.session import PTSession as Session, generate_sample
-from nnf.runner import PTRunner as Runner
-from nnf.description import IODescription
-from nnf.trainer import PTTrainer as Trainer
-from nnf.utils import cd, execute
+from nnfusion.data_format import cast_numpy_array, cast_pytorch_tensor
+from nnfusion.executor import Executor
+from nnfusion.session import PTSession as Session, generate_sample
+from nnfusion.runner import PTRunner as Runner
+from nnfusion.description import IODescription
+from nnfusion.trainer import PTTrainer as Trainer
+from nnfusion.utils import cd, execute
 import data_loader
 
 
@@ -50,7 +50,7 @@ def test_executor():
                           output_names=["output"],
                           opset_version=12,
                           _retain_param_name=True)
-        from nnf.session import codegen, modify_nnfusion_rt, build
+        from nnfusion.session import codegen, modify_nnfusion_rt, build
         codegen(os.path.join(workdir, "nnf.onnx"),
                 "-f onnx -fextern_result_memory=1", workdir)
         rt_dir = os.path.join(workdir, "nnfusion_rt/cuda_codegen")

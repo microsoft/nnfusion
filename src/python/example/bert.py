@@ -16,8 +16,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 from transformers import BertForSequenceClassification
 from transformers import BertTokenizer
-from nnf.runner import PTRunner as Runner
-from nnf.trainer import PTTrainer as Trainer
+from nnfusion.runner import PTRunner as Runner
+from nnfusion.trainer import PTTrainer as Trainer
 
 
 class WrapperModel(nn.Module):

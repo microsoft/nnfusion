@@ -20,6 +20,9 @@ with open("README.md", encoding="utf-8") as f:
 with open("requirements.txt") as f:
     install_requires = f.read().splitlines()
 
+with open("requirements_test.txt") as f:
+    tests_require = f.read().splitlines()
+
 with open("VERSION") as f:
     version = f.readline().strip()
 
@@ -35,6 +38,7 @@ setuptools.setup(
     packages=setuptools.find_packages(where="src/python", exclude=["example"]),
     package_dir={"": "src/python"},
     install_requires=install_requires,
+    tests_require=tests_require,
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

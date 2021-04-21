@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from nnf.trainer import Trainer
-from nnf.description import IODescription, generate_sample
-from nnf.runner import Runner
-from nnf.session import Session
+from nnfusion.trainer import PTTrainer as Trainer
+from nnfusion.description import IODescription
+from nnfusion.runner import PTRunner as Runner
+from nnfusion.session import PTSession as Session, generate_sample
 import data_loader
 import torch.nn.functional as F
 import torch.nn as nn
@@ -15,7 +15,6 @@ import sys
 import os
 import argparse
 import json
-sys.path.insert(1, os.path.abspath("./src/python"))
 torch.manual_seed(0)
 
 os.environ["PATH"] = os.path.abspath(
@@ -195,10 +194,10 @@ def test_session():
                                 args.hidden_size, args.batch_size, 28).to(args.device)
     batch_size = args.batch_size
     input_desc = [IODescription(
-        "data", [batch_size, 1, 28, 28], torch.float32), ]
+        "data", [batch_size, 1, 28, 28], "float32"), ]
     device = args.device
     inputs = {
-        desc.name_: generate_sample(input_desc[0], device)
+        desc.name: generate_sample(input_desc[0], device)
         for desc in input_desc
     }
     session = Session(model, input_desc, device)

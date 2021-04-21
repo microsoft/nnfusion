@@ -3,14 +3,14 @@
 
 from collections import defaultdict
 from .description import IODescription
-from .session import Session
+from .session import PTSession, tensor2desc
 
 
 def extract_desc_and_device(name, tensor):
-    return IODescription(name, tensor.shape, tensor.dtype), str(tensor.device)
+    return tensor2desc(tensor, name=name), str(tensor.device)
 
 
-class Runner(object):
+class PTRunner(object):
     """
     Runner is the replacement of PyTorch models, it caches sessions for various input desc.
     Every time tensors feed, runner will forward them to corresponding session(cache hit)
@@ -34,7 +34,7 @@ class Runner(object):
 
     def _retrieve_by_desc(self, descs, device):
         if device not in self._sessions[tuple(descs)]:
-            self._sessions[tuple(descs)][device] = Session(
+            self._sessions[tuple(descs)][device] = PTSession(
                 self._model,
                 descs,
                 device,
@@ -59,7 +59,7 @@ class Runner(object):
         ## todo: partially support such model by `inspect`
         if len(kwargs) != 0:
             raise Exception("Model forward with kwargs not supported yet")
-        descs, devices = zip(*(extract_desc_and_device("input{}".format(i), v)
+        descs, devices = zip(*(extract_desc_and_device("input_{}".format(i), v)
                                for i, v in enumerate(args)))
         unique_devices = set(devices)
         if len(unique_devices) != 1:
@@ -67,5 +67,5 @@ class Runner(object):
                 "All input tensors should be on the same device: {}".format(
                     unique_devices))
         device = list(unique_devices)[0]
-        feeds = {"input{}".format(i): v for i, v in enumerate(args)}
+        feeds = {"input_{}".format(i): v for i, v in enumerate(args)}
         return self._retrieve_by_desc(descs, device)(feeds)

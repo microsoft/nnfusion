@@ -54,7 +54,7 @@ namespace nnfusion
                    auto& lu = *_lu;
                    auto code = nnfusion::op::create_code_from_template(
                    R"(
-                        DispatchSoftmax<@dtype@>(stream, @N@, @D@, input0, output0);
+                        DispatchSoftmax<@dtype@>(0, @N@, @D@, input0, output0);
                     )",
                     {{"dtype", (dtype == element::f16) ? "half" : "float"}, {"D", D}, {"N", N}});
 

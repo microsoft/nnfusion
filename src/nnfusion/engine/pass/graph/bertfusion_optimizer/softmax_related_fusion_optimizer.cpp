@@ -11,7 +11,13 @@ using namespace nnfusion::pass::graph;
 bool SoftmaxRelatedFusionOptimizer::CheckStartingNode(std::shared_ptr<nnfusion::graph::GNode> node)
 {
     if (node->get_op_type() == "Softmax")
-        return true;
+    {
+        auto is = node->get_input_shape(0);
+        auto col = is.back();
+        if(col<=1024)
+            return true;
+        return false;
+    }
     return false;
 }
 

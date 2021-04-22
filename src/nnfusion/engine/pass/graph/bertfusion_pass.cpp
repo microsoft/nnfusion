@@ -14,7 +14,7 @@
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;
 
-DEFINE_bool(fsoftmax_related_fusion, false, "");
+DEFINE_bool(fsoftmax_related_fusion, true, "");
 DEFINE_bool(fattention_fusion, false, "");
 DEFINE_bool(flayernorm_fusion, false, "");
 DEFINE_bool(fembedlayernorm_fusion, false, "");

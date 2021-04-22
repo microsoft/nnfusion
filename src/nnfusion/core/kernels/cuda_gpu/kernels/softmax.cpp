@@ -156,6 +156,7 @@ LanguageUnit_p cuda::Softmax::emit_dependency()
     if (softmax_ori == 0)
     {
         _lu->require(declaration::oneflow_softmax);
+        _lu->require(header::cub);
         declaration::oneflow_softmax->require(header::math_constants);
         declaration::oneflow_softmax->require(header::cub);
     }

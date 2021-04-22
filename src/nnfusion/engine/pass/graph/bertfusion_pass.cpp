@@ -9,10 +9,12 @@
 #include "bertfusion_optimizer/layernorm_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/matmuladd_fusion_optimizer.hpp"
 #include "bertfusion_optimizer/skiplayernorm_fusion_optimizer.hpp"
+#include "bertfusion_optimizer/softmax_related_fusion_optimizer.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;
 
+DEFINE_bool(fsoftmax_related_fusion, true, "");
 DEFINE_bool(fattention_fusion, false, "");
 DEFINE_bool(flayernorm_fusion, false, "");
 DEFINE_bool(fembedlayernorm_fusion, false, "");
@@ -98,6 +100,19 @@ bool BertFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph
         else
         {
             NNFUSION_LOG(INFO) << "MatMulAddFusion Optimization Done.";
+        }
+    }
+
+    if (FLAGS_fsoftmax_related_fusion || FLAGS_fenable_all_bert_fusion)
+    {
+        auto optimizer = std::make_shared<SoftmaxRelatedFusionOptimizer>(graph);
+        if (!optimizer->Optimize())
+        {
+            NNFUSION_LOG(NNFUSION_WARNING) << "Softmax Related Optimization failed.";
+        }
+        else
+        {
+            NNFUSION_LOG(INFO) << "Softmax Related Optimization Done.";
         }
     }
     return true;

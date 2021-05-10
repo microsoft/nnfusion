@@ -47,15 +47,36 @@ REGISTER_OP(Dot)
 
         auto _op = static_pointer_cast<nnfusion::op::Dot>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
+        NNFUSION_CHECK(_op->get_reduction_axes_count() == 1);
+        auto input0_shape = curr->get_input_shape(0);
+        auto input1_shape = curr->get_input_shape(1);
+        NNFUSION_CHECK(input0_shape.size() >= 2 && input1_shape.size() >= 2);
 
         auto ir_template =
             R"( @output0@@output0_layout@ +=! @input0@@input0_layout@ * @input1@@input1_layout@; )";
 
-        op::OpConfig::any op_config;
-        op_config["input0_layout"] = _op->get_transpose_A() ? "[K, N]" : "[N, K]";
+        vector<string> input0_layout, input1_layout, output0_layout;
+        for (size_t i = 0; i + 2 < input0_shape.size(); i++)
+        {
+            input0_layout.push_back("S" + std::to_string(i));
+            output0_layout.push_back("S" + std::to_string(i));
+        }
+        output0_layout.push_back("N");
+        output0_layout.push_back("M");
+        input0_layout.push_back(_op->get_transpose_A() ? "K" : "N");
+        input0_layout.push_back(_op->get_transpose_A() ? "N" : "K");
+        input1_layout.push_back(_op->get_transpose_B() ? "M" : "K");
+        input1_layout.push_back(_op->get_transpose_B() ? "K" : "M");
+        for (size_t i = 0; i + 2 < input1_shape.size(); i++)
+        {
+            input1_layout.push_back("E" + std::to_string(i));
+            output0_layout.push_back("E" + std::to_string(i));
+        }
 
-        op_config["input1_layout"] = _op->get_transpose_B() ? "[M, K]" : "[K, M]";
-        op_config["output0_layout"] = "[N, M]";
+        op::OpConfig::any op_config;
+        op_config["input0_layout"] = nnfusion::vector_to_string(input0_layout);
+        op_config["input1_layout"] = nnfusion::vector_to_string(input1_layout);
+        op_config["output0_layout"] = nnfusion::vector_to_string(output0_layout);
 
         return op::create_code_from_template(ir_template, op_config);
     });

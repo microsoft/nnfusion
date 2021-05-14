@@ -3,22 +3,25 @@
 
 import sys
 import os
-sys.path.insert(1, os.path.abspath("./src/python"))
+os.environ["PATH"] = os.path.abspath(
+    "./build/src/tools/nnfusion") + ":" + os.environ["PATH"]
 import time
 import numpy as np
 import torch
 torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
-from nnf.session import Session
-from nnf.runner import Runner
-from nnf.description import IODescription, generate_sample
-from nnf.trainer import Trainer
-import data_loader
 import json
+import tempfile
 
-os.environ["PATH"] = os.path.abspath(
-    "./build/src/tools/nnfusion") + ":" + os.environ["PATH"]
+from nnfusion.data_format import cast_numpy_array, cast_pytorch_tensor
+from nnfusion.executor import Executor
+from nnfusion.session import PTSession as Session, generate_sample
+from nnfusion.runner import PTRunner as Runner
+from nnfusion.description import IODescription
+from nnfusion.trainer import PTTrainer as Trainer
+from nnfusion.utils import cd, execute
+import data_loader
 
 
 class MLP(nn.Module):
@@ -36,16 +39,60 @@ class MLP(nn.Module):
         return output
 
 
+def test_executor():
+    def create_mnist_model(workdir, model, sample_input):
+
+        sample_inputs = [sample_input]
+        torch.onnx.export(model,
+                          tuple(sample_inputs),
+                          os.path.join(workdir, "nnf.onnx"),
+                          input_names=["data"],
+                          output_names=["output"],
+                          opset_version=12,
+                          _retain_param_name=True)
+        from nnfusion.session import codegen, modify_nnfusion_rt, build
+        codegen(os.path.join(workdir, "nnf.onnx"),
+                "-f onnx -fextern_result_memory=1", workdir)
+        rt_dir = os.path.join(workdir, "nnfusion_rt/cuda_codegen")
+        modify_nnfusion_rt(rt_dir)
+        build(rt_dir)
+
+    # Execute by PyTorch
+    batch_size = 5
+    device = "cuda:0"
+    sample_input = torch.ones((batch_size, 1, 28, 28))
+    model = MLP()
+    pt_out = model(sample_input)
+
+    # Prepare NNFusion model
+    dir_ctx = tempfile.TemporaryDirectory(prefix="nnf_")
+    workdir = dir_ctx.name
+    create_mnist_model(workdir, model.to(device), sample_input.to(device))
+
+    # Execute by NNFusion executor
+    rt_dir = os.path.join(workdir, "nnfusion_rt/cuda_codegen")
+    executor = Executor(rt_dir)
+    input_name = executor.get_inputs()[0].name
+    output_name = executor.get_outputs()[0].name
+    data_desc = cast_pytorch_tensor(sample_input.cuda())
+    nnf_out = torch.ones([batch_size, 10]).cuda()
+    nnf_out_desc = cast_pytorch_tensor(nnf_out)
+    executor({input_name: data_desc}, {output_name: nnf_out_desc})
+
+    # Results from PyTorch and NNFusion should be equal
+    assert torch.allclose(pt_out, nnf_out.cpu())
+
+
 def test_session():
     model = MLP()
     batch_size = 5
     input_desc = [
-        IODescription("data", [batch_size, 1, 28, 28], torch.float32),
+        IODescription("data", [batch_size, 1, 28, 28], "float32"),
     ]
     device = "cuda:0"
 
     inputs = {
-        desc.name_: generate_sample(input_desc[0], device)
+        desc.name: generate_sample(input_desc[0], device)
         for desc in input_desc
     }
     session = Session(model, input_desc, device)
@@ -79,14 +126,26 @@ def train_mnist():
     batch_size = 5
 
     codegen_flags = {
-        "autodiff": True,  # add backward graph
-        "training_mode": True,  # move weight external
-        "extern_result_memory": True,  # move result external
-        "training_optimizer": '\'' + json.dumps({"optimizer": "SGD", "learning_rate": 0.001}) +'\'',  # training optimizer configs
+        "autodiff":
+        True,  # add backward graph
+        "training_mode":
+        True,  # move weight external
+        "extern_result_memory":
+        True,  # move result external
+        "training_optimizer":
+        '\'' + json.dumps({
+            "optimizer": "SGD",
+            "learning_rate": 0.001
+        }) + '\'',  # training optimizer configs
     }
 
-    trainer = Trainer(model, loss_func, device=device, codegen_flags=codegen_flags)
-    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size, shuffle=False)
+    trainer = Trainer(model,
+                      loss_func,
+                      device=device,
+                      workdir="./tmp",
+                      codegen_flags=codegen_flags)
+    train_loader, _ = data_loader.get_mnist_dataloader(batch_size=batch_size,
+                                                       shuffle=False)
     print("feeding")
     i = 0
     for i, batch in enumerate(train_loader):
@@ -120,6 +179,7 @@ def eval():
     _, test_loader = data_loader.get_mnist_dataloader(batch_size=1,
                                                       shuffle=False)
 
+    res = []
     for i, batch in enumerate(test_loader):
         with torch.no_grad():
             pred = model(batch[0].to(device))
@@ -127,11 +187,14 @@ def eval():
             print('Image {} is digit "{}", confidence {}'.format(
                 i, np.argmax(prob), np.max(prob)))
 
+        res.append(np.argmax(prob))
         if i == 5:
             break
+    assert tuple(res) == (7, 2, 1, 0, 4, 1)
 
 
 if __name__ == "__main__":
+    test_executor()
     test_session()
     test_runner()
     train_mnist()

@@ -22,6 +22,7 @@
 #include "conv.hpp"
 
 #include <unordered_map>
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/frontend/onnx_import/util/broadcasting.hpp"
 
 namespace nnfusion
@@ -143,44 +144,99 @@ namespace nnfusion
                         // split data and filters for group conv
                         std::size_t n_data_channels{data_shape.at(1)};
                         std::size_t n_filters_channels{filters_shape.at(0)};
-                        NNFUSION_CHECK(n_data_channels % groups == 0 &&
-                                       n_filters_channels & groups == 0);
-                        std::size_t data_group_size{n_data_channels / groups};
-                        std::size_t filters_group_size{n_filters_channels / groups};
-
-                        std::vector<std::size_t> data_lower_bounds(data_shape.size(), 0);
-                        std::vector<std::size_t> data_upper_bounds{data_shape};
-                        std::vector<std::size_t> filters_lower_bounds(filters_shape.size(), 0);
-                        std::vector<std::size_t> filters_upper_bounds{filters_shape};
-
-                        std::vector<std::shared_ptr<nnfusion::graph::GNode>> convolution_nodes;
-                        for (std::size_t group = 0; group < groups; ++group)
+                        if (n_data_channels == groups)
                         {
-                            // slice data
-                            data_lower_bounds[1] = group * data_group_size;
-                            data_upper_bounds[1] = (group + 1) * data_group_size;
-                            auto sliced_data_op =
-                                std::make_shared<op::Slice>(data_lower_bounds, data_upper_bounds);
-                            auto sliced_data = m_graph->add_node_and_edge(sliced_data_op, {data});
-                            // slice filters
-                            filters_lower_bounds[0] = group * filters_group_size;
-                            filters_upper_bounds[0] = (group + 1) * filters_group_size;
-                            auto sliced_filters_op = std::make_shared<op::Slice>(
-                                filters_lower_bounds, filters_upper_bounds);
-                            auto sliced_filters =
-                                m_graph->add_node_and_edge(sliced_filters_op, {filters});
+                            // depthwise convolution
+                            NNFUSION_CHECK(n_filters_channels == groups)
+                                << "Currently only support depth_multiplier = 1 in DepthwiseConv2d";
 
-                            convolution_nodes.push_back(m_graph->add_node_and_edge(
-                                std::make_shared<op::Convolution>(strides,
-                                                                  dilations,
-                                                                  padding_below,
-                                                                  padding_above,
-                                                                  conv_data_format),
-                                {sliced_data, sliced_filters}));
+                            auto filter_gnode = GetInputNode(all_ng_nodes, node_proto, 1);
+
+                            nnfusion::AxisVector ng_axis_order(filters_shape.size());
+                            std::iota(ng_axis_order.begin(), ng_axis_order.end(), 0);
+                            auto reshape_filter_op = std::make_shared<nnfusion::op::Reshape>(
+                                ng_axis_order,
+                                nnfusion::Shape({filters_shape[2],
+                                                 filters_shape[3],
+                                                 filters_shape[0],
+                                                 filters_shape[1]}));
+                            reshape_filter_op->set_name(filter_gnode->get_name() +
+                                                        "_filters_reshape");
+                            auto reshape_filter_gnode =
+                                m_graph->add_node_and_edge(reshape_filter_op, {filter_gnode});
+
+                            size_t depth_multiplier = 1;
+                            nnfusion::op::OpConfig::any myConfig;
+                            myConfig["data_format"] = "NCHW";
+                            myConfig["strides"] = strides;
+                            myConfig["dilations"] = dilations;
+                            myConfig["padding_before"] = padding_below;
+                            myConfig["padding_after"] = padding_above;
+
+                            if ((2 * padding_below[0] - dilations[0] * (filters_shape[2] - 1) ==
+                                 0) &&
+                                (2 * padding_below[1] - dilations[1] * (filters_shape[3] - 1) == 0))
+                            {
+                                myConfig["padding_type"] = "SAME";
+                            }
+                            else if (padding_below[0] == 0 && padding_below[1] == 0)
+                            {
+                                myConfig["padding_type"] = "VALID";
+                            }
+                            else
+                            {
+                                NNFUSION_CHECK_FAIL() << "Currently only support SAME and VALID "
+                                                         "padding in DepthwiseConv2dNative";
+                            }
+
+                            auto conv_op = std::make_shared<nnfusion::op::GenericOp>(
+                                node_proto.name(), "DepthwiseConv2dNative", myConfig);
+                            conv_node = m_graph->add_node_and_edge(
+                                conv_op, {data, GNodeIndex{reshape_filter_gnode, 0}});
                         }
-                        std::size_t concatenation_axis = 1;
-                        conv_node = m_graph->add_node_and_edge(
-                            std::make_shared<op::Concat>(concatenation_axis), convolution_nodes);
+                        else
+                        {
+                            NNFUSION_CHECK(n_data_channels % groups == 0 &&
+                                           n_filters_channels & groups == 0);
+                            std::size_t data_group_size{n_data_channels / groups};
+                            std::size_t filters_group_size{n_filters_channels / groups};
+
+                            std::vector<std::size_t> data_lower_bounds(data_shape.size(), 0);
+                            std::vector<std::size_t> data_upper_bounds{data_shape};
+                            std::vector<std::size_t> filters_lower_bounds(filters_shape.size(), 0);
+                            std::vector<std::size_t> filters_upper_bounds{filters_shape};
+
+                            std::vector<std::shared_ptr<nnfusion::graph::GNode>> convolution_nodes;
+                            for (std::size_t group = 0; group < groups; ++group)
+                            {
+                                // slice data
+                                data_lower_bounds[1] = group * data_group_size;
+                                data_upper_bounds[1] = (group + 1) * data_group_size;
+                                auto sliced_data_op = std::make_shared<op::Slice>(
+                                    data_lower_bounds, data_upper_bounds);
+                                auto sliced_data =
+                                    m_graph->add_node_and_edge(sliced_data_op, {data});
+                                // slice filters
+                                filters_lower_bounds[0] = group * filters_group_size;
+                                filters_upper_bounds[0] = (group + 1) * filters_group_size;
+                                auto sliced_filters_op = std::make_shared<op::Slice>(
+                                    filters_lower_bounds, filters_upper_bounds);
+                                auto sliced_filters =
+                                    m_graph->add_node_and_edge(sliced_filters_op, {filters});
+
+                                convolution_nodes.push_back(m_graph->add_node_and_edge(
+                                    std::make_shared<op::Convolution>(strides,
+                                                                      dilations,
+                                                                      padding_below,
+                                                                      padding_above,
+                                                                      conv_data_format),
+                                    {sliced_data, sliced_filters}));
+                            }
+                            std::size_t concatenation_axis = 1;
+                            conv_node = m_graph->add_node_and_edge(
+                                std::make_shared<op::Concat>(concatenation_axis),
+                                convolution_nodes);
+                        }
                     }
 
                     // add bias

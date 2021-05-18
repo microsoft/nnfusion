@@ -869,7 +869,7 @@ namespace nnfusion
                             ng_padding_below,
                             ng_padding_above);
 
-                NNFUSION_CHECK(ng_padding_above == ng_padding_above)
+                NNFUSION_CHECK(ng_padding_below == ng_padding_above)
                     << "Asymetric padding is not supported by now.";
                 nnfusion::op::OpConfig::any op_config;
                 op_config["data_format"] = tf_data_format;

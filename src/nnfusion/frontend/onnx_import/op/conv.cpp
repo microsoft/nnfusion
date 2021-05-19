@@ -151,11 +151,8 @@ namespace nnfusion
                                 << "Currently only support depth_multiplier = 1 in DepthwiseConv2d";
 
                             auto filter_gnode = GetInputNode(all_ng_nodes, node_proto, 1);
-
-                            nnfusion::AxisVector ng_axis_order(filters_shape.size());
-                            std::iota(ng_axis_order.begin(), ng_axis_order.end(), 0);
                             auto reshape_filter_op = std::make_shared<nnfusion::op::Reshape>(
-                                ng_axis_order,
+                                nnfusion::AxisVector{2, 3, 0, 1},
                                 nnfusion::Shape({filters_shape[2],
                                                  filters_shape[3],
                                                  filters_shape[0],

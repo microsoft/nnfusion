@@ -23,7 +23,7 @@ Prerequisite: We assume you already build and install NNFusion compiler folloing
 Take LSTM-L8-S8-H256 model as an example, you can just download the model:
 
 ```
-wget https://nnfusion.blob.core.windows.net/models/tensorflow/tensorflow/frozen_lstm_l8s8h256_bs1.pb
+wget https://nnfusion.blob.core.windows.net/models/tensorflow/frozen_lstm_l8s8h256_bs1.pb
 ```
 
 Then compile the model with NNFusion (we assume you have a CUDA envrioment):

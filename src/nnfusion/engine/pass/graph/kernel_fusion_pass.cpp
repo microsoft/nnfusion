@@ -457,7 +457,13 @@ private:
                                 //    /  \                 |      |
                                 // nodeB  nodeC          nodeB   nodeC
 
-                                if (input_node->get_out_edges().size() > 1)
+                                size_t out_edges = 0;
+                                for (auto e : input_node->get_out_edges())
+                                {
+                                    if (!e->is_control_edge())
+                                        out_edges++;
+                                }
+                                if (out_edges > 1)
                                 {
                                     auto bc_src_edge = input_node->get_in_edge(0);
                                     auto dup_bc_node = m_graph->add_node_and_edge(

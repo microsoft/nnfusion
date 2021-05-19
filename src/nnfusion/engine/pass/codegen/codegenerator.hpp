@@ -5,6 +5,7 @@
 #include "nnfusion/common/common.hpp"
 #include "nnfusion/common/languageunit.hpp"
 
+DECLARE_bool(fhost_entry);
 namespace nnfusion
 {
     namespace codegen

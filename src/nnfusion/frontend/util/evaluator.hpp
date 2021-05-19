@@ -10,7 +10,7 @@
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 #include "nnfusion/frontend/frontend_base.hpp"
-
+DECLARE_bool(fuse_cpuprofiler);
 namespace nnfusion
 {
     namespace frontend
@@ -106,20 +106,29 @@ namespace nnfusion
                 std::vector<shared_ptr<const KernelRegistration>> kernel_regs;
 
                 runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
-                if (runtime->check_env())
+                if (FLAGS_fuse_cpuprofiler)
                 {
+                    runtime = nnfusion::profiler::CPUDefaultRuntime::Runtime();
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), ROCM_GPU, element::f32);
-                    if (kernel_regs.size() == 0)
-                        kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                            gnode->get_op_type(), CUDA_GPU, element::f32);
+                        gnode->get_op_type(), GENERIC_CPU, element::f32);
                 }
                 else
                 {
-                    runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
-                    NNFUSION_CHECK(runtime->check_env());
-                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), CUDA_GPU, element::f32);
+                    if (runtime->check_env())
+                    {
+                        kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                            gnode->get_op_type(), ROCM_GPU, element::f32);
+                        if (kernel_regs.size() == 0)
+                            kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                                gnode->get_op_type(), CUDA_GPU, element::f32);
+                    }
+                    else
+                    {
+                        runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
+                        NNFUSION_CHECK(runtime->check_env());
+                        kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                            gnode->get_op_type(), CUDA_GPU, element::f32);
+                    }
                 }
 
                 bool const_infer_success = false;

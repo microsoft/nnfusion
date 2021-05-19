@@ -52,6 +52,7 @@ bool TensorLivenessAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
                 {
                     auto tensor = outputs[i];
                     tensor->set_parameter();
+                    tensor->set_persistent();
                     set_tensor_group(tensor, to_string(stream_id));
                 }
             }

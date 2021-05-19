@@ -26,7 +26,7 @@ out = model(data)
 Code below replaces the execution backend with NNFusion
 
 ```python
-from nnf.runner import Runner
+from nnfusion.runner import Runner
 
 model = MLP()
 data = torch.ones([5, 1, 28, 28], dtype=torch.float32, device="cuda:0")
@@ -41,7 +41,7 @@ You could compare NNFusion result against PyTorch.
 There is no much difference for training, just replace Runner with Trainer
 
 ```python
-from nnf.trainer import Trainer
+from nnfusion.trainer import Trainer
 
 model = MLP()
 loss_func = F.nll_loss

@@ -150,7 +150,8 @@ void CpuCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     {
         lu_exit_end << "}\n";
     }
-
+    //add requirements
+    projgen->lup_codegen->require(codegen_device_type());
     // add component
     // create_graph_config(ctx, tu);
     create_header_file(ctx, tu);
@@ -290,28 +291,14 @@ void CpuCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         }
         lu_main << "\n//fill input values\n";
         lu_main << fillval.get_code();
-
-        vector<string> params;
-        for (int i = 0; i < tu->arg.size(); i++)
-        {
-            auto& tv = tu->arg[i];
-            params.push_back(tv->get_name() + "_host");
-        }
-        for (int i = 0; i < tu->out.size(); i++)
-        {
-            auto& tv = tu->out[i];
-            if (FLAGS_fextern_result_memory)
-                params.push_back(tv->get_name() + "_host");
-            else
-                params.push_back("&" + tv->get_name() + "_host");
-        }
+        std::string args = get_kernel_entry_args(tu, true);
 
         lu_main << "\n//warm up\n";
         lu_main << "int warm_steps = 5;\n";
         lu_main << "for(int i_=0; i_<warm_steps; i_++)\n";
         lu_main.block_begin();
         // kernel launch
-        lu_main << "kernel_entry(" << join(params, ", ") << ");\n";
+        lu_main << "kernel_entry(" << args << ");\n";
         lu_main.block_end();
 
         lu_main << "\n//time measurement\n";
@@ -321,7 +308,7 @@ void CpuCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "for(int i_=0; i_<test_steps; i_++)\n";
         lu_main.block_begin();
         // kernel launch
-        lu_main << "kernel_entry(" << join(params, ", ") << ");\n";
+        lu_main << "kernel_entry(" << args << ");\n";
         lu_main.block_end();
 
         lu_main << "\n//time measurement\n";
@@ -380,7 +367,7 @@ void CpuCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx,
     lu_header << declaration::typedef_int->get_code() << "\n";
     // if (device_type() == CUDA_GPU || device_type() == ROCM_GPU)
     //     lu_header << header::cuda->get_code();
-
+    lu_header << "extern \"C\" int get_device_type();\n";
     lu_header << "extern \"C\" int kernel_entry(";
     std::string params = get_kernel_entry_paras(tu);
     lu_header << params;

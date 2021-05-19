@@ -3,10 +3,9 @@
 
 import sys
 import os
-sys.path.insert(1, os.path.abspath("./src/python"))
 os.environ["PATH"] = os.path.abspath(
     "./build/src/tools/nnfusion") + ":" + os.environ["PATH"]
-
+import json
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -17,9 +16,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 from transformers import BertForSequenceClassification
 from transformers import BertTokenizer
-from nnf.runner import Runner
-from nnf.trainer import Trainer
-import json
+from nnfusion.runner import PTRunner as Runner
+from nnfusion.trainer import PTTrainer as Trainer
 
 
 class WrapperModel(nn.Module):
@@ -172,12 +170,19 @@ def train_bert():
     wrapper = WrapperModel(model)
 
     codegen_flags = {
-        "autodiff": True,  # add backward graph
-        "training_mode": True,  # move weight external
-        "extern_result_memory": True,  # move result external
-        "training_optimizer": '\'' + json.dumps({"optimizer": "SGD", "learning_rate": 0.0001}) + '\'',  # training optimizer configs
-        "blockfusion_level": 0,  # TODO: fix blockfusion problem in bert training
-        "enable_all_bert_fusion": True,  # enable all bert fusion optimizations
+        "autodiff":
+        True,  # add backward graph
+        "training_mode":
+        True,  # move weight external
+        "extern_result_memory":
+        True,  # move result external
+        "training_optimizer":
+        '\'' + json.dumps({
+            "optimizer": "SGD",
+            "learning_rate": 0.0001
+        }) + '\'',  # training optimizer configs
+        "blockfusion_level":
+        0,  # TODO: fix blockfusion problem in bert training
     }
     trainer = Trainer(wrapper, device=device, codegen_flags=codegen_flags)
 

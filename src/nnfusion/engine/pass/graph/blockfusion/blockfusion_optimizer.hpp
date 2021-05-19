@@ -133,6 +133,7 @@ private:
     bool m_db_ready;
     std::string m_device_name;
     std::vector<std::shared_ptr<TaggedNode>> m_nodes;
+    std::unordered_set<std::string> m_active_gnodes_name;
     std::shared_ptr<cache::KernelCacheManager> m_kernel_db;
     bool m_interplay;   // interplay of intra- and inter- operator scheduling
     int m_fusion_level; // 0: disable, 1: wavefront, 2: wavefront with wave merge

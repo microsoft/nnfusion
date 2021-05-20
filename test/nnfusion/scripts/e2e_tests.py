@@ -179,7 +179,7 @@ class TestsManager:
 
         hostname = socket.gethostname()
         print("=========================================\n\n")
-        print(hostname + "\tE2E Test report")
+        print(hostname + "\tE2E Model report")
         print("\n\n=========================================\n")
         report = ("\n".join(report_list))
         print(report)

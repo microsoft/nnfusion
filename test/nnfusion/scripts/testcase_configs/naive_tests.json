@@ -3,10 +3,10 @@
         {
             "testcase": "naive_cases #1",
             "tag": [
-                "correctness"
+                "perf"
             ],
             "filename": "pipeline/naive_tests/simple_tests/frozen_random-weights_bert_large.pb",
-            "type": "naive_case_single_line",
+            "type": "perf_case",
             "output": "0.001335 0.001490 0.000675 0.002558 0.000761 0.001435 0.000518 0.001516 0.000738 0.001183  .. (size = 1001, ends with 0.000281);",
             "comment": "Naive json descriptor for test case."
         },

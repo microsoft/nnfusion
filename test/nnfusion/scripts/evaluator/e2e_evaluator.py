@@ -98,7 +98,7 @@ class E2EEvaluator:
                 os.system("rm -rf %s/nnfusion_rt"%self.working_foler)
                 return False
         else:
-            latency = self.exectime()
+            self.latency = self.exectime()
 
         os.system("rm -rf %s/nnfusion_rt"%self.working_foler)
         return True
@@ -113,7 +113,8 @@ def E2EExecutor(TestCases, devname, report_list, nnf, nnf_args):
     for test in TestCases:
         logging.info("Testing " + test.casename)
         if test.valid():
-            eval = E2EEvaluator(test, configs[devname][0], configs[devname][1], tmpdir, nnf, nnf_args)
+            perf_mode = "latency" in dir(test)
+            eval = E2EEvaluator(test, configs[devname][0], configs[devname][1], tmpdir, nnf, nnf_args, perf_mode)
             report = devname + "\t" + test.casename + '\t' + ",".join(test.tags) + "\t";
             if eval.report():
                 report += "Succeed!"
@@ -123,7 +124,8 @@ def E2EExecutor(TestCases, devname, report_list, nnf, nnf_args):
                     report += ",\tSucceed"
                 else:
                     report += ",\tFailed"
-            report += ",\t" + str(eval.latency)
+            if eval.perf_mode:
+                report += ",\t" + str(eval.latency)
             logging.info(report)
             report_list.append(report)
     # clean

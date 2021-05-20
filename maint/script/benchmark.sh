@@ -33,7 +33,7 @@ else
     fi
 
     # build & install
-    docker exec -t nnfusion_cuda_dev /nnfusion/maint/script/build.sh
+    # docker exec -t nnfusion_cuda_dev /nnfusion/maint/script/build.sh
 
     failed=0
 

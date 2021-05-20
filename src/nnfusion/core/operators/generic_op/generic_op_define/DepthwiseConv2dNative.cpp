@@ -10,13 +10,6 @@ REGISTER_OP(DepthwiseConv2dNative)
     .attr<nnfusion::op::OpConfig::any>("dilations")
     .attr<nnfusion::op::OpConfig::any>("padding_before")
     .attr<nnfusion::op::OpConfig::any>("padding_after")
-    .constrait([](const nnfusion::op::OpConfig::any& config) -> bool {
-        if (config["padding_type"] != "SAME")
-        {
-            return false;
-        }
-        return true;
-    })
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         NNFUSION_CHECK(gnode->get_input_size() == 2);
         auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
@@ -39,11 +32,23 @@ REGISTER_OP(DepthwiseConv2dNative)
         const int64_t filter_rows = filter_shape[0];
         const int64_t filter_cols = filter_shape[1];
         const int64_t batch = input_shape[0];
+        auto padding_before = op->localOpConfig.getRoot()["padding_before"];
+        auto padding_after = op->localOpConfig.getRoot()["padding_after"];
+        const int64_t padding_h = padding_before[0];
+        const int64_t padding_w = padding_before[1];
+        const int64_t dilation_h = op->localOpConfig.getRoot()["dilations"][0];
+        const int64_t dilation_w = op->localOpConfig.getRoot()["dilations"][1];
 
         std::vector<int64_t> strides = op->localOpConfig.getRoot()["strides"];
         NNFUSION_CHECK(strides.size() == 2);
-        const int64_t out_rows = (input_rows + strides[0] - 1) / strides[0];
-        const int64_t out_cols = (input_cols + strides[1] - 1) / strides[1];
+        const int64_t out_rows =
+            (int64_t)((float)(input_rows + 2 * padding_h - dilation_h * (filter_rows - 1) - 1) /
+                          (float)strides[0] +
+                      1);
+        const int64_t out_cols =
+            (int64_t)((float)(input_cols + 2 * padding_w - dilation_w * (filter_cols - 1) - 1) /
+                          (float)strides[1] +
+                      1);
 
         Shape output_shape(
             is_nhwc

@@ -1139,14 +1139,12 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "float ms_max = std::numeric_limits<float>::min();\n";
         lu_main << "float ms_min = std::numeric_limits<float>::max();\n";
         lu_main << "float ms_total, ms_i;\n";
-        lu_main << "cudaEvent_t start, stop, start_i, stop_i;\n";
-        lu_main << "cudaEventCreate(&start);\n";
-        lu_main << "cudaEventCreate(&stop);\n";
+        lu_main << "cudaEvent_t start_i, stop_i;\n";
         lu_main << "cudaEventCreate(&start_i);\n";
         lu_main << "cudaEventCreate(&stop_i);\n";
 
         lu_main << "\n//time measurement\n";
-        lu_main << "cudaEventRecord(start);\n\n";
+        lu_main << "ms_total = 0;\n\n";
         lu_main << "//kernel call\n";
 
         lu_main << "int steps = " << test_step << ";\n";
@@ -1163,18 +1161,16 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "cudaEventSynchronize(stop_i);\n";
         lu_main << "cudaEventElapsedTime(&ms_i, start_i, stop_i);\n";
         lu_main << "printf(\"Iteration time %f ms\\n\", ms_i);\n";
+        lu_main << "ms_total += ms_i;\n";
         lu_main << "if (ms_i > ms_max)  ms_max = ms_i;\n";
         lu_main << "if (ms_i < ms_min) ms_min = ms_i;\n";
 
         lu_main.block_end();
         lu_main << "cudaProfilerStop();\n";
 
-        lu_main << "//time measurement\n";
-        lu_main << "\ncudaEventRecord(stop);\n";
-        lu_main << "cudaEventSynchronize(stop);\n";
-        lu_main << "cudaEventElapsedTime(&ms_total, start, stop);\n";
+        lu_main << "\n//time measurement\n";
         lu_main << "printf(\"Summary: [min, max, mean] = [%f, %f, %f] ms\\n\",  ms_min, ms_max, "
-                   "ms_total/steps);\n";
+                   "ms_total / steps);\n";
         lu_main << "\n//free context\n";
 
         for (size_t i = 0; i < tu->arg.size(); i++)

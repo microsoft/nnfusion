@@ -15,7 +15,7 @@ class E2EEvaluator:
             self.nnfusion_cli = nnfusion_cli
         self.nnfusion_cli_arg = nnfusion_cli_arg
 
-        self.perf_mode = True
+        self.perf_mode = False
         self.latency = 0
     
     def load_default_nnfusion_cli(self):

@@ -8,7 +8,7 @@
 - Developers who want to deploy their pre-trained model as framework-free source codes with minimum library dependencies.
 - Researchers who want to quickly try new compiler optimization ideas or customize optimizations on some specific models.
 
-### [NNFusion v0.2 has been released!](https://github.com/microsoft/nnfusion/releases/tag/v0.2):raised_hands:
+### [NNFusion v0.3 has been released!](https://github.com/microsoft/nnfusion/releases/tag/v0.3):raised_hands:
 
 ## Highlight features
 - Provide a full-stack optimization mechanism, including:
@@ -93,6 +93,8 @@ Summary: [min, max, mean] = [2.724704, 2.968352, 2.921987] ms
 For more detailed information on NNFusion usage, please refer to [NNFusion Usage](https://github.com/microsoft/nnfusion/blob/master/docs/Compile-a-Tensorflow-model-with-NNFusion.md).
 
 For TensorFlow users, you can refer to [Kernel Tuner Tutorial](https://github.com/microsoft/nnfusion/blob/master/docs/Compile-a-model-with-kernel-tuning-enabled.md) to learn how to compile a TensorFlow model and tune each operator in this model to generate the end-to-end source code.
+
+For detailed example about training，please refer to [How to use NNFusion Python interface for inference/training](https://github.com/microsoft/nnfusion/tree/master/src/python/example).
 
 ### Build from Source Code
 Researchers or contributors who want to do more research on optimizing model compilation, you can build NNFusion from source code.

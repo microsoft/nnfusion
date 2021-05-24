@@ -183,6 +183,8 @@ def train_bert():
         }) + '\'',  # training optimizer configs
         "blockfusion_level":
         0,  # TODO: fix blockfusion problem in bert training
+        "enable_all_bert_fusion":
+        True, # enable all bert fusion optimizations
     }
     trainer = Trainer(wrapper, device=device, codegen_flags=codegen_flags)
 

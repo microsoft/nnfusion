@@ -465,9 +465,12 @@ private:
                                 }
                                 if (out_edges > 1)
                                 {
+                                    // When copying a node, we have to copy the op first, as the unique name is determined by a new op
+                                    auto dup_bc_op = std::make_shared<op::Broadcast>(
+                                        bc->get_broadcast_shape(), bc->get_broadcast_axes());
                                     auto bc_src_edge = input_node->get_in_edge(0);
                                     auto dup_bc_node = m_graph->add_node_and_edge(
-                                        bc, GNodeVector({bc_src_edge->get_src()}));
+                                        dup_bc_op, GNodeVector({bc_src_edge->get_src()}));
                                     NNFUSION_CHECK(dup_bc_node->get_id() < ELEM_GROUP_NODEID)
                                         << "too many new nodes created, try increase the "
                                            "empty_node_ids.";
@@ -477,6 +480,9 @@ private:
 
                                     m_graph->add_edge(
                                         dup_bc_node, 0, n_node, in_edge->get_dst_input());
+                                    // Need to also reselect n_node's kernel, as the input tensor in its KernelContext has changed.
+                                    // TODO: in future, we might need to change the input/output in KernelContext to be obtained dynamiclly
+                                    n_node->Del("Kernel_Selection_Result");
                                     m_graph->remove_edge(in_edge);
 
                                     auto bc_tn = std::make_shared<TaggedNode>();

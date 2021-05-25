@@ -7,7 +7,8 @@ Welcome to the NNFusion Documents!
    - [Adding-Custom-Operator](/src/contrib/custom_op/README.md)
 2. [Build-Guide](Build-Guide.md)
    - [End-to-end-Test](End-to-end-Test.md)
-3. [Compile-a-Tensorflow-model-with-NNFusion](Compile-a-Tensorflow-model-with-NNFusion.md)
+3. How to compile model with NNFusion
+   - [Compile-a-Tensorflow-model-with-NNFusion](Compile-a-Tensorflow-model-with-NNFusion.md)
    - [Compile-a-model-with-kernel-tuning-enabled](Compile-a-model-with-kernel-tuning-enabled.md)
    - [How to use NNFusion Python interface for inference/training](../src/python/example/README.md)
 4. [Guide-for-Contributors](Guide-for-Contributors.md)

@@ -143,3 +143,16 @@ float (*dxEventElapsedTime)(void* hStart, void* hStop);
 int (*dxEventDestroy)(void* hEvent);
 
 )");
+
+LU_DEFINE(declaration::dxModuleLaunchAsync, R"(
+int dxModuleLaunchAsync(void* hModule, std::string* kernel_names, void*** args, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        void* shader = dxModuleGetShader(hModule, kernel_names[i].c_str());
+        dxShaderLaunchAsync(shader, args[i], 0);
+    }
+    return 0;
+};
+
+)");

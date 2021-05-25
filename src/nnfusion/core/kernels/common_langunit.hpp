@@ -38,6 +38,7 @@ namespace nnfusion
             LU_DECLARE(limits);
             LU_DECLARE(iostream);
             LU_DECLARE(windows);
+            LU_DECLARE(unordered_map);
         }
 
         namespace macro

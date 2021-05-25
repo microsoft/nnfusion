@@ -113,7 +113,9 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(header::stdio);
     projgen->lup_codegen->require(header::windows);
     projgen->lup_codegen->require(header::D3D12APIWrapper);
+    projgen->lup_codegen->require(header::unordered_map);
     projgen->lup_codegen->require(codegen_device_type());
+    projgen->lup_codegen->require(declaration::dxModuleLaunchAsync);
     // projgen->lup_codegen->require(macro::OutputDebugStringA);
     // LanguageUnit_p num_inputs_outputs = std::make_shared<LanguageUnit>(
     //     "declaration::num_inputs_outputs", "int num_inputs, num_outputs;\n");
@@ -131,10 +133,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 {
     if (!tu)
         return false;
-    auto sharder_pair = create_init_and_exit_pair<LanguageUnitwithVec, LanguageUnitwithVec>(
-        "shader_load", "shader_unload");
-    auto lup_shaders_load = sharder_pair.first;
-    auto lup_shaders_unload = sharder_pair.second;
+    auto module_pair = create_init_and_exit_pair<LanguageUnitwithVec, LanguageUnitwithVec>(
+        "module_load", "module_unload");
+    auto lup_modules_load = module_pair.first;
+    auto lup_modules_unload = module_pair.second;
     int count = 0;
     auto pairs = collect_ins(ctx, tu);
     for (size_t i = 0; i < pairs.size(); i++)
@@ -156,7 +158,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             FunctionUnit_p fu = kernel->get_or_emit_source(true);
             string body_str = fu->body_unit->get_code();
             string func_name = fu->name_unit->get_code();
-            string hShader_name = func_name + "_hShader";
+            string module_name = func_name + "_module";
             if (!body_str.empty())
             {
                 if (kernel_func_defs.find(body_str) == kernel_func_defs.end())
@@ -184,10 +186,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
                         if (gnode->get_op_type() != "Result" && gnode->get_op_type() != "Constant")
                         {
-                            // prepare shader
-                            LanguageUnit_p shader_decl = std::make_shared<LanguageUnit>(
-                                "declaration::" + hShader_name + "_decl",
-                                "void* " + hShader_name + ";\n");
+                            // prepare module
+                            LanguageUnit_p module_decl = std::make_shared<LanguageUnit>(
+                                "declaration::" + module_name + "_decl",
+                                "void* " + module_name + ";\n");
                             string fname = kernel_func_def->symbol;
                             if (fname.length() > 128)
                             {
@@ -196,25 +198,28 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                             }
 
                             std::string file = "file://HLSL/" + fname + m_kernel_suffix;
-                            // std::string load_str = hShader_name + " = dxShaderLoad(\"" + file +
-                            //                        "\", &num_inputs, &num_outputs);\nif (!" +
-                            //                        hShader_name +
-                            //                        ") {\n    std::cout << \"Invalid Shader Source "
-                            //                        "for Compilation: " +
-                            //                        file + "\";\n    exit(1);\n}\n";
-                            std::string load_str = hShader_name + " = dxShaderLoad_v2(\"" + file +
-                                                   "\");\nif (!" + hShader_name +
-                                                   ") {\n    std::cout << \"Invalid Shader Source "
-                                                   "for Compilation: " +
-                                                   file + "\";\n    exit(1);\n}\n";
-                            // std::string unload_str = "dxShaderUnload(" + hShader_name + ");\n";
-                            LanguageUnit_p shader_load =
-                                std::make_shared<LanguageUnit>(hShader_name + "_load", load_str);
-                            // LanguageUnit_p shader_unload = std::make_shared<LanguageUnit>(
-                            //     hShader_name + "_unload", unload_str);
-                            shader_load->require(shader_decl);
-                            lup_shaders_load->unit_vec.push_back(shader_load);
-                            // lup_shaders_unload->unit_vec.push_back(shader_unload);
+
+                            std::string load_str =
+                                module_name + " = dxModuleLoad(\"" + file + "\");\n";
+                            load_str += "auto " + module_name +
+                                        "_dict = *(std::unordered_map<std::string, void*>*)" +
+                                        module_name + ";\n";
+                            load_str += "for (auto& p : " + module_name + "_dict)\n{\n";
+                            load_str += "    if (!p.second) {\n";
+                            load_str +=
+                                "        std::cout << \"Invalid Shader Source for Compilation: " +
+                                file + "\";\n";
+                            load_str += "        exit(1);\n";
+                            load_str += "    }\n";
+                            load_str += "}\n";
+                            // std::string unload_str = "dxmoduleUnload(" + module_name + ");\n";
+                            LanguageUnit_p module_load =
+                                std::make_shared<LanguageUnit>(module_name + "_load", load_str);
+                            // LanguageUnit_p module_unload = std::make_shared<LanguageUnit>(
+                            //     module_name + "_unload", unload_str);
+                            module_load->require(module_decl);
+                            lup_modules_load->unit_vec.push_back(module_load);
+                            // lup_modules_unload->unit_vec.push_back(module_unload);
                         }
                         else
                         {
@@ -225,7 +230,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 else
                 {
                     func_name = kernel_func_defs[body_str].first;
-                    hShader_name = func_name + "_hShader";
+                    module_name = func_name + "_module";
                 }
             }
 
@@ -248,14 +253,19 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             }
             else
             {
-                std::string buffers =
-                    "void* args_" + to_string(count) + "[] = { " + call_str + "};\n";
+                int s_pos = call_str.find("dxModuleLaunchAsync(");
+                NNFUSION_CHECK(s_pos >= 0);
+                int e_pos = call_str.find(",", s_pos);
+                NNFUSION_CHECK(e_pos >= 0);
+                if (call_str.substr(s_pos + 20, e_pos - s_pos - 20) != module_name)
+                {
+                    call_str = call_str.replace(s_pos + 20, e_pos - s_pos - 20, module_name);
+                }
+
                 if (kernel && kernel->is_eliminative())
                 {
-                    buffers += "// ";
+                    call_str = "/*\n" + call_str + "*/\n";
                 }
-                call_str = buffers + "dxShaderLaunchAsync(" + hShader_name + ", args_" +
-                           to_string(count) + ", " + stream_name + ");\n";
             }
 
             LanguageUnit_p kernel_func_call =

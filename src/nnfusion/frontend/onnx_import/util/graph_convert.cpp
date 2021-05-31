@@ -325,6 +325,11 @@ namespace nnfusion
                 NNFUSION_CHECK(onnx_graph_proto->sparse_initializer_size() == 0)
                     << "sparse_initializer not supported";
 
+                for (const auto& output : onnx_graph_proto->output())
+                {
+                    m_output_names.insert(output.name());
+                }
+
                 for (auto tensor : onnx_graph_proto->initializer())
                 {
                     if (tensor.has_name())
@@ -379,6 +384,12 @@ namespace nnfusion
                             cast_op->set_name(input_proto.name());
                             auto input_gnode = m_graph->add_node_and_edge(cast_op, it->second);
                             m_node_map[input_proto.name()] = {GNodeIndex{input_gnode}};
+                            if (m_output_names.find(input_gnode->get_name()) !=
+                                m_output_names.end())
+                            {
+                                // TODO: should specify which output of current gnode
+                                m_graph_outputs.emplace_back(input_gnode);
+                            }
                         }
                     }
                     else
@@ -388,12 +399,12 @@ namespace nnfusion
                         input_op->set_name(input_proto.name());
                         input_gnode = m_graph->add_node_and_edge(input_op, graph::GNodeVector({}));
                         m_node_map[input_proto.name()] = {GNodeIndex{input_gnode}};
+                        if (m_output_names.find(input_gnode->get_name()) != m_output_names.end())
+                        {
+                            // TODO: should specify which output of current gnode
+                            m_graph_outputs.emplace_back(input_gnode);
+                        }
                     }
-                }
-
-                for (const auto& output : onnx_graph_proto->output())
-                {
-                    m_output_names.insert(output.name());
                 }
 
                 // Verify that ONNX graph contains only nodes of available operator types

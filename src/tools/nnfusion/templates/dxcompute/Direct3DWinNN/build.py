@@ -48,6 +48,10 @@ def copy_to_output(output_dir, build_type, platform):
     para_info = os.path.join(nnf_desktop_dir, "para_info.json")
     nnf_exe = os.path.join(
         nnf_desktop_dir, platform if "x64" in platform else "", build_type, "nnf_desktop_example.exe")
+    dxcompiler_lib = os.path.join(
+        nnf_desktop_dir, platform if "x64" in platform else "", build_type, "dxcompiler.dll")
+    dxil_lib = os.path.join(
+        nnf_desktop_dir, platform if "x64" in platform else "", build_type, "dxil.dll")
 
     runtime_dir = r".\runtime"
     nnf_lib = os.path.join(
@@ -60,6 +64,8 @@ def copy_to_output(output_dir, build_type, platform):
     copy_to(para_info, os.path.join(output_dir, "para_info.json"))
     copy_to(nnf_exe, os.path.join(output_dir, "nnf_desktop_example.exe"))
     copy_to(nnf_lib, os.path.join(output_dir, "nnfusion_rt.dll"))
+    copy_to(dxcompiler_lib, os.path.join(output_dir, "dxcompiler.dll"))
+    copy_to(dxil_lib, os.path.join(output_dir, "dxil.dll"))
 
 
 def setup_parser():

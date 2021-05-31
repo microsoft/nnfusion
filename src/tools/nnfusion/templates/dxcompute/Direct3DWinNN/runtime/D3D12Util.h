@@ -1013,7 +1013,9 @@ namespace antares {
             IFE(m_pLibrary->CreateBlobWithEncodingOnHeapCopy(pText, size, CP_UTF8, &pSrcBlob));
             ComPtr<IDxcOperationResult> pResult;
             // Just set a random name "ShaderFile"
-            if (FAILED(m_pCompiler->Compile(pSrcBlob.Get(), L"ShaderFile", entryName, profile, NULL, 0, NULL, 0, NULL, &pResult)))
+            const WCHAR* args[] = { NULL };
+            // const WCHAR* args[] = { L"-enable-templates", L"-enable-16bit-types", NULL }; // TODO: will be supported in HLSL 2021 & cs_6_2
+            if (FAILED(m_pCompiler->Compile(pSrcBlob.Get(), L"ShaderFile", entryName, profile, args, sizeof(args) / sizeof(*args) - 1, NULL, 0, NULL, &pResult)))
             {
                 if (pResult)
                 {

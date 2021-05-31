@@ -28,6 +28,7 @@ set(SRC
     dot_transpose_pass.cpp
     reduce_fusion_pass.cpp
     superscaler_dataparallelism_pass.cpp
+    hlsl_required_pass.cpp
 )
 
 add_library(nnfusion_engine_pass_graph STATIC ${SRC})

@@ -59,6 +59,11 @@ namespace nnfusion
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
                         }
+
+                        kernel_info =
+                            nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
+                        NNFUSION_CHECK(!kernel_info.empty());
+                        process_antares_kernel_info();
                     }
                 }
 
@@ -71,7 +76,12 @@ namespace nnfusion
                 bool is_memcpy = false;
 
             protected:
+                // map tensor names and allocate tmp tensor
+                void process_antares_kernel_info();
                 std::string ir, options;
+                std::vector<AntaresKernelInfo::Pointer> kernel_info;
+                std::unordered_map<std::string, std::string>
+                    tensor_name_map; // antares tensor name : kernel tensor name
             };
         }
     }

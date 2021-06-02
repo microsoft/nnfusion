@@ -10,7 +10,7 @@
 #include <map>
 
 #define _USE_GPU_TIMER_
-// #define _USE_DXC_
+#define _USE_DXC_
 
 #include "D3D12Util.h"
 #include "D3D12APIWrapper.h"
@@ -145,17 +145,15 @@ namespace {
         return iter;
     }
 
-    static std::vector<std::string> ssplit(const std::string& source, const std::string& delim) {
-        if (!source.size())
-            return {};
+    static std::vector<std::string> ssplit(const std::string& source, const std::string& delim, bool allow_empty = false) {
         std::vector<std::string> ret;
         int it = 0, next;
         while (next = (int)source.find(delim, it), next >= 0) {
-            if (next > it)
+            if (next > it || allow_empty)
                 ret.push_back(source.substr(it, next - it));
             it = next + (int)delim.size();
         }
-        if (it < source.size())
+        if (it < source.size() || allow_empty)
             ret.push_back(source.substr(it));
         return std::move(ret);
     }
@@ -270,18 +268,20 @@ void* dxShaderLoad_v2(const char* shader_src)
 
     if (legacy_format) {
         str_params = get_between(source, "///", "\n");
-        arr_params = ssplit(str_params, ":");
+        arr_params = ssplit(str_params, ":", true);
         assert(arr_params.size() == 2);
         in_params = ssplit(arr_params[0], ",");
         out_params = ssplit(arr_params[1], ",");
     }
     else {
         str_params = get_between(source, " -- ", "\n");
-        arr_params = ssplit(str_params, " -> ");
+        arr_params = ssplit(str_params, " -> ", true);
         assert(arr_params.size() == 2);
         in_params = ssplit(arr_params[0] + ", ", "], ");
         out_params = ssplit(arr_params[1] + ", ", "], ");
     }
+    if (!arr_params[0].size())
+        in_params.clear();
 
     auto parse_tensor = [&](const std::string & param) -> dx_tensor_t {
         dx_tensor_t ret;

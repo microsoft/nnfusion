@@ -32,7 +32,6 @@ REGISTER_OP(Convolution)
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto ir_template =
             R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
-        auto manual_rule = R"( ## @: plan/convfwd_@data_format@_v1 )";
 
         auto _op = static_pointer_cast<nnfusion::op::Convolution>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
@@ -81,6 +80,5 @@ REGISTER_OP(Convolution)
         }
         config["pad_cond"] = pad_cond;
 
-        return op::create_code_from_template(ir_template, config) +
-               op::create_code_from_template(manual_rule, {{"data_format", data_format}});
+        return op::create_code_from_template(ir_template, config);
     });

@@ -10,6 +10,19 @@ namespace nnfusion
 {
     namespace kernels
     {
+        struct AntaresKernelInfo
+        {
+            std::string kernel_name;
+            std::vector<std::string> input_names;
+            std::vector<std::string> output_names;
+            std::vector<std::string> input_shapes;
+            std::vector<std::string> output_shapes;
+            std::vector<std::string> input_dtypes;
+            std::vector<std::string> output_dtypes;
+
+            using Pointer = std::shared_ptr<AntaresKernelInfo>;
+        };
+
         class AntaresKEImp
         {
         public:
@@ -21,6 +34,8 @@ namespace nnfusion
             static std::pair<int, int> get_tuning_step(const std::string& response);
             static std::string get_device_name(const std::string& response);
             static std::vector<nnfusion::Shape> get_output_shapes(const std::string& response);
+            static std::vector<AntaresKernelInfo::Pointer>
+                get_kernel_info(const std::string& response);
         };
     } // namespace kernels
 } // namespace nnfusion

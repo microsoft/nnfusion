@@ -89,6 +89,37 @@ bool element::Type::nnfusion_element_type_to_dtype_string(const element::Type& n
 
     return true;
 }
+bool element::Type::dtype_string_to_nnfusion_element_type(const std::string& dtype, Type& ng_et)
+{
+    if (dtype == "char")
+        ng_et = element::character;
+    else if (dtype == "float16")
+        ng_et = element::f16;
+    else if (dtype == "float32")
+        ng_et = element::f32;
+    else if (dtype == "float64")
+        ng_et = element::f64;
+    else if (dtype == "int8")
+        ng_et = element::i8;
+    else if (dtype == "int16")
+        ng_et = element::i16;
+    else if (dtype == "int32")
+        ng_et = element::i32;
+    else if (dtype == "int64")
+        ng_et = element::i64;
+    else if (dtype == "uint8")
+        ng_et == element::u8;
+    else if (dtype == "uint16")
+        ng_et = element::u16;
+    else if (dtype == "uint32")
+        ng_et = element::u32;
+    else if (dtype == "uint64")
+        ng_et = element::u64;
+    else
+        return false;
+
+    return true;
+}
 
 bool element::Type::nnfusion_element_type_to_pbtype(const element::Type& ng_et,
                                                     nnfusion::serialize::PBType& dtype)

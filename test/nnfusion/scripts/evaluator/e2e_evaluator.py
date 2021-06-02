@@ -4,7 +4,7 @@
 import uuid, os, logging, sys, multiprocessing, tempfile
 
 class E2EEvaluator:
-    def __init__(self, testcase, codegen_folder = "cuda_codegen", default_device = "CUDA", working_foler = ".", nnfusion_cli = "", nnfusion_cli_arg = ""):
+    def __init__(self, testcase, codegen_folder = "cuda_codegen", default_device = "CUDA", working_foler = ".", nnfusion_cli = "", nnfusion_cli_arg = "", perf_mode = False):
         self.codegen_folder = codegen_folder
         self.default_device = default_device
         self.testcase = testcase
@@ -14,6 +14,9 @@ class E2EEvaluator:
         else:
             self.nnfusion_cli = nnfusion_cli
         self.nnfusion_cli_arg = nnfusion_cli_arg
+
+        self.perf_mode = False
+        self.latency = 0
     
     def load_default_nnfusion_cli(self):
         nnf_clis = [os.path.join(os.path.dirname(os.path.abspath(
@@ -67,6 +70,19 @@ class E2EEvaluator:
             logging.error("%s result missmatch."%self.testcase.casename)
             return False
         return True 
+    
+    def exectime(self):
+        code = os.system("cd %s/nnfusion_rt/%s/ && ./main_test > result.txt"%(self.working_foler, self.codegen_folder))
+        if code != 0:
+            logging.error("%s execution failed."%self.testcase.casename)
+            return False
+        if not os.path.exists("%s/nnfusion_rt/%s/result.txt"%(self.working_foler, self.codegen_folder)):
+            logging.error("Failed at compiling phase.")
+            return False
+        result_file = open("%s/nnfusion_rt/%s/result.txt"%(self.working_foler, self.codegen_folder))
+        results = result_file.readlines()
+        latency = self.testcase.latency(results)
+        return latency
 
     def report(self):
         os.system("rm -rf %s/nnfusion_rt"%self.working_foler)
@@ -76,9 +92,14 @@ class E2EEvaluator:
         if not self.build():
             os.system("rm -rf %s/nnfusion_rt"%self.working_foler)
             return False
-        if not self.allclose():
-            os.system("rm -rf %s/nnfusion_rt"%self.working_foler)
-            return False
+        
+        if self.perf_mode is False:
+            if not self.allclose():
+                os.system("rm -rf %s/nnfusion_rt"%self.working_foler)
+                return False
+        else:
+            self.latency = self.exectime()
+
         os.system("rm -rf %s/nnfusion_rt"%self.working_foler)
         return True
 
@@ -92,16 +113,19 @@ def E2EExecutor(TestCases, devname, report_list, nnf, nnf_args):
     for test in TestCases:
         logging.info("Testing " + test.casename)
         if test.valid():
-            eval = E2EEvaluator(test, configs[devname][0], configs[devname][1], tmpdir, nnf, nnf_args)
+            perf_mode = "latency" in dir(test)
+            eval = E2EEvaluator(test, configs[devname][0], configs[devname][1], tmpdir, nnf, nnf_args, perf_mode)
             report = devname + "\t" + test.casename + '\t' + ",".join(test.tags) + "\t";
             if eval.report():
                 report += "Succeed!"
             else:
                 eval = E2EEvaluator(test, configs[devname][0], configs[devname][1], tmpdir)
                 if eval.report():
-                    report += "Succeed!"
+                    report += ",\tSucceed"
                 else:
-                    report += "Failed"
+                    report += ",\tFailed"
+            if eval.perf_mode:
+                report += ",\t" + str(eval.latency)
             logging.info(report)
             report_list.append(report)
     # clean

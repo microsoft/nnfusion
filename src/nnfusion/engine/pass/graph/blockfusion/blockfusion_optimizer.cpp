@@ -39,6 +39,13 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
 
     m_kernel_db = std::make_shared<cache::KernelCacheManager>();
     m_db_ready = m_kernel_db->is_valid() ? true : false;
+
+    m_active_gnodes_name.clear();
+    auto active_gnodes = m_graph->get_ordered_ops();
+    for (size_t i = 0; i < active_gnodes.size(); i++)
+    {
+        m_active_gnodes_name.insert(active_gnodes[i]->get_name());
+    }
 }
 
 bool BlockFusionWavefrontOptimizer::Optimize()
@@ -145,6 +152,12 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
     {
         NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before this pass:"
                                        << node->get_name();
+        return false;
+    }
+
+    // ignore dead gnodes
+    if (m_active_gnodes_name.find(node->get_name()) == m_active_gnodes_name.end())
+    {
         return false;
     }
 

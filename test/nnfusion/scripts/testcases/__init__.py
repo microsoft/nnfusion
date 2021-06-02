@@ -4,12 +4,14 @@
 from testcases.testcase import *
 import testcases.naive_cases
 import testcases.cpu_perf_cases
+import testcases.perf_cases
 
 TestCases = list()
 
 tests_load_funtion = {
     "naive_case_single_line": testcases.naive_cases.create_naive_case_single_line, "naive_case_multi_lines": testcases.naive_cases.create_naive_case_multi_lines, 
-    "cpu_perf_case_single_line": testcases.cpu_perf_cases.create_cpu_perf_case_single_line, "cpu_perf_case_single_lines": testcases.cpu_perf_cases.create_cpu_perf_case_multi_lines
+    "cpu_perf_case_single_line": testcases.cpu_perf_cases.create_cpu_perf_case_single_line, "cpu_perf_case_single_lines": testcases.cpu_perf_cases.create_cpu_perf_case_multi_lines,
+    "perf_case" : testcases.perf_cases.create_perf_case
 }
 
 def parse_tests(base_folder, json_data):

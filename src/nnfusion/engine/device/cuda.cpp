@@ -16,6 +16,7 @@
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
 #include "nnfusion/engine/pass/graph/graph_serialization_pass.hpp"
+#include "nnfusion/engine/pass/graph/hlsl_required_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"

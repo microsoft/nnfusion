@@ -92,6 +92,11 @@ class Executor(object):
 
         # prepare init/free/kernel_entry
         self.init_flag = False
+        # dxil.dll and dxcompiler.dll must be manually imported
+        if os.path.exists(os.path.join(nnf_rt_dir, "dxil.dll")):
+            ctypes.cdll.LoadLibrary(os.path.join(nnf_rt_dir, "dxil.dll"))
+        if os.path.exists(os.path.join(nnf_rt_dir, "dxcompiler.dll")):
+            ctypes.cdll.LoadLibrary(os.path.join(nnf_rt_dir, "dxcompiler.dll"))
         self.libnnf = ctypes.cdll.LoadLibrary(self.libnnf_path)
         if hasattr(self.libnnf, "kernel_entry_host"):
             self.kernel_entry = self.libnnf.kernel_entry_host

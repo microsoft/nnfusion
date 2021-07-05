@@ -11,6 +11,8 @@ import onnx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--file', type=str, default='./frozen_graph.onnx', help='The file name of the frozen graph.')
+parser.add_argument('--optimized_model_filepath', type=str, default='', help='The file name of the optimized frozen graph.')
+parser.add_argument('--graph_optimization_level', type=str, default='ORT_ENABLE_ALL', help='ONNX Runtime graph optimization level.')
 parser.add_argument('--warmup', type=int, default=5, help='The number of warmup iterations.')
 parser.add_argument('--iters', type=int, default=100, help='The number of execution iterations.')
 parser.add_argument('--provider', type=str, default='', help='The backend provider.')
@@ -60,8 +62,18 @@ def get_numpy(tensor):
 
 print("Importing ONNX model into ONNX Runtime...")
 ort.set_default_logger_severity(args.logger_severity)
+
 sess_options = ort.SessionOptions()
 sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+if args.graph_optimization_level == 'ORT_DISABLE_ALL':
+    sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+elif args.graph_optimization_level == 'ORT_ENABLE_BASIC':
+    sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
+elif args.graph_optimization_level == 'ORT_ENABLE_EXTENDED':
+    sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
+if args.optimized_model_filepath != '':
+    sess_options.optimized_model_filepath = args.optimized_model_filepath
+
 ort_session = ort.InferenceSession(args.file, sess_options)
 
 if args.provider != '':

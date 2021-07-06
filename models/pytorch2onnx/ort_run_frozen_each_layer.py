@@ -64,7 +64,6 @@ for node_id in range(len(model.graph.node)):
         debug_tensor.name = node_outputs[output_id]
         model.graph.output.append(debug_tensor)
         node_name_dict.update({debug_tensor.name: model.graph.node[node_id].name+'_'+str(output_id)})
-onnx.save(model, "/tmp/tmp.onnx")
 
 print("Importing ONNX model into ONNX Runtime...")
 ort.set_default_logger_severity(args.logger_severity)
@@ -78,7 +77,7 @@ elif args.graph_optimization_level == 'ORT_ENABLE_BASIC':
 elif args.graph_optimization_level == 'ORT_ENABLE_EXTENDED':
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
 
-ort_session = ort.InferenceSession("/tmp/tmp.onnx", sess_options)
+ort_session = ort.InferenceSession(model.SerializeToString(), sess_options)
 
 if args.provider != '':
     ort_session.set_providers([args.provider])

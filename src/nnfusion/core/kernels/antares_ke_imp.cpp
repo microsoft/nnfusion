@@ -125,10 +125,10 @@ std::pair<int, int> AntaresKEImp::get_tuning_step(const std::string& response)
 
 std::string AntaresKEImp::get_device_name(const std::string& response)
 {
-    /*// BACKEND = c-cuda (Tesla V100-PCIE-16GB)*/
-    /*// BACKEND = c-cuda (default)*/
+    /*// BACKEND: c-cuda (Tesla V100-PCIE-16GB)*/
+    /*// BACKEND: c-cuda (default)*/
     std::string device_name = "default";
-    size_t pos = response.find("\n// BACKEND = ");
+    size_t pos = response.find("\n// BACKEND: ");
     if (pos != std::string::npos)
     {
         size_t pos_st = response.find("(", pos) + 1;

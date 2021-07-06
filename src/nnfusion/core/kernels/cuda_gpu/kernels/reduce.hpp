@@ -74,9 +74,10 @@ namespace nnfusion
                     {
                         // calculate reduction_split_number
                         reduction_split_number = 1;
-                        if (reduce_op == "add")
+                        uint32_t num_outputs = static_cast<uint32_t>(shape_size(output_shape));
+                        if (reduce_op == "add" && num_outputs < 1024 * 128)
                         {
-                            // currently, reduction_split only supports add reduce_op
+                            // currently, reduction_split only supports add reduce_op in small output_shape
                             uint32_t reduction_loop_size = 1;
                             Shape reduce_flag(rank, 0);
                             for (auto a : reduce_axis)
@@ -340,6 +341,7 @@ if (thread_idx == 0) output0[block_idx] = val;
                                 }
                                 lu.block_end();
                                 lu << "idx" << last_r_idx << " <<= " << unroll_shift << ";\n"; */
+                                lu << "reduce_idx += idx" << last_r_idx << " * step;\n";
                                 lu << "for(; idx" << last_r_idx << " < idx_end; idx" << last_r_idx
                                    << "++)\n";
                                 lu.block_begin();

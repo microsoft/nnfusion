@@ -494,6 +494,16 @@ namespace nnfusion
                     m_graph_outputs.emplace_back(generic_gnode);
                 }
 
+                // Sort nGraph output nodes in the order of ONNX output nodes
+                std::vector<std::string> output_names;
+                for (const auto& output : onnx_graph_proto->output())
+                {
+                    output_names.push_back(output.name());
+                }
+                sort(m_graph_outputs.begin(), m_graph_outputs.end(), [&output_names](const std::shared_ptr<nnfusion::graph::GNode>& a, const std::shared_ptr<nnfusion::graph::GNode>& b) {
+                    return std::find(output_names.begin(), output_names.end(), a->get_name()) < std::find(output_names.begin(), output_names.end(), b->get_name());
+                });
+
                 m_graph->set_default_parameters();
                 m_graph->set_outputs(m_graph_outputs);
 

@@ -11,11 +11,8 @@ import onnx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--file', type=str, default='./frozen_graph.onnx', help='The file name of the frozen graph.')
-parser.add_argument('--optimized_model_filepath', type=str, default='', help='The file name of the optimized frozen graph.')
 parser.add_argument('--graph_optimization_level', type=str, default='ORT_ENABLE_ALL', help='ONNX Runtime graph optimization level.')
-parser.add_argument('--warmup', type=int, default=5, help='The number of warmup iterations.')
-parser.add_argument('--iters', type=int, default=100, help='The number of execution iterations.')
-parser.add_argument('--provider', type=str, default='', help='The backend provider.')
+parser.add_argument('--provider', type=str, default='CPUExecutionProvider', help='The backend provider.')
 parser.add_argument('--logger_severity', type=int, default=2, help='onnxruntime.set_default_logger_severity.')
 args = parser.parse_args()
 
@@ -58,7 +55,15 @@ def get_numpy(tensor):
     shape = tensor.shape
     return np.ones(shape, dtype=dtype)
 
-# print("Execution Device:", ort.get_device())
+model = onnx.load(args.file)
+node_name_dict = {}
+for node_id in range(len(model.graph.node)):
+    node_outputs = model.graph.node[node_id].output
+    for output_id in range(len(node_outputs)):
+        debug_tensor = onnx.helper.ValueInfoProto()
+        debug_tensor.name = node_outputs[output_id]
+        model.graph.output.append(debug_tensor)
+        node_name_dict.update({debug_tensor.name: model.graph.node[node_id].name+'_'+str(output_id)})
 
 print("Importing ONNX model into ONNX Runtime...")
 ort.set_default_logger_severity(args.logger_severity)
@@ -71,10 +76,8 @@ elif args.graph_optimization_level == 'ORT_ENABLE_BASIC':
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
 elif args.graph_optimization_level == 'ORT_ENABLE_EXTENDED':
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
-if args.optimized_model_filepath != '':
-    sess_options.optimized_model_filepath = args.optimized_model_filepath
 
-ort_session = ort.InferenceSession(args.file, sess_options)
+ort_session = ort.InferenceSession(model.SerializeToString(), sess_options)
 
 if args.provider != '':
     ort_session.set_providers([args.provider])
@@ -90,21 +93,15 @@ for tensor in inputs:
 outputs = ort_session.get_outputs()
 outputs_name = [item.name for item in outputs]
 
-for warmup in range(args.warmup):
+for step in range(1):
     outputs = ort_session.run(outputs_name, ort_inputs)
     for i in range(len(outputs)):
         out_flat = outputs[i].flat
         if (len(out_flat) > 0):
             max_len = min(10, len(out_flat))
             print(outputs_name[i])
-            print(out_flat[:max_len], "...(size=", len(out_flat), "end with", out_flat[-1], ")")
+            print(out_flat[:max_len], f"...(size = {len(out_flat)} end with {out_flat[-1]}, sum = {np.sum(out_flat)})")
             # print_offset = int(len(out_flat) / 3)
             # max_len = min(10, len(out_flat) - print_offset)
             # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
 
-print('>> Evalutating Benchmark ...')
-t_start = time.time()
-for step in range(args.iters):
-    ort_session.run(outputs_name, ort_inputs)
-t_end = time.time()
-print('>> Average time for each run: %.4f ms;' % ((t_end - t_start) * 1e3 / args.iters))

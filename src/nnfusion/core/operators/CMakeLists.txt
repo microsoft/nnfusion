@@ -42,9 +42,11 @@ set(SRC
     op_define/gelu.cpp
     op_define/greater_eq.cpp
     op_define/greater.cpp
+    op_define/if.cpp
     op_define/less_eq.cpp
     op_define/less.cpp
     op_define/log.cpp
+    op_define/loop.cpp
     op_define/lrn.cpp
     op_define/max_pool.cpp
     op_define/max.cpp

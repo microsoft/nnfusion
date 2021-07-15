@@ -38,6 +38,49 @@ namespace nnfusion
     {
         namespace onnx_import
         {
+            class GraphProtoConvert
+            {
+            public:
+                GraphProtoConvert(
+                    const onnx::GraphProto& graph_proto,
+                    const std::unordered_map<std::string, ConvertFuncMap>& domain_convert_func_map,
+                    const string& model_dir,
+                    const std::unordered_map<std::string, size_t>& dim_params = {},
+                    const NodeMap& _node_map = NodeMap(),
+                    bool flag_subgraph = false);
+
+                std::shared_ptr<nnfusion::graph::Graph> get_graph() { return m_graph; }
+                const onnx::GraphProto& get_onnx_proto_graph() const { return *onnx_graph_proto; }
+                NamedNodeVector convert_node(const onnx::NodeProto& node_proto);
+
+                /// \brief Access an operator object by its type name and domain name
+                /// The function will return the operator object if it exists, or report an error
+                /// in case of domain or operator absence.
+                /// \param name       type name of the operator object,
+                /// \param domain     domain name of the operator object.
+                /// \return Reference to the operator object.
+                const ConvertFunc& get_convert_func(const std::string& name,
+                                                    const std::string& domain) const;
+
+            private:
+                const onnx::GraphProto* onnx_graph_proto;
+
+                std::shared_ptr<nnfusion::graph::Graph> m_graph;
+
+                std::unordered_map<std::string, ConvertFuncMap> m_domain_convert_func_map;
+
+                NodeMap m_node_map;
+
+                // TODO: to be removed
+                std::set<std::string> m_output_names;
+
+                graph::GNodeVector m_graph_outputs;
+
+                std::unordered_map<std::string, size_t> m_dim_params;
+                std::string m_model_dir;
+
+                bool m_flag_subgraph;
+            };
             class GraphConvert
             {
             public:
@@ -66,16 +109,19 @@ namespace nnfusion
                     return onnx_model_proto->producer_version();
                 }
 
-                NamedNodeVector convert_node(const onnx::NodeProto& node_proto);
+                /// \brief Convert ONNX::GraphProto to nnfusion graph
+                /// \param graph_proto ONNX GraphProto
+                /// \param _node_map pre-provided node_map, empty by default
+                /// \return std::shared_ptr<nnfusion::graph::Graph>
+                std::shared_ptr<nnfusion::graph::Graph>
+                    convert_graph(const onnx::GraphProto& graph_proto,
+                                  const NodeMap& _node_map = NodeMap());
 
-                /// \brief Access an operator object by its type name and domain name
-                /// The function will return the operator object if it exists, or report an error
-                /// in case of domain or operator absence.
-                /// \param name       type name of the operator object,
-                /// \param domain     domain name of the operator object.
-                /// \return Reference to the operator object.
-                const ConvertFunc& get_convert_func(const std::string& name,
-                                                    const std::string& domain) const;
+                // /// \brief Construct complete GraphProtos for sub-graphs in control-flow nodes (e.g., If, Loop) by adding the missing information (i.e., inputs) of the GraphProto, which could be processed by GraphProtoConvert to get nnfusion graph
+                // /// \param graph_proto the graph_proto of the ONNX model
+                // /// \returns unordered_map<controlflow_node.name, onnx::GraphProto>
+                // std::unordered_map<std::string, onnx::GraphProto>
+                //     construct_controlflow_graphproto(const onnx::GraphProto& graph_proto);
 
                 /// \brief Check availability of operator base on NodeProto.
                 /// \return `true` if the operator is available, otherwise it returns `false`.
@@ -89,15 +135,17 @@ namespace nnfusion
 
                 std::unordered_map<std::string, ConvertFuncMap> m_domain_convert_func_map;
 
-                NodeMap m_node_map;
+                // std::unordered_map<std::string, onnx::GraphProto> m_controlflow_graphproto_map;
+
+                // NodeMap m_node_map;
 
                 // TODO: to be removed
-                std::set<std::string> m_output_names;
+                // std::set<std::string> m_output_names;
 
-                graph::GNodeVector m_graph_outputs;
+                // graph::GNodeVector m_graph_outputs;
 
                 std::unordered_map<std::string, size_t> m_dim_params;
-                std::string model_dir;
+                std::string m_model_dir;
             };
         } // namespace onnx_import
     }     // namespace frontend

@@ -45,10 +45,12 @@
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
 #include "op/identity.hpp"
+#include "op/if.hpp"
 #include "op/index_reduce.hpp"
 #include "op/layer_norm.hpp"
 #include "op/leaky_relu.hpp"
 #include "op/log_softmax.hpp"
+#include "op/loop.hpp"
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
 #include "op/memory_copy.hpp"
@@ -189,12 +191,17 @@ namespace nnfusion
                 REGISTER_OPERATOR("Greater", 1, TranslateBinaryOp<op::Greater>);
                 //REGISTER_OPERATOR("HardSigmoid", 1, hard_sigmoid);
                 REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
+                // REGISTER_OPERATOR("If", 1, TranslateIfOp);
+                REGISTER_OPERATOR(
+                    "If", 1, TranslateIdentityOp); // TODO(lingm): fix convert_func map
                 REGISTER_OPERATOR("LayerNormalization", 1, TranslateLayerNormalizationOp);
                 REGISTER_OPERATOR("LayerNormalizationGrad", 1, TranslateLayerNormalizationGradOp);
                 REGISTER_OPERATOR("LeakyRelu", 1, TranslateLeakyReluOp);
                 REGISTER_OPERATOR("Less", 1, TranslateBinaryOp<op::Less>);
                 REGISTER_OPERATOR("Log", 1, TranslateUnaryOp<op::Log>);
                 REGISTER_OPERATOR("LogSoftmax", 1, TranslateLogSoftmaxOp);
+                REGISTER_OPERATOR(
+                    "Loop", 1, TranslateIdentityOp); // TODO(lingm): fix convert_func map
                 //REGISTER_OPERATOR("LRN", 1, lrn);
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);

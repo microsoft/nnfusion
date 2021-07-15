@@ -160,6 +160,54 @@ namespace nnfusion
                     return __get_data<uint64_t>(tensor.uint64_data());
                 }
 
+                template <>
+                inline std::vector<char> get_data(const onnx::TensorProto& tensor)
+                {
+                    // NNFUSION_CHECK(tensor.has_raw_data()) << "Data type char only supports raw_data";
+                    // return __get_raw_data<char>(tensor.raw_data());
+
+                    // the following is for control-flow test
+                    if (tensor.has_raw_data())
+                    {
+                        return __get_raw_data<char>(tensor.raw_data());
+                    }
+                    // NNFUSION_CHECK(tensor.data_type() == onnx::TensorProto_DataType_INT32)
+                    //     << "invalid data type: "
+                    //     << onnx::TensorProto_DataType_Name(
+                    //            static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
+                    auto tmp = __get_data<int32_t>(tensor.int32_data());
+                    std::vector<char> ret;
+                    for (auto item : tmp)
+                    {
+                        ret.push_back((char)item);
+                    }
+                    return ret;
+                }
+
+                template <>
+                inline std::vector<bool> get_data(const onnx::TensorProto& tensor)
+                {
+                    // NNFUSION_CHECK(tensor.has_raw_data()) << "Data type boolean only supports raw_data";
+                    // return __get_raw_data<bool>(tensor.raw_data());
+
+                    // the following is for control-flow test
+                    if (tensor.has_raw_data())
+                    {
+                        return __get_raw_data<bool>(tensor.raw_data());
+                    }
+                    // NNFUSION_CHECK(tensor.data_type() == onnx::TensorProto_DataType_INT32)
+                    //     << "invalid data type: "
+                    //     << onnx::TensorProto_DataType_Name(
+                    //            static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
+                    auto tmp = __get_data<int32_t>(tensor.int32_data());
+                    std::vector<bool> ret;
+                    for (auto item : tmp)
+                    {
+                        ret.push_back((bool)item);
+                    }
+                    return ret;
+                }
+
                 /// \brief      Fill specified range with monotonic sequence.
                 ///
                 /// \param[in]  first            The iterator to the beginning of the range.
@@ -181,7 +229,7 @@ namespace nnfusion
                         *first = init_value;
                     }
                 }
-            }
+            } // namespace detail
 
             class Tensor;
             class Node;
@@ -321,6 +369,9 @@ namespace nnfusion
             Strides get_strides_helper(const Node& node,
                                        const std::string& name,
                                        const Shape& kernel_shape);
+
+            std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto);
+            onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto);
 
         } // namespace onnx_import
     }     // namespace frontend

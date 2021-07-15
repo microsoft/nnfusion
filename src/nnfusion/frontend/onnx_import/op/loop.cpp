@@ -247,9 +247,9 @@ namespace nnfusion
 
                     std::vector<nnfusion::PartialShape> output_shapes;
                     std::vector<nnfusion::element::Type> output_types;
-                    for (auto output : loop_body_graph_proto.output())
+                    for (size_t i = 1; i < loop_body_graph_proto.output().size(); i++)
                     {
-                        ValueInfo output_value_info(output, dim_params);
+                        ValueInfo output_value_info(loop_body_graph_proto.output()[i], dim_params);
                         output_shapes.push_back(output_value_info.get_shape());
                         output_types.push_back(output_value_info.get_element_type());
                     }

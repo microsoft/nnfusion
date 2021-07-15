@@ -48,7 +48,7 @@ void Loop::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
     NNFUSION_CHECK(cond_et == nnfusion::element::boolean)
         << "The condition tensor of the Loop operation mush be boolean.";
 
-    for (size_t i = 0; i < m_output_types.size(); i++)
+    for (size_t i = 0; i < gnode->get_output_size(); i++)
     {
         gnode->set_output_type_and_shape(i, m_output_types[i], m_output_shapes[i]);
     }

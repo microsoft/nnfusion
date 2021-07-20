@@ -61,6 +61,7 @@
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
+#include "op/scatter.hpp"
 #include "op/shape.hpp"
 #include "op/skip_layer_norm.hpp"
 #include "op/slice.hpp"
@@ -235,6 +236,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Relu", 1, TranslateUnaryOp<op::Relu>);
                 REGISTER_OPERATOR("Reshape", 1, TranslateReshapeOp);
                 REGISTER_OPERATOR("ReshapeGrad", 1, TranslateReshapeGradOp);
+                REGISTER_OPERATOR("ScatterND", 11, TranslateScatterNDOp);
                 //REGISTER_OPERATOR("Selu", 1, selu);
                 REGISTER_OPERATOR("Shape", 1, TranslateShapeOp);
                 REGISTER_OPERATOR("Sigmoid", 1, TranslateUnaryOp<op::Sigmoid>);

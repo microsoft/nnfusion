@@ -257,7 +257,8 @@ namespace nnfusion
                     auto loop_op =
                         std::make_shared<op::Loop>(loop_body_graph, output_shapes, output_types);
                     loop_op->set_name(node_proto.name());
-                    auto loop_gnode = m_graph->add_node_and_edge(loop_op, input_indexes);
+                    auto loop_gnode = m_graph->add_node_and_edge(
+                        loop_op, input_indexes, /* output_size */ node_proto.output_size());
 
                     NamedNodeVector ret;
                     for (size_t i = 0; i < node_proto.output_size(); i++)

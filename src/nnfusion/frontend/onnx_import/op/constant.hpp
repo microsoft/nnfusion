@@ -48,7 +48,8 @@ namespace nnfusion
                     static const std::map<element::Type,
                                           std::function<std::shared_ptr<op::Constant>(
                                               const element::Type&, const Tensor&)>>
-                        the_map = {{element::f32, __make_constant_op<float>},
+                        the_map = {{element::boolean, __make_constant_op<char>},
+                                   {element::f32, __make_constant_op<float>},
                                    {element::f64, __make_constant_op<double>},
                                    {element::i32, __make_constant_op<int32_t>},
                                    {element::i64, __make_constant_op<int64_t>},

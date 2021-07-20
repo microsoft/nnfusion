@@ -372,15 +372,15 @@ namespace nnfusion
                     }
                 }
 
-                if (localOpConfig.f_translate_v2 != nullptr && !m_expression.size())
-                {
-                    m_expression = localOpConfig.f_translate_v2(gnode);
-                }
+                // if (localOpConfig.f_translate_v2 != nullptr && !m_expression.size())
+                // {
+                //     m_expression = localOpConfig.f_translate_v2(gnode);
+                // }
 
-                if (localOpConfig.f_translate != nullptr && !m_expression.size())
-                {
-                    m_expression = localOpConfig.f_translate(gnode);
-                }
+                // if (localOpConfig.f_translate != nullptr && !m_expression.size())
+                // {
+                //     m_expression = localOpConfig.f_translate(gnode);
+                // }
             }
 
             virtual void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override

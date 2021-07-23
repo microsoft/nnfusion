@@ -92,10 +92,7 @@ namespace
 
 bool HLSLRequiredPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
-    if (FLAGS_fdefault_device != "HLSL")
-    {
-        return true;
-    }
+    return true;
 
     map<element::Type, element::Type> type_mapping = {{element::i64, element::i32},
                                                       {element::u64, element::u32}};

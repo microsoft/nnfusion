@@ -12,7 +12,7 @@ namespace nnfusion
         namespace graph
         {
             // This pass run some necessary change for HLSL codegen, including
-            // 1. Convert 64bit integer to 32bit
+            // 1. [Disabled, HLSL already support 64bit integer] Convert 64bit integer to 32bit
             class HLSLRequiredPass : public GraphPassBase
             {
             public:

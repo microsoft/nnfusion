@@ -170,6 +170,14 @@ namespace {
             return def;
         return source.substr(idx, tail - idx);
     }
+
+    static std::string dos2unix(const string& input)
+    {
+        std::string res = input;
+        std::string::iterator end_pos = std::remove(res.begin(), res.end(), '\r');
+        res.erase(end_pos, res.end());
+        return res;
+    }
 }
 
 
@@ -236,6 +244,10 @@ void* dxShaderLoad_v2(const char* shader_src)
             return nullptr;
         std::string _((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         source = std::move(_);
+        if (source.find('\r') != std::string::npos)
+        {
+            source = dos2unix(source);
+        }
     }
 
     dx_shader_t* handle = new dx_shader_t;
@@ -379,6 +391,10 @@ void* dxModuleLoad(const char* module_src)
             return nullptr;
         std::string _((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         source = std::move(_);
+        if (source.find('\r') != std::string::npos)
+        {
+            source = dos2unix(source);
+        }
         module_src = source.c_str();
     }
 

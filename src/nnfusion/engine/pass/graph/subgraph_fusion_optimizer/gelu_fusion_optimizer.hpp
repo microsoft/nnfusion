@@ -11,10 +11,10 @@ namespace nnfusion
     {
         namespace graph
         {
-            class ConvElemFusionOptimizer : public SubGraphFusionOptimizer
+            class GeluFusionOptimizer : public SubGraphFusionOptimizer
             {
             public:
-                ConvElemFusionOptimizer(std::shared_ptr<nnfusion::graph::Graph> graph)
+                GeluFusionOptimizer(std::shared_ptr<nnfusion::graph::Graph> graph)
                     : SubGraphFusionOptimizer(graph)
 
                 {

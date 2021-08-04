@@ -7,16 +7,18 @@ using namespace nnfusion::pass::graph;
 bool SubGraphFusionOptimizer::Optimize()
 {
     subgraph_match = std::make_shared<SubGraphMatch>(graph);
+    // NNFUSION_LOG(INFO) << "subgraph fusion begin-----------------";
     create_subgraphs();
+    // NNFUSION_LOG(INFO) << "create subgraph done-----------------";
     match_and_fuse_subgraph();
-
+    // NNFUSION_LOG(INFO) << "match_and_fuse_subgraph done-----------------";
     return true;
 }
 
-bool SubGraphFusionOptimizer::create_subgraphs()
-{
-    return true;
-}
+// bool SubGraphFusionOptimizer::create_subgraphs()
+// {
+//     return true;
+// }
 
 bool SubGraphFusionOptimizer::match_and_fuse_subgraph()
 {
@@ -26,7 +28,7 @@ bool SubGraphFusionOptimizer::match_and_fuse_subgraph()
         if (subgraph_match->Match(subgraph))
         {
             auto records = subgraph_match->get_matched_subgraph();
-            NNFUSION_LOG(INFO) << records.size();
+            NNFUSION_LOG(INFO) << "find subgraph: " << records.size();
             for (auto sr : records)
             {
                 fuse_subgraph(sr);
@@ -37,10 +39,10 @@ bool SubGraphFusionOptimizer::match_and_fuse_subgraph()
     return true;
 }
 
-bool SubGraphFusionOptimizer::fuse_subgraph(SubGraphRecord::Pointer subgraph_record)
-{
-    return true;
-}
+// bool SubGraphFusionOptimizer::fuse_subgraph(SubGraphRecord::Pointer subgraph_record)
+// {
+//     return true;
+// }
 
 bool SubGraphFusionOptimizer::RemoveNodes(std::unordered_set<std::shared_ptr<GNode>>& nodes,
                                           std::shared_ptr<GNode> new_node)

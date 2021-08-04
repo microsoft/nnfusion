@@ -4,7 +4,6 @@
 
 add_subdirectory(blockfusion)
 add_subdirectory(autodiff)
-add_subdirectory(bertfusion_optimizer)
 add_subdirectory(subgraph_fusion_optimizer)
 
 set(SRC
@@ -18,7 +17,6 @@ set(SRC
     kernel_tuning.cpp
     kernel_selection.cpp
     blockfusion_pass.cpp
-    bertfusion_pass.cpp
     assign_async_info_pass.cpp
     kernel_profiling_pass.cpp
     runtime_const_folding_pass.cpp
@@ -39,6 +37,7 @@ target_include_directories(nnfusion_engine_pass_graph SYSTEM PUBLIC
 )
 target_compile_options(nnfusion_engine_pass_graph PRIVATE "-fPIC")
 
-target_link_libraries(nnfusion_engine_pass_graph PRIVATE nnfusion_common nnfusion_engine_pass_graph_blockfusion nnfusion_engine_pass_graph_bertfusion nnfusion_engine_pass_graph_subgraph_fusion
+target_link_libraries(nnfusion_engine_pass_graph PRIVATE nnfusion_common nnfusion_engine_pass_graph_blockfusion nnfusion_engine_pass_graph_subgraph_fusion
+
 gflags ${CURL_LIBRARIES} ${WholeArchiveFlag} nnfusion_engine_pass_graph_autodiff ${NoWholeArchiveFlag}
 )

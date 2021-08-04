@@ -40,6 +40,10 @@ bool SubGraphMatch::FindSubGraph(SubGraphRecord::Pointer subgraph_record,
             {
                 return true; // return true when we find the first subgraph
             }
+            // else if (!subgraph_record->is_valid())
+            // {
+            //     NNFUSION_LOG(INFO) << "subgraph invalid-----------";
+            // }
         }
     }
 
@@ -119,9 +123,13 @@ void SubGraphMatch::SearchPattern(std::shared_ptr<GNode> cur_node,
     {
         PatternRecord::Pointer pr = std::make_shared<PatternRecord>(pattern);
         pr->nodes = pattern_nodes;
-        pr->pattern_description_idx = description_idx;
+        pr->set_pattern_description_idx(description_idx);
         if (pr->is_valid())
             pattern_records.push_back(pr);
+        // else
+        // {
+        //     NNFUSION_LOG(INFO) << "pattern invalid: ";
+        // }
     }
     else
     {
@@ -147,7 +155,7 @@ void SubGraphMatch::SearchPattern(std::shared_ptr<GNode> cur_node,
                 sub_node = edge->get_dst();
             }
 
-            if (sub_node->get_op_type() == description_ops[idx])
+            if (sub_node->get_op_type() == description_ops[idx] || description_ops[idx] == "AnyOp")
             {
                 // NNFUSION_LOG(INFO) << sub_node->get_op_type() << " : " << description_ops[idx];
                 pattern_nodes.push_back(sub_node);

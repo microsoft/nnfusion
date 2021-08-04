@@ -5,6 +5,12 @@
 set(SRC
    subgraph_fusion_optimizer.cpp
    conv_elementwise_fusion_optimizer.cpp
+   embed_layernorm_fusion_optimizer.cpp
+   attention_fusion_optimizer.cpp
+   gelu_fusion_optimizer.cpp
+   layernorm_fusion_optimizer.cpp
+   matmuladd_fusion_optimizer.cpp
+   skiplayernorm_fusion_optimizer.cpp
   
 )
 

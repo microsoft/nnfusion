@@ -42,6 +42,7 @@ namespace nnfusion
         // the matched pattern found in the graph
         struct PatternRecord
         {
+        public:
             PatternRecord(Pattern::Pointer p)
                 : pattern(p)
             {
@@ -77,10 +78,14 @@ namespace nnfusion
              pair.second is used to indentify which description pair.first matches.
             */
             std::vector<std::shared_ptr<GNode>> nodes;
-            size_t pattern_description_idx;
+            void set_pattern_description_idx(size_t idx) { pattern_description_idx = idx; }
+            size_t get_pattern_description_idx() const { return pattern_description_idx; }
             // std::vector<std::pair<std::vector<std::shared_ptr<GNode>>, size_t>> nodes;
             Pattern::Pointer pattern;
             using Pointer = std::shared_ptr<PatternRecord>;
+
+        private:
+            size_t pattern_description_idx;
         };
 
         /*
@@ -97,7 +102,7 @@ namespace nnfusion
                   G               
 
         , we can description it as pattern(A->B->D->E->G) with starting node A 
-        in non-reverse order followed by pattern(F->C) in reverse order.                                            
+        in non-reverse order followed by pattern(G->F->C) in reverse order.                                            
         */
         struct SubGraph
         {
@@ -110,6 +115,7 @@ namespace nnfusion
 
         struct SubGraphRecord
         {
+        public:
             SubGraphRecord(std::shared_ptr<GNode> sn, SubGraph::Pointer sg)
                 : starting_node(sn)
                 , subgraph(sg)
@@ -139,10 +145,14 @@ namespace nnfusion
                 return true;
             }
 
-            std::shared_ptr<GNode> starting_node;
+            void set_starting_node(std::shared_ptr<GNode> node) { starting_node = node; }
+            const std::shared_ptr<GNode>& get_starting_node() const { return starting_node; }
             std::vector<PatternRecord::Pointer> pattern_records;
             SubGraph::Pointer subgraph;
             using Pointer = std::shared_ptr<SubGraphRecord>;
+
+        private:
+            std::shared_ptr<GNode> starting_node;
         };
 
         class SubGraphMatch

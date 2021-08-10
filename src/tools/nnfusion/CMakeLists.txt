@@ -26,6 +26,7 @@ target_link_libraries(nnfusion nnfusion_backend nnfusion_engine_pass_graph nnfus
 add_custom_command(
     TARGET nnfusion
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/tools/nnfusion/templates ${CMAKE_BINARY_DIR}/src/tools/nnfusion/templates
+    POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/models/pytorch2onnx/ort_run_frozen.py ${CMAKE_BINARY_DIR}/src/tools/nnfusion/templates/onnx/ort_run_frozen.py
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/thirdparty/eigen ${CMAKE_BINARY_DIR}/src/tools/nnfusion/eigen
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/thirdparty/threadpool ${CMAKE_BINARY_DIR}/src/tools/nnfusion/threadpool
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/thirdparty/mlas ${CMAKE_BINARY_DIR}/src/tools/nnfusion/mlas

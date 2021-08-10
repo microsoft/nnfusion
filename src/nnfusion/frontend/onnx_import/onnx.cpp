@@ -76,13 +76,10 @@ namespace nnfusion
                 cmd += dim_params_str;
             }
             int sys_ret = system(cmd.c_str());
-            bool opt_success = false;
             std::ifstream opt_fin(optimized_filename.c_str());
-            if (sys_ret == 0 && opt_fin.good())
+            if (sys_ret == 0 && opt_fin.is_open())
             {
                 m_path = optimized_filename;
-                opt_fin.close();
-                opt_success = true;
             }
             else
             {
@@ -102,8 +99,7 @@ namespace nnfusion
 
             auto graph = load_onnx_model(ifs, model_dir, dim_params);
 
-            ifs.close();
-            if (opt_success)
+            if (opt_fin.is_open())
             {
                 remove(optimized_filename.c_str());
             }

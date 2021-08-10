@@ -84,8 +84,9 @@ namespace nnfusion
             }
             else
             {
-                NNFUSION_LOG(ERROR) << "Failed to optimize ONNX Graph with external tool, please "
-                                       "check error messages reported by the tool, fallback";
+                NNFUSION_LOG(NNFUSION_WARNING)
+                    << "Failed to optimize ONNX Graph with external tool, please "
+                       "check error messages reported by the tool, fallback";
             }
 
             std::ifstream ifs{m_path, std::ios::in | std::ios::binary};

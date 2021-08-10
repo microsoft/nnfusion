@@ -8,10 +8,15 @@ import os
 import sys
 import time
 import onnx
+try:
+    from yaml import safe_load as load_func
+except ImportError:
+    from json import loads as load_func
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--file', type=str, default='./frozen_graph.onnx', help='The file name of the frozen graph.')
 parser.add_argument('--graph_optimization_level', type=str, default='ORT_ENABLE_ALL', help='ONNX Runtime graph optimization level.')
+parser.add_argument('--symbolic_dims', type=load_func, default={}, help='The size of symbolic dimensions, provided by \'{"dim1_name": dim1, "dim2_name": dim2}\'')
 parser.add_argument('--provider', type=str, default='CPUExecutionProvider', help='The backend provider.')
 parser.add_argument('--logger_severity', type=int, default=2, help='onnxruntime.set_default_logger_severity.')
 args = parser.parse_args()
@@ -76,6 +81,9 @@ elif args.graph_optimization_level == 'ORT_ENABLE_BASIC':
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
 elif args.graph_optimization_level == 'ORT_ENABLE_EXTENDED':
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
+
+for k, v in args.symbolic_dims.items():
+    sess_options.add_free_dimension_override_by_name(k, int(v))
 
 ort_session = ort.InferenceSession(model.SerializeToString(), sess_options)
 

@@ -76,11 +76,13 @@ namespace nnfusion
                 cmd += dim_params_str;
             }
             int sys_ret = system(cmd.c_str());
+            bool opt_success = false;
             std::ifstream opt_fin(optimized_filename.c_str());
             if (sys_ret == 0 && opt_fin.good())
             {
                 m_path = optimized_filename;
                 opt_fin.close();
+                opt_success = true;
             }
             else
             {
@@ -97,7 +99,16 @@ namespace nnfusion
             {
                 model_dir = path.substr(0, pos);
             }
-            return load_onnx_model(ifs, model_dir, dim_params);
+
+            auto graph = load_onnx_model(ifs, model_dir, dim_params);
+
+            ifs.close();
+            if (opt_success)
+            {
+                remove(optimized_filename.c_str());
+            }
+
+            return graph;
         }
     } // namespace frontend
 } // namespace nnfusion

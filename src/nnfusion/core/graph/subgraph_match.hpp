@@ -70,6 +70,16 @@ namespace nnfusion
 
                 return true;
             }
+            std::string get_symbol()
+            {
+                std::string identity;
+                for (auto node : nodes)
+                {
+                    auto id = node->get_id();
+                    identity += std::to_string(id) + "_";
+                }
+                return identity;
+            }
             /*
              pair< pattern nodes, pattern index>
              Pattern.descriptions may contain several descriptions with equal logic meaning,

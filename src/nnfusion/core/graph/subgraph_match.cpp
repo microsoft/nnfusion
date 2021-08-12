@@ -57,13 +57,14 @@ bool SubGraphMatch::SearchSubGraph(SubGraphRecord::Pointer subgraph_record,
 {
     std::stack<PatternRecord::Pointer> s;
     std::vector<PatternRecord::Pointer> matched_pattern_records;
-
+    std::unordered_set<std::string> pr_symbols;
     s.push(cur_pr);
     while (!s.empty())
     {
         cur_pr = s.top();
         s.pop();
         subgraph_record->pattern_records.push_back(cur_pr);
+        pr_symbols.insert(cur_pr->get_symbol());
 
         if (idx == subgraph->patterns.size() &&
             subgraph_record->pattern_records.size() == subgraph->patterns.size())
@@ -74,17 +75,29 @@ bool SubGraphMatch::SearchSubGraph(SubGraphRecord::Pointer subgraph_record,
         {
             auto start = cur_pr->get_next_start_node();
             auto next_pattern = subgraph->patterns[idx];
+            // to ensure that subgraoh_record->pattern_records does not contain
+            // the same record.
+            bool is_valid = false;
             if (FindPattern(next_pattern, matched_pattern_records, start))
             {
                 for (auto pr : matched_pattern_records)
                 {
-                    s.push(pr);
+                    auto symbol = pr->get_symbol();
+                    if (pr_symbols.find(symbol) == pr_symbols.end())
+                    {
+                        s.push(pr);
+                        is_valid = true;
+                    }
                 }
+
                 idx++;
             }
-            else
+
+            if (!is_valid)
             {
+                auto back_pr = subgraph_record->pattern_records.back();
                 subgraph_record->pattern_records.pop_back();
+                pr_symbols.erase(back_pr->get_symbol());
             }
         }
     }

@@ -13,78 +13,15 @@ int ElementWiseFused::unique_func_id = 0;
 ElementWiseFused::ElementWiseFused(shared_ptr<KernelContext> ctx)
     : BlockCudaEmitter(ctx)
 {
-    NNFUSION_CHECK_NOT_NULLPTR(FuseContext());
+    m_gnode = static_pointer_cast<graph::FusedGNode>(ctx->gnode);
+    NNFUSION_CHECK_NOT_NULLPTR(m_gnode);
 }
 
-std::shared_ptr<KernelContext> ElementWiseFused::FuseContext()
+std::pair<std::string, shared_ptr<LanguageUnit>> get_op_kernel(shared_ptr<graph::OpContext> ctx)
 {
-    std::shared_ptr<KernelContext> ctx = this->m_context;
-    // output
-    std::unordered_map<std::string, size_t> node_outputs;
-    std::unordered_map<std::string, shared_ptr<nnfusion::descriptor::Tensor>> tensors;
-
-    for (auto kernel_emitter : ctx->kernels)
-    {
-        auto gnode = kernel_emitter->m_context->gnode;
-        for (size_t i = 0; i < gnode->get_input_size(); i++)
-        {
-            auto tv = gnode->get_input_tensor_ptr(i);
-            NNFUSION_CHECK_NOT_NULLPTR(tv);
-            auto iter = node_outputs.find(tv->get_name());
-            if (iter == node_outputs.end())
-            {
-                ctx->inputs.push_back(tv);
-                ctx->input_names.push_back(tv->get_name());
-            }
-            else
-            {
-                NNFUSION_CHECK(iter->second > 0);
-                node_outputs[tv->get_name()] = node_outputs[tv->get_name()] - 1;
-            }
-        }
-
-        for (size_t i = 0; i < gnode->get_output_size(); i++)
-        {
-            shared_ptr<descriptor::Tensor> tv = gnode->get_output_tensor_ptr(i);
-            NNFUSION_CHECK_NOT_NULLPTR(tv);
-            NNFUSION_CHECK(node_outputs.find(tv->get_name()) == node_outputs.end());
-            NNFUSION_CHECK(gnode->get_output_users(i).size() > 0)
-                << gnode->get_name() << " " << i << "th output has "
-                << gnode->get_output_users(i).size() << " users.";
-            node_outputs[tv->get_name()] = gnode->get_output_users(i).size();
-            tensors.insert(std::make_pair(tv->get_name(), tv));
-        }
-    }
-
-    for (auto& iter : node_outputs)
-    {
-        if (iter.second > 0)
-        {
-            ctx->output_names.push_back(iter.first);
-            auto tw = tensors.find(iter.first);
-            NNFUSION_CHECK(tw != tensors.end());
-            ctx->outputs.push_back(tw->second);
-        }
-    }
-
-    for (auto arg : ctx->inputs)
-    {
-        ctx->dtypes.push_back(arg->get_element_type().c_type_string());
-    }
-
-    for (auto out : ctx->outputs)
-    {
-        ctx->dtypes.push_back(out->get_element_type().c_type_string());
-    }
-
-    return ctx;
-}
-
-std::pair<std::string, shared_ptr<LanguageUnit>> get_op_kernel(shared_ptr<KernelContext> ctx)
-{
-    auto iter = CudaElementOpMap.find(ctx->gnode->get_op_type());
+    auto iter = CudaElementOpMap.find(ctx->op->get_op_type());
     NNFUSION_CHECK(iter != CudaElementOpMap.end()) << "unable find op type: "
-                                                   << ctx->gnode->get_op_type();
+                                                   << ctx->op->get_op_type();
     std::string op = iter->second.op;
     shared_ptr<LanguageUnit> kernel = nullptr;
 
@@ -145,11 +82,10 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         lu << "if (tid >= " << bound << ") return;\n";
     }
 
-    for (auto kernel_emitter : m_context->kernels)
+    for (auto op_ctx : m_gnode->get_op_contexts())
     {
-        auto gnode = kernel_emitter->m_context->gnode;
-        auto& out_tw = kernel_emitter->m_context->outputs[0];
-        if (auto bc = std::dynamic_pointer_cast<nnfusion::op::Broadcast>(gnode->get_op_ptr()))
+        auto& out_tw = op_ctx->outputs[0];
+        if (auto bc = std::dynamic_pointer_cast<nnfusion::op::Broadcast>(op_ctx->op))
         {
             std::string index = "";
             if (bc->is_inner_broadcast())
@@ -162,17 +98,17 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
                 index += "[tid % " + std::to_string(bc->get_outer_broadcast_size()) + "]";
             }
             local_tensors[out_tw->get_name()] = "temp" + std::to_string(temp_tensor_id++);
-            auto& in_tw = kernel_emitter->m_context->inputs[0];
+            auto& in_tw = op_ctx->inputs[0];
             NNFUSION_CHECK(in_args.count(in_tw->get_name()) > 0);
 
             lu << out_tw->get_element_type().c_type_string() << " "
                << local_tensors[out_tw->get_name()] << " = " << in_args[in_tw->get_name()] << index
                << ";\n";
         }
-        else if (auto rs = std::dynamic_pointer_cast<nnfusion::op::Reshape>(gnode->get_op_ptr()))
+        else if (auto rs = std::dynamic_pointer_cast<nnfusion::op::Reshape>(op_ctx->op))
         {
             NNFUSION_CHECK(rs->get_is_transpose() == false);
-            auto& in_tw = kernel_emitter->m_context->inputs[0];
+            auto& in_tw = op_ctx->inputs[0];
             if (in_args.count(in_tw->get_name()) > 0)
             {
                 in_args[out_tw->get_name()] = in_args[in_tw->get_name()];
@@ -185,63 +121,27 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         }
         else
         {
-            auto cuda_kernel = std::dynamic_pointer_cast<CudaElementwiseEmitter>(kernel_emitter);
-
-            if (!cuda_kernel)
+            if (CudaElementOpMap.find(op_ctx->op->get_op_type()) == CudaElementOpMap.end())
             {
-                bool check_flag = false;
-
-                auto ir_kernel =
-                    std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel_emitter);
-                if (ir_kernel &&
-                    CudaElementOpMap.find(ir_kernel->m_context->gnode->get_op_type()) !=
-                        CudaElementOpMap.end())
-                {
-                    check_flag = true;
-                }
-
-                auto cache_kernel = std::dynamic_pointer_cast<CacheCudaEmitter>(kernel_emitter);
-                if (cache_kernel &&
-                    CudaElementOpMap.find(cache_kernel->m_context->gnode->get_op_type()) !=
-                        CudaElementOpMap.end())
-                {
-                    check_flag = true;
-                }
-
-                auto cache_block_kernel =
-                    std::dynamic_pointer_cast<CacheBlockCudaEmitter>(kernel_emitter);
-                if (cache_block_kernel &&
-                    CudaElementOpMap.find(cache_block_kernel->m_context->gnode->get_op_type()) !=
-                        CudaElementOpMap.end())
-                {
-                    check_flag = true;
-                }
-
-                if (!check_flag)
-                {
-                    NNFUSION_CHECK_FAIL() << "Illegal element-wise kernel: "
-                                          << kernel_emitter->m_context->gnode->get_op_type();
-                }
+                NNFUSION_CHECK_FAIL() << "Illegal element-wise kernel: "
+                                      << op_ctx->op->get_op_type();
             }
 
             std::string invoke_func;
-            if (kernel_emitter->m_context->gnode->get_op_type() == "Convert")
+            if (op_ctx->op->get_op_type() == "Convert")
             {
                 lu.require(declaration::cuda_convert_template);
                 lu.require(header::cublas);
-                invoke_func =
-                    "convert<" +
-                    kernel_emitter->m_context->inputs[0]->get_element_type().c_type_string() +
-                    ", " +
-                    kernel_emitter->m_context->outputs[0]->get_element_type().c_type_string() + ">";
+                invoke_func = "convert<" + op_ctx->inputs[0]->get_element_type().c_type_string() +
+                              ", " + op_ctx->outputs[0]->get_element_type().c_type_string() + ">";
             }
             else
             {
-                auto op_kernel = get_op_kernel(kernel_emitter->m_context);
+                auto op_kernel = get_op_kernel(op_ctx);
                 if (op_kernel.second != nullptr)
                 {
                     lu.require(op_kernel.second);
-                    if (kernel_emitter->m_context->gnode->get_op_type() == "Gelu")
+                    if (op_ctx->op->get_op_type() == "Gelu")
                     {
                         op_kernel.second->require(declaration::math_Gelu);
                         op_kernel.second->require(header::cublas);
@@ -251,9 +151,9 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
             }
             local_tensors[out_tw->get_name()] = "temp" + std::to_string(temp_tensor_id++);
             std::vector<std::string> input_args;
-            for (int i = 0; i < kernel_emitter->m_context->inputs.size(); i++)
+            for (int i = 0; i < op_ctx->inputs.size(); i++)
             {
-                auto& in_tw = kernel_emitter->m_context->inputs[i];
+                auto& in_tw = op_ctx->inputs[i];
                 if (in_args.count(in_tw->get_name()) > 0)
                 {
                     input_args.push_back(in_args[in_tw->get_name()] + "[tid]");
@@ -279,7 +179,8 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         }
         else
         {
-            NNFUSION_CHECK(in_args.count(pair.first) > 0);
+            NNFUSION_CHECK(in_args.count(pair.first) > 0) << m_context->gnode->get_name() << " "
+                                                          << lu.get_code() << " " << pair.first;
             lu << in_args[pair.first] << "[tid];\n";
         }
     }
@@ -302,9 +203,9 @@ LanguageUnit_p ElementWiseFused::emit_function_name()
     auto& lu = *_lu;
 
     std::vector<std::string> names;
-    for (auto kernel : m_context->kernels)
+    for (auto ctx : m_gnode->get_op_contexts())
     {
-        names.push_back(kernel->m_context->gnode->get_op_type());
+        names.push_back(ctx->op->get_op_type());
     }
 
     lu << "FusedKernel_" << join(m_context->dtypes, "_") << "_" << m_kernel_type << "_"
@@ -339,10 +240,9 @@ LanguageUnit_p ElementWiseFused::emit_comments()
     }
 
     lu << "// Fused functions:\n";
-    for (auto kernel : m_context->kernels)
+    for (auto ctx : m_gnode->get_op_contexts())
     {
-        lu << "// " << kernel->get_or_emit_source()->name_unit->get_code()
-           << kernel->get_or_emit_source()->call_unit->get_code();
+        lu << "// " << ctx->op->get_op_type() << ", " << ctx->op->get_name() << "\n";
     }
 
     return _lu;

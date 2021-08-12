@@ -8,7 +8,7 @@
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "nnfusion/core/operators/op_define/broadcast.hpp"
-#include "nnfusion/core/operators/op_define/noop.hpp"
+#include "nnfusion/core/operators/op_define/fused.hpp"
 #include "nnfusion/core/operators/op_define/reshape.hpp"
 #include "nnfusion/core/operators/util/elementwise_arithmetic.hpp"
 
@@ -97,9 +97,6 @@ public:
                 if (fusion_level > 1)
                 {
                     FuseReshapeAndBroadcast(fuse_groups);
-                    // after fuse reshape and broadcast, there might be new node added without kernel selected
-                    auto kernel_selector = DefaultKernelSelector();
-                    kernel_selector.run_on_graph(m_graph);
                 }
                 if (fusion_level > 2)
                 {
@@ -212,8 +209,8 @@ private:
         std::unordered_map<string, std::shared_ptr<FuseGroup>> dev_group;
         for (auto node : m_graph->get_ordered_ops())
         {
-            auto n_device_type = (*node)["DeviceType"].as<NNFusion_DeviceType>();
-            auto n_device_id = (*node)["DeviceID"].as<int>();
+            // auto n_device_type = (*node)["DeviceType"].as<NNFusion_DeviceType>();
+            // auto n_device_id = (*node)["DeviceID"].as<int>();
             size_t id = node->get_id();
             m_nodes[id] = std::make_shared<TaggedNode>();
             m_nodes[id]->node = node;
@@ -475,14 +472,9 @@ private:
                                         << "too many new nodes created, try increase the "
                                            "empty_node_ids.";
                                     dup_bc_node->copy_tags_from(*input_node);
-                                    // need to reselect kernel for new added broadcast node
-                                    dup_bc_node->Del("Kernel_Selection_Result");
 
                                     m_graph->add_edge(
                                         dup_bc_node, 0, n_node, in_edge->get_dst_input());
-                                    // Need to also reselect n_node's kernel, as the input tensor in its KernelContext has changed.
-                                    // TODO: in future, we might need to change the input/output in KernelContext to be obtained dynamiclly
-                                    n_node->Del("Kernel_Selection_Result");
                                     m_graph->remove_edge(in_edge);
 
                                     auto bc_tn = std::make_shared<TaggedNode>();
@@ -620,14 +612,13 @@ private:
                 auto tn = m_nodes[id];
                 if (id >= ELEM_GROUP_NODEID && tn->elem_group && tn->elem_group->nodes.size() > 1)
                 {
-                    // NNFUSION_LOG(INFO) << DebugStringFuseGroup(tn->elem_group);
                     std::vector<std::shared_ptr<KernelEmitter>> block_kernels;
+                    std::unordered_set<shared_ptr<GNode>> fusing_nodes;
                     bool all_kernel_emitted = true;
                     NNFusion_DeviceType k_device_type;
                     NNFusion_DeviceType n_device_type;
                     int n_device_id;
 
-                    // find and check whether all kernels are emitted
                     for (auto elem_id : tn->elem_group->nodes)
                     {
                         NNFUSION_CHECK(elem_id < m_nodes.size());
@@ -635,129 +626,28 @@ private:
                         NNFUSION_CHECK_NOT_NULLPTR(node);
                         n_device_type = (*node)["DeviceType"].as<NNFusion_DeviceType>();
                         n_device_id = (*node)["DeviceID"].as<int>();
-
-                        auto emitted_kernel =
-                            (*node)["Kernel_Selection_Result"]
-                                .as<pair<NNFusion_DeviceType, KernelEmitter::Pointer>>();
-                        KernelEmitter::Pointer kernel = nullptr;
-
-                        if (!emitted_kernel.second->is_emitted())
-                        {
-                            NNFUSION_LOG(NNFUSION_WARNING)
-                                << "Kernel should be emitted before this pass:" << node->get_name();
-                            all_kernel_emitted = false;
-                            break;
-                        }
-                        else
-                        {
-                            kernel = emitted_kernel.second;
-                            k_device_type = emitted_kernel.first;
-                            block_kernels.push_back(kernel);
-                        }
+                        fusing_nodes.insert(node);
                     }
-                    if (all_kernel_emitted)
                     {
-                        shared_ptr<const KernelRegistration> kernel_reg;
-                        if (n_device_type != GENERIC_CPU)
-                        {
-                            kernel_reg = KernelRegistry::Global()->FindKernelRegistration(
-                                "ElementWiseFused", CUDA_GPU, element::f32);
-                        }
-                        else
-                        {
-                            kernel_reg = KernelRegistry::Global()->FindKernelRegistration(
-                                "ElementwiseFused", GENERIC_CPU, element::f32);
-                        }
-                        NNFUSION_CHECK_NOT_NULLPTR(kernel_reg);
-                        auto ctx = std::make_shared<KernelContext>();
-                        ctx->kernels = block_kernels;
-                        auto kernel = kernel_reg->m_factory(ctx);
-                        kernel->get_or_emit_source();
+                        auto fused_op = std::make_shared<nnfusion::op::Fused>("fused_kernel",
+                                                                              "ElementWiseFused");
+                        auto fused_node = std::make_shared<FusedGNode>(fused_op);
+                        fused_node->build_fused_node(fusing_nodes, m_graph, true);
+                        m_graph->add_node(fused_node);
 
-                        //auto fused_node = std::make_shared<GNode>();
-                        auto fused_op = std::make_shared<nnfusion::op::NoOp>("fused_kernel");
-                        GNodeVector empty_inputs;
-                        auto fused_node = std::make_shared<GNode>(fused_op, empty_inputs);
-                        ctx->gnode = fused_node;
-
-                        (*fused_node)["Kernel_Selection_Result"] =
-                            std::make_pair(k_device_type, kernel);
                         NNFUSION_CHECK(n_device_type != UNKNOWN);
                         NNFUSION_CHECK(n_device_id != -1);
                         (*fused_node)["DeviceType"] = n_device_type;
                         (*fused_node)["DeviceID"] = n_device_id;
 
-                        // replace original nodes with the fused node on graph
-                        m_graph->add_node(fused_node);
-                        int next_input_id = 0;
-                        int next_output_id = 0;
-                        std::unordered_set<std::shared_ptr<GNode>> internal_nodes;
-
-                        for (auto elem_id : tn->elem_group->nodes)
-                        {
-                            auto node = m_nodes[elem_id]->node;
-                            internal_nodes.insert(node);
-                        }
-
-                        for (auto elem_id : tn->elem_group->nodes)
-                        {
-                            auto node = m_nodes[elem_id]->node;
-                            for (const auto& in_edge : node->get_in_edges())
-                            {
-                                if (internal_nodes.find(in_edge->get_src()) == internal_nodes.end())
-                                {
-                                    auto input_id = in_edge->is_control_edge() ? Graph::kControlSlot
-                                                                               : next_input_id++;
-                                    if (input_id != Graph::kControlSlot)
-                                    {
-                                        fused_node->set_input(
-                                            input_id,
-                                            node->get_inputs().at(in_edge->get_dst_input()));
-                                    }
-                                    m_graph->add_edge(in_edge->get_src(),
-                                                      in_edge->get_src_output(),
-                                                      fused_node,
-                                                      input_id);
-                                }
-                            }
-
-                            for (const auto& out_edge : node->get_out_edges())
-                            {
-                                if (internal_nodes.find(out_edge->get_dst()) ==
-                                    internal_nodes.end())
-                                {
-                                    auto output_id = out_edge->is_control_edge()
-                                                         ? Graph::kControlSlot
-                                                         : next_output_id++;
-                                    if (output_id != Graph::kControlSlot)
-                                    {
-                                        fused_node->set_output(
-                                            output_id,
-                                            node->get_outputs().at(out_edge->get_src_output()));
-                                    }
-                                    m_graph->add_edge(fused_node,
-                                                      output_id,
-                                                      out_edge->get_dst(),
-                                                      out_edge->get_dst_input());
-                                }
-                            }
-                        }
-
                         // ROCm can only support maximum 70 args for single kernel
-                        if (n_device_type == ROCM_GPU &&
-                            fused_node->get_in_edges().size() +
-                                    fused_node->get_out_edges().size() >=
-                                70)
-                        {
-                            m_graph->remove_node(fused_node);
-                        }
-                        else
-                        {
-                            for (auto node : internal_nodes)
-                            {
-                                m_graph->remove_node(node);
-                            }
-                        }
+                        // if (n_device_type == ROCM_GPU &&
+                        //     fused_node->get_in_edges().size() +
+                        //             fused_node->get_out_edges().size() >=
+                        //         70)
+                        // {
+                        //     m_graph->remove_node(fused_node);
+                        // }
                     }
                 }
             }

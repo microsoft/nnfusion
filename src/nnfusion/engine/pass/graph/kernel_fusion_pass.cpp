@@ -628,26 +628,27 @@ private:
                         n_device_id = (*node)["DeviceID"].as<int>();
                         fusing_nodes.insert(node);
                     }
-                    {
-                        auto fused_op = std::make_shared<nnfusion::op::Fused>("fused_kernel",
-                                                                              "ElementWiseFused");
-                        auto fused_node = std::make_shared<FusedGNode>(fused_op);
-                        fused_node->build_fused_node(fusing_nodes, m_graph, true);
-                        m_graph->add_node(fused_node);
 
+                    auto fused_op =
+                        std::make_shared<nnfusion::op::Fused>("fused_kernel", "ElementWiseFused");
+                    auto fused_node = std::make_shared<FusedGNode>(fused_op);
+                    fused_node->build_fused_node(fusing_nodes, m_graph, false);
+                    m_graph->add_node(fused_node);
+
+                    // ROCm can only support maximum 70 args for single kernel
+                    if (n_device_type == ROCM_GPU &&
+                        fused_node->get_input_size() + fused_node->get_output_size() >= 70)
+                    {
+                        m_graph->remove_node(fused_node);
+                    }
+                    else
+                    {
                         NNFUSION_CHECK(n_device_type != UNKNOWN);
                         NNFUSION_CHECK(n_device_id != -1);
                         (*fused_node)["DeviceType"] = n_device_type;
                         (*fused_node)["DeviceID"] = n_device_id;
-
-                        // ROCm can only support maximum 70 args for single kernel
-                        // if (n_device_type == ROCM_GPU &&
-                        //     fused_node->get_in_edges().size() +
-                        //             fused_node->get_out_edges().size() >=
-                        //         70)
-                        // {
-                        //     m_graph->remove_node(fused_node);
-                        // }
+                        for (auto& node : fusing_nodes)
+                            m_graph->remove_node(node);
                     }
                 }
             }

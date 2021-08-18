@@ -18,7 +18,6 @@
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
-#include "nnfusion/engine/pass/graph/hlsl_required_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
@@ -49,7 +48,6 @@ HLSLEngine::HLSLEngine()
 {
     if (FLAGS_fhlsl_codegen_type == "csharp")
     {
-        g_passes->push_back(make_shared<HLSLRequiredPass>());
         g_passes->push_back(make_shared<CSEPass>());
         g_passes->push_back(make_shared<AutodiffPass>());
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
@@ -89,7 +87,6 @@ HLSLEngine::HLSLEngine()
     }
     else if (FLAGS_fhlsl_codegen_type == "cpp")
     {
-        g_passes->push_back(make_shared<HLSLRequiredPass>());
         g_passes->push_back(make_shared<CSEPass>());
         g_passes->push_back(make_shared<AutodiffPass>());
         g_passes->push_back(make_shared<GradientWeightMappingPass>());

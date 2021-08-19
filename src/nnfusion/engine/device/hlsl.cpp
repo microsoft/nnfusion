@@ -64,6 +64,7 @@ HLSLEngine::HLSLEngine()
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelFusionPass>());
         g_passes->push_back(make_shared<KernelTuning>());
         g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
         g_passes->push_back(make_shared<FetchBasedSelector>());
@@ -104,6 +105,7 @@ HLSLEngine::HLSLEngine()
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelFusionPass>());
         g_passes->push_back(make_shared<KernelTuning>());
         g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
         g_passes->push_back(make_shared<FetchBasedSelector>());
@@ -135,6 +137,7 @@ HLSLEngine::HLSLEngine()
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelFusionPass>());
         g_passes->push_back(make_shared<KernelTuning>());
         g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
         g_passes->push_back(make_shared<FetchBasedSelector>());

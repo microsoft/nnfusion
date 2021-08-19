@@ -48,7 +48,7 @@ using namespace std;
 using namespace Microsoft::WRL;
 
 
-#define IFE(x)  ((FAILED(x)) ? (printf("Error-line: (%s) %d\n\nPossible Reason:\n\tWindows TDR might be triggered.\n\tTo avoid this, please download and apply https://github.com/microsoft/antares/releases/download/v0.1.0/antares_hlsl_tdr_v0.1.reg into Windows registry and reboot your system to take effect.\nIf this is not fixed, please report an issue to https://github.com/microsoft/antares/issues\n\n", __FILE__, __LINE__), abort(), 0): 1)
+#define IFE(x)  ((FAILED(x)) ? (printf((x) == E_OUTOFMEMORY ? "Error-line: (%s) %d\n\nDX out of memory": "Error-line: (%s) %d\n\nPossible Reason:\n\tWindows TDR might be triggered.\n\tTo avoid this, please download and apply https://github.com/microsoft/antares/releases/download/v0.1.0/antares_hlsl_tdr_v0.1.reg into Windows registry and reboot your system to take effect.\nIf this is not fixed, please report an issue to https://github.com/microsoft/antares/issues\n\n", __FILE__, __LINE__), abort(), 0): 1)
 
 namespace {
 

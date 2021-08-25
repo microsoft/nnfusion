@@ -36,30 +36,42 @@ namespace nnfusion
         {
             namespace
             {
+                bool is_sorted(const std::vector<onnx::NodeProto>& unsorted_nodes,
+                               const std::unordered_set<std::string>& external_values)
+                {
+                    std::unordered_set<std::string> ready_values = external_values;
+                    for (auto node : unsorted_nodes)
+                    {
+                        for (auto value : node.input())
+                        {
+                            if (ready_values.find(value) == ready_values.end())
+                            {
+                                return false;
+                            }
+                        }
+                        for (auto value : node.output())
+                        {
+                            ready_values.insert(value);
+                        }
+                    }
+                    return true;
+                }
+
                 std::vector<onnx::NodeProto>
                     tp_sort(const std::vector<onnx::NodeProto>& unsorted_nodes,
                             const std::unordered_set<std::string>& external_values)
                 {
-                    auto randam_string = [](int length = 8) -> string {
-                        static string charset =
-                            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-                        string result;
-                        result.resize(length);
-                        // srand(time(NULL));
-                        for (int i = 0; i < length; i++)
-                            result[i] = charset[rand() % charset.length()];
-                        return result;
-                    };
-
-                    std::unordered_map<std::string, std::unordered_set<std::string>>
-                        value2uses;                                // value name: used nodes
-                    std::unordered_map<std::string, int> indegree; // node name:dedup indegree
+                    std::unordered_map<std::string, std::set<std::string>>
+                        value2uses;                      // value name: used nodes
+                    std::map<std::string, int> indegree; // node name: dedup indegree
                     std::unordered_map<std::string, onnx::NodeProto> name2node;
                     std::vector<onnx::NodeProto> sorted_nodes;
+                    size_t empty_name_index = 0;
                     for (auto n : unsorted_nodes)
                     {
-                        string node_name =
-                            (n.has_name() && n.name() != "") ? n.name() : randam_string();
+                        string node_name = (n.has_name() && n.name() != "")
+                                               ? n.name()
+                                               : "nnf_name_" + std::to_string(empty_name_index++);
                         NNFUSION_CHECK(name2node.find(node_name) == name2node.end())
                             << "duplicate node name: " << node_name;
                         name2node[node_name] = n;
@@ -90,19 +102,22 @@ namespace nnfusion
                     }
 
                     std::queue<std::string> q;
-                    std::unordered_set<std::string> added_nodes;
-                    for (auto n : indegree)
                     {
-                        if (n.second == 0)
+                        std::unordered_set<std::string> zero_in_nodes;
+                        for (auto n : indegree)
                         {
-                            q.push(n.first);
-                            added_nodes.insert(n.first);
+                            if (n.second == 0)
+                            {
+                                q.push(n.first);
+                                zero_in_nodes.insert(n.first);
+                            }
+                        }
+                        for (auto node : zero_in_nodes)
+                        {
+                            indegree.erase(node);
                         }
                     }
-                    for (auto node : added_nodes)
-                    {
-                        indegree.erase(node);
-                    }
+
                     while (!q.empty())
                     {
                         auto name = q.front();
@@ -138,7 +153,7 @@ namespace nnfusion
                     return sorted_nodes;
                 }
 
-                int print_model_proto(const onnx::ModelProto& model_proto)
+                void print_model_proto(const onnx::ModelProto& model_proto)
                 {
                     onnx::ModelProto proto_without_init;
                     proto_without_init.CopyFrom(model_proto);
@@ -221,7 +236,7 @@ namespace nnfusion
                 , m_dim_params(dim_params)
                 , model_dir(model_dir)
             {
-                print_model_proto(model_proto);
+                // print_model_proto(model_proto);
 
                 // Note: onnx connect nodes by tensor's name instead of op name
                 /*
@@ -443,8 +458,8 @@ namespace nnfusion
 
                 // Process ONNX graph nodes, convert to nGraph nodes
                 // sorted to avoid non-stardard model
-                std::vector<onnx::NodeProto> unsorted_nodes(std::begin(onnx_graph_proto->node()),
-                                                            std::end(onnx_graph_proto->node()));
+                std::vector<onnx::NodeProto> onnx_nodes(std::begin(onnx_graph_proto->node()),
+                                                        std::end(onnx_graph_proto->node()));
                 std::unordered_set<std::string> external_values{
                     ""}; // values provided by initializers/params, empty string means option input
                 std::transform(std::begin(onnx_graph_proto->initializer()),
@@ -455,12 +470,15 @@ namespace nnfusion
                                std::end(onnx_graph_proto->input()),
                                std::inserter(external_values, external_values.begin()),
                                [](onnx::ValueInfoProto v) -> std::string { return v.name(); });
-                std::vector<onnx::NodeProto> sorted_nodes =
-                    tp_sort(unsorted_nodes, external_values);
+                if (!is_sorted(onnx_nodes, external_values))
+                {
+                    NNFUSION_LOG(NNFUSION_WARNING) << "Resorting ONNX nodes...";
+                    onnx_nodes = tp_sort(onnx_nodes, external_values);
+                }
 
                 graph::GNodeIndexVector optimizer_outputs;
 
-                for (const auto& node_proto : sorted_nodes)
+                for (const auto& node_proto : onnx_nodes)
                 {
                     auto results = convert_node(node_proto);
                     for (auto& named_gnode : results)

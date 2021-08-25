@@ -39,5 +39,21 @@ namespace nnfusion
             int m_src_output;
             int m_dst_input;
         };
+
+        struct EdgeComparatorSrcIndex
+        {
+            bool operator()(const std::shared_ptr<Edge> lhs, const std::shared_ptr<Edge> rhs) const
+            {
+                return lhs->get_src_output() < rhs->get_src_output();
+            }
+        };
+
+        struct EdgeComparatorDstIndex
+        {
+            bool operator()(const std::shared_ptr<Edge> lhs, const std::shared_ptr<Edge> rhs) const
+            {
+                return lhs->get_dst_input() < rhs->get_dst_input();
+            }
+        };
     }
 }

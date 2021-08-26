@@ -77,7 +77,7 @@ void nnfusion::graph::ReverseDFS(const Graph* graph,
             auto in_edges = node->get_in_edges();
             std::vector<std::shared_ptr<Edge>> in_edges_sorted(in_edges.begin(), in_edges.end());
             std::sort(in_edges_sorted.begin(), in_edges_sorted.end(), EdgeComparatorDstIndex());
-            for (auto in_edge : in_edges)
+            for (auto in_edge : in_edges_sorted)
             {
                 add_work(in_edge->get_src());
             }

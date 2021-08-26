@@ -473,5 +473,6 @@ void FusedGNode::clean_nodes(std::shared_ptr<Graph> graph)
 
 void FusedGNode::derive_op_def()
 {
-    static_pointer_cast<nnfusion::op::Fused>(m_op_ptr)->register_ir2(m_order_nodes);
+    static_pointer_cast<nnfusion::op::Fused>(m_op_ptr)->register_ir2(m_order_nodes,
+                                                                     shared_from_this());
 }

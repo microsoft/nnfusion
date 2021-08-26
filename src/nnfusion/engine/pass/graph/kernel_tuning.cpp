@@ -17,11 +17,12 @@ using namespace nnfusion::kernels;
 using namespace nnfusion::pass::graph;
 
 DEFINE_int64(fkernel_tuning_steps, 0, "Enable automatic kernel tuning for maximum N steps.");
+DEFINE_string(ftuning_blocklist,
+              "",
+              "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
 DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
-
-const std::unordered_set<std::string> KernelTuning::BlockList = {};
 
 struct TuningStatus
 {
@@ -181,10 +182,24 @@ std::vector<std::shared_ptr<GNode>>
     return candidates;
 }
 
+bool KernelTuning::parse_block_list()
+{
+    auto blocklist_str = FLAGS_ftuning_blocklist;
+    stringstream ss(blocklist_str);
+    while (ss.good())
+    {
+        string substr;
+        getline(ss, substr, ',');
+        BlockList.insert(substr);
+    }
+    NNFUSION_LOG(INFO) << "Kernel Tuning BlockList: " << join(BlockList, ", ");
+}
+
 bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
     if (FLAGS_fantares_mode)
     {
+        parse_block_list();
         // register antares kernels anyway here in case kernel selection pass will use them
         register_antares_kernel();
     }

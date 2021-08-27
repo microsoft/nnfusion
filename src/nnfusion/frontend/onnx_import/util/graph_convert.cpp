@@ -102,19 +102,16 @@ namespace nnfusion
                     }
 
                     std::queue<std::string> q;
+                    for (auto it = indegree.begin(); it != indegree.end();)
                     {
-                        std::unordered_set<std::string> zero_in_nodes;
-                        for (auto n : indegree)
+                        if (it->second == 0)
                         {
-                            if (n.second == 0)
-                            {
-                                q.push(n.first);
-                                zero_in_nodes.insert(n.first);
-                            }
+                            q.push(it->first);
+                            it = indegree.erase(it);
                         }
-                        for (auto node : zero_in_nodes)
+                        else
                         {
-                            indegree.erase(node);
+                            ++it;
                         }
                     }
 

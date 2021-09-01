@@ -72,7 +72,7 @@ namespace nnfusion
             // REQUIRES: 0 <= id < get_max_node_id().
 
             GNodeVector get_nodes();
-            GNodeVector get_ordered_ops(bool include_control_deps = true);
+            GNodeVector get_ordered_ops();
             GNodeVector get_bfs_ordered_ops();
 
             GNodeVector get_const_nodes();

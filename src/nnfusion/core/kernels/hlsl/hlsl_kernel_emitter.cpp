@@ -189,7 +189,7 @@ void hlsl::AntaresHLSLKernelEmitter::process_antares_kernel_info()
             {
                 if (name.find("output") != std::string::npos)
                 {
-                    int idx = std::atoi(name.substr(5).data());
+                    int idx = std::atoi(name.substr(6).data());
                     tensor_name_map[name] = m_context->output_names[idx];
                 }
                 else if (name.find("mediate") != std::string::npos)

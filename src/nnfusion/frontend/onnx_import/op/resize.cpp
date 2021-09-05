@@ -30,6 +30,30 @@ namespace nnfusion
         {
             namespace set_1
             {
+
+                NamedNodeVector TranslateGeneral(const onnx::NodeProto& node_proto,
+                                                    const NodeMap& all_ng_nodes,
+                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indices = GetAllInputIndex(all_ng_nodes, node_proto);
+                    auto node_name = node_proto.output(0);
+
+                    nnfusion::op::OpConfig::any config;
+                    NNFUSION_LOG(INFO) << "GenericTFNode(" << node_proto.op_type() << "): " << config << std::endl;
+
+                    auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
+                        node_name,
+                        node_proto.op_type(), // select which existing kernels to use;
+                        config);
+                    
+
+                    auto generic_gnode = m_graph->add_node_and_edge(generic_op, input_indices);
+                    NamedNodeVector ret{{node_name, generic_gnode}};
+                    return ret;
+                }
+
+
+
                 NamedNodeVector TranslateResizeOp(const onnx::NodeProto& node_proto,
                                                   const NodeMap& all_ng_nodes,
                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph)
@@ -48,9 +72,20 @@ namespace nnfusion
                     auto node_name = node_proto.output(0);
                     auto resize_op =
                         std::make_shared<nnfusion::op::GenericOp>(node_name, "Resize", op_config);
-                    auto resize_gnode =
-                        m_graph->add_node_and_edge(resize_op, {x_gnode, scales_gnode});
-                    return NamedNodeVector{{node_proto.output(0), resize_gnode}};
+
+                    if(input_indices.size()<=3)
+                    {   
+                        auto resize_gnode =
+                            m_graph->add_node_and_edge(resize_op, {x_gnode, scales_gnode});
+                        return NamedNodeVector{{node_proto.output(0), resize_gnode}};
+                    }
+                    else
+                    {
+                        auto sizes_gnode = input_indices[3];
+                        auto resize_gnode =
+                            m_graph->add_node_and_edge(resize_op, {x_gnode, sizes_gnode});
+                        return NamedNodeVector{{node_proto.output(0), resize_gnode}};
+                    }
                 }
             } // namespace set_1
 

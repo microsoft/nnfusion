@@ -34,6 +34,10 @@ namespace nnfusion
                 NamedNodeVector TranslateResizeOp(const onnx::NodeProto& node_proto,
                                                   const NodeMap& all_ng_nodes,
                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph);
+
+                NamedNodeVector TranslateGeneral(const onnx::NodeProto& node_proto,
+                                                    const NodeMap& all_ng_nodes,
+                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph);
             }
         }
     }

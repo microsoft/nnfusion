@@ -3,7 +3,7 @@
 
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-REGISTER_OP(DepthToSpace)
+REGISTER_OP(DepthToSpaceOLD)
     .attr<nnfusion::op::OpConfig::any>("T")
     .attr<nnfusion::op::OpConfig::any>("block_size")
     .attr<nnfusion::op::OpConfig::any>("data_format")

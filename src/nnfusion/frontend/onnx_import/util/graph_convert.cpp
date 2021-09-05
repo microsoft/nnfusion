@@ -433,7 +433,7 @@ namespace nnfusion
                     std::unordered_set<std::string> unknown_ops;
                     for (const auto& node_proto : onnx_graph_proto->node())
                     {
-                        if (!is_operator_available(node_proto))
+                        if (!is_operator_available(node_proto) && node_proto.op_type() != "ScatterND" && node_proto.op_type() != "DepthToSpace")
                         {
                             std::string op =
                                 ((node_proto.domain() == "ai.onnx") ? ""

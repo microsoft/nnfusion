@@ -42,3 +42,67 @@ REGISTER_OP(CustomTestOp)
             )",
             {{"value", std::to_string(value)}});
     });
+
+
+REGISTER_OP(ScatterND)
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        NNFUSION_CHECK(1 == gnode->get_input_size());
+        auto& shape_0 = gnode->get_input_shape(0);
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), shape_0);
+    })
+    .antares_ir([](std::shared_ptr<graph::GNode> gnode) -> std::string {
+        auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        return op::create_code_from_template(
+            "@output0@@data_layout@ = @input0@@data_layout@ * @value@",
+            {{"data_layout",
+              vector_to_string<std::vector<std::string>>(
+                  op::create_layout_from_dims(gnode->get_output_shape(0)))}
+             }
+             );
+    })
+    .cuda_kernel(
+        [](std::shared_ptr<graph::GNode> gnode) -> std::string {
+            auto op_config = nnfusion::op::lookup_op_config(gnode->get_op_type());
+            return op::create_code_from_template(
+                R"(
+                int index = blockIdx.x*blockDim.x + threadIdx.x;
+                output0[index] = inpupt0[index];
+            )",
+                {});
+        },
+        std::vector<uint32_t>({1, 1, 4 /*gridDim*/, 1, 1, 32 /*blockDim*/}));
+
+
+REGISTER_OP(DepthToSpace)
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        NNFUSION_CHECK(1 == gnode->get_input_size());
+        auto shape_0 = gnode->get_input_shape(0);
+        int a = ((int)shape_0[1]) / 4;
+        int b = shape_0[2] * 2;
+        int c = shape_0[3] * 2;
+        shape_0[1] = a;
+        shape_0[2] = b;
+        shape_0[3] = c;
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), shape_0);
+    })
+    .antares_ir([](std::shared_ptr<graph::GNode> gnode) -> std::string {
+        auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        return op::create_code_from_template(
+            "@output0@@data_layout@ = @input0@@data_layout@ * @value@",
+            {{"data_layout",
+              vector_to_string<std::vector<std::string>>(
+                  op::create_layout_from_dims(gnode->get_output_shape(0)))}
+             }
+             );
+    })
+    .cuda_kernel(
+        [](std::shared_ptr<graph::GNode> gnode) -> std::string {
+            auto op_config = nnfusion::op::lookup_op_config(gnode->get_op_type());
+            return op::create_code_from_template(
+                R"(
+                int index = blockIdx.x*blockDim.x + threadIdx.x;
+                output0[index] = inpupt0[index];
+            )",
+                {});
+        },
+        std::vector<uint32_t>({1, 1, 4 /*gridDim*/, 1, 1, 32 /*blockDim*/}));

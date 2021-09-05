@@ -6,7 +6,7 @@
 REGISTER_OP(Resize)
     .attr<std::string>("method")
     .constrait([](const nnfusion::op::OpConfig::any& config) -> bool {
-        if (config["method"] != "NEAREST")
+        if (config["method"] != "NEAREST" && config["method"] != "LINEAR")
         {
             return false;
         }
@@ -21,12 +21,26 @@ REGISTER_OP(Resize)
             << "We only accept the Resze input \"scales\" as Constant";
         auto scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
                           ->get_vector<float>();
-        NNFUSION_CHECK(input_shape.size() == scales.size());
-
-        nnfusion::Shape output_shape(scales.size());
-        for (int i = 0; i < scales.size(); i++)
-            output_shape[i] = input_shape[i] * scales[i];
-        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+            
+        NNFUSION_LOG(INFO) << "---" <<scales.size()<<" "<<scales[0];
+        if(scales[0] < 0.000001)
+        {
+            auto sizes = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
+                          ->get_vector<int64_t>();
+            NNFUSION_LOG(INFO) << "+++" <<sizes.size()<<" "<<sizes[0];
+            nnfusion::Shape output_shape(scales.size());
+            for (int i = 0; i < scales.size(); i++)
+                output_shape[i] =  sizes[i];
+            gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+        }
+        else
+        {
+            NNFUSION_CHECK(input_shape.size() == scales.size());
+            nnfusion::Shape output_shape(scales.size());
+            for (int i = 0; i < scales.size(); i++)
+                output_shape[i] = input_shape[i] * scales[i];
+            gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+        }
     })
     .translate_v2([](std::shared_ptr<graph::GNode> gnode) -> std::string {
         auto expression_template =

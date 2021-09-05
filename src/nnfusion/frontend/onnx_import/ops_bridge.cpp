@@ -142,6 +142,8 @@ namespace nnfusion
 
             OperatorsBridge::OperatorsBridge()
             {
+                REGISTER_OPERATOR("ScatterND", 1, TranslateUnaryOp<op::Abs>);
+                REGISTER_OPERATOR("DepthToSpace", 1, TranslateGeneral);
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
                 REGISTER_OPERATOR("Acos", 1, TranslateUnaryOp<op::Acos>);
                 REGISTER_OPERATOR("AdamOptimizer", 1, TranslateAdamOptimizerOp);

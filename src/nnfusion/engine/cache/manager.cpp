@@ -25,6 +25,7 @@ std::unordered_set<std::string> KernelCacheManager::SupportOpList;
 sqlite3* KernelCacheManager::kernel_cache = nullptr;
 KernelCacheManager::KernelCacheManager()
 {
+    return;
     m_path = (getpwuid(getuid())->pw_dir + std::string("/.cache/nnfusion/kernel_cache.db"));
     if (FLAGS_fkernel_cache_path != "")
     {

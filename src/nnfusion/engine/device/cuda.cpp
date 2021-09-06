@@ -61,11 +61,14 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<OpInplacePass>());
     g_passes->push_back(make_shared<ReduceFusionPass>());
 
-    g_passes->push_back(make_shared<PatternSubstitutionPass>());
+    //g_passes->push_back(make_shared<PatternSubstitutionPass>());
 
     // Kernel selection
+    NNFUSION_LOG(INFO) << "$$$1";
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+    NNFUSION_LOG(INFO) << "$$$2";
     g_passes->push_back(make_shared<KernelTuning>());
+    NNFUSION_LOG(INFO) << "$$$3";
     g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
     g_passes->push_back(make_shared<FetchBasedSelector>());
     g_passes->push_back(make_shared<DefaultKernelSelector>());
@@ -73,7 +76,9 @@ CudaEngine::CudaEngine()
     // GPU specific graph passes
     g_passes->push_back(make_shared<KernelFusionPass>());
     g_passes->push_back(make_shared<KernelProfilingPass>());
-    g_passes->push_back(make_shared<PatternSubstitutionPass>());
+
+    //g_passes->push_back(make_shared<PatternSubstitutionPass>());
+
     g_passes->push_back(make_shared<BlockFusionPass>());
 
     // Specific opt for dot

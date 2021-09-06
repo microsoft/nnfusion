@@ -98,6 +98,7 @@ void print_tuning_results(std::vector<std::shared_ptr<TuningStatus>> tuned_kerne
 std::vector<std::shared_ptr<GNode>>
     KernelTuning::get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
+    NNFUSION_LOG(INFO) << "Get tuning candidates";
     NNFUSION_CHECK(graph != nullptr);
 
     std::vector<std::shared_ptr<GNode>> candidates;
@@ -106,6 +107,7 @@ std::vector<std::shared_ptr<GNode>>
     std::unordered_set<std::string> translated_irs;
     for (auto gnode : nodes)
     {
+        NNFUSION_LOG(INFO) << "into loop Get tuning candidates";
         if (!(*gnode)["DeviceType"].is_valid())
         {
             NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass："
@@ -114,14 +116,20 @@ std::vector<std::shared_ptr<GNode>>
         auto n_device_type = (*gnode)["DeviceType"].as<NNFusion_DeviceType>();
         NNFUSION_CHECK(n_device_type != UNKNOWN);
 
+        NNFUSION_LOG(INFO) << "%1 into loop Get tuning candidates";
         // filter ops in BlockList
         if (BlockList.find(gnode->get_op_type()) != BlockList.end())
         {
             continue;
         }
 
+        if(gnode->get_op_type() == "Reshape")
+            continue;
+
+        NNFUSION_LOG(INFO) << gnode->get_op_type();//<< ", ir: " << ir;
+        NNFUSION_LOG(INFO) << "%2 into loop Get tuning candidates";
         auto ir = nnfusion::op::get_translation(gnode);
-        // NNFUSION_LOG(DEBUG) << gnode->get_op_type() << ", ir: " << ir;
+        NNFUSION_LOG(INFO) << "ir: " << ir;
 
         // filter unimplemented irs
         if (ir.empty())
@@ -129,6 +137,7 @@ std::vector<std::shared_ptr<GNode>>
             continue;
         }
 
+        NNFUSION_LOG(INFO) << "%3 into loop Get tuning candidates";
         // dedupe ops with the same ir
         if (!ir.empty())
         {
@@ -142,7 +151,9 @@ std::vector<std::shared_ptr<GNode>>
         candidates.push_back(gnode);
     }
 
+    NNFUSION_LOG(INFO) << "done Get tuning candidates";
     // filter ops existing in kernel cache DB
+    /* 
     {
         auto cache_manager = std::make_shared<cache::KernelCacheManager>();
         if (!cache_manager->is_valid())
@@ -177,18 +188,22 @@ std::vector<std::shared_ptr<GNode>>
             candidates = non_cached_candidates;
         }
     }
+    */
 
     return candidates;
 }
 
 bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
+    NNFUSION_LOG(INFO) << "%%%%1";
     if (FLAGS_fantares_mode)
     {
         // register antares kernels anyway here in case kernel selection pass will use them
         register_antares_kernel();
     }
 
+    NNFUSION_LOG(INFO) << "%%%%2";
+    NNFUSION_LOG(INFO) << FLAGS_fantares_codegen_server;
     if (FLAGS_fkernel_tuning_steps <= 0 || FLAGS_fantares_codegen_server == "" ||
         !FLAGS_fantares_mode)
     {
@@ -199,6 +214,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     std::vector<std::shared_ptr<TuningStatus>> tuning_kernels;
 
     std::vector<std::shared_ptr<GNode>> nodes = get_tuning_candidates(graph);
+    NNFUSION_LOG(INFO) << "%%%%3";
     for (auto gnode : nodes)
     {
         if (!(*gnode)["DeviceType"].is_valid())
@@ -264,6 +280,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     }
 
     insert_to_kernel_cache(nodes);
+    NNFUSION_LOG(INFO) << "%%%%9";
 
     return true;
 }

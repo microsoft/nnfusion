@@ -60,6 +60,7 @@
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
+#include "op/scatternd.hpp"
 #include "op/shape.hpp"
 #include "op/skip_layer_norm.hpp"
 #include "op/slice.hpp"
@@ -73,7 +74,6 @@
 #include "op/unaryop.hpp"
 #include "op/unsqueeze.hpp"
 #include "op/where.hpp"
-
 #include "ops_bridge.hpp"
 
 namespace nnfusion
@@ -269,6 +269,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Resize", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Where", 1, TranslateWhereOp);
+                REGISTER_OPERATOR("ScatterND", 11, TranslateScatterNDOp);
                 REGISTER_OPERATOR("DepthToSpace", 1, TranslateDepthToSpaceOp);
                 REGISTER_OPERATOR("DepthToSpace", 11, TranslateDepthToSpaceOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);

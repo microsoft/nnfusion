@@ -65,6 +65,16 @@ namespace nnfusion
                 auto output_alias = "output" + to_string(out_id);
                 io_config[output_alias] = output_alias;
                 extra_outputs.push_back("\"" + output_alias + "\"");
+
+                // special handle for "=." expr, which need add output into input dict
+                if (antares_template.find("=.") != std::string::npos)
+                {
+                    op::OpConfig::any output_config;
+                    op::create_inputs_definition_from_tensor(
+                        gnode->get_output_tensor_ptr(out_id), output_alias, output_config, "input");
+                    input_code = input_code + (input_code.empty() ? "" : ", ") +
+                                 op::create_code_from_template(input_template, output_config);
+                }
             }
             auto extra_output = join(extra_outputs, ", ");
 

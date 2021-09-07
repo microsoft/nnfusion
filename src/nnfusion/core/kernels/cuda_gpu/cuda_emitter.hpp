@@ -208,9 +208,9 @@ namespace nnfusion
                     GENERIC_OP_LOGGING();
                     if (!FLAGS_fantares_codegen_server.empty())
                     {
-                        NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
+                        // NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
 
-                        auto ir = nnfusion::op::get_translation(ctx->gnode);
+                        ir = nnfusion::op::get_translation(ctx->gnode);
 #if 0
                         std::unordered_set<std::string> wl = {
                           "Add", "ApplyGradient", "AvgPool", "BatchMatMul", "Broadcast", "Concat", "Convert", "Convolution", "DepthToSpace", "DepthwiseConv2dNative",
@@ -296,9 +296,16 @@ namespace nnfusion
                 bool is_eliminative() override;
                 LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;
+                LanguageUnit_p emit_comments() override
+                {
+                    auto lu = KernelEmitter::emit_comments();
+                    (*lu) << "// IR:\n//" << ir << "\n";
+                    return lu;
+                };
                 void set_launch_config() override {}
                 AntaresKEImp::Pointer m_antares_ke_imp;
                 std::string antares_code;
+                std::string ir;
                 bool is_memcpy = false;
             };
 

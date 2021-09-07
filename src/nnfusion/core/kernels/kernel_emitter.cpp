@@ -13,6 +13,7 @@ DECLARE_bool(fextern_result_memory);
 
 KernelContext::KernelContext(shared_ptr<graph::GNode> gnode)
     : gnode(gnode)
+    , op(gnode->get_op_ptr())
     , gpu_num_sm(20)
 {
     // extract input tensors

@@ -36,6 +36,7 @@
 #include "op/constant.hpp"
 #include "op/conv.hpp"
 #include "op/conv_trans.hpp"
+#include "op/depth_to_space.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
 #include "op/embed_layer_norm.hpp"
@@ -269,6 +270,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Where", 1, TranslateWhereOp);
                 REGISTER_OPERATOR("ScatterND", 11, TranslateScatterNDOp);
+                REGISTER_OPERATOR("DepthToSpace", 1, TranslateDepthToSpaceOp);
+                REGISTER_OPERATOR("DepthToSpace", 11, TranslateDepthToSpaceOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

@@ -1454,3 +1454,76 @@ TEST(nnfusion_onnx_import, trainable_dropout_op)
     auto ratio = (float)num_output_zero / input.size();
     EXPECT_NEAR(ratio, dropout_raito, 0.02);
 }
+
+TEST(nnfusion_onnx_import, depthtospace_dcr_op)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/depth2space_dcr.onnx"));
+
+    // x (1, 8, 2, 3)
+    Inputs inputs{{0.,  1.,  2.,  3.,  4.,  5.,  9.,  10., 11., 12., 13., 14., 18., 19., 20., 21.,
+                   22., 23., 27., 28., 29., 30., 31., 32., 36., 37., 38., 39., 40., 41., 45., 46.,
+                   47., 48., 49., 50., 54., 55., 56., 57., 58., 59., 63., 64., 65., 66., 67., 68.}};
+
+    // output (1, 2, 4, 6)
+    Outputs expected_outputs{{0.,  18., 1.,  19., 2.,  20., 36., 54., 37., 55., 38., 56.,
+                              3.,  21., 4.,  22., 5.,  23., 39., 57., 40., 58., 41., 59.,
+                              9.,  27., 10., 28., 11., 29., 45., 63., 46., 64., 47., 65.,
+                              12., 30., 13., 31., 14., 32., 48., 66., 49., 67., 50., 68.}};
+
+    Outputs outputs{execute(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_onnx_import, depthtospace_crd_op)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/depth2space_crd.onnx"));
+
+    // x (1, 8, 2, 3)
+    Inputs inputs{{0.,  1.,  2.,  3.,  4.,  5.,  9.,  10., 11., 12., 13., 14., 18., 19., 20., 21.,
+                   22., 23., 27., 28., 29., 30., 31., 32., 36., 37., 38., 39., 40., 41., 45., 46.,
+                   47., 48., 49., 50., 54., 55., 56., 57., 58., 59., 63., 64., 65., 66., 67., 68.}};
+
+    // output (1, 2, 4, 6)
+    Outputs expected_outputs{{0.,  9.,  1.,  10., 2.,  11., 18., 27., 19., 28., 20., 29.,
+                              3.,  12., 4.,  13., 5.,  14., 21., 30., 22., 31., 23., 32.,
+                              36., 45., 37., 46., 38., 47., 54., 63., 55., 64., 56., 65.,
+                              39., 48., 40., 49., 41., 50., 57., 66., 58., 67., 59., 68.}};
+
+    Outputs outputs{execute(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_onnx_import, scatternd_op)
+{
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/scatter_nd_1.onnx"));
+
+    RawInputs raw_inputs;
+    // data [0, 1, 2, 3]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{0, 1, 2, 3}));
+    // indices [[3], [1]]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{3, 1}));
+    // udpates [9, 10]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{9, 10}));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<int32_t>(raw_outputs[0])};
+    // output [0, 10, 2, 9]
+    vector<int> expected_outputs{0, 10, 2, 9};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}

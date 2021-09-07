@@ -77,7 +77,8 @@ std::string retarget_expr_mediates(std::string expr,
     return retrgt_expr;
 }
 
-void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes)
+void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes,
+                         std::shared_ptr<graph::GNode> fused_node)
 {
     // DEBUG: Preprint the IR list of all gnodes
     // NNFUSION_LOG(INFO) << "Fusion IR list";
@@ -88,14 +89,28 @@ void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes)
     //     NNFUSION_CHECK(it->second.f_translate_v2) << m_node->get_op_type();
     //     NNFUSION_LOG(INFO) << it->second.f_translate_v2(m_node);
     // }
+    using index_dict_t =
+        std::unordered_map<std::shared_ptr<graph::GNode>, std::unordered_map<int, std::string>>;
+    index_dict_t inputs_dict;
+    index_dict_t outputs_dict;
+    index_dict_t mediate_dict;
 
-    std::unordered_map<std::shared_ptr<graph::GNode>, std::vector<std::string>> outputs_info_dict;
-    std::unordered_map<std::shared_ptr<graph::GNode>, std::vector<std::string>> inputs_info_dict;
+    for (auto in_edge : fused_node->get_in_edges())
+    {
+        if (in_edge->is_control_edge())
+            continue;
+        inputs_dict[in_edge->get_src()][in_edge->get_src_output()] =
+            "@input" + to_string(in_edge->get_dst_input()) + "@";
+    }
+    for (auto out_edge : fused_node->get_out_edges())
+    {
+        if (out_edge->is_control_edge())
+            continue;
+        outputs_dict[out_edge->get_dst()][out_edge->get_dst_input()] =
+            "@output" + to_string(out_edge->get_src_output()) + "@";
+    }
 
-    int output_offset = 0;
     int mediate_offset = 0;
-    int input_offset = 0;
-    std::unordered_set<std::shared_ptr<graph::GNode>> gnodes_set(gnodes.begin(), gnodes.end());
     for (auto& m_node : gnodes)
     {
         // Step 1: Get the template expression of target node
@@ -110,55 +125,54 @@ void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes)
         OpConfig::any ioConfig;
 
         // Step 3: Alignment the input dictory to the expression
-        int node_input_offset = 0;
-        std::vector<std::string> input_info(m_node->get_input_size());
-        for (int in_id = 0; in_id < m_node->get_input_size(); ++in_id)
+        for (auto in_edge : m_node->get_in_edges())
         {
-            auto& in_edge = m_node->get_in_edge(in_id);
-            if (in_edge == nullptr || in_edge->is_control_edge())
+            if (in_edge->is_control_edge())
                 continue;
-            auto in_node = outputs_info_dict.find(in_edge->get_src());
-            if (in_node == outputs_info_dict.end())
+            auto iter = inputs_dict.find(in_edge->get_src());
+            std::string input_str;
+            if (iter != inputs_dict.end())
             {
-                input_info[in_id] = "@input" + to_string(input_offset++) + "@";
+                NNFUSION_CHECK(iter->second.find(in_edge->get_src_output()) != iter->second.end());
+                input_str = iter->second[in_edge->get_src_output()];
             }
             else
             {
-                input_info[in_id] = in_node->second[in_edge->get_src_output()];
+                auto med_iter = mediate_dict.find(in_edge->get_src());
+                NNFUSION_CHECK(med_iter != mediate_dict.end());
+                NNFUSION_CHECK(med_iter->second.find(in_edge->get_src_output()) !=
+                               med_iter->second.end());
+                input_str = med_iter->second[in_edge->get_src_output()];
             }
-            ioConfig["input" + to_string(node_input_offset++)] = input_info[in_id];
+            ioConfig["input" + to_string(in_edge->get_dst_input())] = input_str;
         }
-        inputs_info_dict.insert(std::make_pair(m_node, input_info));
 
         // Step 4: Alignment the output dictory to the expression
-        std::vector<std::string> output_info(m_node->get_output_size());
-        int node_output_offset = 0;
-        std::unordered_set<int> output_ids;
-        for (auto& out_edge : m_node->get_out_edges())
+        for (auto i = 0; i < m_node->get_output_size(); i++)
         {
-            if (gnodes_set.find(out_edge->get_dst()) == gnodes_set.end())
+            bool has_global_output = false;
+            std::string output_str;
+            auto out_edges = m_node->get_output_users(i);
+            for (auto out_edge : out_edges)
             {
-                auto out_id = out_edge->get_src_output();
-                if (output_ids.find(out_id) == output_ids.end())
+                auto iter = outputs_dict.find(out_edge->get_dst());
+                if (iter != outputs_dict.end())
                 {
-                    output_info[out_edge->get_src_output()] =
-                        "@output" + to_string(output_offset++) + "@";
-                    output_ids.insert(out_id);
+                    NNFUSION_CHECK(iter->second.find(out_edge->get_dst_input()) !=
+                                   iter->second.end());
+                    output_str = iter->second[out_edge->get_dst_input()];
+                    // update mediate_dict in case this slot has multiple users
+                    mediate_dict[out_edge->get_src()][out_edge->get_src_output()] = output_str;
+                    break;
                 }
             }
-        }
-        for (auto& out_edge : m_node->get_out_edges())
-        {
-            if (output_info[out_edge->get_src_output()].empty())
+            if (output_str.empty())
             {
-                output_info[out_edge->get_src_output()] = "mediate" + to_string(mediate_offset++);
+                output_str = "mediate" + to_string(mediate_offset++);
+                mediate_dict[m_node][i] = output_str;
             }
+            ioConfig["output" + to_string(i)] = output_str;
         }
-        for (auto& out_i : output_info)
-        {
-            ioConfig["output" + to_string(node_output_offset++)] = out_i;
-        }
-        outputs_info_dict.insert(std::make_pair(m_node, output_info));
 
         // Step 5: Create fused expression and plan
         std::string mediate_expr;

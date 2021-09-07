@@ -29,6 +29,8 @@ namespace nnfusion
             // The node this OpKernel corresponds to
             shared_ptr<graph::GNode> gnode;
 
+            std::shared_ptr<op::Op> op;
+
             // The input tensor ptr
             vector<shared_ptr<nnfusion::descriptor::Tensor>> inputs;
 

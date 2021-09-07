@@ -780,8 +780,39 @@ namespace nnfusion
                             ng_padding_below,
                             ng_padding_above);
 
-                NNFUSION_CHECK(ng_padding_above == ng_padding_above)
-                    << "Asymetric padding is not supported by now.";
+                // NNFUSION_CHECK(ng_padding_below == ng_padding_above)
+                //     << "Asymetric padding is not supported by now.";
+                // Add a Pad op to avoid asymetric padding
+                if (ng_padding_below != ng_padding_above)
+                {
+                    NNFUSION_CHECK(input_gnode->get_shape().size() == 4);
+                    nnfusion::Shape padding_below(4, 0);
+                    nnfusion::Shape padding_above(4, 0);
+                    nnfusion::Shape padding_interior(4, 0);
+                    is_nhwc = (tf_data_format == "NHWC");
+
+                    for (size_t i = 0; i < 2; i++)
+                    {
+                        padding_below[i + (is_nhwc ? 1 : 2)] = ng_padding_below[i];
+                        padding_above[i + (is_nhwc ? 1 : 2)] = ng_padding_above[i];
+                        ng_padding_below[i] = 0;
+                        ng_padding_above[i] = 0;
+                    }
+
+                    auto pad_val_op =
+                        std::make_shared<op::Constant>(reshape_input_gnode->get_element_type(),
+                                                       nnfusion::Shape{},
+                                                       std::vector<std::string>{"0"});
+                    auto pad_val_gnode = m_graph->add_node_and_edge(pad_val_op, GNodeVector({}));
+
+                    auto pad_op =
+                        std::make_shared<op::Pad>(padding_below, padding_above, padding_interior);
+                    pad_op->set_name(node.name() + "Pad");
+
+                    auto pad_gnode =
+                        m_graph->add_node_and_edge(pad_op, {reshape_input_gnode, pad_val_gnode});
+                    reshape_input_gnode = pad_gnode;
+                }
                 // Generate new op
                 auto conv_op = std::make_shared<op::Convolution>(
                     ng_strides, ng_dilations, ng_padding_below, ng_padding_above, tf_data_format);
@@ -813,7 +844,6 @@ namespace nnfusion
             {
                 auto input_gnode = GetInputNode(all_ng_nodes, node, 0);
                 auto filter_gnode = GetInputNode(all_ng_nodes, node, 1);
-
                 std::vector<int32> tf_strides;
                 std::vector<int32> tf_dilations;
                 std::string tf_padding_type;
@@ -869,8 +899,39 @@ namespace nnfusion
                             ng_padding_below,
                             ng_padding_above);
 
-                NNFUSION_CHECK(ng_padding_below == ng_padding_above)
-                    << "Asymetric padding is not supported by now.";
+                // NNFUSION_CHECK(ng_padding_below == ng_padding_above)
+                //     << "Asymetric padding is not supported by now.";
+                // Add a Pad op to avoid asymetric padding
+                if (ng_padding_below != ng_padding_above)
+                {
+                    NNFUSION_CHECK(input_gnode->get_shape().size() == 4);
+                    nnfusion::Shape padding_below(4, 0);
+                    nnfusion::Shape padding_above(4, 0);
+                    nnfusion::Shape padding_interior(4, 0);
+
+                    for (size_t i = 0; i < 2; i++)
+                    {
+                        padding_below[i + (is_nhwc ? 1 : 2)] = ng_padding_below[i];
+                        padding_above[i + (is_nhwc ? 1 : 2)] = ng_padding_above[i];
+                        ng_padding_below[i] = 0;
+                        ng_padding_above[i] = 0;
+                    }
+
+                    auto pad_val_op =
+                        std::make_shared<op::Constant>(input_gnode->get_element_type(),
+                                                       nnfusion::Shape{},
+                                                       std::vector<std::string>{"0"});
+                    auto pad_val_gnode = m_graph->add_node_and_edge(pad_val_op, GNodeVector({}));
+
+                    auto pad_op =
+                        std::make_shared<op::Pad>(padding_below, padding_above, padding_interior);
+                    pad_op->set_name(node.name() + "Pad");
+
+                    auto pad_gnode =
+                        m_graph->add_node_and_edge(pad_op, {input_gnode, pad_val_gnode});
+                    input_gnode = pad_gnode;
+                }
+
                 nnfusion::op::OpConfig::any op_config;
                 op_config["data_format"] = tf_data_format;
                 op_config["padding_type"] = tf_padding_type;

@@ -72,6 +72,8 @@ add_library(onnx_import STATIC
         op/skip_layer_norm.cpp
         op/attention.hpp
         op/attention.cpp
+        op/scatternd.hpp
+        op/scatternd.cpp
         # ${ops_source}
         util/broadcasting.cpp
         util/graph_convert.cpp

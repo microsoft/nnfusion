@@ -5,6 +5,9 @@
 
 REGISTER_OP(Resize)
     .attr<std::string>("method")
+    .attr<std::string>("coordinate_transformation_mode")
+    .attr<std::string>("nearest_mode")
+    .attr<bool>("no_scale")
     .constrait([](const nnfusion::op::OpConfig::any& config) -> bool {
         // Currently support Nearst and Linear mode
         // in Linear mode, the size of output can be specified by sizes value
@@ -14,16 +17,17 @@ REGISTER_OP(Resize)
         }
         // This is specific for SR model
         // The "linear" mode includes linear interpolation for 1D tensor and N-linear interpolation for N-D tensor (for example, bilinear interpolation for 2D tensor).
-        if(config["method"] == "LINEAR" && (config["coordinate_transformation_mode"] != "pytorch_half_pixel" || config["nearest_mode"] != "floor"))
-        {
-            return false;
-        }
+        //if(config["method"] == "LINEAR" && (config["coordinate_transformation_mode"] != "pytorch_half_pixel" || config["nearest_mode"] != "floor"))
+        //{
+        //    return false;
+        //}
         return true;
     })
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         auto input_shape = gnode->get_input_shape(0);
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         auto mode = generic_op->localOpConfig.getRoot()["method"];
+        auto no_scale = generic_op->localOpConfig.getRoot()["no_scale"];
 
         if(mode == "NEAREST")
         {
@@ -46,13 +50,11 @@ REGISTER_OP(Resize)
             auto ng_op = gnode->get_in_edge(1)->get_src();
             NNFUSION_CHECK(ng_op->is_constant())
                 << "We only accept the Resize input \"scales\" as Constant";
-            auto scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                            ->get_vector<float>();
-            // have scale
-            if(scales.empty())
+            if(no_scale)
             {
-                NNFUSION_CHECK(3 == gnode->get_input_size());
-                auto ng_op = gnode->get_in_edge(2)->get_src();
+                auto ng_op = gnode->get_in_edge(1)->get_src();
+                NNFUSION_LOG(INFO) << std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
+                                ->get_data_size();
                 auto sizes = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
                                 ->get_vector<int64_t>();
 
@@ -65,6 +67,8 @@ REGISTER_OP(Resize)
             // don't have scale, only have sizes
             else
             {
+                auto scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
+                                ->get_vector<float>();
                 NNFUSION_CHECK(4 == scales.size());
                 nnfusion::Shape output_shape(scales.size());
                 for (int i = 0; i < scales.size(); i++)
@@ -76,6 +80,7 @@ REGISTER_OP(Resize)
     .translate_v2([](std::shared_ptr<graph::GNode> gnode) -> std::string {
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         auto mode = generic_op->localOpConfig.getRoot()["method"];
+        auto no_scale = generic_op->localOpConfig.getRoot()["no_scale"];
 
         if(mode == "NEAREST")
         {
@@ -123,13 +128,17 @@ REGISTER_OP(Resize)
             auto input10_layout = op::create_layout_from_dims(output_shape);
             auto input11_layout = op::create_layout_from_dims(output_shape);
 
+            vector<float> scales;
             auto ng_op = gnode->get_in_edge(1)->get_src();
-            auto scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                            ->get_vector<float>();
-            if(scales.empty())
+            if(no_scale)
             {
                 for(int i=0;i<output_shape.size();i++)
                     scales.push_back((float)output_shape[i]/(float)input_shape[i]);
+            }
+            else
+            {
+                scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
+                           ->get_vector<float>();
             }
 
             auto expression_template =
@@ -145,6 +154,7 @@ REGISTER_OP(Resize)
                 + @input0@@input11_layout@ * (1.0 - h_weight@w_layout@) * (1.0 - w_weight@w_layout@) \
                 where @con@; )";
 
+
             std::string cond;
             for(int d = 0; d < output_layout.size(); ++d)
                 cond += (cond.empty() ? "" : ", ") + output_layout[d] + " in " + to_string(output_shape[d]);
@@ -152,14 +162,14 @@ REGISTER_OP(Resize)
             for(int d = 0; d < 2; ++d)
                 input00_layout[d] = input01_layout[d] = input11_layout[d] = input10_layout[d];
             
-            input00_layout[3] = "h_map[" + output_layout[3] + "]";
-            input00_layout[4] = "w_map[" + output_layout[4] + "]";
-            input10_layout[3] = "h_map[" + output_layout[3] + " + 1 ]";
-            input10_layout[4] = "w_map[" + output_layout[4] + "]";
-            input01_layout[3] = "h_map[" + output_layout[3] + "]";
-            input01_layout[4] = "w_map[" + output_layout[4] + " + 1]";
-            input11_layout[3] = "h_map[" + output_layout[3] + " + 1]";
-            input11_layout[4] = "w_map[" + output_layout[4] + " + 1]";
+            input00_layout[2] = "h_map[" + output_layout[2] + "]";
+            input00_layout[3] = "w_map[" + output_layout[3] + "]";
+            input10_layout[2] = "h_map[" + output_layout[2] + " + 1 ]";
+            input10_layout[3] = "w_map[" + output_layout[3] + "]";
+            input01_layout[2] = "h_map[" + output_layout[2] + "]";
+            input01_layout[3] = "w_map[" + output_layout[3] + " + 1]";
+            input11_layout[2] = "h_map[" + output_layout[2] + " + 1]";
+            input11_layout[3] = "w_map[" + output_layout[3] + " + 1]";
 
             vector<std::string> w_layout;
             w_layout.push_back(output_layout[2]);

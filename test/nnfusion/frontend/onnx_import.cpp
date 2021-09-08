@@ -1527,3 +1527,53 @@ TEST(nnfusion_onnx_import, scatternd_op)
         EXPECT_EQ(expected_outputs[i], outputs[i]);
     }
 }
+
+TEST(nnfusion_onnx_import, resize_downsample_scales_linear)
+{
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/resize_downsample_scales_linear.onnx"));
+
+    RawInputs raw_inputs;
+    // data [0, 1, 2, 3]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{0, 1, 2, 3}));
+    // indices [[3], [1]]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{3, 1}));
+    // udpates [9, 10]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{9, 10}));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<int32_t>(raw_outputs[0])};
+    // output [0, 10, 2, 9]
+    vector<int> expected_outputs{0, 10, 2, 9};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_onnx_import, resize_upsample_scales_linear)
+{
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/resize_upsample_scales_linear.onnx"));
+
+    RawInputs raw_inputs;
+    // data [0, 1, 2, 3]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{0, 1, 2, 3}));
+    // indices [[3], [1]]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{3, 1}));
+    // udpates [9, 10]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{9, 10}));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<int32_t>(raw_outputs[0])};
+    // output [0, 10, 2, 9]
+    vector<int> expected_outputs{0, 10, 2, 9};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}

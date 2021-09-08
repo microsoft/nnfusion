@@ -141,17 +141,24 @@ REGISTER_OP(Resize)
             }
 
             auto expression_template =
-                R"(h_map[CH] = @h_shape@.call('min', (CH + 0.5)/@h_scale@ - 0.5) where CH in @oh_shape@; \
-                h_map[CH] = h_map[CH].call('max', 0) where CH in @oh_shape@; \
-                h_weight[CH] = h_map[CH] - h_map[CH].cast("int") where CH in @oh_shape@; \
-                w_map[CH] = @w_shape@.call('min', (CH + 0.5)/@w_scale@ - 0.5) where CH in @ow_shape@; \
-                w_map[CH] = w_map[CH].call('max', 0) where CH in @ow_shape@; \
-                w_weight[CH] = w_map[CH] - h_map[CH].cast("int") where CH in @ow_shape@; \
-                @output0@@output0_layout@ = @input0@@input00_layout@ * h_weight@w_layout@ * w_weight@w_layout@ \
-                + @input0@@input10_layout@ * (1.0 - h_weight@w_layout@) * w_weight@w_layout@ \
-                + @input0@@input01_layout@ * h_weight@w_layout@ * (1.0 - w_weight@w_layout@) \
-                + @input0@@input11_layout@ * (1.0 - h_weight@w_layout@) * (1.0 - w_weight@w_layout@) \
-                where @con@; )";
+                "h_map[CH] = ((CH + 0.5)//@h_scale@ - 0.5).call('min', "
+                "[const(@h_shape@)]).call('max', [const(0.0)]) where CH in @oh_shape_plus_one@;"
+                "h_weight[CH] = h_map[CH] - h_map[CH].call('floor') where CH in "
+                "@oh_shape_plus_one@;"
+                "w_map[CH] = ((CH + 0.5)//@w_scale@ - 0.5).call('min', "
+                "[const(@w_shape@)]).call('max', [const(0.0)]) where CH in @ow_shape_plus_one@;"
+                "w_weight[CH] = w_map[CH] - w_map[CH].call('floor') where CH in "
+                "@ow_shape_plus_one@;"
+                "h_map_int[CH] = h_map[CH].cast('int') where CH in @oh_shape_plus_one@;"
+                "w_map_int[CH] = w_map[CH].cast('int') where CH in @ow_shape_plus_one@;"
+                "@output0@@output0_layout@ = @input0@@input00_layout@ * h_weight@h_layout@ * "
+                "w_weight@w_layout@"
+                "+ @input0@@input10_layout@ * (1.0 - h_weight@h_layout@) * w_weight@w_layout@"
+                "+ @input0@@input01_layout@ * h_weight@h_layout@ * (1.0 - w_weight@w_layout@)"
+                "+ @input0@@input11_layout@ * (1.0 - h_weight@w_layout@) * (1.0 - "
+                "w_weight@w_layout@)"
+                " where @con@;";
+            ;
 
             std::string cond;
             for (int d = 0; d < output_layout.size(); ++d)
@@ -161,34 +168,38 @@ REGISTER_OP(Resize)
             for (int d = 0; d < 2; ++d)
                 input00_layout[d] = input01_layout[d] = input11_layout[d] = input10_layout[d];
 
-            input00_layout[2] = "h_map[" + output_layout[2] + "]";
-            input00_layout[3] = "w_map[" + output_layout[3] + "]";
-            input10_layout[2] = "h_map[" + output_layout[2] + " + 1 ]";
-            input10_layout[3] = "w_map[" + output_layout[3] + "]";
-            input01_layout[2] = "h_map[" + output_layout[2] + "]";
-            input01_layout[3] = "w_map[" + output_layout[3] + " + 1]";
-            input11_layout[2] = "h_map[" + output_layout[2] + " + 1]";
-            input11_layout[3] = "w_map[" + output_layout[3] + " + 1]";
+            input00_layout[2] = "h_map_int[" + output_layout[2] + "]";
+            input00_layout[3] = "w_map_int[" + output_layout[3] + "]";
+            input10_layout[2] = "h_map_int[" + output_layout[2] + " + 1 ]";
+            input10_layout[3] = "w_map_int[" + output_layout[3] + "]";
+            input01_layout[2] = "h_map_int[" + output_layout[2] + "]";
+            input01_layout[3] = "w_map_int[" + output_layout[3] + " + 1]";
+            input11_layout[2] = "h_map_int[" + output_layout[2] + " + 1]";
+            input11_layout[3] = "w_map_int[" + output_layout[3] + " + 1]";
 
             vector<std::string> w_layout;
-            w_layout.push_back(output_layout[2]);
             w_layout.push_back(output_layout[3]);
+            vector<std::string> h_layout;
+            h_layout.push_back(output_layout[2]);
 
             auto expr =
                 op::create_code_from_template(expression_template,
                                               {{"output0_layout", vector_to_string(output_layout)},
                                                {"h_scale", scales[2]},
                                                {"oh_shape", output_shape[2]},
+                                               {"oh_shape_plus_one", output_shape[2] + 1},
                                                {"h_shape", input_shape[2] - 1},
                                                {"w_scale", scales[3]},
                                                {"ow_shape", output_shape[3]},
                                                {"w_shape", input_shape[3] - 1},
+                                               {"ow_shape_plus_one", output_shape[3] + 1},
                                                {"input00_layout", vector_to_string(input00_layout)},
                                                {"input01_layout", vector_to_string(input01_layout)},
                                                {"input10_layout", vector_to_string(input10_layout)},
                                                {"input11_layout", vector_to_string(input11_layout)},
                                                {"w_layout", vector_to_string(w_layout)},
-                                               {"cond", cond}});
+                                               {"h_layout", vector_to_string(h_layout)},
+                                               {"con", cond}});
             return expr;
         }
     });

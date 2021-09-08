@@ -29,14 +29,14 @@ REGISTER_OP(Resize)
         auto mode = generic_op->localOpConfig.getRoot()["method"];
         auto no_scale = generic_op->localOpConfig.getRoot()["no_scale"];
 
-        if(mode == "NEAREST")
+        if (mode == "NEAREST")
         {
             auto ng_op = gnode->get_in_edge(1)->get_src();
             NNFUSION_CHECK(2 == gnode->get_input_size());
             NNFUSION_CHECK(ng_op->is_constant())
                 << "We only accept the Resize input \"scales\" as Constant";
             auto scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                            ->get_vector<float>();
+                              ->get_vector<float>();
             NNFUSION_CHECK(input_shape.size() == scales.size());
 
             nnfusion::Shape output_shape(scales.size());
@@ -44,19 +44,19 @@ REGISTER_OP(Resize)
                 output_shape[i] = input_shape[i] * scales[i];
             gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
         }
-        else
-        if(mode == "LINEAR")
+        else if (mode == "LINEAR")
         {
             auto ng_op = gnode->get_in_edge(1)->get_src();
             NNFUSION_CHECK(ng_op->is_constant())
                 << "We only accept the Resize input \"scales\" as Constant";
-            if(no_scale)
+            if (no_scale)
             {
                 auto ng_op = gnode->get_in_edge(1)->get_src();
-                NNFUSION_LOG(INFO) << std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                                ->get_data_size();
+                NNFUSION_LOG(INFO)
+                    << std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
+                           ->get_data_size();
                 auto sizes = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                                ->get_vector<int64_t>();
+                                 ->get_vector<int64_t>();
 
                 NNFUSION_CHECK(4 == sizes.size());
                 nnfusion::Shape output_shape(sizes.size());
@@ -68,7 +68,7 @@ REGISTER_OP(Resize)
             else
             {
                 auto scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                                ->get_vector<float>();
+                                  ->get_vector<float>();
                 NNFUSION_CHECK(4 == scales.size());
                 nnfusion::Shape output_shape(scales.size());
                 for (int i = 0; i < scales.size(); i++)
@@ -82,7 +82,7 @@ REGISTER_OP(Resize)
         auto mode = generic_op->localOpConfig.getRoot()["method"];
         auto no_scale = generic_op->localOpConfig.getRoot()["no_scale"];
 
-        if(mode == "NEAREST")
+        if (mode == "NEAREST")
         {
             auto expression_template =
                 R"( @output0@@output0_layout@ = @input0@@input0_layout@ where @cond@; )";
@@ -93,7 +93,7 @@ REGISTER_OP(Resize)
             NNFUSION_CHECK(ng_op->is_constant())
                 << "We only accept the Tile input \"scales\" as Constant.";
             auto scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                            ->get_vector<float>();
+                              ->get_vector<float>();
 
             auto output_layout = op::create_layout_from_dims(output_shape);
             auto input_layout = op::create_layout_from_dims(output_shape);
@@ -104,19 +104,18 @@ REGISTER_OP(Resize)
                     input_layout[d] = input_layout[d] + " // " + to_string(int(scales[d]));
                 else
                     input_layout[d] = input_layout[d] + " * " + to_string(int(1 / scales[d]));
-                cond +=
-                    (cond.empty() ? "" : ", ") + output_layout[d] + " in " + to_string(output_shape[d]);
+                cond += (cond.empty() ? "" : ", ") + output_layout[d] + " in " +
+                        to_string(output_shape[d]);
             }
 
             auto expr =
                 op::create_code_from_template(expression_template,
-                                            {{"output0_layout", vector_to_string(output_layout)},
-                                            {"input0_layout", vector_to_string(input_layout)},
-                                            {"cond", cond}});
+                                              {{"output0_layout", vector_to_string(output_layout)},
+                                               {"input0_layout", vector_to_string(input_layout)},
+                                               {"cond", cond}});
             return expr;
         }
-        else
-        if(mode == "LINEAR")
+        else if (mode == "LINEAR")
         {
             // Only support 2D case
             nnfusion::Shape input_shape = gnode->get_input_shape(0);
@@ -130,36 +129,43 @@ REGISTER_OP(Resize)
 
             vector<float> scales;
             auto ng_op = gnode->get_in_edge(1)->get_src();
-            if(no_scale)
+            if (no_scale)
             {
-                for(int i=0;i<output_shape.size();i++)
-                    scales.push_back((float)output_shape[i]/(float)input_shape[i]);
+                for (int i = 0; i < output_shape.size(); i++)
+                    scales.push_back((float)output_shape[i] / (float)input_shape[i]);
             }
             else
             {
                 scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                           ->get_vector<float>();
+                             ->get_vector<float>();
             }
 
             auto expression_template =
-                "h_map[CH] = ((CH + 0.5)//@h_scale@ - 0.5).call('min', [const(@h_shape@)]).call('max', [const(0.0)]) where CH in @oh_shape_plus_one@;"
-                "h_weight[CH] = h_map[CH] - h_map[CH].call('floor') where CH in @oh_shape_plus_one@;"
-                "w_map[CH] = ((CH + 0.5)//@w_scale@ - 0.5).call('min', [const(@w_shape@)]).call('max', [const(0.0)]) where CH in @ow_shape_plus_one@;"
-                "w_weight[CH] = w_map[CH] - w_map[CH].call('floor') where CH in @ow_shape_plus_one@;"
+                "h_map[CH] = ((CH + 0.5)//@h_scale@ - 0.5).call('min', "
+                "[const(@h_shape@)]).call('max', [const(0.0)]) where CH in @oh_shape_plus_one@;"
+                "h_weight[CH] = h_map[CH] - h_map[CH].call('floor') where CH in "
+                "@oh_shape_plus_one@;"
+                "w_map[CH] = ((CH + 0.5)//@w_scale@ - 0.5).call('min', "
+                "[const(@w_shape@)]).call('max', [const(0.0)]) where CH in @ow_shape_plus_one@;"
+                "w_weight[CH] = w_map[CH] - w_map[CH].call('floor') where CH in "
+                "@ow_shape_plus_one@;"
                 "h_map_int[CH] = h_map[CH].cast('int') where CH in @oh_shape_plus_one@;"
                 "w_map_int[CH] = w_map[CH].cast('int') where CH in @ow_shape_plus_one@;"
-                "@output0@@output0_layout@ = @input0@@input00_layout@ * h_weight@h_layout@ * w_weight@w_layout@"
+                "@output0@@output0_layout@ = @input0@@input00_layout@ * h_weight@h_layout@ * "
+                "w_weight@w_layout@"
                 "+ @input0@@input10_layout@ * (1.0 - h_weight@h_layout@) * w_weight@w_layout@"
                 "+ @input0@@input01_layout@ * h_weight@h_layout@ * (1.0 - w_weight@w_layout@)"
-                "+ @input0@@input11_layout@ * (1.0 - h_weight@w_layout@) * (1.0 - w_weight@w_layout@)"
+                "+ @input0@@input11_layout@ * (1.0 - h_weight@w_layout@) * (1.0 - "
+                "w_weight@w_layout@)"
                 " where @con@;";
-                ;
+            ;
 
             std::string cond;
-            for(int d = 0; d < output_layout.size(); ++d)
-                cond += (cond.empty() ? "" : ", ") + output_layout[d] + " in " + to_string(output_shape[d]);
-            
-            for(int d = 0; d < 2; ++d)
+            for (int d = 0; d < output_layout.size(); ++d)
+                cond += (cond.empty() ? "" : ", ") + output_layout[d] + " in " +
+                        to_string(output_shape[d]);
+
+            for (int d = 0; d < 2; ++d)
                 input00_layout[d] = input01_layout[d] = input11_layout[d] = input10_layout[d];
 
             input00_layout[2] = "h_map_int[" + output_layout[2] + "]";
@@ -178,23 +184,22 @@ REGISTER_OP(Resize)
 
             auto expr =
                 op::create_code_from_template(expression_template,
-                                            {{"output0_layout", vector_to_string(output_layout)},
-                                            {"h_scale", scales[2]},
-                                            {"oh_shape", output_shape[2]},
-                                            {"oh_shape_plus_one", output_shape[2]+1},
-                                            {"h_shape", input_shape[2] - 1},
-                                            {"w_scale", scales[3]},
-                                            {"ow_shape", output_shape[3]},
-                                            {"w_shape", input_shape[3]-1},
-                                            {"ow_shape_plus_one", output_shape[3]+1},
-                                            {"input00_layout", vector_to_string(input00_layout)},
-                                            {"input01_layout", vector_to_string(input01_layout)},
-                                            {"input10_layout", vector_to_string(input10_layout)},
-                                            {"input11_layout", vector_to_string(input11_layout)},
-                                            {"w_layout", vector_to_string(w_layout)},
-                                            {"h_layout", vector_to_string(h_layout)},
-                                            {"con", cond}});
+                                              {{"output0_layout", vector_to_string(output_layout)},
+                                               {"h_scale", scales[2]},
+                                               {"oh_shape", output_shape[2]},
+                                               {"oh_shape_plus_one", output_shape[2] + 1},
+                                               {"h_shape", input_shape[2] - 1},
+                                               {"w_scale", scales[3]},
+                                               {"ow_shape", output_shape[3]},
+                                               {"w_shape", input_shape[3] - 1},
+                                               {"ow_shape_plus_one", output_shape[3] + 1},
+                                               {"input00_layout", vector_to_string(input00_layout)},
+                                               {"input01_layout", vector_to_string(input01_layout)},
+                                               {"input10_layout", vector_to_string(input10_layout)},
+                                               {"input11_layout", vector_to_string(input11_layout)},
+                                               {"w_layout", vector_to_string(w_layout)},
+                                               {"h_layout", vector_to_string(h_layout)},
+                                               {"con", cond}});
             return expr;
-
         }
     });

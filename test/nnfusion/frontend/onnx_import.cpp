@@ -1530,8 +1530,8 @@ TEST(nnfusion_onnx_import, scatternd_op)
 
 TEST(nnfusion_onnx_import, resize_downsample_scales_linear)
 {
-    auto model =
-        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/resize_downsample_scales_linear.onnx"));
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/resize_downsample_scales_linear.onnx"));
 
     RawInputs raw_inputs;
     raw_inputs.emplace_back(convert_to_raw(vector<float>{1, 2, 3, 4, 5, 6, 7, 8}));
@@ -1550,8 +1550,8 @@ TEST(nnfusion_onnx_import, resize_downsample_scales_linear)
 
 TEST(nnfusion_onnx_import, resize_upsample_scales_linear)
 {
-    auto model =
-        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/resize_upsample_scales_linear.onnx"));
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/resize_upsample_scales_linear.onnx"));
 
     RawInputs raw_inputs;
     raw_inputs.emplace_back(convert_to_raw(vector<float>{1, 2, 3, 4}));
@@ -1559,11 +1559,8 @@ TEST(nnfusion_onnx_import, resize_upsample_scales_linear)
     RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
     auto outputs{convert_from_raw<int32_t>(raw_outputs[0])};
     // output [0, 10, 2, 9]
-    vector<float> expected_outputs{1., 1.25, 1.75, 2. ,
-        1.5, 1.75,2.25,2.5,
-        2.5, 2.75,3.25,3.5,
-        3., 3.25, 3.75, 4.
-        };
+    vector<float> expected_outputs{
+        1., 1.25, 1.75, 2., 1.5, 1.75, 2.25, 2.5, 2.5, 2.75, 3.25, 3.5, 3., 3.25, 3.75, 4.};
 
     EXPECT_EQ(outputs.size(), expected_outputs.size());
     for (size_t i = 0; i < expected_outputs.size(); ++i)

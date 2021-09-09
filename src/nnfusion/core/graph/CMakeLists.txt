@@ -9,6 +9,7 @@ set(SRC
     graph_util.cpp
     util/autobroadcast.cpp
     util/numpy_transpose.cpp
+    subgraph_match.cpp
 )
 
 add_library(nnfusion_graph STATIC ${SRC})

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "bertfusion_optimizer.hpp"
+#include "subgraph_fusion_optimizer.hpp"
 
 namespace nnfusion
 {
@@ -11,20 +11,20 @@ namespace nnfusion
     {
         namespace graph
         {
-            class AttentionFusionOptimizer : public BertFusionOptimizer
+            class AttentionFusionOptimizer : public SubGraphFusionOptimizer
             {
             public:
                 AttentionFusionOptimizer(std::shared_ptr<nnfusion::graph::Graph> graph)
-                    : BertFusionOptimizer(graph)
+                    : SubGraphFusionOptimizer(graph)
 
                 {
                 }
+                virtual bool create_subgraphs() override;
+                virtual bool fuse_subgraph(SubGraphRecord::Pointer subgraph_record) override;
 
             private:
-                bool CheckStartingNode(std::shared_ptr<nnfusion::graph::GNode> node) override;
-                bool FindSubGraph(std::shared_ptr<nnfusion::graph::GNode> starting_node,
-                                  std::shared_ptr<BertFusionGroup> bertfusion_group) override;
-                bool FuseSubGraph(std::shared_ptr<BertFusionGroup> bertfusion_group) override;
+                std::shared_ptr<nnfusion::graph::GNode>
+                    GetorCreateMaskIndex(std::shared_ptr<nnfusion::graph::GNode> mask_input);
                 std::shared_ptr<nnfusion::graph::GNode>
                     MergeQkvWeights(std::shared_ptr<nnfusion::graph::GNode> q_weight,
                                     std::shared_ptr<nnfusion::graph::GNode> k_weight,
@@ -41,13 +41,9 @@ namespace nnfusion
                                         const char* v_weight_dptr,
                                         size_t step,
                                         std::vector<char>& qkv_weight_data);
-                std::shared_ptr<nnfusion::graph::GNode>
-                    GetorCreateMaskIndex(std::shared_ptr<nnfusion::graph::GNode> mask_input);
-
                 std::map<std::string, std::shared_ptr<nnfusion::graph::GNode>> mask_index_map;
                 std::map<std::string, std::shared_ptr<nnfusion::graph::GNode>> qkv_weight_map;
             };
-
         } // namespace graph
     }     // namespace pass
 } // namespace nnfusion

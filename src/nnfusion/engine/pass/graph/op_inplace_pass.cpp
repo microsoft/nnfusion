@@ -13,6 +13,8 @@
 #include "nnfusion/core/operators/util/arithmetic_reduction.hpp"
 #include "nnfusion/core/operators/util/elementwise_arithmetic.hpp"
 
+DECLARE_bool(fantares_mode);
+
 using namespace nnfusion::graph;
 using namespace nnfusion::op;
 using namespace nnfusion::pass::graph;
@@ -89,8 +91,15 @@ bool OpInplacePass::run_on_graph(std::shared_ptr<Graph>& graph)
             AddInplace(op, 0, 2, true);
         }
 
-        else if (nnfusion::op::get_annotation(nnfusion::op::get_translation(node))
-                     .find("|memcpy|") != string::npos)
+        else if (node->get_op_type() == "ScatterND")
+        {
+            auto op = std::dynamic_pointer_cast<GenericOp>(node->get_op_ptr());
+            AddInplace(op, 0, 0, true, true);
+        }
+
+        else if (FLAGS_fantares_mode &&
+                 nnfusion::op::get_annotation(nnfusion::op::get_translation(node))
+                         .find("|memcpy|") != string::npos)
         {
             auto op = node->get_op_ptr();
             AddInplace(op, 0, 0, false);

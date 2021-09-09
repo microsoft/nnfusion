@@ -59,7 +59,7 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
                            << ", Op Type = " << it->get_op_type();
 
         bool const_infer_success = false;
-        std::vector<std::vector<char>> raw_inputs, raw_outputs;
+        std::vector<std::vector<char>> raw_inputs(it->get_input_size()), raw_outputs;
 
         // Prepare constant inputs from upstream_nodes
         std::set<std::shared_ptr<GNode>> upstream_nodes;
@@ -83,10 +83,9 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
             NNFUSION_LOG(INFO) << "  With Constant Input Node: " << p_const->get_name()
                                << ", Memory Length = " << length;
 
-            std::vector<char> raw_input(length);
-            memcpy(raw_input.data(), ptr, length);
-            raw_inputs.emplace_back(std::move(raw_input));
-            NNFUSION_CHECK(raw_input.size() == 0);
+            size_t input_index = input->get_dst_input();
+            raw_inputs[input_index].resize(length);
+            memcpy(raw_inputs[input_index].data(), ptr, length);
         }
 
         // Prepare runtime backend

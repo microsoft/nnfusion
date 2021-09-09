@@ -277,6 +277,13 @@ bool InplaceTensorAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
                                       inplace_use_count[inplace_inputs[input].tensor] == 0) &&
                                      ins->liveness_free_list.count(input) != 0))
                                 {
+                                    if (oi_pair.force_inplace &&
+                                        ins->liveness_free_list.count(input) == 0)
+                                    {
+                                        NNFUSION_LOG(INFO) << "Inplace optimization for "
+                                                           << ins->getGNode()->get_name()
+                                                           << " has potential side effects.";
+                                    }
                                     in_place_outputs.insert(
                                         {output, std::make_pair(input, oi_pair.input_offset)});
 

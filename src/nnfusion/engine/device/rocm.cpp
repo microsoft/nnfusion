@@ -57,13 +57,13 @@ ROCmEngine::ROCmEngine()
 
     // Kernel selection
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+    g_passes->push_back(make_shared<KernelFusionPass>());
     g_passes->push_back(make_shared<KernelTuning>());
     g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
     g_passes->push_back(make_shared<FetchBasedSelector>());
     g_passes->push_back(make_shared<DefaultKernelSelector>());
 
     // GPU specific graph passes
-    g_passes->push_back(make_shared<KernelFusionPass>());
     g_passes->push_back(make_shared<KernelProfilingPass>());
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
     g_passes->push_back(make_shared<BlockFusionPass>());

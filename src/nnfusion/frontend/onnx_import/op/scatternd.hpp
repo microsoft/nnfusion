@@ -19,8 +19,9 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
-#include "where.hpp"
-#include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#pragma once
+
+#include "core/node.hpp"
 
 namespace nnfusion
 {
@@ -28,27 +29,16 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_11
             {
-                NamedNodeVector TranslateWhereOp(const onnx::NodeProto& node_proto,
-                                                 const NodeMap& all_ng_nodes,
-                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
-                {
-                    auto input_indices = GetAllInputIndex(all_ng_nodes, node_proto);
-                    auto cond_gnode = input_indices[0];
-                    auto x_gnode = input_indices[1];
-                    auto y_gnode = input_indices[2];
+                NamedNodeVector
+                    TranslateScatterNDOp(const onnx::NodeProto& node_proto,
+                                         const NodeMap& all_ng_nodes,
+                                         std::shared_ptr<nnfusion::graph::Graph> m_graph);
+            } // namespace set_11
 
-                    auto node_name = node_proto.output(0);
-                    nnfusion::op::OpConfig::any op_config;
+        } //namespace onnx_import
 
-                    auto where_op = std::make_shared<op::GenericOp>(node_name, "Select", op_config);
-                    auto where_gnode =
-                        m_graph->add_node_and_edge(where_op, {cond_gnode, x_gnode, y_gnode});
+    } // namespace frontend
 
-                    return {{node_proto.output(0), GNodeIndex(where_gnode)}};
-                }
-            } // namespace set_1
-        }     // namespace onnx_import
-    }         // namespace frontend
 } // namespace nnfusion

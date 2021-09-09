@@ -59,11 +59,24 @@ namespace nnfusion
                 }
                 io_config[input_alias] = input_alias;
             }
+            std::vector<std::string> extra_outputs;
             for (int out_id = 0; out_id < gnode->get_output_size(); ++out_id)
             {
                 auto output_alias = "output" + to_string(out_id);
                 io_config[output_alias] = output_alias;
+                extra_outputs.push_back("\"" + output_alias + "\"");
+
+                // special handle for "=." expr, which need add output into input dict
+                if (antares_template.find("=.") != std::string::npos)
+                {
+                    op::OpConfig::any output_config;
+                    op::create_inputs_definition_from_tensor(
+                        gnode->get_output_tensor_ptr(out_id), output_alias, output_config, "input");
+                    input_code = input_code + (input_code.empty() ? "" : ", ") +
+                                 op::create_code_from_template(input_template, output_config);
+                }
             }
+            auto extra_output = join(extra_outputs, ", ");
 
             std::string expression_code =
                 op::create_code_from_template(antares_template, io_config);
@@ -73,9 +86,22 @@ namespace nnfusion
                 (std::string::npos == plan_pos) ? "" : expression_code.substr(plan_pos);
             expression_code = expression_code.substr(0, plan_pos);
 
-            std::string ir_code = op::create_code_from_template(
-                R"( - einstein_v2("@exp_code@", input_dict={@in_code@}) @plan@ )",
-                {{"exp_code", expression_code}, {"in_code", input_code}, {"plan", plan}});
+            std::string ir_code;
+            if (extra_outputs.size() > 1)
+            {
+                ir_code = op::create_code_from_template(
+                    R"( - einstein_v2("@exp_code@", input_dict={@in_code@}, extra_outputs=[@extra_outputs@]) @plan@ )",
+                    {{"exp_code", expression_code},
+                     {"in_code", input_code},
+                     {"extra_outputs", extra_output},
+                     {"plan", plan}});
+            }
+            else
+            {
+                ir_code = op::create_code_from_template(
+                    R"( - einstein_v2("@exp_code@", input_dict={@in_code@}) @plan@ )",
+                    {{"exp_code", expression_code}, {"in_code", input_code}, {"plan", plan}});
+            }
             return std::move(ir_code);
         }
 

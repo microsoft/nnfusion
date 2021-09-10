@@ -11,7 +11,7 @@ namespace nnfusion
     {
         namespace graph
         {
-            class BertFusionPass : public GraphPassBase
+            class SubGraphFusionPass : public GraphPassBase
             {
             public:
                 bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) override;

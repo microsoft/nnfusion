@@ -142,11 +142,13 @@ REGISTER_OP(Resize)
 
             auto expression_template =
                 "h_map[CH] = ((CH + 0.5)//@h_scale@ - 0.5).call('min', "
-                "[const(@h_shape@).cast('float')]).call('max', [const(0.0)]) where CH in @oh_shape_plus_one@;"
+                "[const(@h_shape@).cast('float')]).call('max', [const(0.0)]) where CH in "
+                "@oh_shape_plus_one@;"
                 "h_weight[CH] = h_map[CH] - h_map[CH].call('floor') where CH in "
                 "@oh_shape_plus_one@;"
                 "w_map[CH] = ((CH + 0.5)//@w_scale@ - 0.5).call('min', "
-                "[const(@w_shape@).cast('float')]).call('max', [const(0.0)]) where CH in @ow_shape_plus_one@;"
+                "[const(@w_shape@).cast('float')]).call('max', [const(0.0)]) where CH in "
+                "@ow_shape_plus_one@;"
                 "w_weight[CH] = w_map[CH] - w_map[CH].call('floor') where CH in "
                 "@ow_shape_plus_one@;"
                 "h_map_int[CH] = h_map[CH].cast('int') where CH in @oh_shape_plus_one@;"

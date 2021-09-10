@@ -121,6 +121,12 @@ namespace nnfusion
             }
             /// \return The data format.
             const std::string& get_data_format() const { return m_data_format; }
+            void set_activation(const std::string& act)
+            {
+                NNFUSION_CHECK(act == "" || act == "relu");
+                m_activation = act;
+            }
+            const std::string& get_activation() const { return m_activation; }
         protected:
             nnfusion::Strides m_window_movement_strides;
             nnfusion::Strides m_window_dilation_strides;
@@ -128,6 +134,7 @@ namespace nnfusion
             nnfusion::CoordinateDiff m_padding_above;
             nnfusion::Strides m_data_dilation_strides;
             std::string m_data_format;
+            std::string m_activation;
 
         private:
             static nnfusion::Strides default_strides(const Op* op,

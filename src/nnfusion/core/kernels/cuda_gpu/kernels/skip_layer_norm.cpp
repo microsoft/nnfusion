@@ -26,6 +26,18 @@ LanguageUnit_p cuda::SkipLayerNorm::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
+    std::string input4;
+    if (m_context->inputs.size() != 5)
+    {
+        input4 = "nullptr";
+    }
+    else
+    {
+        if (dtype == element::f16)
+            input4 = "reinterpret_cast<const half*>(input4)";
+        else
+            input4 = "reinterpret_cast<const float*>(input4)";
+    }
 
     auto code = nnfusion::op::create_code_from_template(
         R"(
@@ -37,14 +49,14 @@ reinterpret_cast<const @dtype@*>(input0),
 reinterpret_cast<const @dtype@*>(input1),
 reinterpret_cast<const @dtype@*>(input3),
 reinterpret_cast<const @dtype@*>(input2),
-reinterpret_cast<const @dtype@*>(@input4@),
+@input4@,
 @expression1@@epsilon@@expression2@,
 reinterpret_cast<@dtype@*>(output0));
     )",
         {{"hidden_size", hidden_size},
          {"element_count", element_count},
          {"dtype", (dtype == element::f16) ? "half" : "float"},
-         {"input4", (m_context->inputs.size() == 5) ? "input4" : "nullptr"},
+         {"input4", input4},
          {"expression1", (dtype == element::f16) ? "__float2half_rn(" : ""},
          {"expression2", (dtype == element::f16) ? ")" : ""},
          {"epsilon", epsilon}});

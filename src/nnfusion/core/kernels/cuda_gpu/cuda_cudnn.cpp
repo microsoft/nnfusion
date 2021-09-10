@@ -236,3 +236,70 @@ void @prefix@_free()
     LanguageUnit_p lu(new LanguageUnit(mangled_name, code));
     return lu;
 }
+
+LanguageUnit_p cuda::get_cudnn_activation_descriptor(string mode, string desc, float coef)
+{
+    std::string mangled_name = "declaration::cudnn_activation_descriptor";
+    NNFUSION_CHECK(mode == "relu" || mode == "");
+    std::string cudnn_activation_mode;
+    if (mode == "relu")
+    {
+        cudnn_activation_mode = "CUDNN_ACTIVATION_RELU";
+    }
+    else
+    {
+        cudnn_activation_mode = "CUDNN_ACTIVATION_IDENTITY";
+    }
+    std::string code = nnfusion::op::create_code_from_template(
+        R"(
+cudnnActivationDescriptor_t @activation_desc@;
+CUDNN_SAFE_CALL(cudnnCreateActivationDescriptor(&@activation_desc@));
+CUDNN_SAFE_CALL(cudnnSetActivationDescriptor(@activation_desc@, @activation_mode@, CUDNN_NOT_PROPAGATE_NAN, @coef@));
+
+
+)",
+        {
+            {"activation_mode", cudnn_activation_mode}, {"coef", coef}, {"activation_desc", desc},
+        });
+
+    LanguageUnit_p lu(new LanguageUnit(mangled_name, code));
+    return lu;
+}
+
+LanguageUnit_p
+    cuda::get_cudnn_bias_descriptor(const nnfusion::Shape& shape, string desc, element::Type type)
+{
+    LanguageUnit_p _lu(new LanguageUnit);
+    auto& lu = *_lu;
+    string data_type = cuda::get_cudnn_datatype(type);
+
+    lu << "cudnnTensorDescriptor_t " << desc << ";\n";
+    lu << "CUDNN_SAFE_CALL(cudnnCreateTensorDescriptor(&" << desc << "));\n";
+
+    NNFUSION_CHECK(shape.size() <= 4);
+    if (shape.size() < 4)
+    {
+        std::array<int, 4> dimensions;
+        size_t pos = 0;
+        for (size_t i = shape.size(); i < 4; i++)
+        {
+            dimensions[pos++] = 1;
+        }
+        for (size_t i = 0; i < shape.size(); i++)
+        {
+            dimensions[pos++] = static_cast<int>(shape[i]);
+        }
+        lu << "CUDNN_SAFE_CALL(cudnnSetTensor4dDescriptorEx(" << desc << ", " << data_type << ", "
+           << dimensions[0] << ", " << dimensions[1] << ", " << dimensions[2] << ", "
+           << dimensions[3] << ", 1, 1, 1, 1));\n";
+    }
+    else if (shape.size() == 4)
+    {
+        lu << "CUDNN_SAFE_CALL(cudnnSetTensor4dDescriptorEx(" << desc << ", " << data_type << ", "
+           << static_cast<int>(shape[0]) << ", " << static_cast<int>(shape[1]) << ", "
+           << static_cast<int>(shape[2]) << ", " << static_cast<int>(shape[3])
+           << ", 1, 1, 1, 1));\n";
+    }
+
+    return _lu;
+}

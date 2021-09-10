@@ -30,6 +30,12 @@ cuda::ConvolutionCudnn::ConvolutionCudnn(shared_ptr<KernelContext> ctx)
     padding_above_diff = conv->get_padding_above();
     data_format = conv->get_data_format();
     dtype = ctx->outputs[0]->get_element_type().c_type_string();
+    activation = conv->get_activation();
+    with_bias = (ctx->inputs.size() == 3);
+    if (activation != "")
+    {
+        NNFUSION_CHECK(with_bias);
+    }
 
     std::stringstream tag;
     tag << "cudnn_convolution_op_" << dtype << "_i" << join(input_shape, "_") << "_w"
@@ -101,7 +107,22 @@ LanguageUnit_p cuda::ConvolutionCudnn::emit_function_body()
                                                conv_type)
                   ->get_code();
 
-        lu << R"(
+        if (with_bias)
+        {
+            auto bias_shape = m_context->inputs[2]->get_shape();
+            auto bias_type = m_context->inputs[2]->get_element_type();
+            lu << get_cudnn_bias_descriptor(bias_shape, "tensor_desc_bias", bias_type)->get_code();
+            lu << get_cudnn_activation_descriptor(activation, "tensor_desc_act", 0.0)->get_code();
+        }
+
+        if (with_bias && activation == "")
+        {
+            lu << "cudnnConvolutionFwdAlgo_t conv_fwd_bias_algo = "
+                  "CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;\n";
+        }
+        else
+        {
+            lu << R"(
 static bool selected_algo = false;
 static cudnnConvolutionFwdAlgo_t conv_fwd_algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
 
@@ -130,6 +151,8 @@ if (!selected_algo) {
     }
     selected_algo = true;
 })";
+        }
+
         lu << "\n";
         lu << "const float alpha = 1.0;\n";
         lu << "const float beta = 0.0;\n";
@@ -141,30 +164,78 @@ if (!selected_algo) {
            << "tensor_desc_0, "
            << "filter_desc, "
            << "conv_desc, "
-           << "tensor_desc_1, "
-           << "conv_fwd_algo, "
-           << "&workspace_size_in_bytes));\n";
+           << "tensor_desc_1, ";
+        if (with_bias && activation == "")
+        {
+            lu << "conv_fwd_bias_algo, ";
+        }
+        else
+        {
+            lu << "conv_fwd_algo, ";
+        }
+        lu << "&workspace_size_in_bytes));\n";
         //lu << "void *workspace_ptr;\n"
         lu << "CUDA_SAFE_CALL(cudaMalloc(&workspace_ptr, workspace_size_in_bytes));\n";
         lu.block_end();
-        lu << "CUDNN_SAFE_CALL(cudnnConvolutionForward(cudnn_handle, "
-           << "&alpha, "
-           << "tensor_desc_0, "
-           << "input0,"
-           << "filter_desc, "
-           << "input1, "
-           << "conv_desc, "
-           << "conv_fwd_algo, "
-           << "workspace_ptr, "
-           << "workspace_size_in_bytes, "
-           << "&beta, "
-           << "tensor_desc_1, "
-           << "output0));\n";
-        //lu << "CUDA_SAFE_CALL(cudaFree(workspace_ptr));\n";
-        lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(tensor_desc_0));\n";
-        lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(tensor_desc_1));\n";
-        lu << "CUDNN_SAFE_CALL(cudnnDestroyFilterDescriptor(filter_desc));\n";
-        lu << "CUDNN_SAFE_CALL(cudnnDestroyConvolutionDescriptor(conv_desc));\n";
+
+        if (!with_bias && activation == "")
+        {
+            lu << "CUDNN_SAFE_CALL(cudnnConvolutionForward(cudnn_handle, "
+               << "&alpha, "
+               << "tensor_desc_0, "
+               << "input0,"
+               << "filter_desc, "
+               << "input1, "
+               << "conv_desc, "
+               << "conv_fwd_algo, "
+               << "workspace_ptr, "
+               << "workspace_size_in_bytes, "
+               << "&beta, "
+               << "tensor_desc_1, "
+               << "output0));\n";
+            //lu << "CUDA_SAFE_CALL(cudaFree(workspace_ptr));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(tensor_desc_0));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(tensor_desc_1));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyFilterDescriptor(filter_desc));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyConvolutionDescriptor(conv_desc));\n";
+        }
+        else
+        {
+            lu << "CUDNN_SAFE_CALL(cudnnConvolutionBiasActivationForward(cudnn_handle, "
+               << "&alpha, "
+               << "tensor_desc_0, "
+               << "input0,"
+               << "filter_desc, "
+               << "input1, "
+               << "conv_desc, ";
+
+            if (activation == "")
+            {
+                lu << "conv_fwd_bias_algo, ";
+            }
+            else
+            {
+                lu << "conv_fwd_algo, ";
+            }
+
+            lu << "workspace_ptr, "
+               << "workspace_size_in_bytes, "
+               << "&beta, "
+               << "tensor_desc_1, "
+               << "output0, "
+               << "tensor_desc_bias, "
+               << "input2, "
+               << "tensor_desc_act, "
+               << "tensor_desc_1, "
+               << "output0));\n";
+
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(tensor_desc_0));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(tensor_desc_1));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyFilterDescriptor(filter_desc));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyConvolutionDescriptor(conv_desc));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(tensor_desc_bias));\n";
+            lu << "CUDNN_SAFE_CALL(cudnnDestroyActivationDescriptor(tensor_desc_act));\n";
+        }
     }
 
     return _lu;

@@ -155,7 +155,7 @@ REGISTER_OP(Resize)
                 "w_weight@w_layout@"
                 "+ @input0@@input10_layout@ * (1.0 - h_weight@h_layout@) * w_weight@w_layout@"
                 "+ @input0@@input01_layout@ * h_weight@h_layout@ * (1.0 - w_weight@w_layout@)"
-                "+ @input0@@input11_layout@ * (1.0 - h_weight@w_layout@) * (1.0 - "
+                "+ @input0@@input11_layout@ * (1.0 - h_weight@h_layout@) * (1.0 - "
                 "w_weight@w_layout@)"
                 " where @con@;";
             ;

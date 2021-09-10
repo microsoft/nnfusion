@@ -72,87 +72,93 @@ REGISTER_OP(Reshape)
         }
         else
         {
-            auto output_shape = curr->get_output_shape(0).empty() ? nnfusion::Shape({1})
-                                                                  : curr->get_output_shape(0);
-            auto input_shape =
-                curr->get_input_shape(0).empty() ? nnfusion::Shape({1}) : curr->get_input_shape(0);
+            std::string cond = "";
+
+            auto output_shape = curr->get_output_shape(0);
+            auto input_shape = curr->get_input_shape(0);
             auto output_layout = op::create_layout_from_dims(output_shape);
-            std::set<int> declear_dims;
-            std::vector<std::string> input_layout;
-            int in_multiplier = 1;
-            int out_multiplier = 1;
-            int in_index = 0;
-            int out_index = 0;
-            while (in_index < input_shape.size() || out_index < output_shape.size())
+            auto input_layout = std::vector<std::string>(input_shape.size());
+
+            int m_index = 0;
+            for (int dim_index = 0; dim_index < input_shape.size(); dim_index++)
+                input_layout[dim_index] =
+                    input_shape[dim_index] == 1 ? "0" : input_layout[dim_index];
+
+            int acc_in_shape = 1;
+            int acc_in_index = -1;
+            int acc_out_shape = 1;
+            std::vector<size_t> acc_in_pairs;
+            std::vector<size_t> acc_out_pairs;
+            for (int dim_index = 0; dim_index < output_shape.size(); dim_index++)
             {
-                auto in_dim = in_index < input_shape.size() ? input_shape[in_index] : 0;
-                auto out_dim = out_index < output_shape.size() ? output_shape[out_index] : 0;
-                if (in_multiplier == 1 && out_multiplier == 1)
+                if (output_shape[dim_index] == 1)
+                    continue;
+                acc_out_shape *= output_shape[dim_index];
+                acc_out_pairs.push_back(dim_index);
+
+                if (acc_out_shape > acc_in_shape)
                 {
-                    if (out_dim != in_dim)
+                    while (acc_out_shape > acc_in_shape)
                     {
-                        in_multiplier = out_dim > in_dim ? 1 : in_dim;
-                        out_multiplier = out_dim > in_dim ? out_dim : 1;
-                    }
-                    else
-                    {
-                        input_layout.push_back(output_layout[out_index]);
-                        in_index++;
-                        out_index++;
-                        continue;
+                        acc_in_index += 1;
+                        if (input_shape[acc_in_index] == 1)
+                            continue;
+                        acc_in_shape *= input_shape[acc_in_index];
+                        acc_in_pairs.push_back(acc_in_index);
                     }
                 }
 
-                NNFUSION_CHECK(in_multiplier == 1 || out_multiplier == 1)
-                    << "Only single-way reshape is suuported now!";
-
-                if (out_dim && (in_multiplier / out_dim))
+                if (acc_out_shape == acc_in_shape)
                 {
-                    in_multiplier /= out_dim;
-                    // declear_dims.insert(out_index);
-                    auto r_in_index = std::min(in_index, int(input_shape.size()) - 1);
-                    auto r_out_index = std::min(out_index, int(output_shape.size()) - 1);
-                    if (input_layout.size() <= r_in_index)
-                        input_layout.push_back("");
-                    input_layout[r_in_index] =
-                        input_layout[r_in_index] + (input_layout[r_in_index].empty() ? "" : " + ") +
-                        output_layout[r_out_index] + " * " + to_string(in_multiplier);
-                    out_index++;
-                    if (in_multiplier == 1)
-                        in_index++;
-                }
-
-                if (in_dim && (out_multiplier / in_dim))
-                {
-                    out_multiplier /= in_dim;
-                    // declear_dims.insert(out_index);
-                    auto r_out_index = std::min(out_index, int(output_shape.size()) - 1);
-                    input_layout.push_back(output_layout[r_out_index] + " // " +
-                                           to_string(out_multiplier) + " % " + to_string(in_dim));
-                    in_index++;
-                    if (out_multiplier == 1)
-                        out_index++;
+                    std::string in_mul_str = "";
+                    for (auto acc_out : acc_out_pairs)
+                    {
+                        in_mul_str =
+                            (in_mul_str.empty() ? output_layout[acc_out]
+                                                : ("(" + in_mul_str + ")" + " * " +
+                                                   to_string(output_shape[acc_out]) + " + ") +
+                                                      output_layout[acc_out]);
+                    }
+                    for (int i_index = 0; i_index < acc_in_pairs.size(); i_index++)
+                    {
+                        int mod = 1;
+                        for (int t_index = i_index + 1; t_index < acc_in_pairs.size(); t_index++)
+                        {
+                            mod *= input_shape[acc_in_pairs[t_index]];
+                        }
+                        std::string o_layout_str =
+                            acc_out_pairs.size() == 1 ? in_mul_str : ("(" + in_mul_str + ")");
+                        o_layout_str += acc_in_pairs.size() == 1
+                                            ? ""
+                                            : (" / " + to_string(mod) + " % " +
+                                               to_string(input_shape[acc_in_pairs[i_index]]));
+                        input_layout[acc_in_pairs[i_index]] = o_layout_str;
+                    }
+                    acc_in_shape = 1;
+                    acc_out_shape = 1;
+                    acc_in_pairs.clear();
+                    acc_out_pairs.clear();
                 }
             }
 
-            std::string condition;
-            for (int d = 0; d < output_shape.size(); ++d)
+            std::unordered_set<std::string> def_keys;
+            for (int dim_index = 0; dim_index < input_layout.size(); dim_index++)
             {
-                condition = condition + (condition.empty() ? "" : " , ") + "N" + to_string(d) +
-                            " in " + to_string(output_shape[d]);
+                def_keys.insert(input_layout[dim_index]);
             }
-            if (!condition.empty())
-                condition = "where " + condition;
-
-            auto input_layout_str = curr->get_input_shape(0).empty()
-                                        ? "[]"
-                                        : vector_to_string<std::vector<std::string>>(input_layout);
+            for (int dim_index = 0; dim_index < output_shape.size(); dim_index++)
+            {
+                if (def_keys.find(output_layout[dim_index]) != def_keys.end())
+                    continue;
+                cond = cond + (cond.empty() ? "where " : ", ") + output_layout[dim_index] + " in " +
+                       to_string(output_shape[dim_index]);
+            }
 
             expression_code = op::create_code_from_template(
                 expression_template,
                 {{"output0_layout", vector_to_string<std::vector<std::string>>(output_layout)},
-                 {"input0_layout", input_layout_str},
-                 {"conditions", condition}});
+                 {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
+                 {"conditions", cond}});
 
             memcpy_annotation = true;
         }

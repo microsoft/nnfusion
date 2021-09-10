@@ -45,12 +45,35 @@ namespace nnfusion
                     nnfusion::op::OpConfig::any op_config;
                     op_config["method"] = mode;
 
-                    auto node_name = node_proto.output(0);
-                    auto resize_op =
-                        std::make_shared<nnfusion::op::GenericOp>(node_name, "Resize", op_config);
-                    auto resize_gnode =
-                        m_graph->add_node_and_edge(resize_op, {x_gnode, scales_gnode});
-                    return NamedNodeVector{{node_proto.output(0), resize_gnode}};
+                    if (mode == "NEAREST")
+                    {
+                        auto node_name = node_proto.output(0);
+                        auto resize_op = std::make_shared<nnfusion::op::GenericOp>(
+                            node_name, "Resize", op_config);
+                        auto resize_gnode =
+                            m_graph->add_node_and_edge(resize_op, {x_gnode, scales_gnode});
+                        return NamedNodeVector{{node_proto.output(0), resize_gnode}};
+                    }
+                    else if (mode == "LINEAR")
+                    {
+                        std::string trans_mode = node.get_attribute_value<std::string>(
+                            "coordinate_transformation_mode", "pytorch_half_pixel");
+                        std::string nearest_mode =
+                            node.get_attribute_value<std::string>("nearest_mode", "floor");
+                        op_config["coordinate_transformation_mode"] = trans_mode;
+                        op_config["nearest_mode"] = nearest_mode;
+                        op_config["no_scale"] = input_indices.size() > 3;
+
+                        auto node_name = node_proto.output(0);
+                        auto resize_op = std::make_shared<nnfusion::op::GenericOp>(
+                            node_name, "Resize", op_config);
+                        auto resize_gnode =
+                            input_indices.size() < 4
+                                ? m_graph->add_node_and_edge(resize_op, {x_gnode, scales_gnode})
+                                : m_graph->add_node_and_edge(resize_op,
+                                                             {x_gnode, input_indices[3]});
+                        return NamedNodeVector{{node_proto.output(0), resize_gnode}};
+                    }
                 }
             } // namespace set_1
 

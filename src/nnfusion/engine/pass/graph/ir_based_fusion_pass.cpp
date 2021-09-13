@@ -54,6 +54,15 @@ private:
             // multi-used op
             if (node->get_out_edges().size() > 1)
                 m_tagged_nodes.insert(node);
+            // tensor op
+            else if (node->get_op_ptr()->is_tensor_op())
+                m_tagged_nodes.insert(node);
+            // output op
+            else if (node->get_op_ptr()->is_output())
+            {
+                auto output = node->get_in_edge(0)->get_src();
+                m_tagged_nodes.insert(output);
+            }
             else
             {
                 auto ir = nnfusion::op::get_translation(node);
@@ -87,18 +96,22 @@ private:
             for (auto edge : node->get_in_edges())
             {
                 auto src = edge->get_src();
-                if (m_tagged_nodes.find(src) == m_tagged_nodes.end())
+                if (m_tagged_nodes.find(src) == m_tagged_nodes.end() &&
+                    src->get_op_type() != "Matched_Pattern")
                 {
                     ready.push(src);
                 }
             }
         }
-
         // fuse
-        auto fused_op = std::make_shared<nnfusion::op::Fused>("fused_kernel", "ElementWiseFused");
-        auto fused_node = std::make_shared<FusedGNode>(fused_op);
-        fused_node->build_fused_node(fused, m_graph, true);
-        m_graph->add_node(fused_node);
+        if (fused.size() > 1)
+        {
+            auto fused_op =
+                std::make_shared<nnfusion::op::Fused>("fused_kernel", "Matched_Pattern");
+            auto fused_node = std::make_shared<FusedGNode>(fused_op);
+            fused_node->build_fused_node(fused, m_graph, true);
+            m_graph->add_node(fused_node);
+        }
     }
 
     unordered_set<shared_ptr<GNode>> m_tagged_nodes;

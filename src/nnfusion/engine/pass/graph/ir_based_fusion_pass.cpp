@@ -13,22 +13,6 @@ using namespace nnfusion::kernels;
 
 DEFINE_bool(fir_based_fusion, false, "");
 
-const static int DEFAULT_GROUP_ID = -1;
-namespace
-{
-    struct FuseGroup
-    {
-        FuseGroup(int g_id = DEFAULT_GROUP_ID)
-            : id(g_id)
-        {
-        }
-        int id;
-        std::unordered_set<std::shared_ptr<GNode>> internal_nodes;
-        std::shared_ptr<GNode> root_node;
-        std::vector<size_t> reduce_range;
-    };
-}
-
 class IRBasedFusionOptimizer
 {
 public:
@@ -55,27 +39,35 @@ private:
             if (node->get_out_edges().size() > 1)
                 m_tagged_nodes.insert(node);
             // tensor op
-            else if (node->get_op_ptr()->is_tensor_op())
+            if (node->get_op_ptr()->is_tensor_op())
                 m_tagged_nodes.insert(node);
             // output op
-            else if (node->get_op_ptr()->is_output())
+            if (node->get_op_ptr()->is_output())
             {
                 auto output = node->get_in_edge(0)->get_src();
                 m_tagged_nodes.insert(output);
             }
-            else
+
+            auto ir = nnfusion::op::get_translation(node);
+            // multi ir
+            if (ir.find("mediate") != string::npos)
             {
-                auto ir = nnfusion::op::get_translation(node);
-                // "+=! op"
-                if (ir.find("+=!") != string::npos)
-                    m_tagged_nodes.insert(node);
-                // "=. op"
-                else if (ir.find("=.") != string::npos)
+                NNFUSION_LOG(INFO) << node->get_op_type();
+                for (auto in_edge : node->get_in_edges())
                 {
-                    m_tagged_nodes.insert(node);
-                    auto input = node->get_in_edge(0)->get_src();
-                    m_tagged_nodes.insert(input);
+                    auto src = in_edge->get_src();
+                    m_tagged_nodes.insert(src);
                 }
+            }
+            // "+=! op"
+            if (ir.find("+=!") != string::npos)
+                m_tagged_nodes.insert(node);
+            // "=. op"
+            if (ir.find("=.") != string::npos)
+            {
+                m_tagged_nodes.insert(node);
+                auto input = node->get_in_edge(0)->get_src();
+                m_tagged_nodes.insert(input);
             }
         }
         return;

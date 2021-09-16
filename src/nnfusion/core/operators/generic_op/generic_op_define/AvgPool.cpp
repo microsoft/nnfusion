@@ -27,7 +27,6 @@ REGISTER_OP(AvgPool)
     })
     */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         auto _op = static_pointer_cast<nnfusion::op::AvgPool>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 

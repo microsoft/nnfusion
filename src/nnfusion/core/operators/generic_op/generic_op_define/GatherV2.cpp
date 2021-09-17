@@ -43,7 +43,6 @@ REGISTER_OP(GatherV2)
              {"axis", axis}});
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
         int axis = generic_op->localOpConfig.getRoot()["axis"];
         // e.g. Antares type is int64 rather than C++'s int64_t
@@ -91,6 +90,10 @@ REGISTER_OP(GatherV2)
             auto index =
                 *((int64_t*)std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
                       ->get_data_ptr());
+            if (index < 0)
+            {
+                index = input0_shape[axis] + index;
+            }
             op_config["input1"] = to_string(index);
             op_config["input1_layout"] = "";
         }

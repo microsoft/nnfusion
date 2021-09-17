@@ -46,16 +46,16 @@ REGISTER_OP(DepthToSpace)
         if (mode == "CRD")
         {
             input0_c_str = op::create_code_from_template(
-                "C * @c_stride@ * @block_size@ + HS * @c_stride@ + WS",
+                "C * @block_size@ * @block_size@ + HS * @block_size@ + WS",
                 {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
         }
         else
         {
             input0_c_str = op::create_code_from_template(
-                "HS * @c_stride@ * @block_size@ + WS * @c_stride@ + C",
+                "HS * @block_size@ * @block_size@ + WS * @block_size@ + C",
                 {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
         }
-        // auto input0_c_str = op::create_code_from_template("C * @block_size@ * @block_size@ + HS * @block_size@ + WS", {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
+        // auto input0_c_str = op::create_code_from_template("C * @c_stride@ * @block_size@ + HS * @c_stride@ + WS", {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
         auto input0_layout = op::create_code_from_template(
             is_nhwc ? "[N, H, W, @c_str@]" : "[N, @c_str@, H, W]", {{"c_str", input0_c_str}});
         std::string mediate0_layout;

@@ -17,6 +17,7 @@
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
+#include "nnfusion/engine/pass/graph/ir_based_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
@@ -58,6 +59,7 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<AssignLayoutPass>());
         g_passes->push_back(make_shared<OpInplacePass>());
         g_passes->push_back(make_shared<ReduceFusionPass>());
+        g_passes->push_back(make_shared<IRBasedFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
@@ -98,6 +100,7 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<AssignLayoutPass>());
         g_passes->push_back(make_shared<OpInplacePass>());
         g_passes->push_back(make_shared<ReduceFusionPass>());
+        g_passes->push_back(make_shared<IRBasedFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
@@ -130,6 +133,7 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
         g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
         g_passes->push_back(make_shared<ReduceFusionPass>());
+        g_passes->push_back(make_shared<IRBasedFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());

@@ -252,6 +252,7 @@ namespace nnfusion
                                                 << "NNFusion shape: "
                                                 << ctx->outputs[i]->get_shape()
                                                 << ", Antares shape: " << antares_output_shapes[i];
+                                            NNFUSION_LOG(INFO) << info.first;
                                             flag_match = false;
                                             break;
                                         }
@@ -287,6 +288,11 @@ namespace nnfusion
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
                         }
+
+                        kernel_info =
+                            nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
+                        NNFUSION_CHECK(!kernel_info.empty());
+                        process_antares_kernel_info();
                     }
                 }
 
@@ -295,6 +301,8 @@ namespace nnfusion
 
                 bool is_eliminative() override;
                 LanguageUnit_p emit_function_body() override;
+                LanguageUnit_p emit_function_call() override;
+                LanguageUnit_p emit_function_signature() override;
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_comments() override
                 {
@@ -307,6 +315,14 @@ namespace nnfusion
                 std::string antares_code;
                 std::string ir;
                 bool is_memcpy = false;
+
+            protected:
+                // map tensor names and allocate tmp tensor
+                void process_antares_kernel_info();
+                void find_launch_config(const std::string& str, dim3& gridDim, dim3& blockDim);
+                std::vector<AntaresKernelInfo::Pointer> kernel_info;
+                std::unordered_map<std::string, std::string>
+                    tensor_name_map; // antares tensor name : kernel tensor name
             };
 
             class CacheCudaEmitter : public CudaEmitter

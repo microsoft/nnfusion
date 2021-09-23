@@ -3,8 +3,9 @@
 
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-REGISTER_OP(GatherND).attr<int>("axis", 0).infershape(
-    [](std::shared_ptr<graph::GNode> gnode) -> void {
+REGISTER_OP(GatherND)
+    .attr<int>("axis", 0)
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         NNFUSION_CHECK(gnode->get_input_size() == 2);
         const nnfusion::Shape& input_shape_0 = gnode->get_input_shape(0);
         const nnfusion::Shape& input_shape_1 = gnode->get_input_shape(1);

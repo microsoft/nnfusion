@@ -16,10 +16,10 @@
 
 #include "backward_registry.hpp"
 
-REGISTER_BACKWARD_TRANSLATOR(MatMulAdd).translator(
-    [](std::shared_ptr<GNode> forward_node,
-       const GNodeIndexVector& outputs_grad,
-       std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {
+REGISTER_BACKWARD_TRANSLATOR(MatMulAdd)
+    .translator([](std::shared_ptr<GNode> forward_node,
+                   const GNodeIndexVector& outputs_grad,
+                   std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {
         // Y = AB + C, A_grad = Y_grad.B^T, B_grad = A^T.Y_grad, C_grad = Y_grad
         NNFUSION_CHECK(outputs_grad.size() == 1) << "MatMulAdd have only 1 output, but "
                                                  << outputs_grad.size() << " outputs_grad provided";

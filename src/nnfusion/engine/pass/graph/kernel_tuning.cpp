@@ -20,6 +20,7 @@ DEFINE_int64(fkernel_tuning_steps, 0, "Enable automatic kernel tuning for maximu
 DEFINE_string(ftuning_blocklist,
               "",
               "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
+DEFINE_string(fantares_perf_file, "./antares_perf.csv", "File to save Antares kernel performance.");
 DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
@@ -96,6 +97,36 @@ void print_tuning_results(std::vector<std::shared_ptr<TuningStatus>> tuned_kerne
     NNFUSION_LOG(INFO) << ss.str();
 }
 
+void dump_perf(std::string filename,
+               std::vector<std::shared_ptr<TuningStatus>> tuned_kernels,
+               std::unordered_map<std::string, size_t> ir_cnt)
+{
+    double total_time = 0.0;
+    for (auto status : tuned_kernels)
+    {
+        if (status->best_perf > 0)
+            total_time += status->best_perf * ir_cnt.at(status->ir);
+    }
+    std::sort(tuned_kernels.begin(),
+              tuned_kernels.end(),
+              [&](std::shared_ptr<TuningStatus> left, std::shared_ptr<TuningStatus> right) {
+                  return left->best_perf * ir_cnt.at(left->ir) >
+                         right->best_perf * ir_cnt.at(right->ir);
+              });
+    std::ofstream out(FLAGS_fantares_perf_file);
+    for (auto status : tuned_kernels)
+    {
+        size_t cnt = ir_cnt.at(status->ir);
+        double kernel_time_sum = status->best_perf > 0 ? status->best_perf * cnt : -1.0;
+        double percent = std::max(kernel_time_sum / total_time * 100, 0.0);
+
+        out << std::fixed << std::setprecision(2) << percent << " %"
+            << "\t" << kernel_time_sum << "\t" << cnt << "\t" << status->best_perf << "\t"
+            << status->op_type << "\t" << status->op_name << "\t" << status->ir << endl;
+    }
+    out.close();
+}
+
 std::vector<std::shared_ptr<GNode>>
     KernelTuning::get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
@@ -103,8 +134,6 @@ std::vector<std::shared_ptr<GNode>>
 
     std::vector<std::shared_ptr<GNode>> candidates;
     std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
-
-    std::unordered_set<std::string> translated_irs;
     for (auto gnode : nodes)
     {
         if (!(*gnode)["DeviceType"].is_valid())
@@ -135,9 +164,10 @@ std::vector<std::shared_ptr<GNode>>
         {
             if (translated_irs.find(ir) != translated_irs.end())
             {
+                translated_irs.at(ir) += 1;
                 continue;
             }
-            translated_irs.insert(ir);
+            translated_irs[ir] = 1;
         }
 
         candidates.push_back(gnode);
@@ -278,6 +308,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
         exit(0);
     }
 
+    dump_perf(FLAGS_fantares_perf_file, tuned_kernels, translated_irs);
     insert_to_kernel_cache(nodes);
 
     return true;
@@ -305,8 +336,9 @@ bool KernelTuning::register_antares_kernel()
                 .Priority(9)
                 .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                    -> shared_ptr<kernels::KernelEmitter> {
-                    return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(context);
-                })
+                                       return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(
+                                           context);
+                                   })
                 .Build());
         kernels::KernelRegistrar kernel_registrar_cpu(
             op_name,
@@ -317,8 +349,9 @@ bool KernelTuning::register_antares_kernel()
                 .Priority(9)
                 .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                    -> shared_ptr<kernels::KernelEmitter> {
-                    return make_shared<kernels::cpu::AntaresCpuKernelEmitter>(context);
-                })
+                                       return make_shared<kernels::cpu::AntaresCpuKernelEmitter>(
+                                           context);
+                                   })
                 .Build());
         kernels::KernelRegistrar kernel_registrar_hlsl(
             op_name,
@@ -329,8 +362,9 @@ bool KernelTuning::register_antares_kernel()
                 .Priority(9)
                 .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                    -> shared_ptr<kernels::KernelEmitter> {
-                    return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(context);
-                })
+                                       return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(
+                                           context);
+                                   })
                 .Build());
     }
     return true;

@@ -38,10 +38,10 @@ shared_ptr<op::Reshape>
     return make_shared<op::Reshape>(input_order, output_shape);
 }
 
-REGISTER_BACKWARD_TRANSLATOR(Dot)
-    .translator([](std::shared_ptr<GNode> forward_node,
-                   const GNodeIndexVector& outputs_grad,
-                   std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {
+REGISTER_BACKWARD_TRANSLATOR(Dot).translator(
+    [](std::shared_ptr<GNode> forward_node,
+       const GNodeIndexVector& outputs_grad,
+       std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {
         //  y = dot(a, b), a_grad = dot(y_grad, b^t), b_grad = dot(a^t, y_grad)
         NNFUSION_CHECK(outputs_grad.size() == 1) << "parameter have only 1 output, but "
                                                  << outputs_grad.size() << " outputs_grad provided";

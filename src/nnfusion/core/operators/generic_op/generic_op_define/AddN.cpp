@@ -3,9 +3,8 @@
 
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-REGISTER_OP(AddN)
-    .attr<nnfusion::op::OpConfig::any>("T")
-    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+REGISTER_OP(AddN).attr<nnfusion::op::OpConfig::any>("T").infershape(
+    [](std::shared_ptr<graph::GNode> gnode) -> void {
         // enforce is like assert, but when thing goes wrong, it will print error message.
         NNFUSION_CHECK(gnode->get_input_size() >= 2)
             << "Inputs of AddN operator should not be less than 2.";

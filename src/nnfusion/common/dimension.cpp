@@ -61,9 +61,9 @@ Dimension Dimension::operator*(const Dimension& dim) const
 {
     return ((is_static() && dim.is_static())
                 ? m_dimension * size_t(dim)
-                : (is_static() && m_dimension == 0) ? 0 : (dim.is_static() && size_t(dim) == 0)
-                                                              ? 0
-                                                              : Dimension::dynamic());
+                : (is_static() && m_dimension == 0)
+                      ? 0
+                      : (dim.is_static() && size_t(dim) == 0) ? 0 : Dimension::dynamic());
 }
 
 bool Dimension::compatible(const Dimension& d) const

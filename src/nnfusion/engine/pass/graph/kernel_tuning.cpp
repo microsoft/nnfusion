@@ -362,9 +362,8 @@ bool KernelTuning::register_antares_kernel()
                 .Priority(9)
                 .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                    -> shared_ptr<kernels::KernelEmitter> {
-                                       return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(
-                                           context);
-                                   })
+                    return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(context);
+                })
                 .Build());
         kernels::KernelRegistrar kernel_registrar_cpu(
             op_name,
@@ -375,9 +374,8 @@ bool KernelTuning::register_antares_kernel()
                 .Priority(9)
                 .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                    -> shared_ptr<kernels::KernelEmitter> {
-                                       return make_shared<kernels::cpu::AntaresCpuKernelEmitter>(
-                                           context);
-                                   })
+                    return make_shared<kernels::cpu::AntaresCpuKernelEmitter>(context);
+                })
                 .Build());
         kernels::KernelRegistrar kernel_registrar_hlsl(
             op_name,
@@ -388,9 +386,8 @@ bool KernelTuning::register_antares_kernel()
                 .Priority(9)
                 .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                    -> shared_ptr<kernels::KernelEmitter> {
-                                       return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(
-                                           context);
-                                   })
+                    return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(context);
+                })
                 .Build());
     }
     return true;

@@ -29,6 +29,7 @@ namespace nnfusion
 
             private:
                 std::unordered_set<std::string> BlockList;
+                std::unordered_map<std::string, size_t> translated_irs; // ir->cnt
             };
         }
     }

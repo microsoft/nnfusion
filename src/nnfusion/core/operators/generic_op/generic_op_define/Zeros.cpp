@@ -3,8 +3,9 @@
 
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-REGISTER_OP(Zeros).attr<std::vector<int>>("shape").infershape(
-    [](std::shared_ptr<graph::GNode> gnode) -> void {
+REGISTER_OP(Zeros)
+    .attr<std::vector<int>>("shape")
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         NNFUSION_CHECK(gnode->get_input_size() == 0);
         auto d_type = nnfusion::element::f32; // hardcode f32
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());

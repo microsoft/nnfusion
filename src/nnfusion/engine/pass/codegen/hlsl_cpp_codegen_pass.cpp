@@ -22,6 +22,7 @@ DECLARE_bool(fcodegen_debug);
 DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
+DECLARE_string(fantares_perf_file);
 
 void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                     std::shared_ptr<TranslationUnit> tu)
@@ -550,6 +551,7 @@ bool HLSLCPPCodegenPass::after_projgen()
     std::string runtime_header_path = lup_header->pwd + lup_header->write_to;
     std::string main_path = lup_main->pwd + lup_main->write_to;
     std::string para_info_path = m_codegen_folder + "para_info.json";
+    std::string antares_perf_path = m_codegen_folder + FLAGS_fantares_perf_file;
     std::string Direct3DWinNN_path = m_codegen_folder + std::string("Direct3DWinNN/");
     std::string Direct3DXBoxNN_path = m_codegen_folder + std::string("Direct3DXBoxNN/");
 
@@ -605,6 +607,27 @@ bool HLSLCPPCodegenPass::after_projgen()
     else
     {
         throw nnfusion::errors::RuntimeError("Failed to codegen files.\n");
+    }
+
+    if (stat(antares_perf_path.c_str(), &s) == 0)
+    {
+        cmd = std::string("cp -f ") + antares_perf_path + " " + nnf_desktop_example_folder;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy antares perf file to Direct3DWinNN example folder.\n");
+        }
+        cmd = std::string("cp -f ") + antares_perf_path + " " + nnf_xbox_example_folder;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError(
+                "Failed to copy antares perf file to Direct3DXBoxNN example folder.\n");
+        }
+        cmd = std::string("rm -f ") + antares_perf_path;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError("Failed to remove antares perf file.\n");
+        }
     }
 
     std::string constant_folder = m_codegen_folder + std::string("Constant/");

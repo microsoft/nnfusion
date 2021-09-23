@@ -34,15 +34,14 @@ namespace nnfusion
                                    GetElement* _getElement,
                                    Delete* _delete,
                                    DeleteArray* _deleteArray,
-                                   FromString* _fromString) noexcept
-                : f_new(_new)
-                , f_newArray(_newArray)
-                , f_copy(_copy)
-                , f_setElement(_setElement)
-                , f_getElement(_getElement)
-                , f_delete(_delete)
-                , f_deleteArray(_deleteArray)
-                , f_fromString(_fromString)
+                                   FromString* _fromString) noexcept : f_new(_new),
+                                                                       f_newArray(_newArray),
+                                                                       f_copy(_copy),
+                                                                       f_setElement(_setElement),
+                                                                       f_getElement(_getElement),
+                                                                       f_delete(_delete),
+                                                                       f_deleteArray(_deleteArray),
+                                                                       f_fromString(_fromString)
             {
             }
 

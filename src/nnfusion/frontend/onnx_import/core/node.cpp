@@ -114,11 +114,7 @@ namespace nnfusion
             {
             }
 
-            Node::Node(Node&& other) noexcept
-                : m_pimpl{std::move(other.m_pimpl)}
-            {
-            }
-
+            Node::Node(Node&& other) noexcept : m_pimpl{std::move(other.m_pimpl)} {}
             Node::Node(const Node& other)
                 : m_pimpl{new Impl{other.m_pimpl->node_proto()}, [](Impl* impl) { delete impl; }}
             {

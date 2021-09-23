@@ -16,10 +16,10 @@
 
 #include "backward_registry.hpp"
 
-REGISTER_BACKWARD_TRANSLATOR(Divide).translator(
-    [](std::shared_ptr<GNode> forward_node,
-       const GNodeIndexVector& outputs_grad,
-       std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {
+REGISTER_BACKWARD_TRANSLATOR(Divide)
+    .translator([](std::shared_ptr<GNode> forward_node,
+                   const GNodeIndexVector& outputs_grad,
+                   std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {
         NNFUSION_CHECK(outputs_grad.size() == 1) << "divide have only 1 output, but "
                                                  << outputs_grad.size() << " outputs_grad provided";
         // z = x / y, x_grad = z_grad / y, y_grad = -z_grad * x / (y * y) = -(z_grad / y) * (x / y) = -x_grad * z

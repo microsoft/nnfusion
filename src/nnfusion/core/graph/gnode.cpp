@@ -185,9 +185,11 @@ bool GNode::has_same_type(std::shared_ptr<const GNode> gnode) const
     return true;
 }
 
-const std::set<std::shared_ptr<nnfusion::graph::Edge>>& GNode::get_in_edges() const
+std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_in_edges() const
 {
-    return m_in_edges;
+    std::vector<std::shared_ptr<nnfusion::graph::Edge>> ret(m_in_edges.begin(), m_in_edges.end());
+    std::sort(ret.begin(), ret.end(), EdgeComparatorDstIndex());
+    return ret;
 };
 
 const std::shared_ptr<nnfusion::graph::Edge> GNode::get_in_edge(size_t i) const
@@ -218,9 +220,11 @@ void GNode::remove_in_edge(std::shared_ptr<nnfusion::graph::Edge> edge)
     m_in_edges.erase(edge);
 }
 
-const std::set<std::shared_ptr<nnfusion::graph::Edge>>& GNode::get_out_edges() const
+std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_out_edges() const
 {
-    return m_out_edges;
+    std::vector<std::shared_ptr<nnfusion::graph::Edge>> ret(m_out_edges.begin(), m_out_edges.end());
+    std::sort(ret.begin(), ret.end(), EdgeComparatorSrcIndex());
+    return ret;
 };
 
 std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_output_users(size_t i)

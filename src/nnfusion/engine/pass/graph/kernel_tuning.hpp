@@ -22,14 +22,11 @@ namespace nnfusion
 
             private:
                 bool parse_block_list();
-                std::vector<std::shared_ptr<nnfusion::graph::GNode>>
-                    get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph);
                 bool insert_to_kernel_cache(
                     const std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes);
 
             private:
                 std::unordered_set<std::string> BlockList;
-                std::unordered_map<std::string, size_t> translated_irs; // ir->cnt
             };
         }
     }

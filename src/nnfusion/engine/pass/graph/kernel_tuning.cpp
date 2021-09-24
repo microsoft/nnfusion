@@ -24,6 +24,7 @@ DEFINE_string(fantares_perf_file, "./antares_perf.csv", "File to save Antares ke
 DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
+DECLARE_string(fdefault_device);
 
 struct TuningStatus
 {
@@ -127,8 +128,8 @@ void dump_perf(std::string filename,
     out.close();
 }
 
-std::vector<std::shared_ptr<GNode>>
-    KernelTuning::get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph)
+std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<TuningStatus>>>
+    get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph, const std::unordered_set<std::string> block_list, std::unordered_map<std::string, size_t>& ir2cnt)
 {
     NNFUSION_CHECK(graph != nullptr);
 
@@ -145,7 +146,7 @@ std::vector<std::shared_ptr<GNode>>
         NNFUSION_CHECK(n_device_type != UNKNOWN);
 
         // filter ops in BlockList
-        if (BlockList.find(gnode->get_op_type()) != BlockList.end())
+        if (block_list.find(gnode->get_op_type()) != block_list.end())
         {
             continue;
         }
@@ -160,20 +161,19 @@ std::vector<std::shared_ptr<GNode>>
         }
 
         // dedupe ops with the same ir
-        if (!ir.empty())
+        if (ir2cnt.find(ir) != ir2cnt.end())
         {
-            if (translated_irs.find(ir) != translated_irs.end())
-            {
-                translated_irs.at(ir) += 1;
-                continue;
-            }
-            translated_irs[ir] = 1;
+            ir2cnt.at(ir) += 1;
         }
-
-        candidates.push_back(gnode);
+        else
+        {
+            ir2cnt[ir] = 1;
+            candidates.push_back(gnode);
+        }    
     }
 
     // filter ops existing in kernel cache DB
+    std::vector<std::shared_ptr<TuningStatus>> cached_kernels;
     {
         auto cache_manager = std::make_shared<cache::KernelCacheManager>();
         if (!cache_manager->is_valid())
@@ -182,9 +182,11 @@ std::vector<std::shared_ptr<GNode>>
         }
         else
         {
+            std::unordered_map<std::string, std::shared_ptr<TuningStatus>> ir2kernel;
             std::vector<std::shared_ptr<GNode>> non_cached_candidates;
             for (auto gnode : candidates)
             {
+                auto ir = nnfusion::op::get_translation(gnode);
                 shared_ptr<KernelContext> ctx(new KernelContext(gnode));
                 auto identifier = ctx->generate_identifier();
                 auto device_type = get_device_str((*gnode)["DeviceType"].as<NNFusion_DeviceType>());
@@ -197,19 +199,39 @@ std::vector<std::shared_ptr<GNode>>
                     if (fetch->miscs["antares"]["device_name"] == FLAGS_fproduct_name &&
                         fetch->miscs["antares"]["planned_steps"] >= FLAGS_fkernel_tuning_steps)
                     {
-                        tune_flag = false;
+                        tune_flag = false;    
+                        auto iter = ir2kernel.find(ir);
+                        if (iter != ir2kernel.end())
+                        {
+                            continue;
+                        }
+                        double fetch_perf = double(fetch->miscs["antares"]["time"]) / 1000;
+                        if (fetch_perf <= 0 || iter->second->best_perf <= fetch_perf)
+                        {
+                            continue;
+                        }
+                        auto status = std::make_shared<TuningStatus>(gnode);
+                        status->status = "completed";
+                        status->progress_step = fetch->miscs["antares"]["step_produced"];
+                        status->best_perf = fetch_perf;
+                        status->ir = ir;
+                        ir2kernel[ir] = status;
                     }
                 }
                 if (tune_flag)
                 {
                     non_cached_candidates.push_back(gnode);
                 }
+                else
+                {
+                    cached_kernels.push_back(ir2kernel.at(ir));
+                } 
             }
             candidates = non_cached_candidates;
         }
     }
 
-    return candidates;
+    return std::make_pair(candidates, cached_kernels);
 }
 
 bool KernelTuning::parse_block_list()
@@ -242,8 +264,9 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 
     std::vector<std::shared_ptr<TuningStatus>> tuned_kernels;
     std::vector<std::shared_ptr<TuningStatus>> tuning_kernels;
-
-    std::vector<std::shared_ptr<GNode>> nodes = get_tuning_candidates(graph);
+    std::unordered_map<std::string, size_t> ir2cnt;
+    std::vector<std::shared_ptr<GNode>> nodes;
+    std::tie(nodes, tuned_kernels) = get_tuning_candidates(graph, BlockList, ir2cnt);
     for (auto gnode : nodes)
     {
         if (!(*gnode)["DeviceType"].is_valid())
@@ -308,8 +331,11 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
         exit(0);
     }
 
-    dump_perf(FLAGS_fantares_perf_file, tuned_kernels, translated_irs);
-    insert_to_kernel_cache(nodes);
+    dump_perf(FLAGS_fantares_perf_file, tuned_kernels, ir2cnt);
+    if (FLAGS_fdefault_device == "CUDA")
+    {
+        insert_to_kernel_cache(nodes);
+    }
 
     return true;
 }

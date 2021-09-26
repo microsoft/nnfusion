@@ -93,14 +93,14 @@ namespace nnfusion
             bool has_same_type(std::shared_ptr<const GNode> gnode) const;
 
             /// in edges
-            const std::set<std::shared_ptr<nnfusion::graph::Edge>>& get_in_edges() const;
+            std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_in_edges() const;
             const std::shared_ptr<nnfusion::graph::Edge> get_in_edge(size_t i) const;
 
             void add_in_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
             void remove_in_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
 
             ///  out edges
-            const std::set<std::shared_ptr<nnfusion::graph::Edge>>& get_out_edges() const;
+            std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_out_edges() const;
             std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_output_users(size_t i);
 
             void add_out_edge(std::shared_ptr<nnfusion::graph::Edge> edge);

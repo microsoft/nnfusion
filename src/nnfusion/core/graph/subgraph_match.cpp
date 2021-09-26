@@ -146,7 +146,7 @@ void SubGraphMatch::SearchPattern(std::shared_ptr<GNode> cur_node,
     }
     else
     {
-        std::set<std::shared_ptr<nnfusion::graph::Edge>> edges;
+        std::vector<std::shared_ptr<nnfusion::graph::Edge>> edges;
         if (pattern->reverse_order)
         {
             edges = cur_node->get_in_edges();

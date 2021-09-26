@@ -426,7 +426,7 @@ private:
                         auto n_node = elem_tn->node;
                         auto n_device_type = (*n_node)["DeviceType"].as<NNFusion_DeviceType>();
                         auto n_device_id = (*n_node)["DeviceID"].as<int>();
-                        std::set<std::shared_ptr<nnfusion::graph::Edge>> inedges(
+                        std::vector<std::shared_ptr<nnfusion::graph::Edge>> inedges(
                             elem_tn->node->get_in_edges());
                         for (auto in_edge : inedges)
                         {

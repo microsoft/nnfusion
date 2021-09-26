@@ -22,7 +22,15 @@ public:
     bool Optimize()
     {
         add_tag();
-        for (auto tn : m_tagged_nodes)
+        std::vector<shared_ptr<GNode>> sorted_tagged_nodes(m_tagged_nodes.begin(),
+                                                           m_tagged_nodes.end());
+        std::sort(sorted_tagged_nodes.begin(),
+                  sorted_tagged_nodes.end(),
+                  [](shared_ptr<GNode> a, shared_ptr<GNode> b) {
+                      return (a->get_name() < b->get_name());
+                  });
+
+        for (auto tn : sorted_tagged_nodes)
         {
             ir_based_fusion(tn);
         }

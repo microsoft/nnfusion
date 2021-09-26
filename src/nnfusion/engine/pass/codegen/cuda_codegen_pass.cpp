@@ -32,6 +32,7 @@ DECLARE_int32(fwarmup_step);
 DECLARE_int32(frun_step);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
+DECLARE_string(fantares_perf_file);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)

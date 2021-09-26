@@ -200,7 +200,8 @@ bool BaseCodegenPass::after_projgen()
     struct stat s;
     std::string constant_folder = get_current_dir_name() + std::string("/Constant");
     std::string para_info_json = get_current_dir_name() + std::string("/para_info.json");
-    std::string antares_perf_path = get_current_dir_name() + std::string("/") + FLAGS_fantares_perf_file;
+    std::string antares_perf_path =
+        get_current_dir_name() + std::string("/") + FLAGS_fantares_perf_file;
     if (stat(constant_folder.c_str(), &s) == 0)
     {
         std::string nnfusion_rt_const_folder = m_codegen_folder + std::string("Constant");

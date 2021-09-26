@@ -129,7 +129,9 @@ void dump_perf(std::string filename,
 }
 
 std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<TuningStatus>>>
-    get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph, const std::unordered_set<std::string> block_list, std::unordered_map<std::string, size_t>& ir2cnt)
+    get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph,
+                          const std::unordered_set<std::string> block_list,
+                          std::unordered_map<std::string, size_t>& ir2cnt)
 {
     NNFUSION_CHECK(graph != nullptr);
 
@@ -169,7 +171,7 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
         {
             ir2cnt[ir] = 1;
             candidates.push_back(gnode);
-        }    
+        }
     }
 
     // filter ops existing in kernel cache DB
@@ -202,15 +204,16 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
                 {
                     if (fetch->miscs["antares"]["device_name"] == FLAGS_fproduct_name &&
                         fetch->miscs["antares"]["planned_steps"] >= FLAGS_fkernel_tuning_steps)
-                    {  
+                    {
                         double fetch_perf = double(fetch->miscs["antares"]["time"]) / 1000;
                         // ignore kernel without perf
                         if (fetch_perf <= 0)
                         {
                             continue;
-                        }       
+                        }
                         // ignore current kernel if we have a better kernel
-                        if (ir2kernel.find(ir) != ir2kernel.end() && ir2kernel.at(ir)->best_perf <= fetch_perf)
+                        if (ir2kernel.find(ir) != ir2kernel.end() &&
+                            ir2kernel.at(ir)->best_perf <= fetch_perf)
                         {
                             continue;
                         }
@@ -230,7 +233,7 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
                 else
                 {
                     cached_kernels.push_back(ir2kernel.at(ir));
-                } 
+                }
             }
             candidates = non_cached_candidates;
         }

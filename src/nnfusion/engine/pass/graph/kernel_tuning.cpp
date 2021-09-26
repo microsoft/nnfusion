@@ -121,7 +121,7 @@ void dump_perf(std::string filename,
         double kernel_time_sum = status->best_perf > 0 ? status->best_perf * cnt : -1.0;
         double percent = std::max(kernel_time_sum / total_time * 100, 0.0);
 
-        out << std::fixed << std::setprecision(2) << percent << " %"
+        out << std::fixed << std::setprecision(2) << percent << "%"
             << "\t" << kernel_time_sum << "\t" << cnt << "\t" << status->best_perf << "\t"
             << status->op_type << "\t" << status->op_name << "\t" << status->ir << endl;
     }
@@ -192,21 +192,25 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
                 auto device_type = get_device_str((*gnode)["DeviceType"].as<NNFusion_DeviceType>());
                 std::string source = "Antares";
                 auto fetched = cache_manager->fetch_with_source(identifier, device_type, source);
+                if (device_type != "CUDA_GPU")
+                {
+                    NNFUSION_CHECK(fetched.size() == 0);
+                }
 
                 bool tune_flag = true;
                 for (auto fetch : fetched)
                 {
                     if (fetch->miscs["antares"]["device_name"] == FLAGS_fproduct_name &&
                         fetch->miscs["antares"]["planned_steps"] >= FLAGS_fkernel_tuning_steps)
-                    {
-                        tune_flag = false;    
-                        auto iter = ir2kernel.find(ir);
-                        if (iter != ir2kernel.end())
+                    {  
+                        double fetch_perf = double(fetch->miscs["antares"]["time"]) / 1000;
+                        // ignore kernel without perf
+                        if (fetch_perf <= 0)
                         {
                             continue;
-                        }
-                        double fetch_perf = double(fetch->miscs["antares"]["time"]) / 1000;
-                        if (fetch_perf <= 0 || iter->second->best_perf <= fetch_perf)
+                        }       
+                        // ignore current kernel if we have a better kernel
+                        if (ir2kernel.find(ir) != ir2kernel.end() && ir2kernel.at(ir)->best_perf <= fetch_perf)
                         {
                             continue;
                         }
@@ -216,6 +220,7 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
                         status->best_perf = fetch_perf;
                         status->ir = ir;
                         ir2kernel[ir] = status;
+                        tune_flag = false;
                     }
                 }
                 if (tune_flag)

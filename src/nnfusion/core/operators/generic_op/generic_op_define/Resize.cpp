@@ -115,7 +115,7 @@ REGISTER_OP(Resize)
                                                {"cond", cond}});
             return expr;
         }
-        else if (mode == "LINEAR")
+        else if (mode == "LINEAR" && generic_op->localOpConfig.getRoot()["coordinate_transformation_mode"] != "align_corners")
         {
             // Only support 2D case
             nnfusion::Shape input_shape = gnode->get_input_shape(0);
@@ -153,6 +153,89 @@ REGISTER_OP(Resize)
                 "@ow_shape_plus_one@;"
                 "h_map_int[CH] = h_map[CH].cast('int') where CH in @oh_shape_plus_one@;"
                 "w_map_int[CH] = w_map[CH].cast('int') where CH in @ow_shape_plus_one@;"
+                "@output0@@output0_layout@ = @input0@@input00_layout@ * h_weight@h_layout@ * "
+                "w_weight@w_layout@"
+                "+ @input0@@input10_layout@ * (1.0 - h_weight@h_layout@) * w_weight@w_layout@"
+                "+ @input0@@input01_layout@ * h_weight@h_layout@ * (1.0 - w_weight@w_layout@)"
+                "+ @input0@@input11_layout@ * (1.0 - h_weight@h_layout@) * (1.0 - "
+                "w_weight@w_layout@)"
+                " where @con@;";
+            ;
+
+            std::string cond;
+            for (int d = 0; d < output_layout.size(); ++d)
+                cond += (cond.empty() ? "" : ", ") + output_layout[d] + " in " +
+                        to_string(output_shape[d]);
+
+            for (int d = 0; d < 2; ++d)
+                input00_layout[d] = input01_layout[d] = input11_layout[d] = input10_layout[d];
+
+            input00_layout[2] = "h_map_int[" + output_layout[2] + "]";
+            input00_layout[3] = "w_map_int[" + output_layout[3] + "]";
+            input10_layout[2] = "h_map_int[" + output_layout[2] + " + 1 ]";
+            input10_layout[3] = "w_map_int[" + output_layout[3] + "]";
+            input01_layout[2] = "h_map_int[" + output_layout[2] + "]";
+            input01_layout[3] = "w_map_int[" + output_layout[3] + " + 1]";
+            input11_layout[2] = "h_map_int[" + output_layout[2] + " + 1]";
+            input11_layout[3] = "w_map_int[" + output_layout[3] + " + 1]";
+
+            vector<std::string> w_layout;
+            w_layout.push_back(output_layout[3]);
+            vector<std::string> h_layout;
+            h_layout.push_back(output_layout[2]);
+
+            auto expr =
+                op::create_code_from_template(expression_template,
+                                              {{"output0_layout", vector_to_string(output_layout)},
+                                               {"h_scale", scales[2]},
+                                               {"oh_shape", output_shape[2]},
+                                               {"oh_shape_plus_one", output_shape[2] + 1},
+                                               {"h_shape", input_shape[2] - 1},
+                                               {"w_scale", scales[3]},
+                                               {"ow_shape", output_shape[3]},
+                                               {"w_shape", input_shape[3] - 1},
+                                               {"ow_shape_plus_one", output_shape[3] + 1},
+                                               {"input00_layout", vector_to_string(input00_layout)},
+                                               {"input01_layout", vector_to_string(input01_layout)},
+                                               {"input10_layout", vector_to_string(input10_layout)},
+                                               {"input11_layout", vector_to_string(input11_layout)},
+                                               {"w_layout", vector_to_string(w_layout)},
+                                               {"h_layout", vector_to_string(h_layout)},
+                                               {"con", cond}});
+            return expr;
+        }
+        else if (mode == "LINEAR" && generic_op->localOpConfig.getRoot()["coordinate_transformation_mode"] == "align_corners")
+        {
+            // Only support 2D case
+            nnfusion::Shape input_shape = gnode->get_input_shape(0);
+            nnfusion::Shape output_shape = gnode->get_output_shape(0);
+            auto output_layout = op::create_layout_from_dims(output_shape);
+
+            auto input00_layout = op::create_layout_from_dims(output_shape);
+            auto input01_layout = op::create_layout_from_dims(output_shape);
+            auto input10_layout = op::create_layout_from_dims(output_shape);
+            auto input11_layout = op::create_layout_from_dims(output_shape);
+
+            vector<float> scales;
+            auto ng_op = gnode->get_in_edge(1)->get_src();
+            if (no_scale)
+            {
+                for (int i = 0; i < output_shape.size(); i++)
+                    scales.push_back((float)output_shape[i] / (float)input_shape[i]);
+            }
+            else
+            {
+                scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
+                             ->get_vector<float>();
+            }
+
+            auto expression_template =
+                "h_map[CH] = CH * @h_scale@ where CH in @oh_shape@;"
+                "h_weight[CH] = h_map[CH] - h_map[CH].call('floor') where CH in @oh_shape@;"
+                "w_map[CH] = CH * @w_scale@ where CH in @ow_shape@;"
+                "w_weight[CH] = w_map[CH] - w_map[CH].call('floor') where CH in @ow_shape@;"
+                "h_map_int[CH] = h_map[CH].cast('int') where CH in @oh_shape@;"
+                "w_map_int[CH] = w_map[CH].cast('int') where CH in @ow_shape@;"
                 "@output0@@output0_layout@ = @input0@@input00_layout@ * h_weight@h_layout@ * "
                 "w_weight@w_layout@"
                 "+ @input0@@input10_layout@ * (1.0 - h_weight@h_layout@) * w_weight@w_layout@"

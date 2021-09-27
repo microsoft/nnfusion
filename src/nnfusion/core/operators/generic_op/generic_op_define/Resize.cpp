@@ -270,11 +270,11 @@ REGISTER_OP(Resize)
             auto expr =
                 op::create_code_from_template(expression_template,
                                               {{"output0_layout", vector_to_string(output_layout)},
-                                               {"h_scale", scales[2]},
+                                               {"h_scale", (input_shape[2]-1)/(output_shape[2]-1)},
                                                {"oh_shape", output_shape[2]},
                                                {"oh_shape_plus_one", output_shape[2] + 1},
                                                {"h_shape", input_shape[2] - 1},
-                                               {"w_scale", scales[3]},
+                                               {"w_scale", (input_shape[3]-1)/(output_shape[3]-1)},
                                                {"ow_shape", output_shape[3]},
                                                {"w_shape", input_shape[3] - 1},
                                                {"ow_shape_plus_one", output_shape[3] + 1},

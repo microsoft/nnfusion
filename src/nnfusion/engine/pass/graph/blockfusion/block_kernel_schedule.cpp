@@ -187,28 +187,27 @@ std::vector<int> RangeBlockKernelScheduler::get_ready_bes(int num_required_bes, 
     // find time_start and select ready bes
     while (true)
     {
-        for (int be_id = 0; be_id < be_lane.size() - num_required_bes + 1; be_id++)
+        for (int be_id = 0; be_id < be_lane.size() - num_required_bes + 1;)
         {
-            if (be_lane[be_id].size() <= time_start)
+            int next_be_id = be_id;
+            bool flag_selected = true;
+            for (; next_be_id < be_id + num_required_bes; next_be_id++)
             {
-                bool flag_selected = true;
-                for (int i = 1; i < num_required_bes; i++)
+                if (be_lane[next_be_id].size() > time_start)
                 {
-                    if (be_lane[be_id].size() > time_start)
-                    {
-                        flag_selected = false;
-                        break;
-                    }
-                }
-                if (flag_selected)
-                {
-                    for (int i = 0; i < num_required_bes; i++)
-                    {
-                        bes_ready.push_back(be_id + i);
-                    }
-                    return bes_ready;
+                    flag_selected = false;
+                    break;
                 }
             }
+            if (flag_selected)
+            {
+                for (int i = 0; i < num_required_bes; i++)
+                {
+                    bes_ready.push_back(be_id + i);
+                }
+                return bes_ready;
+            }
+            be_id = next_be_id + 1;
         }
         time_start++;
     }
@@ -260,33 +259,32 @@ std::vector<int> RangeBlockKernelScheduler::get_ready_bes_with_hint(int num_requ
     std::vector<int> bes_ready;
     for (int be_id = hint_bes[0]; be_id < be_lane.size() - num_required_bes + 1; be_id++)
     {
-        if (be_lane[be_id].size() <= time_start)
+        int next_be_id = be_id;
+        bool flag_selected = true;
+        for (; next_be_id < be_id + num_required_bes; next_be_id++)
         {
-            bool flag_selected = true;
-            for (int i = 1; i < num_required_bes; i++)
+            if (be_lane[next_be_id].size() > time_start)
             {
-                if (be_lane[be_id].size() > time_start)
-                {
-                    flag_selected = false;
-                    break;
-                }
-            }
-            if (flag_selected)
-            {
-                std::cout << "hint success" << std::endl;
-                for (int i = 0; i < num_required_bes; i++)
-                {
-                    bes_ready.push_back(be_id + i);
-                }
-                std::cout << "selected: " << std::endl;
-                for (auto be : bes_ready)
-                {
-                    std::cout << be << " ";
-                }
-                std::cout << std::endl;
-                return bes_ready;
+                flag_selected = false;
+                break;
             }
         }
+        if (flag_selected)
+        {
+            std::cout << "hint success" << std::endl;
+            for (int i = 0; i < num_required_bes; i++)
+            {
+                bes_ready.push_back(be_id + i);
+            }
+            std::cout << "selected: " << std::endl;
+            for (auto be : bes_ready)
+            {
+                std::cout << be << " ";
+            }
+            std::cout << std::endl;
+            return bes_ready;
+        }
+        be_id = next_be_id + 1;
     }
 
     std::cout << "hint fail, rollback" << std::endl;

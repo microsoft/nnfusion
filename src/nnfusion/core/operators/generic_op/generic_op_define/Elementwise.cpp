@@ -90,7 +90,7 @@ std::string replace_input_str(std::string ir)
     return ir;
 }
 
-auto trans_elementwise = [&](std::shared_ptr<graph::GNode>& node) {
+auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
     std::string expr = "@output0@@data_layout@ = ";
     auto iter = ElementOpMap.find(node->get_op_type());
     if (iter == ElementOpMap.end())

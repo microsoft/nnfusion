@@ -391,7 +391,11 @@ shared_ptr<nnfusion::cache::KernelEntry>
         kernel_entry->miscs = nlohmann::json();
     }
 
-    return kernel_entry;
+    bool is_valid_entry = kernel_entry->key != "" && kernel_entry->identifier != "" &&
+                          kernel_entry->op_type != "" && kernel_entry->source != "" &&
+                          kernel_entry->device_type != "" && kernel_entry->function.dump() != "";
+
+    return is_valid_entry ? kernel_entry : nullptr;
 }
 
 template <typename Iter>

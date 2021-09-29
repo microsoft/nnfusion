@@ -2,7 +2,7 @@
 The coding style NNFUSION uses is LLVM style. It's recorded in $(nnfusion_root)/.clang-format
 ### How to Apply coding style for whole project
 Install clang-format with 3.9: `sudo apt-get install clang-format-3.9`.   
-Use  `cd maint && bash ./apply-code-format.sh` or `make style` to apply coding style.
+Use  `cd maint/script && bash ./apply-code-format.sh` or `make style` to apply coding style.
 
 ### How to write comment  
 The documents will be mainly based on Doxygen Style comment in source code, which is documented [here](http://www.doxygen.nl/manual/index.html).

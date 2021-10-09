@@ -1001,10 +1001,11 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
 
         lu_header << header::cuda_fp16->get_code();
     lu_header << "extern \"C\" int get_device_type();\n";
-    lu_header << "extern \"C\" int kernel_entry(";
-    std::string params = get_kernel_entry_paras(tu);
-    lu_header << params;
-    lu_header << ");\n";
+    lu_header << "extern \"C\" int kernel_entry";
+    if (FLAGS_fhost_entry)
+        lu_header << "_host";
+    std::string params = get_kernel_entry_paras(tu, FLAGS_fhost_entry);
+    lu_header << "(" << params << ");\n";
 
     if (superscaler_enable)
         lu_header << "extern \"C\" void cuda_init(const char*);\n";
@@ -1076,10 +1077,12 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
             lu_main << "CUDA_SAFE_CALL(cudaMallocHost((void**)&" << tensor.get_name()
                     << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ")* "
                     << tensor.get_tensor_layout()->get_size() << "));\n";
-            lu_main << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << tensor.get_name() << ", "
-                    << "sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                    << tensor.get_tensor_layout()->get_size() << "));\n";
-
+            if (!FLAGS_fhost_entry)
+            {
+                lu_main << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << tensor.get_name() << ", "
+                        << "sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                        << tensor.get_tensor_layout()->get_size() << "));\n";
+            }
             fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
                     << tensor.get_name() << "_host[i] = 1.0f;\n";
         }
@@ -1096,7 +1099,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
                     << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
                     << tensor.get_tensor_layout()->get_size() << "));\n";
 
-            if (FLAGS_fextern_result_memory)
+            if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
             {
                 lu_main << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << tensor.get_name() << ","
                         << " sizeof(" << tensor.get_element_type().c_type_string() << ") * "
@@ -1106,9 +1109,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
 
         lu_main << "\n// fill input values\n";
         lu_main << fillval.get_code() << "\n";
-        lu_main << get_h2dcopy(tu)->get_code() << "\n";
 
-        std::string args = get_kernel_entry_args(tu);
         int warm_step = FLAGS_fwarmup_step, test_step = FLAGS_frun_step;
         if (FLAGS_fcodegen_debug)
         {
@@ -1118,11 +1119,20 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "\n//warm up for 5 iters:\n";
         lu_main << "for(int i_=0; i_< " << warm_step << "; i_++)\n";
         lu_main.block_begin();
-        lu_main << get_h2dcopy(tu)->get_code();
-        lu_main << "kernel_entry(" << args << ");\n";
-        lu_main << get_d2hcopy(tu)->get_code();
-        lu_main << get_sync()->get_code();
-
+        std::string args;
+        if (FLAGS_fhost_entry)
+        {
+            args = get_kernel_entry_args(tu, true);
+            lu_main << "kernel_entry_host(" << args << ");\n";
+        }
+        else
+        {
+            args = get_kernel_entry_args(tu, false);
+            lu_main << get_h2dcopy(tu)->get_code();
+            lu_main << "kernel_entry(" << args << ");\n";
+            lu_main << get_d2hcopy(tu)->get_code();
+            lu_main << get_sync()->get_code();
+        }
         for (size_t i = 0; i < tu->out.size(); i++)
         {
             auto& tensor = *tu->out[i];
@@ -1154,9 +1164,17 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main.block_begin();
 
         lu_main << "cudaEventRecord(start_i, 0);\n";
-        lu_main << get_h2dcopy(tu)->get_code();
-        // kernel launch
-        lu_main << "kernel_entry(" << args << ");\n";
+        if (FLAGS_fhost_entry)
+        {
+            lu_main << "kernel_entry_host(" << args << ");\n";
+        }
+        else
+        {
+            lu_main << get_h2dcopy(tu)->get_code();
+            lu_main << "kernel_entry(" << args << ");\n";
+            // lu_main << get_d2hcopy(tu)->get_code();
+            // lu_main << get_sync()->get_code();
+        }
 
         lu_main << "cudaEventRecord(stop_i, 0);\n";
         lu_main << "cudaEventSynchronize(stop_i);\n";
@@ -1174,13 +1192,15 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
                    "ms_total / steps);\n";
         lu_main << "\n//free context\n";
 
-        for (size_t i = 0; i < tu->arg.size(); i++)
+        if (!FLAGS_fhost_entry)
         {
-            auto& tensor = *tu->arg[i];
-            lu_main << "CUDA_SAFE_CALL(cudaFree(" << tensor.get_name() << "));\n";
+            for (size_t i = 0; i < tu->arg.size(); i++)
+            {
+                auto& tensor = *tu->arg[i];
+                lu_main << "CUDA_SAFE_CALL(cudaFree(" << tensor.get_name() << "));\n";
+            }
         }
-
-        if (FLAGS_fextern_result_memory)
+        if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
         {
             for (size_t i = 0; i < tu->out.size(); i++)
             {

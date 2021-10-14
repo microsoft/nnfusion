@@ -11,7 +11,11 @@ using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
 
+DECLARE_bool(fantares_mode);
 DEFINE_bool(fir_based_fusion, false, "");
+DEFINE_string(firfusion_blocklist,
+              "",
+              "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
 
 class IRBasedFusionOptimizer
 {
@@ -21,6 +25,7 @@ public:
 
     bool Optimize()
     {
+        parse_block_list();
         add_tag();
         std::vector<shared_ptr<GNode>> sorted_tagged_nodes(m_tagged_nodes.begin(),
                                                            m_tagged_nodes.end());
@@ -43,6 +48,16 @@ private:
     {
         for (auto node : m_graph->get_ordered_ops())
         {
+            // block list
+            if (m_blocklist.find(node->get_op_type()) != m_blocklist.end())
+            {
+                m_tagged_nodes.insert(node);
+                for (auto in_edge : node->get_in_edges())
+                {
+                    auto src = in_edge->get_src();
+                    m_tagged_nodes.insert(src);
+                }
+            }
             // multi-used op
             if (node->get_out_edges().size() > 1)
                 m_tagged_nodes.insert(node);
@@ -114,13 +129,26 @@ private:
         }
     }
 
+    bool parse_block_list()
+    {
+        auto blocklist_str = FLAGS_firfusion_blocklist;
+        stringstream ss(blocklist_str);
+        while (ss.good())
+        {
+            string substr;
+            getline(ss, substr, ',');
+            m_blocklist.insert(substr);
+        }
+        NNFUSION_LOG(INFO) << "IR-based Fusion BlockList: " << join(m_blocklist, ", ");
+    }
     unordered_set<shared_ptr<GNode>> m_tagged_nodes;
     std::shared_ptr<Graph> m_graph;
+    std::unordered_set<std::string> m_blocklist;
 };
 
 bool IRBasedFusionPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
-    if (FLAGS_fir_based_fusion)
+    if (FLAGS_fir_based_fusion && FLAGS_fantares_mode)
     {
         IRBasedFusionOptimizer optimizer(graph);
         auto status = optimizer.Optimize();

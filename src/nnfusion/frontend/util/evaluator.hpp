@@ -98,6 +98,7 @@ namespace nnfusion
 
                 runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
                 if (FLAGS_fuse_cpuprofiler)
+
                 {
                     runtime = nnfusion::profiler::CPUDefaultRuntime::Runtime();
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
@@ -120,6 +121,7 @@ namespace nnfusion
                         kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
                             gnode->get_op_type(), CUDA_GPU, element::f32);
                     }
+
                 }
 
                 bool const_infer_success = false;

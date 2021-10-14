@@ -223,7 +223,7 @@ int data_idx_offset = block_idx * width;
 float val = 0.0;
 for (int tidx = thread_idx; tidx < width; tidx += block_size) {
     int data_idx = tidx + data_idx_offset;
-    val += input0[data_idx];
+    val += static_cast<float>(input0[data_idx]);
 }
 val = reduceSum(val, thread_idx, block_size, shm);
 if (thread_idx == 0) output0[block_idx] = val;

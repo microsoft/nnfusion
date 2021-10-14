@@ -94,6 +94,12 @@ void print_tuning_results(std::vector<std::shared_ptr<TuningStatus>> tuned_kerne
            << std::setw(10) << s->status << " | " << std::setw(6) << s->progress_step << "/"
            << FLAGS_fkernel_tuning_steps << " "
            << " | " << std::setw(12) << s->best_perf << " ms |\n";
+
+        if (fabs(s->best_perf + 1.0) < 1e-5)
+        {
+            NNFUSION_LOG(INFO) << "Kernel named \"" << s->op_name << "\" has not yet been tuned.\n"
+                               << s->ir;
+        }
     }
     NNFUSION_LOG(INFO) << ss.str();
 }

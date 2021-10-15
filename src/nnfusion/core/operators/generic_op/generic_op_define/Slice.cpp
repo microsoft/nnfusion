@@ -25,30 +25,34 @@ REGISTER_OP(Slice)
         auto op = static_pointer_cast<nnfusion::op::Slice>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
+        bool ones_strides = true;
         for (auto& s : op->get_strides())
         {
-            if (s == 1)
-                continue;
-            std::cout << "Slice operation with strides larger than 1 is not supported by Antares, "
-                         "using V1 interface"
-                      << std::endl;
-            return "";
+            if (s != 1)
+                ones_strides = false;
         }
-
-        auto output_layout = op::create_layout_from_dims(curr->get_output_shape(0));
-        std::string slice_dims;
-        std::vector<std::string> input_layout;
-        for (int d = 0; d < output_layout.size(); d++)
+        if (ones_strides)
         {
-            input_layout.push_back(output_layout[d] + " + " + to_string(op->get_lower_bounds()[d]));
-            slice_dims = slice_dims + (slice_dims.empty() ? "" : " , ") + output_layout[d] +
-                         " in " + to_string(curr->get_output_shape(0)[d]);
-        }
+            auto output_layout = op::create_layout_from_dims(curr->get_output_shape(0));
+            std::string slice_dims;
+            std::vector<std::string> input_layout;
+            for (int d = 0; d < output_layout.size(); d++)
+            {
+                input_layout.push_back(output_layout[d] + " + " +
+                                       to_string(op->get_lower_bounds()[d]));
+                slice_dims = slice_dims + (slice_dims.empty() ? "" : " , ") + output_layout[d] +
+                             " in " + to_string(curr->get_output_shape(0)[d]);
+            }
 
-        auto expression_code = op::create_code_from_template(
-            expression_template,
-            {{"output0_layout", vector_to_string<std::vector<std::string>>(output_layout)},
-             {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
-             {"slice_dims", slice_dims}});
-        return expression_code;
+            auto expression_code = op::create_code_from_template(
+                expression_template,
+                {{"output0_layout", vector_to_string<std::vector<std::string>>(output_layout)},
+                 {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
+                 {"slice_dims", slice_dims}});
+            return expression_code;
+        }
+        else
+        {
+            return nnfusion::op::get_ir_via_plugin(curr);
+        }
     });

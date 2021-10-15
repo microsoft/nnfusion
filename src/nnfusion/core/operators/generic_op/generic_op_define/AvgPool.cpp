@@ -33,7 +33,6 @@ REGISTER_OP(AvgPool)
         // divide operation goes before add operation, which may cause precision issue.
         auto ir_template =
             R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@ / ((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) / ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0])) @where_condition@;)";
-
         // divide after add operation
         // auto ir_template =
         //     R"( mediate0@output0_layout@ +=! @input0@@input0_layout@@when_condition@ @where_condition@; @output0@@output0_layout@ = mediate0@output0_layout@ / (((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) * ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0]))).call('max', [1]);)";
@@ -53,45 +52,64 @@ REGISTER_OP(AvgPool)
 
         NNFUSION_CHECK(input0_shape.size() == output0_shape.size());
         NNFUSION_CHECK(output0_shape.size() == 3 || output0_shape.size() == 4);
-        NNFUSION_CHECK(kernel.size() == 2);
         NNFUSION_CHECK(shape_size(kernel) != 0);
+        NNFUSION_CHECK(shape_size(stride) != 0);
 
-        if (output0_shape.size() == 3)
+        if (output0_shape.size() == 3 && kernel.size() == 1)
         {
-            output0_layout = "[NC, HO, WO]";
-            input0_layout = "[NC, ";
-        }
-        else if (output0_shape.size() == 4)
-        {
-            output0_layout = "[N, C, HO, WO]";
+            ir_template =
+                R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@ / ((HWO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@W_top@])  - (HWO * @stride_h@ - @pad_h@).call('max', [0])) @where_condition@;)";
+            output0_layout = "[N, C, HWO]";
             input0_layout = "[N, C, ";
+            std::string HW_in = "(HWO * " + to_string(stride[0]) + " + KHW";
+            HW_in += " - " + to_string(padding_below[0]) + ")";
+            when_condition_template += (when_condition_template.empty() ? "" : " , ") + HW_in +
+                                       " >= 0, " + HW_in + " < " +
+                                       to_string(input0_shape[input0_shape.size() - 1]);
+
+            input0_layout += HW_in + "]";
+
+            where_condition = "where HWO in " + to_string(output0_shape[output0_shape.size() - 1]) +
+                              ", " + "KHW in " + to_string(kernel[0]);
         }
+        else
+        {
+            NNFUSION_CHECK(kernel.size() == 2);
+            if (output0_shape.size() == 3)
+            {
+                output0_layout = "[NC, HO, WO]";
+                input0_layout = "[NC, ";
+            }
+            else if (output0_shape.size() == 4)
+            {
+                output0_layout = "[N, C, HO, WO]";
+                input0_layout = "[N, C, ";
+            }
 
-        std::string H_in = "(HO * " + to_string(stride[0]) + " + KH";
-        H_in += " - " + to_string(padding_below[0]) + ")";
-        when_condition_template += (when_condition_template.empty() ? "" : " , ") + H_in +
-                                   " >= 0, " + H_in + " < " +
-                                   to_string(input0_shape[input0_shape.size() - 2]);
+            std::string H_in = "(HO * " + to_string(stride[0]) + " + KH";
+            H_in += " - " + to_string(padding_below[0]) + ")";
+            when_condition_template += (when_condition_template.empty() ? "" : " , ") + H_in +
+                                       " >= 0, " + H_in + " < " +
+                                       to_string(input0_shape[input0_shape.size() - 2]);
 
-        std::string W_in = "(WO * " + to_string(stride[1]) + " + KW";
-        W_in += " - " + to_string(padding_below[1]) + ")";
-        when_condition_template += (when_condition_template.empty() ? "" : " , ") + W_in +
-                                   " >= 0, " + W_in + " < " +
-                                   to_string(input0_shape[input0_shape.size() - 1]);
+            std::string W_in = "(WO * " + to_string(stride[1]) + " + KW";
+            W_in += " - " + to_string(padding_below[1]) + ")";
+            when_condition_template += (when_condition_template.empty() ? "" : " , ") + W_in +
+                                       " >= 0, " + W_in + " < " +
+                                       to_string(input0_shape[input0_shape.size() - 1]);
 
-        input0_layout += H_in + " , " + W_in + "]";
+            input0_layout += H_in + " , " + W_in + "]";
 
-        where_condition = "where HO in " + to_string(output0_shape[output0_shape.size() - 2]) +
-                          ", " + "WO in " + to_string(output0_shape[output0_shape.size() - 1]) +
-                          ", " + "KH in " + to_string(kernel[0]) + ", " + "KW in " +
-                          to_string(kernel[0]);
-
+            where_condition = "where HO in " + to_string(output0_shape[output0_shape.size() - 2]) +
+                              ", " + "WO in " + to_string(output0_shape[output0_shape.size() - 1]) +
+                              ", " + "KH in " + to_string(kernel[0]) + ", " + "KW in " +
+                              to_string(kernel[1]);
+        }
         if (!when_condition_template.empty())
         {
             when_condition_template = ".when([" + when_condition_template +
                                       "], const(0.0).cast(@input0@@input0_layout@.dtype()))";
         }
-
         op::OpConfig::any op_config;
         op_config["input0_layout"] = input0_layout;
         op_config["output0_layout"] = output0_layout;

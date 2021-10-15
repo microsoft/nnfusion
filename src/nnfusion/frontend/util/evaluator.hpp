@@ -121,7 +121,6 @@ namespace nnfusion
                         kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
                             gnode->get_op_type(), CUDA_GPU, element::f32);
                     }
-
                 }
 
                 bool const_infer_success = false;

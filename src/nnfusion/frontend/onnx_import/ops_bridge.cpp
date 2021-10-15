@@ -60,6 +60,7 @@
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
+#include "op/roll.hpp"
 #include "op/scatternd.hpp"
 #include "op/shape.hpp"
 #include "op/skip_layer_norm.hpp"
@@ -272,6 +273,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("ScatterND", 11, TranslateScatterNDOp);
                 REGISTER_OPERATOR("DepthToSpace", 1, TranslateDepthToSpaceOp);
                 REGISTER_OPERATOR("DepthToSpace", 11, TranslateDepthToSpaceOp);
+                // REGISTER_OPERATOR("Roll", 1, TranslateRollOp);
+                REGISTER_DOMAIN_OPERATOR("org.pytorch.aten", "roll", 1, TranslateRollOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

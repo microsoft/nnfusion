@@ -75,7 +75,6 @@ private:
             // multi ir
             if (ir.find("mediate") != string::npos)
             {
-                NNFUSION_LOG(INFO) << node->get_op_type();
                 for (auto in_edge : node->get_in_edges())
                 {
                     auto src = in_edge->get_src();

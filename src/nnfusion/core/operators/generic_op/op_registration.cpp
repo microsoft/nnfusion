@@ -129,6 +129,38 @@ namespace nnfusion
             return options;
         }
 
+        std::string get_ir_via_plugin(std::shared_ptr<graph::GNode> gnode)
+        {
+            nnfusion::json message;
+            message["output_name"] = "@output0@";
+            std::vector<nnfusion::json> input_dict;
+            for (size_t i = 0; i < gnode->get_input_size(); i++)
+            {
+                nnfusion::json input_info;
+                input_info["name"] = "@input" + to_string(i) + "@";
+                input_info["dtype"] = gnode->get_input_element_type(i).c_type_string();
+                input_info["shape"] = gnode->get_input_shape(i);
+                input_dict.push_back(input_info);
+            }
+            message["input_dict"] = input_dict;
+            nnfusion::json config = gnode->get_op_ptr()->serialize();
+            if (config.empty())
+                NNFUSION_LOG(NNFUSION_WARNING) << "config is empty";
+            message["config"] = config;
+
+            std::string cmd = "./plugins/" + gnode->get_op_type() + " '" + message.dump() + "'",
+                        ir_string;
+            NNFUSION_LOG(INFO) << "Execute: " << cmd;
+
+            static char line[4096];
+            FILE* fp = popen(cmd.c_str(), "r");
+            while (fgets(line, sizeof(line), fp))
+                ir_string += line;
+            pclose(fp);
+            ir_string.pop_back(); // romove '\n'
+            NNFUSION_LOG(INFO) << "Response: " << ir_string;
+            return ir_string;
+        }
         // +        std::string get_annotation(std::string translation)
         // +        {
         // +            std::string options;

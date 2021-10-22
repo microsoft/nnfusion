@@ -8,6 +8,10 @@ in_items, out_items = [f'N{i}' for i in range(len(where_range))], [f'N{i}' for i
 for dim, start, end, stride in zip(config["axes"], config["starts"], config["ends"], config["steps"]):
   if dim < 0:
     dim += len(where_range)
+  if start > where_range[dim]:
+    start = where_range[dim]
+  if end > where_range[dim]:
+    end = where_range[dim]
   in_items[dim] = f'''{start} + ({stride}) * {in_items[dim]}'''
   where_range[dim] = (end - start) // stride
   assert where_range[dim] > 0

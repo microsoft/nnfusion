@@ -12,6 +12,7 @@ using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
 
 DECLARE_bool(fantares_mode);
+DECLARE_string(ftuning_blocklist);
 DEFINE_bool(fir_based_fusion, false, "");
 DEFINE_string(firfusion_blocklist,
               "",
@@ -130,7 +131,12 @@ private:
 
     bool parse_block_list()
     {
-        auto blocklist_str = FLAGS_firfusion_blocklist;
+        fLS::clstring blocklist_str;
+        if (FLAGS_ftuning_blocklist != "")
+            blocklist_str = FLAGS_ftuning_blocklist + ",";
+
+        blocklist_str += FLAGS_firfusion_blocklist;
+
         stringstream ss(blocklist_str);
         while (ss.good())
         {

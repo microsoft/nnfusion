@@ -129,8 +129,9 @@ namespace nnfusion
             return options;
         }
 
-        std::string get_ir_via_plugin(std::shared_ptr<graph::GNode> gnode)
+        bool get_ir_via_plugin(std::shared_ptr<graph::GNode> gnode, std::string& ir_string)
         {
+            ir_string.clear();
             nnfusion::json message;
             message["output_name"] = "@output0@";
             std::vector<nnfusion::json> input_dict;
@@ -148,8 +149,16 @@ namespace nnfusion
                 NNFUSION_LOG(NNFUSION_WARNING) << "config is empty";
             message["config"] = config;
 
-            std::string cmd = "./plugins/" + gnode->get_op_type() + " '" + message.dump() + "'",
-                        ir_string;
+            std::string file_path;
+            struct stat buffer;
+            if (stat(file_path.c_str(), &buffer) != 0)
+            {
+                NNFUSION_LOG(NNFUSION_WARNING) << "plugin for " << gnode->get_op_type()
+                                               << " does not exist";
+                return false;
+            }
+
+            std::string cmd = "./plugins/" + gnode->get_op_type() + " '" + message.dump() + "'";
             NNFUSION_LOG(INFO) << "Execute: " << cmd;
 
             static char line[4096];
@@ -159,7 +168,7 @@ namespace nnfusion
             pclose(fp);
             ir_string.pop_back(); // romove '\n'
             NNFUSION_LOG(INFO) << "Response: " << ir_string;
-            return ir_string;
+            return !ir_string.empty();
         }
         // +        std::string get_annotation(std::string translation)
         // +        {

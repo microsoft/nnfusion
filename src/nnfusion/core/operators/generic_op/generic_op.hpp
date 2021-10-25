@@ -145,7 +145,7 @@ namespace nnfusion
         std::string get_translation(std::shared_ptr<nnfusion::graph::GNode>& gnode);
         std::string get_translation_v2(std::shared_ptr<nnfusion::graph::GNode>& gnode);
         std::string get_annotation(std::string translation);
-        bool get_ir_via_plugin(std::shared_ptr<graph::GNode> gnode, std::string& ir_string);
+        std::string get_ir_via_plugin(std::shared_ptr<graph::GNode> gnode);
 
         inline const OpConfig& lookup_op_config(const std::string& opname)
         {

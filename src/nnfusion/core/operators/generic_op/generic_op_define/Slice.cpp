@@ -24,11 +24,6 @@ REGISTER_OP(Slice)
 
         auto op = static_pointer_cast<nnfusion::op::Slice>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
-
-        std::string ir_string;
-        if (nnfusion::op::get_ir_via_plugin(curr, ir_string))
-            return ir_string;
-
         for (auto& s : op->get_strides())
         {
             if (s == 1)

@@ -32,7 +32,6 @@ if ! dpkg -L $DEB_PACKAGES >/dev/null 2>&1; then
 		$SUDO sh -c "cd /tmp/protobuf-3.6.1/ && ./configure && make && make check && make install && ldconfig && rm -rf /tmp/protobuf-3.6.1/"
 	fi
 fi
-echo "- Dependencies are installed in system."
 
 if [[ $ubuntu_codename == "focal" ]]; then
 	# Install clang-format-3.9
@@ -40,6 +39,8 @@ if [[ $ubuntu_codename == "focal" ]]; then
 	$SUDO sh -c "cp /tmp/clang+llvm-3.9.0-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin/clang-format-3.9 && ln -s /usr/bin/clang-format-3.9 /usr/bin/clang-format"
 	$SUDO sh -c "rm -rf /tmp/clang+llvm-3.9.0-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /tmp/clang+llvm-3.9.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz"
 fi
+
+echo "- Dependencies are installed in system."
 
 if [ ! -f "/usr/lib/libgtest.a" ]; then
 
@@ -58,11 +59,18 @@ if [ ! -f "/usr/lib/libgtest.a" ]; then
 	fi
 
 	$SUDO sh -c "rm -rf /usr/src/googletest/googletest/build"
-
 	$SUDO sh -c "mkdir /usr/local/lib/googletest"
 	$SUDO sh -c "ln -s /usr/lib/libgtest.a /usr/local/lib/googletest/libgtest.a"
 	$SUDO sh -c "ln -s /usr/lib/libgtest_main.a /usr/local/lib/googletest/libgtest_main.a"
 fi
 echo "- libgtest is installed in system."
+
+# Install numpy
+$SUDO sh -c "apt install -y python3 python3-pip"
+if [[ $ubuntu_codename == "xenial" ]]; then
+	$SUDO sh -c "pip3 install numpy==1.18.5"
+else
+	$SUDO sh -c "pip3 install numpy"
+fi
 
 echo "- Done."

@@ -154,7 +154,7 @@ namespace nnfusion
             }
             message["config"] = config;
 
-            std::string file_path = "./plugins/" + gnode->get_op_type();
+            std::string file_path = "./extensions/" + gnode->get_op_type();
             struct stat buffer;
             if (stat(file_path.c_str(), &buffer) != 0)
             {

@@ -353,3 +353,67 @@ TEST(nnfusion_pass_autodiff, gelu)
         a_grad,
         vector<float>{1.0833, 1.0852, 1.0119, 1.0833, 1.0852, 1.0119, 1.0833, 1.0852, 1.0119}));
 }
+
+TEST(nnfusion_pass_autodiff, conv)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/conv_with_strides_padding.onnx"));
+
+    model->set_outputs({model->get_outputs()[0]});
+    build_backward_graph(model);
+    RawInputs raw_inputs;
+    // x
+    auto x = vector<float>(35);
+    for (int i = 0; i < 35; ++i)
+        x[i] = i;
+    raw_inputs.emplace_back(convert_to_raw(x));
+    // w
+    auto w = vector<float>{2.9745677e-01,
+                           9.1013080e-01,
+                           8.0400240e-01,
+                           8.9810324e-01,
+                           4.7342436e-04,
+                           2.9623753e-01,
+                           5.0297123e-01,
+                           5.4320157e-01,
+                           8.5549527e-01};
+    raw_inputs.emplace_back(convert_to_raw(w));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> x_grad{convert_from_raw<float>(raw_outputs.at(1))};
+    vector<float> w_grad{convert_from_raw<float>(raw_outputs.at(2))};
+
+    EXPECT_TRUE(test::all_close_f(out,
+                                  vector<float>{8.145217e+00,
+                                                1.545196e+01,
+                                                1.160879e+01,
+                                                3.447396e+01,
+                                                6.100446e+01,
+                                                4.162711e+01,
+                                                6.856937e+01,
+                                                1.120852e+02,
+                                                7.315048e+01,
+                                                5.285490e+01,
+                                                9.245167e+01,
+                                                6.437609e+01}));
+    EXPECT_TRUE(test::all_close_f(
+        x_grad,
+        vector<float>{4.734244e-04, 1.194341e+00, 4.734244e-04, 1.194341e+00, 4.734244e-04,
+                      1.453332e+00, 2.459926e+00, 1.453332e+00, 2.459926e+00, 1.453332e+00,
+                      4.734244e-04, 1.194341e+00, 4.734244e-04, 1.194341e+00, 4.734244e-04,
+                      1.453332e+00, 2.459926e+00, 1.453332e+00, 2.459926e+00, 1.453332e+00,
+                      4.734244e-04, 1.194341e+00, 4.734244e-04, 1.194341e+00, 4.734244e-04,
+                      1.453332e+00, 2.459926e+00, 1.453332e+00, 2.459926e+00, 1.453332e+00,
+                      4.734244e-04, 1.194341e+00, 4.734244e-04, 1.194341e+00, 4.734244e-04}));
+    EXPECT_TRUE(test::all_close_f(w_grad,
+                                  vector<float>{1.020000e+02,
+                                                1.530000e+02,
+                                                1.020000e+02,
+                                                1.360000e+02,
+                                                2.040000e+02,
+                                                1.360000e+02,
+                                                1.020000e+02,
+                                                1.530000e+02,
+                                                1.020000e+02}));
+}

@@ -120,9 +120,9 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
         expr += replace_input_str(iter->second.expr) + ";";
     }
 
-    auto data_layput = op::create_layout_from_dims(node->get_output_shape(0));
+    auto data_layout = op::create_layout_from_dims(node->get_output_shape(0));
     return op::create_code_from_template(
-        expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layput)}});
+        expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
 };
 
 #define REGISTER_ELEM_OP(op_name)                                                                  \

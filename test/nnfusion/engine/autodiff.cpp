@@ -417,3 +417,22 @@ TEST(nnfusion_pass_autodiff, conv)
                                                 1.530000e+02,
                                                 1.020000e+02}));
 }
+
+TEST(nnfusion_pass_autodiff, abs)
+{
+    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/abs.onnx"));
+
+    build_backward_graph(model);
+
+    RawInputs raw_inputs;
+    // a
+    auto a = vector<float>{1, -3.4, 0};
+    raw_inputs.emplace_back(convert_to_raw(a));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> a_grad{convert_from_raw<float>(raw_outputs.at(1))};
+
+    EXPECT_TRUE(test::all_close_f(out, vector<float>{1, 3.4, 0}));
+    EXPECT_TRUE(test::all_close_f(a_grad, vector<float>{1, -1, 0}));
+}

@@ -446,7 +446,7 @@ TEST(nnfusion_pass_autodiff, sigmoid)
     RawInputs raw_inputs;
     // a
     auto a = vector<float>{
-        -3.0f, -2.0f, -1.0f, 0.0f, 1.0f, 2.0f, 3.0f,
+        -1.0f, 0.0f, 1.0f,
     };
     raw_inputs.emplace_back(convert_to_raw(a));
 
@@ -456,8 +456,8 @@ TEST(nnfusion_pass_autodiff, sigmoid)
 
     EXPECT_TRUE(test::all_close_f(
         out,
-        vector<float>{0.0474, 0.1192, 0.2689, 0.5000, 0.7311, 0.8808, 0.9526}));
+        vector<float>{0.2689, 0.5000, 0.7311}));
     EXPECT_TRUE(test::all_close_f(
         a_grad,
-        vector<float>{0.0452, 0.1050, 0.1966, 0.2500, 0.1966, 0.1050, 0.0452}));
+        vector<float>{0.1966, 0.2500, 0.1966}));
 }

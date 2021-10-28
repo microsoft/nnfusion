@@ -258,3 +258,28 @@ bool RuntimeConstantFoldingPass::run_on_graph(std::shared_ptr<Graph>& graph)
     NNFUSION_LOG(INFO) << "";
     return true;
 }
+
+template<class F, class... Args>
+auto RuntimeConstantFoldingPass::thread_pool::commit(F&& f, Args&&... args) -> std::future<decltype(f(args...))>
+{
+    if (stoped.load())
+    {
+        NNFUSION_LOG(ERROR) << "Runtime Constant Folding Pass Commit on ThreadPool is stopped.";
+        return;
+    }
+
+    using RetType = decltype(f(args...));
+    auto task = std::make_shared<std::packaged_task<RetType()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+    std::future<RetType> future = task->getfuture();
+    {
+        std::lock_guard<std::mutex> lock{ m_lock };
+        tasks.emplace([task](){(*task)()});
+    }
+    cv_task.notify_one();
+    return future;
+}
+
+int RuntimeConstantFoldingPass::thread_pool::idlCount()
+{
+    return idlThrNum;
+}

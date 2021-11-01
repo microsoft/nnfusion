@@ -247,6 +247,10 @@ namespace nnfusion
             {
                 config[alias_name + "_dtype"] = "float32";
             }
+            if (d_type == element::f64)
+            {
+                config[alias_name + "_dtype"] = "float64";
+            }
             else if (d_type == element::i32)
             {
                 config[alias_name + "_dtype"] = "int32";

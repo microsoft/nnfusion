@@ -403,6 +403,123 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_signature()
     return _lu;
 }
 
+cuda::AvgPoolmDGrad::AvgPoolmDGrad(shared_ptr<KernelContext> ctx)
+    : CudaLibEmitter(ctx)
+{
+    auto avg_pool = static_pointer_cast<nnfusion::op::AvgPoolBackprop>(ctx->gnode->get_op_ptr());
+    input_shape = nnfusion::Shape(ctx->inputs[0]->get_shape());
+    d_input_shape = nnfusion::Shape(ctx->inputs[1]->get_shape());
+    output_shape = nnfusion::Shape(ctx->inputs[2]->get_shape());
+    d_output_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
+    window_shape = nnfusion::Shape(avg_pool->get_window_shape());
+    padding_below = nnfusion::Shape(avg_pool->get_padding_below());
+    padding_above = nnfusion::Shape(avg_pool->get_padding_above());
+    window_stride = nnfusion::Strides(avg_pool->get_window_movement_strides());
+    include_pad = avg_pool->get_include_padding_in_avg_computation();
+    input_type = ctx->inputs[0]->get_element_type();
+    output_type = ctx->outputs[0]->get_element_type();
+
+    NNFUSION_CHECK(input_shape.size() == 4 || input_shape.size() == 5)
+        << "Input shape size of AvgPoolmD is invalid, shape size: " << input_shape.size()
+        << "expected 4 or 5";
+
+    std::stringstream tag;
+    tag << "cudnn_avgpoolgrad_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
+        << "_o" << join(output_shape, "_") << "_ws" << join(window_shape, "_") << "_wst"
+        << join(window_stride, "_") << "_pb" << join(padding_below, "_") << "_pb"
+        << join(padding_above, "_");
+    custom_tag = tag.str();
+}
+
+LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+    auto& lu = *_lu;
+
+    auto cudnn_avg_type = include_pad ? "CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING"
+                                      : "CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING";
+
+    // y dy x dx
+    auto input_desc = cudnn_tensor_descriptor_from_shape(input_shape, "input_desc", input_type);
+    auto d_input_desc = cudnn_tensor_descriptor_from_shape(d_input_shape, "d_input_desc", d_input_type);
+    auto output_desc = cudnn_tensor_descriptor_from_shape(output_shape, "output_desc", output_type);
+    auto d_output_desc = cudnn_tensor_descriptor_from_shape(d_output_shape, "d_output_desc", d_output_type);
+
+    lu << input_desc->get_code();
+    lu << d_input_desc->get_code();
+    lu << output_desc->get_code();
+    lu << d_output_desc->get_code();
+
+    lu << "cudnnPoolingDescriptor_t desc;\n";
+    lu << "cudnnCreatePoolingDescriptor(&desc);\n";
+    if (input_shape.size() == 4)
+    {
+        lu << "CUDNN_SAFE_CALL(cudnnSetPooling2dDescriptor(desc,"
+           << " " << cudnn_avg_type << ","
+           << " CUDNN_NOT_PROPAGATE_NAN," << static_cast<int>(window_shape[0]) << ", "
+           << static_cast<int>(window_shape[1]) << ", " << static_cast<int>(padding_below[0])
+           << ", " << static_cast<int>(padding_below[1]) << ", "
+           << static_cast<int>(window_stride[0]) << ", " << static_cast<int>(window_stride[1])
+           << "));\n";
+    }
+    else /*op->input_shape.size() == 5*/
+    {
+        std::vector<int> w_strides(window_stride.size());
+        std::vector<int> w_shape(window_stride.size());
+        std::vector<int> w_padding(padding_below.size());
+        for (int i = 0; i < window_shape.size(); i++)
+        {
+            w_shape[i] = static_cast<int>(window_shape[i]);
+            w_strides[i] = static_cast<int>(window_stride[i]);
+            w_padding[i] = static_cast<int>(padding_below[i]);
+        }
+
+        auto expand_vector_int = [](string name, vector<int>& d) {
+            stringstream ss;
+            NNFUSION_CHECK(d.size() > 0);
+            ss << "int " << name << "[] = {";
+            for (int i = 0; i + 1 < d.size(); i++)
+                ss << to_string(d[i]) << ", ";
+            ss << to_string(d.back()) << "}\n";
+            return ss.str();
+        };
+
+        lu << expand_vector_int("w_shape", w_shape);
+        lu << expand_vector_int("w_strides", w_strides);
+        lu << expand_vector_int("w_padding", w_padding);
+
+        lu << "CUDNN_SAFE_CALL(cudnnSetPoolingNdDescriptor(desc, "
+           << " " << cudnn_avg_type << ","
+           << "CUDNN_NOT_PROPAGATE_NAN, "
+           << "3, w_shape, w_padding, w_strides));\n";
+    }
+
+    lu << "const float alpha = 1.0;\n";
+    lu << "const float beta = 0.0;\n";
+
+    lu << "CUDNN_SAFE_CALL(cudnnPoolingBackward(cudnn_handle,"
+       << " desc,"
+       << " &alpha,"
+       << " input_desc,"
+       << " input0,"
+       << " d_input_desc,"
+       << " input1,"
+       << " output_desc,"
+       << " input2,"
+       << " &beta,"
+       << " d_output_desc,"
+       << " output0"
+       << " ));\n";
+
+    lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(input_desc));\n";
+    lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(d_input_desc));\n";
+    lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(output_desc));\n";
+    lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(d_output_desc));\n";
+    lu << "CUDNN_SAFE_CALL(cudnnDestroyPoolingDescriptor(desc));\n";
+
+    return _lu;
+}
+
 REGISTER_KERNEL_EMITTER(
     "AvgPool",                                                                    // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
@@ -412,3 +529,8 @@ REGISTER_KERNEL_EMITTER(
     "AvgPool",                                                                     // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
     cuda::AvgPoolmD)                                                               // constructor
+
+REGISTER_KERNEL_EMITTER(
+    "AvgPoolBackprop",                                                                     // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
+    cuda::AvgPoolmDGrad)                                                               // constructor

@@ -283,3 +283,15 @@ int RuntimeConstantFoldingPass::thread_pool::idlCount()
 {
     return idlThrNum;
 }
+
+int RuntimeConstantFoldingPass::runtime_const_folding_task(std::shared_ptr<Graph>& graph)
+{
+    return 0;
+}
+
+bool RuntimeConstantFoldingPass::run_on_graph_parallel(
+    std::shared_ptr<Graph>& graph,
+    std::set<std::shared_ptr<GNode>>& blocklist_nodes)
+{
+    std::map<std::shared_ptr<GNode>, int> in_degree;
+}

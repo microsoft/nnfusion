@@ -25,6 +25,12 @@ namespace nnfusion
                 int runtime_const_folding_iterate_once(
                     std::shared_ptr<Graph>& graph,
                     std::set<std::shared_ptr<GNode>>& blocklist_nodes);
+                int runtime_const_folding_task(
+                    std::shared_ptr<Graph>& graph);
+                bool run_on_graph_parallel(
+                    std::shared_ptr<Graph>& graph,
+                    std::set<std::shared_ptr<GNode>>& blocklist_nodes);
+
                 class thread_pool
                 {
                     using Task = std::function<void()>;

@@ -436,3 +436,25 @@ TEST(nnfusion_pass_autodiff, abs)
     EXPECT_TRUE(test::all_close_f(out, vector<float>{1, 3.4, 0}));
     EXPECT_TRUE(test::all_close_f(a_grad, vector<float>{1, -1, 0}));
 }
+
+TEST(nnfusion_pass_autodiff, sigmoid)
+{
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/sigmoid.onnx"));
+
+    build_backward_graph(model);
+
+    RawInputs raw_inputs;
+    // a
+    auto a = vector<float>{
+        -1.0f, 0.0f, 1.0f,
+    };
+    raw_inputs.emplace_back(convert_to_raw(a));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> a_grad{convert_from_raw<float>(raw_outputs.at(1))};
+
+    EXPECT_TRUE(test::all_close_f(out, vector<float>{0.2689, 0.5000, 0.7311}));
+    EXPECT_TRUE(test::all_close_f(a_grad, vector<float>{0.1966, 0.2500, 0.1966}));
+}

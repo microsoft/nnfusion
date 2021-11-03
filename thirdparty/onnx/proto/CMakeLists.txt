@@ -9,7 +9,7 @@ else()
             ${srcs}
             ${hdrs}
     )
-    add_dependencies(onnx_proto protobuf::libprotobuf)
+    #add_dependencies(onnx_proto protobuf::libprotobuf)
     target_include_directories(onnx_proto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Protobuf_INCLUDE_DIR})
     set(ONNXPROTO_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Location for generated onnx protobuf headers." )
 endif()

@@ -16,7 +16,9 @@ add_library(nnfusion_engine_profiler STATIC
 )
 
 target_link_libraries(nnfusion_engine_profiler
-    nnfusion_graph sqlite3
+    nnfusion_graph
+    sqlite3
+    ${CMAKE_DL_LIBS}
 )
 
 target_include_directories(nnfusion_engine_profiler SYSTEM PUBLIC

@@ -16,7 +16,9 @@ target_include_directories(nnfusion_engine_device SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
 
-target_link_libraries(nnfusion_engine_device PRIVATE
-    nnfusion_graph ${CURL_LIBRARIES}
+target_link_libraries(nnfusion_engine_device
+    nnfusion_engine_base
+    nnfusion_ir
 )
+
 target_compile_options(nnfusion_engine_device PRIVATE "-fPIC")

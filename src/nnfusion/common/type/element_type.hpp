@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "half/include/half.hpp"
-#include "nnfusion/common/serialize/pbtypes.pb.h"
+#include "nnfusion/common/serialize/nnf_pbtypes.pb.h"
 #include "nnfusion/common/type/bfloat16.hpp"
 #include "nnfusion/util/errors.hpp"
 

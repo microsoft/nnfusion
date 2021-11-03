@@ -19,5 +19,7 @@ add_library(nnfusion_engine_pass STATIC ${SRC})
 target_include_directories(nnfusion_engine_pass SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
+target_link_libraries(nnfusion_engine_pass
+    nnfusion_operators
+)
 target_compile_options(nnfusion_engine_pass PRIVATE "-fPIC")
-target_link_libraries(nnfusion_engine_pass PRIVATE gflags)

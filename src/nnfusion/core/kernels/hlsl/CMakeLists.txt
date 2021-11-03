@@ -15,7 +15,3 @@ target_include_directories(kernels_hlsl SYSTEM PUBLIC
     ${NGRAPH_INCLUDE_PATH}
 )
 target_compile_options(kernels_hlsl PRIVATE "-fPIC")
-
-target_link_libraries(kernels_hlsl PRIVATE
-    kernels_registration gflags ${CURL_LIBRARIES}
-)

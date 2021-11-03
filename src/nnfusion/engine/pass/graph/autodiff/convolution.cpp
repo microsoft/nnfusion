@@ -31,11 +31,20 @@ REGISTER_BACKWARD_TRANSLATOR(Convolution)
         auto padding_below_diff = conv->get_padding_below();
         auto padding_above_diff = conv->get_padding_above();
         auto data_format = conv->get_data_format();
-        NNFUSION_CHECK(data_format == "NCHW");
+        NNFUSION_CHECK(data_format == "NCHW" || data_format == "NCW");
         auto x_shape = forward_node->get_input_shape(0);
         auto filter_shape = forward_node->get_input_shape(1);
-        nnfusion::Shape kernel_shape = {filter_shape[2], filter_shape[3]};
+        nnfusion::Shape kernel_shape;
         nnfusion::op::OpConfig::any conv_grad_data_config, conv_grad_filter_config;
+        if (data_format == "NCW")
+        {
+            kernel_shape = {filter_shape[2]};
+        }
+        else
+        {
+            kernel_shape = {filter_shape[2], filter_shape[3]};
+        }
+
         conv_grad_data_config["padding_above"] = padding_above_diff;
         conv_grad_data_config["padding_below"] = padding_below_diff;
         conv_grad_data_config["data_format"] = data_format;

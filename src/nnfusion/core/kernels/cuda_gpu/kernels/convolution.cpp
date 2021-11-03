@@ -352,10 +352,23 @@ LanguageUnit_p cuda::ConvolutionGradDataCudnn::emit_function_body()
         return nullptr;
     }
 
-    if (data_format != "NCHW")
+    if (data_format != "NCHW" && data_format != "NCW")
     {
-        NNFUSION_LOG(NNFUSION_WARNING) << "Only support NCHW by now.";
+        NNFUSION_LOG(NNFUSION_WARNING) << "Only support NCHW or NCW by now.";
         return nullptr;
+    }
+
+    // Conv1D: convert Conv1D to Conv2D
+    if (data_format == "NCW")
+    {
+        filter_shape = {filter_shape[0], filter_shape[1], 1, filter_shape[2]};
+        dy_shape = {dy_shape[0], dy_shape[1], 1, dy_shape[2]};
+        dx_shape = {dx_shape[0], dx_shape[1], 1, dx_shape[2]};
+        window_dilation_strides = {1, window_dilation_strides[0]};
+        window_movement_strides = {1, window_movement_strides[0]};
+        data_dilation_strides = {1, data_dilation_strides[0]};
+        padding_below_diff = {0, padding_below_diff[0]};
+        padding_above_diff = {0, padding_above_diff[0]};
     }
 
     // emit code
@@ -552,10 +565,23 @@ LanguageUnit_p cuda::ConvolutionGradFilterCudnn::emit_function_body()
         return nullptr;
     }
 
-    if (data_format != "NCHW")
+    if (data_format != "NCHW" && data_format != "NCW")
     {
-        NNFUSION_LOG(NNFUSION_WARNING) << "Only support NCHW by now.";
+        NNFUSION_LOG(NNFUSION_WARNING) << "Only support NCHW or NCW by now.";
         return nullptr;
+    }
+
+    // Conv1D: convert Conv1D to Conv2D
+    if (data_format == "NCW")
+    {
+        x_shape = {x_shape[0], x_shape[1], 1, x_shape[2]};
+        dy_shape = {dy_shape[0], dy_shape[1], 1, dy_shape[2]};
+        dw_shape = {dw_shape[0], dw_shape[1], 1, dw_shape[2]};
+        window_dilation_strides = {1, window_dilation_strides[0]};
+        window_movement_strides = {1, window_movement_strides[0]};
+        data_dilation_strides = {1, data_dilation_strides[0]};
+        padding_below_diff = {0, padding_below_diff[0]};
+        padding_above_diff = {0, padding_above_diff[0]};
     }
 
     // emit code

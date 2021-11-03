@@ -268,9 +268,9 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
     input_type = ctx->inputs[0]->get_element_type();
     output_type = ctx->outputs[0]->get_element_type();
 
-    NNFUSION_CHECK(input_shape.size() == 4 || input_shape.size() == 5)
-        << "Input shape size of AvgPoolmD is invalid, shape size: " << input_shape.size()
-        << "expected 4 or 5";
+    // NNFUSION_CHECK(input_shape.size() == 4 || input_shape.size() == 5)
+    //     << "Input shape size of AvgPoolmD is invalid, shape size: " << input_shape.size()
+    //     << "expected 4 or 5";
 
     std::stringstream tag;
     tag << "cudnn_avgpool_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
@@ -282,6 +282,9 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
 
 LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
 {
+    if (input_shape.size() != 4 && input_shape.size() != 5)
+        return nullptr;
+
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
 

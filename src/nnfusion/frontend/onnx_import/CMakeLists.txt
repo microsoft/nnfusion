@@ -76,6 +76,8 @@ add_library(onnx_import STATIC
         op/scatternd.cpp
         op/depth_to_space.hpp
         op/depth_to_space.cpp
+        op/roll.hpp
+        op/roll.cpp
         # ${ops_source}
         util/broadcasting.cpp
         util/graph_convert.cpp

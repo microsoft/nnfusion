@@ -20,6 +20,10 @@ target_include_directories(nnfusion_engine_pass SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
 target_link_libraries(nnfusion_engine_pass
+    kernels_cuda 
+    kernels_cpu
+    kernels_hlsl
     nnfusion_operators
+    nnfusion_engine_base
+    nnfusion_engine_pass_graph
 )
-target_compile_options(nnfusion_engine_pass PRIVATE "-fPIC")

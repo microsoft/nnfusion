@@ -14,4 +14,3 @@ add_library(kernels_hlsl STATIC ${SRC})
 target_include_directories(kernels_hlsl SYSTEM PUBLIC
     ${NGRAPH_INCLUDE_PATH}
 )
-target_compile_options(kernels_hlsl PRIVATE "-fPIC")

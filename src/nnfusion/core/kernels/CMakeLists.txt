@@ -13,7 +13,6 @@ add_library(kernels_registration STATIC ${SRC})
 target_include_directories(kernels_registration SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
-target_compile_options(kernels_registration PRIVATE "-fPIC")
 
 add_subdirectory(cuda_gpu)
 add_subdirectory(cpu)

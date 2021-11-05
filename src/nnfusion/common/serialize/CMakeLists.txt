@@ -15,5 +15,4 @@ target_include_directories(nnfusion_serialize SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
 
-target_compile_options(nnfusion_serialize PRIVATE "-fPIC")
 target_link_libraries(nnfusion_serialize ${Protobuf_LIBRARIES})

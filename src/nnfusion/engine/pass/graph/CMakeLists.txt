@@ -38,5 +38,6 @@ target_include_directories(nnfusion_engine_pass_graph SYSTEM PUBLIC
 )
 target_link_libraries(nnfusion_engine_pass_graph
     nnfusion_cache_manager
+    nnfusion_operators
+    kernels_hlsl
 )
-target_compile_options(nnfusion_engine_pass_graph PRIVATE "-fPIC")

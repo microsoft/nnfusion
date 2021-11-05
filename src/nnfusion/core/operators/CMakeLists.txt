@@ -94,7 +94,6 @@ add_library(nnfusion_operators STATIC ${SRC})
 target_include_directories(nnfusion_operators SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
-target_compile_options(nnfusion_operators PRIVATE "-fPIC")
 
 install(TARGETS nnfusion_operators
         RUNTIME DESTINATION bin

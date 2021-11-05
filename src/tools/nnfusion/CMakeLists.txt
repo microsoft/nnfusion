@@ -34,6 +34,7 @@ target_link_libraries(nnfusion
     nnfusion_engine_base 
     nnfusion_engine_profiler
     nnfusion_engine_device
+    nnfusion_engine_mem
     nnfusion_engine_pass
     nnfusion_engine_pass_graph
     nnfusion_engine_pass_graph_blockfusion

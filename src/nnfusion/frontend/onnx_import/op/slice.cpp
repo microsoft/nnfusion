@@ -66,6 +66,15 @@ namespace nnfusion
 
                     auto op = std::make_shared<op::Slice>(lower_bounds, upper_bounds);
                     op->set_name(node_proto.output(0));
+                    nnfusion::json stat;
+                    stat["starts"] = starts;
+                    stat["ends"] = ends;
+                    stat["axes"] = axes;
+                    std::vector<int64_t> steps;
+                    steps.resize(starts.size(), 1);
+                    stat["steps"] = steps;
+                    op->deserialize(stat);
+                    // NNFUSION_LOG(INFO) << stat.dump();
                     auto gnode = m_graph->add_node_and_edge(op, {data});
                     NamedNodeVector ret{{node_proto.output(0), gnode}};
                     return ret;
@@ -123,6 +132,12 @@ namespace nnfusion
 
                     auto op = std::make_shared<op::Slice>(lower_bounds, upper_bounds, strides);
                     op->set_name(node_proto.output(0));
+                    nnfusion::json stat;
+                    stat["starts"] = starts;
+                    stat["ends"] = ends;
+                    stat["axes"] = axes;
+                    stat["steps"] = steps;
+                    op->deserialize(stat);
                     auto gnode = m_graph->add_node_and_edge(op, {data});
                     NamedNodeVector ret{{node_proto.output(0), gnode}};
                     return ret;

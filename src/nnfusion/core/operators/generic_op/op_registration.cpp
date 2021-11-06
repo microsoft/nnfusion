@@ -16,7 +16,9 @@ namespace nnfusion
         // empty string result when translation is not available for a certain op
         std::string get_translation(std::shared_ptr<nnfusion::graph::GNode>& gnode)
         {
-            std::string result = get_translation_v2(gnode);
+            std::string result = get_ir_via_extension(gnode);
+            if (result.empty())
+                result = get_translation_v2(gnode);
             if (!result.empty())
                 return result;
             auto& configs = get_op_configs();
@@ -129,6 +131,50 @@ namespace nnfusion
             return options;
         }
 
+        std::string get_ir_via_extension(std::shared_ptr<graph::GNode> gnode)
+        {
+            nnfusion::json message;
+            message["output_name"] = "@output0@";
+            std::vector<nnfusion::json> input_dict;
+            for (size_t i = 0; i < gnode->get_input_size(); i++)
+            {
+                nnfusion::json input_info;
+                input_info["name"] = "@input" + to_string(i) + "@";
+                input_info["dtype"] = gnode->get_input_element_type(i).c_type_string();
+                input_info["shape"] = gnode->get_input_shape(i);
+                input_dict.push_back(input_info);
+            }
+            message["input_dict"] = input_dict;
+            nnfusion::json config = gnode->get_op_ptr()->serialize();
+            if (config.empty())
+            {
+                // NNFUSION_LOG(NNFUSION_WARNING) << "config for " << gnode->get_op_type()
+                //                                << " is empty";
+                return "";
+            }
+            message["config"] = config;
+
+            std::string file_path = "./extensions/" + gnode->get_op_type();
+            struct stat buffer;
+            if (stat(file_path.c_str(), &buffer) != 0)
+            {
+                // NNFUSION_LOG(NNFUSION_WARNING) << "extension for " << gnode->get_op_type()
+                //                                << " does not exist";
+                return "";
+            }
+
+            std::string cmd = file_path + " '" + message.dump() + "'", ir_string;
+            NNFUSION_LOG(INFO) << "Execute: " << cmd;
+
+            static char line[4096];
+            FILE* fp = popen(cmd.c_str(), "r");
+            while (fgets(line, sizeof(line), fp))
+                ir_string += line;
+            pclose(fp);
+            ir_string.pop_back(); // romove '\n'
+            NNFUSION_LOG(INFO) << "Response: " << ir_string;
+            return ir_string;
+        }
         // +        std::string get_annotation(std::string translation)
         // +        {
         // +            std::string options;

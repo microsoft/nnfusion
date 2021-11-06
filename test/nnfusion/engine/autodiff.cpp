@@ -77,12 +77,12 @@ namespace
         return result_vectors;
     }
 
-    void build_backward_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
+    void build_backward_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::shared_ptr<vector<vector<float>>> backward_inputs = nullptr)
     {
         FLAGS_fautodiff = true;
         FLAGS_ftraining_optimizer = "{\"optimizer\": \"SGD\", \"learning_rate\": 0.1}";
         auto ad_pass = nnfusion::pass::graph::AutodiffPass();
-        ad_pass.run_on_graph(graph);
+        ad_pass.run_on_graph(graph, backward_inputs);
     }
 }
 
@@ -442,9 +442,6 @@ TEST(nnfusion_pass_autodiff, sigmoid)
     auto model =
         frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/sigmoid.onnx"));
 
-    build_backward_graph(model);
-
-    RawInputs raw_inputs;
     // a
     auto a = vector<float>{
         -1.0f, 0.0f, 1.0f,

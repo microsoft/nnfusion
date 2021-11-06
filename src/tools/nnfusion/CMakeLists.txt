@@ -22,13 +22,14 @@ if (TORCHSCRIPT_FRONTEND)
 endif()
 
 target_link_libraries(nnfusion 
+    -Wl,--whole-archive
     # Common feature
     nnfusion_common
     nnfusion_util
     nnfusion_cache_manager
+    nnfusion_operators 
     nnfusion_serialize
     nnfusion_graph
-    nnfusion_operators 
     nnfusion_ir
     # Engine related
     nnfusion_engine_base 
@@ -47,6 +48,7 @@ target_link_libraries(nnfusion
     kernels_cpu
     kernels_hlsl
     # Depends
+    -Wl,--no-whole-archive
     protobuf::libprotobuf
     gflags 
     dl

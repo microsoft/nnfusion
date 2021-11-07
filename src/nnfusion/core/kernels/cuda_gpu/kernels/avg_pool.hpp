@@ -96,7 +96,7 @@ namespace nnfusion
                     padding_above;
                 nnfusion::Strides window_stride;
                 bool include_pad;
-                element::Type input_type, output_type;
+                element::Type input_type, output_type, d_input_type, d_output_type;
             };
         } // namespace cuda
     }     // namespace kernels

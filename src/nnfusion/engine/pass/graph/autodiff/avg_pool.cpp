@@ -33,5 +33,5 @@ REGISTER_BACKWARD_TRANSLATOR(AvgPool)
      auto xgrad = graph->add_node_and_edge(
             avgpoolbackprop, {x, y, y_grad});
     
-    return GNodeIndexVector{GNodeIndex{x_grad, 0}};
+    return GNodeIndexVector{GNodeIndex{xgrad, 0}};
 });

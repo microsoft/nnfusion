@@ -403,14 +403,60 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_signature()
     return _lu;
 }
 
+LanguageUnit_p cuda::AvgPoolmDGrad::emit_dependency()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+
+    _lu->require(header::cudnn);
+    //_lu->require(declaration::cudnn_handle);
+    _lu->require(macro::CUDNN_SAFE_CALL);
+
+    return _lu;
+}
+
+LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
+    auto& lu = *_lu;
+
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->tensors.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        // defult name is: "persit0", "persist1" ...
+        ss << m_context->tensors[i]->get_name();
+        params.push_back(ss.str());
+    }
+
+    lu << "void "
+       << "(cudnnHandle_t cudnn_handle, " << join(params, ", ") << ")";
+    return _lu;
+}
+
+
 cuda::AvgPoolmDGrad::AvgPoolmDGrad(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {
     auto avg_pool = static_pointer_cast<nnfusion::op::AvgPoolBackprop>(ctx->gnode->get_op_ptr());
     input_shape = nnfusion::Shape(ctx->inputs[0]->get_shape());
-    d_input_shape = nnfusion::Shape(ctx->inputs[1]->get_shape());
-    output_shape = nnfusion::Shape(ctx->inputs[2]->get_shape());
-    d_output_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
+    output_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
     window_shape = nnfusion::Shape(avg_pool->get_window_shape());
     padding_below = nnfusion::Shape(avg_pool->get_padding_below());
     padding_above = nnfusion::Shape(avg_pool->get_padding_above());
@@ -424,7 +470,7 @@ cuda::AvgPoolmDGrad::AvgPoolmDGrad(shared_ptr<KernelContext> ctx)
         << "expected 4 or 5";
 
     std::stringstream tag;
-    tag << "cudnn_avgpoolgrad_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
+    tag << "cudnn_avgpool_grad_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
         << "_o" << join(output_shape, "_") << "_ws" << join(window_shape, "_") << "_wst"
         << join(window_stride, "_") << "_pb" << join(padding_below, "_") << "_pb"
         << join(padding_above, "_");
@@ -531,6 +577,6 @@ REGISTER_KERNEL_EMITTER(
     cuda::AvgPoolmD)                                                               // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "AvgPoolBackprop",                                                                     // op_name
+    "AvgPoolGrad",                                                                     // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
     cuda::AvgPoolmDGrad)                                                               // constructor

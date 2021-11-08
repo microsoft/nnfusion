@@ -1,6 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+set(MEMALLOC
+    memory_allocator.cpp
+)
+
+add_library(nnfusion_engine_mem STATIC 
+    ${MEMALLOC}
+)
+
 
 # Make pass and op object
 add_subdirectory(pass)
@@ -12,42 +20,16 @@ add_subdirectory(cache)
 set(ENGINE
     engine.cpp
     op.cpp
-    memory_allocator.cpp
     async_manager.cpp
     util/file_util.cpp
 )
 
-add_library(nnfusion_backend SHARED
+add_library(nnfusion_engine_base STATIC 
     ${ENGINE}
 )
 
-target_link_libraries(nnfusion_backend PRIVATE
-   # nnfusion_engine_pass
-    nnfusion_common
-    # nnfusion_ir
-    nnfusion_util
-    # kernels
-    # use ${WholeArchiveFlag} because MacOS' ldtool use different flag.
-    ${WholeArchiveFlag}
-    nnfusion_ir
-    nnfusion_engine_pass
-    kernels_registration
-    nnfusion_engine_device
-    kernels_cuda 
-    kernels_cpu
-    kernels_hlsl
-    nnfusion_cache_manager
-    nnfusion_engine_profiler
-    ${NoWholeArchiveFlag} 
-)
-
-target_link_libraries(nnfusion_backend PUBLIC
-    gflags dl
-)
-
-install(TARGETS nnfusion_backend
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    PUBLIC_HEADER DESTINATION include
+target_link_libraries(nnfusion_engine_base
+   nnfusion_engine_device
+   nnfusion_engine_pass
+   nnfusion_engine_mem
 )

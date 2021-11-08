@@ -17,26 +17,51 @@ REGISTER_OP(ConvolutionGradFilter)
         NNFUSION_CHECK(gnode->get_input_size() == 2);
         auto data_shape = gnode->get_input_shape(0);
         auto dy_shape = gnode->get_input_shape(1);
-        NNFUSION_CHECK(data_shape.size() == dy_shape.size() && dy_shape.size() == 4);
+        NNFUSION_CHECK(data_shape.size() == dy_shape.size());
         NNFUSION_CHECK(data_shape[0] == dy_shape[0]);
         auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         nnfusion::Strides dilations = op->localOpConfig.getRoot()["dilations"];
-        NNFUSION_CHECK(dilations[0] == dilations[1] == 1) << "Not support other dilation yet";
+        bool dilations_one = true;
+        for (auto d : dilations)
+        {
+            if (d != 1)
+            {
+                dilations_one = false;
+                break;
+            }
+        }
+        NNFUSION_CHECK(dilations_one == true) << "Not support other dilation yet";
         nnfusion::Strides data_dilations = op->localOpConfig.getRoot()["data_dilations"];
-        NNFUSION_CHECK(data_dilations[0] == data_dilations[1] == 1)
-            << "Not support other data dilation yet";
+        bool data_dilations_one = true;
+        for (auto d : data_dilations)
+        {
+            if (d != 1)
+            {
+                data_dilations_one = false;
+                break;
+            }
+        }
+        NNFUSION_CHECK(data_dilations_one == true) << "Not support other data dilation yet";
         std::string data_format = op->localOpConfig.getRoot()["data_format"];
-        bool is_nchw = (data_format == "NCHW");
-        NNFUSION_CHECK(is_nchw) << "ConvolutionGradFilter only supports NCHW now!";
+        NNFUSION_CHECK(data_format == "NCHW" || data_format == "NCW")
+            << "ConvolutionGradFilter only supports NCHW or NCW now!";
         Shape kernel_shape = op->localOpConfig.getRoot()["kernel_shape"];
-        size_t kernel_size_h = kernel_shape[0];
-        size_t kernel_size_w = kernel_shape[1];
+        Shape dx_shape;
+        size_t CI = data_shape[1];
+        if (data_format == "NCW")
+        {
+            size_t kernel_size_w = kernel_shape[0];
+            size_t CO = dy_shape[1];
+            dx_shape = {CO, CI, kernel_size_w};
+        }
+        else
+        {
+            NNFUSION_CHECK(dy_shape.size() == 4);
+            size_t kernel_size_h = kernel_shape[0];
+            size_t kernel_size_w = kernel_shape[1];
+            size_t CO = dy_shape[1];
+            dx_shape = {CO, CI, kernel_size_h, kernel_size_w};
+        }
 
-        size_t N = dy_shape[0];
-        size_t CO = dy_shape[1];
-        size_t HO = dy_shape[2];
-        size_t WO = dy_shape[3];
-
-        Shape dx_shape{N, CO, kernel_size_h, kernel_size_w};
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(1), dx_shape);
     });

@@ -268,7 +268,6 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
     input_type = ctx->inputs[0]->get_element_type();
     output_type = ctx->outputs[0]->get_element_type();
 
-
     std::stringstream tag;
     tag << "cudnn_avgpool_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
         << "_o" << join(output_shape, "_") << "_ws" << join(window_shape, "_") << "_wst"
@@ -283,6 +282,9 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
 
 LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
 {
+    if (input_shape.size() != 4 && input_shape.size() != 5)
+        return nullptr;
+
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
     auto rank = input_shape.size();

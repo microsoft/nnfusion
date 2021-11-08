@@ -442,6 +442,9 @@ TEST(nnfusion_pass_autodiff, sigmoid)
     auto model =
         frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/sigmoid.onnx"));
 
+    build_backward_graph(model);
+
+    RawInputs raw_inputs;
     // a
     auto a = vector<float>{
         -1.0f, 0.0f, 1.0f,

@@ -35,9 +35,8 @@ using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::pass::graph::autodiff;
 
-bool AutodiffPass::run_on_graph(
-    std::shared_ptr<Graph>& graph,
-    std::shared_ptr<vector<vector<float>>> backward_inputs = nullptr)
+bool AutodiffPass::run_on_graph(std::shared_ptr<Graph>& graph,
+                                std::shared_ptr<vector<vector<float>>> backward_inputs = nullptr)
 {
     bool enable_autodiff = FLAGS_fautodiff;
     if (!enable_autodiff)
@@ -67,10 +66,15 @@ bool AutodiffPass::run_on_graph(
         NNFUSION_CHECK(gnode->get_output_size() == 1);
         outputs_index.emplace_back(gnode, 0);
         std::shared_ptr<op::Constant> one_op;
-        if (backward_inputs != nullptr && i < backward_inputs->size()) {
-            one_op = std::make_shared<op::Constant>(element::f32, gnode->get_shape(), backward_inputs->at(i));
-        } else {
-            one_op = std::make_shared<op::Constant>(element::f32, gnode->get_shape(), std::vector<float>{1});
+        if (backward_inputs != nullptr && i < backward_inputs->size())
+        {
+            one_op = std::make_shared<op::Constant>(
+                element::f32, gnode->get_shape(), backward_inputs->at(i));
+        }
+        else
+        {
+            one_op = std::make_shared<op::Constant>(
+                element::f32, gnode->get_shape(), std::vector<float>{1});
         }
         one_op->set_name(gnode->get_name() + "_grad");
         auto one = graph->add_node_and_edge(one_op, GNodeVector());

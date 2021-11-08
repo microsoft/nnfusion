@@ -24,13 +24,11 @@ REGISTER_OP(Slice)
 
         auto op = static_pointer_cast<nnfusion::op::Slice>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
-
         for (auto& s : op->get_strides())
         {
             if (s == 1)
                 continue;
-            std::cout << "Slice operation with strides larger than 1 is not supported by Antares, "
-                         "using V1 interface"
+            std::cout << "Slice operation with strides larger than 1 is not supported by Antares "
                       << std::endl;
             return "";
         }
@@ -51,4 +49,5 @@ REGISTER_OP(Slice)
              {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
              {"slice_dims", slice_dims}});
         return expression_code;
+
     });

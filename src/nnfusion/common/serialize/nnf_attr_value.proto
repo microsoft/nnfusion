@@ -3,8 +3,8 @@ syntax = "proto3";
 package nnfusion.serialize;
 
 // import "tensor.proto";
-import "tensor_shape.proto";
-import "pbtypes.proto";
+import "nnf_tensor_shape.proto";
+import "nnf_pbtypes.proto";
 
 option cc_enable_arenas = true;
 

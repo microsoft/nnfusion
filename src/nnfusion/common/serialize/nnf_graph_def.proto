@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package nnfusion.serialize;
 
-import "node_def.proto";
+import "nnf_node_def.proto";
 
 option cc_enable_arenas = true;
 

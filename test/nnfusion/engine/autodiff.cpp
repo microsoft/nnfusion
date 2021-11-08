@@ -353,3 +353,156 @@ TEST(nnfusion_pass_autodiff, gelu)
         a_grad,
         vector<float>{1.0833, 1.0852, 1.0119, 1.0833, 1.0852, 1.0119, 1.0833, 1.0852, 1.0119}));
 }
+
+TEST(nnfusion_pass_autodiff, conv)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/conv_with_strides_padding.onnx"));
+
+    model->set_outputs({model->get_outputs()[0]});
+    build_backward_graph(model);
+    RawInputs raw_inputs;
+    // x
+    auto x = vector<float>(35);
+    for (int i = 0; i < 35; ++i)
+        x[i] = i;
+    raw_inputs.emplace_back(convert_to_raw(x));
+    // w
+    auto w = vector<float>{2.9745677e-01,
+                           9.1013080e-01,
+                           8.0400240e-01,
+                           8.9810324e-01,
+                           4.7342436e-04,
+                           2.9623753e-01,
+                           5.0297123e-01,
+                           5.4320157e-01,
+                           8.5549527e-01};
+    raw_inputs.emplace_back(convert_to_raw(w));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> x_grad{convert_from_raw<float>(raw_outputs.at(1))};
+    vector<float> w_grad{convert_from_raw<float>(raw_outputs.at(2))};
+
+    EXPECT_TRUE(test::all_close_f(out,
+                                  vector<float>{8.145217e+00,
+                                                1.545196e+01,
+                                                1.160879e+01,
+                                                3.447396e+01,
+                                                6.100446e+01,
+                                                4.162711e+01,
+                                                6.856937e+01,
+                                                1.120852e+02,
+                                                7.315048e+01,
+                                                5.285490e+01,
+                                                9.245167e+01,
+                                                6.437609e+01}));
+    EXPECT_TRUE(test::all_close_f(
+        x_grad,
+        vector<float>{4.734244e-04, 1.194341e+00, 4.734244e-04, 1.194341e+00, 4.734244e-04,
+                      1.453332e+00, 2.459926e+00, 1.453332e+00, 2.459926e+00, 1.453332e+00,
+                      4.734244e-04, 1.194341e+00, 4.734244e-04, 1.194341e+00, 4.734244e-04,
+                      1.453332e+00, 2.459926e+00, 1.453332e+00, 2.459926e+00, 1.453332e+00,
+                      4.734244e-04, 1.194341e+00, 4.734244e-04, 1.194341e+00, 4.734244e-04,
+                      1.453332e+00, 2.459926e+00, 1.453332e+00, 2.459926e+00, 1.453332e+00,
+                      4.734244e-04, 1.194341e+00, 4.734244e-04, 1.194341e+00, 4.734244e-04}));
+    EXPECT_TRUE(test::all_close_f(w_grad,
+                                  vector<float>{1.020000e+02,
+                                                1.530000e+02,
+                                                1.020000e+02,
+                                                1.360000e+02,
+                                                2.040000e+02,
+                                                1.360000e+02,
+                                                1.020000e+02,
+                                                1.530000e+02,
+                                                1.020000e+02}));
+}
+
+TEST(nnfusion_pass_autodiff, conv1d)
+{
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/conv1d.onnx"));
+
+    model->set_outputs({model->get_outputs()[0]});
+    build_backward_graph(model);
+    RawInputs raw_inputs;
+    // x
+    auto x = vector<float>{-0.7583, -0.5220, -0.0367, 0.3002,  0.1444, 1.4162,  -0.1217, 0.2265,
+                           0.8248,  -0.1658, -0.6053, -1.0609, 2.3762, 1.0725,  0.1565,
+
+                           0.6086,  -0.3693, -0.4803, 0.7205,  0.4418, 0.4734,  -0.4241, 0.1261,
+                           -0.9748, 0.2929,  -1.9605, 0.9493,  0.4774, -0.4049, 0.9748};
+    raw_inputs.emplace_back(convert_to_raw(x));
+    // w
+    auto w = vector<float>{-0.2450, 0.2661,  0.3636,  -0.1040, -0.2286, 0.2135,
+
+                           -0.3568, 0.3563,  0.3599,  -0.3011, -0.0962, -0.0637,
+
+                           -0.1210, -0.0831, -0.0211, 0.1642,  -0.3098, -0.1787,
+
+                           0.1211,  0.4018,  0.2846,  -0.1065, 0.0786,  0.2718};
+    raw_inputs.emplace_back(convert_to_raw(w));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> x_grad{convert_from_raw<float>(raw_outputs.at(1))};
+    vector<float> w_grad{convert_from_raw<float>(raw_outputs.at(2))};
+
+    EXPECT_TRUE(test::all_close_f(
+        out, vector<float>{-0.4783, 0.4863,  0.8002,  -0.2286, 0.0703,  -0.1314, -0.6581, 0.7568,
+                           0.0118,  -0.3437, 0.1780,  -0.1263, 0.4037,  0.4624,  0.0100,  -0.8175,
+                           -0.4531, -0.0625, -0.6201, -0.2216, 0.4256,  0.5710,  0.4736,  -0.0174,
+                           -0.3059, 0.6196,  -0.3196, 0.2610,  -0.1432, -0.2246, 0.1992,  0.0774,
+                           -0.3517, 0.7469,  -0.5619, -0.1460, 0.3775,  0.3151,  -0.2652, -0.2400,
+                           -0.1040, -0.3616, -0.3387, 0.2091,  -0.1675, 0.2986,  0.1893,  0.2135}));
+    EXPECT_TRUE(test::all_close_f(
+        x_grad, vector<float>{0.3395, 0.3395,  0.3395,  0.3395,  0.3395,  0.6396,  0.6396,  0.6396,
+                              0.6396, 0.6396,  -0.3130, -0.3130, -0.3130, -0.3130, -0.3130, 0.3395,
+                              0.3395, 0.3395,  0.3395,  0.3395,  0.6396,  0.6396,  0.6396,  0.6396,
+                              0.6396, -0.3130, -0.3130, -0.3130, -0.3130, -0.3130}));
+    EXPECT_TRUE(test::all_close_f(
+        w_grad, vector<float>{0.0488, 0.0488, 1.6734, 1.6734, 1.9752, 1.9752, 0.0488, 0.0488,
+                              1.6734, 1.6734, 1.9752, 1.9752, 0.0488, 0.0488, 1.6734, 1.6734,
+                              1.9752, 1.9752, 0.0488, 0.0488, 1.6734, 1.6734, 1.9752, 1.9752}));
+}
+
+TEST(nnfusion_pass_autodiff, abs)
+{
+    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/abs.onnx"));
+
+    build_backward_graph(model);
+
+    RawInputs raw_inputs;
+    // a
+    auto a = vector<float>{1, -3.4, 0};
+    raw_inputs.emplace_back(convert_to_raw(a));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> a_grad{convert_from_raw<float>(raw_outputs.at(1))};
+
+    EXPECT_TRUE(test::all_close_f(out, vector<float>{1, 3.4, 0}));
+    EXPECT_TRUE(test::all_close_f(a_grad, vector<float>{1, -1, 0}));
+}
+
+TEST(nnfusion_pass_autodiff, sigmoid)
+{
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/sigmoid.onnx"));
+
+    build_backward_graph(model);
+
+    RawInputs raw_inputs;
+    // a
+    auto a = vector<float>{
+        -1.0f, 0.0f, 1.0f,
+    };
+    raw_inputs.emplace_back(convert_to_raw(a));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> a_grad{convert_from_raw<float>(raw_outputs.at(1))};
+
+    EXPECT_TRUE(test::all_close_f(out, vector<float>{0.2689, 0.5000, 0.7311}));
+    EXPECT_TRUE(test::all_close_f(a_grad, vector<float>{0.1966, 0.2500, 0.1966}));
+}

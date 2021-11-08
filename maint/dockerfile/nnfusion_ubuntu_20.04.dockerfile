@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 RUN apt update && apt install -y git
 RUN git clone https://github.com/microsoft/nnfusion.git /root/nnfusion --branch master --single-branch
-# - Install Requirements
-RUN bash /root/nnfusion/maint/script/install_dependency.sh
+# - Install Requirements (set noninteractive to skip time zone setting for tzdata)
+RUN DEBIAN_FRONTEND="noninteractive" bash /root/nnfusion/maint/script/install_dependency.sh
 # - Make Install
 RUN cd /root/nnfusion/ && mkdir build && cd build && cmake .. && make -j6 && make install
 # - Execute command

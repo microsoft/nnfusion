@@ -418,6 +418,62 @@ TEST(nnfusion_pass_autodiff, conv)
                                                 1.020000e+02}));
 }
 
+
+TEST(nnfusion_pass_autodiff, avg_pool_1d_default)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/avg_pool_1d_default.onnx"));
+
+    model->set_outputs({model->get_outputs()[0]});
+    build_backward_graph(model);
+    auto x = vector<float>{
+        -0.1609, -0.6482,  1.7266,  1.2513, -1.0219,
+        -1.3534, -0.1036, -1.8076,  0.5356, -0.2011,
+         0.9565, -0.3530,  0.2873, -1.8090,  1.4433,
+         1.6176,  1.8445, -0.2011, -0.3197, -0.6869,
+         -0.4957, -0.8529, -0.4022,  0.6894, -1.0498,
+         -0.2938, -1.4487,  0.5454, -1.6465, -1.5261
+    };
+    RawInputs raw_inputs;
+    raw_inputs.emplace_back(convert_to_raw(x));
+
+    auto y_truth = vector<float>{
+        -0.4045,  0.5392,  1.4889,  0.1147,
+        -0.7285, -0.9556, -0.6360,  0.1672,
+        0.3017, -0.0328, -0.7608, -0.1828,
+        1.7310,  0.8217, -0.2604, -0.5033,
+        -0.6743, -0.6275,  0.1436, -0.1802,
+        -0.8713, -0.4516, -0.5505, -1.5863
+    };
+
+    auto x_grad_truth = vector<float>{
+        0.5000, 1.0000, 1.0000, 1.0000, 0.5000,
+        0.5000, 1.0000, 1.0000, 1.0000, 0.5000,
+        0.5000, 1.0000, 1.0000, 1.0000, 0.5000,
+        0.5000, 1.0000, 1.0000, 1.0000, 0.5000,
+        0.5000, 1.0000, 1.0000, 1.0000, 0.5000,
+        0.5000, 1.0000, 1.0000, 1.0000, 0.5000
+    };
+
+    auto y_grad_truth = vector<float>{
+        1., 1., 1., 1.,
+        1., 1., 1., 1.,
+        1., 1., 1., 1.,
+        1., 1., 1., 1.,
+        1., 1., 1., 1.,
+        1., 1., 1., 1.
+    };
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    vector<float> out{convert_from_raw<float>(raw_outputs.at(0))};
+    vector<float> x_grad{convert_from_raw<float>(raw_outputs.at(1))};
+    //vector<float> y_grad{convert_from_raw<float>(raw_outputs.at(2))};
+
+    EXPECT_TRUE(test::all_close_f(out,y_truth));
+    EXPECT_TRUE(test::all_close_f(x_grad, x_grad_truth));
+    //EXPECT_TRUE(test::all_close_f(y_grad, y_grad_truth));
+}
+
 TEST(nnfusion_pass_autodiff, abs)
 {
     auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/abs.onnx"));

@@ -268,9 +268,6 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
     input_type = ctx->inputs[0]->get_element_type();
     output_type = ctx->outputs[0]->get_element_type();
 
-    NNFUSION_CHECK(input_shape.size() == 4 || input_shape.size() == 5)
-        << "Input shape size of AvgPoolmD is invalid, shape size: " << input_shape.size()
-        << "expected 4 or 5";
 
     std::stringstream tag;
     tag << "cudnn_avgpool_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
@@ -278,24 +275,42 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
         << join(window_stride, "_") << "_pb" << join(padding_below, "_") << "_pb"
         << join(padding_above, "_");
     custom_tag = tag.str();
+
+    NNFUSION_CHECK(input_shape.size() == 3 || input_shape.size() == 4 || input_shape.size() == 5)
+        << "Input shape size of AvgPoolmD is invalid, shape size: " << input_shape.size()
+        << "expected 3, 4 or 5";
 }
 
 LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
+    auto rank = input_shape.size();
+
+    auto _input_shape = input_shape;
+    auto _output_shape = output_shape;
+
+    if(rank == 3)
+    {
+        window_shape.insert(window_shape.begin(), 1);
+        padding_below.insert(padding_below.begin(), 0);
+        window_stride.insert(window_stride.begin(), 1);
+        _input_shape.insert(_input_shape.begin()+1, 1);
+        _output_shape.insert(_output_shape.begin()+1, 1);
+        rank = 4;
+    }
 
     auto cudnn_avg_type = include_pad ? "CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING"
                                       : "CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING";
 
-    auto input_desc = cudnn_tensor_descriptor_from_shape(input_shape, "input_desc", input_type);
-    auto output_desc = cudnn_tensor_descriptor_from_shape(output_shape, "output_desc", output_type);
+    auto input_desc = cudnn_tensor_descriptor_from_shape(_input_shape, "input_desc", input_type);
+    auto output_desc = cudnn_tensor_descriptor_from_shape(_output_shape, "output_desc", output_type);
     lu << input_desc->get_code();
     lu << output_desc->get_code();
 
     lu << "cudnnPoolingDescriptor_t desc;\n";
     lu << "cudnnCreatePoolingDescriptor(&desc);\n";
-    if (input_shape.size() == 4)
+    if (rank == 4)
     {
         lu << "CUDNN_SAFE_CALL(cudnnSetPooling2dDescriptor(desc,"
            << " " << cudnn_avg_type << ","
@@ -455,19 +470,23 @@ cuda::AvgPoolmDGrad::AvgPoolmDGrad(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {
     auto avg_pool = static_pointer_cast<nnfusion::op::AvgPoolBackprop>(ctx->gnode->get_op_ptr());
+    // x y dy
     input_shape = nnfusion::Shape(ctx->inputs[0]->get_shape());
-    output_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
+    output_shape = nnfusion::Shape(ctx->inputs[1]->get_shape());
+    d_output_shape = nnfusion::Shape(ctx->inputs[2]->get_shape());
+    d_input_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
+
     window_shape = nnfusion::Shape(avg_pool->get_window_shape());
     padding_below = nnfusion::Shape(avg_pool->get_padding_below());
     padding_above = nnfusion::Shape(avg_pool->get_padding_above());
     window_stride = nnfusion::Strides(avg_pool->get_window_movement_strides());
     include_pad = avg_pool->get_include_padding_in_avg_computation();
     input_type = ctx->inputs[0]->get_element_type();
-    output_type = ctx->outputs[0]->get_element_type();
+    output_type = ctx->inputs[2]->get_element_type();
 
-    NNFUSION_CHECK(input_shape.size() == 4 || input_shape.size() == 5)
+    NNFUSION_CHECK(input_shape.size() == 3 || input_shape.size() == 4 || input_shape.size() == 5)
         << "Input shape size of AvgPoolmD is invalid, shape size: " << input_shape.size()
-        << "expected 4 or 5";
+        << "expected 3, 4 or 5";
 
     std::stringstream tag;
     tag << "cudnn_avgpool_grad_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
@@ -481,24 +500,43 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
+    auto rank = input_shape.size();
 
     auto cudnn_avg_type = include_pad ? "CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING"
                                       : "CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING";
+    
+    auto _input_shape = input_shape;
+    auto _d_input_shape = d_input_shape;
+    auto _output_shape = output_shape;
+    auto _d_output_shape = d_output_shape;
+
+    if(rank == 3)
+    {
+        window_shape.insert(window_shape.begin(), 1);
+        padding_below.insert(padding_below.begin(), 0);
+        window_stride.insert(window_stride.begin(), 1);
+        _input_shape.insert(_input_shape.begin()+1, 1);
+        _output_shape.insert(_output_shape.begin()+1, 1);
+        _d_input_shape.insert(_d_input_shape.begin()+1, 1);
+        _d_output_shape.insert(_d_output_shape.begin()+1, 1);
+        rank = 4;
+    }
 
     // y dy x dx
-    auto input_desc = cudnn_tensor_descriptor_from_shape(input_shape, "input_desc", input_type);
-    auto d_input_desc = cudnn_tensor_descriptor_from_shape(d_input_shape, "d_input_desc", d_input_type);
-    auto output_desc = cudnn_tensor_descriptor_from_shape(output_shape, "output_desc", output_type);
-    auto d_output_desc = cudnn_tensor_descriptor_from_shape(d_output_shape, "d_output_desc", d_output_type);
+    auto input_desc = cudnn_tensor_descriptor_from_shape(_input_shape, "input_desc", input_type);
+    auto d_input_desc = cudnn_tensor_descriptor_from_shape(_d_input_shape, "d_input_desc", input_type);
+    auto output_desc = cudnn_tensor_descriptor_from_shape(_output_shape, "output_desc", output_type);
+    auto d_output_desc = cudnn_tensor_descriptor_from_shape(_d_output_shape, "d_output_desc", output_type);
+
+    lu << "cudnnPoolingDescriptor_t desc;\n";
+    lu << "cudnnCreatePoolingDescriptor(&desc);\n";
 
     lu << input_desc->get_code();
     lu << d_input_desc->get_code();
     lu << output_desc->get_code();
     lu << d_output_desc->get_code();
 
-    lu << "cudnnPoolingDescriptor_t desc;\n";
-    lu << "cudnnCreatePoolingDescriptor(&desc);\n";
-    if (input_shape.size() == 4)
+    if ( rank == 4)
     {
         lu << "CUDNN_SAFE_CALL(cudnnSetPooling2dDescriptor(desc,"
            << " " << cudnn_avg_type << ","
@@ -508,7 +546,7 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
            << static_cast<int>(window_stride[0]) << ", " << static_cast<int>(window_stride[1])
            << "));\n";
     }
-    else /*op->input_shape.size() == 5*/
+    else if(rank == 5)
     {
         std::vector<int> w_strides(window_stride.size());
         std::vector<int> w_shape(window_stride.size());
@@ -546,14 +584,14 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
     lu << "CUDNN_SAFE_CALL(cudnnPoolingBackward(cudnn_handle,"
        << " desc,"
        << " &alpha,"
+       << " output_desc,"
+       << " input1,"
+       << " d_output_desc,"
+       << " input2,"
        << " input_desc,"
        << " input0,"
-       << " d_input_desc,"
-       << " input1,"
-       << " output_desc,"
-       << " input2,"
        << " &beta,"
-       << " d_output_desc,"
+       << " d_input_desc,"
        << " output0"
        << " ));\n";
 
@@ -577,6 +615,6 @@ REGISTER_KERNEL_EMITTER(
     cuda::AvgPoolmD)                                                               // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "AvgPoolGrad",                                                                     // op_name
+    "AvgPoolBackprop",                                                                     // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
     cuda::AvgPoolmDGrad)                                                               // constructor

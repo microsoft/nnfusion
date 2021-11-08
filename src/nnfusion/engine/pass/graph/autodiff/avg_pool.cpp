@@ -30,8 +30,8 @@ REGISTER_BACKWARD_TRANSLATOR(AvgPool)
                 include_padding_in_avg_computation
             );
     
-     auto xgrad = graph->add_node_and_edge(
+     auto x_grad = graph->add_node_and_edge(
             avgpoolbackprop, {x, y, y_grad});
     
-    return GNodeIndexVector{GNodeIndex{xgrad, 0}};
+    return GNodeIndexVector{GNodeIndex{x_grad, 0}};
 });

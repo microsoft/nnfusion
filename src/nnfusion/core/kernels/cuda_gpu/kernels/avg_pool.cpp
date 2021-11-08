@@ -292,13 +292,13 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
     auto _input_shape = input_shape;
     auto _output_shape = output_shape;
 
-    if(rank == 3)
+    if (rank == 3)
     {
         window_shape.insert(window_shape.begin(), 1);
         padding_below.insert(padding_below.begin(), 0);
         window_stride.insert(window_stride.begin(), 1);
-        _input_shape.insert(_input_shape.begin()+1, 1);
-        _output_shape.insert(_output_shape.begin()+1, 1);
+        _input_shape.insert(_input_shape.begin() + 1, 1);
+        _output_shape.insert(_output_shape.begin() + 1, 1);
         rank = 4;
     }
 
@@ -306,7 +306,8 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
                                       : "CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING";
 
     auto input_desc = cudnn_tensor_descriptor_from_shape(_input_shape, "input_desc", input_type);
-    auto output_desc = cudnn_tensor_descriptor_from_shape(_output_shape, "output_desc", output_type);
+    auto output_desc =
+        cudnn_tensor_descriptor_from_shape(_output_shape, "output_desc", output_type);
     lu << input_desc->get_code();
     lu << output_desc->get_code();
 
@@ -467,7 +468,6 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_signature()
     return _lu;
 }
 
-
 cuda::AvgPoolmDGrad::AvgPoolmDGrad(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {
@@ -491,10 +491,10 @@ cuda::AvgPoolmDGrad::AvgPoolmDGrad(shared_ptr<KernelContext> ctx)
         << "expected 3, 4 or 5";
 
     std::stringstream tag;
-    tag << "cudnn_avgpool_grad_dtype_" << output_type.c_type_string() << "_i" << join(input_shape, "_")
-        << "_o" << join(output_shape, "_") << "_ws" << join(window_shape, "_") << "_wst"
-        << join(window_stride, "_") << "_pb" << join(padding_below, "_") << "_pb"
-        << join(padding_above, "_");
+    tag << "cudnn_avgpool_grad_dtype_" << output_type.c_type_string() << "_i"
+        << join(input_shape, "_") << "_o" << join(output_shape, "_") << "_ws"
+        << join(window_shape, "_") << "_wst" << join(window_stride, "_") << "_pb"
+        << join(padding_below, "_") << "_pb" << join(padding_above, "_");
     custom_tag = tag.str();
 }
 
@@ -506,29 +506,32 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
 
     auto cudnn_avg_type = include_pad ? "CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING"
                                       : "CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING";
-    
+
     auto _input_shape = input_shape;
     auto _d_input_shape = d_input_shape;
     auto _output_shape = output_shape;
     auto _d_output_shape = d_output_shape;
 
-    if(rank == 3)
+    if (rank == 3)
     {
         window_shape.insert(window_shape.begin(), 1);
         padding_below.insert(padding_below.begin(), 0);
         window_stride.insert(window_stride.begin(), 1);
-        _input_shape.insert(_input_shape.begin()+1, 1);
-        _output_shape.insert(_output_shape.begin()+1, 1);
-        _d_input_shape.insert(_d_input_shape.begin()+1, 1);
-        _d_output_shape.insert(_d_output_shape.begin()+1, 1);
+        _input_shape.insert(_input_shape.begin() + 1, 1);
+        _output_shape.insert(_output_shape.begin() + 1, 1);
+        _d_input_shape.insert(_d_input_shape.begin() + 1, 1);
+        _d_output_shape.insert(_d_output_shape.begin() + 1, 1);
         rank = 4;
     }
 
     // y dy x dx
     auto input_desc = cudnn_tensor_descriptor_from_shape(_input_shape, "input_desc", input_type);
-    auto d_input_desc = cudnn_tensor_descriptor_from_shape(_d_input_shape, "d_input_desc", input_type);
-    auto output_desc = cudnn_tensor_descriptor_from_shape(_output_shape, "output_desc", output_type);
-    auto d_output_desc = cudnn_tensor_descriptor_from_shape(_d_output_shape, "d_output_desc", output_type);
+    auto d_input_desc =
+        cudnn_tensor_descriptor_from_shape(_d_input_shape, "d_input_desc", input_type);
+    auto output_desc =
+        cudnn_tensor_descriptor_from_shape(_output_shape, "output_desc", output_type);
+    auto d_output_desc =
+        cudnn_tensor_descriptor_from_shape(_d_output_shape, "d_output_desc", output_type);
 
     lu << "cudnnPoolingDescriptor_t desc;\n";
     lu << "cudnnCreatePoolingDescriptor(&desc);\n";
@@ -538,7 +541,7 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
     lu << output_desc->get_code();
     lu << d_output_desc->get_code();
 
-    if ( rank == 4)
+    if (rank == 4)
     {
         lu << "CUDNN_SAFE_CALL(cudnnSetPooling2dDescriptor(desc,"
            << " " << cudnn_avg_type << ","
@@ -548,7 +551,7 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
            << static_cast<int>(window_stride[0]) << ", " << static_cast<int>(window_stride[1])
            << "));\n";
     }
-    else if(rank == 5)
+    else if (rank == 5)
     {
         std::vector<int> w_strides(window_stride.size());
         std::vector<int> w_shape(window_stride.size());
@@ -617,6 +620,6 @@ REGISTER_KERNEL_EMITTER(
     cuda::AvgPoolmD)                                                               // constructor
 
 REGISTER_KERNEL_EMITTER(
-    "AvgPoolBackprop",                                                                     // op_name
+    "AvgPoolBackprop",                                                             // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
-    cuda::AvgPoolmDGrad)                                                               // constructor
+    cuda::AvgPoolmDGrad)                                                           // constructor

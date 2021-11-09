@@ -23,8 +23,3 @@ add_library(kernels_cuda STATIC ${SRC} ${KERNELS})
 target_include_directories(kernels_cuda SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
-target_compile_options(kernels_cuda PRIVATE "-fPIC")
-
-target_link_libraries(kernels_cuda PRIVATE
-    kernels_registration gflags ${CURL_LIBRARIES}
-)

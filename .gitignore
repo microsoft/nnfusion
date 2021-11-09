@@ -17,6 +17,7 @@
 *.swo
 
 build/
+custom_op/
 
 # makeenv and test intermediate files
 tmp/

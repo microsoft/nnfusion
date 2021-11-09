@@ -115,7 +115,7 @@ void AvgPoolBackprop::validate_and_infer_types(std::shared_ptr<graph::GNode> gno
                                       m_window_movement_strides,
                                       m_include_padding_in_avg_computation);
 
-    const nnfusion::PartialShape& delta_shape = gnode->get_input_shape(0);
+    const nnfusion::PartialShape& delta_shape = gnode->get_input_shape(2);
 
     OP_VALIDATION(this, forward_result_shape.compatible(delta_shape))
         << "Inferred forward output shape does not match delta shape (inferred forward output "

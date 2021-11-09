@@ -80,6 +80,24 @@ namespace nnfusion
                 bool include_pad;
                 element::Type input_type, output_type;
             };
+
+            class AvgPoolmDGrad : public CudaLibEmitter
+            {
+            public:
+                AvgPoolmDGrad(shared_ptr<KernelContext> ctx);
+
+                LanguageUnit_p emit_function_body() override;
+                LanguageUnit_p emit_dependency() override;
+                LanguageUnit_p emit_function_signature() override;
+                bool require_cudnn_handle() override { return true; }
+            private:
+                shared_ptr<KernelContext> kernel_ctx;
+                nnfusion::Shape input_shape, output_shape, d_input_shape, d_output_shape,
+                    window_shape, padding_below, padding_above;
+                nnfusion::Strides window_stride;
+                bool include_pad;
+                element::Type input_type, output_type, d_input_type, d_output_type;
+            };
         } // namespace cuda
     }     // namespace kernels
 } // namespace nnfusion

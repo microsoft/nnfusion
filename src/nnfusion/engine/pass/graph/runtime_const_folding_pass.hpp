@@ -25,8 +25,17 @@ namespace nnfusion
                 int runtime_const_folding_iterate_once(
                     std::shared_ptr<Graph>& graph,
                     std::set<std::shared_ptr<GNode>>& blocklist_nodes);
-                int runtime_const_folding_task(
-                    std::shared_ptr<Graph>& graph);
+                void runtime_const_folding_node(
+                    std::shared_ptr<Graph>& graph,
+                    std::set<std::shared_ptr<GNode>>& blocklist_nodes,
+                    std::shared_ptr<GNode>& node);
+                void runtime_const_folding_task(
+                    std::shared_ptr<Graph>& graph,
+                    std::set<std::shared_ptr<GNode>>& blocklist_nodes,
+                    std::shared_ptr<GNode>& node,
+                    std::map<std::shared_ptr<GNode>, int>& in_degree,
+                    std::mutex& in_degree_lock);
+
                 bool run_on_graph_parallel(
                     std::shared_ptr<Graph>& graph,
                     std::set<std::shared_ptr<GNode>>& blocklist_nodes);
@@ -38,16 +47,15 @@ namespace nnfusion
                     std::queue<Task> tasks;
                     std::mutex m_lock;
                     std::condition_variable cv_task;
-                    std::atomic<bool> stoped;
+                    std::atomic<bool> stopped;
                     std::atomic<int> idlThrNum;
 
                 public:
-                    threadpool(unsigned short size);
-                    ~threadpool();
-                    template<class F, class... Args>
-                    auto commit(F&& f, Args&&... args) -> std::future<decltype(f(args...))>;
+                    thread_pool();
+                    ~thread_pool();
+                    void commit(Task task);
                     int idlCount();
-                }
+                };
 
             public:
                 bool run_on_graph(std::shared_ptr<Graph>& graph) override;
@@ -55,6 +63,7 @@ namespace nnfusion
             private:
                 std::string backend;
                 bool fast_debug;
+                thread_pool pool;
             };
         } // namespace pass
     }     // namespace graph

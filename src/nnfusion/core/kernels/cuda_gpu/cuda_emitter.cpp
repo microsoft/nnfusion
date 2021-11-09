@@ -322,11 +322,24 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
     auto& lu = *_lu;
 
+    std::unordered_set<int> inplace_input, inplace_output;
+    if (m_context->annotations)
+    {
+        for (auto oi_pair : m_context->annotations->get_in_place_oi_pairs())
+        {
+            inplace_input.insert(oi_pair.input);
+            inplace_output.insert(oi_pair.output);
+        }
+    }
     vector<string> params;
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
         ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        if (inplace_input.find(i) == inplace_input.end())
+        {
+            ss << "__restrict__ ";
+        }
         ss << "input" << i;
         params.push_back(ss.str());
     }
@@ -335,6 +348,10 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     {
         stringstream ss;
         ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        if (inplace_output.find(i) == inplace_output.end())
+        {
+            ss << "__restrict__ ";
+        }
         ss << "output" << i;
         params.push_back(ss.str());
     }
@@ -343,6 +360,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     {
         stringstream ss;
         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << "__restrict__ ";
         ss << "mediate" << i;
         params.push_back(ss.str());
     }

@@ -9,8 +9,8 @@
 
 #include "profiler.hpp"
 #include "nnfusion/core/graph/graph_util.hpp"
-#include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/operators/op_define/constant.hpp"
+#include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
 
 #include <chrono>
 #include <ctime>
@@ -22,22 +22,6 @@ using namespace std::chrono;
 
 DECLARE_bool(fmerge_prof_compiling);
 DECLARE_bool(fantares_mode);
-
-static bool register_antares_kernel(std::string op_name)
-{
-    kernels::KernelRegistrar kernel_registrar_cuda(
-        op_name,
-        kernels::Name(op_name)
-            .Device(CUDA_GPU)
-            .TypeConstraint(element::f32)
-            .Tag("antares")
-            .Priority(9)
-            .KernelFactory([](shared_ptr<kernels::KernelContext> context)
-                               -> shared_ptr<kernels::KernelEmitter> {
-                return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(context);
-            })
-            .Build());
-}
 
 Profiler::Profiler(IProfilingRuntime::Pointer rt, ProfilingContext::Pointer context)
 {
@@ -100,7 +84,7 @@ void GraphEvaluate::create_profiling_contexts(shared_ptr<GNode> gnode)
         return;
     }
     if (FLAGS_fantares_mode)
-        register_antares_kernel(gnode->get_op_type());
+        nnfusion::pass::graph::KernelTuning::register_single_kernel(gnode->get_op_type());
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
         KernelRegistry::Global()->FindKernelRegistrations(
             gnode->get_op_type(), dev_type, element::f32);

@@ -33,6 +33,7 @@ namespace nnfusion
             class AutodiffPass : public GraphPassBase
             {
             public:
+                bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) override;
                 bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph,
                                   std::shared_ptr<vector<vector<float>>> backward_inputs);
             };

@@ -16,9 +16,7 @@ namespace nnfusion
         // empty string result when translation is not available for a certain op
         std::string get_translation(std::shared_ptr<nnfusion::graph::GNode>& gnode)
         {
-            std::string result = get_ir_via_extension(gnode);
-            if (result.empty())
-                result = get_translation_v2(gnode);
+            std::string result = get_translation_v2(gnode);
             if (!result.empty())
                 return result;
             auto& configs = get_op_configs();
@@ -33,13 +31,16 @@ namespace nnfusion
         {
             auto& configs = get_op_configs();
             auto it = configs.find(gnode->get_op_ptr()->get_op_type());
-            if (it == configs.end() || it->second.f_translate_v2 == nullptr)
-                return "";
+            auto antares_template = get_ir_via_extension(gnode);
+            if (antares_template == "")
+            {
+                if (it == configs.end() || it->second.f_translate_v2 == nullptr)
+                    return "";
 
-            auto antares_template = it->second.f_translate_v2(gnode);
-            if (antares_template.empty())
-                return "";
-
+                antares_template = it->second.f_translate_v2(gnode);
+                if (antares_template.empty())
+                    return "";
+            }
             op::OpConfig::any io_config;
             auto input_template =
                 R"( "@input@" : { "dtype" : "@input_dtype@", "shape" : @input_shape@} )";

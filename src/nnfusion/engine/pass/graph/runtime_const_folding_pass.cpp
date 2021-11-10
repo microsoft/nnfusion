@@ -14,6 +14,10 @@ std::shared_ptr<GNode> RuntimeConstantFoldingPass::runtime_const_folding_node(
     std::set<std::shared_ptr<GNode>>& blocklist_nodes,
     std::shared_ptr<GNode>& node)
 {
+    if (blocklist_nodes.count(node))
+    {
+        return nullptr;
+    }
     NNFUSION_LOG(INFO) << ">> Found constant downstream node: " << node->get_name()
                        << ", Op Type = " << node->get_op_type();
 

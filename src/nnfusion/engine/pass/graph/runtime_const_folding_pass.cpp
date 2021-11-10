@@ -238,6 +238,7 @@ RuntimeConstantFoldingPass::thread_pool::thread_pool()
                 idl_thread_num--;
                 task();
                 idl_thread_num++;
+                this->cv_task_done.notify_one();
             }
         });
     }
@@ -263,10 +264,7 @@ void RuntimeConstantFoldingPass::thread_pool::commit(Task task)
     }
     {
         std::lock_guard<std::mutex> lock{m_lock};
-        tasks.emplace([this, task]() {
-            task();
-            this->cv_task_done.notify_one();
-        });
+        tasks.emplace([task]() { task(); });
     }
     cv_task.notify_one();
 }

@@ -8,45 +8,37 @@
 
 #include "../test_util/common.hpp"
 
-TEST(nnfusion_core, constant_foldeing_pass)
+DECLARE_string(fconst_folding_backend);
+
+TEST(nnfusion_core, constant_folding_pass)
 {
-    // using namespace nnfusion::pass::graph;
-    //
-    // Shape shape{4};
-    // std::vector<int> values(4, 10);
-    // auto A = make_shared<op::Constant>(element::i32, shape, values);
-    // auto B = make_shared<op::Constant>(element::i32, shape, values);
-    // auto add = make_shared<op::Add>();
+    using namespace nnfusion::pass::graph;
+    FLAGS_fconst_folding_backend = "CUDA";
 
-    // auto A_GNode = make_shared<GNode>(A,GNodeVector());
-    // auto B_GNode = make_shared<GNode>(B,GNodeVector());
-    // auto add_GNode = make_shared<GNode>(add,GNodeVector());
+    Shape shape{4};
+    std::vector<int> values(4, 10);
+    auto graph = make_shared<Graph>("constant_folding_pass");
 
-    // std::shared_ptr<Graph> graph;
-    // graph->add_node(A_GNode);
-    // graph->add_node(B_GNode);
-    // graph->add_node(add_GNode);
-    // graph->add_edge(A_GNode, 0, add_GNode, 0);
-    // graph->add_edge(B_GNode, 0, add_GNode, 1);
+    Shape shape_a{2, 3};
+    auto a = make_shared<op::Constant>(element::i32, shape, values);
+    auto a_gnode = graph->add_node_and_edge(a, GNodeVector({}));
+    auto b = make_shared<op::Constant>(element::i32, shape, values);
+    auto b_gnode = graph->add_node_and_edge(b, GNodeVector({}));
+    auto c = make_shared<op::Constant>(element::i32, shape, values);
+    auto c_gnode = graph->add_node_and_edge(c, GNodeVector({}));
 
-    // auto pass_manager = make_shared<nnfusion::GraphPassManager>();
-    // pass_manager->push_back(make_shared<RuntimeConstantFoldingPass>());
-    // pass_manager->run_on_graph(graph);
+    auto op1 = std::make_shared<op::Add>();
+    auto op2 = std::make_shared<op::Add>();
+    auto op_gnode_1 = graph->add_node_and_edge(op1, {a_gnode, b_gnode});
+    auto op_gnode_2 = graph->add_node_and_edge(op2, {op_gnode_1, c_gnode});
 
-    /*
-        shared_ptr<runtime::Backend> backend = runtime::Backend::create("INTERPRETER");
+    auto node_size_before = graph->get_node_size();
 
-    shared_ptr<runtime::interpreter::INTBackend> ibackend =
-        static_pointer_cast<runtime::interpreter::INTBackend>(backend);
+    auto const_folding_optimizer = RuntimeConstantFoldingPass();
+    const_folding_optimizer.run_on_graph(graph);
 
-    // Create some tensors for input/output
-    auto a = backend->create_tensor(element::f32, shape);
-    copy_data(a, vector<float>{2, 4, NAN, 16});
-    auto b = backend->create_tensor(element::f32, shape);
-    copy_data(b, vector<float>{1, 2, 1, 8});
-    auto result = backend->create_tensor(element::f32, shape);
-
-    ibackend->set_nan_check(f, true);
-    EXPECT_ANY_THROW(ibackend->call_with_validate(f, {result}, {a, b}));
-     */
+    auto node_size_after = graph->get_node_size();
+    EXPECT_TRUE(node_size_before == 5);
+    EXPECT_TRUE(node_size_after == 1);
+    EXPECT_TRUE(graph->get_nodes().at(0)->is_constant());
 }

@@ -21,7 +21,40 @@ if (TORCHSCRIPT_FRONTEND)
     target_link_libraries(nnfusion torchscript_import_interface torchscript_import frontend_util)
 endif()
 
-target_link_libraries(nnfusion nnfusion_backend nnfusion_engine_pass_graph nnfusion_operators gflags)
+target_link_libraries(nnfusion 
+    -Wl,--whole-archive
+    # Common feature
+    nnfusion_common
+    nnfusion_util
+    nnfusion_cache_manager
+    nnfusion_operators 
+    nnfusion_serialize
+    nnfusion_graph
+    nnfusion_ir
+    # Engine related
+    nnfusion_engine_base 
+    nnfusion_engine_profiler
+    nnfusion_engine_device
+    nnfusion_engine_mem
+    nnfusion_engine_pass
+    nnfusion_engine_pass_graph
+    nnfusion_engine_pass_graph_blockfusion
+    nnfusion_engine_pass_graph_subgraph_fusion
+    nnfusion_engine_pass_graph_autodiff
+    # Kernels and Operators
+    contrib_custom_operators
+    kernels_registration
+    kernels_cuda 
+    kernels_cpu
+    kernels_hlsl
+    # Depends
+    -Wl,--no-whole-archive
+    protobuf::libprotobuf
+    gflags 
+    dl
+    sqlite3
+    ${CURL_LIBRARIES} 
+)
 
 add_custom_command(
     TARGET nnfusion
@@ -34,6 +67,7 @@ add_custom_command(
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/thirdparty/superscaler ${CMAKE_BINARY_DIR}/src/tools/nnfusion/superscaler
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/thirdparty/cub ${CMAKE_BINARY_DIR}/src/tools/nnfusion/cub
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/tools/nnfusion/templates ${CMAKE_BINARY_DIR}/test/templates
+    POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/tools/nnfusion/extensions ${CMAKE_BINARY_DIR}/extensions
 )
 
 install(TARGETS nnfusion

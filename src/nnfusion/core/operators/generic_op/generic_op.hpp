@@ -21,6 +21,35 @@ namespace nnfusion
     {
         class OpConfig;
         class GenericOp;
+        namespace infershape
+        {
+            // Provide default infershape function: output_shapes[*] = input_shapes[*];
+            inline void copy_shape_from_inputs(std::shared_ptr<graph::GNode> gnode)
+            {
+                for (int i = 0; i < gnode->get_input_size(); ++i)
+                {
+                    gnode->set_output_type_and_shape(
+                        0, gnode->get_input_element_type(i), gnode->get_input_shape(i));
+                }
+            }
+
+            // unimplemented that will notify exception when migrating to op_v2 mode
+            inline void unimplemented_and_not_used(std::shared_ptr<graph::GNode> gnode)
+            {
+                throw std::runtime_error(
+                    ("Not implemented infershape for Op: " + gnode->get_op_ptr()->get_op_type())
+                        .c_str());
+            }
+
+            inline void copy_shape_from_inputs_with_boolean(std::shared_ptr<graph::GNode> gnode)
+            {
+                for (int i = 0; i < gnode->get_input_size(); ++i)
+                {
+                    gnode->set_output_type_and_shape(
+                        0, nnfusion::element::boolean, gnode->get_input_shape(i));
+                }
+            }
+        } // namespace infershape
 
         class OpConfig
         {
@@ -120,12 +149,11 @@ namespace nnfusion
 
             bool is_legal()
             {
-                if (!f_infershape && !f_translate_v2)
-                    return false;
+                // if (!f_infershape && !f_translate_v2)
+                //     return false;
                 for (auto& func : f_constraits)
                     if (!func(getRoot()))
                     {
-                        NNFUSION_LOG(INFO) << "________________";
                         return false;
                     }
                 return true;
@@ -146,14 +174,7 @@ namespace nnfusion
         std::string get_translation(std::shared_ptr<nnfusion::graph::GNode>& gnode);
         std::string get_translation_v2(std::shared_ptr<nnfusion::graph::GNode>& gnode);
         std::string get_annotation(std::string translation);
-
-        inline const OpConfig& lookup_op_config(const std::string& opname)
-        {
-            auto it = get_op_configs().find(opname);
-            NNFUSION_CHECK(it != get_op_configs().end())
-                << "No config-definition found for op type `" + opname + "`";
-            return it->second;
-        }
+        std::string get_ir_via_extension(std::shared_ptr<graph::GNode> gnode);
 
         inline OpConfig& build_op_config(const std::string& opname)
         {
@@ -161,6 +182,20 @@ namespace nnfusion
                 << "OpConfig for opname `" + opname + "` is registered more than once.";
             get_op_configs()[opname].attr("op", opname);
             return get_op_configs()[opname];
+        }
+
+        inline const OpConfig& lookup_op_config(const std::string& opname)
+        {
+            auto it = get_op_configs().find(opname);
+            if (it != get_op_configs().end())
+            {
+                return it->second;
+            }
+            else
+            {
+                NNFUSION_LOG(INFO) << "Insert new OpConfig entry for `" + opname + "`";
+                return build_op_config(opname);
+            }
         }
 
         template <typename T>
@@ -247,6 +282,10 @@ namespace nnfusion
             {
                 config[alias_name + "_dtype"] = "float32";
             }
+            else if (d_type == element::f64)
+            {
+                config[alias_name + "_dtype"] = "float64";
+            }
             else if (d_type == element::i32)
             {
                 config[alias_name + "_dtype"] = "int32";
@@ -289,10 +328,6 @@ namespace nnfusion
 
                 for (auto& item : customOpConfig.items())
                 {
-                    NNFUSION_CHECK(keyset.find(item.key()) != keyset.end())
-                        << "####### From " << opname << "'s config: " << customOpConfig
-                        << ": Invalid attribution `" + item.key() +
-                               "` not recognized by op type `" + opname + "`";
                     localOpConfig.getRoot()[item.key()] = item.value();
                 }
 
@@ -313,7 +348,9 @@ namespace nnfusion
             virtual void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override
             {
                 localOpConfig.check_constrait();
-                if (localOpConfig.f_infershape != nullptr)
+                if (localOpConfig.f_infershape != nullptr &&
+                    localOpConfig.f_infershape !=
+                        nnfusion::op::infershape::unimplemented_and_not_used)
                     localOpConfig.f_infershape(gnode);
                 else
                 {
@@ -352,22 +389,29 @@ namespace nnfusion
                         ret.push_back(str.substr(it));
                         return std::move(ret);
                     };
-                    auto output_params =
-                        ssplit(ssplit(get_between(result.first, "///", "\n"), ":")[1], ",");
+                    // GLOBALS: input0:float32[2, 4] -> output0:float32[1, 3]\n
+                    auto output_params = ssplit(
+                        ssplit(get_between(result.first, "// GLOBALS: ", "\n"), "->")[1], "],");
                     for (int i = 0; i < output_params.size(); ++i)
                     {
-                        auto params = ssplit(output_params[i], "/");
+                        auto ouput_dims =
+                            ssplit(get_between(output_params[i] + "]", "[", "]"), ",");
+                        auto type_str = get_between(output_params[i], ":", "[");
                         nnfusion::Shape output_shape;
-                        for (auto dim : ssplit(params[0], "-"))
+                        for (auto dim : ouput_dims)
                             output_shape.push_back(std::atoi(dim.c_str()));
-                        nnfusion::element::Type type;
-                        if (params[1] == "float32")
-                            type = nnfusion::element::Type(32, true, true, false, "float");
-                        else if (params[1] == "int32")
-                            type = nnfusion::element::Type(32, false, true, false, "int");
-                        else
-                            throw std::runtime_error("Unrecognized data type for infershape: " +
-                                                     params[1]);
+
+                        static std::unordered_map<std::string, nnfusion::element::Type>
+                            antares2nnfusion{{"float16", nnfusion::element::f16},
+                                             {"float32", nnfusion::element::f32},
+                                             {"float64", nnfusion::element::f64},
+                                             {"int8", nnfusion::element::boolean},
+                                             {"int32", nnfusion::element::i32},
+                                             {"int64", nnfusion::element::i64}};
+                        auto it = antares2nnfusion.find(type_str);
+                        NNFUSION_CHECK(it != antares2nnfusion.end())
+                            << "Unrecognized antares data type for infershape: " << type_str;
+                        nnfusion::element::Type type = it->second;
                         gnode->set_output_type_and_shape(i, type, output_shape);
                     }
                 }
@@ -376,8 +420,7 @@ namespace nnfusion
                 {
                     m_expression = localOpConfig.f_translate_v2(gnode);
                 }
-
-                if (localOpConfig.f_translate != nullptr && !m_expression.size())
+                else if (localOpConfig.f_translate != nullptr && !m_expression.size())
                 {
                     m_expression = localOpConfig.f_translate(gnode);
                 }
@@ -392,35 +435,5 @@ namespace nnfusion
             mutable OpConfig localOpConfig;
             std::string m_expression;
         };
-
-        namespace infershape
-        {
-            // Provide default infershape function: output_shapes[*] = input_shapes[*];
-            inline void copy_shape_from_inputs(std::shared_ptr<graph::GNode> gnode)
-            {
-                for (int i = 0; i < gnode->get_input_size(); ++i)
-                {
-                    gnode->set_output_type_and_shape(
-                        0, gnode->get_input_element_type(i), gnode->get_input_shape(i));
-                }
-            }
-
-            // unimplemented that will notify exception when migrating to op_v2 mode
-            inline void unimplemented_and_not_used(std::shared_ptr<graph::GNode> gnode)
-            {
-                throw std::runtime_error(
-                    ("Not implemented infershape for Op: " + gnode->get_op_ptr()->get_op_type())
-                        .c_str());
-            }
-
-            inline void copy_shape_from_inputs_with_boolean(std::shared_ptr<graph::GNode> gnode)
-            {
-                for (int i = 0; i < gnode->get_input_size(); ++i)
-                {
-                    gnode->set_output_type_and_shape(
-                        0, nnfusion::element::boolean, gnode->get_input_shape(i));
-                }
-            }
-        } // namespace infershape
-    }     // namespace op
+    } // namespace op
 } // namespace nnfusion

@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+import sys, json
+op_v2 = json.loads(sys.argv[1])
+inputs, config = op_v2["input_dict"], op_v2["config"]
+output_name = op_v2["output_name"]
+where_range = [x for x in inputs[0]["shape"]]
+in_items, out_items = [f'N{i}' for i in range(len(where_range))], [f'N{i}' for i in range(len(where_range))]
+for dim, start, end, stride in zip(config["axes"], config["starts"], config["ends"], config["steps"]):
+  if dim < 0:
+    dim += len(where_range)
+  if start > where_range[dim]:
+    start = where_range[dim]
+  if end > where_range[dim]:
+    end = where_range[dim]
+  in_items[dim] = f'''{start} + ({stride}) * {in_items[dim]}'''
+  where_range[dim] = (end - start) // stride
+  assert where_range[dim] > 0
+where_range = [f'N{i} in {x}' for i, x in enumerate(where_range)]
+print(f'''{output_name}[{", ".join(out_items)}] = {inputs[0]["name"]}[{", ".join(in_items)}] where {", ".join(where_range)}; ''') 

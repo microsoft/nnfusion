@@ -348,6 +348,46 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     return true;
 }
 
+void KernelTuning::register_single_kernel(const std::string& op_name)
+{
+    kernels::KernelRegistrar kernel_registrar_cuda(
+        op_name,
+        kernels::Name(op_name)
+            .Device(CUDA_GPU)
+            .TypeConstraint(element::f32)
+            .Tag("antares")
+            .Priority(9)
+            .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                               -> shared_ptr<kernels::KernelEmitter> {
+                return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(context);
+            })
+            .Build());
+    kernels::KernelRegistrar kernel_registrar_cpu(
+        op_name,
+        kernels::Name(op_name)
+            .Device(GENERIC_CPU)
+            .TypeConstraint(element::f32)
+            .Tag("antares")
+            .Priority(9)
+            .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                               -> shared_ptr<kernels::KernelEmitter> {
+                return make_shared<kernels::cpu::AntaresCpuKernelEmitter>(context);
+            })
+            .Build());
+    kernels::KernelRegistrar kernel_registrar_hlsl(
+        op_name,
+        kernels::Name(op_name)
+            .Device(HLSL)
+            .TypeConstraint(element::f32)
+            .Tag("antares")
+            .Priority(9)
+            .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                               -> shared_ptr<kernels::KernelEmitter> {
+                return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(context);
+            })
+            .Build());
+}
+
 bool KernelTuning::register_antares_kernel()
 {
     for (auto pair : nnfusion::op::get_op_configs())
@@ -360,43 +400,7 @@ bool KernelTuning::register_antares_kernel()
         {
             continue;
         }
-
-        kernels::KernelRegistrar kernel_registrar_cuda(
-            op_name,
-            kernels::Name(op_name)
-                .Device(CUDA_GPU)
-                .TypeConstraint(element::f32)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<kernels::KernelContext> context)
-                                   -> shared_ptr<kernels::KernelEmitter> {
-                    return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(context);
-                })
-                .Build());
-        kernels::KernelRegistrar kernel_registrar_cpu(
-            op_name,
-            kernels::Name(op_name)
-                .Device(GENERIC_CPU)
-                .TypeConstraint(element::f32)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<kernels::KernelContext> context)
-                                   -> shared_ptr<kernels::KernelEmitter> {
-                    return make_shared<kernels::cpu::AntaresCpuKernelEmitter>(context);
-                })
-                .Build());
-        kernels::KernelRegistrar kernel_registrar_hlsl(
-            op_name,
-            kernels::Name(op_name)
-                .Device(HLSL)
-                .TypeConstraint(element::f32)
-                .Tag("antares")
-                .Priority(9)
-                .KernelFactory([](shared_ptr<kernels::KernelContext> context)
-                                   -> shared_ptr<kernels::KernelEmitter> {
-                    return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(context);
-                })
-                .Build());
+        register_single_kernel(op_name);
     }
     return true;
 }

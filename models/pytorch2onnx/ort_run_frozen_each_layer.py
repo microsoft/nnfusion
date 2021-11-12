@@ -38,6 +38,10 @@ def get_numpy(tensor):
             return np.float32
         elif 'double' in onnx_dtype:
             return np.float64
+        elif 'uint8' in onnx_dtype:
+            return np.uint8
+        elif 'uint16' in onnx_dtype:
+            return np.uint16
         elif 'int8' in onnx_dtype:
             return np.int8
         elif 'int16' in onnx_dtype:
@@ -46,10 +50,6 @@ def get_numpy(tensor):
             return np.int32
         elif 'int64' in onnx_dtype:
             return np.int64
-        elif 'uint8' in onnx_dtype:
-            return np.uint8
-        elif 'uint16' in onnx_dtype:
-            return np.uint16
         elif 'bool' in onnx_dtype:
             return np.bool_
         else:

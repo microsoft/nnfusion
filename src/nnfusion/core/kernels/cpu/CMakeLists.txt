@@ -30,9 +30,3 @@ add_library(kernels_cpu STATIC ${SRC} ${KERNELS})
 target_include_directories(kernels_cpu SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
-target_compile_options(kernels_cpu PRIVATE "-fPIC")
-
-target_link_libraries(kernels_cpu  PRIVATE
-    kernels_registration
-    ${CURL_LIBRARIES}
-)

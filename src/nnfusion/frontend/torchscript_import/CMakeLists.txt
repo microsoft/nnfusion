@@ -20,10 +20,8 @@ add_library(torchscript_import STATIC
 )
 
 target_include_directories(torchscript_import SYSTEM PUBLIC ${TORCH_INCLUDE_DIRS})
-target_link_libraries(torchscript_import PRIVATE nnfusion_graph ${TORCH_LIBRARIES})
 # Currently libtorch uses CXX14 templates, might be upgraded in the future
 set_property(TARGET torchscript_import PROPERTY CXX_STANDARD 14)
-target_link_libraries(torchscript_import_interface PRIVATE nnfusion_graph torchscript_import)
 set_property(TARGET torchscript_import_interface PROPERTY CXX_STANDARD 14)
 
 set_property(TARGET torchscript_import_interface PROPERTY POSITION_INDEPENDENT_CODE ON)

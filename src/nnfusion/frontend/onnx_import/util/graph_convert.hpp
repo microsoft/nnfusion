@@ -98,6 +98,7 @@ namespace nnfusion
 
                 std::unordered_map<std::string, size_t> m_dim_params;
                 std::string model_dir;
+                std::unordered_map<std::string, std::int64_t> domain2version;
             };
         } // namespace onnx_import
     }     // namespace frontend

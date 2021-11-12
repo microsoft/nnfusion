@@ -12,6 +12,8 @@
 #include "nnfusion/engine/util/file_util.hpp"
 #include "nnfusion/frontend/onnx_import/onnx.hpp"
 
+DECLARE_bool(fantares_mode);
+
 using namespace nnfusion;
 using Inputs = vector<vector<float>>;
 using Outputs = vector<vector<float>>;
@@ -1561,6 +1563,31 @@ TEST(nnfusion_onnx_import, resize_upsample_scales_linear)
     // output [0, 10, 2, 9]
     vector<float> expected_outputs{
         1., 1.25, 1.75, 2., 1.5, 1.75, 2.25, 2.5, 2.5, 2.75, 3.25, 3.5, 3., 3.25, 3.75, 4.};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+// enable by ./test/unit-test --gtest_filter="nnfusion_onnx_import.customized_op_slice" -fkernel_tuning_steps=0 -fantares_mode=true -fantares_codegen_server=127.0.0.1:8881 -fkernel_fusion_level=0 -fblockfusion_level=0 -fhost_entry=1 -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fir_based_fusion=true
+TEST(nnfusion_onnx_import, customized_op_slice)
+{
+    if (!FLAGS_fantares_mode)
+    {
+        return;
+    }
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/custom_slice.onnx"));
+
+    RawInputs
+        raw_inputs; // [[1, 2, 3, 4], [5, 6, 7, 8]], attr: {"axes":[0,1],"domain":"","ends":[2,3],"op":"Slice","starts":[1,0],"steps":[1,1],"version":11}
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<float>(raw_outputs[0])};
+
+    vector<float> expected_outputs{5., 6., 7.};
 
     EXPECT_EQ(outputs.size(), expected_outputs.size());
     for (size_t i = 0; i < expected_outputs.size(); ++i)

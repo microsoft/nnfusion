@@ -65,7 +65,7 @@ namespace nnfusion
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     Node node(node_proto);
                     size_t block_size = node.get_attribute_value<int64_t>("blocksize");
-                    std::string mode = node.get_attribute_value<string>("mode");
+                    std::string mode = node.get_attribute_value<string>("mode", "DCR");
 
                     nnfusion::op::OpConfig::any myConfig;
                     myConfig["data_format"] = "NCHW";

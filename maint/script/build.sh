@@ -19,11 +19,9 @@ else
 fi
 
 # build the repo
-if [ ! -d "$THIS_SCRIPT_DIR/../../build" ]; then
- mkdir $THIS_SCRIPT_DIR/../../build
-fi
+mkdir -p $THIS_SCRIPT_DIR/../../build
 
-pushd $THIS_SCRIPT_DIR/../../build/ > /dev/null
+pushd $THIS_SCRIPT_DIR/../../build > /dev/null
 cmake ..
 popd > /dev/null
 
@@ -35,9 +33,7 @@ else
 fi
 
 # Make
-pushd $THIS_SCRIPT_DIR/../../build/ > /dev/null
-make -j$(nproc)
-popd > /dev/null
+cmake --build $THIS_SCRIPT_DIR/../../build -j$(nproc)
 
 if [ $? -ne 0 ]; then
     echo "Build failed."
@@ -48,9 +44,7 @@ fi
 
 if [ -f "/.dockerenv" ]; then
     # Make install
-    pushd $THIS_SCRIPT_DIR/../../build/ > /dev/null
-    make install
-    popd > /dev/null
+    cmake --install $THIS_SCRIPT_DIR/../../build
 
     if [ $? -ne 0 ]; then
         echo "Install failed."

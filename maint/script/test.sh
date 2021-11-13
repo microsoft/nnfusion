@@ -26,7 +26,11 @@ create_rocm_container(){
 
 # check if inside one docker container(for testing)
 if [ -f "/.dockerenv" ]; then
-    $THIS_SCRIPT_DIR/build.sh
+    cmake --install $THIS_SCRIPT_DIR/../../build > /dev/null
+    if [ $? -ne 0 ]; then
+        echo "install failed"
+        exit 1
+    fi
     python3 $THIS_SCRIPT_DIR/../../test/nnfusion/scripts/e2e_tests.py
 else
     

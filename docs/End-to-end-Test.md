@@ -1,6 +1,6 @@
 The new e2e testing tool is targeting easy usage and could be easily extented.
 
-The tool is located at "(source code repo)/test/nnfusion/script/e2e_test.py".
+The tool is located at "(source code repo)/test/nnfusion/scripts/e2e_tests.py".
 
 Execution in native enviroment:
 
@@ -47,7 +47,7 @@ Execution in native enviroment:
 	
 **3. Add test cases:**
 
-   After run `download_models.h`, a folder named "frozenmodels" is created and all the required models are downloaded inside this folder.  
+   After run `download_models.sh`, a folder named "frozenmodels" is created and all the required models are downloaded inside this folder.  
 	
    A test config can be added and loaded by default test run under the folder "(source root)/test/nnfusion/scripts/testcase_configs".
 	 
@@ -78,13 +78,13 @@ Execution in native enviroment:
 
    a. Using config.json
 
-  `python ./test/nnfusion/script/e2e_test.py "path to config.json"`
+  `python ./test/nnfusion/scripts/e2e_tests.py "path to config.json"`
 
   If the config file is not specified, the default config will be applied.
 		
    b. Use parameter
 
-   `python  ./test/nnfusion/script/e2e_test.py "path to models folder" "path to nnfusion cli"`
+   `python  ./test/nnfusion/scripts/e2e_tests.py "path to models folder" "path to nnfusion cli"`
 
    This will use default config and load test from the models folder, compiling models use the nnfusion cli specified.
 		

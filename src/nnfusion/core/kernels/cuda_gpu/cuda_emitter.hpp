@@ -208,9 +208,9 @@ namespace nnfusion
                     GENERIC_OP_LOGGING();
                     if (!FLAGS_fantares_codegen_server.empty())
                     {
-                        NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
+                        // NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
 
-                        auto ir = nnfusion::op::get_translation(ctx->gnode);
+                        ir = nnfusion::op::get_translation(ctx->gnode);
 #if 0
                         std::unordered_set<std::string> wl = {
                           "Add", "ApplyGradient", "AvgPool", "BatchMatMul", "Broadcast", "Concat", "Convert", "Convolution", "DepthToSpace", "DepthwiseConv2dNative",
@@ -252,6 +252,7 @@ namespace nnfusion
                                                 << "NNFusion shape: "
                                                 << ctx->outputs[i]->get_shape()
                                                 << ", Antares shape: " << antares_output_shapes[i];
+                                            NNFUSION_LOG(INFO) << info.first;
                                             flag_match = false;
                                             break;
                                         }
@@ -287,6 +288,11 @@ namespace nnfusion
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
                         }
+
+                        kernel_info =
+                            nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
+                        NNFUSION_CHECK(!kernel_info.empty());
+                        process_antares_kernel_info();
                     }
                 }
 
@@ -295,11 +301,28 @@ namespace nnfusion
 
                 bool is_eliminative() override;
                 LanguageUnit_p emit_function_body() override;
+                LanguageUnit_p emit_function_call() override;
+                LanguageUnit_p emit_function_signature() override;
                 LanguageUnit_p emit_dependency() override;
+                LanguageUnit_p emit_comments() override
+                {
+                    auto lu = KernelEmitter::emit_comments();
+                    (*lu) << "// IR:\n//" << ir << "\n";
+                    return lu;
+                };
                 void set_launch_config() override {}
                 AntaresKEImp::Pointer m_antares_ke_imp;
                 std::string antares_code;
+                std::string ir;
                 bool is_memcpy = false;
+
+            protected:
+                // map tensor names and allocate tmp tensor
+                void process_antares_kernel_info();
+                void find_launch_config(const std::string& str, dim3& gridDim, dim3& blockDim);
+                std::vector<AntaresKernelInfo::Pointer> kernel_info;
+                std::unordered_map<std::string, std::string>
+                    tensor_name_map; // antares tensor name : kernel tensor name
             };
 
             class CacheCudaEmitter : public CudaEmitter

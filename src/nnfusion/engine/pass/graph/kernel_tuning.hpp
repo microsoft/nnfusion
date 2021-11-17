@@ -17,17 +17,16 @@ namespace nnfusion
             {
             public:
                 bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) override;
-
+                static void register_single_kernel(const std::string& op_name);
                 bool register_antares_kernel();
 
             private:
-                std::vector<std::shared_ptr<nnfusion::graph::GNode>>
-                    get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph);
+                bool parse_block_list();
                 bool insert_to_kernel_cache(
                     const std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes);
 
             private:
-                static const std::unordered_set<std::string> BlockList;
+                std::unordered_set<std::string> BlockList;
             };
         }
     }

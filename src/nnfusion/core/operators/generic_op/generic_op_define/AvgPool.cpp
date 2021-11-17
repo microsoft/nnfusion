@@ -27,17 +27,16 @@ REGISTER_OP(AvgPool)
     })
     */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         auto _op = static_pointer_cast<nnfusion::op::AvgPool>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         // divide operation goes before add operation, which may cause precision issue.
-        // auto ir_template =
-        //     R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@ / ((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) / ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0])) @where_condition@;)";
+        auto ir_template =
+            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@ / ((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) / ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0])) @where_condition@;)";
 
         // divide after add operation
-        auto ir_template =
-            R"( mediate0@output0_layout@ +=! @input0@@input0_layout@@when_condition@ @where_condition@; @output0@@output0_layout@ = mediate0@output0_layout@ / (((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) * ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0]))).call('max', [1]);)";
+        // auto ir_template =
+        //     R"( mediate0@output0_layout@ +=! @input0@@input0_layout@@when_condition@ @where_condition@; @output0@@output0_layout@ = mediate0@output0_layout@ / (((HO * @stride_h@ + @KH_top@ - @pad_h@).call('min', [@H_top@])  - (HO * @stride_h@ - @pad_h@).call('max', [0])) * ((WO * @stride_w@ + @KW_top@ - @pad_w@).call('min', [@W_top@])  - (WO * @stride_w@ - @pad_w@).call('max', [0]))).call('max', [1]);)";
 
         const auto& input0_shape = curr->get_input_shape(0);
         const auto& output0_shape = curr->get_output_shape(0);

@@ -100,7 +100,7 @@ namespace nnfusion
                             const nnfusion::Strides& window_movement_strides,
                             const nnfusion::Shape& padding_below,
                             const nnfusion::Shape& padding_above,
-                            bool include_padding_in_avg_computation);
+                            bool include_padding_in_avg_computation = false);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
 

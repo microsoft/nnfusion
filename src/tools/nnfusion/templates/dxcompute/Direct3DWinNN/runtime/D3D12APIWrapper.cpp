@@ -379,6 +379,13 @@ void* dxModuleLoad(const char* module_src)
             return nullptr;
         std::string _((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         source = std::move(_);
+        if (source.find('\r') != std::string::npos)
+        {
+            std::string res = source;
+            std::string::iterator end_pos = std::remove(res.begin(), res.end(), '\r');
+            res.erase(end_pos, res.end());
+            source = std::move(res);
+        }
         module_src = source.c_str();
     }
 

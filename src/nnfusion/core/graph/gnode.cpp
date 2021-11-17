@@ -185,9 +185,11 @@ bool GNode::has_same_type(std::shared_ptr<const GNode> gnode) const
     return true;
 }
 
-const std::set<std::shared_ptr<nnfusion::graph::Edge>>& GNode::get_in_edges() const
+std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_in_edges() const
 {
-    return m_in_edges;
+    std::vector<std::shared_ptr<nnfusion::graph::Edge>> ret(m_in_edges.begin(), m_in_edges.end());
+    std::sort(ret.begin(), ret.end(), EdgeComparatorDstIndex());
+    return ret;
 };
 
 const std::shared_ptr<nnfusion::graph::Edge> GNode::get_in_edge(size_t i) const
@@ -218,9 +220,11 @@ void GNode::remove_in_edge(std::shared_ptr<nnfusion::graph::Edge> edge)
     m_in_edges.erase(edge);
 }
 
-const std::set<std::shared_ptr<nnfusion::graph::Edge>>& GNode::get_out_edges() const
+std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_out_edges() const
 {
-    return m_out_edges;
+    std::vector<std::shared_ptr<nnfusion::graph::Edge>> ret(m_out_edges.begin(), m_out_edges.end());
+    std::sort(ret.begin(), ret.end(), EdgeComparatorSrcIndex());
+    return ret;
 };
 
 std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_output_users(size_t i)
@@ -404,7 +408,11 @@ void FusedGNode::set_inputs_and_outputs(std::shared_ptr<Graph> graph)
     NNFUSION_CHECK(m_order_nodes.size());
     std::unordered_set<std::shared_ptr<GNode>> cached_nodes;
     for (const auto& m_node : m_order_nodes)
+    {
         cached_nodes.insert(m_node);
+        auto ctx = std::make_shared<OpContext>(m_node);
+        m_op_ctxs.push_back(ctx);
+    }
 
     // Regirster input tensors
     for (const auto& m_node : m_order_nodes)
@@ -469,5 +477,6 @@ void FusedGNode::clean_nodes(std::shared_ptr<Graph> graph)
 
 void FusedGNode::derive_op_def()
 {
-    static_pointer_cast<nnfusion::op::Fused>(m_op_ptr)->register_ir2(m_order_nodes);
+    static_pointer_cast<nnfusion::op::Fused>(m_op_ptr)->register_ir2(m_order_nodes,
+                                                                     shared_from_this());
 }

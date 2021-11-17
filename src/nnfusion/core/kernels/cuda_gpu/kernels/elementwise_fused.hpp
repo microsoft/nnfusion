@@ -27,9 +27,8 @@ namespace nnfusion
                 void set_launch_config() override;
 
             private:
-                std::shared_ptr<KernelContext> FuseContext();
                 void compute_best_config(int& grids, int& blocks, int& bound);
-                std::vector<shared_ptr<CudaElementwiseEmitter>> m_kernels;
+                std::shared_ptr<graph::FusedGNode> m_gnode;
             };
 
         } // namespace cuda

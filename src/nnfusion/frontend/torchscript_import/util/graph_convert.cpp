@@ -1361,15 +1361,7 @@ namespace nnfusion
             {
                 int arg_cnt = 0;
                 int depth = 0;
-                auto in_edges_set = n->get_in_edges();
-                std::vector<std::shared_ptr<nnfusion::graph::Edge>> in_edges(in_edges_set.begin(),
-                                                                             in_edges_set.end());
-                std::sort(in_edges.begin(),
-                          in_edges.end(),
-                          [](std::shared_ptr<nnfusion::graph::Edge> a,
-                             std::shared_ptr<nnfusion::graph::Edge> b) {
-                              return a->get_dst_input() < b->get_dst_input();
-                          });
+                std::vector<std::shared_ptr<nnfusion::graph::Edge>> in_edges = n->get_in_edges();
 
                 std::cout << "Inputs: " << std::endl;
                 for (auto in_edge : in_edges)

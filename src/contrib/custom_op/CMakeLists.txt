@@ -10,11 +10,10 @@ set(SRC
     ${native_custom_ops}
 )
 
-add_library(contrib_custom_operators SHARED ${SRC})
+add_library(contrib_custom_operators STATIC ${SRC})
 target_include_directories(contrib_custom_operators SYSTEM PUBLIC
     ${GLOBAL_INCLUDE_PATH}
 )
-target_link_libraries(contrib_custom_operators nnfusion_common)
 target_compile_options(contrib_custom_operators PRIVATE "-fPIC")
 
 if(NOT DEFINED ENV{NNFUSION_HOME})

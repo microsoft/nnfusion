@@ -36,6 +36,7 @@
 #include "op/constant.hpp"
 #include "op/conv.hpp"
 #include "op/conv_trans.hpp"
+#include "op/depth_to_space.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
 #include "op/embed_layer_norm.hpp"
@@ -61,7 +62,8 @@
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
-#include "op/scatter.hpp"
+#include "op/roll.hpp"
+#include "op/scatternd.hpp"
 #include "op/shape.hpp"
 #include "op/skip_layer_norm.hpp"
 #include "op/slice.hpp"
@@ -75,7 +77,6 @@
 #include "op/unaryop.hpp"
 #include "op/unsqueeze.hpp"
 #include "op/where.hpp"
-
 #include "ops_bridge.hpp"
 
 namespace nnfusion
@@ -277,6 +278,9 @@ namespace nnfusion
                 REGISTER_OPERATOR("Resize", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Where", 1, TranslateWhereOp);
+                REGISTER_OPERATOR("DepthToSpace", 1, TranslateDepthToSpaceOp);
+                REGISTER_OPERATOR("DepthToSpace", 11, TranslateDepthToSpaceOp);
+                REGISTER_DOMAIN_OPERATOR("org.pytorch.aten", "roll", 1, TranslateRollOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

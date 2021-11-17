@@ -26,6 +26,43 @@ namespace nnfusion
                 nnfusion::Strides window_dilation_strides, window_movement_strides,
                     data_dilation_strides;
                 nnfusion::CoordinateDiff padding_below_diff, padding_above_diff;
+                string dtype, data_format, activation;
+                bool with_bias;
+            };
+
+            class ConvolutionGradDataCudnn : public CudaLibEmitter
+            {
+            public:
+                ConvolutionGradDataCudnn(shared_ptr<KernelContext> ctx);
+
+                LanguageUnit_p emit_function_body() override;
+                LanguageUnit_p emit_dependency() override;
+                LanguageUnit_p emit_function_signature() override;
+                bool require_cudnn_handle() override { return true; }
+            private:
+                nnfusion::Shape filter_shape, dy_shape, dx_shape;
+                element::Type filter_type, dy_type, dx_type, conv_type;
+                nnfusion::Strides window_dilation_strides, window_movement_strides,
+                    data_dilation_strides;
+                nnfusion::CoordinateDiff padding_below_diff, padding_above_diff;
+                string dtype, data_format;
+            };
+
+            class ConvolutionGradFilterCudnn : public CudaLibEmitter
+            {
+            public:
+                ConvolutionGradFilterCudnn(shared_ptr<KernelContext> ctx);
+
+                LanguageUnit_p emit_function_body() override;
+                LanguageUnit_p emit_dependency() override;
+                LanguageUnit_p emit_function_signature() override;
+                bool require_cudnn_handle() override { return true; }
+            private:
+                nnfusion::Shape x_shape, dy_shape, dw_shape;
+                element::Type x_type, dy_type, dw_type, conv_type;
+                nnfusion::Strides window_dilation_strides, window_movement_strides,
+                    data_dilation_strides;
+                nnfusion::CoordinateDiff padding_below_diff, padding_above_diff;
                 string dtype, data_format;
             };
         } // namespace cuda

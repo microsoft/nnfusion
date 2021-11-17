@@ -12,6 +12,8 @@
 #include "nnfusion/engine/util/file_util.hpp"
 #include "nnfusion/frontend/onnx_import/onnx.hpp"
 
+DECLARE_bool(fantares_mode);
+
 using namespace nnfusion;
 using Inputs = vector<vector<float>>;
 using Outputs = vector<vector<float>>;
@@ -1453,4 +1455,143 @@ TEST(nnfusion_onnx_import, trainable_dropout_op)
 
     auto ratio = (float)num_output_zero / input.size();
     EXPECT_NEAR(ratio, dropout_raito, 0.02);
+}
+
+TEST(nnfusion_onnx_import, depthtospace_dcr_op)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/depth2space_dcr.onnx"));
+
+    // x (1, 8, 2, 3)
+    Inputs inputs{{0.,  1.,  2.,  3.,  4.,  5.,  9.,  10., 11., 12., 13., 14., 18., 19., 20., 21.,
+                   22., 23., 27., 28., 29., 30., 31., 32., 36., 37., 38., 39., 40., 41., 45., 46.,
+                   47., 48., 49., 50., 54., 55., 56., 57., 58., 59., 63., 64., 65., 66., 67., 68.}};
+
+    // output (1, 2, 4, 6)
+    Outputs expected_outputs{{0.,  18., 1.,  19., 2.,  20., 36., 54., 37., 55., 38., 56.,
+                              3.,  21., 4.,  22., 5.,  23., 39., 57., 40., 58., 41., 59.,
+                              9.,  27., 10., 28., 11., 29., 45., 63., 46., 64., 47., 65.,
+                              12., 30., 13., 31., 14., 32., 48., 66., 49., 67., 50., 68.}};
+
+    Outputs outputs{execute(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_onnx_import, depthtospace_crd_op)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/depth2space_crd.onnx"));
+
+    // x (1, 8, 2, 3)
+    Inputs inputs{{0.,  1.,  2.,  3.,  4.,  5.,  9.,  10., 11., 12., 13., 14., 18., 19., 20., 21.,
+                   22., 23., 27., 28., 29., 30., 31., 32., 36., 37., 38., 39., 40., 41., 45., 46.,
+                   47., 48., 49., 50., 54., 55., 56., 57., 58., 59., 63., 64., 65., 66., 67., 68.}};
+
+    // output (1, 2, 4, 6)
+    Outputs expected_outputs{{0.,  9.,  1.,  10., 2.,  11., 18., 27., 19., 28., 20., 29.,
+                              3.,  12., 4.,  13., 5.,  14., 21., 30., 22., 31., 23., 32.,
+                              36., 45., 37., 46., 38., 47., 54., 63., 55., 64., 56., 65.,
+                              39., 48., 40., 49., 41., 50., 57., 66., 58., 67., 59., 68.}};
+
+    Outputs outputs{execute(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_onnx_import, scatternd_op)
+{
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/scatter_nd_1.onnx"));
+
+    RawInputs raw_inputs;
+    // data [0, 1, 2, 3]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{0, 1, 2, 3}));
+    // indices [[3], [1]]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{3, 1}));
+    // udpates [9, 10]
+    raw_inputs.emplace_back(convert_to_raw(vector<int32_t>{9, 10}));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<int32_t>(raw_outputs[0])};
+    // output [0, 10, 2, 9]
+    vector<int> expected_outputs{0, 10, 2, 9};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_onnx_import, resize_downsample_scales_linear)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/resize_downsample_scales_linear.onnx"));
+
+    RawInputs raw_inputs;
+    raw_inputs.emplace_back(convert_to_raw(vector<float>{1, 2, 3, 4, 5, 6, 7, 8}));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<int32_t>(raw_outputs[0])};
+    // output [0, 10, 2, 9]
+    vector<float> expected_outputs{2.6666665, 4.3333331};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_onnx_import, resize_upsample_scales_linear)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/resize_upsample_scales_linear.onnx"));
+
+    RawInputs raw_inputs;
+    raw_inputs.emplace_back(convert_to_raw(vector<float>{1, 2, 3, 4}));
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<int32_t>(raw_outputs[0])};
+    // output [0, 10, 2, 9]
+    vector<float> expected_outputs{
+        1., 1.25, 1.75, 2., 1.5, 1.75, 2.25, 2.5, 2.5, 2.75, 3.25, 3.5, 3., 3.25, 3.75, 4.};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+// enable by ./test/unit-test --gtest_filter="nnfusion_onnx_import.customized_op_slice" -fkernel_tuning_steps=0 -fantares_mode=true -fantares_codegen_server=127.0.0.1:8881 -fkernel_fusion_level=0 -fblockfusion_level=0 -fhost_entry=1 -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fir_based_fusion=true
+TEST(nnfusion_onnx_import, customized_op_slice)
+{
+    if (!FLAGS_fantares_mode)
+    {
+        return;
+    }
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/custom_slice.onnx"));
+
+    RawInputs
+        raw_inputs; // [[1, 2, 3, 4], [5, 6, 7, 8]], attr: {"axes":[0,1],"domain":"","ends":[2,3],"op":"Slice","starts":[1,0],"steps":[1,1],"version":11}
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<float>(raw_outputs[0])};
+
+    vector<float> expected_outputs{5., 6., 7.};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
 }

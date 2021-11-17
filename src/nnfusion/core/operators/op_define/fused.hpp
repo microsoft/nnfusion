@@ -28,7 +28,8 @@ namespace nnfusion
             Fused(const std::string& name, const std::string& opname)
                 : Op(opname){};
 
-            void register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes);
+            void register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes,
+                              std::shared_ptr<graph::GNode> fused_node);
             std::string get_fused_ir2() { return fused_op_ir2; };
             std::string get_plan_rule();
 

@@ -7,6 +7,7 @@ REGISTER_OP(DepthToSpace)
     .attr<nnfusion::op::OpConfig::any>("T")
     .attr<nnfusion::op::OpConfig::any>("block_size")
     .attr<nnfusion::op::OpConfig::any>("data_format")
+    .attr<nnfusion::op::OpConfig::any>("mode", "DCR") // choose from DCR and CRD
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         NNFUSION_CHECK(1 == gnode->get_input_size());
         auto shape_0 = gnode->get_input_shape(0);
@@ -27,25 +28,6 @@ REGISTER_OP(DepthToSpace)
 
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), shape_0);
     })
-    .translate([](std::shared_ptr<graph::GNode> gnode) -> std::string {
-        auto input_shape = gnode->get_input_shape(0);
-        NNFUSION_CHECK(input_shape.size() == 4);
-
-        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
-        NNFUSION_CHECK(generic_op->localOpConfig.getRoot()["data_format"] == "NHWC");
-        size_t block_size = generic_op->localOpConfig.getRoot()["block_size"];
-        input_shape[0] *= input_shape[1];
-        input_shape[1] = block_size;
-        input_shape[3] /= block_size;
-
-        auto output_shape = input_shape;
-        std::swap(input_shape[1], input_shape[2]);
-
-        return op::create_code_from_template(
-            R"( - input("input0", @input_shape@); output(@output_shape@, topi=topi.transpose(args("input0"), axes=[0, 2, 1, 3])); )",
-            {{"input_shape", vector_to_string(input_shape)},
-             {"output_shape", vector_to_string(output_shape)}});
-    })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto expression_template =
             R"( mediate0@mediate0_layout@ = @input0@@input0_layout@ @cond0@; mediate1@mediate1_layout@ = mediate0@mediate0_layout@; @output0@@output0_layout@ = mediate1@mediate1o_layout@ @cond1@;)";
@@ -55,16 +37,36 @@ REGISTER_OP(DepthToSpace)
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
         auto is_nhwc = _op->localOpConfig.getRoot()["data_format"] == "NHWC";
+        auto mode = _op->localOpConfig.getRoot()["mode"];
 
         size_t block_size = _op->localOpConfig.getRoot()["block_size"];
         size_t c_stride = (is_nhwc ? input_shape[3] : input_shape[1]) / (block_size * block_size);
-        auto input0_c_str = op::create_code_from_template(
-            "HS * @c_stride@ * @block_size@ + WS * @c_stride@ + C",
-            {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
-        // auto input0_c_str = op::create_code_from_template("C * @block_size@ * @block_size@ + HS * @block_size@ + WS", {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
+        std::string input0_c_str;
+
+        if (mode == "CRD")
+        {
+            input0_c_str = op::create_code_from_template(
+                "C * @block_size@ * @block_size@ + HS * @block_size@ + WS",
+                {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
+        }
+        else
+        {
+            input0_c_str = op::create_code_from_template(
+                "HS * @block_size@ * @block_size@ + WS * @block_size@ + C",
+                {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
+        }
+        // auto input0_c_str = op::create_code_from_template("C * @c_stride@ * @block_size@ + HS * @c_stride@ + WS", {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
         auto input0_layout = op::create_code_from_template(
             is_nhwc ? "[N, H, W, @c_str@]" : "[N, @c_str@, H, W]", {{"c_str", input0_c_str}});
-        auto mediate0_layout = is_nhwc ? "[N, H, W, HS, WS, C]" : "[N, HS, WS, C, H, W]";
+        std::string mediate0_layout;
+        if (mode == "CRD")
+        {
+            mediate0_layout = is_nhwc ? "[N, H, W, C, HS, WS]" : "[N, C, HS, WS, H, W]";
+        }
+        else
+        {
+            mediate0_layout = is_nhwc ? "[N, H, W, HS, WS, C]" : "[N, HS, WS, C, H, W]";
+        }
         auto cond0 = op::create_code_from_template(
             "where C in @c_stride@, HS in @block_size@, WS in @block_size@",
             {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});

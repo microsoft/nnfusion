@@ -41,6 +41,10 @@ def get_numpy(tensor):
             return np.float32
         elif 'double' in onnx_dtype:
             return np.float64
+        elif 'uint8' in onnx_dtype:
+            return np.uint8
+        elif 'uint16' in onnx_dtype:
+            return np.uint16
         elif 'int8' in onnx_dtype:
             return np.int8
         elif 'int16' in onnx_dtype:
@@ -49,10 +53,6 @@ def get_numpy(tensor):
             return np.int32
         elif 'int64' in onnx_dtype:
             return np.int64
-        elif 'uint8' in onnx_dtype:
-            return np.uint8
-        elif 'uint16' in onnx_dtype:
-            return np.uint16
         elif 'bool' in onnx_dtype:
             return np.bool_
         else:
@@ -110,9 +110,10 @@ for warmup in range(args.warmup):
             # max_len = min(10, len(out_flat) - print_offset)
             # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
 
-print('>> Evalutating Benchmark ...')
-t_start = time.time()
-for step in range(args.iters):
-    ort_session.run(outputs_name, ort_inputs)
-t_end = time.time()
-print('>> Average time for each run: %.4f ms;' % ((t_end - t_start) * 1e3 / args.iters))
+if args.iters > 0:
+    print('>> Evalutating Benchmark ...')
+    t_start = time.time()
+    for step in range(args.iters):
+        ort_session.run(outputs_name, ort_inputs)
+    t_end = time.time()
+    print('>> Average time for each run: %.4f ms;' % ((t_end - t_start) * 1e3 / args.iters))

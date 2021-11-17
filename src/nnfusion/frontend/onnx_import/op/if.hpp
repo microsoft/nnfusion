@@ -23,6 +23,7 @@ namespace nnfusion
                     std::shared_ptr<nnfusion::graph::Graph> m_graph,
                     const std::unordered_map<std::string, ConvertFuncMap>& domain_convert_func_map,
                     const string& model_dir,
+                    const std::unordered_map<std::string, std::int64_t>& domain2version,
                     const std::unordered_map<std::string, size_t>& dim_params = {});
 
             } // namespace set_1

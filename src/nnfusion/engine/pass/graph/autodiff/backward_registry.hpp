@@ -109,3 +109,24 @@ namespace nnfusion
     static nnfusion::pass::graph::autodiff::BackwardTranslatorConfig                               \
         __register_backward_translator_##op_name =                                                 \
             nnfusion::pass::graph::autodiff::build_backward_config(#op_name)
+
+#define REGISTER_EMPTY_BACKWARD_TRANSLATOR_UNARY(op_name)                                          \
+    static nnfusion::pass::graph::autodiff::BackwardTranslatorConfig                               \
+        __register_backward_translator_##op_name =                                                 \
+            nnfusion::pass::graph::autodiff::build_backward_config(#op_name).translator(           \
+                [](std::shared_ptr<GNode> forward_node,                                            \
+                   const GNodeIndexVector& outputs_grad,                                           \
+                   std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {            \
+                    return GNodeIndexVector{pass::graph::autodiff::DiffEngine::EMPTY_GNODE_INDEX}; \
+                });
+
+#define REGISTER_EMPTY_BACKWARD_TRANSLATOR_BINARY(op_name)                                         \
+    static nnfusion::pass::graph::autodiff::BackwardTranslatorConfig                               \
+        __register_backward_translator_##op_name =                                                 \
+            nnfusion::pass::graph::autodiff::build_backward_config(#op_name).translator(           \
+                [](std::shared_ptr<GNode> forward_node,                                            \
+                   const GNodeIndexVector& outputs_grad,                                           \
+                   std::shared_ptr<nnfusion::graph::Graph> graph) -> GNodeIndexVector {            \
+                    return GNodeIndexVector{pass::graph::autodiff::DiffEngine::EMPTY_GNODE_INDEX,  \
+                                            pass::graph::autodiff::DiffEngine::EMPTY_GNODE_INDEX}; \
+                });

@@ -10,6 +10,7 @@
 #include "profiler.hpp"
 #include "nnfusion/core/graph/graph_util.hpp"
 #include "nnfusion/core/operators/op_define/constant.hpp"
+#include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
 
 #include <chrono>
 #include <ctime>
@@ -20,6 +21,7 @@ using namespace nnfusion::profiler;
 using namespace std::chrono;
 
 DECLARE_bool(fmerge_prof_compiling);
+DECLARE_bool(fantares_mode);
 
 Profiler::Profiler(IProfilingRuntime::Pointer rt, ProfilingContext::Pointer context)
 {
@@ -81,6 +83,8 @@ void GraphEvaluate::create_profiling_contexts(shared_ptr<GNode> gnode)
     {
         return;
     }
+    if (FLAGS_fantares_mode)
+        nnfusion::pass::graph::KernelTuning::register_single_kernel(gnode->get_op_type());
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
         KernelRegistry::Global()->FindKernelRegistrations(
             gnode->get_op_type(), dev_type, element::f32);

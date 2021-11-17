@@ -93,14 +93,14 @@ namespace nnfusion
             bool has_same_type(std::shared_ptr<const GNode> gnode) const;
 
             /// in edges
-            const std::set<std::shared_ptr<nnfusion::graph::Edge>>& get_in_edges() const;
+            std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_in_edges() const;
             const std::shared_ptr<nnfusion::graph::Edge> get_in_edge(size_t i) const;
 
             void add_in_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
             void remove_in_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
 
             ///  out edges
-            const std::set<std::shared_ptr<nnfusion::graph::Edge>>& get_out_edges() const;
+            std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_out_edges() const;
             std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_output_users(size_t i);
 
             void add_out_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
@@ -187,6 +187,34 @@ namespace nnfusion
             std::vector<std::shared_ptr<Output>> m_outputs;
         };
 
+        class OpContext
+        {
+        public:
+            OpContext(std::shared_ptr<GNode> gnode)
+                : op(gnode->get_op_ptr())
+            {
+                // extract input tensors
+                for (size_t i = 0; i < gnode->get_input_size(); ++i)
+                {
+                    std::shared_ptr<descriptor::Tensor> tv = gnode->get_input_tensor_ptr(i);
+                    NNFUSION_CHECK_NOT_NULLPTR(tv);
+                    inputs.push_back(tv);
+                }
+
+                // extract output tensors
+                for (size_t i = 0; i < gnode->get_output_size(); ++i)
+                {
+                    std::shared_ptr<descriptor::Tensor> tv = gnode->get_output_tensor_ptr(i);
+                    NNFUSION_CHECK_NOT_NULLPTR(tv);
+                    outputs.push_back(tv);
+                }
+            }
+
+            std::shared_ptr<op::Op> op;
+            std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> inputs;
+            std::vector<std::shared_ptr<nnfusion::descriptor::Tensor>> outputs;
+        };
+
         class FusedGNode : public GNode
         {
         public:
@@ -199,7 +227,7 @@ namespace nnfusion
             void build_fused_node(std::unordered_set<std::shared_ptr<GNode>> nodes,
                                   std::shared_ptr<Graph> graph,
                                   bool clean_graph = true);
-
+            std::vector<std::shared_ptr<OpContext>>& get_op_contexts() { return m_op_ctxs; }
         protected:
             void reorder_nodes(std::unordered_set<std::shared_ptr<GNode>> nodes,
                                std::shared_ptr<Graph> graph);
@@ -208,6 +236,7 @@ namespace nnfusion
             void clean_nodes(std::shared_ptr<Graph> graph);
 
             std::vector<std::shared_ptr<GNode>> m_order_nodes;
+            std::vector<std::shared_ptr<OpContext>> m_op_ctxs;
         };
     } // namespace graph
 } // namespace nnfusion

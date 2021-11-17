@@ -1,0 +1,22 @@
+onnx-example:•
++
+data
+indices
+updatesoutput"	ScatterND
+scatter_ndZ
+data
+
+
+Z
+indices
+
+
+Z
+updates
+
+
+b
+output
+
+
+B

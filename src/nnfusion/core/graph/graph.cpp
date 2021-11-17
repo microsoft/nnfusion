@@ -5,10 +5,10 @@
 
 #include "graph.hpp"
 #include "graph_util.hpp"
-#include "nnfusion/common/serialize/attr_value.pb.h"
-#include "nnfusion/common/serialize/graph_def.pb.h"
-#include "nnfusion/common/serialize/pbtypes.pb.h"
-#include "nnfusion/common/serialize/tensor_shape.pb.h"
+#include "nnfusion/common/serialize/nnf_attr_value.pb.h"
+#include "nnfusion/common/serialize/nnf_graph_def.pb.h"
+#include "nnfusion/common/serialize/nnf_pbtypes.pb.h"
+#include "nnfusion/common/serialize/nnf_tensor_shape.pb.h"
 #include "nnfusion/util/util.hpp"
 
 using namespace nnfusion::graph;
@@ -183,7 +183,7 @@ GNodeVector Graph::get_nodes()
     return valid_nodes;
 }
 
-GNodeVector Graph::get_ordered_ops(bool include_control_deps)
+GNodeVector Graph::get_ordered_ops()
 {
     // todo: stored ops instead of calculate each time
     GNodeVector nodes;
@@ -191,7 +191,7 @@ GNodeVector Graph::get_ordered_ops(bool include_control_deps)
                get_outputs(),
                nullptr,
                [&](std::shared_ptr<GNode> node) { nodes.push_back(node); },
-               NodeComparatorName());
+               nullptr);
 
     return nodes;
 }
@@ -416,7 +416,7 @@ void Graph::set_temporary_pool_size(size_t size)
 bool Graph::serialize_to_file(const std::string& file_path)
 {
     nnfusion::serialize::GraphDef graphdef;
-    auto nnfusion_nodes = get_ordered_ops(true);
+    auto nnfusion_nodes = get_ordered_ops();
     for (auto& nnfusion_node : nnfusion_nodes)
     {
         NNFUSION_CHECK(

@@ -14,11 +14,10 @@
 #include "nnfusion/engine/pass/graph/common_subexpression_elimination_pass.hpp"
 #include "reversed_dfs_visitor.hpp"
 
-#include "nnfusion/engine/pass/graph/bertfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
-#include "nnfusion/engine/pass/graph/hlsl_required_pass.hpp"
+#include "nnfusion/engine/pass/graph/ir_based_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
@@ -49,7 +48,6 @@ HLSLEngine::HLSLEngine()
 {
     if (FLAGS_fhlsl_codegen_type == "csharp")
     {
-        g_passes->push_back(make_shared<HLSLRequiredPass>());
         g_passes->push_back(make_shared<CSEPass>());
         g_passes->push_back(make_shared<AutodiffPass>());
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
@@ -61,9 +59,11 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<AssignLayoutPass>());
         g_passes->push_back(make_shared<OpInplacePass>());
         g_passes->push_back(make_shared<ReduceFusionPass>());
+        g_passes->push_back(make_shared<IRBasedFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelFusionPass>());
         g_passes->push_back(make_shared<KernelTuning>());
         g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
         g_passes->push_back(make_shared<FetchBasedSelector>());
@@ -89,7 +89,6 @@ HLSLEngine::HLSLEngine()
     }
     else if (FLAGS_fhlsl_codegen_type == "cpp")
     {
-        g_passes->push_back(make_shared<HLSLRequiredPass>());
         g_passes->push_back(make_shared<CSEPass>());
         g_passes->push_back(make_shared<AutodiffPass>());
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
@@ -101,9 +100,11 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<AssignLayoutPass>());
         g_passes->push_back(make_shared<OpInplacePass>());
         g_passes->push_back(make_shared<ReduceFusionPass>());
+        g_passes->push_back(make_shared<IRBasedFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelFusionPass>());
         g_passes->push_back(make_shared<KernelTuning>());
         g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
         g_passes->push_back(make_shared<FetchBasedSelector>());
@@ -132,9 +133,11 @@ HLSLEngine::HLSLEngine()
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
         g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
         g_passes->push_back(make_shared<ReduceFusionPass>());
+        g_passes->push_back(make_shared<IRBasedFusionPass>());
 
         // Kernel selection
         g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
+        g_passes->push_back(make_shared<KernelFusionPass>());
         g_passes->push_back(make_shared<KernelTuning>());
         g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
         g_passes->push_back(make_shared<FetchBasedSelector>());

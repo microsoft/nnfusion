@@ -42,7 +42,7 @@ namespace nnfusion
                     auto node_name = node_proto.output(0);
                     nnfusion::op::OpConfig::any op_config;
 
-                    auto where_op = std::make_shared<op::GenericOp>(node_name, "Where", op_config);
+                    auto where_op = std::make_shared<op::GenericOp>(node_name, "Select", op_config);
                     auto where_gnode =
                         m_graph->add_node_and_edge(where_op, {cond_gnode, x_gnode, y_gnode});
 

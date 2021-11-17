@@ -45,6 +45,7 @@ namespace nnfusion
                     const onnx::GraphProto& graph_proto,
                     const std::unordered_map<std::string, ConvertFuncMap>& domain_convert_func_map,
                     const string& model_dir,
+                    const std::unordered_map<std::string, std::int64_t>& domain2version,
                     const std::unordered_map<std::string, size_t>& dim_params = {},
                     const NodeMap& _node_map = NodeMap(),
                     bool flag_subgraph = false);
@@ -78,6 +79,7 @@ namespace nnfusion
 
                 std::unordered_map<std::string, size_t> m_dim_params;
                 std::string m_model_dir;
+                std::unordered_map<std::string, std::int64_t> m_domain2version;
 
                 bool m_flag_subgraph;
             };
@@ -146,6 +148,7 @@ namespace nnfusion
 
                 std::unordered_map<std::string, size_t> m_dim_params;
                 std::string m_model_dir;
+                std::unordered_map<std::string, std::int64_t> m_domain2version;
             };
         } // namespace onnx_import
     }     // namespace frontend

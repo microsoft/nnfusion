@@ -213,11 +213,251 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
 
-    // extract kernel code
-    int start = antares_code.find(") {\n"), end = antares_code.find("\n}\n");
-    NNFUSION_CHECK(start >= 0 && end >= 0 && end > start);
-    std::string str = antares_code.substr(start + 4, end - start - 4);
+    if (kernel_info.size() > 1)
+    {
+        std::string to_search = "template_op";
+        std::string replace_str = get_function_name();
+        int search_pos = antares_code.find(to_search);
+        while (search_pos > 0)
+        {
+            antares_code.replace(search_pos, to_search.size(), replace_str);
+            search_pos = antares_code.find(to_search, search_pos + replace_str.size());
+        }
 
+        std::vector<int> kernels_pos;
+        std::string start = "// LOCAL: ";
+        int pos = antares_code.find(start, 0);
+        while (pos > 0)
+        {
+            kernels_pos.push_back(pos);
+            pos = antares_code.find(start, pos + start.size());
+        }
+        NNFUSION_CHECK(kernels_pos.size() == kernel_info.size());
+        for (size_t i = 0; i < kernels_pos.size(); i++)
+        {
+            std::string kernel;
+            if (i == kernels_pos.size() - 1)
+            {
+                kernel = antares_code.substr(kernels_pos[i]);
+            }
+            else
+            {
+                kernel = antares_code.substr(kernels_pos[i], kernels_pos[i + 1] - kernels_pos[i]);
+            }
+
+            std::string code_start = "extern \"C\" __global__";
+
+            std::string code_end = "\n}\n";
+            int p_code_start = kernel.find(code_start);
+            int p_code_end = kernel.find(code_end);
+            NNFUSION_CHECK(p_code_start >= 0 && p_code_end >= 0 && p_code_end > p_code_start);
+            std::string kernel_def = kernel.substr(p_code_start, p_code_end - p_code_start + 3);
+            LanguageUnit_p kernel_i = std::make_shared<LanguageUnit>(
+                get_function_name() + "_kernel" + to_string(i), kernel_def);
+            _lu->require(kernel_i);
+
+            dim3 GridDim, BlockDim;
+            find_launch_config(kernel_def, GridDim, BlockDim);
+            std::string call;
+            auto ki = kernel_info[i];
+            NNFUSION_CHECK(ki->kernel_name == "template_op_kernel" + to_string(i));
+            call = get_function_name() + "_kernel" + to_string(i) + "<<<dim3(" +
+                   to_string(GridDim.x) + ", " + to_string(GridDim.y) + ", " +
+                   to_string(GridDim.z) + "), dim3(" + to_string(BlockDim.x) + ", " +
+                   to_string(BlockDim.y) + ", " + to_string(BlockDim.z) + "), mem, stream>>>(" +
+                   join(ki->input_names, ", ") + ", " + join(ki->output_names, ", ") + ");";
+            lu << call << "\n";
+        }
+    }
+    else
+    {
+        // extract kernel code
+        int start = antares_code.find(") {\n"), end = antares_code.find("\n}\n");
+        NNFUSION_CHECK(start >= 0 && end >= 0 && end > start);
+        std::string str = antares_code.substr(start + 4, end - start - 4);
+
+        find_launch_config(str, m_gridDim, m_blockDim);
+        // lu.block_begin();
+        lu << str << "\n";
+        // lu.block_end();
+    }
+    return _lu;
+}
+
+LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_call()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
+    auto& lu = *_lu;
+    vector<string> names;
+    set_launch_config();
+
+    auto gnode = m_context->gnode;
+    string stream_name = "0";
+    if (gnode && (*gnode)["Async_info"].is_valid())
+    {
+        auto& async_info = (*gnode)["Async_info"].as<AsyncExecutionInfo>();
+        if (async_info.execution_stream != nullptr)
+            stream_name = async_info.execution_stream->get_name();
+    }
+
+    names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
+    names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+    names.insert(names.end(), m_context->tensor_names.begin(), m_context->tensor_names.end());
+
+    if (kernel_info.size() > 1)
+    {
+        lu << "(0, " << stream_name << ", " << join(names, ", ") << ");\n";
+    }
+    else
+    {
+        lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z << "), dim3("
+           << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z << "), 0, "
+           << stream_name << ">>>(" << join(names, ", ") << ");\n";
+    }
+    return _lu;
+}
+
+LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
+    auto& lu = *_lu;
+
+    std::unordered_set<int> inplace_input, inplace_output;
+    if (m_context->annotations)
+    {
+        for (auto oi_pair : m_context->annotations->get_in_place_oi_pairs())
+        {
+            inplace_input.insert(oi_pair.input);
+            inplace_output.insert(oi_pair.output);
+        }
+    }
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        if (inplace_input.find(i) == inplace_input.end())
+        {
+            ss << "__restrict__ ";
+        }
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        if (inplace_output.find(i) == inplace_output.end())
+        {
+            ss << "__restrict__ ";
+        }
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->tensors.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << "__restrict__ ";
+        ss << "mediate" << i;
+        params.push_back(ss.str());
+    }
+
+    set_launch_config();
+    emit_function_body();
+    if (kernel_info.size() > 1)
+    {
+        lu << "extern void (unsigned mem, cudaStream_t stream, " << join(params, ", ") << ")";
+    }
+    else
+    {
+        lu << "extern \"C\" __launch_bounds__(" << m_blockDim.x * m_blockDim.y * m_blockDim.z
+           << ") __global__ void "
+           << "(" << join(params, ", ") << ")";
+    }
+    return _lu;
+}
+
+void cuda::AntaresCudaKernelEmitter::process_antares_kernel_info()
+{
+    for (auto ki : kernel_info)
+    {
+        for (size_t i = 0; i < ki->input_names.size(); i++)
+        {
+            std::string name = ki->input_names[i];
+            if (tensor_name_map.find(name) == tensor_name_map.end())
+            {
+                if (name.find("input") != std::string::npos)
+                {
+                    int idx = std::atoi(name.substr(5).data());
+                    tensor_name_map[name] = m_context->input_names[idx];
+                }
+                else if (name.find("mediate") != std::string::npos)
+                {
+                    std::string dtype_str = ki->input_dtypes[i];
+                    element::Type dtype;
+                    NNFUSION_CHECK(
+                        element::Type::dtype_string_to_nnfusion_element_type(dtype_str, dtype));
+
+                    std::string shape_str = ki->input_shapes[i].substr(1);
+                    std::vector<size_t> shape;
+                    shape.push_back(std::atoi(shape_str.data()));
+                    int pos = shape_str.find(", ");
+                    while (pos > 0)
+                    {
+                        shape_str = shape_str.substr(pos + 2);
+                        shape.push_back(std::atoi(shape_str.data()));
+                        pos = shape_str.find(", ");
+                    }
+
+                    auto tmp_tensor = allocate_tensor(Shape(shape), dtype);
+                    tensor_name_map[name] = tmp_tensor->get_name();
+                }
+            }
+        }
+
+        for (size_t i = 0; i < ki->output_names.size(); i++)
+        {
+            std::string name = ki->output_names[i];
+            if (tensor_name_map.find(name) == tensor_name_map.end())
+            {
+                if (name.find("output") != std::string::npos)
+                {
+                    int idx = std::atoi(name.substr(6).data());
+                    tensor_name_map[name] = m_context->output_names[idx];
+                }
+                else if (name.find("mediate") != std::string::npos)
+                {
+                    std::string dtype_str = ki->output_dtypes[i];
+                    element::Type dtype;
+                    NNFUSION_CHECK(
+                        element::Type::dtype_string_to_nnfusion_element_type(dtype_str, dtype));
+
+                    std::string shape_str = ki->output_shapes[i].substr(1);
+                    std::vector<size_t> shape;
+                    shape.push_back(std::atoi(shape_str.data()));
+                    int pos = shape_str.find(", ");
+                    while (pos > 0)
+                    {
+                        shape_str = shape_str.substr(pos + 2);
+                        shape.push_back(std::atoi(shape_str.data()));
+                        pos = shape_str.find(", ");
+                    }
+
+                    auto tmp_tensor = allocate_tensor(Shape(shape), dtype);
+                    tensor_name_map[name] = tmp_tensor->get_name();
+                }
+            }
+        }
+    }
+}
+
+void cuda::AntaresCudaKernelEmitter::find_launch_config(const std::string& str,
+                                                        dim3& gridDim,
+                                                        dim3& blockDim)
+{
     int at_bx = str.find("// [thread_extent] blockIdx.x = "),
         blockX =
             (at_bx >= 0)
@@ -249,13 +489,8 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
                 ? std::atoi(str.data() + at_tz + sizeof("// [thread_extent] threadIdx.z = ") - 1)
                 : 1;
 
-    m_gridDim = dim3(blockX, blockY, blockZ);
-    m_blockDim = dim3(threadX, threadY, threadZ);
-
-    lu.block_begin();
-    lu << str << "\n";
-    lu.block_end();
-    return _lu;
+    gridDim = dim3(blockX, blockY, blockZ);
+    blockDim = dim3(threadX, threadY, threadZ);
 }
 
 shared_ptr<nnfusion::cache::KernelEntry> cuda::BlockCudaEmitter::get_kernel_cache_entry(

@@ -81,16 +81,7 @@ namespace nnfusion
 
                 std::vector<std::vector<char>> _inputs, _outputs;
                 int arg_cnt = 0;
-                auto in_edges_set = gnode->get_in_edges();
-                std::vector<std::shared_ptr<nnfusion::graph::Edge>> in_edges(in_edges_set.begin(),
-                                                                             in_edges_set.end());
-                std::sort(in_edges.begin(),
-                          in_edges.end(),
-                          [](std::shared_ptr<nnfusion::graph::Edge> a,
-                             std::shared_ptr<nnfusion::graph::Edge> b) {
-                              return a->get_dst_input() < b->get_dst_input();
-                          });
-                for (auto in_edge : in_edges)
+                for (auto in_edge : gnode->get_in_edges())
                 {
                     auto input_node = in_edge->get_src();
                     auto outs = get_node_outputs(input_node, depth + 1, arg_cnt++);

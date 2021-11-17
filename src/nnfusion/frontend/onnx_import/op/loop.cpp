@@ -203,6 +203,7 @@ namespace nnfusion
                     std::shared_ptr<nnfusion::graph::Graph> m_graph,
                     const std::unordered_map<std::string, ConvertFuncMap>& domain_convert_func_map,
                     const string& model_dir,
+                    const std::unordered_map<std::string, std::int64_t>& domain2version,
                     const std::unordered_map<std::string, size_t>& dim_params)
                 {
                     Node node(node_proto);
@@ -239,6 +240,7 @@ namespace nnfusion
                         GraphProtoConvert loop_body_graph_convert(loop_body_graph_proto,
                                                                   domain_convert_func_map,
                                                                   model_dir,
+                                                                  domain2version,
                                                                   dim_params,
                                                                   all_ng_nodes,
                                                                   true);

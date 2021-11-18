@@ -99,10 +99,10 @@ namespace nnfusion
 
             auto graph = load_onnx_model(ifs, model_dir, dim_params);
 
-            if (opt_fin.is_open())
-            {
-                remove(optimized_filename.c_str());
-            }
+            // if (opt_fin.is_open())
+            // {
+            //     remove(optimized_filename.c_str());
+            // }
 
             return graph;
         }

@@ -101,6 +101,7 @@ namespace nnfusion
     public:
         Engine();
         bool run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer context = nullptr);
+        nnfusion::TranslationUnit::Pointer convert_graph_to_program(graph::Graph::Pointer graph);
 
     protected:
         InterpreterPassManager::Pointer m_passes;

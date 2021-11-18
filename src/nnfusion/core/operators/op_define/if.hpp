@@ -21,6 +21,7 @@
 
 #include "../op.hpp"
 #include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/engine/interpreter.hpp"
 
 namespace nnfusion
 {
@@ -40,10 +41,17 @@ namespace nnfusion
                std::shared_ptr<nnfusion::graph::Graph>& else_branch_graph);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
+            std::shared_ptr<nnfusion::graph::Graph> get_then_branch_graph();
+            std::shared_ptr<nnfusion::graph::Graph> get_else_branch_graph();
+            TranslationUnit::Pointer get_then_branch_tu();
+            void set_then_branch_tu(TranslationUnit::Pointer);
+            TranslationUnit::Pointer get_else_branch_tu();
+            void set_else_branch_tu(TranslationUnit::Pointer);
 
         protected:
             std::shared_ptr<nnfusion::graph::Graph> m_then_branch_graph;
             std::shared_ptr<nnfusion::graph::Graph> m_else_branch_graph;
+            TranslationUnit::Pointer m_then_branch_tu, m_else_branch_tu;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

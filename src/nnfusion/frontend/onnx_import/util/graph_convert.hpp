@@ -48,7 +48,8 @@ namespace nnfusion
                     const std::unordered_map<std::string, std::int64_t>& domain2version,
                     const std::unordered_map<std::string, size_t>& dim_params = {},
                     const NodeMap& _node_map = NodeMap(),
-                    bool flag_subgraph = false);
+                    bool flag_subgraph = false,
+                    std::unordered_map<std::string, int> subgraph_input_map = {});
 
                 std::shared_ptr<nnfusion::graph::Graph> get_graph() { return m_graph; }
                 const onnx::GraphProto& get_onnx_proto_graph() const { return *onnx_graph_proto; }

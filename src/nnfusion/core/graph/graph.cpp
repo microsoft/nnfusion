@@ -163,7 +163,7 @@ void Graph::replace_node(std::shared_ptr<GNode> old_node,
         }
         else
         {
-            add_edge(new_node, 0, edge->get_dst(), edge->get_dst_input());
+            add_edge(new_node, edge->get_src_output(), edge->get_dst(), edge->get_dst_input());
         }
     }
 
@@ -463,7 +463,7 @@ bool Graph::serialize_to_file(const std::string& file_path)
 #if 0
         // Plan_gen can't parse this now. So just skip it for now.
         else
-        {            
+        {
             nnfusion::serialize::AttrValue_ListValue* _data_types_list =
                 new nnfusion::serialize::AttrValue_ListValue();
             for (auto nnfusion_output : nnfusion_node->get_outputs())

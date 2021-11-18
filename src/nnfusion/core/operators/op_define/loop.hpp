@@ -21,6 +21,7 @@
 
 #include "../op.hpp"
 #include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/engine/interpreter.hpp"
 
 namespace nnfusion
 {
@@ -39,11 +40,15 @@ namespace nnfusion
                  const std::vector<nnfusion::element::Type>& output_types);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
+            std::shared_ptr<nnfusion::graph::Graph> get_loop_body_graph();
+            TranslationUnit::Pointer get_loop_body_tu();
+            void set_loop_body_tu(TranslationUnit::Pointer);
 
         protected:
             std::shared_ptr<nnfusion::graph::Graph> m_loop_body_graph;
             std::vector<nnfusion::PartialShape> m_output_shapes;
             std::vector<nnfusion::element::Type> m_output_types;
+            TranslationUnit::Pointer m_loop_body_tu;
         };
     } // namespace op
 } // namespace nnfusion

@@ -42,7 +42,9 @@ namespace nnfusion
                     : KernelEmitter(ctx, "cuda")
                 {
                 }
-
+                virtual LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params);
+                virtual LanguageUnit_p emit_block_kernel();
+                virtual std::string type() { return "CudaEmitter"; }
                 virtual bool is_static_function() override { return false; }
                 // Need to regenerate function call with new assigned launch config(stream).
                 LanguageUnit_p emit_function_call() override;
@@ -53,6 +55,8 @@ namespace nnfusion
                     shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr) override;
 
             protected:
+                virtual LanguageUnit_p emit_device_function_body();
+                virtual LanguageUnit_p emit_device_function_signature();
                 // config the blockDim and gridDim
                 virtual void set_launch_config() = 0;
 
@@ -84,7 +88,7 @@ namespace nnfusion
                     shared_memory_log.dtype.clear();
                     shared_memory_log.size.clear();
                 }
-
+                std::string type() override { return "BlockCudaEmitter"; }
                 static const std::unordered_map<std::string, size_t> size_of_str_type;
 
                 size_t get_shared_memory_size() { return shared_memory_size; }
@@ -106,7 +110,7 @@ namespace nnfusion
                     return is_emitting_block_kernel ? m_block_function_unit : m_function_unit;
                 }
 
-                LanguageUnit_p emit_block_kernel()
+                LanguageUnit_p emit_block_kernel() override
                 {
                     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel"));
                     auto& lu = *_lu;
@@ -123,8 +127,8 @@ namespace nnfusion
                     return _lu;
                 }
 
-                LanguageUnit_p emit_device_function_signature();
-                LanguageUnit_p emit_device_function_body();
+                LanguageUnit_p emit_device_function_signature() override;
+                LanguageUnit_p emit_device_function_body() override;
 
                 // this API can only be used inner the function body
                 void emit_thread_sync(LanguageUnit& lu) override

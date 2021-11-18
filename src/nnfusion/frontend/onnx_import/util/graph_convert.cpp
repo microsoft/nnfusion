@@ -236,7 +236,8 @@ namespace nnfusion
                 const std::unordered_map<std::string, std::int64_t>& domain2version,
                 const std::unordered_map<std::string, size_t>& dim_params,
                 const NodeMap& node_map,
-                bool flag_subgraph)
+                bool flag_subgraph,
+                std::unordered_map<std::string, int> subgraph_input_map)
                 : onnx_graph_proto(&graph_proto)
                 , m_domain_convert_func_map(domain_convert_func_map)
                 , m_model_dir(model_dir)
@@ -310,6 +311,8 @@ namespace nnfusion
                         }
                         input_op->set_name(input_proto.name());
                         input_gnode = m_graph->add_node_and_edge(input_op, graph::GNodeVector({}));
+                        input_gnode->Set<int>("subgraph_input_map",
+                                              int(subgraph_input_map[input_proto.name()]));
                         m_node_map[input_proto.name()] = {GNodeIndex{input_gnode}};
                         if (m_output_names.find(input_gnode->get_name()) != m_output_names.end())
                         {

@@ -212,21 +212,26 @@ namespace nnfusion
 
                     onnx::NodeProto completed_node_proto(node_proto);
                     auto loop_body_graph_inputs = extract_input(loop_body_graph_proto);
-                    std::unordered_set<std::string> node_inputs;
+                    std::unordered_map<std::string, int> node_inputs;
+                    assert(loop_body_graph_proto.input_size() == node_proto.input_size());
                     for (size_t i = 0; i < node_proto.input_size(); i++)
                     {
-                        node_inputs.insert(node_proto.input(i));
+                        std::cout << "f0 " << node_proto.input(i) << std::endl;
                     }
                     for (const auto& input_proto : loop_body_graph_proto.input())
                     {
-                        node_inputs.insert(input_proto.name());
+                        std::cout << "f1 " << input_proto.name() << std::endl;
+                        int input_idx = node_inputs.size();
+                        node_inputs[input_proto.name()] = input_idx;
                     }
                     for (auto item : loop_body_graph_inputs)
                     {
+                        std::cout << "f2 " << item << std::endl;
                         if (node_inputs.find(item) == node_inputs.end())
                         {
                             completed_node_proto.add_input(item);
-                            node_inputs.insert(item);
+                            int input_idx = node_inputs.size();
+                            node_inputs[item] = input_idx;
                         }
                     }
 
@@ -243,7 +248,8 @@ namespace nnfusion
                                                                   domain2version,
                                                                   dim_params,
                                                                   all_ng_nodes,
-                                                                  true);
+                                                                  true,
+                                                                  node_inputs);
                         loop_body_graph = loop_body_graph_convert.get_graph();
                     }
 

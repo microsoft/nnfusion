@@ -32,6 +32,21 @@ Loop::Loop(std::shared_ptr<nnfusion::graph::Graph>& loop_body_graph,
 {
 }
 
+std::shared_ptr<nnfusion::graph::Graph> Loop::get_loop_body_graph()
+{
+    return m_loop_body_graph;
+}
+
+void Loop::set_loop_body_tu(TranslationUnit::Pointer p)
+{
+    m_loop_body_tu = std::move(p);
+}
+
+TranslationUnit::Pointer Loop::get_loop_body_tu()
+{
+    return m_loop_body_tu;
+}
+
 void Loop::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
 {
     nnfusion::Shape trip_shape = gnode->get_input_shape(0);

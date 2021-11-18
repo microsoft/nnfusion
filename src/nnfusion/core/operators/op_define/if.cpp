@@ -30,6 +30,29 @@ If::If(std::shared_ptr<nnfusion::graph::Graph>& then_branch_graph,
 {
 }
 
+std::shared_ptr<nnfusion::graph::Graph> If::get_then_branch_graph()
+{
+    return m_then_branch_graph;
+}
+
+std::shared_ptr<nnfusion::graph::Graph> If::get_else_branch_graph()
+{
+    return m_else_branch_graph;
+}
+
+TranslationUnit::Pointer If::get_then_branch_tu() {
+    return m_then_branch_tu;
+}
+void If::set_then_branch_tu(TranslationUnit::Pointer tu) {
+    m_then_branch_tu = tu;
+}
+TranslationUnit::Pointer If::get_else_branch_tu() {
+    return m_else_branch_tu;
+}
+void If::set_else_branch_tu(TranslationUnit::Pointer tu) {
+    m_else_branch_tu = tu;
+}
+
 void If::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
 {
     nnfusion::Shape cond_shape = gnode->get_input_shape(0);

@@ -269,17 +269,18 @@ namespace nnfusion
                     onnx::NodeProto completed_node_proto(node_proto);
                     auto then_branch_graph_inputs = extract_input(then_branch_graph_proto);
                     auto else_branch_graph_inputs = extract_input(else_branch_graph_proto);
-                    std::unordered_set<std::string> node_inputs;
+                    std::unordered_map<std::string, int> node_inputs;
                     for (size_t i = 0; i < node_proto.input_size(); i++)
                     {
-                        node_inputs.insert(node_proto.input(i));
+                        node_inputs[node_proto.input(i)] = i;
                     }
                     for (auto item : then_branch_graph_inputs)
                     {
                         if (node_inputs.find(item) == node_inputs.end())
                         {
                             completed_node_proto.add_input(item);
-                            node_inputs.insert(item);
+                            int input_idx = node_inputs.size();
+                            node_inputs[item] = input_idx;
                         }
                     }
                     for (auto item : else_branch_graph_inputs)
@@ -287,9 +288,11 @@ namespace nnfusion
                         if (node_inputs.find(item) == node_inputs.end())
                         {
                             completed_node_proto.add_input(item);
-                            node_inputs.insert(item);
+                            int input_idx = node_inputs.size();
+                            node_inputs[item] = input_idx;
                         }
                     }
+
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, completed_node_proto);
 
                     // process then_branch graph and else_branch_graph
@@ -303,7 +306,8 @@ namespace nnfusion
                                                                     domain2version,
                                                                     dim_params,
                                                                     all_ng_nodes,
-                                                                    true);
+                                                                    true,
+                                                                    node_inputs);
                         then_branch_graph = then_branch_graph_convert.get_graph();
 
                         else_branch_graph_proto = complete_graphproto(else_branch_graph_proto);
@@ -313,7 +317,8 @@ namespace nnfusion
                                                                     domain2version,
                                                                     dim_params,
                                                                     all_ng_nodes,
-                                                                    true);
+                                                                    true,
+                                                                    node_inputs);
                         else_branch_graph = else_branch_graph_convert.get_graph();
                     }
 

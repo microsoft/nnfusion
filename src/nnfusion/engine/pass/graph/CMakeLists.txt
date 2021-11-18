@@ -20,6 +20,7 @@ set(SRC
     assign_async_info_pass.cpp
     kernel_profiling_pass.cpp
     runtime_const_folding_pass.cpp
+    control_flow_pass.cpp
     common_subexpression_elimination_pass.cpp
     pattern_substitution.cpp
     batchnorm_inference_folding_pass.cpp

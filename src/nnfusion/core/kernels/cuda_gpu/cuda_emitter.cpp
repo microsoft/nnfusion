@@ -63,6 +63,76 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     return _lu;
 }
 
+LanguageUnit_p cuda::CudaEmitter::emit_block_kernel()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel"));
+    auto& lu = *_lu;
+
+    FunctionUnit_p fu = this->get_or_emit_source();
+    lu << fu->comment_unit->get_code();
+    lu << this->emit_device_function_signature()->get_code() << "\n";
+    lu.block_begin();
+    lu << this->emit_device_function_body()->get_code();
+    lu.block_end();
+
+    return _lu;
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_block_kernel_call(std::vector<std::string> params)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
+    auto& lu = *_lu;
+    params.push_back("threadIdx.x");
+    params.push_back("blockIdx.x");
+    params.push_back("NULL");
+    lu << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ");"
+       << "\n";
+    return _lu;
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_device_function_body()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_body"));
+    auto& lu = *_lu;
+    FunctionUnit_p fu = this->get_or_emit_source();
+    lu << fu->body_unit->get_code() << "\n";
+    return _lu;
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_device_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_sig"));
+    auto& lu = *_lu;
+
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+    for (size_t i = 0; i < m_context->tensors.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << "temp" << i;
+        params.push_back(ss.str());
+    }
+    lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ")";
+    return _lu;
+}
+
 shared_ptr<nnfusion::cache::KernelEntry>
     cuda::CudaEmitter::get_kernel_cache_entry(shared_ptr<nnfusion::cache::KernelEntry> kernel_entry)
 {

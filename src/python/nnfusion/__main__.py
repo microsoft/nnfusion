@@ -3,12 +3,12 @@
 
 import sys, os, tarfile
 
-this_folder = os.path.split(os.path.realpath(__file__))[0]
-nnf_bin=os.path.join(this_folder, "bin/nnfusion")
-nnf_dir=os.path.join(this_folder, "bin/")
-nnf_pkg = os.path.join(this_folder, "nnfusion.tar.gz")
+def main():
+    this_folder = os.path.split(os.path.realpath(__file__))[0]
+    nnf_bin=os.path.join(this_folder, "bin/nnfusion")
+    nnf_dir=os.path.join(this_folder, "bin/")
+    nnf_pkg = os.path.join(this_folder, "nnfusion.tar.gz")
 
-if __name__ == '__main__':
     if not os.path.exists(nnf_bin):
         if os.path.exists(nnf_pkg):
             tar = tarfile.open(nnf_pkg, 'r:gz')
@@ -22,3 +22,6 @@ if __name__ == '__main__':
             exit(-1)
     args = " ".join(sys.argv[1:])
     os.system("%s %s"%(nnf_bin, args))
+
+if __name__ == '__main__':
+    main()

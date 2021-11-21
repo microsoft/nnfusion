@@ -79,5 +79,10 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Programming Language :: Python :: 3 :: Only",
         "License :: OSI Approved :: MIT License",
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'nnfusion=nnfusion.__main__:main',
+        ],
+    }
     )

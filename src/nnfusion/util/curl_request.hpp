@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <curl/curl.h>
 #include <regex>
 #include <string>
 #include "nnfusion/util/errors.hpp"

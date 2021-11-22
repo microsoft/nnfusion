@@ -84,7 +84,6 @@ target_link_libraries(unit-test PRIVATE
     gflags 
     dl
     sqlite3
-    ${CURL_LIBRARIES} 
     GTest::GTest
     Threads::Threads
 )

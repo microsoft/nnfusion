@@ -41,6 +41,9 @@ def make_targz(output_filename, source_dir, ignore_list):
             tar.add(pathfile, arcname=pathfile.replace("build/src/tools/nnfusion/", ""))
     tar.close()
 
+if os.path.exists(nnf_pkg):
+    os.remove(nnf_pkg)
+
 make_targz(nnf_pkg, nnf_tool, nnf_blacklist)
 
 import setuptools

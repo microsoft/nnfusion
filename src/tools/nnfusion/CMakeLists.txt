@@ -49,11 +49,14 @@ target_link_libraries(nnfusion
     kernels_hlsl
     # Depends
     -Wl,--no-whole-archive
-    protobuf::libprotobuf
-    gflags 
     dl
-    sqlite3
-    ${CURL_LIBRARIES} 
+    # static libraries
+    protobuf::libprotobuf
+    ${GFLAGS}
+    ${SQLITE3}
+    ${LIBM}
+    -static-libgcc
+    -static-libstdc++
 )
 
 add_custom_command(

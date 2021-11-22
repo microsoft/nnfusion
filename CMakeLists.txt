@@ -130,7 +130,15 @@ else()
     message(FATAL_ERROR "Not found sqlite3" )
 endif()
 
-find_library(LIBM NAMES c)
+find_library(LIBC NAMES c)
+if (NOT "${LIBC}" STREQUAL "")
+    message(STATUS "Found static libc: ${LIBC}")
+else()
+    message(FATAL_ERROR "Not found static libc" )
+endif()
+
+
+find_library(LIBM NAMES m)
 if (NOT "${LIBM}" STREQUAL "")
     message(STATUS "Found static libm: ${LIBM}")
 else()

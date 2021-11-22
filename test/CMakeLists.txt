@@ -80,12 +80,16 @@ target_link_libraries(unit-test PRIVATE
     kernels_hlsl
     # Depends
     -Wl,--no-whole-archive
-    protobuf::libprotobuf
-    gflags 
     dl
-    sqlite3
-    GTest::GTest
+    # static libraries
+    protobuf::libprotobuf
     Threads::Threads
+    ${GFLAGS}
+    ${SQLITE3}
+    ${LIBM}
+    ${LIBC}
+    -static-libgcc
+    -static-libstdc++
 )
 
 add_custom_target(unit-test-check

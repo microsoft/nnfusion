@@ -55,6 +55,7 @@ target_link_libraries(nnfusion
     ${GFLAGS}
     ${SQLITE3}
     ${LIBM}
+    ${LIBC}
     -static-libgcc
     -static-libstdc++
 )

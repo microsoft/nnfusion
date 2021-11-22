@@ -54,10 +54,6 @@ target_link_libraries(nnfusion
     protobuf::libprotobuf
     ${GFLAGS}
     ${SQLITE3}
-    ${LIBM}
-    ${LIBC}
-    -static-libgcc
-    -static-libstdc++
 )
 
 add_custom_command(

@@ -318,7 +318,7 @@ void RuntimeConstantFoldingPass::runtime_const_folding_task(
                 if (it->second == 0)
                 {
                     pool_ptr->commit(
-                        [this, &graph, &blocklist_nodes, &target, &in_degree, &in_degree_lock]() {
+                        [this, graph, &blocklist_nodes, &target, &in_degree, &in_degree_lock]() {
                             this->runtime_const_folding_task(
                                 graph, blocklist_nodes, target, in_degree, in_degree_lock);
                         });
@@ -359,7 +359,7 @@ bool RuntimeConstantFoldingPass::run_on_graph_parallel(
     {
         if (in_degree[it] == 0)
         {
-            pool_ptr->commit([this, &graph, &blocklist_nodes, &it, &in_degree, &in_degree_lock]() {
+            pool_ptr->commit([this, graph, &blocklist_nodes, &it, &in_degree, &in_degree_lock]() {
                 this->runtime_const_folding_task(
                     graph, blocklist_nodes, it, in_degree, in_degree_lock);
             });

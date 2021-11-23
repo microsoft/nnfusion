@@ -23,16 +23,16 @@ namespace nnfusion
             class RuntimeConstantFoldingPass : public GraphPassBase
             {
                 std::shared_ptr<GNode>
-                    runtime_const_folding_node(std::shared_ptr<Graph>& graph,
+                    runtime_const_folding_node(std::shared_ptr<Graph> graph,
                                                std::set<std::shared_ptr<GNode>>& blocklist_nodes,
-                                               std::shared_ptr<GNode>& node);
-                void runtime_const_folding_task(std::shared_ptr<Graph>& graph,
+                                               std::shared_ptr<GNode> node);
+                void runtime_const_folding_task(std::shared_ptr<Graph> graph,
                                                 std::set<std::shared_ptr<GNode>>& blocklist_nodes,
                                                 std::shared_ptr<GNode> node,
                                                 std::map<std::shared_ptr<GNode>, int>& in_degree,
                                                 std::mutex& in_degree_lock);
 
-                bool run_on_graph_parallel(std::shared_ptr<Graph>& graph,
+                bool run_on_graph_parallel(std::shared_ptr<Graph> graph,
                                            std::set<std::shared_ptr<GNode>>& blocklist_nodes);
 
                 class thread_pool

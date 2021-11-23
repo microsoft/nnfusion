@@ -10,9 +10,9 @@ DEFINE_string(fconst_folding_backend,
 using namespace nnfusion::pass::graph;
 
 std::shared_ptr<GNode> RuntimeConstantFoldingPass::runtime_const_folding_node(
-    std::shared_ptr<Graph>& graph,
+    std::shared_ptr<Graph> graph,
     std::set<std::shared_ptr<GNode>>& blocklist_nodes,
-    std::shared_ptr<GNode>& node)
+    std::shared_ptr<GNode> node)
 {
     if (blocklist_nodes.count(node))
     {
@@ -286,7 +286,7 @@ void RuntimeConstantFoldingPass::thread_pool::wait_for_all()
 }
 
 void RuntimeConstantFoldingPass::runtime_const_folding_task(
-    std::shared_ptr<Graph>& graph,
+    std::shared_ptr<Graph> graph,
     std::set<std::shared_ptr<GNode>>& blocklist_nodes,
     std::shared_ptr<GNode> node,
     std::map<std::shared_ptr<GNode>, int>& in_degree,
@@ -333,7 +333,7 @@ void RuntimeConstantFoldingPass::runtime_const_folding_task(
 }
 
 bool RuntimeConstantFoldingPass::run_on_graph_parallel(
-    std::shared_ptr<Graph>& graph, std::set<std::shared_ptr<GNode>>& blocklist_nodes)
+    std::shared_ptr<Graph> graph, std::set<std::shared_ptr<GNode>>& blocklist_nodes)
 {
     std::map<std::shared_ptr<GNode>, int> in_degree;
     std::mutex in_degree_lock;

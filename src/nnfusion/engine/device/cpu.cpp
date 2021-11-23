@@ -4,6 +4,7 @@
 #include "cpu.hpp"
 #include "reversed_dfs_visitor.hpp"
 
+#include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/graph/assign_async_info_pass.hpp"
 #include "nnfusion/engine/pass/graph/assign_layout_pass.hpp"
 #include "nnfusion/engine/pass/graph/autodiff_pass.hpp"
@@ -14,6 +15,7 @@
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
+#include "nnfusion/engine/pass/graph/ir_based_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
@@ -23,8 +25,6 @@
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
-
-#include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
 #include "nnfusion/engine/pass/tensor/liveness_analysis.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_device_dispatcher.hpp"
@@ -51,6 +51,7 @@ CpuEngine::CpuEngine()
     g_passes->push_back(make_shared<AssignLayoutPass>());
     g_passes->push_back(make_shared<OpInplacePass>());
 
+    g_passes->push_back(make_shared<IRBasedFusionPass>());
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
 
     // Kernel selection

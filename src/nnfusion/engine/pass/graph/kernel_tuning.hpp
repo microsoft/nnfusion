@@ -22,11 +22,13 @@ namespace nnfusion
 
             private:
                 bool parse_block_list();
+                bool parse_tuning_list();
                 bool insert_to_kernel_cache(
                     const std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes);
 
             private:
                 std::unordered_set<std::string> BlockList;
+                std::unordered_set<std::string> TuningList;
             };
         }
     }

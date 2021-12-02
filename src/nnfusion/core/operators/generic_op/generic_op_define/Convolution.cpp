@@ -51,6 +51,10 @@ REGISTER_OP(Convolution)
         const auto& in_shape = curr->get_input_shape(0);
         const auto& out_shape = curr->get_output_shape(0);
         const std::string data_format = is_nchw ? "nchw" : "nhwc";
+        if (dilation_h != 1 || dilation_w != 1 || padding_below != padding_above)
+        {
+            return "";
+        }
         NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
         NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
         NNFUSION_CHECK(padding_below == padding_above)

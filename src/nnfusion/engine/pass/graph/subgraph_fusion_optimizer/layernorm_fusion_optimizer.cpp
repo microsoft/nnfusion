@@ -52,10 +52,11 @@ X --> ReduceMean --> Sub --> Pow --> ReduceMean --> Add --> Sqrt --> Div --> Mul
             {
                 auto src_input = src->get_in_edge(0)->get_src();
                 // todo: remove reshape
-                if (src_input->is_constant() ||
-                    (src_input->get_op_type() == "Reshape" &&
-                     src_input->get_in_edge(0)->get_src()->is_constant()))
-                    return true;
+                // if (src_input->is_constant() ||
+                //     (src_input->get_op_type() == "Reshape" &&
+                //      src_input->get_in_edge(0)->get_src()->is_constant()))
+                //     return true;
+                return true;
             }
         }
         return false;
@@ -164,10 +165,13 @@ X --> ReduceMean --> Sub --> Pow --> ReduceMean --> Add --> Sqrt --> Div --> Mul
                     scale_broadcast = src;
                     auto cur = src->get_in_edge(0)->get_src();
                     // todo : remove reshape
-                    if (cur->is_constant())
-                        scale = cur;
-                    else if (cur->get_op_type() == "Reshape" &&
-                             cur->get_in_edge(0)->get_src()->is_constant())
+                    // if (cur->is_constant())
+                    //     scale = cur;
+                    // else if (cur->get_op_type() == "Reshape" &&
+                    //          cur->get_in_edge(0)->get_src()->is_constant())
+                    //     scale = cur->get_in_edge(0)->get_src();
+                    scale = cur;
+                    if (cur->get_op_type() == "Reshape")
                         scale = cur->get_in_edge(0)->get_src();
                 }
             }
@@ -293,9 +297,12 @@ bool LayerNormFusionOptimizer::fuse_subgraph(SubGraphRecord::Pointer subgraph_re
         {
             scale_broadcast = src;
             // todo: remove reshape
-            if (src->get_in_edge(0)->get_src()->is_constant())
-                scale = src->get_in_edge(0)->get_src();
-            else if (src->get_in_edge(0)->get_src()->get_op_type() == "Reshape")
+            // if (src->get_in_edge(0)->get_src()->is_constant())
+            //     scale = src->get_in_edge(0)->get_src();
+            // else if (src->get_in_edge(0)->get_src()->get_op_type() == "Reshape")
+            //     scale = src->get_in_edge(0)->get_src()->get_in_edge(0)->get_src();
+            scale = src->get_in_edge(0)->get_src();
+            if (src->get_in_edge(0)->get_src()->get_op_type() == "Reshape")
                 scale = src->get_in_edge(0)->get_src()->get_in_edge(0)->get_src();
         }
     }

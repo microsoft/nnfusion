@@ -213,6 +213,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("MemcpyFromHost", 1, TranslateMemcpyFromHostOp);
                 REGISTER_OPERATOR("MemcpyToHost", 1, TranslateMemcpyToHostOp);
                 REGISTER_OPERATOR("Min", 1, TranslateLegacyBinaryOp<op::Minimum>);
+                REGISTER_OPERATOR("Mod", 1, TranslateBinaryOp<op::Mod>);
                 REGISTER_OPERATOR("Mul", 1, TranslateLegacyBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Mul", 7, TranslateBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);

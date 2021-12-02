@@ -69,7 +69,7 @@ namespace nnfusion
                     rank = input_shape.size();
                     out_rank = rank - reduce_rank;
                     reduce_op = CudaOpMap<T>::op;
-                    reduction_split_factor = 32;
+                    reduction_split_factor = 128;
 
                     {
                         // calculate reduction_split_number
@@ -78,7 +78,7 @@ namespace nnfusion
                         if (reduce_op == "add" && num_outputs < 1024 * 128)
                         {
                             // currently, reduction_split only supports add reduce_op in small output_shape
-                            uint32_t reduction_loop_size = 1;
+                            reduction_loop_size = 1;
                             Shape reduce_flag(rank, 0);
                             for (auto a : reduce_axis)
                             {
@@ -88,7 +88,7 @@ namespace nnfusion
                             {
                                 if (reduce_flag[i] != 0)
                                 {
-                                    reduction_loop_size = input_shape[i];
+                                    reduction_loop_size *= input_shape[i];
                                 }
                             }
                             if ((reduction_loop_size % reduction_split_factor) == 0)
@@ -306,55 +306,68 @@ if (thread_idx == 0) output0[block_idx] = val;
                         if (reduction_split_number > 1)
                         {
                             int64_t last_r_idx = static_cast<int64_t>(reduce_rank) - 1;
-                            for (int64_t j = 0; j < last_r_idx; j++)
-                            {
-                                lu << "for(int idx" << j << " = 0; idx" << j << "< reduce_shape"
-                                   << j << "; idx" << j << "++)\n";
-                                lu.block_begin();
-                            }
-                            {
-                                lu << "uint32_t reduce_idx = in_idx;\n";
-                                for (int64_t j = 0; j < last_r_idx; j++)
-                                {
-                                    lu << "reduce_idx += idx" << j << " * reduce_strides" << j
-                                       << ";\n";
-                                }
-                                lu << "int idx" << last_r_idx << " = 0;\n";
-                                lu << "uint32_t step = reduce_strides" << last_r_idx << ";\n";
-                                lu << "idx" << last_r_idx << " += " << reduction_split_factor
-                                   << " * blockIdx.y;\n";
-                                lu << "int idx_end = min(idx" << last_r_idx << " + "
-                                   << reduction_split_factor << ", (int)reduce_shape" << last_r_idx
-                                   << ");\n";
-                                /* // Unroll last reduction axis.
-                                uint32_t unroll_num = 8;
-                                uint32_t unroll_shift = 3;
-                                lu << "for(; idx" << last_r_idx << " < (reduce_shape" << last_r_idx
-                                   << " >> " << unroll_shift << "); idx" << last_r_idx << "++)\n";
-                                lu.block_begin();
-                                {
-                                    for (int k = 0; k < unroll_num; k++)
-                                    {
-                                        lu << "r = " << reduce_op << "(r , input0[reduce_idx]);\n";
-                                        lu << "reduce_idx += step;\n";
-                                    }
-                                }
-                                lu.block_end();
-                                lu << "idx" << last_r_idx << " <<= " << unroll_shift << ";\n"; */
-                                lu << "reduce_idx += idx" << last_r_idx << " * step;\n";
-                                lu << "for(; idx" << last_r_idx << " < idx_end; idx" << last_r_idx
-                                   << "++)\n";
-                                lu.block_begin();
-                                {
-                                    lu << "r = " << reduce_op << "(r , input0[reduce_idx]);\n";
-                                    lu << "reduce_idx += step;\n";
-                                }
-                                lu.block_end();
-                            }
-                            for (int64_t j = 0; j < last_r_idx; j++)
-                            {
-                                lu.block_end();
-                            }
+                            int64_t last_reduce_stride = reduce_strides[reduce_strides.size() - 1];
+
+                            lu << "uint32_t reduce_idx = in_idx;\n";
+                            lu << "uint32_t idx = " << reduction_split_factor << " * blockIdx.y;\n";
+                            lu << "uint32_t idx_end = min(idx + " << reduction_split_factor << ", "
+                               << reduction_loop_size << ");\n";
+                            lu << "reduce_idx += idx * " << last_reduce_stride << ";\n";
+                            lu << "for (; idx < idx_end; idx++)\n";
+                            lu.block_begin();
+                            lu << "r = " << reduce_op << "(r , input0[reduce_idx]);\n";
+                            lu << "reduce_idx += " << last_reduce_stride << ";\n";
+                            lu.block_end();
+
+                            // /*for (int64_t j = 0; j < last_r_idx; j++)
+                            // {
+                            //     lu << "for(int idx" << j << " = 0; idx" << j << "< reduce_shape"
+                            //        << j << "; idx" << j << "++)\n";
+                            //     lu.block_begin();
+                            // }
+                            // {
+                            //     lu << "uint32_t reduce_idx = in_idx;\n";
+                            //     for (int64_t j = 0; j < last_r_idx; j++)
+                            //     {
+                            //         lu << "reduce_idx += idx" << j << " * reduce_strides" << j
+                            //            << ";\n";
+                            //     }
+                            //     lu << "int idx" << last_r_idx << " = 0;\n";
+                            //     lu << "uint32_t step = reduce_strides" << last_r_idx << ";\n";
+                            //     lu << "idx" << last_r_idx << " += " << reduction_split_factor
+                            //        << " * blockIdx.y;\n";
+                            //     lu << "int idx_end = min(idx" << last_r_idx << " + "
+                            //        << reduction_split_factor << ", (int)reduce_shape" << last_r_idx
+                            //        << ");\n";
+                            //     /* // Unroll last reduction axis.
+                            //     uint32_t unroll_num = 8;
+                            //     uint32_t unroll_shift = 3;
+                            //     lu << "for(; idx" << last_r_idx << " < (reduce_shape" << last_r_idx
+                            //        << " >> " << unroll_shift << "); idx" << last_r_idx << "++)\n";
+                            //     lu.block_begin();
+                            //     {
+                            //         for (int k = 0; k < unroll_num; k++)
+                            //         {
+                            //             lu << "r = " << reduce_op << "(r , input0[reduce_idx]);\n";
+                            //             lu << "reduce_idx += step;\n";
+                            //         }
+                            //     }
+                            //     lu.block_end();
+                            //     lu << "idx" << last_r_idx << " <<= " << unroll_shift << ";\n"; */
+                            //     lu << "reduce_idx += idx" << last_r_idx << " * step;\n";
+                            //     lu << "for(; idx" << last_r_idx << " < idx_end; idx" << last_r_idx
+                            //        << "++)\n";
+                            //     lu.block_begin();
+                            //     {
+                            //         lu << "r = " << reduce_op << "(r , input0[reduce_idx]);\n";
+                            //         lu << "reduce_idx += step;\n";
+                            //     }
+                            //     lu.block_end();
+                            // }
+                            // for (int64_t j = 0; j < last_r_idx; j++)
+                            // {
+                            //     lu.block_end();
+                            // }*/
                             lu << "atomicAdd(output0 + tid, r);\n";
                         }
                         else
@@ -593,7 +606,7 @@ if (thread_idx == 0) output0[block_idx] = val;
                 string reduce_op, input_type, output_type, init_value;
                 size_t height, width, expected_block_size;
                 bool is_row_reduction;
-                size_t reduction_split_factor,
+                size_t reduction_loop_size, reduction_split_factor,
                     reduction_split_number; // split reduction axis for column reduction
             };
 

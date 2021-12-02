@@ -53,6 +53,7 @@ set(SRC
     op_define/maximum.cpp
     op_define/min.cpp
     op_define/minimum.cpp
+    op_define/mod.cpp
     op_define/multiply.cpp
     op_define/negative.cpp
     op_define/not_equal.cpp

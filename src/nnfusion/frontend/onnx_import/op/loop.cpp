@@ -234,6 +234,13 @@ namespace nnfusion
                             node_inputs[item] = input_idx;
                         }
                     }
+                    // we need to know which graph output maps to which Loop op output
+                    std::unordered_map<std::string, int> loop_output_map;
+                    for (auto output : loop_body_graph_proto.output())
+                    {
+                        int idx = loop_output_map.size();
+                        loop_output_map[output.name()] = idx;
+                    }
 
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, completed_node_proto);
 
@@ -241,15 +248,13 @@ namespace nnfusion
                     std::shared_ptr<nnfusion::graph::Graph> loop_body_graph;
                     {
                         loop_body_graph_proto = complete_graphproto(loop_body_graph_proto);
-                        std::cout << loop_body_graph_proto.DebugString() << std::endl;
                         GraphProtoConvert loop_body_graph_convert(loop_body_graph_proto,
                                                                   domain_convert_func_map,
                                                                   model_dir,
                                                                   domain2version,
                                                                   dim_params,
                                                                   all_ng_nodes,
-                                                                  true,
-                                                                  node_inputs);
+                                                                  true);
                         loop_body_graph = loop_body_graph_convert.get_graph();
                     }
 
@@ -261,9 +266,16 @@ namespace nnfusion
                         output_shapes.push_back(output_value_info.get_shape());
                         output_types.push_back(output_value_info.get_element_type());
                     }
+                    for (auto node : loop_body_graph->get_ordered_ops())
+                    {
+                        if (node->get_op_type() == "Parameter")
+                            node->Set<int>("subgraph_input_map",
+                                           int(node_inputs[node->get_name()]));
+                    }
 
                     auto loop_op =
                         std::make_shared<op::Loop>(loop_body_graph, output_shapes, output_types);
+                    loop_op->set_loop_output_map(loop_output_map);
                     loop_op->set_name(node_proto.name());
                     auto loop_gnode = m_graph->add_node_and_edge(
                         loop_op, input_indexes, /* output_size */ node_proto.output_size());

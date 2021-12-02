@@ -265,6 +265,10 @@ namespace nnfusion
                         node.get_attribute_value<onnx::GraphProto>("then_branch");
                     onnx::GraphProto else_branch_graph_proto =
                         node.get_attribute_value<onnx::GraphProto>("else_branch");
+                    for (auto item : all_ng_nodes)
+                    {
+                        std::cout << item.first << std::endl;
+                    }
 
                     onnx::NodeProto completed_node_proto(node_proto);
                     auto then_branch_graph_inputs = extract_input(then_branch_graph_proto);
@@ -306,10 +310,8 @@ namespace nnfusion
                                                                     domain2version,
                                                                     dim_params,
                                                                     all_ng_nodes,
-                                                                    true,
-                                                                    node_inputs);
+                                                                    true);
                         then_branch_graph = then_branch_graph_convert.get_graph();
-
                         else_branch_graph_proto = complete_graphproto(else_branch_graph_proto);
                         GraphProtoConvert else_branch_graph_convert(else_branch_graph_proto,
                                                                     domain_convert_func_map,
@@ -317,15 +319,43 @@ namespace nnfusion
                                                                     domain2version,
                                                                     dim_params,
                                                                     all_ng_nodes,
-                                                                    true,
-                                                                    node_inputs);
+                                                                    true);
                         else_branch_graph = else_branch_graph_convert.get_graph();
                     }
+                    std::vector<nnfusion::PartialShape> output_shapes;
+                    std::vector<nnfusion::element::Type> output_types;
+                    for (size_t i = 0; i < then_branch_graph_proto.output().size(); i++)
+                    {
+                        ValueInfo output_value_info(then_branch_graph_proto.output()[i],
+                                                    dim_params);
+                        output_shapes.push_back(output_value_info.get_shape());
+                        output_types.push_back(output_value_info.get_element_type());
+                    }
+                    std::unordered_map<std::string, int> output_map;
+                    for (size_t i = 0; i < then_branch_graph_proto.output().size(); i++)
+                        output_map[then_branch_graph_proto.output()[i].name()] = i;
+                    for (size_t i = 0; i < then_branch_graph_proto.output().size(); i++)
+                        output_map[else_branch_graph_proto.output()[i].name()] = i;
 
-                    auto if_op = std::make_shared<op::If>(then_branch_graph, else_branch_graph);
+                    for (auto node : then_branch_graph->get_nodes())
+                    {
+                        if (node->get_op_type() == "Parameter")
+                            node->Set<int>("subgraph_input_map",
+                                           int(node_inputs[node->get_name()]));
+                    }
+                    for (auto node : else_branch_graph->get_nodes())
+                    {
+                        if (node->get_op_type() == "Parameter")
+                            node->Set<int>("subgraph_input_map",
+                                           int(node_inputs[node->get_name()]));
+                    }
+
+                    auto if_op = std::make_shared<op::If>(
+                        then_branch_graph, else_branch_graph, output_shapes, output_types);
                     if_op->set_name(node_proto.name());
-                    auto if_gnode = m_graph->add_node_and_edge(if_op, input_indexes);
-
+                    if_op->set_output_map(output_map);
+                    auto if_gnode =
+                        m_graph->add_node_and_edge(if_op, input_indexes, node_proto.output_size());
                     NamedNodeVector ret;
                     for (size_t i = 0; i < node_proto.output_size(); i++)
                     {

@@ -42,12 +42,18 @@ namespace nnfusion
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
             std::shared_ptr<nnfusion::graph::Graph> get_loop_body_graph();
             TranslationUnit::Pointer get_loop_body_tu();
+            std::unordered_map<std::string, int> get_loop_output_map() { return m_loop_output_map; }
+            void set_loop_output_map(std::unordered_map<std::string, int> map)
+            {
+                m_loop_output_map = std::move(map);
+            }
             void set_loop_body_tu(TranslationUnit::Pointer);
 
         protected:
             std::shared_ptr<nnfusion::graph::Graph> m_loop_body_graph;
             std::vector<nnfusion::PartialShape> m_output_shapes;
             std::vector<nnfusion::element::Type> m_output_types;
+            std::unordered_map<std::string, int> m_loop_output_map;
             TranslationUnit::Pointer m_loop_body_tu;
         };
     } // namespace op

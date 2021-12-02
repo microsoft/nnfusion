@@ -23,10 +23,14 @@ using namespace std;
 using namespace nnfusion::op;
 
 If::If(std::shared_ptr<nnfusion::graph::Graph>& then_branch_graph,
-       std::shared_ptr<nnfusion::graph::Graph>& else_branch_graph)
+       std::shared_ptr<nnfusion::graph::Graph>& else_branch_graph,
+       const std::vector<nnfusion::PartialShape>& output_shapes,
+       const std::vector<nnfusion::element::Type>& output_types)
     : Op("If")
     , m_then_branch_graph(then_branch_graph)
     , m_else_branch_graph(else_branch_graph)
+    , m_output_shapes(output_shapes)
+    , m_output_types(output_types)
 {
 }
 
@@ -40,16 +44,20 @@ std::shared_ptr<nnfusion::graph::Graph> If::get_else_branch_graph()
     return m_else_branch_graph;
 }
 
-TranslationUnit::Pointer If::get_then_branch_tu() {
+TranslationUnit::Pointer If::get_then_branch_tu()
+{
     return m_then_branch_tu;
 }
-void If::set_then_branch_tu(TranslationUnit::Pointer tu) {
+void If::set_then_branch_tu(TranslationUnit::Pointer tu)
+{
     m_then_branch_tu = tu;
 }
-TranslationUnit::Pointer If::get_else_branch_tu() {
+TranslationUnit::Pointer If::get_else_branch_tu()
+{
     return m_else_branch_tu;
 }
-void If::set_else_branch_tu(TranslationUnit::Pointer tu) {
+void If::set_else_branch_tu(TranslationUnit::Pointer tu)
+{
     m_else_branch_tu = tu;
 }
 
@@ -69,13 +77,6 @@ void If::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
            "same data type.";
     for (size_t i = 0; i < then_branch_outputs.size(); i++)
     {
-        NNFUSION_CHECK(then_branch_outputs[i]->get_shape() == else_branch_outputs[i]->get_shape() &&
-                       then_branch_outputs[i]->get_element_type() ==
-                           else_branch_outputs[i]->get_element_type())
-            << "The outputs in the then_branch and else_branch must have the same shape and "
-               "same data type.";
-
-        gnode->set_output_type_and_shape(
-            i, then_branch_outputs[i]->get_element_type(), then_branch_outputs[i]->get_shape());
+        gnode->set_output_type_and_shape(i, m_output_types[i], m_output_shapes[i]);
     }
 }

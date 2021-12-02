@@ -38,7 +38,9 @@ namespace nnfusion
             /// \param else_branch_graph The else_branch graph.<br>
             /// `[f]`
             If(std::shared_ptr<nnfusion::graph::Graph>& then_branch_graph,
-               std::shared_ptr<nnfusion::graph::Graph>& else_branch_graph);
+               std::shared_ptr<nnfusion::graph::Graph>& else_branch_graph,
+               const std::vector<nnfusion::PartialShape>& output_shapes,
+               const std::vector<nnfusion::element::Type>& output_types);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
             std::shared_ptr<nnfusion::graph::Graph> get_then_branch_graph();
@@ -47,11 +49,19 @@ namespace nnfusion
             void set_then_branch_tu(TranslationUnit::Pointer);
             TranslationUnit::Pointer get_else_branch_tu();
             void set_else_branch_tu(TranslationUnit::Pointer);
+            std::unordered_map<std::string, int> get_output_map() { return m_output_map; }
+            void set_output_map(std::unordered_map<std::string, int> map)
+            {
+                m_output_map = std::move(map);
+            }
 
         protected:
             std::shared_ptr<nnfusion::graph::Graph> m_then_branch_graph;
             std::shared_ptr<nnfusion::graph::Graph> m_else_branch_graph;
             TranslationUnit::Pointer m_then_branch_tu, m_else_branch_tu;
+            std::vector<nnfusion::PartialShape> m_output_shapes;
+            std::vector<nnfusion::element::Type> m_output_types;
+            std::unordered_map<std::string, int> m_output_map;
         };
     } // namespace op
 } // namespace nnfusion

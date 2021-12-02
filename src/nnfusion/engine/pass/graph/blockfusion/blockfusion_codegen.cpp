@@ -1350,7 +1350,6 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_device_function_signature()
     // }
     params.push_back("int thread_id");
     params.push_back("int block_id");
-    params.push_back("char *shared_buffer");
 
     lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ")";
@@ -1414,14 +1413,7 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_block_kernel_call(std::vector<std::s
     auto& lu = *_lu;
     params.push_back("threadIdx.x");
     params.push_back("blockIdx.x");
-    if (this->is_shared_buffer == false)
-    {
-        params.push_back("NULL");
-    }
-    else
-    {
-        params.push_back("shared_buffer");
-    }
+
     lu << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ");"
        << "\n";

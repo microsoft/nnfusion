@@ -2188,3 +2188,29 @@ __device__ __forceinline__ T WARP_SHFL_DOWN(T value, unsigned int delta, int wid
 }
 )",
                  "");
+
+LU_DEFINE(declaration::barrier,
+          R"(__device__ void Barrier(volatile int* global_state_in,
+                        volatile int* global_state_out, int val) {
+  const int BLOCK_NUM = gridDim.x * gridDim.y;
+  int thread_idx_in_block = blockDim.x * threadIdx.y + threadIdx.x;
+  int block_idx = gridDim.x * blockIdx.y + blockIdx.x;
+  if (thread_idx_in_block == 0) {
+    global_state_in[block_idx] = val;
+  }
+  if (block_idx == 0) {
+    if (thread_idx_in_block < BLOCK_NUM) {
+      while (global_state_in[thread_idx_in_block] != val) {
+      };
+    }
+    __syncthreads();
+    if (thread_idx_in_block < BLOCK_NUM) {
+      global_state_out[thread_idx_in_block] = val;
+    }
+  }
+  if (thread_idx_in_block == 0) {
+    while (global_state_out[block_idx] != val) {
+    };
+  }
+  __syncthreads();
+})");

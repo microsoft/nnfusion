@@ -5,6 +5,7 @@
 
 #include "nnfusion/core/operators/op_define/if.hpp"
 #include "nnfusion/core/operators/op_define/loop.hpp"
+#include "nnfusion/core/operators/op_define/recursion.hpp"
 #include "nnfusion/engine/device/cuda.hpp"
 
 using namespace nnfusion;
@@ -12,6 +13,7 @@ using namespace nnfusion::pass::graph;
 using namespace nnfusion::engine;
 using Loop = nnfusion::op::Loop;
 using If = nnfusion::op::If;
+using Recursion = nnfusion::op::Recursion;
 
 // this func append Constants in the subgraph as additional inputs to the control flow node
 static void extract_constant_nodes(std::shared_ptr<nnfusion::graph::Graph>& graph,
@@ -66,6 +68,14 @@ bool ControlFlowPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
             op->set_else_branch_tu(else_branch_tu);
             extract_constant_nodes(graph, gnode, then_branch_tu->program);
             extract_constant_nodes(graph, gnode, else_branch_tu->program);
+        }
+        else if (gnode->get_op_type() == "Recursion")
+        {
+            auto op = static_pointer_cast<Recursion>(gnode->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(op);
+            auto body = op->get_body_graph();
+            auto body_tu = CudaEngine().convert_graph_to_program(body);
+            op->set_body_tu(body_tu);
         }
     }
     return true;

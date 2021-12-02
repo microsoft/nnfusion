@@ -36,6 +36,8 @@ add_library(onnx_import STATIC
         op/if.cpp
         op/loop.hpp
         op/loop.cpp
+        op/recursion.hpp
+        op/recursion.cpp
         op/no.hpp
         op/no.cpp
         op/slice.hpp

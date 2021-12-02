@@ -351,7 +351,9 @@ namespace nnfusion
                     if (tensor.has_name())
                     {
                         move_external_to_rawdata(tensor, model_dir);
-                        if (FLAGS_ftraining_mode)
+                        if (FLAGS_ftraining_mode &&
+                            !(tensor.name().find_first_not_of("0123456789") == std::string::npos) &&
+                            (tensor.name().find("word_embeddings") == std::string::npos))
                         {
                             element::Type type;
                             ONNXDataTypeToNNFusionElementType(

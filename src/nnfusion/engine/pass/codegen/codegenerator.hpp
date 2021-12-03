@@ -97,6 +97,7 @@ namespace nnfusion
                     lup_codegen->require(lup_exec_py);
                     lup_exit->require(lup_exec_py);
                     lup_exec_py->require(lup_init);
+                    lup_exec_py->require(lup_exec);
                 }
             }
             LanguageUnit_p lup_codegen;

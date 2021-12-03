@@ -1034,7 +1034,9 @@ bool CudaCodegenPass::modify_codegen()
     {
         for (auto item : projgen->lup_exec->unit_vec)
         {
-            projgen->lup_exec_py->unit_vec.push_back(item);
+            nnfusion::LanguageUnit_p py_item =
+                std::make_shared<LanguageUnit>(item->symbol, item->get_code());
+            projgen->lup_exec_py->unit_vec.push_back(py_item);
         }
     }
 

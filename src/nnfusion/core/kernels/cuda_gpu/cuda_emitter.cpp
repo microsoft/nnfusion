@@ -82,6 +82,16 @@ LanguageUnit_p cuda::CudaEmitter::emit_block_kernel_call(std::vector<std::string
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
     auto& lu = *_lu;
+    lu << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ");"
+       << "\n";
+    return _lu;
+}
+
+LanguageUnit_p cuda::BlockCudaEmitter::emit_block_kernel_call(std::vector<std::string> params)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
+    auto& lu = *_lu;
     params.push_back("threadIdx.x");
     params.push_back("blockIdx.x");
     params.push_back("NULL");

@@ -88,7 +88,7 @@ static std::vector<ir::Instruction::Pointer> get_fused_kernel(const ir::Program&
 }
 
 cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
-    : BlockCudaEmitter(ctx)
+    : CudaEmitter(ctx)
 {
     std::stringstream tag;
     tag << "_LoopOP";
@@ -122,13 +122,15 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
     auto inputs = get_subgraph_inputs(m_loop_body_tu->program);
     for (auto ins : instructions)
     {
+        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+        lu << "if (blockIdx.x < " << kernel->get_grid_dim().x << ")\n";
         std::vector<string> params;
         for (auto tensor : ins->get_inputs())
         {
             if (inputs.count(tensor->get_name()))
             {
                 auto input_index = inputs[tensor->get_name()];
-                if (input_index == 0)
+                if (input_index == -1)
                     params.push_back("&i");
                 else
                     params.push_back("input" + std::to_string(input_index));
@@ -153,10 +155,8 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
             else
                 params.push_back(get_workspace_tensor(tensor));
         }
-        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        if (kernel->type() == "BlockFusionCudaCodegen")
-            for (auto tensor : kernel->m_context->tensors)
-                params.push_back(get_workspace_tensor(tensor));
+        for (auto tensor : kernel->m_context->tensors)
+            params.push_back(get_workspace_tensor(tensor));
         lu << kernel->emit_block_kernel_call(params)->get_code();
     }
 }
@@ -189,6 +189,7 @@ LanguageUnit_p cuda::Loop::emit_dependency()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
+    _lu->require(declaration::barrier);
     for (auto ins : get_fused_kernel(m_loop_body_tu->program))
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());

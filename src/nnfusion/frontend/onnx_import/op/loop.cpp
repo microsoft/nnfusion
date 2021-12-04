@@ -210,30 +210,22 @@ namespace nnfusion
                     onnx::GraphProto loop_body_graph_proto =
                         node.get_attribute_value<onnx::GraphProto>("body");
 
-                    onnx::NodeProto completed_node_proto(node_proto);
-                    auto loop_body_graph_inputs = extract_input(loop_body_graph_proto);
                     std::unordered_map<std::string, int> node_inputs;
                     assert(loop_body_graph_proto.input_size() == node_proto.input_size());
-                    for (size_t i = 0; i < node_proto.input_size(); i++)
-                    {
-                        std::cout << "f0 " << node_proto.input(i) << std::endl;
-                    }
+                    int idx = 0;
                     for (const auto& input_proto : loop_body_graph_proto.input())
                     {
                         std::cout << "f1 " << input_proto.name() << std::endl;
-                        int input_idx = node_inputs.size();
-                        node_inputs[input_proto.name()] = input_idx;
+                        node_inputs[input_proto.name()] = idx++;
+                        if (idx == 1)
+                            node_inputs[input_proto.name()] = -1;
                     }
-                    for (auto item : loop_body_graph_inputs)
+                    for (size_t i = 0; i < node_proto.input_size(); i++)
                     {
-                        std::cout << "f2 " << item << std::endl;
-                        if (node_inputs.find(item) == node_inputs.end())
-                        {
-                            completed_node_proto.add_input(item);
-                            int input_idx = node_inputs.size();
-                            node_inputs[item] = input_idx;
-                        }
+                        node_inputs[node_proto.input(i)] = i;
+                        std::cout << "f0 " << node_proto.input(i) << std::endl;
                     }
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     // we need to know which graph output maps to which Loop op output
                     std::unordered_map<std::string, int> loop_output_map;
                     for (auto output : loop_body_graph_proto.output())
@@ -241,8 +233,6 @@ namespace nnfusion
                         int idx = loop_output_map.size();
                         loop_output_map[output.name()] = idx;
                     }
-
-                    auto input_indexes = GetAllInputIndex(all_ng_nodes, completed_node_proto);
 
                     // process loop_body_graph
                     std::shared_ptr<nnfusion::graph::Graph> loop_body_graph;
@@ -269,8 +259,31 @@ namespace nnfusion
                     for (auto node : loop_body_graph->get_ordered_ops())
                     {
                         if (node->get_op_type() == "Parameter")
+                        {
+                            auto item = node->get_name();
+                            if (!node_inputs.count(item))
+                            {
+                                node_inputs[item] = idx++;
+                                if (find_node_from_graph(m_graph, item) == nullptr)
+                                {
+                                    NNFUSION_CHECK(all_ng_nodes.count(item));
+                                    auto node = all_ng_nodes.at(item)[0];
+                                    NNFUSION_CHECK(node.gnode->get_op_type() == "Parameter")
+                                        << node.gnode->get_op_type();
+                                    auto new_node = m_graph->add_node_and_edge(
+                                        node.gnode->get_op_ptr(), graph::GNodeVector({}));
+                                    input_indexes.push_back(GNodeIndex{new_node, 0});
+                                }
+                                else
+                                {
+                                    auto gnode = find_node_from_graph(m_graph, item);
+                                    input_indexes.push_back(GNodeIndex{gnode, 0});
+                                }
+                            }
+                            NNFUSION_CHECK(node_inputs.count(node->get_name()));
                             node->Set<int>("subgraph_input_map",
                                            int(node_inputs[node->get_name()]));
+                        }
                     }
 
                     auto loop_op =
@@ -284,6 +297,10 @@ namespace nnfusion
                     for (size_t i = 0; i < node_proto.output_size(); i++)
                     {
                         ret.push_back(NamedNode(node_proto.output(i), loop_gnode, i));
+                    }
+                    for (auto item : input_indexes)
+                    {
+                        std::cout << "fin " << item.gnode->get_name() << std::endl;
                     }
 
                     return ret;

@@ -21,7 +21,7 @@ namespace nnfusion
                 void set_launch_config() override;
             };
 
-            class Recursion : public BlockCudaEmitter
+            class Recursion : public CudaEmitter
             {
             public:
                 Recursion(shared_ptr<KernelContext> ctx);
@@ -31,6 +31,7 @@ namespace nnfusion
                 void set_launch_config() override;
 
             private:
+                LanguageUnit_p m_saved_func_body;
                 void generate_subgraph_code(LanguageUnit_p);
                 std::string get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor);
                 descriptor::Tensor::Pointer m_workspace;

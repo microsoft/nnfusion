@@ -265,39 +265,13 @@ namespace nnfusion
                         node.get_attribute_value<onnx::GraphProto>("then_branch");
                     onnx::GraphProto else_branch_graph_proto =
                         node.get_attribute_value<onnx::GraphProto>("else_branch");
-                    for (auto item : all_ng_nodes)
-                    {
-                        std::cout << item.first << std::endl;
-                    }
 
-                    onnx::NodeProto completed_node_proto(node_proto);
-                    auto then_branch_graph_inputs = extract_input(then_branch_graph_proto);
-                    auto else_branch_graph_inputs = extract_input(else_branch_graph_proto);
                     std::unordered_map<std::string, int> node_inputs;
                     for (size_t i = 0; i < node_proto.input_size(); i++)
                     {
                         node_inputs[node_proto.input(i)] = i;
                     }
-                    for (auto item : then_branch_graph_inputs)
-                    {
-                        if (node_inputs.find(item) == node_inputs.end())
-                        {
-                            completed_node_proto.add_input(item);
-                            int input_idx = node_inputs.size();
-                            node_inputs[item] = input_idx;
-                        }
-                    }
-                    for (auto item : else_branch_graph_inputs)
-                    {
-                        if (node_inputs.find(item) == node_inputs.end())
-                        {
-                            completed_node_proto.add_input(item);
-                            int input_idx = node_inputs.size();
-                            node_inputs[item] = input_idx;
-                        }
-                    }
-
-                    auto input_indexes = GetAllInputIndex(all_ng_nodes, completed_node_proto);
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
 
                     // process then_branch graph and else_branch_graph
                     std::shared_ptr<nnfusion::graph::Graph> then_branch_graph;
@@ -337,19 +311,39 @@ namespace nnfusion
                     for (size_t i = 0; i < then_branch_graph_proto.output().size(); i++)
                         output_map[else_branch_graph_proto.output()[i].name()] = i;
 
-                    for (auto node : then_branch_graph->get_nodes())
-                    {
-                        if (node->get_op_type() == "Parameter")
-                            node->Set<int>("subgraph_input_map",
-                                           int(node_inputs[node->get_name()]));
-                    }
+                    auto nodes = then_branch_graph->get_nodes();
                     for (auto node : else_branch_graph->get_nodes())
+                        nodes.push_back(node);
+                    for (auto node : nodes)
                     {
                         if (node->get_op_type() == "Parameter")
+                        {
+                            auto item = node->get_name();
+                            if (!node_inputs.count(item))
+                            {
+                                int idx = node_inputs.size();
+                                node_inputs[item] = idx;
+                                if (find_node_from_graph(m_graph, item) == nullptr)
+                                {
+                                    NNFUSION_CHECK(all_ng_nodes.count(item));
+                                    auto node = all_ng_nodes.at(item)[0];
+                                    NNFUSION_CHECK(node.gnode->get_op_type() == "Parameter")
+                                        << node.gnode->get_op_type();
+                                    auto new_node = m_graph->add_node_and_edge(
+                                        node.gnode->get_op_ptr(), graph::GNodeVector({}));
+                                    input_indexes.push_back(GNodeIndex{new_node, 0});
+                                }
+                                else
+                                {
+                                    auto gnode = find_node_from_graph(m_graph, item);
+                                    input_indexes.push_back(GNodeIndex{gnode, 0});
+                                }
+                            }
+                            NNFUSION_CHECK(node_inputs.count(node->get_name()));
                             node->Set<int>("subgraph_input_map",
                                            int(node_inputs[node->get_name()]));
+                        }
                     }
-
                     auto if_op = std::make_shared<op::If>(
                         then_branch_graph, else_branch_graph, output_shapes, output_types);
                     if_op->set_name(node_proto.name());

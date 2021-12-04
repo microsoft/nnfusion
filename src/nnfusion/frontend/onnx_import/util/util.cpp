@@ -307,17 +307,24 @@ namespace nnfusion
                 }
                 for (auto node_proto : graph_proto.node())
                 {
-                    if (node_proto.op_type() == "If")
-                    {
-                        auto input = extract_input(
-                            Node(node_proto).get_attribute_value<onnx::GraphProto>("then_branch"));
-                        for (auto item : input)
-                            graph_inputs.insert(item);
-                        input = extract_input(
-                            Node(node_proto).get_attribute_value<onnx::GraphProto>("else_branch"));
-                        for (auto item : input)
-                            graph_inputs.insert(item);
-                    }
+                    // if (node_proto.op_type() == "If")
+                    // {
+                    //     auto input = extract_input(
+                    //         Node(node_proto).get_attribute_value<onnx::GraphProto>("then_branch"));
+                    //     for (auto item : input)
+                    //         graph_inputs.insert(item);
+                    //     input = extract_input(
+                    //         Node(node_proto).get_attribute_value<onnx::GraphProto>("else_branch"));
+                    //     for (auto item : input)
+                    //         graph_inputs.insert(item);
+                    // }
+                    // else if (node_proto.op_type() == "Recursion" || node_proto.op_type() == "Loop")
+                    // {
+                    //     auto input = extract_input(
+                    //         Node(node_proto).get_attribute_value<onnx::GraphProto>("body"));
+                    //     for (auto item : input)
+                    //         graph_inputs.insert(item);
+                    // }
                 }
 
                 return graph_inputs;
@@ -353,6 +360,16 @@ namespace nnfusion
                 // std::cout << completed_graphproto.DebugString() << std::endl;
 
                 return completed_graphproto;
+            }
+            std::shared_ptr<graph::GNode> find_node_from_graph(const graph::Graph::Pointer graph,
+                                                               const std::string& name)
+            {
+                for (auto node : graph->get_nodes())
+                {
+                    if (node->get_name() == name)
+                        return node;
+                }
+                return nullptr;
             }
 
         } // namespace onnx_import

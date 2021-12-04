@@ -35,6 +35,8 @@ static std::pair<cuda::dim3, cuda::dim3> get_subgraph_launch_config(const ir::Pr
             }
             else
             {
+                std::cout << kernel->get_kernel_type() << " " << ins->getGNode()->get_op_type()
+                          << std::endl;
                 NNFUSION_CHECK_FAIL();
             }
         }
@@ -51,8 +53,11 @@ static std::map<std::string, int> get_subgraph_inputs(const ir::Program& program
         {
             if (ins->getGNode()->get_op_type() == "Parameter" ||
                 ins->getGNode()->get_op_type() == "Constant")
-                inputs[ins->get_outputs()[0]->get_name()] =
-                    ins->getGNode()->Get<int>("subgraph_input_map");
+            {
+                auto input_map = (*ins->getGNode())["subgraph_input_map"];
+                NNFUSION_CHECK(input_map.is_valid());
+                inputs[ins->get_outputs()[0]->get_name()] = input_map.as<int>();
+            }
         }
     return inputs;
 }
@@ -94,13 +99,8 @@ static std::vector<ir::Instruction::Pointer> get_fused_kernel(const ir::Program&
     return result;
 }
 
-static bool dim3_is_equal(const cuda::dim3& lhs, const cuda::dim3& rhs)
-{
-    return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
-}
-
 cuda::If::If(shared_ptr<KernelContext> ctx)
-    : BlockCudaEmitter(ctx)
+    : CudaEmitter(ctx)
 {
     std::stringstream tag;
     tag << "_IfOP";
@@ -140,6 +140,8 @@ void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false
     auto inputs = get_subgraph_inputs(tu->program);
     for (auto ins : instructions)
     {
+        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+        lu << "if (blockIdx.x < " << kernel->get_grid_dim().x << ")\n";
         std::vector<string> params;
         int tensor_cnt = 0;
         for (auto tensor : ins->get_inputs())
@@ -159,10 +161,8 @@ void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false
             else
                 params.push_back(get_workspace_tensor(tensor));
         }
-        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        if (kernel->type() == "BlockFusionCudaCodegen")
-            for (auto tensor : kernel->m_context->tensors)
-                params.push_back(get_workspace_tensor(tensor));
+        for (auto tensor : kernel->m_context->tensors)
+            params.push_back(get_workspace_tensor(tensor));
         lu << kernel->emit_block_kernel_call(params)->get_code();
     }
 }
@@ -185,17 +185,16 @@ LanguageUnit_p cuda::If::emit_function_body()
 void cuda::If::set_launch_config()
 {
     auto cfg0 = get_subgraph_launch_config(m_then_branch_tu->program);
-    auto cfg1 = get_subgraph_launch_config(m_then_branch_tu->program);
-    NNFUSION_CHECK(dim3_is_equal(cfg0.first, cfg1.first) && dim3_is_equal(cfg0.second, cfg1.second))
-        << "then-branch and else-branch must have equal grid and blocks";
-    m_blockDim = cfg0.first;
-    m_gridDim = cfg0.second;
+    auto cfg1 = get_subgraph_launch_config(m_else_branch_tu->program);
+    m_blockDim = maxdim3(cfg0.first, cfg1.first);
+    m_gridDim = maxdim3(cfg0.second, cfg1.second);
 }
 
 LanguageUnit_p cuda::If::emit_dependency()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
+    _lu->require(declaration::barrier);
     for (auto ins : get_fused_kernel(m_then_branch_tu->program))
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());

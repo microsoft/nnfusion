@@ -50,8 +50,7 @@ static std::map<std::string, int> get_subgraph_inputs(const ir::Program& program
     for (auto blk : program)
         for (auto ins : *blk)
         {
-            if (ins->getGNode()->get_op_type() == "Parameter" ||
-                ins->getGNode()->get_op_type() == "Constant")
+            if (ins->getGNode()->get_op_type() == "Parameter")
             {
                 auto input_map = (*ins->getGNode())["subgraph_input_map"];
                 NNFUSION_CHECK(input_map.is_valid());
@@ -114,7 +113,7 @@ void cuda::FuncForward::set_launch_config()
 }
 
 cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
-    : BlockCudaEmitter(ctx)
+    : CudaEmitter(ctx)
 {
     std::stringstream tag;
     tag << "_RecursionOP";
@@ -148,6 +147,8 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
     auto inputs = get_subgraph_inputs(m_loop_body_tu->program);
     for (auto ins : instructions)
     {
+        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+        lu << "if (blockIdx.x < " << kernel->get_grid_dim().x << ")\n";
         std::vector<string> params;
         for (auto tensor : ins->get_inputs())
         {
@@ -166,10 +167,8 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
             else
                 params.push_back(get_workspace_tensor(tensor));
         }
-        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        if (kernel->type() == "BlockFusionCudaCodegen")
-            for (auto tensor : kernel->m_context->tensors)
-                params.push_back(get_workspace_tensor(tensor));
+        for (auto tensor : kernel->m_context->tensors)
+            params.push_back(get_workspace_tensor(tensor));
         lu << kernel->emit_block_kernel_call(params)->get_code();
     }
 }
@@ -179,6 +178,7 @@ LanguageUnit_p cuda::Recursion::emit_function_body()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
     generate_subgraph_code(_lu);
+    m_saved_func_body = _lu;
     return _lu;
 }
 
@@ -193,6 +193,28 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
+    _lu->require(declaration::barrier);
+    // include the recursion kernel declare at first
+    auto kernel_declare = this->emit_device_function_signature();
+    (*kernel_declare) << ";\n";
+    _lu->require(kernel_declare);
+
+    for (auto ins : get_fused_kernel(m_loop_body_tu->program))
+    {
+        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+        auto body = kernel->get_or_emit_source();
+        auto block_kernel = kernel->emit_block_kernel();
+        block_kernel->require(body->dep_unit);
+        _lu->require(block_kernel);
+    }
+
+    LanguageUnit_p kernel_code(new LanguageUnit(get_function_name() + "_block_kernel"));
+    (*kernel_code) << this->emit_device_function_signature()->get_code();
+    kernel_code->block_begin();
+    (*kernel_code) << m_saved_func_body->get_code();
+    kernel_code->block_end();
+    _lu->require(kernel_code);
+
     return _lu;
 }
 

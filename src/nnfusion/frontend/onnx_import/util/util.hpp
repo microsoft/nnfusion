@@ -372,6 +372,8 @@ namespace nnfusion
 
             std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto);
             onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto);
+            std::shared_ptr<graph::GNode> find_node_from_graph(const graph::Graph::Pointer graph,
+                                                               const std::string& name);
 
         } // namespace onnx_import
     }     // namespace frontend

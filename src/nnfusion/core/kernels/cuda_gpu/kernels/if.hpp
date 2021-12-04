@@ -12,7 +12,7 @@ namespace nnfusion
     {
         namespace cuda
         {
-            class If : public BlockCudaEmitter
+            class If : public CudaEmitter
             {
             public:
                 If(shared_ptr<KernelContext> ctx);

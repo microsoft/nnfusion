@@ -127,6 +127,7 @@ namespace nnfusion
                     return _lu;
                 }
 
+                LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params) override;
                 LanguageUnit_p emit_device_function_signature() override;
                 LanguageUnit_p emit_device_function_body() override;
 
@@ -291,6 +292,7 @@ namespace nnfusion
                                                    << ctx->gnode->get_op_type();
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
+                            return;
                         }
 
                         kernel_info =

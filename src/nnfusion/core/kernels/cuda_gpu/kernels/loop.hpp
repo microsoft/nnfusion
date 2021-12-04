@@ -12,7 +12,7 @@ namespace nnfusion
     {
         namespace cuda
         {
-            class Loop : public BlockCudaEmitter
+            class Loop : public CudaEmitter
             {
             public:
                 Loop(shared_ptr<KernelContext> ctx);

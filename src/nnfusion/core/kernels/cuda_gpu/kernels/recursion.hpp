@@ -18,7 +18,9 @@ namespace nnfusion
                 FuncForward(shared_ptr<KernelContext> ctx);
                 LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;
+                LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params) override;
                 void set_launch_config() override;
+                static std::string m_block_func_name;
             };
 
             class Recursion : public CudaEmitter
@@ -32,6 +34,7 @@ namespace nnfusion
 
             private:
                 LanguageUnit_p m_saved_func_body;
+                std::string m_block_func_name;
                 void generate_subgraph_code(LanguageUnit_p);
                 std::string get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor);
                 descriptor::Tensor::Pointer m_workspace;

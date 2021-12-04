@@ -59,7 +59,6 @@ namespace nnfusion
                     Node node(node_proto);
                     onnx::GraphProto body_graph_proto =
                         node.get_attribute_value<onnx::GraphProto>("body");
-                    onnx::NodeProto completed_node_proto(node_proto);
                     auto body_graph_inputs = extract_input(body_graph_proto);
                     std::unordered_map<std::string, int> node_inputs;
                     assert(body_graph_proto.input_size() == node_proto.input_size());
@@ -75,7 +74,7 @@ namespace nnfusion
                         output_map[output.name()] = idx;
                     }
 
-                    auto input_indexes = GetAllInputIndex(all_ng_nodes, completed_node_proto);
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     std::vector<nnfusion::PartialShape> output_shapes;
                     std::vector<nnfusion::element::Type> output_types;
                     for (size_t i = 0; i < body_graph_proto.output().size(); i++)

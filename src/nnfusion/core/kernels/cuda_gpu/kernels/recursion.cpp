@@ -112,6 +112,19 @@ void cuda::FuncForward::set_launch_config()
 {
 }
 
+LanguageUnit_p cuda::FuncForward::emit_block_kernel_call(std::vector<std::string> params)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
+    auto& lu = *_lu;
+    if (m_block_func_name == "")
+        m_block_func_name = m_kernel_name + "_recursion";
+
+    lu << m_block_func_name + "_block_kernel(" << join(params, ", ") << ");\n";
+    return _lu;
+}
+
+std::string cuda::FuncForward::m_block_func_name = "";
+
 cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     : CudaEmitter(ctx)
 {
@@ -130,6 +143,8 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
     m_loop_output_map = op->get_output_map();
+    m_block_func_name = move(FuncForward::m_block_func_name);
+    NNFUSION_CHECK(!m_block_func_name.empty());
 }
 
 std::string cuda::Recursion::get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor)
@@ -194,10 +209,18 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
+    auto saved = m_kernel_name;
+    m_kernel_name = m_block_func_name;
     // include the recursion kernel declare at first
     auto kernel_declare = this->emit_device_function_signature();
     (*kernel_declare) << ";\n";
     _lu->require(kernel_declare);
+    LanguageUnit_p kernel_code(new LanguageUnit(get_function_name() + "_block_kernel"));
+    (*kernel_code) << this->emit_device_function_signature()->get_code();
+    kernel_code->block_begin();
+    (*kernel_code) << m_saved_func_body->get_code();
+    kernel_code->block_end();
+    m_kernel_name = saved;
 
     for (auto ins : get_fused_kernel(m_loop_body_tu->program))
     {
@@ -208,11 +231,6 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
         _lu->require(block_kernel);
     }
 
-    LanguageUnit_p kernel_code(new LanguageUnit(get_function_name() + "_block_kernel"));
-    (*kernel_code) << this->emit_device_function_signature()->get_code();
-    kernel_code->block_begin();
-    (*kernel_code) << m_saved_func_body->get_code();
-    kernel_code->block_end();
     _lu->require(kernel_code);
 
     return _lu;

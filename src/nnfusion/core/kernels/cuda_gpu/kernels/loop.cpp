@@ -5,6 +5,7 @@
 #include "../cuda_cudnn.hpp"
 #include "convolution.hpp"
 #include "nnfusion/core/operators/op_define/loop.hpp"
+#include "nnfusion/engine/pass/graph/blockfusion/blockfusion_codegen.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
@@ -155,8 +156,9 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
             else
                 params.push_back(get_workspace_tensor(tensor));
         }
-        for (auto tensor : kernel->m_context->tensors)
-            params.push_back(get_workspace_tensor(tensor));
+        if (std::dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
+            for (auto tensor : kernel->m_context->tensors)
+                params.push_back(get_workspace_tensor(tensor));
         lu << kernel->emit_block_kernel_call(params)->get_code();
     }
 }

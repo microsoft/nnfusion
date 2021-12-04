@@ -161,8 +161,9 @@ void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false
             else
                 params.push_back(get_workspace_tensor(tensor));
         }
-        for (auto tensor : kernel->m_context->tensors)
-            params.push_back(get_workspace_tensor(tensor));
+        if (std::dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
+            for (auto tensor : kernel->m_context->tensors)
+                params.push_back(get_workspace_tensor(tensor));
         lu << kernel->emit_block_kernel_call(params)->get_code();
     }
 }

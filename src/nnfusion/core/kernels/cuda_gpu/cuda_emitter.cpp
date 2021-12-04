@@ -131,13 +131,6 @@ LanguageUnit_p cuda::CudaEmitter::emit_device_function_signature()
         ss << "output" << i;
         params.push_back(ss.str());
     }
-    for (size_t i = 0; i < m_context->tensors.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-        ss << "temp" << i;
-        params.push_back(ss.str());
-    }
     lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ")";
     return _lu;

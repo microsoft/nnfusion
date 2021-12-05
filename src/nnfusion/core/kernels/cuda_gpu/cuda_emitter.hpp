@@ -287,6 +287,7 @@ namespace nnfusion
                                                    << ctx->gnode->get_op_type();
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
+                            return;
                         }
 
                         kernel_info =

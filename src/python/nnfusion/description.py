@@ -13,7 +13,10 @@ class IODescription(object):
     """
     def __init__(self, name, shape, dtype=None, num_classes=None):
         self._name = name
-        self._shape = tuple(shape)
+        if len(shape) > 0:
+            self._shape = tuple(shape)
+        else:
+            self._shape = (1, )
         self._dtype = dtype
         self._num_classes = num_classes
 

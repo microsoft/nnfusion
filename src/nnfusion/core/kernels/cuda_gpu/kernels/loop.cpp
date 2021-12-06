@@ -38,7 +38,7 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
     for (auto ins : instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        lu << "if (blockIdx.x < " << kernel->get_grid_dim().x << ")\n";
+        lu << get_launch_bound(ins);
         std::vector<string> params;
         for (auto tensor : ins->get_inputs())
         {

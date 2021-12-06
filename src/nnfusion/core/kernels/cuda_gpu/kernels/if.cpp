@@ -44,7 +44,7 @@ void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false
     for (auto ins : instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        lu << "if (blockIdx.x < " << kernel->get_grid_dim().x << ")\n";
+        lu << get_launch_bound(ins);
         std::vector<string> params;
         int tensor_cnt = 0;
         for (auto tensor : ins->get_inputs())
@@ -68,6 +68,8 @@ void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false
             for (auto tensor : kernel->m_context->tensors)
                 params.push_back(get_workspace_tensor(tensor));
         lu << kernel->emit_block_kernel_call(params)->get_code();
+        if (ins != instructions.back())
+            lu << "Barrier();\n";
     }
 }
 

@@ -513,3 +513,20 @@ void LanguageUnit::divide_code()
     process_functions(pair.first);
     process_variables(pair.second);
 }
+
+void LanguageUnit::code_symbol_replace(const std::string& src, const std::string& tgt)
+{
+    auto code = get_code();
+    size_t pos;
+    bool flag = false;
+    while (pos = code.find(src), pos != string::npos)
+    {
+        flag = true;
+        code.replace(pos, src.size(), tgt);
+    }
+    if (flag)
+    {
+        clear();
+        (*this) << code;
+    }
+}

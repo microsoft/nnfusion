@@ -17,6 +17,7 @@ cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
     tag << "_FuncForwardOP";
     custom_tag = tag.str();
     auto m_workspace = allocate_tensor(Shape{0}, nnfusion::element::character);
+    m_workspace->set_name("recursion_stack");
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
 }
@@ -59,12 +60,12 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     auto op = static_pointer_cast<op::Recursion>(ctx->gnode->get_op_ptr());
     NNFUSION_CHECK_NOT_NULLPTR(op);
     m_loop_body_tu = op->get_body_tu();
-    size_t workspace_size = 0;
+    m_workspace_size = 0;
     for (auto& pair : m_loop_body_tu->memory_allocator_factory->get_allocator_list())
     {
-        workspace_size += pair.second->max_allocated();
+        m_workspace_size += pair.second->max_allocated();
     }
-    m_workspace = allocate_tensor(Shape{workspace_size}, nnfusion::element::character);
+    m_workspace = allocate_tensor(Shape{m_workspace_size * 20}, nnfusion::element::character);
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
     m_loop_output_map = op->get_output_map();
@@ -80,7 +81,7 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
     for (auto ins : instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        lu << "if (blockIdx.x < " << kernel->get_grid_dim().x << ")\n";
+        lu << get_launch_bound(ins);
         std::vector<string> params;
         for (auto tensor : ins->get_inputs())
         {
@@ -103,6 +104,8 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
             for (auto tensor : kernel->m_context->tensors)
                 params.push_back(get_workspace_tensor(tensor));
         lu << kernel->emit_block_kernel_call(params)->get_code();
+        if (ins != instructions.back())
+            lu << "Barrier();\n";
     }
 }
 
@@ -120,6 +123,14 @@ void cuda::Recursion::set_launch_config()
     auto cfg0 = get_subgraph_launch_config(m_loop_body_tu->program);
     m_blockDim = cfg0.first;
     m_gridDim = cfg0.second;
+}
+
+static void replace_dep_code(LanguageUnit_p lu, const std::string& src, const std::string& tgt)
+{
+    auto code = lu->get_code();
+    lu->code_symbol_replace(src, tgt);
+    for (auto item : lu->local_symbol)
+        replace_dep_code(item.second, src, tgt);
 }
 
 LanguageUnit_p cuda::Recursion::emit_dependency()
@@ -151,7 +162,7 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
     }
 
     _lu->require(kernel_code);
-
+    replace_dep_code(_lu, "$stack_size$", std::to_string(m_workspace_size));
     return _lu;
 }
 

@@ -64,6 +64,7 @@ set(SRC
     op_define/power.cpp
     op_define/product.cpp
     op_define/reduce_window.cpp
+    op_define/recursion.cpp
     op_define/reduce.cpp
     op_define/relu.cpp
     op_define/replace_slice.cpp

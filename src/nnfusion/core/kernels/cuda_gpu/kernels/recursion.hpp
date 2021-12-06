@@ -2,9 +2,7 @@
 // Licensed under the MIT License.
 
 #pragma once
-#include "../cuda_emitter.hpp"
-#include "../cuda_langunit.hpp"
-#include "nnfusion/engine/interpreter.hpp"
+#include "../controlflow_emitter.hpp"
 
 namespace nnfusion
 {
@@ -23,7 +21,7 @@ namespace nnfusion
                 static std::string m_block_func_name;
             };
 
-            class Recursion : public CudaEmitter
+            class Recursion : public ControlFlowEmitter
             {
             public:
                 Recursion(shared_ptr<KernelContext> ctx);
@@ -36,7 +34,6 @@ namespace nnfusion
                 LanguageUnit_p m_saved_func_body;
                 std::string m_block_func_name;
                 void generate_subgraph_code(LanguageUnit_p);
-                std::string get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor);
                 descriptor::Tensor::Pointer m_workspace;
                 TranslationUnit::Pointer m_loop_body_tu;
                 std::unordered_map<std::string, int> m_loop_output_map;

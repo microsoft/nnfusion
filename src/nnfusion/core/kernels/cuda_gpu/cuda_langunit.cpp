@@ -224,7 +224,7 @@ LU_DEFINE(
         v = __ldg(in + i);
     }
     return v;
-} 
+}
 __device__ __forceinline__ float  load(const float*  __restrict__ in, int i=0, bool b=true)
 {
     float v = 0.0f;
@@ -883,7 +883,7 @@ struct KeyValuePairSum {
 
 template <typename T, int TPB>
 __device__ inline void LayerNorm(
-    const cub::KeyValuePair<T, T>& thread_data, const int ld, const int offset, const T* beta, 
+    const cub::KeyValuePair<T, T>& thread_data, const int ld, const int offset, const T* beta,
     const T* gamma, const T epsilon, T* output) {
   // Assuming thread_data is already divided by ld
 
@@ -1259,7 +1259,7 @@ void ComputeSoftmaxWithMask1D(cudaStream_t stream, const int all_sequence_length
     const int blockSize = 1024;
     MaskedSoftmaxKernel<T, blockSize>
         <<<grid, blockSize, 0, stream>>>(all_sequence_length, sequence_length, mask_index, mask_start, input, output);
-  } 
+  }
 }
 
 template <typename T>
@@ -1291,7 +1291,7 @@ void ComputeSoftmaxWithMask2D(cudaStream_t stream, const int all_sequence_length
     const int blockSize = 1024;
     SoftmaxWithMask2DSmallKernel<T, blockSize>
         <<<grid, blockSize, 0, stream>>>(all_sequence_length, sequence_length, attention_mask, input, output, is_unidirectional, scalar);
-  } 
+  }
 }
 
 template <typename T>
@@ -1673,7 +1673,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward) 
+// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward)
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.
@@ -1908,7 +1908,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward) 
+// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward)
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.
@@ -2190,27 +2190,33 @@ __device__ __forceinline__ T WARP_SHFL_DOWN(T value, unsigned int delta, int wid
                  "");
 
 LU_DEFINE(declaration::barrier,
-          R"(__device__ void Barrier(volatile int* global_state_in,
-                        volatile int* global_state_out, int val) {
-  const int BLOCK_NUM = gridDim.x * gridDim.y;
-  int thread_idx_in_block = blockDim.x * threadIdx.y + threadIdx.x;
-  int block_idx = gridDim.x * blockIdx.y + blockIdx.x;
-  if (thread_idx_in_block == 0) {
-    global_state_in[block_idx] = val;
-  }
-  if (block_idx == 0) {
-    if (thread_idx_in_block < BLOCK_NUM) {
-      while (global_state_in[thread_idx_in_block] != val) {
-      };
+          R"(
+__device__ void Barrier() {
+    static volatile uint8_t global_state_in[1024] = {0};
+    static volatile uint8_t global_state_out[1024] = {0};
+    const int BLOCK_NUM = gridDim.x * gridDim.y;
+    const int thread_idx_in_block = blockDim.x * threadIdx.y + threadIdx.x;
+    const int block_idx = gridDim.x * blockIdx.y + blockIdx.x;
+    if (thread_idx_in_block == 0) {
+        global_state_in[block_idx] = 1;
+    }
+    if (block_idx == 0) {
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            while (global_state_in[i] != 1) {
+            }
+
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            global_state_in[i] = 0;
+
+        __syncthreads();
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            global_state_out[i] = 1;
+    }
+    if (thread_idx_in_block == 0) {
+        while (global_state_out[block_idx] != 1) {
+        };
+        global_state_out[block_idx] = 0;
     }
     __syncthreads();
-    if (thread_idx_in_block < BLOCK_NUM) {
-      global_state_out[thread_idx_in_block] = val;
-    }
-  }
-  if (thread_idx_in_block == 0) {
-    while (global_state_out[block_idx] != val) {
-    };
-  }
-  __syncthreads();
-})");
+}
+)");

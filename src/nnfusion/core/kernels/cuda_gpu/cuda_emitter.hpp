@@ -44,7 +44,6 @@ namespace nnfusion
                 }
                 virtual LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params);
                 virtual LanguageUnit_p emit_block_kernel();
-                virtual std::string type() { return "CudaEmitter"; }
                 virtual bool is_static_function() override { return false; }
                 // Need to regenerate function call with new assigned launch config(stream).
                 LanguageUnit_p emit_function_call() override;
@@ -88,7 +87,6 @@ namespace nnfusion
                     shared_memory_log.dtype.clear();
                     shared_memory_log.size.clear();
                 }
-                std::string type() override { return "BlockCudaEmitter"; }
                 static const std::unordered_map<std::string, size_t> size_of_str_type;
 
                 size_t get_shared_memory_size() { return shared_memory_size; }

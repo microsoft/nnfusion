@@ -19,7 +19,7 @@ public:
     std::shared_ptr<KernelContext> get_kernel_context() { return this->m_context; }
     static size_t get_unique_func_id() { return unique_func_id; }
     LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params) override;
-    std::string type() override { return "BlockFusionCudaCodegen"; }
+
 private:
     LanguageUnit_p emit_device_function_signature() override;
     LanguageUnit_p emit_device_function_body() override;

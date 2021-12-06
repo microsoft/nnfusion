@@ -2,9 +2,7 @@
 // Licensed under the MIT License.
 
 #pragma once
-#include "../cuda_emitter.hpp"
-#include "../cuda_langunit.hpp"
-#include "nnfusion/engine/interpreter.hpp"
+#include "../controlflow_emitter.hpp"
 
 namespace nnfusion
 {
@@ -12,7 +10,7 @@ namespace nnfusion
     {
         namespace cuda
         {
-            class Loop : public CudaEmitter
+            class Loop : public ControlFlowEmitter
             {
             public:
                 Loop(shared_ptr<KernelContext> ctx);
@@ -23,7 +21,6 @@ namespace nnfusion
 
             private:
                 void generate_subgraph_code(LanguageUnit_p);
-                std::string get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor);
                 descriptor::Tensor::Pointer m_workspace;
                 TranslationUnit::Pointer m_loop_body_tu;
                 size_t m_loop_carried_var;

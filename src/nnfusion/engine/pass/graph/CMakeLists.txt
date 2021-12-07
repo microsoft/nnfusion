@@ -29,6 +29,7 @@ set(SRC
     superscaler_dataparallelism_pass.cpp
     ir_based_fusion_pass.cpp
     subgraph_fusion_pass.cpp
+    dump_op.cpp
 
 )
 

@@ -55,6 +55,8 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
         params.push_back(ss.str());
     }
 
+    set_launch_config();
+    emit_function_body();
     lu << "extern \"C\" __launch_bounds__(" << m_blockDim.x * m_blockDim.y * m_blockDim.z
        << ") __global__ void "
        << "(" << join(params, ", ") << ")";

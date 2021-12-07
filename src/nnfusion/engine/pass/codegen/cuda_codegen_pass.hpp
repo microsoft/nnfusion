@@ -65,6 +65,8 @@ namespace nnfusion
                                                       bool is_host = false);
             virtual std::tuple<std::string, std::string, std::string>
                 get_kernel_torch_entry_paras(std::shared_ptr<TranslationUnit> tu);
+            virtual std::tuple<std::string, std::string, std::string>
+                get_kernel_torch_entry_returns(std::shared_ptr<TranslationUnit> tu);
 
             virtual std::pair<std::string, std::string>
                 get_paras_and_args(std::vector<nnfusion::ir::Instruction::Pointer>& ir_vec);

@@ -169,11 +169,22 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
         {
             if (FLAGS_fcodegen_pybind)
             {
+                lu_exec_py_begin << "auto float_cuda_options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA, 0).requires_grad(false);\n";
+                lu_exec_py_begin << "auto int32_t_cuda_options = torch::TensorOptions().dtype(torch::kInt32).device(torch::kCUDA, 0).requires_grad(false);\n";
+                lu_exec_py_begin << "auto int64_t_cuda_options = torch::TensorOptions().dtype(torch::kInt64).device(torch::kCUDA, 0).requires_grad(false);\n";
+                lu_exec_py_begin << "#include <vector>";
                 auto params_info = get_kernel_torch_entry_paras(tu);
-                lu_exec_py_begin << "\nextern \"C\" void kernel_torch_entry(" << std::get<0>(params_info)
+                auto rets_info = get_kernel_torch_entry_returns(tu);
+                lu_exec_py_begin << "\nextern \"C\" std::vector<torch::Tensor> kernel_torch_entry(" << std::get<0>(params_info)
                                  << ")\n{\n";
+                lu_exec_py_begin << std::get<1>(rets_info) << "\n";
                 lu_exec_py_begin << std::get<1>(params_info) << "\n";
-                lu_exec_py_begin << "kernel_entry(" << std::get<2>(params_info) << ");\n";
+                if (std::get<2>(params_info).length() > 0) {
+                    lu_exec_py_begin << "kernel_entry(" << std::get<2>(params_info) << ", " << std::get<2>(rets_info) << ");\n";
+                } else {
+                    lu_exec_py_begin << "kernel_entry(" << std::get<2>(rets_info) << ");\n";
+                }
+                lu_exec_py_begin << "return {" << std::get<0>(rets_info) << "};\n";
             }
         }
 
@@ -566,20 +577,34 @@ std::tuple<std::string, std::string, std::string>
         pointers.push_back(tv->get_name());
     }
 
+    paras = join(params, ", ");
+    refs = join(references, "\n");
+    pts = join(pointers, ", ");
+    return std::make_tuple(paras, refs, pts);
+}
+
+std::tuple<std::string, std::string, std::string>
+    CudaCodegenPass::get_kernel_torch_entry_returns(std::shared_ptr<TranslationUnit> tu)
+{
+    std::string paras, refs, pts;
+    unordered_set<string> allocated;
+    vector<string> params, references, pointers;
+
     for (int i = 0; i < tu->out.size(); i++)
     {
         auto tv = tu->out[i];
         string type = tv->get_element_type().c_type_string();
         stringstream ss1, ss2;
-        ss1 << "torch::Tensor " << tv->get_name() << "_ts";
-        if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
-            ss2 << type << "* " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<"
-                << type << ">();";
-        else
-            ss2 << type << "** " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<"
-                << type << ">();";
+        ss2 << "torch::Tensor " << tv->get_name() << "_ts = torch::empty({" << join(tv->get_shape()) <<"}, " << type << "_cuda_options);\n";
+        ss2 << type << "* " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<" << type << ">();";
+        // if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
+        //     ss2 << type << "* " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<"
+        //         << type << ">();";
+        // else
+        //     ss2 << type << "** " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<"
+        //         << type << ">();";
         allocated.insert(tv->get_name());
-        params.push_back(ss1.str());
+        params.push_back(tv->get_name() + "_ts");
         references.push_back(ss2.str());
         pointers.push_back(tv->get_name());
     }

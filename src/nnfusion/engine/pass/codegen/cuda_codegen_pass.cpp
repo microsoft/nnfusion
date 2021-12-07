@@ -175,11 +175,10 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
                 auto params_info = get_kernel_torch_entry_paras(tu);
                 auto rets_info = get_kernel_torch_entry_returns(tu);
                 if (tu->out.size() == 1) {
-                    lu_exec_py_begin << "\nextern \"C\" torch::Tensor kernel_torch_entry(" << std::get<0>(params_info) << ")\n{\n";
+                    lu_exec_py_begin << "\nextern \"C\" torch::Tensor kernel_torch_entry(std::vector<torch::Tensor>& input_tensors)\n{\n";
                 } else {
                     lu_exec_py_begin << "#include <vector>";
-                    lu_exec_py_begin << "\nextern \"C\" std::vector<torch::Tensor> kernel_torch_entry(" << std::get<0>(params_info)
-                                    << ")\n{\n";
+                    lu_exec_py_begin << "\nextern \"C\" std::vector<torch::Tensor> kernel_torch_entry(std::vector<torch::Tensor>& input_tensors)\n{\n";
                 }
                 lu_exec_py_begin << std::get<1>(rets_info) << "\n";
                 lu_exec_py_begin << std::get<1>(params_info) << "\n";
@@ -232,6 +231,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
             lu_exit_end << "    m.def(\"kernel_entry\", &kernel_torch_entry, \"kernel torch entry "
                            "(CUDA)\");\n";
             lu_exit_end << "    m.def(\"cuda_init\", &cuda_init, \"cuda init (CUDA)\");\n";
+            lu_exit_end << "    m.def(\"cuda_free\", &cuda_free, \"cuda free (CUDA)\");\n";
             lu_exit_end << "}\n";
         }
     }
@@ -577,7 +577,7 @@ std::tuple<std::string, std::string, std::string>
         string type = tv->get_element_type().c_type_string();
         stringstream ss1, ss2;
         ss1 << "torch::Tensor " << tv->get_name() << "_ts";
-        ss2 << type << "* " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<" << type
+        ss2 << type << "* " << tv->get_name() << " = input_tensors[" << i << "].data_ptr<" << type
             << ">();";
         allocated.insert(tv->get_name());
         params.push_back(ss1.str());

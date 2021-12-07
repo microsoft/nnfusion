@@ -172,19 +172,27 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
                 lu_exec_py_begin << "auto float_cuda_options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA, 0).requires_grad(false);\n";
                 lu_exec_py_begin << "auto int32_t_cuda_options = torch::TensorOptions().dtype(torch::kInt32).device(torch::kCUDA, 0).requires_grad(false);\n";
                 lu_exec_py_begin << "auto int64_t_cuda_options = torch::TensorOptions().dtype(torch::kInt64).device(torch::kCUDA, 0).requires_grad(false);\n";
-                lu_exec_py_begin << "#include <vector>";
                 auto params_info = get_kernel_torch_entry_paras(tu);
                 auto rets_info = get_kernel_torch_entry_returns(tu);
-                lu_exec_py_begin << "\nextern \"C\" std::vector<torch::Tensor> kernel_torch_entry(" << std::get<0>(params_info)
-                                 << ")\n{\n";
+                if (tu->out.size() == 1) {
+                    lu_exec_py_begin << "\nextern \"C\" torch::Tensor kernel_torch_entry(" << std::get<0>(params_info) << ")\n{\n";
+                } else {
+                    lu_exec_py_begin << "#include <vector>";
+                    lu_exec_py_begin << "\nextern \"C\" std::vector<torch::Tensor> kernel_torch_entry(" << std::get<0>(params_info)
+                                    << ")\n{\n";
+                }
                 lu_exec_py_begin << std::get<1>(rets_info) << "\n";
                 lu_exec_py_begin << std::get<1>(params_info) << "\n";
-                if (std::get<2>(params_info).length() > 0) {
+                if (tu->arg.size() > 0) {
                     lu_exec_py_begin << "kernel_entry(" << std::get<2>(params_info) << ", " << std::get<2>(rets_info) << ");\n";
                 } else {
                     lu_exec_py_begin << "kernel_entry(" << std::get<2>(rets_info) << ");\n";
                 }
-                lu_exec_py_begin << "return {" << std::get<0>(rets_info) << "};\n";
+                if (tu->out.size() == 1) {
+                    lu_exec_py_begin << "return " << std::get<0>(rets_info) << ";\n";
+                } else {
+                    lu_exec_py_begin << "return {" << std::get<0>(rets_info) << "};\n";
+                }
             }
         }
 

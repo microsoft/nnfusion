@@ -170,9 +170,10 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
             if (FLAGS_fcodegen_pybind)
             {
                 auto params_info = get_kernel_torch_entry_paras(tu);
-                lu_exec_py_begin << "\nextern \"C\" void kernel_torch_entry(" << params_info.first
+                lu_exec_py_begin << "\nextern \"C\" void kernel_torch_entry(" << std::get<0>(params_info)
                                  << ")\n{\n";
-                lu_exec_py_begin << params_info.second << "\n";
+                lu_exec_py_begin << std::get<1>(params_info) << "\n";
+                lu_exec_py_begin << "kernel_entry(" << std::get<2>(params_info) << ");\n";
             }
         }
 
@@ -545,12 +546,12 @@ std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationU
     return join(params, ", ");
 }
 
-std::pair<std::string, std::string>
+std::tuple<std::string, std::string, std::string>
     CudaCodegenPass::get_kernel_torch_entry_paras(std::shared_ptr<TranslationUnit> tu)
 {
-    std::string paras, refs;
+    std::string paras, refs, pts;
     unordered_set<string> allocated;
-    vector<string> params, references;
+    vector<string> params, references, pointers;
     for (int i = 0; i < tu->arg.size(); i++)
     {
         auto tv = tu->arg[i];
@@ -562,6 +563,7 @@ std::pair<std::string, std::string>
         allocated.insert(tv->get_name());
         params.push_back(ss1.str());
         references.push_back(ss2.str());
+        pointers.push_back(tv->get_name());
     }
 
     for (int i = 0; i < tu->out.size(); i++)
@@ -579,10 +581,12 @@ std::pair<std::string, std::string>
         allocated.insert(tv->get_name());
         params.push_back(ss1.str());
         references.push_back(ss2.str());
+        pointers.push_back(tv->get_name());
     }
     paras = join(params, ", ");
     refs = join(references, "\n");
-    return std::make_pair(paras, refs);
+    pts = join(pointers, ", ");
+    return std::make_tuple(paras, refs, pts);
 }
 
 std::string CudaCodegenPass::get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu,
@@ -1266,14 +1270,15 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "for (int i_=0; i_<steps; i_++)\n";
         lu_main.block_begin();
 
-        lu_main << "cudaEventRecord(start_i, 0);\n";
         if (FLAGS_fhost_entry)
         {
+            lu_main << "cudaEventRecord(start_i, 0);\n";
             lu_main << "kernel_entry_host(" << args << ");\n";
         }
         else
         {
             lu_main << get_h2dcopy(tu)->get_code();
+            lu_main << "cudaEventRecord(start_i, 0);\n";
             lu_main << "kernel_entry(" << args << ");\n";
             // lu_main << get_d2hcopy(tu)->get_code();
             // lu_main << get_sync()->get_code();

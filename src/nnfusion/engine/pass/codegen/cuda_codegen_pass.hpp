@@ -63,7 +63,7 @@ namespace nnfusion
                                                        bool is_host = false);
             virtual std::string get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu,
                                                       bool is_host = false);
-            virtual std::pair<std::string, std::string>
+            virtual std::tuple<std::string, std::string, std::string>
                 get_kernel_torch_entry_paras(std::shared_ptr<TranslationUnit> tu);
 
             virtual std::pair<std::string, std::string>

@@ -293,17 +293,17 @@ LanguageUnit_p
         //    << dimensions[0] << ", " << dimensions[1] << ", " << dimensions[2] << ", "
         //    << dimensions[3] << ", 1, 1, 1, 1));\n";
         lu << "CUDNN_SAFE_CALL(cudnnSetTensor4dDescriptorEx(" << desc << ", " << data_type << ", "
-           << "1, " << dimensions[1] << ", 1, 1, 1, 1, 1, 1));\n";
+           << "1, " << dimensions[3] << ", 1, 1, 1, 1, 1, 1));\n";
     }
     else if (shape.size() == 4)
     {
         // lu << "CUDNN_SAFE_CALL(cudnnSetTensor4dDescriptorEx(" << desc << ", " << data_type << ", "
         //    << static_cast<int>(shape[0]) << ", " << static_cast<int>(shape[1]) << ", "
         //    << static_cast<int>(shape[2]) << ", " << static_cast<int>(shape[3])
-        //    << ", 1, 1, 1, 1));\n";
+        //    << ", 1, 1, 1, 1));\n";i
 
         lu << "CUDNN_SAFE_CALL(cudnnSetTensor4dDescriptorEx(" << desc << ", " << data_type << ", "
-           << "1, " << static_cast<int>(shape[1]) << ",1, 1,  1, 1, 1, 1));\n";
+           << "1, " << static_cast<int>(shape[1]) << ",1, 1,  1, 1, 1, 1)); xxx\n"; // xxx for making compile error
     }
 
     return _lu;

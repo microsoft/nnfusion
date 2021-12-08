@@ -508,7 +508,7 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
     auto _d_input_shape = d_input_shape;
     auto _output_shape = output_shape;
     auto _d_output_shape = d_output_shape;
-
+    NNFUSION_LOG(INFO) << "---------4";
     if (rank == 3)
     {
         window_shape.insert(window_shape.begin(), 1);
@@ -520,7 +520,7 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
         _d_output_shape.insert(_d_output_shape.begin() + 2, 1);
         rank = 4;
     }
-
+    NNFUSION_LOG(INFO) << "---------5";
     // y dy x dx
     auto input_desc = cudnn_tensor_descriptor_from_shape(_input_shape, "input_desc", input_type);
     auto d_input_desc =
@@ -602,7 +602,7 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
     lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(output_desc));\n";
     lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(d_output_desc));\n";
     lu << "CUDNN_SAFE_CALL(cudnnDestroyPoolingDescriptor(desc));\n";
-
+    NNFUSION_LOG(INFO) << "---------6";
     return _lu;
 }
 

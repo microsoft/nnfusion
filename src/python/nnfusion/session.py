@@ -71,7 +71,7 @@ def convert_model_to_onnx(model, model_desc, device, file_name, const_folding):
 def codegen(model_path, flags, output_dir):
     model_path = os.path.abspath(model_path)
     with cd(output_dir):
-        command = "{} {} {} 2>&1 | tee codegen.log".format("nnfusion", model_path, flags)
+        command = "{} {} {}".format("nnfusion", model_path, flags)
         execute(command)
 
 

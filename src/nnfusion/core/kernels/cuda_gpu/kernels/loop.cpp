@@ -28,6 +28,7 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
     m_loop_output_map = op->get_loop_output_map();
+    m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
 }
 
 void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
@@ -82,6 +83,7 @@ LanguageUnit_p cuda::Loop::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
+    allocate_shared_memory(_lu);
     lu << "for (int64_t i = 0; i < *input0; i++)";
     lu.block_begin();
     // after the first loop, loop-carried output should be used as input

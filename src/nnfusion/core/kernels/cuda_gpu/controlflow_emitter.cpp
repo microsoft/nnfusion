@@ -1,4 +1,5 @@
 #include "controlflow_emitter.hpp"
+#include "nnfusion/engine/pass/graph/blockfusion/blockfusion_codegen.hpp"
 
 using namespace nnfusion;
 using namespace kernels;
@@ -24,6 +25,12 @@ std::pair<cuda::dim3, cuda::dim3>
             }
             else
             {
+                auto op = ins->getGNode()->get_op_ptr();
+                for (auto input : ins->get_inputs())
+                {
+                    std::cout << input->get_shape() << std::endl;
+                }
+                std::cout << ins->getGNode()->get_op_type() << "\n";
                 NNFUSION_CHECK_FAIL();
             }
         }
@@ -66,12 +73,6 @@ std::vector<ir::Instruction::Pointer>
                 result.push_back(ins);
             else if (kernel->get_kernel_type() == "cuda_lib")
             {
-                auto op = ins->getGNode()->get_op_ptr();
-                for (auto input : ins->get_inputs())
-                {
-                    std::cout << input->get_shape() << std::endl;
-                }
-                std::cout << ins->getGNode()->get_op_type() << "\n";
                 NNFUSION_CHECK_FAIL();
             }
         }
@@ -105,4 +106,50 @@ std::string cuda::ControlFlowEmitter::get_launch_bound(nnfusion::ir::Instruction
     cuda::dim3 grid = kernel->get_grid_dim();
     return "if (blockIdx.x < " + std::to_string(grid.x) + " && blockIdx.y < " +
            std::to_string(grid.y) + ")\n";
+}
+
+size_t cuda::ControlFlowEmitter::get_subgraph_shared_memory(const ir::Program& program)
+{
+    for (auto blk : program)
+        for (auto ins : *blk)
+        {
+            auto kernel = ins->getKernel();
+            if (dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
+            {
+                auto ptr = dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel);
+                m_shared_memory_size = max(m_shared_memory_size, ptr->get_shared_memory_size());
+            }
+            else if (dynamic_pointer_cast<ControlFlowEmitter>(kernel) != nullptr)
+            {
+                auto ptr = dynamic_pointer_cast<ControlFlowEmitter>(kernel);
+                m_shared_memory_size = max(m_shared_memory_size, ptr->m_shared_memory_size);
+            }
+        }
+    return m_shared_memory_size;
+}
+
+LanguageUnit_p cuda::ControlFlowEmitter::emit_device_function_body()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_body"));
+    auto& lu = *_lu;
+    is_emitting_block_kernel = true;
+    FunctionUnit_p fu = this->emit_source();
+    is_emitting_block_kernel = false;
+    lu << fu->body_unit->get_code() << "\n";
+    return _lu;
+}
+
+void cuda::ControlFlowEmitter::allocate_shared_memory(LanguageUnit_p _lu)
+{
+    if (is_emitting_block_kernel)
+        return;
+    auto& lu = *_lu;
+    if (m_shared_memory_size == 0)
+    {
+        lu << "char * shared_buffer = nullptr;\n";
+    }
+    else
+    {
+        lu << "__shared__ char shared_buffer[" + std::to_string(m_shared_memory_size) + "];\n";
+    }
 }

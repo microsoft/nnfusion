@@ -370,7 +370,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     dump_perf(FLAGS_fantares_perf_file, tuned_kernels, ir2cnt);
     if (FLAGS_fdefault_device == "CUDA")
     {
-        insert_to_kernel_cache(nodes);
+        // insert_to_kernel_cache(nodes);
     }
 
     return true;
@@ -387,8 +387,9 @@ void KernelTuning::register_single_kernel(const std::string& op_name)
             .Priority(9)
             .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                -> shared_ptr<kernels::KernelEmitter> {
-                return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(context);
-            })
+                                   return make_shared<kernels::cuda::AntaresCudaKernelEmitter>(
+                                       context);
+                               })
             .Build());
     kernels::KernelRegistrar kernel_registrar_cpu(
         op_name,
@@ -399,8 +400,9 @@ void KernelTuning::register_single_kernel(const std::string& op_name)
             .Priority(9)
             .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                -> shared_ptr<kernels::KernelEmitter> {
-                return make_shared<kernels::cpu::AntaresCpuKernelEmitter>(context);
-            })
+                                   return make_shared<kernels::cpu::AntaresCpuKernelEmitter>(
+                                       context);
+                               })
             .Build());
     kernels::KernelRegistrar kernel_registrar_hlsl(
         op_name,
@@ -411,8 +413,9 @@ void KernelTuning::register_single_kernel(const std::string& op_name)
             .Priority(9)
             .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                -> shared_ptr<kernels::KernelEmitter> {
-                return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(context);
-            })
+                                   return make_shared<kernels::hlsl::AntaresHLSLKernelEmitter>(
+                                       context);
+                               })
             .Build());
 }
 

@@ -19,6 +19,7 @@ public:
     std::shared_ptr<KernelContext> get_kernel_context() { return this->m_context; }
     static size_t get_unique_func_id() { return unique_func_id; }
     LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params) override;
+    size_t get_shared_memory_size();
 
 private:
     LanguageUnit_p emit_device_function_signature() override;
@@ -58,6 +59,7 @@ private:
     void compute_launch_config(int& grids, int& blocks, int& bound);
 
 private:
+    bool is_emitting_block_kernel = false;
     static size_t unique_func_id;
     BlockExecutorProgram block_executor_program;
 

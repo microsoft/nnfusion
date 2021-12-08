@@ -44,6 +44,7 @@ LanguageUnit_p cuda::FuncForward::emit_block_kernel_call(std::vector<std::string
     auto& lu = *_lu;
     if (m_block_func_name == "")
         m_block_func_name = m_kernel_name + "_recursion";
+    params.push_back("shared_buffer");
 
     lu << m_block_func_name + "_block_kernel(" << join(params, ", ") << ");\n";
     return _lu;
@@ -71,6 +72,7 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     m_loop_output_map = op->get_output_map();
     m_block_func_name = move(FuncForward::m_block_func_name);
     NNFUSION_CHECK(!m_block_func_name.empty());
+    m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
 }
 
 void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
@@ -113,6 +115,7 @@ LanguageUnit_p cuda::Recursion::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
+    allocate_shared_memory(_lu);
     generate_subgraph_code(_lu);
     m_saved_func_body = _lu;
     return _lu;

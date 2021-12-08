@@ -82,6 +82,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_block_kernel_call(std::vector<std::string
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
     auto& lu = *_lu;
+    params.push_back("shared_buffer");
     lu << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ");"
        << "\n";
@@ -131,6 +132,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_device_function_signature()
         ss << "output" << i;
         params.push_back(ss.str());
     }
+    params.push_back("char* shared_buffer");
     lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ")";
     return _lu;

@@ -724,10 +724,25 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_function_signature()
     return _lu;
 }
 
+size_t BlockFusionCudaCodegen::get_shared_memory_size()
+{
+    size_t kernel_shared_size = 0;
+
+    for (auto kernel : m_context->kernels)
+    {
+        auto block_kernel = std::dynamic_pointer_cast<BlockCudaEmitter>(kernel);
+        NNFUSION_CHECK_NOT_NULLPTR(block_kernel);
+        kernel_shared_size = std::max(kernel_shared_size, block_kernel->get_shared_memory_size());
+    }
+    return kernel_shared_size;
+}
+
 LanguageUnit_p BlockFusionCudaCodegen::emit_alloc_shared()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_alloc_shared"));
     LanguageUnit& lu = *_lu;
+    if (is_emitting_block_kernel)
+        return _lu;
 
     size_t kernel_shared_size = 0;
 
@@ -1350,6 +1365,7 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_device_function_signature()
     // }
     params.push_back("int thread_id");
     params.push_back("int block_id");
+    params.push_back("char* shared_buffer");
 
     lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ")";
@@ -1363,7 +1379,9 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_device_function_body()
 
     int block_size = m_blockDim.x * m_blockDim.y * m_blockDim.z;
     int block_num = m_gridDim.x * m_gridDim.y * m_gridDim.z;
-    FunctionUnit_p fu = this->get_or_emit_source();
+    is_emitting_block_kernel = true;
+    FunctionUnit_p fu = this->emit_source();
+    is_emitting_block_kernel = false;
 
     lu << "const dim3 blockDim(" << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z
        << ");\n";
@@ -1413,6 +1431,7 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_block_kernel_call(std::vector<std::s
     auto& lu = *_lu;
     params.push_back("threadIdx.x");
     params.push_back("blockIdx.x");
+    params.push_back("shared_buffer");
 
     lu << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ");"

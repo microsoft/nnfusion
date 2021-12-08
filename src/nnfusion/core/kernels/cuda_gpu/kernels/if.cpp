@@ -29,6 +29,8 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
     m_output_map = op->get_output_map();
+    m_shared_memory_size = max(get_subgraph_shared_memory(m_then_branch_tu->program),
+                               get_subgraph_shared_memory(m_else_branch_tu->program));
 }
 
 void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false)
@@ -77,6 +79,7 @@ LanguageUnit_p cuda::If::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
+    allocate_shared_memory(_lu);
     lu << "if (*input0) ";
     lu.block_begin();
     generate_branch_code(_lu, false);

@@ -11,6 +11,7 @@
 #include "nnfusion/engine/async_manager.hpp"
 
 DECLARE_string(fantares_codegen_server);
+DECLARE_string(ftuning_list);
 
 namespace nnfusion
 {
@@ -209,10 +210,14 @@ namespace nnfusion
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
                     GENERIC_OP_LOGGING();
+                    parse_tuning_list();
                     if (!FLAGS_fantares_codegen_server.empty())
                     {
                         // NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
-
+                        if (TuningList.find(ctx->gnode->get_op_type()) == TuningList.end())
+                        {
+                            return;
+                        }
                         ir = nnfusion::op::get_translation(ctx->gnode);
 #if 0
                         std::unordered_set<std::string> wl = {
@@ -300,6 +305,19 @@ namespace nnfusion
                     }
                 }
 
+                bool parse_tuning_list()
+                {
+                    auto tuninglist_str = FLAGS_ftuning_list;
+                    stringstream ss(tuninglist_str);
+                    while (ss.good())
+                    {
+                        string substr;
+                        getline(ss, substr, ',');
+                        TuningList.insert(substr);
+                    }
+                    NNFUSION_LOG(INFO) << "Kernel Tuning List: " << join(TuningList, ", ");
+                }
+
                 virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
                     shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr) override;
 
@@ -327,6 +345,7 @@ namespace nnfusion
                 std::vector<AntaresKernelInfo::Pointer> kernel_info;
                 std::unordered_map<std::string, std::string>
                     tensor_name_map; // antares tensor name : kernel tensor name
+                std::unordered_set<std::string> TuningList;
             };
 
             class CacheCudaEmitter : public CudaEmitter

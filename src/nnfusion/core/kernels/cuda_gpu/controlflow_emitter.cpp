@@ -8,32 +8,12 @@ std::pair<cuda::dim3, cuda::dim3>
     cuda::ControlFlowEmitter::get_subgraph_launch_config(const ir::Program& program)
 {
     cuda::dim3 block_dim{0, 0, 0}, grid_dim{0, 0, 0};
-    for (auto blk : program)
+    auto instructions = get_fused_kernel(program);
+    for (auto ins : instructions)
     {
-        for (auto ins : *blk)
-        {
-            auto kernel = ins->getKernel();
-            // neglect the Constant copy
-            if (kernel == nullptr || ins->getGNode()->get_op_type() == "Result" ||
-                ins->getGNode()->get_op_type() == "Constant")
-                continue;
-            if (kernel->get_kernel_type() == "cuda")
-            {
-                auto cuda_kernel = static_pointer_cast<cuda::CudaEmitter>(kernel);
-                block_dim = maxdim3(block_dim, cuda_kernel->get_block_dim());
-                grid_dim = maxdim3(grid_dim, cuda_kernel->get_grid_dim());
-            }
-            else
-            {
-                auto op = ins->getGNode()->get_op_ptr();
-                for (auto input : ins->get_inputs())
-                {
-                    std::cout << input->get_shape() << std::endl;
-                }
-                std::cout << ins->getGNode()->get_op_type() << "\n";
-                NNFUSION_CHECK_FAIL();
-            }
-        }
+        auto cuda_kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+        block_dim = maxdim3(block_dim, cuda_kernel->get_block_dim());
+        grid_dim = maxdim3(grid_dim, cuda_kernel->get_grid_dim());
     }
     return std::make_pair(block_dim, grid_dim);
 }
@@ -65,15 +45,25 @@ std::vector<ir::Instruction::Pointer>
         for (auto ins : *blk)
         {
             auto kernel = ins->getKernel();
+            auto type = ins->getGNode()->get_op_type();
+            if ((type == "Reshape" || type == "BroadCast") &&
+                ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size())
+                continue;
             // neglect the Constant copy
-            if (kernel == nullptr || ins->getGNode()->get_op_type() == "Result" ||
-                ins->getGNode()->get_op_type() == "Constant")
+            if (kernel == nullptr || type == "Result" || type == "Constant")
                 continue;
             if (kernel->get_kernel_type() == "cuda")
                 result.push_back(ins);
             else if (kernel->get_kernel_type() == "cuda_lib")
             {
-                NNFUSION_CHECK_FAIL();
+                for (auto input : ins->get_inputs())
+                    std::cout << input->get_shape() << " ";
+                std::cout << endl;
+                for (auto input : ins->get_outputs())
+                    std::cout << input->get_shape() << " ";
+                std::cout << endl;
+                std::cout << ins->getGNode()->get_op_type() << "\n";
+                // NNFUSION_CHECK_FAIL();
             }
         }
     }
@@ -151,5 +141,30 @@ void cuda::ControlFlowEmitter::allocate_shared_memory(LanguageUnit_p _lu)
     else
     {
         lu << "__shared__ char shared_buffer[" + std::to_string(m_shared_memory_size) + "];\n";
+    }
+}
+
+void cuda::ControlFlowEmitter::bypass_instructions(const ir::Program& program)
+{
+    std::vector<nnfusion::ir::Instruction::Pointer> instructions;
+    for (auto blk : program)
+        for (auto ins : *blk)
+            instructions.push_back(ins);
+
+    std::unordered_map<nnfusion::descriptor::Tensor::Pointer, nnfusion::descriptor::Tensor::Pointer>
+        replace;
+    for (auto ins : instructions)
+    {
+        auto kernel = ins->getKernel();
+        auto type = ins->getGNode()->get_op_type();
+        if ((type == "Reshape" || type == "BroadCast") &&
+            ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size())
+            replace[ins->get_outputs()[0]] = ins->get_inputs()[0];
+        else
+        {
+            for (auto& input : ins->get_inputs())
+                if (replace.count(input))
+                    input = replace[input];
+        }
     }
 }

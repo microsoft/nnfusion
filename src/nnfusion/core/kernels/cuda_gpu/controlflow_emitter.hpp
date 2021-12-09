@@ -30,6 +30,8 @@ namespace nnfusion
 
                 void allocate_shared_memory(LanguageUnit_p _lu);
 
+                static void bypass_instructions(const ir::Program& program);
+
                 std::string get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor);
                 std::string get_launch_bound(nnfusion::ir::Instruction::Pointer ins);
                 size_t get_subgraph_shared_memory(const ir::Program& program);

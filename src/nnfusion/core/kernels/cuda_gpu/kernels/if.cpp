@@ -31,6 +31,8 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_output_map = op->get_output_map();
     m_shared_memory_size = max(get_subgraph_shared_memory(m_then_branch_tu->program),
                                get_subgraph_shared_memory(m_else_branch_tu->program));
+    bypass_instructions(m_then_branch_tu->program);
+    bypass_instructions(m_else_branch_tu->program);
 }
 
 void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false)

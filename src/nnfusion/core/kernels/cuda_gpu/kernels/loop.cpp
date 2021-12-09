@@ -29,6 +29,7 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     m_context->input_names.push_back(m_workspace->get_name());
     m_loop_output_map = op->get_loop_output_map();
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
+    bypass_instructions(m_loop_body_tu->program);
 }
 
 void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)

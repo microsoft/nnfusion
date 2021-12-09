@@ -460,8 +460,6 @@ namespace nnfusion
                 }
                 else
                 {
-                    ret = get_convert_func(node_proto.op_type(),
-                                           node_proto.domain())(node_proto, m_node_map, m_graph);
                     const auto& convert_func =
                         get_convert_func(node_proto.op_type(), node_proto.domain());
                     if (convert_func)

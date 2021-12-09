@@ -20,7 +20,7 @@ using namespace nnfusion::kernels;
 
 const size_t BlockFusionWavefrontOptimizer::DEFAULT_GROUP_ID = -1;
 size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
-size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
+size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 160;
 const size_t BlockFusionWavefrontOptimizer::RESOURCE_CAPACITY =
     4 * 80; // volta max parallelism: 4 * #SM
 

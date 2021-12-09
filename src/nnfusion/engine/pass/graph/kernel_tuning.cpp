@@ -150,7 +150,7 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
         NNFUSION_CHECK(n_device_type != UNKNOWN);
 
         // filter ops not in TuningList
-        if (tuning_list.find(gnode->get_op_type()) == tuning_list.end())
+        if (tuning_list.size() > 0 && tuning_list.find(gnode->get_op_type()) == tuning_list.end())
         {
             continue;
         }

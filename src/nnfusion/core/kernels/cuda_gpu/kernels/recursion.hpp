@@ -31,7 +31,6 @@ namespace nnfusion
                 void set_launch_config() override;
 
             private:
-                LanguageUnit_p m_saved_func_body;
                 std::string m_block_func_name;
                 void generate_subgraph_code(LanguageUnit_p);
                 descriptor::Tensor::Pointer m_workspace;

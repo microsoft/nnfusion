@@ -117,7 +117,6 @@ LanguageUnit_p cuda::Recursion::emit_function_body()
     auto& lu = *_lu;
     allocate_shared_memory(_lu);
     generate_subgraph_code(_lu);
-    m_saved_func_body = _lu;
     return _lu;
 }
 
@@ -150,7 +149,9 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
     LanguageUnit_p kernel_code(new LanguageUnit(get_function_name() + "_block_kernel"));
     (*kernel_code) << this->emit_device_function_signature()->get_code();
     kernel_code->block_begin();
-    (*kernel_code) << m_saved_func_body->get_code();
+    is_emitting_block_kernel = true;
+    (*kernel_code) << emit_function_body()->get_code();
+    is_emitting_block_kernel = false;
     kernel_code->block_end();
     m_kernel_name = saved;
 

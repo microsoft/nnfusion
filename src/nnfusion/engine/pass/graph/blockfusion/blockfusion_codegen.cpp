@@ -724,10 +724,25 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_function_signature()
     return _lu;
 }
 
+size_t BlockFusionCudaCodegen::get_shared_memory_size()
+{
+    size_t kernel_shared_size = 0;
+
+    for (auto kernel : m_context->kernels)
+    {
+        auto block_kernel = std::dynamic_pointer_cast<BlockCudaEmitter>(kernel);
+        NNFUSION_CHECK_NOT_NULLPTR(block_kernel);
+        kernel_shared_size = std::max(kernel_shared_size, block_kernel->get_shared_memory_size());
+    }
+    return kernel_shared_size;
+}
+
 LanguageUnit_p BlockFusionCudaCodegen::emit_alloc_shared()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_alloc_shared"));
     LanguageUnit& lu = *_lu;
+    if (is_emitting_block_kernel)
+        return _lu;
 
     size_t kernel_shared_size = 0;
 
@@ -1313,4 +1328,113 @@ bool BlockFusionCudaCodegen::check_instruction_sequential(BEInstruction_p ins_a,
     }
 
     return false;
+}
+
+LanguageUnit_p BlockFusionCudaCodegen::emit_device_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_sig"));
+    auto& lu = *_lu;
+
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+    for (size_t i = 0; i < m_context->tensors.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << "temp" << i;
+        params.push_back(ss.str());
+    }
+    // be_state_buffer for group_sync
+    // if (this->is_group_sync)
+    // {
+    //     params[params.size() - 1] = "volatile int* be_state_buffer";
+    // }
+    params.push_back("int thread_id");
+    params.push_back("int block_id");
+    params.push_back("char* shared_buffer");
+
+    lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ")";
+    return _lu;
+}
+
+LanguageUnit_p BlockFusionCudaCodegen::emit_device_function_body()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_body"));
+    auto& lu = *_lu;
+
+    int block_size = m_blockDim.x * m_blockDim.y * m_blockDim.z;
+    int block_num = m_gridDim.x * m_gridDim.y * m_gridDim.z;
+    is_emitting_block_kernel = true;
+    FunctionUnit_p fu = this->emit_source();
+    is_emitting_block_kernel = false;
+
+    lu << "const dim3 blockDim(" << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z
+       << ");\n";
+    lu << "const dim3 gridDim(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z
+       << ");\n";
+
+    if (m_blockDim.y != 1 && m_blockDim.z == 1)
+    {
+        lu << "const dim3 threadIdx(thread_id % " << m_blockDim.x << ", thread_id / "
+           << m_blockDim.x << ", 0);\n";
+    }
+    else if (m_blockDim.y == 1 && m_blockDim.z != 1)
+    {
+        lu << "const dim3 threadIdx(thread_id % " << m_blockDim.x << ", 0, thread_id / "
+           << m_blockDim.x << ");\n";
+    }
+    else if (m_blockDim.y != 1 && m_blockDim.z != 1)
+    {
+        lu << "const dim3 threadIdx(thread_id % " << m_blockDim.x << ", thread_id / "
+           << m_blockDim.x << " % " << m_blockDim.y << ", thread_id / "
+           << m_blockDim.x * m_blockDim.y << ");\n";
+    }
+
+    if (m_gridDim.y == 1 && m_gridDim.z == 1)
+    {
+        lu << "const dim3 blockIdx(block_id, 0, 0);\n";
+    }
+    else if (m_gridDim.z == 1)
+    {
+        lu << "const dim3 blockIdx(block_id % " << m_gridDim.x << ", block_id / " << m_gridDim.x
+           << ", 0);\n";
+    }
+    else
+    {
+        lu << "const dim3 blockIdx(block_id % " << m_gridDim.x << ", block_id / " << m_gridDim.x
+           << " % " << m_gridDim.y << ", block_id / " << m_gridDim.x * m_gridDim.y << ");\n";
+    }
+
+    lu << fu->body_unit->get_code() << "\n";
+
+    return _lu;
+}
+
+LanguageUnit_p BlockFusionCudaCodegen::emit_block_kernel_call(std::vector<std::string> params)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
+    auto& lu = *_lu;
+    params.push_back("threadIdx.x");
+    params.push_back("blockIdx.x");
+    params.push_back("shared_buffer");
+
+    lu << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ");"
+       << "\n";
+    return _lu;
 }

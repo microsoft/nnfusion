@@ -261,7 +261,7 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
 {
     uint32_t num_ele =
         static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-    for (int i = 512; i >= 64; i >>= 1)
+    for (int i = 256; i >= 64; i >>= 1)
     {
         if (num_ele % i == 0)
         {
@@ -269,7 +269,7 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
             return;
         }
     }
-    for (int i = 512; i >= 32; i--)
+    for (int i = 256; i >= 32; i--)
     {
         if (num_ele % i == 0)
         {

@@ -80,6 +80,12 @@ public:
         *this << "}\n";
     }
 
+    void clear()
+    {
+        indent = 0;
+        m_ss.str("");
+    }
+
 private:
     std::stringstream m_ss;
     bool m_pending_indent;

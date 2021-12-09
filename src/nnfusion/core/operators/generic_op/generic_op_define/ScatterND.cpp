@@ -14,7 +14,7 @@ REGISTER_OP(ScatterND)
         const nnfusion::Shape& data_shape = gnode->get_input_shape(0);
         const nnfusion::Shape& index_shape = gnode->get_input_shape(1);
         const nnfusion::Shape& update_shape = gnode->get_input_shape(2);
-        NNFUSION_CHECK(index_shape.size() > 1);
+        NNFUSION_CHECK(index_shape.size() >= 1);
         size_t update_dim = index_shape[index_shape.size() - 1];
         NNFUSION_CHECK(update_shape.size() ==
                        index_shape.size() - 1 + data_shape.size() - update_dim);

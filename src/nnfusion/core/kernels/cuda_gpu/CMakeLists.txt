@@ -7,6 +7,7 @@ set(SRC
     cuda_cudnn.cpp
     cuda_helper.cpp
     cuda_langunit.cpp
+    controlflow_emitter.cpp
     cuda_testutil.cpp
     util/gpu_util.cpp
 )

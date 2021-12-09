@@ -59,6 +59,7 @@ namespace nnfusion
         string get_symbol() { return symbol; }
         string collect_code();
         string collect_required_code();
+        void code_symbol_replace(const std::string& src, const std::string& tgt);
         virtual void execute(bool append = true);
         virtual void divide_code();
 

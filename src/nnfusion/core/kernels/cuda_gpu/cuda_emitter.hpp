@@ -11,6 +11,7 @@
 #include "nnfusion/engine/async_manager.hpp"
 
 DECLARE_string(fantares_codegen_server);
+DECLARE_string(ftuning_list);
 
 namespace nnfusion
 {
@@ -42,7 +43,8 @@ namespace nnfusion
                     : KernelEmitter(ctx, "cuda")
                 {
                 }
-
+                virtual LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params);
+                virtual LanguageUnit_p emit_block_kernel();
                 virtual bool is_static_function() override { return false; }
                 // Need to regenerate function call with new assigned launch config(stream).
                 LanguageUnit_p emit_function_call() override;
@@ -53,6 +55,8 @@ namespace nnfusion
                     shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr) override;
 
             protected:
+                virtual LanguageUnit_p emit_device_function_body();
+                virtual LanguageUnit_p emit_device_function_signature();
                 // config the blockDim and gridDim
                 virtual void set_launch_config() = 0;
 
@@ -84,7 +88,6 @@ namespace nnfusion
                     shared_memory_log.dtype.clear();
                     shared_memory_log.size.clear();
                 }
-
                 static const std::unordered_map<std::string, size_t> size_of_str_type;
 
                 size_t get_shared_memory_size() { return shared_memory_size; }
@@ -106,7 +109,7 @@ namespace nnfusion
                     return is_emitting_block_kernel ? m_block_function_unit : m_function_unit;
                 }
 
-                LanguageUnit_p emit_block_kernel()
+                LanguageUnit_p emit_block_kernel() override
                 {
                     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel"));
                     auto& lu = *_lu;
@@ -123,8 +126,9 @@ namespace nnfusion
                     return _lu;
                 }
 
-                LanguageUnit_p emit_device_function_signature();
-                LanguageUnit_p emit_device_function_body();
+                LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params) override;
+                LanguageUnit_p emit_device_function_signature() override;
+                LanguageUnit_p emit_device_function_body() override;
 
                 // this API can only be used inner the function body
                 void emit_thread_sync(LanguageUnit& lu) override
@@ -206,10 +210,14 @@ namespace nnfusion
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
                     GENERIC_OP_LOGGING();
+                    parse_tuning_list();
                     if (!FLAGS_fantares_codegen_server.empty())
                     {
                         // NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
-
+                        if (TuningList.find(ctx->gnode->get_op_type()) == TuningList.end())
+                        {
+                            return;
+                        }
                         ir = nnfusion::op::get_translation(ctx->gnode);
 #if 0
                         std::unordered_set<std::string> wl = {
@@ -287,6 +295,7 @@ namespace nnfusion
                                                    << ctx->gnode->get_op_type();
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
+                            return;
                         }
 
                         kernel_info =
@@ -294,6 +303,19 @@ namespace nnfusion
                         NNFUSION_CHECK(!kernel_info.empty());
                         process_antares_kernel_info();
                     }
+                }
+
+                bool parse_tuning_list()
+                {
+                    auto tuninglist_str = FLAGS_ftuning_list;
+                    stringstream ss(tuninglist_str);
+                    while (ss.good())
+                    {
+                        string substr;
+                        getline(ss, substr, ',');
+                        TuningList.insert(substr);
+                    }
+                    NNFUSION_LOG(INFO) << "Kernel Tuning List: " << join(TuningList, ", ");
                 }
 
                 virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
@@ -323,6 +345,7 @@ namespace nnfusion
                 std::vector<AntaresKernelInfo::Pointer> kernel_info;
                 std::unordered_map<std::string, std::string>
                     tensor_name_map; // antares tensor name : kernel tensor name
+                std::unordered_set<std::string> TuningList;
             };
 
             class CacheCudaEmitter : public CudaEmitter

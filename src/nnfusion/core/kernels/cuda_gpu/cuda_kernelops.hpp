@@ -53,6 +53,7 @@ namespace nnfusion
         class GreaterEq;
         class Less;
         class LessEq;
+        class Mod;
         class Not;
         class Relu;
         class ReluBackprop;
@@ -273,6 +274,13 @@ namespace nnfusion
             {
                 static constexpr const char* op = "divnonan";
                 static constexpr const char* math_kernel = "x1 != 0 ? fdividef(x0, x1) : 0";
+            };
+
+            template <>
+            struct CudaOpMap<nnfusion::op::Mod>
+            {
+                static constexpr const char* op = "fmod";
+                static constexpr const char* math_kernel = nullptr;
             };
 
             template <>

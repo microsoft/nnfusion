@@ -54,6 +54,7 @@ namespace nnfusion
             LU_DECLARE(math_Gelu);
             LU_DECLARE(ort_softmax);
             LU_DECLARE(warp);
+            LU_DECLARE(barrier);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

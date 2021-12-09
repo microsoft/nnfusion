@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "engine.hpp"
+#include "nnfusion/engine/pass/codegen/base_codegen_pass.hpp"
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
 
 DEFINE_bool(fkernels_as_files, false, "Saving kernels as standalone source code files.");
@@ -55,4 +56,37 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
 
     NNFUSION_CHECK(result) << "Engine failed after finished codegen passes.";
     return result;
+}
+
+nnfusion::TranslationUnit::Pointer Engine::convert_graph_to_program(graph::Graph::Pointer graph)
+{
+    // this function has the same logic with Engine::run_on_graph, 
+    // except that it will not do codegen and will return translation unit object.
+    auto context = make_shared<EngineContext>();
+    bool result = true;
+    if (g_passes != nullptr)
+        result = g_passes->run_on_graph(graph, context);
+    NNFUSION_CHECK(result) << "Engine failed after finished graph passes.";
+    ir::Program::Pointer p = nullptr;
+    p = g_visitor->run_on_graph(graph, context);
+
+    shared_ptr<TranslationUnit> tu(new TranslationUnit());
+    shared_ptr<InterpreterContext> ctx(new InterpreterContext());
+    tu->program = move(*p);
+    {
+        NNFUSION_LOG(INFO) << "Legacy graph used in interpreter;";
+        tu->m_graph = context->m_legacy_graph;
+        NNFUSION_CHECK(tu->m_graph != nullptr);
+        std::unordered_set<graph::Graph::Pointer> graph_vec{tu->m_graph};
+        ctx->m_graphs = graph_vec;
+        tu->blacklist = context->blacklist;
+    }
+    // neglect the codegen pass
+    for (size_t i = 0; i < m_passes->size() - 1; i++)
+    {
+        result = (*m_passes)[i]->run(ctx, tu);
+        if (!result)
+            break;
+    }
+    return tu;
 }

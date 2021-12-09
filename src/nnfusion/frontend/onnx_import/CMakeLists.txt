@@ -32,6 +32,12 @@ add_library(onnx_import STATIC
         core/attribute.cpp
         core/node.hpp
         core/node.cpp
+        op/if.hpp
+        op/if.cpp
+        op/loop.hpp
+        op/loop.cpp
+        op/recursion.hpp
+        op/recursion.cpp
         op/no.hpp
         op/no.cpp
         op/slice.hpp

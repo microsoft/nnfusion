@@ -27,54 +27,29 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     m_workspace = allocate_tensor(Shape{workspace_size}, nnfusion::element::character);
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
-    m_loop_output_map = op->get_loop_output_map();
+    auto output_map = op->get_loop_output_map();
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
-    bypass_instructions(m_loop_body_tu->program);
+    for (auto& item : output_map)
+        item.second--;
+    create_param_map(m_loop_body_tu->program, output_map);
 }
 
 void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
 {
     auto& lu = *_lu;
     auto instructions = get_fused_kernel(m_loop_body_tu->program);
-    auto inputs = get_subgraph_inputs(m_loop_body_tu->program);
     for (auto ins : instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         lu << get_launch_bound(ins);
         std::vector<string> params;
         for (auto tensor : ins->get_inputs())
-        {
-            if (inputs.count(tensor->get_name()))
-            {
-                auto input_index = inputs[tensor->get_name()];
-                if (input_index == -1)
-                    params.push_back("&i");
-                else
-                    params.push_back("input" + std::to_string(input_index));
-            }
-            else
-                params.push_back(get_workspace_tensor(tensor));
-        }
+            params.push_back(m_param_map[tensor]);
         for (auto tensor : ins->get_outputs())
-        {
-            if (m_loop_output_map.count(tensor->get_name(false)))
-            {
-                auto output_index = m_loop_output_map[tensor->get_name(false)];
-                if (output_index == 0)
-                {
-                    params.push_back("input1");
-                }
-                else
-                {
-                    params.push_back("output" + std::to_string(output_index - 1));
-                }
-            }
-            else
-                params.push_back(get_workspace_tensor(tensor));
-        }
+            params.push_back(m_param_map[tensor]);
         if (std::dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
             for (auto tensor : kernel->m_context->tensors)
-                params.push_back(get_workspace_tensor(tensor));
+                params.push_back(m_param_map[tensor]);
         lu << kernel->emit_block_kernel_call(params)->get_code();
         lu << "Barrier();\n";
     }

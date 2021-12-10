@@ -30,13 +30,17 @@ namespace nnfusion
 
                 void allocate_shared_memory(LanguageUnit_p _lu);
 
-                static void bypass_instructions(const ir::Program& program);
+                void create_param_map(
+                    const ir::Program& program,
+                    const std::unordered_map<std::string, int>& subgraph_output_map);
 
                 std::string get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor);
                 std::string get_launch_bound(nnfusion::ir::Instruction::Pointer ins);
                 size_t get_subgraph_shared_memory(const ir::Program& program);
                 size_t m_shared_memory_size = 0;
                 bool is_emitting_block_kernel = false;
+                descriptor::Tensor::Pointer m_workspace;
+                std::unordered_map<nnfusion::descriptor::Tensor::Pointer, std::string> m_param_map;
             };
         }
     }

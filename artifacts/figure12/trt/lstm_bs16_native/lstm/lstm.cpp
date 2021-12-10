@@ -56,7 +56,7 @@ const std::string gSampleName = "TensorRT.sample_lstm";
 
 // Information describing the network
 const int LAYER_COUNT = 10;
-const int BATCH_SIZE = 16;
+const int BATCH_SIZE = 128;
 const int HIDDEN_SIZE = 256;
 const int SEQ_SIZE = 100;
 const int DATA_SIZE = HIDDEN_SIZE;
@@ -470,7 +470,7 @@ void APIToModel(std::map<std::string, Weights> &weightMap, IHostMemory **modelSt
     }
 
     // Build the engine
-    builder->setMaxBatchSize(16);
+    builder->setMaxBatchSize(128);
     builder->setMaxWorkspaceSize(1 << 30);
     // builder->setFp16Mode(true);
     builder->setFp16Mode(false);

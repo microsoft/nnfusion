@@ -126,6 +126,27 @@ class AlexnetNchw(BaseNet):
         self.input_node = "eval_input"
         self.output_node = ["cg/affine2/xw_plus_b"]
 
+class ResNet(BaseNet):
+    def __init__(self):
+        self.name = "resnet_bs128"
+        self.image_size = (128, 3, 224, 224)
+        self.input_node = "eval_input"
+        self.output_node = ["resnet_model/dense/BiasAdd"]
+
+class NasNet(BaseNet):
+    def __init__(self):
+        self.name = "nasnet_bs128"
+        self.image_size = (128, 3, 331, 331)
+        self.input_node = "eval_input"
+        self.output_node = ["final_layer/FC/BiasAdd"]
+
+class Bert(BaseNet):
+    def __init__(self):
+        self.name = "bert_large_bs128"
+        self.image_size = (128, 3, 224, 224)
+        self.input_node = "eval_input"
+        self.output_node = ["resnet_model/dense/BiasAdd"]
+
 if __name__ == "__main__":
     net = globals()[FLAGS.model]()
     sess = tf.Session()

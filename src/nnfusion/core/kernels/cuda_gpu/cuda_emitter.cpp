@@ -95,7 +95,7 @@ LanguageUnit_p cuda::BlockCudaEmitter::emit_block_kernel_call(std::vector<std::s
     auto& lu = *_lu;
     params.push_back("threadIdx.x");
     params.push_back("blockIdx.x");
-    params.push_back("NULL");
+    params.push_back("shared_buffer");
     lu << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ");"
        << "\n";

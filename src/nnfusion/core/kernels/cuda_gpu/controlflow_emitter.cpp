@@ -7,13 +7,17 @@ using namespace kernels;
 std::pair<cuda::dim3, cuda::dim3>
     cuda::ControlFlowEmitter::get_subgraph_launch_config(const ir::Program& program)
 {
-    cuda::dim3 block_dim{0, 0, 0}, grid_dim{0, 0, 0};
+    cuda::dim3 block_dim{1, 1, 1}, grid_dim{1, 1, 1};
     auto instructions = get_fused_kernel(program);
     for (auto ins : instructions)
     {
         auto cuda_kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        block_dim = maxdim3(block_dim, cuda_kernel->get_block_dim());
-        grid_dim = maxdim3(grid_dim, cuda_kernel->get_grid_dim());
+        bool is_block = dynamic_pointer_cast<cuda::BlockCudaEmitter>(ins->getKernel()) != nullptr;
+        auto dimb = cuda_kernel->get_block_dim(), dimg = cuda_kernel->get_grid_dim();
+        // if (!is_block && (dimb.y + dimb.z + dimg.y + dimg.z) != 4)
+        //     NNFUSION_CHECK_FAIL() << ins->getGNode()->get_op_type();
+        block_dim.x = max(block_dim.x, dimb.x * dimb.y * dimb.z);
+        grid_dim.x = max(grid_dim.x, dimg.x * dimg.y * dimg.z);
     }
     return std::make_pair(block_dim, grid_dim);
 }
@@ -46,7 +50,7 @@ std::vector<ir::Instruction::Pointer>
         {
             auto kernel = ins->getKernel();
             auto type = ins->getGNode()->get_op_type();
-            if ((type == "Reshape" || type == "BroadCast") &&
+            if ((type == "Reshape" || type == "Broadcast") &&
                 ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size())
                 continue;
             // neglect the Constant copy
@@ -94,8 +98,7 @@ std::string cuda::ControlFlowEmitter::get_launch_bound(nnfusion::ir::Instruction
         return "";
     auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
     cuda::dim3 grid = kernel->get_grid_dim();
-    return "if (blockIdx.x < " + std::to_string(grid.x) + " && blockIdx.y < " +
-           std::to_string(grid.y) + ")\n";
+    return "if (blockIdx.x < " + std::to_string(grid.x * grid.y * grid.z) + ")\n";
 }
 
 size_t cuda::ControlFlowEmitter::get_subgraph_shared_memory(const ir::Program& program)
@@ -157,7 +160,7 @@ void cuda::ControlFlowEmitter::bypass_instructions(const ir::Program& program)
     {
         auto kernel = ins->getKernel();
         auto type = ins->getGNode()->get_op_type();
-        if ((type == "Reshape" || type == "BroadCast") &&
+        if ((type == "Reshape" || type == "Broadcast") &&
             ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size())
             replace[ins->get_outputs()[0]] = ins->get_inputs()[0];
         else

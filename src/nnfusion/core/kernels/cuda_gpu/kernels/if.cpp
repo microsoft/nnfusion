@@ -28,9 +28,10 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_workspace = allocate_tensor(Shape({std::max(size0, size1)}), nnfusion::element::character);
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
-    m_output_map = op->get_output_map();
     m_shared_memory_size = max(get_subgraph_shared_memory(m_then_branch_tu->program),
                                get_subgraph_shared_memory(m_else_branch_tu->program));
+    create_param_map(m_then_branch_tu->program, op->get_output_map());
+    create_param_map(m_else_branch_tu->program, op->get_output_map());
 }
 
 void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false)
@@ -42,36 +43,20 @@ void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false
     }
     auto& lu = *_lu;
     auto instructions = get_fused_kernel(tu->program);
-    auto inputs = get_subgraph_inputs(tu->program);
     for (auto ins : instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         lu << get_launch_bound(ins);
         std::vector<string> params;
-        int tensor_cnt = 0;
         for (auto tensor : ins->get_inputs())
-        {
-            if (inputs.count(tensor->get_name()))
-            {
-                auto input_index = inputs[tensor->get_name()];
-                params.push_back("input" + std::to_string(input_index));
-            }
-            else
-                params.push_back(get_workspace_tensor(tensor));
-        }
+            params.push_back(m_param_map[tensor]);
         for (auto tensor : ins->get_outputs())
-        {
-            if (m_output_map.count(tensor->get_name(false)))
-                params.push_back("output" + std::to_string(m_output_map[tensor->get_name(false)]));
-            else
-                params.push_back(get_workspace_tensor(tensor));
-        }
+            params.push_back(m_param_map[tensor]);
         if (std::dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
             for (auto tensor : kernel->m_context->tensors)
-                params.push_back(get_workspace_tensor(tensor));
+                params.push_back(m_param_map[tensor]);
         lu << kernel->emit_block_kernel_call(params)->get_code();
-        if (ins != instructions.back())
-            lu << "Barrier();\n";
+        lu << "Barrier();\n";
     }
 }
 

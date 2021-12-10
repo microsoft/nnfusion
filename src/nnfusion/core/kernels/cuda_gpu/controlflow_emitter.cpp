@@ -7,33 +7,17 @@ using namespace kernels;
 std::pair<cuda::dim3, cuda::dim3>
     cuda::ControlFlowEmitter::get_subgraph_launch_config(const ir::Program& program)
 {
-    cuda::dim3 block_dim{0, 0, 0}, grid_dim{0, 0, 0};
-    for (auto blk : program)
+    cuda::dim3 block_dim{1, 1, 1}, grid_dim{1, 1, 1};
+    auto instructions = get_fused_kernel(program);
+    for (auto ins : instructions)
     {
-        for (auto ins : *blk)
-        {
-            auto kernel = ins->getKernel();
-            // neglect the Constant copy
-            if (kernel == nullptr || ins->getGNode()->get_op_type() == "Result" ||
-                ins->getGNode()->get_op_type() == "Constant")
-                continue;
-            if (kernel->get_kernel_type() == "cuda")
-            {
-                auto cuda_kernel = static_pointer_cast<cuda::CudaEmitter>(kernel);
-                block_dim = maxdim3(block_dim, cuda_kernel->get_block_dim());
-                grid_dim = maxdim3(grid_dim, cuda_kernel->get_grid_dim());
-            }
-            else
-            {
-                auto op = ins->getGNode()->get_op_ptr();
-                for (auto input : ins->get_inputs())
-                {
-                    std::cout << input->get_shape() << std::endl;
-                }
-                std::cout << ins->getGNode()->get_op_type() << "\n";
-                NNFUSION_CHECK_FAIL();
-            }
-        }
+        auto cuda_kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+        bool is_block = dynamic_pointer_cast<cuda::BlockCudaEmitter>(ins->getKernel()) != nullptr;
+        auto dimb = cuda_kernel->get_block_dim(), dimg = cuda_kernel->get_grid_dim();
+        // if (!is_block && (dimb.y + dimb.z + dimg.y + dimg.z) != 4)
+        //     NNFUSION_CHECK_FAIL() << ins->getGNode()->get_op_type();
+        block_dim.x = max(block_dim.x, dimb.x * dimb.y * dimb.z);
+        grid_dim.x = max(grid_dim.x, dimg.x * dimg.y * dimg.z);
     }
     return std::make_pair(block_dim, grid_dim);
 }
@@ -65,16 +49,17 @@ std::vector<ir::Instruction::Pointer>
         for (auto ins : *blk)
         {
             auto kernel = ins->getKernel();
-            // neglect the Constant copy
-            if (kernel == nullptr || ins->getGNode()->get_op_type() == "Result" ||
-                ins->getGNode()->get_op_type() == "Constant")
+            auto type = ins->getGNode()->get_op_type();
+            if ((type == "Reshape" || type == "Broadcast") &&
+                ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size())
                 continue;
-            if (kernel->get_kernel_type() == "cuda")
+            if (type == "GatherV2")
+                continue;
+            // neglect the Constant copy
+            if (kernel == nullptr || type == "Result" || type == "Constant")
+                continue;
+            if (dynamic_pointer_cast<CudaEmitter>(kernel) != nullptr)
                 result.push_back(ins);
-            else if (kernel->get_kernel_type() == "cuda_lib")
-            {
-                NNFUSION_CHECK_FAIL();
-            }
         }
     }
     return result;
@@ -104,8 +89,7 @@ std::string cuda::ControlFlowEmitter::get_launch_bound(nnfusion::ir::Instruction
         return "";
     auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
     cuda::dim3 grid = kernel->get_grid_dim();
-    return "if (blockIdx.x < " + std::to_string(grid.x) + " && blockIdx.y < " +
-           std::to_string(grid.y) + ")\n";
+    return "if (blockIdx.x < " + std::to_string(grid.x * grid.y * grid.z) + ")\n";
 }
 
 size_t cuda::ControlFlowEmitter::get_subgraph_shared_memory(const ir::Program& program)
@@ -151,5 +135,81 @@ void cuda::ControlFlowEmitter::allocate_shared_memory(LanguageUnit_p _lu)
     else
     {
         lu << "__shared__ char shared_buffer[" + std::to_string(m_shared_memory_size) + "];\n";
+    }
+}
+
+void cuda::ControlFlowEmitter::create_param_map(
+    const ir::Program& program, const std::unordered_map<std::string, int>& subgraph_output_map)
+{
+    std::vector<nnfusion::ir::Instruction::Pointer> instructions;
+    for (auto blk : program)
+        for (auto ins : *blk)
+            instructions.push_back(ins);
+
+    auto input_map = get_subgraph_inputs(program);
+    for (auto ins : instructions)
+    {
+        auto kernel = ins->getKernel();
+        auto type = ins->getGNode()->get_op_type();
+        if (type == "Constant" || type == "Parameter")
+        {
+            auto mapping = (*ins->getGNode())["subgraph_input_map"];
+            NNFUSION_CHECK(mapping.is_valid());
+            auto index = mapping.as<int>();
+            if (index == -1)
+                m_param_map[ins->get_outputs()[0]] = "&i"; // only defined for loop
+            else
+                m_param_map[ins->get_outputs()[0]] = "input" + std::to_string(index);
+        }
+        else if (kernel == nullptr || type == "Result")
+            continue;
+        else if ((type == "Reshape" || type == "Broadcast") &&
+                 ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size())
+        {
+            m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]];
+        }
+        else if (type == "GatherV2")
+        {
+            auto stride = ins->get_outputs()[0]->size(/*in_byte*/ false);
+            m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+*" +
+                                                 m_param_map[ins->get_inputs()[1]] + "*" +
+                                                 std::to_string(stride);
+        }
+        else if (dynamic_pointer_cast<CudaEmitter>(kernel) == nullptr)
+        {
+            for (auto input : ins->get_inputs())
+                std::cout << input->get_shape() << " ";
+            std::cout << endl;
+            for (auto input : ins->get_outputs())
+                std::cout << input->get_shape() << " ";
+            std::cout << endl;
+            std::cout << ins->getGNode()->get_op_type() << "\n";
+            NNFUSION_CHECK_FAIL();
+        }
+        else
+        {
+            for (const auto& tensor : ins->get_inputs())
+            {
+                if (m_param_map.count(tensor))
+                    continue;
+                else
+                    m_param_map[tensor] = get_workspace_tensor(tensor);
+            }
+            for (const auto& tensor : ins->get_outputs())
+            {
+                if (m_param_map.count(tensor))
+                    continue;
+                else if (subgraph_output_map.count(tensor->get_name(false)))
+                {
+                    auto output_index = subgraph_output_map.at(tensor->get_name(false));
+                    m_param_map[tensor] = "output" + std::to_string(output_index);
+                }
+                else
+                    m_param_map[tensor] = get_workspace_tensor(tensor);
+            }
+            if (std::dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
+                for (auto tensor : kernel->m_context->tensors)
+                    m_param_map[tensor] = get_workspace_tensor(tensor);
+        }
     }
 }

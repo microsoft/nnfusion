@@ -33,10 +33,8 @@ namespace nnfusion
             private:
                 std::string m_block_func_name;
                 void generate_subgraph_code(LanguageUnit_p);
-                descriptor::Tensor::Pointer m_workspace;
                 size_t m_workspace_size;
                 TranslationUnit::Pointer m_loop_body_tu;
-                std::unordered_map<std::string, int> m_loop_output_map;
             };
         } // namespace cuda
     }     // namespace kernels

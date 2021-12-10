@@ -22,8 +22,6 @@ namespace nnfusion
             private:
                 void generate_branch_code(LanguageUnit_p, bool);
                 TranslationUnit::Pointer m_then_branch_tu, m_else_branch_tu;
-                descriptor::Tensor::Pointer m_workspace;
-                std::unordered_map<std::string, int> m_output_map;
             };
         } // namespace cuda
     }     // namespace kernels

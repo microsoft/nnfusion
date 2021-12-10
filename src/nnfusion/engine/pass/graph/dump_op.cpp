@@ -15,7 +15,8 @@ bool DumpOp::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
         return true;
 
     std::ofstream out(FLAGS_fdump_op_file);
-    out << "op\tinput\toutput\tfused nodes\n";
+    out << "op\tinput\toutput\tfused nodes\tstride\tpad\tdilation or window shape\treduce "
+           "axis\tdata format\n";
     std::vector<std::shared_ptr<GNode>> nodes = graph->get_ordered_ops();
     for (auto it : nodes)
     {
@@ -58,6 +59,59 @@ bool DumpOp::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
             auto op = static_pointer_cast<nnfusion::op::Convolution>(it->get_op_ptr());
             NNFUSION_CHECK_NOT_NULLPTR(op);
             out << op->get_activation() << "\t";
+            out << op->get_window_movement_strides() << "\t";
+            out << op->get_padding_below() << ", " << op->get_padding_above() << "\t";
+            out << op->get_window_dilation_strides() << "\t";
+        }
+        else if (it->get_op_type() == "AvgPool")
+        {
+            auto op = static_pointer_cast<nnfusion::op::AvgPool>(it->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(op);
+            out << "\t";
+            out << op->get_window_movement_strides() << "\t";
+            out << op->get_padding_below() << ", " << op->get_padding_above() << "\t";
+            out << op->get_window_shape() << "\t";
+        }
+        else if (it->get_op_type() == "AvgPool")
+        {
+            auto op = static_pointer_cast<nnfusion::op::AvgPool>(it->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(op);
+            out << "\t";
+            out << op->get_window_movement_strides() << "\t";
+            out << op->get_padding_below() << ", " << op->get_padding_above() << "\t";
+            out << op->get_window_shape() << "\t";
+        }
+        else if (it->get_op_type() == "Pad")
+        {
+            auto op = static_pointer_cast<nnfusion::op::Pad>(it->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(op);
+            out << "\t";
+            out << "\t";
+            out << op->get_padding_below() << ", " << op->get_padding_above() << ", "
+                << op->get_padding_interior() << "\t";
+            out << "\t";
+        }
+        else if (it->get_op_type() == "Sum")
+        {
+            auto op = static_pointer_cast<nnfusion::op::Sum>(it->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(op);
+            out << "\t";
+            out << "\t";
+            out << "\t";
+            out << "\t";
+            out << op->get_reduction_axes() << "\t";
+        }
+        else if (it->get_op_type() == "DepthwiseConv2dNative")
+        {
+            auto op = static_pointer_cast<nnfusion::op::GenericOp>(it->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(op);
+            out << "\t";
+            out << op->localOpConfig.getRoot()["strides"] << "\t";
+            out << op->localOpConfig.getRoot()["padding_before"] << ", "
+                << op->localOpConfig.getRoot()["padding_after"] << "\t";
+            out << op->localOpConfig.getRoot()["dilations"] << "\t";
+            out << "\t";
+            out << op->localOpConfig.getRoot()["data_format"] << "\t";
         }
         out << "\n";
     }

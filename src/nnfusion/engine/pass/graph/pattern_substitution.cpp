@@ -32,7 +32,8 @@ const static std::vector<std::vector<std::string>> PATTERNS = {
     // {"Convolution", "BatchNormInference"},
     // Conv-BN-Relu is converted into Conv-Add-Relu
     {"Convolution", "Add", "Relu"},
-    {"Convolution", "Relu"}};
+    {"Convolution", "Relu"},
+    {"Convolution", "Add"}};
 
 REGISTER_OP(Matched_Pattern)
     // .attr<nnfusion::op::OpConfig::any>("out_shape")

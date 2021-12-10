@@ -201,6 +201,8 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
             return false;
         }
     }
+    if (node->get_op_type() == "GatherV2")
+        return false;
 
     cur_group->nodes.push_back(node_id);
     cur_group->block_kernels.push_back(kernel);

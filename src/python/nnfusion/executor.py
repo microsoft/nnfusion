@@ -214,6 +214,9 @@ class Executor(object):
                     raise Exception(f"Unused output {name}")
         self.feed_pointers(signature, params)
 
+    def alloc_output_buffer(self):
+        return tuple(desc.get_torch_cuda_buffer() for desc in self.output_descs) 
+
     def feed_pointers(self, signature, params):
         self.kernel_entry.argtypes = signature
         self.kernel_entry(*params)

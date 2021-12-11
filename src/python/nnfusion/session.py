@@ -84,10 +84,10 @@ def modify_nnfusion_rt(rt_dir):
 
 def build(rt_dir):
     with cd(rt_dir):
-        command = "cmake ."
+        command = "cmake . 2>&1 | tee ../../cmake.log"
         execute([command])
 
-        command = "make -j"
+        command = "make -j 2>&1 | tee ../../make.log"
         execute(command)
 
 

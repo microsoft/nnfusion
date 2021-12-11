@@ -33,6 +33,7 @@ DECLARE_int32(frun_step);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
+DECLARE_bool(fcodegen_pybind);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -162,6 +163,45 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
         lu_exec_end << "}\n\n";
     }
 
+    if (FLAGS_fcodegen_pybind)
+    {
+        auto& lu_exec_py_begin = *(projgen->lup_exec_py->begin);
+        {
+            if (FLAGS_fcodegen_pybind)
+            {
+                lu_exec_py_begin << "auto float_cuda_options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA, 0).requires_grad(false);\n";
+                lu_exec_py_begin << "auto int32_t_cuda_options = torch::TensorOptions().dtype(torch::kInt32).device(torch::kCUDA, 0).requires_grad(false);\n";
+                lu_exec_py_begin << "auto int64_t_cuda_options = torch::TensorOptions().dtype(torch::kInt64).device(torch::kCUDA, 0).requires_grad(false);\n";
+                auto params_info = get_kernel_torch_entry_paras(tu);
+                auto rets_info = get_kernel_torch_entry_returns(tu);
+                if (tu->out.size() == 1) {
+                     lu_exec_py_begin << "\nextern \"C\" torch::Tensor kernel_torch_entry(" << std::get<0>(params_info) << ")\n{\n";
+                } else {
+                    lu_exec_py_begin << "#include <vector>";
+                    lu_exec_py_begin << "\nextern \"C\" std::vector<torch::Tensor> kernel_torch_entry(" << std::get<0>(params_info)
+                                    << ")\n{\n";
+                }
+                lu_exec_py_begin << std::get<1>(rets_info) << "\n";
+                lu_exec_py_begin << std::get<1>(params_info) << "\n";
+                if (tu->arg.size() > 0) {
+                    lu_exec_py_begin << "kernel_entry(" << std::get<2>(params_info) << ", " << std::get<2>(rets_info) << ");\n";
+                } else {
+                    lu_exec_py_begin << "kernel_entry(" << std::get<2>(rets_info) << ");\n";
+                }
+                if (tu->out.size() == 1) {
+                    lu_exec_py_begin << "return " << std::get<0>(rets_info) << ";\n";
+                } else {
+                    lu_exec_py_begin << "return {" << std::get<0>(rets_info) << "};\n";
+                }
+            }
+        }
+
+        auto& lu_exec_py_end = *(projgen->lup_exec_py->end);
+        {
+            lu_exec_py_end << "}\n\n";
+        }
+    }
+
     if (FLAGS_fhost_entry)
     {
         fill_exec_host(tu);
@@ -185,6 +225,16 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
         if (superscaler_enable)
             lu_exit_end << "sc_finalize();\n";
         lu_exit_end << "}\n\n";
+
+        if (FLAGS_fcodegen_pybind)
+        {
+            lu_exit_end << "PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {\n";
+            lu_exit_end << "    m.def(\"kernel_entry\", &kernel_torch_entry, \"kernel torch entry "
+                           "(CUDA)\");\n";
+            lu_exit_end << "    m.def(\"cuda_init\", &cuda_init, \"cuda init (CUDA)\");\n";
+            lu_exit_end << "    m.def(\"cuda_free\", &cuda_free, \"cuda free (CUDA)\");\n";
+            lu_exit_end << "}\n";
+        }
     }
 
     // add component
@@ -200,10 +250,13 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     projgen->lup_codegen->require(header::cuda);
     projgen->lup_codegen->require(header::cublas);
     projgen->lup_codegen->require(header::cudnn);
+    if (FLAGS_fcodegen_pybind)
+        projgen->lup_codegen->require(header::torch_extension);
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
-    projgen->lup_codegen->require(macro::HALF_MAX);
+    if (!FLAGS_fcodegen_pybind)
+        projgen->lup_codegen->require(macro::HALF_MAX);
     projgen->lup_codegen->require(codegen_device_type());
     return;
 }
@@ -285,6 +338,21 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             }
 
             std::string call_str = fu->get_specialized_funciton_call(func_name);
+            // todo: this hack is to eliminate d2d copy caused by extern result memory
+            if (FLAGS_fextern_result_memory && gnode)
+            {
+                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
+                {
+                    if (gnode->get_out_edges()[i]->get_dst()->get_op_ptr()->is_output())
+                    {
+                        std::shared_ptr<GNode> output = gnode->get_out_edges()[i]->get_dst();
+                        std::string in_name = output->get_input_tensor(0).get_name();
+                        std::string out_name = output->get_output_tensor(0).get_name();
+                        int pos = call_str.find(", " + in_name);
+                        call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                    }
+                }
+            }
             int pos_right = call_str.find(">>>(");
             if (pos_right >= 0)
             {
@@ -498,6 +566,70 @@ std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationU
     return join(params, ", ");
 }
 
+std::tuple<std::string, std::string, std::string>
+    CudaCodegenPass::get_kernel_torch_entry_paras(std::shared_ptr<TranslationUnit> tu)
+{
+    std::string paras, refs, pts;
+    unordered_set<string> allocated;
+    vector<string> params, references, pointers;
+    for (int i = 0; i < tu->arg.size(); i++)
+    {
+        auto tv = tu->arg[i];
+        string type = tv->get_element_type().c_type_string();
+        stringstream ss1, ss2;
+        NNFUSION_LOG(INFO) << "param " << tv->get_name() << " " << tv->get_shape().size();
+        if (tv->get_shape().size() == 0) {
+            ss1 << type << " " << tv->get_name() << "_scalar";
+            NNFUSION_CHECK(tv->get_element_type() == nnfusion::element::i64);
+            ss2 << "torch::Tensor " << tv->get_name() << "_ts = torch::arange(" << tv->get_name() << "_scalar, " << tv->get_name() << "_scalar + 1, " << type << "_cuda_options);\n";
+        } else {
+            ss1 << "torch::Tensor " << tv->get_name() << "_ts";
+        }
+        ss2 << type << "* " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<" << type
+            << ">();";
+        allocated.insert(tv->get_name());
+        params.push_back(ss1.str());
+        references.push_back(ss2.str());
+        pointers.push_back(tv->get_name());
+    }
+
+    paras = join(params, ", ");
+    refs = join(references, "\n");
+    pts = join(pointers, ", ");
+    return std::make_tuple(paras, refs, pts);
+}
+
+std::tuple<std::string, std::string, std::string>
+    CudaCodegenPass::get_kernel_torch_entry_returns(std::shared_ptr<TranslationUnit> tu)
+{
+    std::string paras, refs, pts;
+    unordered_set<string> allocated;
+    vector<string> params, references, pointers;
+
+    for (int i = 0; i < tu->out.size(); i++)
+    {
+        auto tv = tu->out[i];
+        string type = tv->get_element_type().c_type_string();
+        stringstream ss1, ss2;
+        ss2 << "torch::Tensor " << tv->get_name() << "_ts = torch::empty({" << join(tv->get_shape()) <<"}, " << type << "_cuda_options);\n";
+        ss2 << type << "* " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<" << type << ">();";
+        // if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
+        //     ss2 << type << "* " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<"
+        //         << type << ">();";
+        // else
+        //     ss2 << type << "** " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<"
+        //         << type << ">();";
+        allocated.insert(tv->get_name());
+        params.push_back(tv->get_name() + "_ts");
+        references.push_back(ss2.str());
+        pointers.push_back(tv->get_name());
+    }
+    paras = join(params, ", ");
+    refs = join(references, "\n");
+    pts = join(pointers, ", ");
+    return std::make_tuple(paras, refs, pts);
+}
+
 std::string CudaCodegenPass::get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu,
                                                    bool is_host)
 {
@@ -669,6 +801,12 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         {
             lu << "// eliminated: " << func_call;
         }
+        // todo: this hack is to eliminate d2d copy caused by extern result memory
+        else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
+        {
+            lu << "// eliminated: " << func_call;
+        }
+
         else
         {
             lu << func_call;
@@ -937,6 +1075,16 @@ bool CudaCodegenPass::modify_codegen()
         projgen->lup_init->unit_vec.push_back(device_sync);
     }
 
+    if (FLAGS_fcodegen_pybind)
+    {
+        for (auto item : projgen->lup_exec->unit_vec)
+        {
+            nnfusion::LanguageUnit_p py_item =
+                std::make_shared<LanguageUnit>(item->symbol, item->get_code());
+            projgen->lup_exec_py->unit_vec.push_back(py_item);
+        }
+    }
+
     return true;
 }
 
@@ -1163,14 +1311,15 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "for (int i_=0; i_<steps; i_++)\n";
         lu_main.block_begin();
 
-        lu_main << "cudaEventRecord(start_i, 0);\n";
         if (FLAGS_fhost_entry)
         {
+            lu_main << "cudaEventRecord(start_i, 0);\n";
             lu_main << "kernel_entry_host(" << args << ");\n";
         }
         else
         {
             lu_main << get_h2dcopy(tu)->get_code();
+            lu_main << "cudaEventRecord(start_i, 0);\n";
             lu_main << "kernel_entry(" << args << ");\n";
             // lu_main << get_d2hcopy(tu)->get_code();
             // lu_main << get_sync()->get_code();

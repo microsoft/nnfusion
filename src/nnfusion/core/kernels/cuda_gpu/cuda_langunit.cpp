@@ -234,15 +234,6 @@ __device__ __forceinline__ float  load(const float*  __restrict__ in, int i=0, b
     }
     return v;
 }
-__device__ __forceinline__ half  load(const half*  __restrict__ in, int i=0, bool b=true)
-{
-    half v = 0.0f;
-    if (b)
-    {
-        v = __ldg(in + i);
-    }
-    return v;
-}
 __device__ __forceinline__ int32_t  load(const int32_t*  __restrict__ in, int i=0, bool b=true)
 {
     int32_t v = 0;

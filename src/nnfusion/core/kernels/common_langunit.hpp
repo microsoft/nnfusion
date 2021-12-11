@@ -39,6 +39,7 @@ namespace nnfusion
             LU_DECLARE(iostream);
             LU_DECLARE(windows);
             LU_DECLARE(unordered_map);
+            LU_DECLARE(torch_extension);
         }
 
         namespace macro

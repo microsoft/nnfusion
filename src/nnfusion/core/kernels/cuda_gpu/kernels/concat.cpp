@@ -451,7 +451,7 @@ namespace nnfusion
 
                 void set_launch_config() override
                 {
-                    uint32_t block_size_x = 512;
+                    uint32_t block_size_x = 256;
                     uint32_t aligned_grid_size_x = align_to_block_size(nthreads, block_size_x);
                     m_gridDim = dim3(aligned_grid_size_x, 1, 1);
                     m_blockDim = dim3(block_size_x, 1, 1);

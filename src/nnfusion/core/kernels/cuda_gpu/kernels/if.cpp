@@ -30,20 +30,17 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_context->input_names.push_back(m_workspace->get_name());
     m_shared_memory_size = max(get_subgraph_shared_memory(m_then_branch_tu->program),
                                get_subgraph_shared_memory(m_else_branch_tu->program));
-    create_param_map(m_then_branch_tu->program, op->get_output_map());
-    create_param_map(m_else_branch_tu->program, op->get_output_map());
+    m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map());
+    m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map());
 }
 
 void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false)
 {
-    auto tu = m_then_branch_tu;
+    auto instructions = m_then_branch_instructions;
     if (else_branch)
-    {
-        tu = m_else_branch_tu;
-    }
+        instructions = m_else_branch_instructions;
     auto& lu = *_lu;
-    auto instructions = get_fused_kernel(tu->program);
-    for (auto ins : instructions)
+    for (auto ins : *instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         lu << get_launch_bound(ins);
@@ -56,7 +53,8 @@ void cuda::If::generate_branch_code(LanguageUnit_p _lu, bool else_branch = false
             for (auto tensor : kernel->m_context->tensors)
                 params.push_back(m_param_map[tensor]);
         lu << kernel->emit_block_kernel_call(params)->get_code();
-        lu << "Barrier();\n";
+        if (ins != instructions->back())
+            lu << "Barrier();\n";
     }
 }
 
@@ -78,8 +76,8 @@ LanguageUnit_p cuda::If::emit_function_body()
 
 void cuda::If::set_launch_config()
 {
-    auto cfg0 = get_subgraph_launch_config(m_then_branch_tu->program);
-    auto cfg1 = get_subgraph_launch_config(m_else_branch_tu->program);
+    auto cfg0 = get_subgraph_launch_config(m_then_branch_instructions);
+    auto cfg1 = get_subgraph_launch_config(m_else_branch_instructions);
     m_blockDim = maxdim3(cfg0.first, cfg1.first);
     m_gridDim = maxdim3(cfg0.second, cfg1.second);
 }
@@ -89,7 +87,7 @@ LanguageUnit_p cuda::If::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
-    for (auto ins : get_fused_kernel(m_then_branch_tu->program))
+    for (auto ins : *m_then_branch_instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         auto body = kernel->get_or_emit_source();
@@ -97,7 +95,7 @@ LanguageUnit_p cuda::If::emit_dependency()
         block_kernel->require(body->dep_unit);
         _lu->require(block_kernel);
     }
-    for (auto ins : get_fused_kernel(m_else_branch_tu->program))
+    for (auto ins : *m_else_branch_instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         auto body = kernel->get_or_emit_source();

@@ -21,16 +21,13 @@ namespace nnfusion
 
             protected:
                 static std::pair<cuda::dim3, cuda::dim3>
-                    get_subgraph_launch_config(const ir::Program& program);
+                    get_subgraph_launch_config(ir::BasicBlock::Pointer instructions);
 
                 static std::map<std::string, int> get_subgraph_inputs(const ir::Program& program);
 
-                static std::vector<ir::Instruction::Pointer>
-                    get_fused_kernel(const ir::Program& program);
-
                 void allocate_shared_memory(LanguageUnit_p _lu);
 
-                void create_param_map(
+                ir::BasicBlock::Pointer create_param_map(
                     const ir::Program& program,
                     const std::unordered_map<std::string, int>& subgraph_output_map);
 

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+//package nnfusion;
+package nnfusion.serialize;
+
+option cc_enable_arenas = true;
+
+// (== suppress_warning documentation-presence ==)
+// LINT.IfChange
+enum PBType {
+  // Not a legal value for Type.  Used to indicate a Type field
+  // has not been set.
+  DT_INVALID = 0;
+
+  // Data types that all computation devices are expected to be
+  // capable to support.
+  DT_BOOL = 1;
+  DT_CHAR = 2;
+  DT_FLOAT = 3;
+  DT_DOUBLE = 4; 
+  DT_INT8 = 5;
+  DT_INT16 = 6;
+  DT_INT32 = 7;
+  DT_INT64 = 8;
+  DT_UINT8 = 9;
+  DT_UINT16 = 10;
+  DT_UINT32 = 11;
+  DT_UINT64 = 12;
+}
+
+// For identifying the underlying type of a variant. For variants, the types
+// listed here are a subset of the types in the variant type registry,
+// corresponding to commonly used variants which must occasionally be
+// special-cased.
+// enum SpecializedType {
+//   // Invalid/unknown specialized type.
+//   ST_INVALID = 0;
+//   // "tensorflow::TensorList" in the variant type registry.
+//   ST_TENSOR_LIST = 1;
+// }

@@ -22,6 +22,7 @@ namespace nnfusion
             private:
                 void generate_subgraph_code(LanguageUnit_p);
                 TranslationUnit::Pointer m_loop_body_tu;
+                ir::BasicBlock::Pointer m_body_instructions;
             };
         } // namespace cuda
     }     // namespace kernels

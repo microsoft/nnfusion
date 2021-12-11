@@ -72,14 +72,14 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     m_block_func_name = move(FuncForward::m_block_func_name);
     NNFUSION_CHECK(!m_block_func_name.empty());
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
-    create_param_map(m_loop_body_tu->program, op->get_output_map());
+    m_body_instructions = create_param_map(m_loop_body_tu->program, op->get_output_map());
 }
 
 void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
 {
     auto& lu = *_lu;
-    auto instructions = get_fused_kernel(m_loop_body_tu->program);
-    for (auto ins : instructions)
+    auto instructions = m_body_instructions;
+    for (auto ins : *instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         lu << get_launch_bound(ins);
@@ -92,7 +92,8 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
             for (auto tensor : kernel->m_context->tensors)
                 params.push_back(m_param_map[tensor]);
         lu << kernel->emit_block_kernel_call(params)->get_code();
-        lu << "Barrier();\n";
+        if (ins != instructions->back())
+            lu << "Barrier();\n";
     }
 }
 
@@ -107,7 +108,7 @@ LanguageUnit_p cuda::Recursion::emit_function_body()
 
 void cuda::Recursion::set_launch_config()
 {
-    auto cfg0 = get_subgraph_launch_config(m_loop_body_tu->program);
+    auto cfg0 = get_subgraph_launch_config(m_body_instructions);
     m_blockDim = cfg0.first;
     m_gridDim = cfg0.second;
 }
@@ -140,7 +141,7 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
     kernel_code->block_end();
     m_kernel_name = saved;
 
-    for (auto ins : get_fused_kernel(m_loop_body_tu->program))
+    for (auto ins : *m_body_instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         auto body = kernel->get_or_emit_source();

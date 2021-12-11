@@ -31,14 +31,13 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
     for (auto& item : output_map)
         item.second--;
-    create_param_map(m_loop_body_tu->program, output_map);
+    m_body_instructions = create_param_map(m_loop_body_tu->program, output_map);
 }
 
 void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
 {
     auto& lu = *_lu;
-    auto instructions = get_fused_kernel(m_loop_body_tu->program);
-    for (auto ins : instructions)
+    for (auto ins : *m_body_instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         lu << get_launch_bound(ins);
@@ -75,7 +74,7 @@ LanguageUnit_p cuda::Loop::emit_function_body()
 
 void cuda::Loop::set_launch_config()
 {
-    auto cfg0 = get_subgraph_launch_config(m_loop_body_tu->program);
+    auto cfg0 = get_subgraph_launch_config(m_body_instructions);
     m_blockDim = cfg0.first;
     m_gridDim = cfg0.second;
 }
@@ -85,7 +84,7 @@ LanguageUnit_p cuda::Loop::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
-    for (auto ins : get_fused_kernel(m_loop_body_tu->program))
+    for (auto ins : *m_body_instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         auto body = kernel->get_or_emit_source();

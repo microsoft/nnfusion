@@ -10,16 +10,16 @@
 #         "blockDim": [128, 1, 1]}]
 
 import json
-import sys
+import re
 import argparse
 parser=argparse.ArgumentParser()
 parser = argparse.ArgumentParser()
-parser.add_argument('--op_type', type=str, default='')
-parser.add_argument('--source_file', type=str, default='')
-parser.add_argument('--json_file', type=str, default='example.json')
-parser.add_argument("--input0_shape", nargs="*", type=int,default=[1, 2, 3])
+parser.add_argument('--op_type', required=True, type=str, default='')
+parser.add_argument('--source_file', required=True, type=str, default='')
+parser.add_argument('--json_file', required=True, type=str, default='example.json')
+parser.add_argument("--input0_shape", required=True, nargs="*", type=int,default=[1, 2, 3])
 parser.add_argument("--input1_shape", nargs="*", type=int,default=[1, 2, 3])
-parser.add_argument("--output0_shape", nargs="*", type=int,default=[1, 2, 3])
+parser.add_argument("--output0_shape", required=True, nargs="*", type=int,default=[1, 2, 3])
 parser.add_argument("--transpose_A", type=bool, default=False)
 parser.add_argument("--transpose_B", type=bool, default=False)
 parser.add_argument("--stride", nargs="*", type=int,default=[1, 1])
@@ -78,6 +78,10 @@ with open(source_file, 'r', encoding='utf-8') as f:
             flag = False
         if line.startswith("extern \"C\" "):
             line = line.replace("default_function_kernel0", tvm_func_name)
+            match = re.search("__launch_bounds__\([0-9]*\) ", line)
+            if match:
+                lb = match.group()
+                line = line.replace(lb, "")
             code += line
             flag = True
         if "dim3 grid(" in line:

@@ -7,7 +7,7 @@ import sys
 flags = tf.flags
 flags.DEFINE_integer("num_iter", 10, "num of iterations")
 flags.DEFINE_string("model_path", "", "path of frozen model")
-flags.DEFINE_integer("batch_size", 1, "batch size")
+flags.DEFINE_integer("batch_size", 128, "batch size")
 flags.DEFINE_string("model", "", "model name")
 
 FLAGS = flags.FLAGS
@@ -143,9 +143,9 @@ class NasNet(BaseNet):
 class Bert(BaseNet):
     def __init__(self):
         self.name = "bert_large_bs128"
-        self.image_size = (128, 3, 224, 224)
-        self.input_node = "eval_input"
-        self.output_node = ["resnet_model/dense/BiasAdd"]
+        self.image_size = (128, 512)
+        self.input_node = "token_type_ids"
+        self.output_node = ["bert/encoder/Reshape_25"]
 
 if __name__ == "__main__":
     net = globals()[FLAGS.model]()

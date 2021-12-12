@@ -83,7 +83,7 @@ with open(source_file, 'r', encoding='utf-8') as f:
                 line = line.replace(lb, "")
             kernel_name = re.search("void .*_kernel0", line).group()
             # print(kernel_name)
-            line = line.replace(kernel_name, "void *" + tvm_func_name)
+            line = line.replace(kernel_name, "void " + tvm_func_name)
             code += line
             flag = True
         if "dim3 grid(" in line:

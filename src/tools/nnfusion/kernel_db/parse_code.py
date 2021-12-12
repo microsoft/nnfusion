@@ -37,6 +37,7 @@ info["op_type"] = op_type
 source_file = args.source_file
 json_file = args.json_file
 tvm_func_name = source_file.split("/")[-1][:-3]
+tvm_func_name = tvm_func_name.replace("[", "_").replace("]", "_").replace(",", "_")
 info["tvm_func_name"] = tvm_func_name
 if op_type == "Dot" or op_type == "BatchMatMul":
     info["parameters"]["arg0_shape"] = args.input0_shape

@@ -72,9 +72,9 @@ bool DumpOp::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
             out << op->get_padding_below() << ", " << op->get_padding_above() << "\t";
             out << op->get_window_shape() << "\t";
         }
-        else if (it->get_op_type() == "AvgPool")
+        else if (it->get_op_type() == "MaxPool")
         {
-            auto op = static_pointer_cast<nnfusion::op::AvgPool>(it->get_op_ptr());
+            auto op = static_pointer_cast<nnfusion::op::MaxPool>(it->get_op_ptr());
             NNFUSION_CHECK_NOT_NULLPTR(op);
             out << "\t";
             out << op->get_window_movement_strides() << "\t";

@@ -18,7 +18,12 @@ REGISTER_OP(DepthwiseConv2dNative)
         const Shape& input_shape = gnode->get_input_shape(0);
 
         // [ filter_rows, filter_cols, in_depth, depth_multiplier ]
-        const Shape& filter_shape = gnode->get_input_shape(1);
+        // const Shape& filter_shape = gnode->get_input_shape(1);
+
+        // ad_hoc: [ in_depth, depth_multiplier, filter_rows, filter_cols ]
+        const Shape& filter_shape_ts = gnode->get_input_shape(1);
+        nnfusion::Shape filter_shape{
+            filter_shape_ts[2], filter_shape_ts[3], filter_shape_ts[0], filter_shape_ts[1]};
 
         std::string data_format = op->localOpConfig.getRoot()["data_format"];
         bool is_nhwc = (data_format == "NHWC");

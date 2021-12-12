@@ -101,6 +101,16 @@ bool DumpOp::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
             out << "\t";
             out << op->get_reduction_axes() << "\t";
         }
+        else if (it->get_op_type() == "Broadcast")
+        {
+            auto op = static_pointer_cast<nnfusion::op::Broadcast>(it->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(op);
+            out << "\t";
+            out << "\t";
+            out << "\t";
+            out << "\t";
+            out << op->get_broadcast_axes() << "\t";
+        }
         else if (it->get_op_type() == "DepthwiseConv2dNative")
         {
             auto op = static_pointer_cast<nnfusion::op::GenericOp>(it->get_op_ptr());

@@ -41,6 +41,10 @@ param_list = {
         'symbol': ['input0', 'output0'],
         'dtype': ['float*', 'float*']
     },
+    "Broadcast": {
+    'symbol': ['input0', 'output0'],
+    'dtype': ['float*', 'float*']
+    },
     "Sum": {
     'symbol': ['input0', 'output0'],
     'dtype': ['float*', 'float*']
@@ -172,7 +176,7 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
         config["out_shape"] = [kernel["parameters"]["out_shape"]]
         config[
             "function_signature"] = "extern \"C\" __global__  void (float* __restrict__ input0,  float* __restrict__ input1,  float* __restrict__ output0)"
-    elif (op_type == "Relu"):
+    elif (op_type == "Relu" or op_type == "Broadcast"):
         config["in_shape"] = [kernel["parameters"]["input_shape"]]
         config["out_shape"] = [kernel["parameters"]["output_shape"]]
         config["function_signature"] = "extern \"C\" __global__  void (float* input0, float* output0)"

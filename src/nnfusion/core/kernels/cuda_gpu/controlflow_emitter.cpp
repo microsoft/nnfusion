@@ -139,7 +139,8 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
         else if (kernel == nullptr || type == "Result")
             continue;
         else if ((type == "Reshape" || type == "Broadcast") &&
-                 ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size())
+                 ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size() &&
+                 !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)))
         {
             m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]];
         }

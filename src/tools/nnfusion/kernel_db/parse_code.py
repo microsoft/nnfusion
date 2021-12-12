@@ -12,7 +12,7 @@
 import json
 import re
 import argparse
-parser=argparse.ArgumentParser()
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--op_type', required=True, type=str, default='')
 parser.add_argument('--source_file', required=True, type=str, default='')
@@ -77,11 +77,13 @@ with open(source_file, 'r', encoding='utf-8') as f:
         if flag and line.startswith("}"):
             flag = False
         if line.startswith("extern \"C\" "):
-            line = line.replace("default_function_kernel0", tvm_func_name)
             match = re.search("__launch_bounds__\([0-9]*\) ", line)
             if match:
                 lb = match.group()
                 line = line.replace(lb, "")
+            kernel_name = re.search("void .*_kernel0", line).group()
+            # print(kernel_name)
+            line = line.replace(kernel_name, "void *" + tvm_func_name)
             code += line
             flag = True
         if "dim3 grid(" in line:

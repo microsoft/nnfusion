@@ -136,9 +136,12 @@ def gen_key(data, dtype="float"):
                                       for i in parameters["window_stride"]) + "}"
         key += "Shape{" + ", ".join(str(i)
                                     for i in parameters["padding_below"]) + "}"
-    # elif op_type == "Sum":
-    #     key += "AxisSet{" + ", ".join(str(i)
-    #                                 for i in parameters["reduction_axis"]) + "}"
+    elif op_type == "Sum":
+        key += "AxisSet{" + ", ".join(str(i)
+                                    for i in parameters["reduction_axis"]) + "}"
+    elif op_type == "Broadcast":
+        key += "AxisSet{" + ", ".join(str(i)
+                                    for i in parameters["broadcast_axis"]) + "}"
     else:
         pass
 
@@ -176,7 +179,7 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
         config["out_shape"] = [kernel["parameters"]["out_shape"]]
         config[
             "function_signature"] = "extern \"C\" __global__  void (float* __restrict__ input0,  float* __restrict__ input1,  float* __restrict__ output0)"
-    elif (op_type == "Relu" or op_type == "Broadcast"):
+    elif (op_type == "Relu"):
         config["in_shape"] = [kernel["parameters"]["input_shape"]]
         config["out_shape"] = [kernel["parameters"]["output_shape"]]
         config["function_signature"] = "extern \"C\" __global__  void (float* input0, float* output0)"
@@ -184,6 +187,16 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
         config["in_shape"] = [kernel["parameters"]["input_shape"]]
         config["out_shape"] = [kernel["parameters"]["output_shape"]]
         config["function_signature"] = "extern \"C\" __global__  void (float* input0, float* output0)"
+        config["parameters"] = {
+            "reduction_axis" : kernel["parameters"]["reduction_axis"]
+        }
+    elif (op_type == "Broadcast"):
+        config["in_shape"] = [kernel["parameters"]["input_shape"]]
+        config["out_shape"] = [kernel["parameters"]["output_shape"]]
+        config["function_signature"] = "extern \"C\" __global__  void (float* input0, float* output0)"
+        config["parameters"] = {
+            "broadcast_axis" : kernel["parameters"]["broadcast_axis"]
+        }
     elif (op_type == "AvgPool" or op_type == "MaxPool"):
         config["in_shape"] = [kernel["parameters"]["input_shape"]]
         config["out_shape"] = [kernel["parameters"]["output_shape"]]

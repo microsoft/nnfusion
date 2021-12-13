@@ -27,6 +27,7 @@ parser.add_argument("--padding", nargs="*", type=int,default=[0, 0])
 parser.add_argument("--dilation", nargs="*", type=int,default=[1, 1])
 parser.add_argument("--window_shape", nargs="*", type=int,default=[1, 1])
 parser.add_argument("--reduction_axis", nargs="*", type=int,default=[0])
+parser.add_argument("--broadcast_axis", nargs="*", type=int,default=[0])
 
 args = parser.parse_args()
 
@@ -62,6 +63,10 @@ elif op_type == "Sum":
     info["parameters"]["input_shape"] = args.input0_shape
     info["parameters"]["output_shape"] = args.output0_shape
     info["parameters"]["reduction_axis"] = args.reduction_axis
+elif op_type == "Broadcast":
+    info["parameters"]["input_shape"] = args.input0_shape
+    info["parameters"]["output_shape"] = args.output0_shape
+    info["parameters"]["broadcast_axis"] = args.broadcast_axis
 else:
     info["parameters"]["input_shape"] = args.input0_shape
     info["parameters"]["output_shape"] = args.output0_shape

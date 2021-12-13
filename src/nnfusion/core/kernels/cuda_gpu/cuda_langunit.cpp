@@ -2209,5 +2209,6 @@ __device__ void Barrier() {
         global_state_out[block_idx] = 0;
     }
     __syncthreads();
+    __threadfence();
 }
 )");

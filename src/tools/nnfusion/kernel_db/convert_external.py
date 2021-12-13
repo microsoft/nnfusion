@@ -136,9 +136,9 @@ def gen_key(data, dtype="float"):
                                       for i in parameters["window_stride"]) + "}"
         key += "Shape{" + ", ".join(str(i)
                                     for i in parameters["padding_below"]) + "}"
-    elif op_type == "Sum":
-        key += "AxisSet{" + ", ".join(str(i)
-                                    for i in parameters["reduction_axis"]) + "}"
+    # elif op_type == "Sum":
+    #     key += "AxisSet{" + ", ".join(str(i)
+    #                                 for i in parameters["reduction_axis"]) + "}"
     else:
         pass
 

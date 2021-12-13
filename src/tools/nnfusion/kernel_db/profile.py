@@ -134,7 +134,7 @@ __init_input__
     for shape in config["in_shape"]+config["out_shape"]:
         bytes_count.append(prod(shape)*4 + bytes_count[-1])
     profile_kernel = profile_kernel.replace(
-        "__maxbytes__", str(bytes_count[-1]))
+        "__maxbytes__", str(bytes_count[-1] * 2))
 
     init_input = ""
     input_parameters = ""

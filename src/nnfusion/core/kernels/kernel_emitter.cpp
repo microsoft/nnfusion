@@ -3,6 +3,7 @@
 
 #include "kernel_emitter.hpp"
 #include "nnfusion/engine/async_manager.hpp"
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 #include <string>
 
@@ -473,7 +474,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         str << avgpool->get_window_shape();
         str << avgpool->get_window_movement_strides();
         str << avgpool->get_padding_below();
-        str << avgpool->get_padding_above();
+        // str << avgpool->get_padding_above();
         identifier += str.str();
     }
     else if (op_type == "MaxPool")
@@ -484,7 +485,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         str << maxpool->get_window_shape();
         str << maxpool->get_window_movement_strides();
         str << maxpool->get_padding_below();
-        str << maxpool->get_padding_above();
+        // str << maxpool->get_padding_above();
         identifier += str.str();
     }
     else if (op_type == "Dot")
@@ -497,6 +498,32 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         // str << dot->get_transpose_B();
         // ///\todo: need to encode dot reduction_axes_count?
         // identifier += str.str();
+    }
+    else if (op_type == "Sum")
+    {
+        auto op = std::static_pointer_cast<op::Sum>(ctx->gnode->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(op);
+        std::stringstream str;
+        str << op->get_reduction_axes();
+        identifier += str.str();
+    }
+    else if (op_type == "Broadcast")
+    {
+        auto op = std::static_pointer_cast<op::Broadcast>(ctx->gnode->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(op);
+        std::stringstream str;
+        str << op->get_broadcast_axes();
+        identifier += str.str();
+    }
+    else if (op_type == "DepthwiseConv2dNative")
+    {
+        auto op = std::static_pointer_cast<op::GenericOp>(ctx->gnode->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(op);
+        std::stringstream str;
+        str << op->localOpConfig.getRoot()["strides"];
+        str << op->localOpConfig.getRoot()["dilations"];
+        str << op->localOpConfig.getRoot()["padding_before"];
+        identifier += str.str();
     }
 
     return identifier;

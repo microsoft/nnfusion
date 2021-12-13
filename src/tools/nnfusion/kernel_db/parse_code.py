@@ -46,7 +46,7 @@ if op_type == "Dot" or op_type == "BatchMatMul":
     info["parameters"]["out_shape"] = args.output0_shape
     info["parameters"]["transpose_A"] = args.transpose_A
     info["parameters"]["transpose_B"] = args.transpose_B
-elif op_type == "Convolution" or op_type == "DepthwiseConv2dNative":
+elif op_type == "Convolution" or op_type == "DepthwiseConv2dNative" or op_type == "Fused_Convolution_Add" or op_type == "Fused_Convolution_Relu" or op_type == "Fused_Convolution_Add_Relu":
     info["parameters"]["input_shape"] = args.input0_shape
     info["parameters"]["filter_shape"] = args.input1_shape
     info["parameters"]["output_shape"] = args.output0_shape

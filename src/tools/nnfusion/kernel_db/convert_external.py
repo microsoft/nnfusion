@@ -123,12 +123,12 @@ def gen_key(data, dtype="float"):
             else:
                 raise ("to be specified")
     elif op_type == "DepthwiseConv2dNative":
-        key += "".join(["Strides{", ", ".join(str(i)
-                                              for i in parameters["window_movement_strides"]), "}"])
-        key += "".join(["Strides{", ", ".join(str(i)
-                                              for i in parameters["window_dilation_strides"]), "}"])
-        key += "".join(["CoordinateDiff{", ", ".join(str(i)
-                                                     for i in parameters["padding_below_diff"]), "}"])
+        key += "".join(["[", ", ".join(str(i)
+                                              for i in parameters["window_movement_strides"]), "]"])
+        key += "".join(["[", ", ".join(str(i)
+                                              for i in parameters["window_dilation_strides"]), "]"])
+        key += "".join(["[", ", ".join(str(i)
+                                                     for i in parameters["padding_below_diff"]), "]"])
     elif op_type == "AvgPool" or op_type == "MaxPool":
         key += "Shape{" + ", ".join(str(i)
                                     for i in parameters["window_shape"]) + "}"

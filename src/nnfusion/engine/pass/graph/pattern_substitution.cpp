@@ -151,7 +151,7 @@ private:
         {
             // Todo: more tags, more platform
             std::set<std::string> tags = {};
-            auto fetched_kernel = kernel_db->fetch_with_tags(identifier, "CUDA", tags);
+            auto fetched_kernel = kernel_db->fetch_with_tags(identifier, "CUDA_GPU", tags);
             if (fetched_kernel != nullptr)
             {
                 NNFUSION_CHECK(fetched_kernel->function != "");

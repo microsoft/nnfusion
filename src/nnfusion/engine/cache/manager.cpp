@@ -106,7 +106,7 @@ KernelCacheManager::~KernelCacheManager()
 std::vector<KernelEntry_p> KernelCacheManager::fetch_all(std::string identifier,
                                                          std::string device_type)
 {
-    NNFUSION_LOG(INFO) << "Trying to fetch kernel " << identifier
+    NNFUSION_LOG(DEBUG) << "Trying to fetch kernel " << identifier
                         << " on DeviceType: " << device_type;
     sqlite3_stmt* pStmt;
     const char* fetch = R"(
@@ -136,7 +136,7 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
         if (SupportOpList.find(fetched_kernel->op_type) == SupportOpList.end())
         {
             NNFUSION_LOG(INFO) << "Unsupported op_type: " << fetched_kernel->op_type
-                                << ", ingore this fetch";
+                               << ", ingore this fetch";
             fetched.clear();
             break;
         }

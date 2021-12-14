@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include "kernel_emitter.hpp"
-#include "nnfusion/engine/async_manager.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#include "nnfusion/engine/async_manager.hpp"
 
 #include <string>
 

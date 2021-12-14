@@ -110,8 +110,8 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
                << local_tensors[out_tw->get_name()] << " = " << in_args[in_tw->get_name()] << index
                << ";\n";
             lu << out_tw->get_element_type().c_type_string() << " "
-               << local_tensors[out_tw->get_name()] << "_1 = " << in_args[in_tw->get_name()] << index1
-               << ";\n";
+               << local_tensors[out_tw->get_name()] << "_1 = " << in_args[in_tw->get_name()]
+               << index1 << ";\n";
         }
         else if (auto rs = std::dynamic_pointer_cast<nnfusion::op::Reshape>(op_ctx->op))
         {
@@ -206,7 +206,8 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         else
         {
             NNFUSION_CHECK(in_args.count(pair.first) > 0) << m_context->gnode->get_name() << " "
-                                                          << lu.get_code() << " " << pair.first << "_1";
+                                                          << lu.get_code() << " " << pair.first
+                                                          << "_1";
             lu << in_args[pair.first] << "_1[tid1];\n";
         }
     }

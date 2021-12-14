@@ -155,7 +155,7 @@ private:
             if (fetched_kernel != nullptr)
             {
                 NNFUSION_CHECK(fetched_kernel->function != "");
-                NNFUSION_LOG(INFO) << "Substitution applied: " << identifier;
+                NNFUSION_LOG(DEBUG) << "Substitution applied: " << identifier;
                 return Substitution(matched, identifier);
             }
         }

@@ -230,10 +230,10 @@ class PTSession(object):
             if desc.name in real_outputs:
                 assert desc.shape == real_outputs[
                     desc.
-                    name].shape, f"nnf requires output {desc.name} with shape {desc.shape}, but session output desc is {real_inputs[desc.name].shape}"
+                    name].shape, f"nnf requires output {desc.name} with shape {desc.shape}, but session output desc is {real_outputs[desc.name].shape}"
                 assert desc.dtype == real_outputs[
                     desc.
-                    name].dtype, f"nnf requires output {desc.name} with shape {desc.shape}, but session output desc is {real_inputs[desc.name].shape}"
+                    name].dtype, f"nnf requires output {desc.name} with shape {desc.shape}, but session output desc is {real_outputs[desc.name].shape}"
             self._outputs[desc.name] = cast_pytorch_tensor(
                 torch.zeros(desc.shape,
                             dtype=str2type[desc.dtype].torch_type,

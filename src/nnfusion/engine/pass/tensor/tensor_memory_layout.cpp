@@ -83,7 +83,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             unordered_set<std::shared_ptr<descriptor::Tensor>> newlist(alloc_temp);
             // todo: this hack is to eliminate d2d copy caused by extern result memory
             bool skip = false;
-            if (FLAGS_fextern_result_memory && gnode)
+            if (FLAGS_fextern_result_memory && gnode && gnode->get_op_type() != "Loop")
             {
                 bool all_users_are_result = true;
                 for (size_t i = 0; i < gnode->get_out_edges().size(); i++)

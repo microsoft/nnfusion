@@ -268,8 +268,8 @@ namespace nnfusion
                                 {
                                     NNFUSION_CHECK(all_ng_nodes.count(item));
                                     auto node = all_ng_nodes.at(item)[0];
-                                    NNFUSION_CHECK(node.gnode->get_op_type() == "Parameter")
-                                        << node.gnode->get_op_type();
+                                    NNFUSION_CHECK(node.gnode->get_op_type() == "Parameter" ||
+                                                   node.gnode->get_op_type() == "Constant");
                                     auto new_node = m_graph->add_node_and_edge(
                                         node.gnode->get_op_ptr(), graph::GNodeVector({}));
                                     input_indexes.push_back(GNodeIndex{new_node, 0});

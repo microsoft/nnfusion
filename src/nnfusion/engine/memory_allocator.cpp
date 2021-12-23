@@ -240,7 +240,7 @@ void nnfusion::MemoryAllocator::free(shared_ptr<descriptor::Tensor> tensor)
     {
         this->record("[free]", tensor);
     }
-    NNFUSION_CHECK(found) << "bad free";
+    NNFUSION_CHECK(found) << "bad free" << tensor->get_name() << " " << tensor->get_name(false);
 }
 
 void nnfusion::MemoryAllocator::dump(ofstream& out)

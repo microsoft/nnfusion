@@ -77,6 +77,11 @@ size_t cuda::ControlFlowEmitter::get_subgraph_shared_memory(const ir::Program& p
                 auto ptr = dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel);
                 m_shared_memory_size = max(m_shared_memory_size, ptr->get_shared_memory_size());
             }
+            else if (dynamic_pointer_cast<BlockCudaEmitter>(kernel) != nullptr)
+            {
+                auto ptr = dynamic_pointer_cast<BlockCudaEmitter>(kernel);
+                m_shared_memory_size = max(m_shared_memory_size, ptr->get_shared_memory_size());
+            }
             else if (dynamic_pointer_cast<ControlFlowEmitter>(kernel) != nullptr)
             {
                 auto ptr = dynamic_pointer_cast<ControlFlowEmitter>(kernel);

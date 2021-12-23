@@ -59,14 +59,19 @@ LanguageUnit_p cuda::Loop::emit_function_body()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
     allocate_shared_memory(_lu);
-    lu << "for (int64_t i = 0; i < *input0; i++)";
-    lu.block_begin();
-    // after the first loop, loop-carried output should be used as input
-    lu << "if (i == 1)";
-    lu.block_begin();
+    lu << "int tid=threadIdx.x + blockIdx.x * blockDim.x;\n";
+    for (int i = 0; i < m_context->outputs.size(); i++)
+    {
+        size_t tensor_size = m_context->outputs[i]->size(false);
+        size_t num_threads = m_blockDim.x * m_gridDim.x;
+        lu << "for (int64_t i=tid; i<" << tensor_size << "; i+=" << num_threads << ")";
+        lu << " output" << i << "[i] = input" << i + 2 << "[i];\n";
+    }
     for (int i = 0; i < m_context->outputs.size(); i++)
         lu << "input" << i + 2 << " = output" << i << ";\n";
-    lu.block_end();
+    lu << "Barrier();\n";
+    lu << "for (int64_t i = 0; i < *input0; i++)";
+    lu.block_begin();
     generate_subgraph_code(_lu);
     lu.block_end();
     return _lu;

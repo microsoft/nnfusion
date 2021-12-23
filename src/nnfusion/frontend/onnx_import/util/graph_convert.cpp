@@ -397,10 +397,10 @@ namespace nnfusion
 
                         if (m_output_names.find(named_gnode.name) != m_output_names.end())
                         {
-                            // TODO: should specify which output of current gnode
-                            named_gnode.gnode_index.gnode->get_output_tensor_ptr(0)->set_name(
-                                named_gnode.name);
-                            m_graph_outputs.emplace_back(named_gnode.gnode_index.gnode);
+                            named_gnode.gnode_index.gnode
+                                ->get_output_tensor_ptr(named_gnode.gnode_index.index)
+                                ->set_name(named_gnode.name);
+                            m_graph_outputs.emplace_back(named_gnode.gnode_index);
                         }
                     }
                 }
@@ -413,10 +413,11 @@ namespace nnfusion
                 }
                 sort(m_graph_outputs.begin(),
                      m_graph_outputs.end(),
-                     [&output_names](const std::shared_ptr<nnfusion::graph::GNode>& a,
-                                     const std::shared_ptr<nnfusion::graph::GNode>& b) {
-                         return std::find(output_names.begin(), output_names.end(), a->get_name()) <
-                                std::find(output_names.begin(), output_names.end(), b->get_name());
+                     [&output_names](const GNodeIndex& a, const GNodeIndex& b) {
+                         return std::find(
+                                    output_names.begin(), output_names.end(), a.gnode->get_name()) <
+                                std::find(
+                                    output_names.begin(), output_names.end(), b.gnode->get_name());
                      });
 
                 m_graph->set_default_parameters();

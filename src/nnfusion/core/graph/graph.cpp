@@ -358,16 +358,32 @@ void Graph::set_default_outputs()
     {
         if (node != nullptr && node->get_out_edges().size() == 0)
         {
-            m_output_nodes.push_back(node);
+            m_output_nodes.push_back(GNodeIndex{node});
         }
     }
 }
-void Graph::set_outputs(const GNodeVector& outputs)
+
+void Graph::set_outputs(const GNodeIndexVector& outputs)
 {
     m_output_nodes = outputs;
 }
 
+void Graph::set_outputs(const GNodeVector& outputs)
+{
+    m_output_nodes.clear();
+    for (auto node : outputs)
+        m_output_nodes.push_back(GNodeIndex{node});
+}
+
 GNodeVector Graph::get_outputs()
+{
+    GNodeVector result;
+    for (const auto& node : m_output_nodes)
+        result.push_back(node.gnode);
+    return result;
+}
+
+GNodeIndexVector Graph::get_indexed_outputs()
 {
     return m_output_nodes;
 }
@@ -379,7 +395,7 @@ const size_t Graph::get_output_size()
 
 const std::shared_ptr<GNode> Graph::get_output_op(size_t i)
 {
-    return m_output_nodes.at(i);
+    return m_output_nodes.at(i).gnode;
 }
 
 void Graph::set_default_parameters()

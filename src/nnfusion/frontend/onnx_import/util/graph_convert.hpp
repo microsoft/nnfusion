@@ -75,7 +75,7 @@ namespace nnfusion
                 // TODO: to be removed
                 std::set<std::string> m_output_names;
 
-                graph::GNodeVector m_graph_outputs;
+                graph::GNodeIndexVector m_graph_outputs;
 
                 std::unordered_map<std::string, size_t> m_dim_params;
                 std::string m_model_dir;
@@ -143,8 +143,6 @@ namespace nnfusion
 
                 // TODO: to be removed
                 // std::set<std::string> m_output_names;
-
-                // graph::GNodeVector m_graph_outputs;
 
                 std::unordered_map<std::string, size_t> m_dim_params;
                 std::string m_model_dir;

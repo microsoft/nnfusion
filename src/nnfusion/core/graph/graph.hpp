@@ -112,8 +112,10 @@ namespace nnfusion
             // REQUIRES: 0 <= id < get_max_node_id().
             const std::shared_ptr<Edge> find_edge_id(size_t id) const { return m_edges[id]; }
             GNodeVector get_outputs();
+            GNodeIndexVector get_indexed_outputs();
 
             void set_outputs(const GNodeVector& outputs);
+            void set_outputs(const GNodeIndexVector& outputs);
             void set_default_outputs();
             const size_t get_output_size();
             /// Return the op that generates output i
@@ -152,7 +154,7 @@ namespace nnfusion
             std::vector<std::shared_ptr<Edge>> m_free_edges;
 
             // TODO: Output nodes of this graph
-            GNodeVector m_output_nodes;
+            GNodeIndexVector m_output_nodes;
             GNodeVector m_parameters;
             // For generating unique names.
             int name_counter_ = 0;

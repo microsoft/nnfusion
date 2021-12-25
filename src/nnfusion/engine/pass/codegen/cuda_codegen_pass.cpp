@@ -580,7 +580,6 @@ std::tuple<std::string, std::string, std::string>
         NNFUSION_LOG(INFO) << "param " << tv->get_name() << " " << tv->get_shape().size();
         if (tv->get_shape().size() == 0) {
             ss1 << type << " " << tv->get_name() << "_scalar";
-            NNFUSION_CHECK(tv->get_element_type() == nnfusion::element::i64);
             ss2 << "torch::Tensor " << tv->get_name() << "_ts = torch::arange(" << tv->get_name() << "_scalar, " << tv->get_name() << "_scalar + 1, " << type << "_cuda_options);\n";
         } else {
             ss1 << "torch::Tensor " << tv->get_name() << "_ts";

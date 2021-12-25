@@ -44,6 +44,7 @@ std::string
 {
     auto type = tensor->get_element_type().c_type_string();
     size_t offset = tensor->get_pool_offset();
+    NNFUSION_CHECK(offset != SIZE_MAX) << tensor->get_name() << std::endl;
     if (tensor->get_name(false) == "recursion_stack")
     {
         return "(" + type + "*)(input" + std::to_string(m_context->inputs.size() - 1) +

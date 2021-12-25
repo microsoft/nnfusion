@@ -67,19 +67,29 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
     }
 
     int grids, blocks, bound;
+    uint32_t num_ele =
+        static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
     compute_best_config(grids, blocks, bound);
-
-    if (grids == 1)
+    if (grids * blocks != num_ele)
     {
-        lu << "int tid = threadIdx.x;\n";
+        lu << "for (int tid = blockIdx.x * " << blocks << " + threadIdx.x; tid < " << num_ele
+           << "; tid += " << grids * blocks << ")";
+        lu.block_begin();
     }
     else
     {
-        lu << "int tid = blockIdx.x * " << std::to_string(blocks) << " + threadIdx.x;\n";
-    }
-    if (bound)
-    {
-        lu << "if (tid >= " << bound << ") return;\n";
+        if (grids == 1)
+        {
+            lu << "int tid = threadIdx.x;\n";
+        }
+        else
+        {
+            lu << "int tid = blockIdx.x * " << std::to_string(blocks) << " + threadIdx.x;\n";
+        }
+        if (bound)
+        {
+            lu << "if (tid >= " << bound << ") return;\n";
+        }
     }
 
     for (auto op_ctx : m_gnode->get_op_contexts())
@@ -184,6 +194,8 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
             lu << in_args[pair.first] << "[tid];\n";
         }
     }
+    if (grids * blocks != num_ele)
+        lu.block_end();
 
     return lu_;
 }
@@ -266,6 +278,8 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
         if (num_ele % i == 0)
         {
             grids = num_ele / i, blocks = i, bound = 0;
+            if (grids > 128)
+                grids = 128;
             return;
         }
     }

@@ -415,9 +415,12 @@ namespace nnfusion
                      m_graph_outputs.end(),
                      [&output_names](const GNodeIndex& a, const GNodeIndex& b) {
                          return std::find(
-                                    output_names.begin(), output_names.end(), a.gnode->get_name()) <
-                                std::find(
-                                    output_names.begin(), output_names.end(), b.gnode->get_name());
+                                    output_names.begin(),
+                                    output_names.end(),
+                                    a.gnode->get_output_tensor_ptr(a.index)->get_name(false)) <
+                                std::find(output_names.begin(),
+                                          output_names.end(),
+                                          b.gnode->get_output_tensor_ptr(b.index)->get_name(false));
                      });
 
                 m_graph->set_default_parameters();

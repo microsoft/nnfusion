@@ -4,6 +4,7 @@
 #include "engine.hpp"
 #include "nnfusion/engine/pass/codegen/base_codegen_pass.hpp"
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
+#include "pass/tensor/inplace_tensor_analysis.hpp"
 
 DEFINE_bool(fkernels_as_files, false, "Saving kernels as standalone source code files.");
 DEFINE_int64(fkernels_files_number, -1, "Saving kernels into how many source code files.");
@@ -60,7 +61,7 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
 
 nnfusion::TranslationUnit::Pointer Engine::convert_graph_to_program(graph::Graph::Pointer graph)
 {
-    // this function has the same logic with Engine::run_on_graph, 
+    // this function has the same logic with Engine::run_on_graph,
     // except that it will not do codegen and will return translation unit object.
     auto context = make_shared<EngineContext>();
     bool result = true;
@@ -81,9 +82,11 @@ nnfusion::TranslationUnit::Pointer Engine::convert_graph_to_program(graph::Graph
         ctx->m_graphs = graph_vec;
         tu->blacklist = context->blacklist;
     }
-    // neglect the codegen pass
+    // neglect the codegen pass and inplace analysis
     for (size_t i = 0; i < m_passes->size() - 1; i++)
     {
+        if (dynamic_pointer_cast<pass::InplaceTensorAnalysis>((*m_passes)[i]) != nullptr)
+            continue;
         result = (*m_passes)[i]->run(ctx, tu);
         if (!result)
             break;

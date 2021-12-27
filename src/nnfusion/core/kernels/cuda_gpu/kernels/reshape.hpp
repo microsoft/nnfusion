@@ -11,7 +11,7 @@ namespace nnfusion
     {
         namespace cuda
         {
-            class Reshape : public CudaEmitter
+            class Reshape : public BlockCudaEmitter
             {
             public:
                 Reshape(shared_ptr<KernelContext> ctx);

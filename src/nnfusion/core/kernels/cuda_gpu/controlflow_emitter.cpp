@@ -43,8 +43,9 @@ std::string
     cuda::ControlFlowEmitter::get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor)
 {
     auto type = tensor->get_element_type().c_type_string();
-    size_t offset = tensor->get_pool_offset();
-    NNFUSION_CHECK(offset != SIZE_MAX) << tensor->get_name() << std::endl;
+    NNFUSION_CHECK(tensor->get_pool_offset() != SIZE_MAX) << tensor->get_name();
+    NNFUSION_CHECK(m_pool_offset.count(tensor->get_pool())) << tensor->get_pool();
+    size_t offset = tensor->get_pool_offset() + m_pool_offset[tensor->get_pool()];
     if (tensor->get_name(false) == "recursion_stack")
     {
         return "(" + type + "*)(input" + std::to_string(m_context->inputs.size() - 1) +
@@ -144,9 +145,16 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
         }
         else if (kernel == nullptr || type == "Result")
             continue;
-        else if ((type == "Reshape" || type == "Broadcast") &&
+        else if (type == "Broadcast" &&
                  ins->get_inputs()[0]->size() == ins->get_outputs()[0]->size() &&
                  !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)))
+        {
+            m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]];
+        }
+        else if (type == "Reshape" &&
+                 !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)) &&
+                 !dynamic_pointer_cast<op::Reshape>(ins->getGNode()->get_op_ptr())
+                      ->get_is_layout_change())
         {
             m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]];
         }
@@ -154,8 +162,8 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
                  !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)))
         {
             auto stride = ins->get_outputs()[0]->size(/*in_byte*/ false);
-            m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+*" +
-                                                 m_param_map[ins->get_inputs()[1]] + "*" +
+            m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+*(" +
+                                                 m_param_map[ins->get_inputs()[1]] + ")*" +
                                                  std::to_string(stride);
         }
         else if (dynamic_pointer_cast<CudaEmitter>(kernel) == nullptr)

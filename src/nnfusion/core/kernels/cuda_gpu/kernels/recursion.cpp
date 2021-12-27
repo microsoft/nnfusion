@@ -64,6 +64,7 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     m_workspace_size = 0;
     for (auto& pair : m_loop_body_tu->memory_allocator_factory->get_allocator_list())
     {
+        m_pool_offset[pair.second->get_name()] = m_workspace_size;
         m_workspace_size += pair.second->max_allocated();
     }
     m_workspace = allocate_tensor(Shape{m_workspace_size * 20}, nnfusion::element::character);

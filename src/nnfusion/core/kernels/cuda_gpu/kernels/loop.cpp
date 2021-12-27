@@ -22,6 +22,7 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     size_t workspace_size = 0;
     for (auto& pair : m_loop_body_tu->memory_allocator_factory->get_allocator_list())
     {
+        m_pool_offset[pair.second->get_name()] = workspace_size;
         workspace_size += pair.second->max_allocated();
     }
     m_workspace = allocate_tensor(Shape{workspace_size}, nnfusion::element::character);

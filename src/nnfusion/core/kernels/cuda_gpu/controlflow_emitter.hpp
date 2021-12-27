@@ -38,6 +38,7 @@ namespace nnfusion
                 bool is_emitting_block_kernel = false;
                 descriptor::Tensor::Pointer m_workspace;
                 std::unordered_map<nnfusion::descriptor::Tensor::Pointer, std::string> m_param_map;
+                std::unordered_map<std::string, size_t> m_pool_offset;
             };
         }
     }

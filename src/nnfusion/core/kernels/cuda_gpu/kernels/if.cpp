@@ -21,16 +21,25 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_then_branch_tu = op->get_then_branch_tu();
     m_else_branch_tu = op->get_else_branch_tu();
     size_t size0 = 0, size1 = 0;
+    std::unordered_map<std::string, size_t> then_branch_pool_offset, else_branch_pool_offset;
     for (auto& pair : m_then_branch_tu->memory_allocator_factory->get_allocator_list())
+    {
+        then_branch_pool_offset[pair.second->get_name()] = size0;
         size0 += pair.second->max_allocated();
+    }
     for (auto& pair : m_else_branch_tu->memory_allocator_factory->get_allocator_list())
+    {
+        else_branch_pool_offset[pair.second->get_name()] = size1;
         size1 += pair.second->max_allocated();
+    }
     m_workspace = allocate_tensor(Shape({std::max(size0, size1)}), nnfusion::element::character);
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
     m_shared_memory_size = max(get_subgraph_shared_memory(m_then_branch_tu->program),
                                get_subgraph_shared_memory(m_else_branch_tu->program));
+    m_pool_offset = then_branch_pool_offset;
     m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map());
+    m_pool_offset = else_branch_pool_offset;
     m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map());
 }
 

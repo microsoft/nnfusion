@@ -15,11 +15,11 @@ namespace nnfusion
         namespace cuda
         {
             template <class T>
-            class Reduce : public BlockCudaEmitter
+            class Reduce : public CudaEmitter
             {
             public:
                 Reduce(shared_ptr<KernelContext> ctx)
-                    : BlockCudaEmitter(ctx)
+                    : CudaEmitter(ctx)
                 {
                     if (auto reduce =
                             dynamic_pointer_cast<nnfusion::op::Reduce>(ctx->gnode->get_op_ptr()))

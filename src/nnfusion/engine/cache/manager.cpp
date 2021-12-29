@@ -83,11 +83,13 @@ CREATE TABLE IF NOT EXISTS KernelCache(
             SupportOpList.insert(it.first);
         }
         SupportOpList.insert({"Dot",
+                              "BatchMatMul",
                               "Convolution",
                               "AvgPool",
                               "MaxPool",
                               "Fused_Convolution_Relu",
                               "Fused_Convolution_Add_Relu",
+                              "Sum",
                               "Matched_Pattern"});
     }
 }

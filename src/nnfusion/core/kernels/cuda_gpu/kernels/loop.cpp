@@ -22,6 +22,7 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     size_t workspace_size = 0;
     for (auto& pair : m_loop_body_tu->memory_allocator_factory->get_allocator_list())
     {
+        m_pool_offset[pair.second->get_name()] = workspace_size;
         workspace_size += pair.second->max_allocated();
     }
     m_workspace = allocate_tensor(Shape{workspace_size}, nnfusion::element::character);
@@ -31,14 +32,13 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
     for (auto& item : output_map)
         item.second--;
-    create_param_map(m_loop_body_tu->program, output_map);
+    m_body_instructions = create_param_map(m_loop_body_tu->program, output_map);
 }
 
 void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
 {
     auto& lu = *_lu;
-    auto instructions = get_fused_kernel(m_loop_body_tu->program);
-    for (auto ins : instructions)
+    for (auto ins : *m_body_instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         lu << get_launch_bound(ins);
@@ -60,14 +60,19 @@ LanguageUnit_p cuda::Loop::emit_function_body()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
     allocate_shared_memory(_lu);
-    lu << "for (int64_t i = 0; i < *input0; i++)";
-    lu.block_begin();
-    // after the first loop, loop-carried output should be used as input
-    lu << "if (i == 1)";
-    lu.block_begin();
+    lu << "int tid=threadIdx.x + blockIdx.x * blockDim.x;\n";
+    for (int i = 0; i < m_context->outputs.size(); i++)
+    {
+        size_t tensor_size = m_context->outputs[i]->size(false);
+        size_t num_threads = m_blockDim.x * m_gridDim.x;
+        lu << "for (int64_t i=tid; i<" << tensor_size << "; i+=" << num_threads << ")";
+        lu << " output" << i << "[i] = input" << i + 2 << "[i];\n";
+    }
     for (int i = 0; i < m_context->outputs.size(); i++)
         lu << "input" << i + 2 << " = output" << i << ";\n";
-    lu.block_end();
+    lu << "Barrier();\n";
+    lu << "for (int64_t i = 0; i < *input0; i++)";
+    lu.block_begin();
     generate_subgraph_code(_lu);
     lu.block_end();
     return _lu;
@@ -75,7 +80,7 @@ LanguageUnit_p cuda::Loop::emit_function_body()
 
 void cuda::Loop::set_launch_config()
 {
-    auto cfg0 = get_subgraph_launch_config(m_loop_body_tu->program);
+    auto cfg0 = get_subgraph_launch_config(m_body_instructions);
     m_blockDim = cfg0.first;
     m_gridDim = cfg0.second;
 }
@@ -85,7 +90,7 @@ LanguageUnit_p cuda::Loop::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
-    for (auto ins : get_fused_kernel(m_loop_body_tu->program))
+    for (auto ins : *m_body_instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         auto body = kernel->get_or_emit_source();

@@ -19,13 +19,19 @@ REGISTER_OP(BatchMatMul)
         const nnfusion::Shape& input_shape_1 = gnode->get_input_shape(1);
         nnfusion::Shape output_shape_0;
 
-        NNFUSION_CHECK(input_shape_0.size() == input_shape_1.size());
         NNFUSION_CHECK(gnode->get_input_element_type(0) == gnode->get_input_element_type(1));
-
-        for (int i = 0; i < input_shape_0.size() - 2; i++)
-        {
+        NNFUSION_CHECK(input_shape_0.size() >= 2 && input_shape_1.size() >= 2);
+        for (int i = 0; i < std::min(input_shape_0.size(), input_shape_1.size()) - 2; i++)
             NNFUSION_CHECK(input_shape_0[i] == input_shape_1[i]);
-            output_shape_0.push_back(input_shape_0[i]);
+        if (input_shape_0.size() > input_shape_1.size())
+        {
+            for (int i = 0; i < input_shape_0.size() - 2; i++)
+                output_shape_0.push_back(input_shape_0[i]);
+        }
+        else
+        {
+            for (int i = 0; i < input_shape_1.size() - 2; i++)
+                output_shape_0.push_back(input_shape_1[i]);
         }
 
         int m0 = input_shape_0[input_shape_0.size() - 2],
@@ -103,14 +109,12 @@ REGISTER_OP(BatchMatMul)
         return expression;
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         NNFUSION_CHECK(curr->get_input_size() == 2);
 
         const nnfusion::Shape& input_shape_0 = curr->get_input_shape(0);
         const nnfusion::Shape& input_shape_1 = curr->get_input_shape(1);
         nnfusion::Shape output_shape_0 = curr->get_output_shape(0);
 
-        NNFUSION_CHECK(input_shape_0.size() == input_shape_1.size());
         NNFUSION_CHECK(curr->get_input_element_type(0) == curr->get_input_element_type(1));
 
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
@@ -128,8 +132,10 @@ REGISTER_OP(BatchMatMul)
         {
             std::string batch_dim = "B" + to_string(i);
             output0_layout.push_back(batch_dim);
-            input0_layout.push_back(batch_dim);
-            input1_layout.push_back(batch_dim);
+            if (i >= output_shape_0.size() - input_shape_0.size())
+                input0_layout.push_back(batch_dim);
+            if (i >= output_shape_0.size() - input_shape_1.size())
+                input1_layout.push_back(batch_dim);
         }
 
         output0_layout.push_back("N");

@@ -22,6 +22,7 @@ namespace nnfusion
             private:
                 void generate_branch_code(LanguageUnit_p, bool);
                 TranslationUnit::Pointer m_then_branch_tu, m_else_branch_tu;
+                ir::BasicBlock::Pointer m_then_branch_instructions, m_else_branch_instructions;
             };
         } // namespace cuda
     }     // namespace kernels

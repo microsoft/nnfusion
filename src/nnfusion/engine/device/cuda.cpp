@@ -101,7 +101,7 @@ CudaEngine::CudaEngine()
     m_passes->push_back(make_shared<TensorDeviceDispatcher>());
     m_passes->push_back(make_shared<TensorLivenessAnalysis>());
     m_passes->push_back(make_shared<InplaceTensorAnalysis>());
-    m_passes->push_back(make_shared<AssignTensorMemoryLayout>(64, false));
+    m_passes->push_back(make_shared<AssignTensorMemoryLayout>(64, true));
 
     // Do codegen
     m_passes->push_back(make_shared<CudaCodegenPass>());

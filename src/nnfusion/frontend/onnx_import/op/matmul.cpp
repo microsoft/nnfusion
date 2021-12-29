@@ -155,17 +155,22 @@ namespace nnfusion
                     Shape left_broadcast_shape(batch_shape.begin(), batch_shape.end());
                     left_broadcast_shape.push_back(left_full_shape[batchmm_output_rank - 2]);
                     left_broadcast_shape.push_back(left_full_shape[batchmm_output_rank - 1]);
-                    auto lhs_broadcast_gnode = m_graph->add_node_and_edge(
-                        std::make_shared<op::Broadcast>(left_broadcast_shape, left_broadcast_axes),
-                        {lhs_reshape_gnode});
+                    auto lhs_broadcast_gnode = lhs_reshape_gnode;
+                    if (left_shape_before_broadcast.size() < 2)
+                        lhs_broadcast_gnode = m_graph->add_node_and_edge(
+                            std::make_shared<op::Broadcast>(left_broadcast_shape,
+                                                            left_broadcast_axes),
+                            {lhs_reshape_gnode});
 
                     Shape right_broadcast_shape(batch_shape.begin(), batch_shape.end());
                     right_broadcast_shape.push_back(right_full_shape[batchmm_output_rank - 2]);
                     right_broadcast_shape.push_back(right_full_shape[batchmm_output_rank - 1]);
-                    auto rhs_broadcast_gnode =
-                        m_graph->add_node_and_edge(std::make_shared<op::Broadcast>(
-                                                       right_broadcast_shape, right_broadcast_axes),
-                                                   {rhs_reshape_gnode});
+                    auto rhs_broadcast_gnode = rhs_reshape_gnode;
+                    if (right_shape_before_broadcast.size() < 2)
+                        rhs_broadcast_gnode = m_graph->add_node_and_edge(
+                            std::make_shared<op::Broadcast>(right_broadcast_shape,
+                                                            right_broadcast_axes),
+                            {rhs_reshape_gnode});
 
                     nnfusion::op::OpConfig::any myConfig;
                     myConfig["adj_x"]["b"] = static_cast<bool>(adj_x);

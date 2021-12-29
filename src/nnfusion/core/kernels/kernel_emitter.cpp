@@ -487,16 +487,23 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         str << maxpool->get_padding_above();
         identifier += str.str();
     }
+    else if (op_type == "Sum")
+    {
+        auto sum = std::dynamic_pointer_cast<op::Sum>(ctx->gnode->get_op_ptr());
+        std::stringstream str;
+        str << sum->get_reduction_axes();
+        identifier += str.str();
+    }
     else if (op_type == "Dot")
     {
-        ///\todo encode dot attrs, stay the same with db importor
-        // auto dot = std::dynamic_pointer_cast<op::Dot>(ctx->gnode->get_op_ptr());
-        // NNFUSION_CHECK_NOT_NULLPTR(dot);
-        // std::stringstream str;
-        // str << dot->get_transpose_A();
-        // str << dot->get_transpose_B();
-        // ///\todo: need to encode dot reduction_axes_count?
-        // identifier += str.str();
+        ///\todo encode dot attrs, stay the same with db importor auto dot =
+        auto dot = std::dynamic_pointer_cast<op::Dot>(ctx->gnode->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(dot);
+        std::stringstream str;
+        str << dot->get_transpose_A();
+        str << dot->get_transpose_B();
+        ///\todo: need to encode dot reduction_axes_count?
+        identifier += str.str();
     }
 
     return identifier;

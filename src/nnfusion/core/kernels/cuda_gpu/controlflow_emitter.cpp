@@ -186,6 +186,18 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
                 else
                     m_param_map[tensor] = get_workspace_tensor(tensor);
             }
+            if (ins->getKernel()->m_context->annotations != nullptr)
+            {
+                for (auto pair : ins->getKernel()->m_context->annotations->get_in_place_oi_pairs())
+                {
+                    auto output = ins->get_outputs()[pair.output];
+                    auto input = ins->get_inputs()[pair.input];
+                    if (pair.force_inplace)
+                    {
+                        m_param_map[output] = m_param_map[input];
+                    }
+                }
+            }
             for (const auto& tensor : ins->get_outputs())
             {
                 if (m_param_map.count(tensor))

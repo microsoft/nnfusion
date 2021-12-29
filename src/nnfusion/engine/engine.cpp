@@ -85,8 +85,6 @@ nnfusion::TranslationUnit::Pointer Engine::convert_graph_to_program(graph::Graph
     // neglect the codegen pass and inplace analysis
     for (size_t i = 0; i < m_passes->size() - 1; i++)
     {
-        if (dynamic_pointer_cast<pass::InplaceTensorAnalysis>((*m_passes)[i]) != nullptr)
-            continue;
         result = (*m_passes)[i]->run(ctx, tu);
         if (!result)
             break;

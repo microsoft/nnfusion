@@ -160,17 +160,31 @@ FunctionFile_p FunctionFile::convert_from(std::shared_ptr<nnfusion::kernels::Ker
 
         args[args.size() - 1] = ',';
 
-        std::vector<std::string> params;
-        for (int i = 0, j; j = args.find(',', i), j >= 0; i = j + 1)
-        {
-            int start = args.find_last_of(' ', j) + 1;
-            NNFUSION_CHECK(start >= 1);
-            params.push_back(args.substr(start, j - start));
-        }
+        pos = body_unit.find("Barrier();");
+        if (pos > 0) {
+            std::vector<std::string> params;
+            for (int i = 0, j; j = args.find(',', i), j >= 0; i = j + 1)
+            {
+                int start = args.find_last_of(' ', j) + 1;
+                NNFUSION_CHECK(start >= 1);
+                params.push_back("&" + args.substr(start, j - start));
+            }
+            def << "void* args[] = {" << join(params, ", ") << "};\n";
+            def << "CUDA_SAFE_CALL(cudaLaunchCooperativeKernel((const void*) " << func_name << ", grids, blocks, args, (size_t) mem, stream));";
+            def << "}\n";
+        } else {
+            std::vector<std::string> params;
+            for (int i = 0, j; j = args.find(',', i), j >= 0; i = j + 1)
+            {
+                int start = args.find_last_of(' ', j) + 1;
+                NNFUSION_CHECK(start >= 1);
+                params.push_back(args.substr(start, j - start));
+            }
 
-        def << "    " << func_name << "<<<grids, blocks, mem, stream>>>(" << join(params, ", ")
-            << ");\n";
-        def << "}\n";
+            def << "    " << func_name << "<<<grids, blocks, mem, stream>>>(" << join(params, ", ")
+                << ");\n";
+            def << "}\n";
+        }
     }
 #endif
 

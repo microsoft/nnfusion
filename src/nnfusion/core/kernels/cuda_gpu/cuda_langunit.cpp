@@ -8,7 +8,7 @@
 using namespace nnfusion::kernels;
 
 // Header
-LU_DEFINE(header::cuda, "#include <cuda.h>\n#include <cuda_runtime.h>\n");
+LU_DEFINE(header::cuda, "#include <cuda.h>\n#include <cuda_runtime.h>\n#include <cooperative_groups.h>\n");
 LU_DEFINE(header::cublas, "#include <cublas_v2.h>\n");
 LU_DEFINE(header::cudnn, "#include <cudnn.h>\n");
 LU_DEFINE(header::superscaler, "#include \"superscaler.h\"\n");
@@ -2183,32 +2183,7 @@ __device__ __forceinline__ T WARP_SHFL_DOWN(T value, unsigned int delta, int wid
 LU_DEFINE(declaration::barrier,
           R"(
 __device__ void Barrier() {
-    static volatile uint8_t global_state_in[1024] = {0};
-    static volatile uint8_t global_state_out[1024] = {0};
-    const int BLOCK_NUM = gridDim.x * gridDim.y;
-    const int thread_idx_in_block = blockDim.x * threadIdx.y + threadIdx.x;
-    const int block_idx = gridDim.x * blockIdx.y + blockIdx.x;
-    if (thread_idx_in_block == 0) {
-        global_state_in[block_idx] = 1;
-    }
-    if (block_idx == 0) {
-        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
-            while (global_state_in[i] != 1) {
-            }
-
-        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
-            global_state_in[i] = 0;
-
-        __syncthreads();
-        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
-            global_state_out[i] = 1;
-    }
-    if (thread_idx_in_block == 0) {
-        while (global_state_out[block_idx] != 1) {
-        };
-        global_state_out[block_idx] = 0;
-    }
-    __syncthreads();
-    __threadfence();
+    cooperative_groups::grid_group g = cooperative_groups::this_grid();
+    g.sync();
 }
 )");

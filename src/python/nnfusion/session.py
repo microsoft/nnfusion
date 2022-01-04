@@ -80,6 +80,8 @@ def modify_nnfusion_rt(rt_dir):
         # remove cudaDevice reset in cuda_init()
         command = "sed -i '/cudaDeviceReset()/s:^://:'" + " " + "nnfusion_rt.cu"
         execute(command)
+        command = "sed -i '/cudaSetDevice(0)/s:^://:'" + " " + "nnfusion_rt.cu"
+        execute(command)
 
 
 def build(rt_dir):

@@ -34,6 +34,7 @@ DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
+DEFINE_bool(fcheck_result, false, "Check result with external inputs and outputs");
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -1194,6 +1195,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
     re_main->require(header::stdlib);
     re_main->require(header::stdio);
     re_main->require(header::sstream);
+    re_main->require(header::fstream);
     re_main->require(header::stdexcept);
     re_main->require(header::limits);
 
@@ -1212,6 +1214,23 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
             lu_main << it.second->get_code() << "\n";
 
     LanguageUnit fillval("fillval");
+    if (FLAGS_fcheck_result) {
+        lu_main << "void load_param(std::string f_name, void* buffer, size_t size)";
+        lu_main.block_begin();
+        {
+            lu_main << "std::ifstream bin_file(f_name.c_str(), std::ios::in | std::ios::binary);\n";
+            lu_main << "if(bin_file.fail())\n";
+            lu_main.block_begin();
+            {
+                lu_main << "printf(\"Load \%s failed.\\n\", f_name);\n";
+                lu_main << "exit(1);\n";
+            }
+            lu_main.block_end();
+            lu_main << "bin_file.read((char*) buffer, size);\n";
+            lu_main << "bin_file.close();\n";
+        }
+        lu_main.block_end();
+    }
 
     lu_main << "int main(int argc, char *argv[])";
     lu_main.block_begin();
@@ -1242,8 +1261,13 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
                         << "sizeof(" << tensor.get_element_type().c_type_string() << ") * "
                         << tensor.get_tensor_layout()->get_size() << "));\n";
             }
-            fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
-                    << tensor.get_name() << "_host[i] = 1.0f;\n";
+            if (FLAGS_fcheck_result) {
+                fillval << "load_param(\"../../bin/input_ref_" << i << ".bin\", (void*)" << tensor.get_name()
+                        << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * " << tensor.get_tensor_layout()->get_size() << ");\n";
+            } else {
+                fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
+                        << tensor.get_name() << "_host[i] = 1.0f;\n";
+            }
         }
 
         lu_main << "\n//output arguments\n";
@@ -1251,9 +1275,19 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         {
             auto& tensor = *tu->out[i];
             //malloc host output arg
-            lu_main << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
-                    << "_host, *" << tensor.get_name() << ";\n";
-
+            if (FLAGS_fcheck_result) {
+                lu_main << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
+                        << "_host, *" << tensor.get_name() << ", *" << tensor.get_name() << "_ref;\n";
+                lu_main << "CUDA_SAFE_CALL(cudaMallocHost((void**)&" << tensor.get_name()
+                        << "_ref, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                        << tensor.get_tensor_layout()->get_size() << "));\n";
+                fillval << "load_param(\"../../bin/output_ref_" << i << ".bin\", (void*)" << tensor.get_name()
+                        << "_ref, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                        << tensor.get_tensor_layout()->get_size() << ");\n";
+            } else {
+                lu_main << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
+                        << "_host, *" << tensor.get_name() << ";\n";
+            }
             lu_main << "CUDA_SAFE_CALL(cudaMallocHost((void**)&" << tensor.get_name()
                     << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
                     << tensor.get_tensor_layout()->get_size() << "));\n";
@@ -1295,13 +1329,31 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         for (size_t i = 0; i < tu->out.size(); i++)
         {
             auto& tensor = *tu->out[i];
-            lu_main << "printf(\"%s \\n\", \"" << tensor.get_name() << ":\");\n"
-                    << "for (int i = 0; i < "
-                    << std::min(size_t(10), tensor.get_tensor_layout()->get_size())
-                    << "; ++i) printf(\"%e \", (float)" << tensor.get_name() << "_host[i]); "
-                    << "\nprintf(\" .. (size = " << tensor.get_tensor_layout()->get_size()
-                    << ", ends with %e);\\n\", (float)" << tensor.get_name() << "_host["
-                    << tensor.get_tensor_layout()->get_size() - 1 << "]);\n";
+
+            if (FLAGS_fcheck_result) {
+                lu_main << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; i++)";
+                lu_main.block_begin();
+                {
+                    lu_main << "float out = " << tensor.get_name() << "_host[i];\n";
+                    lu_main << "float ref = " << tensor.get_name() << "_ref[i];\n";
+                    lu_main << "if (out - ref > 1e-3 || ref - out > 1e-3)\n";
+                    lu_main.block_begin();
+                    {
+                        lu_main << "printf(\"" << tensor.get_name() << ": wa at \%d: \%f \%f\\n\", i, out, ref);\n";
+                        lu_main << "return 1;\n";
+                    }
+                    lu_main.block_end();
+                }
+                lu_main.block_end();
+            } else {
+                lu_main << "printf(\"%s \\n\", \"" << tensor.get_name() << ":\");\n"
+                        << "for (int i = 0; i < "
+                        << std::min(size_t(10), tensor.get_tensor_layout()->get_size())
+                        << "; ++i) printf(\"%e \", (float)" << tensor.get_name() << "_host[i]); "
+                        << "\nprintf(\" .. (size = " << tensor.get_tensor_layout()->get_size()
+                        << ", ends with %e);\\n\", (float)" << tensor.get_name() << "_host["
+                        << tensor.get_tensor_layout()->get_size() - 1 << "]);\n";
+            }
         }
         lu_main.block_end();
 

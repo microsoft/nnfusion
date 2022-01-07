@@ -2,12 +2,29 @@
 # Licensed under the MIT License.
 
 from collections import defaultdict
+import torch
+
 from .description import IODescription
 from .session import PTSession, tensor2desc
 
 
 def extract_desc_and_device(name, tensor):
     return tensor2desc(tensor, name=name), str(tensor.device)
+
+
+def flatten(args):
+    flatten_args = []
+    if isinstance(args, torch.Tensor):
+        flatten_args.append(args)
+    elif isinstance(args, (list, tuple)):
+        for item in args:
+            flatten_args.extend(flatten(item))
+    elif isinstance(args, dict):
+        for item in args.values():
+            flatten_args.extend(flatten(item))
+    else:
+        raise Exception(f"Unknown type: {type(args)}")
+    return flatten_args
 
 
 class PTRunner(object):
@@ -32,13 +49,14 @@ class PTRunner(object):
     def _retrieve_by_tensor(self, tensors):
         raise NotImplementedError()
 
-    def _retrieve_by_desc(self, descs, device):
+    def _retrieve_by_desc(self, descs, device, raw_input=None):
         if device not in self._sessions[tuple(descs)]:
             self._sessions[tuple(descs)][device] = PTSession(
                 self._model,
                 descs,
                 device,
                 codegen_flags=self._codegen_flags,
+                raw_input=raw_input,
                 **self._session_kwargs)
         return self._sessions[tuple(descs)][device]
 
@@ -59,13 +77,14 @@ class PTRunner(object):
         ## todo: partially support such model by `inspect`
         if len(kwargs) != 0:
             raise Exception("Model forward with kwargs not supported yet")
+        flatten_args = flatten(args)
         descs, devices = zip(*(extract_desc_and_device("input_{}".format(i), v)
-                               for i, v in enumerate(args)))
+                               for i, v in enumerate(flatten_args)))
         unique_devices = set(devices)
         if len(unique_devices) != 1:
             raise Exception(
                 "All input tensors should be on the same device: {}".format(
                     unique_devices))
         device = list(unique_devices)[0]
-        feeds = {"input_{}".format(i): v for i, v in enumerate(args)}
-        return self._retrieve_by_desc(descs, device)(feeds)
+        feeds = {"input_{}".format(i): v for i, v in enumerate(flatten_args)}
+        return self._retrieve_by_desc(descs, device, args)(feeds)

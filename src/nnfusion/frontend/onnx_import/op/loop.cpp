@@ -5,6 +5,7 @@
 #include "../util/graph_convert.hpp"
 #include "../util/util.hpp"
 #include "nnfusion/core/operators/op_define/loop.hpp"
+#include <map>
 
 using namespace nnfusion::frontend::onnx_import;
 
@@ -246,6 +247,40 @@ namespace nnfusion
                                                                   all_ng_nodes,
                                                                   true);
                         loop_body_graph = loop_body_graph_convert.get_graph();
+                    }
+                    std::map<std::string, std::string> output_to_input;
+                    std::map<std::string, std::vector<std::shared_ptr<nnfusion::graph::GNode>>> read_of_input;
+                    std::set<std::string> output_name_set;
+                    {
+                        std::vector<std::string> input_names;
+                        std::vector<std::string> output_names;
+                        for (auto node: loop_body_graph->get_nodes()) {
+                            if (node->get_op_type() == "Parameter") {
+                                input_names.push_back(node->get_name());
+                            }
+                        }
+                        for (auto node: loop_body_graph->get_outputs()) {
+                            std::string name = node->get_name();
+                            output_names.push_back(name);
+                            output_name_set.insert(name);
+                        }
+                        for (size_t i = 0; i < output_names.size() - 1; i++) {
+                            output_to_input[output_names[i]] = input_names[i + 2];
+                        }
+                    }
+                    // write to the output node after read its corresponding node
+                    for (auto node: loop_body_graph->get_nodes()) {
+                        if (output_name_set.find(node->get_name()) != output_name_set.end()) {
+                            for (auto read: read_of_input[output_to_input[node->get_name()]]) {
+                                loop_body_graph->add_control_edge(read, node);
+                                NNFUSION_LOG(INFO) << "add dependency " << read->get_name() << "|" << read->get_op_type() << " " << node->get_name() << "|" << node->get_op_type();
+                            }
+                        }
+                        for (auto edge: node->get_in_edges()) {
+                            if (edge->get_src()->get_op_type() == "Parameter") {
+                                read_of_input[edge->get_src()->get_name()].push_back(node);
+                            }
+                        }
                     }
 
                     std::vector<nnfusion::PartialShape> output_shapes;

@@ -466,6 +466,18 @@ void FusedGNode::set_inputs_and_outputs(std::shared_ptr<Graph> graph)
                                 out_edge->get_dst_input());
             }
         }
+        for (const auto& out_edge : m_node->get_out_edges())
+        {
+            if (!out_edge->is_control_edge())
+                continue;
+            auto out_node = out_edge->get_dst();
+            if (cached_nodes.find(out_node) != cached_nodes.end() || out_node == shared_from_this())
+                continue;
+            graph->add_edge(shared_from_this(),
+                            Graph::kControlSlot,
+                            out_edge->get_dst(),
+                            out_edge->get_src_output());
+        }
     }
 }
 

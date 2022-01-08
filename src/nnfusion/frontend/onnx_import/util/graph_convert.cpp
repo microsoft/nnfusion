@@ -384,7 +384,9 @@ namespace nnfusion
                                [](onnx::ValueInfoProto v) -> std::string { return v.name(); });
                 if (!is_sorted(onnx_nodes, external_values))
                 {
-                    NNFUSION_LOG(NNFUSION_WARNING) << "Resorting ONNX nodes...";
+                    // NNFUSION_LOG(NNFUSION_WARNING) << "Resorting ONNX nodes...";
+                    NNFUSION_LOG(NNFUSION_FATAL) << "Wrong node order";
+                    exit(1);
                     onnx_nodes = tp_sort(onnx_nodes, external_values);
                 }
 

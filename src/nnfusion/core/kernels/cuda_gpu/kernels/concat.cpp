@@ -384,7 +384,7 @@ namespace nnfusion
                     for (size_t i = 0; i < input_num; i++)
                     {
                         auto arg_rank = ctx->inputs[i]->get_shape().size();
-                        nthreads += shape_size(ctx->inputs[i]->get_shape());
+                        nthreads = std::max(nthreads, (uint32_t)shape_size(ctx->inputs[i]->get_shape()));
                         for (size_t j = concat_axis; j < arg_rank; j++)
                         {
                             inputs_strides[i] *= ctx->inputs[i]->get_shape()[j];
@@ -439,10 +439,10 @@ namespace nnfusion
                             {
                                 writer << "output0[output_idx] = input" << i
                                        << "[block_id * inputs_strides[" << i << "] + block_idx];\n";
-                                writer << "return;\n";
+                                // writer << "return;\n";
                             }
                             writer.block_end();
-                            writer << "block_idx -= inputs_strides[" << i << "];\n";
+                            writer << "output_idx += inputs_strides[" << i << "];\n";
                         }
                     }
                     writer.block_end();

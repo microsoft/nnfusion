@@ -287,6 +287,30 @@ namespace nnfusion
                             }
                         }
                     }
+                    // hack for LSTM training forward: reshape(i)->add(i) reshape(i)->scatter(i) so add(i) should execute after scatter(i)
+                    for (auto node: loop_body_graph->get_nodes()) {
+                        if (node->get_op_type() == "Reshape") {
+                            auto op = std::dynamic_pointer_cast<nnfusion::op::Reshape>(node->get_op_ptr());
+                            if (!op->get_is_layout_change())
+                            {
+                                std::vector<std::shared_ptr<nnfusion::graph::GNode>> out_scatters;
+                                std::vector<std::shared_ptr<nnfusion::graph::GNode>> out_adds;
+                                for (auto edge: node->get_out_edges()) {
+                                    auto out = edge->get_dst();
+                                    if (out->get_op_type() == "ScatterND")
+                                        out_scatters.push_back(out);
+                                    if (edge->is_control_edge() && out->get_op_type() == "Add")
+                                        out_adds.push_back(out);
+                                }
+                                for (auto scatter: out_scatters) {
+                                    for (auto add: out_adds) {
+                                        loop_body_graph->add_control_edge(scatter, add);
+                                        NNFUSION_LOG(INFO) << "forward dependency " << scatter->get_name() << "|" << scatter->get_op_type() << " " << add->get_name() << "|" << add->get_op_type();
+                                    }
+                                }
+                            }
+                        }
+                    }
                     std::vector<nnfusion::PartialShape> output_shapes;
                     std::vector<nnfusion::element::Type> output_types;
                     for (size_t i = 1; i < loop_body_graph_proto.output().size(); i++)

@@ -46,7 +46,7 @@ namespace nnfusion
                         {
                             if (!ctx->annotations)
                                 ctx->annotations = std::make_shared<Annotations>();
-                            ctx->annotations->add_in_place_oi_pair(oi_pair(0, idx, false, offset));
+                            // ctx->annotations->add_in_place_oi_pair(oi_pair(0, idx, false, offset));
                             auto& input_shape = ctx->inputs[idx]->get_shape();
                             offset += shape_size(input_shape) * data_type_size;
                         }
@@ -369,7 +369,8 @@ namespace nnfusion
                         {
                             if (!ctx->annotations)
                                 ctx->annotations = std::make_shared<Annotations>();
-                            ctx->annotations->add_in_place_oi_pair(oi_pair(0, idx, false, offset));
+                            // heheda: observe some bug in lstm
+                            // ctx->annotations->add_in_place_oi_pair(oi_pair(0, idx, false, offset));
                             auto& input_shape = ctx->inputs[idx]->get_shape();
                             offset += shape_size(input_shape) * data_type_size;
                         }

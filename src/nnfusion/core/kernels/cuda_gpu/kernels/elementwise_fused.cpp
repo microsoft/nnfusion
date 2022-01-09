@@ -273,17 +273,18 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
 {
     uint32_t num_ele =
         static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-    for (int i = 128; i >= 64; i >>= 1)
+    const int max_block_size = 128;
+    for (int i = max_block_size; i >= 64; i >>= 1)
     {
         if (num_ele % i == 0)
         {
             grids = num_ele / i, blocks = i, bound = 0;
-            if (grids > 128)
-                grids = 128;
+            if (grids > max_block_size)
+                grids = max_block_size;
             return;
         }
     }
-    for (int i = 128; i >= 32; i--)
+    for (int i = max_block_size; i >= 32; i--)
     {
         if (num_ele % i == 0)
         {
@@ -294,7 +295,7 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
     if (num_ele < 32)
         grids = 1, blocks = num_ele, bound = 0;
     else
-        grids = (num_ele + 127) / 128, blocks = 128, bound = 1;
+        grids = (num_ele + max_block_size - 1) / max_block_size, blocks = max_block_size, bound = 1;
 }
 
 REGISTER_KERNEL_EMITTER(

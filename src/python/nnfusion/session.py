@@ -35,8 +35,11 @@ def generate_sample(desc, device=None):
                           dtype=str2type[desc.dtype].torch_type).to(device)
 
 
-def generate_output_desc(model, input_desc, device="cpu"):
-    fake_inputs = [generate_sample(desc, device) for desc in input_desc]
+def generate_output_desc(model, input_desc, device="cpu", raw_input=None):
+    if raw_input is not None:
+        fake_inputs = raw_input
+    else:
+        fake_inputs = [generate_sample(desc, device) for desc in input_desc]
     model_copy = copy.deepcopy(model).to(device)
     out = model_copy(*fake_inputs)
     if isinstance(out, torch.Tensor):
@@ -44,25 +47,31 @@ def generate_output_desc(model, input_desc, device="cpu"):
     return tuple(tensor2desc(t, name=f"output_{i}") for i, t in enumerate(out))
 
 
-def convert_model_to_onnx(model, model_desc, device, file_name, const_folding):
+def convert_model_to_onnx(model,
+                          model_desc,
+                          device,
+                          file_name,
+                          const_folding,
+                          raw_input=None):
     model.to(device)
     input_names = [input.name for input in model_desc.inputs]
     output_names = [output.name for output in model_desc.outputs]
-    sample_inputs = [
-        generate_sample(input, device) for input in model_desc.inputs
-    ]
-    sample_outputs = [
-        generate_sample(output, device) for output in model_desc.outputs
-    ]
+    if raw_input is not None:
+        sample_inputs = raw_input
+    else:
+        sample_inputs = tuple(
+            generate_sample(input, device) for input in model_desc.inputs)
+    sample_outputs = tuple(
+        generate_sample(output, device) for output in model_desc.outputs)
     # note: onnx exporter might have side effect, so copy a new model
     torch.onnx.export(copy.deepcopy(model).to(device),
-                      tuple(sample_inputs),
+                      sample_inputs,
                       file_name,
                       input_names=input_names,
                       output_names=output_names,
                       opset_version=12,
                       _retain_param_name=True,
-                      example_outputs=tuple(sample_outputs),
+                      example_outputs=sample_outputs,
                       do_constant_folding=const_folding)
 
     return model
@@ -108,6 +117,7 @@ class PTSession(object):
                  const_folding=False,
                  build_nnf=True,
                  codegen_flags=None,
+                 raw_input=None,
                  **kwargs):
         """
         Parameters:
@@ -138,13 +148,15 @@ class PTSession(object):
              for name, param in self._model.named_buffers()})
         self._input_desc = input_desc
         self._device = device
+        self._raw_input = raw_input
         if output_desc is not None:
             # TODO: validate output shape/type against real outputs
             self._output_desc = output_desc
         else:
             self._output_desc = generate_output_desc(self._model,
                                                      self._input_desc,
-                                                     self._device)
+                                                     self._device,
+                                                     self._raw_input)
         self._model_desc = ModelDescription(self._input_desc,
                                             self._output_desc)
         if workdir:
@@ -161,8 +173,12 @@ class PTSession(object):
         # convert torch model to onnx
         if self._build_nnf:
             self._onnx_model_path = os.path.join(self._workdir, "nnf.onnx")
-            convert_model_to_onnx(self._model, self._model_desc, self._device,
-                                  self._onnx_model_path, self._const_folding)
+            convert_model_to_onnx(self._model,
+                                  self._model_desc,
+                                  self._device,
+                                  self._onnx_model_path,
+                                  self._const_folding,
+                                  raw_input=self._raw_input)
         else:
             self._onnx_model_path = ""
         torch.cuda.empty_cache()

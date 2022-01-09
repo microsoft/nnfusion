@@ -6,6 +6,8 @@
 #include "convolution.hpp"
 #include "nnfusion/core/operators/op_define/loop.hpp"
 #include "nnfusion/engine/pass/graph/blockfusion/blockfusion_codegen.hpp"
+#include <set>
+#include "nnfusion/core/graph/gnode.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
@@ -35,11 +37,43 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     m_body_instructions = create_param_map(m_loop_body_tu->program, output_map);
 }
 
+void fetch_dependent(const std::set<int64_t>& emitted, std::vector<std::shared_ptr<nnfusion::graph::GNode>>& depend, std::shared_ptr<nnfusion::graph::GNode> node) {
+    for (auto edge: node->get_in_edges()) {
+        auto src = edge->get_src();
+        if (emitted.find(src->get_id()) == emitted.end()) {
+            fetch_dependent(emitted, depend, src);
+        } else {
+            depend.push_back(src);
+        }
+    }
+}
+
 void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
 {
     auto& lu = *_lu;
+    std::set<int64_t> outputs;
+    std::set<int64_t> emitted;
     for (auto ins : *m_body_instructions)
     {
+        auto node = ins->getGNode();
+        // std::cout << node->get_id() << " " << node->get_op_type() << " depends on: ";
+        bool need_barrier = false;
+        std::vector<std::shared_ptr<nnfusion::graph::GNode>> depend;
+        fetch_dependent(emitted, depend, node);
+        for (auto src: depend) {
+            if (outputs.find(src->get_id()) != outputs.end()) {
+                need_barrier = true;
+                // std::cout << "(depend)";
+            }
+            // std::cout << src->get_id() << " " << src->get_op_type() << ", ";
+        }
+        // std::cout << std::endl;
+        if (need_barrier) {
+            lu << "Barrier();\n";
+            outputs.clear();
+        }
+        outputs.insert(node->get_id());
+        emitted.insert(node->get_id());
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         lu << get_launch_bound(ins);
         std::vector<string> params;
@@ -51,8 +85,8 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu)
             for (auto tensor : kernel->m_context->tensors)
                 params.push_back(m_param_map[tensor]);
         lu << kernel->emit_block_kernel_call(params)->get_code();
-        lu << "Barrier();\n";
     }
+    lu << "Barrier();\n";
 }
 
 LanguageUnit_p cuda::Loop::emit_function_body()

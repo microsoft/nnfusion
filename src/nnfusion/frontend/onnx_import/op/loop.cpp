@@ -269,20 +269,24 @@ namespace nnfusion
                         }
                     }
                     // write to the output node after read its corresponding node
+                    // TOFIX: may cause circle dependency in graph
                     for (auto node: loop_body_graph->get_nodes()) {
-                        if (output_name_set.find(node->get_name()) != output_name_set.end()) {
-                            for (auto read: read_of_input[output_to_input[node->get_name()]]) {
-                                loop_body_graph->add_control_edge(read, node);
-                                NNFUSION_LOG(INFO) << "add dependency " << read->get_name() << "|" << read->get_op_type() << " " << node->get_name() << "|" << node->get_op_type();
-                            }
-                        }
                         for (auto edge: node->get_in_edges()) {
                             if (edge->get_src()->get_op_type() == "Parameter") {
                                 read_of_input[edge->get_src()->get_name()].push_back(node);
                             }
                         }
                     }
-
+                    for (auto node: loop_body_graph->get_nodes()) {
+                        if (output_name_set.find(node->get_name()) != output_name_set.end()) {
+                            for (auto read: read_of_input[output_to_input[node->get_name()]]) {
+                                if (read != node) {
+                                  loop_body_graph->add_control_edge(read, node);
+                                  NNFUSION_LOG(INFO) << "add dependency " << read->get_name() << "|" << read->get_op_type() << " " << node->get_name() << "|" << node->get_op_type();
+                                }
+                            }
+                        }
+                    }
                     std::vector<nnfusion::PartialShape> output_shapes;
                     std::vector<nnfusion::element::Type> output_types;
                     for (size_t i = 1; i < loop_body_graph_proto.output().size(); i++)

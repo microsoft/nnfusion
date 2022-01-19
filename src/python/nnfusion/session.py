@@ -118,6 +118,7 @@ class PTSession(object):
                  build_nnf=True,
                  codegen_flags=None,
                  raw_input=None,
+                 update_param_grad=False,
                  **kwargs):
         """
         Parameters:
@@ -190,6 +191,9 @@ class PTSession(object):
                                    False) and self._const_folding:
             raise Exception("Const folding and training mode are incompatible")
         self._create_executor()
+
+        # for PyTorch optimizer
+        self._update_param_grad = update_param_grad
 
     def _create_executor(self):
         if "cuda" in self._device:
@@ -283,9 +287,19 @@ class PTSession(object):
         self._executor(self._inputs, self._outputs)
         if check_nan and self.is_weights_nan():
             raise Exception("Nan found after execution")
+        if self._update_param_grad:
+            self._update_parameter_gradient()
         return [
             self._outputs[desc.name].reference for desc in self._output_desc
         ]
+
+    def _update_parameter_gradient(self):
+        for param in self._torch_weights:
+            grad_name = param + '_grad'
+            if grad_name in self._outputs:
+                self._torch_weights[param].grad = self._outputs[grad_name].reference
+            else:
+                assert(self._torch_weights[param].requires_grad == False, f"pytorch requires gradient for {param}, but session does not have it")
 
     def is_weights_nan(self):
         have_nan = False

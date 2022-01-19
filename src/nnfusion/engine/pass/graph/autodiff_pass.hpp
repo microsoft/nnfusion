@@ -22,6 +22,7 @@
 #include "nnfusion/engine/pass/graph/graph_pass_base.hpp"
 
 DECLARE_bool(fautodiff);
+DECLARE_bool(fextern_training_optimizer);
 DECLARE_string(ftraining_optimizer);
 
 namespace nnfusion

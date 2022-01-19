@@ -59,6 +59,8 @@ class PTTrainer(object):
             True,  # move weight external
             "extern_result_memory":
             True,  # move result external
+            "extern_training_optimizer":
+            False,  # do not use PyTorch optimizer
             "training_optimizer":
             '\'' + json.dumps({
                 "optimizer": "SGD",
@@ -67,8 +69,10 @@ class PTTrainer(object):
         }
         self._codegen_flags = trainer_flags
         self._codegen_flags.update(copy.deepcopy(codegen_flags) or {})
+        update_param_grad = self._codegen_flags["extern_training_optimizer"]
         self.runner = PTRunner(self.model_with_loss,
                                codegen_flags=self._codegen_flags,
+                               update_param_grad=update_param_grad,
                                **kwargs)
 
     def __call__(self, *args):

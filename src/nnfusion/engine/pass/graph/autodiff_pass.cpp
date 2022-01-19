@@ -27,6 +27,7 @@
 #include "autodiff_pass.hpp"
 
 DEFINE_bool(fautodiff, false, "Add backward graph.");
+DEFINE_bool(fextern_training_optimizer, false, "Use external optimizer for training.");
 DEFINE_string(ftraining_optimizer,
               "{}",
               "Configs for training optimizer (expressed in json string).");
@@ -49,6 +50,7 @@ bool AutodiffPass::run_on_graph(std::shared_ptr<Graph>& graph,
 
     nnfusion::pass::graph::autodiff::training_optimizer_configs =
         nlohmann::json::parse(FLAGS_ftraining_optimizer);
+    if (!FLAGS_fextern_training_optimizer)
     {
         // process training_optimizer_configs
         // TODO: support other optimizers

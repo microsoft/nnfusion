@@ -12,6 +12,8 @@ if sys.version_info < python_min_version:
         platform.python_version(), python_min_version_str))
     sys.exit(-1)
 
+os.system("mkdir build;cd build;cmake ..;make -j")
+
 nnf_bin="build/src/tools/nnfusion/nnfusion"
 nnf_tool="build/src/tools/nnfusion/"
 nnf_resource=os.listdir(nnf_tool)

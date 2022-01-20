@@ -61,11 +61,11 @@ class PTTrainer(object):
             True,  # move result external
             "extern_training_optimizer":
             False,  # do not use PyTorch optimizer
-            "training_optimizer":
-            '\'' + json.dumps({
-                "optimizer": "SGD",
-                "learning_rate": 0.01
-            }) + '\'',  # training optimizer configs
+            # "training_optimizer":
+            # '\'' + json.dumps({
+            #     "optimizer": "SGD",
+            #     "learning_rate": 0.01
+            # }) + '\'',  # training optimizer configs
         }
         self._codegen_flags = trainer_flags
         self._codegen_flags.update(copy.deepcopy(codegen_flags) or {})

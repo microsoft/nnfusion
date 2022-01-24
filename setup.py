@@ -12,6 +12,7 @@ if sys.version_info < python_min_version:
         platform.python_version(), python_min_version_str))
     sys.exit(-1)
 
+os.system("bash maint/script/install_dependency.sh")
 os.system("mkdir build;cd build;cmake ..;make -j")
 
 nnf_bin="build/src/tools/nnfusion/nnfusion"

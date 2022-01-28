@@ -24,6 +24,8 @@ def check_pkg():
 
 def extract_pkg():
     if os.path.exists(nnf_pkg):
+        if os.path.exists(nnf_bin):
+            return
         tar = tarfile.open(nnf_pkg, 'r:gz')
         tar.extractall(nnf_dir)
         tar.close()

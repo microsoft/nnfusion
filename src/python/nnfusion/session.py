@@ -61,6 +61,10 @@ def convert_model_to_onnx(model,
     else:
         sample_inputs = tuple(
             generate_sample(input, device) for input in model_desc.inputs)
+    # append {} if a dictionary is the last element of the args tuple, as required in torch.onnx.export
+    if isinstance(sample_inputs, (tuple, list)) and isinstance(sample_inputs[-1], dict) and sample_inputs[-1] != {}:
+        sample_inputs = list(sample_inputs)
+        sample_inputs.append({})
     sample_outputs = tuple(
         generate_sample(output, device) for output in model_desc.outputs)
     # note: onnx exporter might have side effect, so copy a new model

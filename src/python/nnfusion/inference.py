@@ -55,4 +55,6 @@ class PTInference(object):
             PyTorch model inference outputs.
         """
         outs = self.runner(*args)
+        if len(outs) == 1:
+            outs = outs[0]
         return outs

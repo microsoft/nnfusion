@@ -6,6 +6,7 @@
 #include "nnfusion/common/languageunit.hpp"
 
 DECLARE_bool(fhost_entry);
+DECLARE_bool(fcodegen_pybind);
 namespace nnfusion
 {
     namespace codegen
@@ -89,9 +90,19 @@ namespace nnfusion
                 lup_codegen->require(lup_exit);
                 lup_exit->require(lup_exec);
                 lup_exec->require(lup_init);
+
+                if (FLAGS_fcodegen_pybind)
+                {
+                    lup_exec_py = std::make_shared<CodegenMainBlockUnit>("codegen_exec_py");
+                    lup_codegen->require(lup_exec_py);
+                    lup_exit->require(lup_exec_py);
+                    lup_exec_py->require(lup_init);
+                    lup_exec_py->require(lup_exec);
+                }
             }
             LanguageUnit_p lup_codegen;
             CodegenMainBlockUnit_p lup_init, lup_exec, lup_exit;
+            CodegenMainBlockUnit_p lup_exec_py;
             bool codegen();
             void change_codegen_folder(const std::string& codegen_folder)
             {

@@ -2,16 +2,8 @@ import functools
 
 import torch
 
+from .jit_utils import TorchModule
 from .runtime import NNFusionRT
-
-
-class TorchModule(torch.nn.Module):
-    def __init__(self, func):
-        super().__init__()
-        self.func = func
-
-    def forward(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
 
 
 def nrt_forward(obj, *inputs):
@@ -28,8 +20,8 @@ def nrt_forward(obj, *inputs):
     # def nrt_forward(obj, *inputs, **kwargs):
     #     ...
     #     NNFusionRT(obj, inputs, outputs, **kwargs)
-    nnf = NNFusionRT(obj, inputs, outputs, server="127.0.0.1:8880", steps=2000)
-    nnf.compile(buildall=True)
+    nnf = NNFusionRT(obj, server="127.0.0.1:8880", steps=2000)
+    nnf.compile(inputs, outputs)
 
     # TODO free outputs and only save desc?
 

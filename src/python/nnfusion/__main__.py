@@ -3,19 +3,22 @@
 
 import logging
 import os
+import site
 import sys
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
 
 def run_cli():
-    nnf_bin = os.path.join(sys.prefix, "nnfusion-bin/nnfusion")
-    if os.path.exists(nnf_bin):
-        args = " ".join(sys.argv[1:])
-        os.system("%s %s" % (nnf_bin, args))
-    else:
+    nnf_bin = os.path.join(site.USER_BASE, "nnfusion-bin/nnfusion")
+    if not os.path.exists(nnf_bin):
+        nnf_bin = os.path.join(sys.prefix, "nnfusion-bin/nnfusion")
+    if not os.path.exists(nnf_bin):
         logging.error("No nnfusion cli found: Try to reinstall nnfusion.")
         sys.exit(-1)
+
+    args = " ".join(sys.argv[1:])
+    os.system("%s %s" % (nnf_bin, args))
 
 
 def welcome():

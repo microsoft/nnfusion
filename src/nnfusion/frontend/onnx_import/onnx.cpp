@@ -24,6 +24,8 @@
 #include "onnx.hpp"
 #include "util/graph_convert.hpp"
 
+DECLARE_bool(ftraining_mode);
+
 namespace nnfusion
 {
     namespace frontend
@@ -51,6 +53,23 @@ namespace nnfusion
             load_onnx_model(const std::string& path,
                             const std::unordered_map<std::string, size_t>& dim_params)
         {
+            if (FLAGS_ftraining_mode)
+            {
+                string m_path = path;
+                std::ifstream ifs{m_path, std::ios::in | std::ios::binary};
+                NNFUSION_CHECK(ifs.is_open()) << "failure opening file:" + path;
+                string model_dir = "";
+                auto pos = path.rfind("/");
+                if (pos != std::string::npos)
+                {
+                    model_dir = path.substr(0, pos);
+                }
+
+                auto graph = load_onnx_model(ifs, model_dir, dim_params);
+
+                return graph;
+            }
+
             NNFUSION_LOG(INFO) << "Optimizing ONNX Graph with External Tool "
                                   "(models/pytorch2onnx/ort_run_frozen.py)";
             string optimized_filename = string(tmpnam(nullptr));

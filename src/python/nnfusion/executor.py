@@ -43,6 +43,8 @@ def parse_nnf_params(param_file):
             elif dtype == "double":
                 dtype = "float64"
             shape = desc["shape"]
+            if len(shape) == 0:
+                shape = [1]
             out[name] = {
                 "name": name,
                 "id": int(index),

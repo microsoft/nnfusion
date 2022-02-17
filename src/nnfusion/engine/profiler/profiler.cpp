@@ -89,7 +89,6 @@ void GraphEvaluate::create_profiling_contexts(shared_ptr<GNode> gnode)
         KernelRegistry::Global()->FindKernelRegistrations(
             gnode->get_op_type(), dev_type, element::f32);
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-
     for (auto kernel_reg : kernel_regs)
     {
         //if (kernel_reg->m_tag != "reference")

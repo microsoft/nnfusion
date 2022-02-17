@@ -54,9 +54,13 @@ namespace nnfusion
                         node_proto.output(0), "LayerNorm", myConfig);
                     auto generic_gnode = m_graph->add_node_and_edge(generic_op, input_indexes, 3);
 
-                    return {{node_proto.output(0), generic_gnode, 0},
-                            {node_proto.output(1), generic_gnode, 1},
-                            {node_proto.output(2), generic_gnode, 2}};
+                    NamedNodeVector ret;
+                    for (size_t i = 0; i < node_proto.output_size(); i++)
+                    {
+                        ret.emplace_back(node_proto.output(i), generic_gnode, i);
+                    }
+
+                    return ret;
                 }
 
                 NamedNodeVector

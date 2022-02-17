@@ -45,6 +45,7 @@
 #include "op/flatten.hpp"
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
+#include "op/gru.hpp"
 #include "op/identity.hpp"
 #include "op/index_reduce.hpp"
 #include "op/layer_norm.hpp"
@@ -189,6 +190,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("GlobalAveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("GlobalMaxPool", 1, TranslatePoolOp<op::MaxPool>);
                 REGISTER_OPERATOR("Greater", 1, TranslateBinaryOp<op::Greater>);
+                REGISTER_OPERATOR("GRU", 1, TranslateGRUOp);
                 //REGISTER_OPERATOR("HardSigmoid", 1, hard_sigmoid);
                 REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
                 REGISTER_OPERATOR("LayerNormalization", 1, TranslateLayerNormalizationOp);

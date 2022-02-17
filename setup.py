@@ -1,10 +1,17 @@
 from __future__ import print_function
-import sys, os, tarfile
+
+import os
+import platform
+import sys
+import tarfile
+
+import setuptools
+
 if sys.version_info < (3, ):
     print("Please use Python 3 for nnf python library")
     sys.exit(-1)
 
-import platform
+
 python_min_version = (3, 5, 2)
 python_min_version_str = '.'.join(map(str, python_min_version))
 if sys.version_info < python_min_version:
@@ -12,40 +19,38 @@ if sys.version_info < python_min_version:
         platform.python_version(), python_min_version_str))
     sys.exit(-1)
 
-nnf_bin="build/src/tools/nnfusion/nnfusion"
-nnf_tool="build/src/tools/nnfusion/"
-nnf_resource=os.listdir(nnf_tool)
+nnf_bin = "build/src/tools/nnfusion/nnfusion"
+nnf_tool = "build/src/tools/nnfusion/"
 nnf_blacklist = ["cmake_install.cmake", "Makefile", "CMakeFiles"]
-nnf_pkg = "src/python/nnfusion/nnfusion.tar.gz"
 
 if not os.path.exists(nnf_bin):
     print("Pleast build nnfusion in /build folder.")
     sys.exit(-1)
 
-def make_targz(output_filename, source_dir, ignore_list): 
-    tar = tarfile.open(output_filename,"w:gz")
-    for root, dir, files in os.walk(source_dir):
-        skip = False
-        for word in ignore_list:
-            if word in root:
-                skip = True
-                break
-        if skip:
-            continue
-        
-        for file in files:
-            if file in ignore_list:
-                continue
-            pathfile = os.path.join(root, file)
-            tar.add(pathfile, arcname=pathfile.replace("build/src/tools/nnfusion/", ""))
-    tar.close()
 
-if os.path.exists(nnf_pkg):
-    os.remove(nnf_pkg)
+def get_data_files(source_dir, ignore_list):
+    def dir_files_pair(root, files):
+        directory = os.path.relpath(root, source_dir)
+        directory = os.path.join('nnfusion-bin', directory)
+        files = [
+            os.path.join(root, file)
+            for file in files
+            if file not in ignore_list
+        ]
+        return directory, files
 
-make_targz(nnf_pkg, nnf_tool, nnf_blacklist)
+    pairs = [
+        dir_files_pair(root, files)
+        for root, dir, files in os.walk(source_dir)
+        if not any(word in root for word in ignore_list)
+    ]
+    # Remove if files is empty
+    return [
+        pair
+        for pair in pairs
+        if pair[1]
+    ]
 
-import setuptools
 
 with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
@@ -59,8 +64,6 @@ with open("requirements_test.txt") as f:
 with open("VERSION") as f:
     version = f.readline().strip()
 
-print(setuptools.find_packages(where="src/python", exclude=["example"]))
-
 setuptools.setup(
     name="nnfusion",
     version=version,
@@ -72,7 +75,7 @@ setuptools.setup(
     url="https://github.com/microsoft/nnfusion",
     packages=setuptools.find_packages(where="src/python", exclude=["example"]),
     package_dir={"": "src/python"},
-    package_data={"":["nnfusion.tar.gz"]},
+    data_files=get_data_files(nnf_tool, nnf_blacklist),
     install_requires=install_requires,
     tests_require=tests_require,
     classifiers=[
@@ -87,4 +90,4 @@ setuptools.setup(
             'nnfusion=nnfusion.__main__:main',
         ],
     }
-    )
+)

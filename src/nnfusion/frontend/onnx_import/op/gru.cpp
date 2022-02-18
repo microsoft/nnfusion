@@ -8,6 +8,7 @@
 #include "../util/broadcasting.hpp"
 #include "util/reshape.hpp"
 
+DECLARE_bool(fantares_mode);
 namespace nnfusion
 {
     namespace frontend
@@ -24,7 +25,8 @@ namespace nnfusion
                                std::shared_ptr<graph::GNode> B,
                                std::shared_ptr<graph::GNode> H0,
                                int linear_before_reset,
-                               bool reverse = false)
+                               bool reverse = false,
+                               size_t max_concat_size = std::numeric_limits<std::size_t>::max())
                 {
                     auto X_shape = X->get_shape();   // [seq_len, batch, input_size]
                     auto W_shape = W->get_shape();   // [3 * hidden_size, input_size]
@@ -199,6 +201,33 @@ namespace nnfusion
                     {
                         std::reverse(H_vec.begin(), H_vec.end());
                     }
+
+                    // For antares, hierarchically concat result along seq_len
+                    while (H_vec.size() > max_concat_size)
+                    {
+                        GNodeIndexVector new_H_vec;
+                        GNodeIndexVector cur_concat_batch;
+                        for (size_t i = 0; i < H_vec.size(); i++)
+                        {
+                            cur_concat_batch.push_back(H_vec[i]);
+                            if (cur_concat_batch.size() == max_concat_size)
+                            {
+                                new_H_vec.emplace_back(m_graph->add_node_and_edge(
+                                    std::make_shared<op::Concat>(0), cur_concat_batch));
+                                cur_concat_batch.clear();
+                            }
+                        }
+                        if (cur_concat_batch.size() >= 2)
+                        {
+                            new_H_vec.emplace_back(m_graph->add_node_and_edge(
+                                std::make_shared<op::Concat>(0), cur_concat_batch));
+                        }
+                        else if (cur_concat_batch.size() == 1)
+                        {
+                            new_H_vec.push_back(cur_concat_batch[0]);
+                        }
+                        H_vec = new_H_vec;
+                    }
                     auto Y = m_graph->add_node_and_edge(std::make_shared<op::Concat>(0), H_vec);
                     // Y: [seq_len, batch, hidden_size]
                     // Ht: [batch, hidden_size]
@@ -209,6 +238,11 @@ namespace nnfusion
                                                const NodeMap& all_ng_nodes,
                                                std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
+                    // Antares cannot concat too many tensors in sinle IR
+                    size_t concat_size_limit = std::numeric_limits<std::size_t>::max();
+                    if (FLAGS_fantares_mode)
+                        concat_size_limit = 5;
+
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     auto X =
                         GetInputIndex(all_ng_nodes, node_proto, 0); // [seq_len, batch, input_size]
@@ -293,8 +327,6 @@ namespace nnfusion
                     NNFUSION_CHECK(activation_beta.empty()) << "activation_beta not supported";
                     NNFUSION_CHECK(activations.empty()) << "activations not supported";
                     NNFUSION_CHECK(clip == 0) << "clip not supported";
-                    NNFUSION_CHECK(direction == "forward" || direction == "bidirectional")
-                        << "GRU direction should be either forward or bidirectional";
                     NNFUSION_CHECK(layout == 0) << "layout not supported";
                     NNFUSION_CHECK(hidden_size == attr_hidden_size) << "hidden_size mismatch";
 
@@ -379,7 +411,8 @@ namespace nnfusion
                                        forward_B,
                                        forward_H,
                                        linear_before_reset,
-                                       false);
+                                       false,
+                                       concat_size_limit);
                         res[0] = m_graph->add_node_and_edge(
                             std::make_shared<op::Reshape>(
                                 reshape::get_default_axis_vector(3),
@@ -413,12 +446,13 @@ namespace nnfusion
                         std::vector<std::shared_ptr<graph::GNode>> res =
                             forwardGRU(m_graph,
                                        X.gnode,
-                                       forward_W,
-                                       forward_R,
-                                       forward_B,
-                                       forward_H,
+                                       reverse_W,
+                                       reverse_R,
+                                       reverse_B,
+                                       reverse_H,
                                        linear_before_reset,
-                                       true);
+                                       true,
+                                       concat_size_limit);
                         res[0] = m_graph->add_node_and_edge(
                             std::make_shared<op::Reshape>(
                                 reshape::get_default_axis_vector(3),

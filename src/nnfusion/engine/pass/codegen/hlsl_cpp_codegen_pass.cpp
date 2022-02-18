@@ -23,6 +23,7 @@ DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
+DECLARE_bool(ffunction_codegen);
 
 void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                     std::shared_ptr<TranslationUnit> tu)
@@ -61,7 +62,10 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
-        lu_init_begin << "\nvoid hlsl_init()\n{\n";
+        if (FLAGS_ffunction_codegen)
+            lu_init_begin << "\nvoid hlsl_init(char* workspace)\n{\n";
+        else
+            lu_init_begin << "\nvoid hlsl_init()\n{\n";
     }
 
     auto& lu_init_end = *(projgen->lup_init->end);
@@ -116,6 +120,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(header::D3D12APIWrapper);
     projgen->lup_codegen->require(header::unordered_map);
     projgen->lup_codegen->require(codegen_device_type());
+    projgen->lup_codegen->require(codegen_workspace_size(tu));
     projgen->lup_codegen->require(declaration::dxModuleLaunchAsync);
     // projgen->lup_codegen->require(macro::OutputDebugStringA);
     // LanguageUnit_p num_inputs_outputs = std::make_shared<LanguageUnit>(
@@ -315,13 +320,17 @@ void HLSLCPPCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> 
     auto& lu_header = *lup_header;
 
     lu_header << "extern \"C\" RUNTIME_API int get_device_type();\n";
+    lu_header << "extern \"C\" RUNTIME_API int get_workspace_size();\n";
     lu_header << "extern \"C\" RUNTIME_API int kernel_entry";
     if (FLAGS_fhost_entry)
         lu_header << "_host";
     std::string params = get_kernel_entry_paras(tu, FLAGS_fhost_entry);
     lu_header << "(" << params << ");\n";
 
-    lu_header << "extern \"C\" RUNTIME_API void hlsl_init();\n";
+    if (FLAGS_ffunction_codegen)
+        lu_header << "extern \"C\" RUNTIME_API void hlsl_init(char* workspace);\n";
+    else
+        lu_header << "extern \"C\" RUNTIME_API void hlsl_init();\n";
 
     lu_header << "extern \"C\" RUNTIME_API void hlsl_free();\n";
 

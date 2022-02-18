@@ -57,6 +57,7 @@ namespace nnfusion
         virtual LanguageUnit_p emit_memory_alloc();
         virtual LanguageUnit_p emit_memory_free();
         virtual LanguageUnit_p emit_memory_set(int value = 0);
+        virtual LanguageUnit_p emit_memory_pool_offset(size_t offset);
 
         static size_t align(size_t x, size_t alignment);
 
@@ -173,6 +174,7 @@ namespace nnfusion
         LanguageUnit_p emit_memory_alloc() override;
         LanguageUnit_p emit_memory_free() override;
         LanguageUnit_p emit_memory_set(int value = 0) override;
+        LanguageUnit_p emit_memory_pool_offset(size_t offset) override;
 
     private:
         HLSLMemoryAllocator(size_t alignment = 1,

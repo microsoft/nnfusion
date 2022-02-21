@@ -21,27 +21,11 @@ DEFINE_string(ftuning_blocklist,
               "",
               "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
 DEFINE_string(fantares_perf_file, "./antares_perf.csv", "File to save Antares kernel performance.");
+DEFINE_string(ftuning_platform, "", "Antares platform: e.g., win64, xbox, etc.");
 DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
 DECLARE_string(fdefault_device);
-
-struct TuningStatus
-{
-    TuningStatus(std::shared_ptr<GNode> gnode)
-        : op_type(gnode->get_op_type())
-        , op_name(gnode->get_op_ptr()->get_name())
-        , progress_step(0)
-        , best_perf(-1.0)
-    {
-    }
-    std::string op_type;
-    std::string op_name;
-    std::string status;
-    int64_t progress_step;
-    double best_perf;
-    std::string ir;
-};
 
 std::string send_tuning_request(std::string& ir, int64_t step)
 {
@@ -255,26 +239,11 @@ bool KernelTuning::parse_block_list()
     NNFUSION_LOG(INFO) << "Kernel Tuning BlockList: " << join(BlockList, ", ");
 }
 
-bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
+bool KernelTuning::submit_tuning_batch_asyc(
+    std::vector<std::shared_ptr<GNode>>& nodes,
+    std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels,
+    std::vector<std::shared_ptr<TuningStatus>>& tuning_kernels)
 {
-    if (FLAGS_fantares_mode)
-    {
-        parse_block_list();
-        // register antares kernels anyway here in case kernel selection pass will use them
-        register_antares_kernel();
-    }
-
-    if (FLAGS_fkernel_tuning_steps <= 0 || FLAGS_fantares_codegen_server == "" ||
-        !FLAGS_fantares_mode)
-    {
-        return true;
-    }
-
-    std::vector<std::shared_ptr<TuningStatus>> tuned_kernels;
-    std::vector<std::shared_ptr<TuningStatus>> tuning_kernels;
-    std::unordered_map<std::string, size_t> ir2cnt;
-    std::vector<std::shared_ptr<GNode>> nodes;
-    std::tie(nodes, tuned_kernels) = get_tuning_candidates(graph, BlockList, ir2cnt);
     for (auto gnode : nodes)
     {
         if (!(*gnode)["DeviceType"].is_valid())
@@ -330,6 +299,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
                                           : tuning_kernels.push_back(status);
         }
     }
+
     print_tuning_results(tuned_kernels, tuning_kernels);
 
     if (tuning_kernels.size() > 0)
@@ -338,13 +308,102 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
             << "There are pending tuning kernels. Please retry the compilation later!";
         exit(0);
     }
+}
 
+std::string get_antares_device_type(NNFusion_DeviceType dt, std::string platform = "")
+{
+    std::string ret;
+    switch (dt)
+    {
+    case CUDA_GPU: ret = "c-cuda"; break;
+    case ROCM_GPU: ret = "c-rocm"; break;
+    case GENERIC_CPU: ret = "c-mcpu"; break;
+    case HLSL: ret = "c-hlsl"; break;
+    case GraphCore: ret = "c-ipu"; break;
+    default: return "unknow";
+    }
+
+    return platform.empty() ? ret : ret + "_" + platform;
+}
+
+bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
+{
+    if (FLAGS_fantares_mode)
+    {
+        parse_block_list();
+        // register antares kernels anyway here in case kernel selection pass will use them
+        register_antares_kernel();
+    }
+
+    if (FLAGS_fkernel_tuning_steps <= 0 || !FLAGS_fantares_mode)
+    {
+        return true;
+    }
+
+    std::vector<std::shared_ptr<TuningStatus>> tuned_kernels;
+    std::vector<std::shared_ptr<TuningStatus>> tuning_kernels;
+    std::unordered_map<std::string, size_t> ir2cnt;
+    std::vector<std::shared_ptr<GNode>> nodes;
+    std::tie(nodes, tuned_kernels) = get_tuning_candidates(graph, BlockList, ir2cnt);
+
+    if (FLAGS_fantares_codegen_server.size() > 0)
+    {
+        submit_tuning_batch_asyc(nodes, tuned_kernels, tuning_kernels);
+    }
+    else
+    {
+        size_t num_kernels = nodes.size();
+        size_t id = 0;
+        for (auto gnode : nodes)
+        {
+            if (!(*gnode)["DeviceType"].is_valid())
+            {
+                NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass："
+                                      << gnode->get_name();
+            }
+            auto n_device_type = (*gnode)["DeviceType"].as<NNFusion_DeviceType>();
+            NNFUSION_CHECK(n_device_type != UNKNOWN);
+
+            auto ir = nnfusion::op::get_translation(gnode);
+            //NNFUSION_LOG(INFO) << gnode->get_op_type() << ", ir: " << ir;
+            if (!ir.empty())
+            {
+                auto s = std::make_shared<TuningStatus>(gnode);
+                s->ir = ir;
+                std::cout << "\nTuning [" << id++ << "/" << num_kernels
+                          << " ops]: op=" << s->op_type << ", name="
+                          << ((s->op_name.size() > 26) ? (s->op_name.substr(0, 24) + "..")
+                                                       : s->op_name)
+                          << ":" << std::endl;
+
+                std::string cache_folder = "./kernel_cache";
+                struct stat stats;
+                if (stat(cache_folder.c_str(), &stats) != 0)
+                {
+                    std::string cmd_create_folder = "mkdir -p " + cache_folder;
+                    int sys_ret = system(cmd_create_folder.c_str());
+                }
+
+                std::size_t file_id = std::hash<std::string>{}(ir);
+                auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+
+                std::string cmd =
+                    "PROGRESS=1 STEP=" + std::to_string(FLAGS_fkernel_tuning_steps) + " BACKEND=";
+                cmd += get_antares_device_type(n_device_type, FLAGS_ftuning_platform);
+                cmd += " COMPUTE_V1='";
+                cmd += ir;
+                cmd += ("' antares save " + file_name);
+                //NNFUSION_LOG(INFO) << cmd;
+                int sys_ret = system(cmd.c_str());
+                //NNFUSION_CHECK(sys_ret == 0) << sys_ret;
+            }
+        }
+    }
     dump_perf(FLAGS_fantares_perf_file, tuned_kernels, ir2cnt);
     if (FLAGS_fdefault_device == "CUDA")
     {
         insert_to_kernel_cache(nodes);
     }
-
     return true;
 }
 

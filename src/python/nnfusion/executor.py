@@ -1,12 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-
 import ctypes
 import json
+import math
 import os
 import platform
 
+import torch
+
 from . import dtypes
+from .data_format import cast_pytorch_tensor
 from .description import IODescription
 from .utils import cd
 
@@ -81,7 +84,7 @@ class Executor(object):
         5: ("", ""),  # UNKNOWN
     }
 
-    def __init__(self, nnf_rt_dir, workspace_pointer=None):
+    def __init__(self, nnf_rt_dir, device=None):
         """
         Parameters:
             nnf_rt_dir: A full string path to nnfusion runtime,
@@ -115,11 +118,11 @@ class Executor(object):
         self.nnf_rt_init = getattr(self.libnnf, init_func_name, None)
         self.nnf_rt_free = getattr(self.libnnf, free_func_name, None)
 
-
         if self.nnf_rt_init:
             with cd(nnf_rt_dir):
-                if workspace_pointer is not None:
-                    self.nnf_rt_init(workspace_pointer)
+                workspace_ptr = self._maybe_reserve_mem(device)
+                if workspace_ptr is not None:
+                    self.nnf_rt_init(workspace_ptr)
                 else:
                     self.nnf_rt_init()
                 self.init_flag = True
@@ -225,3 +228,16 @@ class Executor(object):
     def feed_pointers(self, signature, params):
         self.kernel_entry.argtypes = signature
         self.kernel_entry(*params)
+
+    def _maybe_reserve_mem(self, device):
+        if not hasattr(self.libnnf, "get_workspace_size"):
+            return None
+
+        ws_size = getattr(self.libnnf, 'get_workspace_size', None)()
+        if not ws_size:
+            return None
+
+        self._reserved_mem = torch.empty(math.ceil(ws_size/8),
+                                         dtype=torch.int8, device=device)
+
+        return cast_pytorch_tensor(self._reserved_mem).pointer

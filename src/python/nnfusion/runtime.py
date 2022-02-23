@@ -1,4 +1,3 @@
-import ctypes
 import filecmp
 import inspect
 import os
@@ -10,7 +9,7 @@ import torch
 import torch.onnx
 
 from .data_format import cast_pytorch_tensor
-from .executor import Executor, find_nnf_rt
+from .executor import Executor
 from .jit_utils import TorchModule
 from .session import build, codegen, modify_nnfusion_rt
 
@@ -69,21 +68,8 @@ class NNFusionRT:
         if check_if_need_build():
             do_compile()
 
-        self._init_executor(self.rt_dir, device=inputs[0].device)
+        self.executor = Executor(self.rt_dir, device=inputs[0].device)
 
-    def _init_executor(self, rt_dir, device):
-
-        libnnf_path = find_nnf_rt(rt_dir)
-        if not libnnf_path:
-            raise Exception("nnf_rt lib not found in folder {}".format(rt_dir))
-        libnnf = ctypes.cdll.LoadLibrary(libnnf_path)
-
-        ws_size = getattr(libnnf, 'get_workspace_size', None)()
-        self._reserved_mem = torch.empty(ws_size//8,
-                                         dtype=torch.int8, device=device)
-
-        workspace_ptr = cast_pytorch_tensor(self._reserved_mem).pointer
-        self.executor = Executor(rt_dir, workspace_pointer=workspace_ptr)
 
     def run(self, inputs, outputs):
         if not isinstance(inputs, (tuple, list)):

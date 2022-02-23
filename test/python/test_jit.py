@@ -1,7 +1,7 @@
-import nnfusion
 import pytest
 import torch
 
+import nnfusion
 
 
 def assert_allclose(output1, output2, rtol=1e-5, atol=1e-8):

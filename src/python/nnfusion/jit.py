@@ -6,7 +6,7 @@ from .jit_utils import TorchModule
 from .runtime import NNFusionRT
 
 
-def nrt_forward(obj, *inputs):
+def nrt_forward(obj, *inputs, **kwargs):
     if not isinstance(obj, torch.nn.Module):
         return nrt_forward(TorchModule(obj), *inputs)
 
@@ -16,11 +16,7 @@ def nrt_forward(obj, *inputs):
     if output_is_tensor:
         outputs = [outputs]
 
-    # TODO Pass other arguments from nrt_jit?
-    # def nrt_forward(obj, *inputs, **kwargs):
-    #     ...
-    #     NNFusionRT(obj, inputs, outputs, **kwargs)
-    nnf = NNFusionRT(obj, server="127.0.0.1:8880", steps=2000)
+    nnf = NNFusionRT(obj, **kwargs)
     nnf.compile(inputs, outputs)
 
     # TODO free outputs and only save desc?
@@ -40,11 +36,16 @@ def nrt_forward(obj, *inputs):
     return forward
 
 
-def jit(func):
-    @functools.wraps(func)
-    def wrapper(*args):  # TODO support kwargs?
-        if wrapper.forward is None:
-            wrapper.forward = nrt_forward(func, *args)
-        return wrapper.forward(*args)
-    wrapper.forward = None
-    return wrapper
+def jit(_func=None, **kwargs):
+    def decorator_jit(func):
+        @functools.wraps(func)
+        def wrapper(*args):  # TODO support kwargs?
+            if wrapper.forward is None:
+                wrapper.forward = nrt_forward(func, *args, **kwargs)
+            return wrapper.forward(*args)
+        wrapper.forward = None
+        return wrapper
+
+    if _func is None:
+        return decorator_jit
+    return decorator_jit(_func)

@@ -1,13 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+import ctypes
+import json
 import os
 import platform
-import json
-import ctypes
+
 from . import dtypes
-from .utils import cd
 from .description import IODescription
+from .utils import cd
 
 
 def find_nnf_rt(nnf_rt_dir):
@@ -80,7 +81,7 @@ class Executor(object):
         5: ("", ""),  # UNKNOWN
     }
 
-    def __init__(self, nnf_rt_dir):
+    def __init__(self, nnf_rt_dir, workspace_pointer=None):
         """
         Parameters:
             nnf_rt_dir: A full string path to nnfusion runtime,
@@ -113,9 +114,14 @@ class Executor(object):
         init_func_name, free_func_name = self.device_type_map[device_type]
         self.nnf_rt_init = getattr(self.libnnf, init_func_name, None)
         self.nnf_rt_free = getattr(self.libnnf, free_func_name, None)
+
+
         if self.nnf_rt_init:
             with cd(nnf_rt_dir):
-                self.nnf_rt_init()
+                if workspace_pointer is not None:
+                    self.nnf_rt_init(workspace_pointer)
+                else:
+                    self.nnf_rt_init()
                 self.init_flag = True
 
         # parse input/output

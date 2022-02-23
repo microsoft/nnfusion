@@ -1,3 +1,4 @@
+import ctypes
 import filecmp
 import inspect
 import os
@@ -9,7 +10,7 @@ import torch
 import torch.onnx
 
 from .data_format import cast_pytorch_tensor
-from .executor import Executor
+from .executor import Executor, find_nnf_rt
 from .jit_utils import TorchModule
 from .session import build, codegen, modify_nnfusion_rt
 
@@ -27,6 +28,7 @@ class NNFusionRT:
 
         self.compile_flag = self._get_compile_flag(steps, server)
         self.executor = None
+        self._reserved_mem = None
 
     def compile(self, inputs, outputs, force_build=False):
 
@@ -67,7 +69,21 @@ class NNFusionRT:
         if check_if_need_build():
             do_compile()
 
-        self.executor = Executor(self.rt_dir)
+        self._init_executor(self.rt_dir, device=inputs[0].device)
+
+    def _init_executor(self, rt_dir, device):
+
+        libnnf_path = find_nnf_rt(rt_dir)
+        if not libnnf_path:
+            raise Exception("nnf_rt lib not found in folder {}".format(rt_dir))
+        libnnf = ctypes.cdll.LoadLibrary(libnnf_path)
+
+        ws_size = getattr(libnnf, 'get_workspace_size', None)()
+        self._reserved_mem = torch.empty(ws_size//8,
+                                         dtype=torch.int8, device=device)
+
+        workspace_ptr = cast_pytorch_tensor(self._reserved_mem).pointer
+        self.executor = Executor(rt_dir, workspace_pointer=workspace_ptr)
 
     def run(self, inputs, outputs):
         if not isinstance(inputs, (tuple, list)):
@@ -91,6 +107,7 @@ class NNFusionRT:
             "-fextern_result_memory=1",
             "-fkernel_tuning_steps=" + str(tuning_step),
             "-fir_based_fusion=1",
+            "-ffunction_codegen=1",
             "-fkernel_fusion_level=0",
             # "-fantares_mode=1",
             # f"-fantares_codegen_server={codegen_server}",

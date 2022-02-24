@@ -2,13 +2,11 @@
 # Licensed under the MIT License.
 import ctypes
 import json
-import math
 import os
 import platform
 
 import torch
 
-from . import dtypes
 from .data_format import cast_pytorch_tensor
 from .description import IODescription
 from .utils import cd

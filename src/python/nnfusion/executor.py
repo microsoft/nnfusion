@@ -230,14 +230,14 @@ class Executor(object):
         self.kernel_entry(*params)
 
     def _maybe_reserve_mem(self, device):
-        if not hasattr(self.libnnf, "get_workspace_size"):
+        get_workspace_size = getattr(self.libnnf, 'get_workspace_size', None)
+        if get_workspace_size is None:
             return None
 
-        ws_size = getattr(self.libnnf, 'get_workspace_size', None)()
-        if not ws_size:
+        n_byte = get_workspace_size()
+        if not n_byte:
             return None
 
-        self._reserved_mem = torch.empty(math.ceil(ws_size/8),
+        self._reserved_mem = torch.empty(n_byte,
                                          dtype=torch.int8, device=device)
-
         return cast_pytorch_tensor(self._reserved_mem).pointer

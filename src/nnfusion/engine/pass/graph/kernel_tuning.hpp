@@ -39,10 +39,13 @@ namespace nnfusion
 
             private:
                 bool parse_block_list();
-                bool submit_tuning_batch_asyc(
+                void submit_tuning_batch_asyc(
                     std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes,
                     std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels,
                     std::vector<std::shared_ptr<TuningStatus>>& tuning_kernels);
+                void
+                    tuning_kernels_sync(std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes,
+                                        std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels);
                 bool insert_to_kernel_cache(
                     const std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes);
 

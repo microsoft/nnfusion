@@ -495,6 +495,8 @@ namespace nnfusion
                             continue;
                         auto dstnode = edge->get_dst();
                         auto dstpctx = gctx.get_profiling_context(dstnode);
+                        if (!dstpctx)
+                            continue;
                         size_t _size = nnfusion::shape_size(gnode->get_shape()) *
                                        gnode->get_element_type().size();
                         // This statments will remove some allocated memory.
@@ -515,6 +517,8 @@ namespace nnfusion
                             continue;
                         auto dstnode = edge->get_dst();
                         auto dstpctx = gctx.get_profiling_context(dstnode);
+                        if (!dstpctx)
+                            continue;
                         // This statments will remove some allocated memory.
                         dstpctx->kernel_memory->load_input_from(edge->get_dst_input(),
                                                                 const_node->get_data_ptr(),

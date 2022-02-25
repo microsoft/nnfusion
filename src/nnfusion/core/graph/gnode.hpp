@@ -51,6 +51,7 @@ namespace nnfusion
                 return gnode == other.gnode && index == other.index;
             }
             bool operator!=(const GNodeIndex& other) const { return !(*this == other); }
+            bool empty() const { return gnode == nullptr; }
             const nnfusion::Shape& get_shape() const;
             const nnfusion::element::Type& get_element_type() const;
             std::shared_ptr<nnfusion::graph::GNode> gnode;

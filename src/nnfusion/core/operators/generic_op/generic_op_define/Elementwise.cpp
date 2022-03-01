@@ -44,6 +44,7 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
      element_op(
          "divnonan",
          "(x0 / x1).when([x1 != const(0).cast(x1.dtype())], const(0).cast(input1[].dtype()))")},
+    {"Mod", element_op("fmod", "")},
     {"Square", element_op("square", "x0 * x0")},
     {"Negative", element_op("negative", "-x0")},
     {"Select", element_op("select", "x2.when([x0 == 0], x1)")},
@@ -174,6 +175,7 @@ REGISTER_ELEM_OP(Subtract)
 REGISTER_ELEM_OP(Multiply)
 REGISTER_ELEM_OP(Divide)
 REGISTER_ELEM_OP(DivNoNan)
+REGISTER_ELEM_OP(Mod)
 REGISTER_ELEM_OP(Square)
 REGISTER_ELEM_OP(Negative)
 REGISTER_ELEM_OP(Select)

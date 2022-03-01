@@ -11,6 +11,7 @@
 #include "nnfusion/engine/async_manager.hpp"
 
 DECLARE_string(fantares_codegen_server);
+DECLARE_string(ftuning_list);
 
 namespace nnfusion
 {
@@ -206,9 +207,14 @@ namespace nnfusion
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
                     GENERIC_OP_LOGGING();
+                    parse_tuning_list();
                     if (!FLAGS_fantares_codegen_server.empty())
                     {
                         // NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
+                        if (TuningList.find(ctx->gnode->get_op_type()) == TuningList.end())
+                        {
+                            return;
+                        }
 
                         ir = nnfusion::op::get_translation(ctx->gnode);
 #if 0
@@ -287,6 +293,7 @@ namespace nnfusion
                                                    << ctx->gnode->get_op_type();
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
+                            return;
                         }
 
                         kernel_info =
@@ -316,6 +323,19 @@ namespace nnfusion
                 std::string ir;
                 bool is_memcpy = false;
 
+                bool parse_tuning_list()
+                {
+                    auto tuninglist_str = FLAGS_ftuning_list;
+                    stringstream ss(tuninglist_str);
+                    while (ss.good())
+                    {
+                        string substr;
+                        getline(ss, substr, ',');
+                        TuningList.insert(substr);
+                    }
+                    NNFUSION_LOG(INFO) << "Kernel Tuning List: " << join(TuningList, ", ");
+                }
+
             protected:
                 // map tensor names and allocate tmp tensor
                 void process_antares_kernel_info();
@@ -323,6 +343,7 @@ namespace nnfusion
                 std::vector<AntaresKernelInfo::Pointer> kernel_info;
                 std::unordered_map<std::string, std::string>
                     tensor_name_map; // antares tensor name : kernel tensor name
+                std::unordered_set<std::string> TuningList;
             };
 
             class CacheCudaEmitter : public CudaEmitter

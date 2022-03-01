@@ -67,6 +67,7 @@
 #include "nnfusion/core/operators/op_define/maximum.hpp"
 #include "nnfusion/core/operators/op_define/min.hpp"
 #include "nnfusion/core/operators/op_define/minimum.hpp"
+#include "nnfusion/core/operators/op_define/mod.hpp"
 #include "nnfusion/core/operators/op_define/multiply.hpp"
 #include "nnfusion/core/operators/op_define/negative.hpp"
 #include "nnfusion/core/operators/op_define/not.hpp"

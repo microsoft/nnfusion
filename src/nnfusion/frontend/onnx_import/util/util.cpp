@@ -280,6 +280,67 @@ namespace nnfusion
                     name, std::vector<std::size_t>(kernel_shape.size(), 1UL));
             }
 
+            std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto)
+            {
+                std::unordered_set<std::string> node_inputs;
+                std::unordered_set<std::string> node_outputs;
+
+                for (auto node_proto : graph_proto.node())
+                {
+                    for (size_t i = 0; i < node_proto.input_size(); i++)
+                    {
+                        node_inputs.insert(node_proto.input(i));
+                    }
+                    for (size_t i = 0; i < node_proto.output_size(); i++)
+                    {
+                        node_outputs.insert(node_proto.output(i));
+                    }
+                }
+
+                std::unordered_set<std::string> graph_inputs;
+                for (auto item : node_inputs)
+                {
+                    if (node_outputs.find(item) == node_outputs.end())
+                    {
+                        graph_inputs.insert(item);
+                    }
+                }
+
+                return graph_inputs;
+            }
+
+            onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto)
+            {
+                onnx::GraphProto completed_graphproto(graph_proto);
+
+                auto all_inputs = extract_input(graph_proto);
+                std::unordered_set<std::string> existing_inputs;
+                for (auto input_proto : graph_proto.input())
+                {
+                    existing_inputs.insert(input_proto.name());
+                }
+
+                std::unordered_set<std::string> missing_inputs;
+                for (auto input : all_inputs)
+                {
+                    if (existing_inputs.find(input) == existing_inputs.end())
+                    {
+                        missing_inputs.insert(input);
+                        // std::cout << input << std::endl;
+                    }
+                }
+
+                for (auto item : missing_inputs)
+                {
+                    auto input = completed_graphproto.add_input();
+                    input->set_name(item);
+                }
+
+                // std::cout << completed_graphproto.DebugString() << std::endl;
+
+                return completed_graphproto;
+            }
+
         } // namespace onnx_import
     }     // namespace frontend
 } // namespace nnfusion

@@ -8,7 +8,7 @@ from .runtime import NNFusionRT
 
 def nrt_forward(obj, *inputs, **kwargs):
     if not isinstance(obj, torch.nn.Module):
-        return nrt_forward(TorchModule(obj), *inputs)
+        return nrt_forward(TorchModule(obj), *inputs, **kwargs)
 
     outputs = obj(*inputs)
     output_is_tensor = isinstance(outputs, torch.Tensor)

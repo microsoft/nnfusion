@@ -78,6 +78,8 @@ add_library(onnx_import STATIC
         op/depth_to_space.cpp
         op/roll.hpp
         op/roll.cpp
+        op/gru.hpp
+        op/gru.cpp
         # ${ops_source}
         util/broadcasting.cpp
         util/graph_convert.cpp

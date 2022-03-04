@@ -20,8 +20,8 @@ str2type = {
     TypeObject._make(
         ["float64", ctypes.c_double, torch.float64, numpy.float64]),
     "float64":
-    TypeObject._make(["float64", ctypes.c_float, torch.float32,
-                      numpy.float32]),
+    TypeObject._make(["float64", ctypes.c_double, torch.float64,
+                      numpy.float64]),
     "int8":
     TypeObject._make(["int8", ctypes.c_int8, torch.int8, numpy.int8]),
     "int16":

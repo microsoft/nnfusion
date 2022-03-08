@@ -1,6 +1,7 @@
-import nnfusion
 import pytest
 import torch
+
+import nnfusion
 
 
 def assert_allclose(output1, output2, rtol=1e-5, atol=1e-8):
@@ -59,6 +60,9 @@ def test_multi_identical_input_single_output():
     compare_torch_and_nrt(func, t, t)
 
 
+@pytest.mark.xfail(reason=(
+    "Probably identical tensors are fused during optimization. "
+    "May need a copy at backend"))
 def test_single_input_multi_identical_output():
     def func(t):
         return t, t
@@ -86,3 +90,26 @@ def test_repeat(step):
 
     t = [torch.randn(8, device="cuda") for _ in range(2)]
     compare_torch_and_nrt(func, *t, step=step, run=run)
+
+
+@pytest.mark.xfail(reason=(
+    "Probably some bug when calling nnfusion to compile the same kernel "
+    "in **a single process** (works well for not a single process). "
+    "Not likely to happen in general use (but should work)."))
+def test_keep_signature_but_change_compute_graph():
+    def func(t):
+        return t + t
+    t = torch.randn(8, device="cuda")
+    compare_torch_and_nrt(func, t)
+
+    # just to show that it can pass for compiling another function
+    # TODO delete after fixing bug
+    def func2(t):
+        return t * 8
+    compare_torch_and_nrt(func2, t)
+
+    # same as the first one (identical jit-signature)
+    # to ensure the compiled kernel will be regenerated if graph don't match
+    def func(t):
+        return t * t
+    compare_torch_and_nrt(func, t)

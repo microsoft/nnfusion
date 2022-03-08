@@ -53,3 +53,9 @@ if [ -f "/.dockerenv" ]; then
         echo "Install succeded."
     fi
 fi
+
+pushd $THIS_SCRIPT_DIR/../../> /dev/null
+rm src/python/nnfusion/nnfusion.tar.gz
+rm -rf dist
+python setup.py bdist_wheel
+popd > /dev/null

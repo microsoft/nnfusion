@@ -10,7 +10,7 @@
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/engine/async_manager.hpp"
 
-DECLARE_string(fantares_codegen_server);
+DECLARE_bool(fantares_mode);
 
 namespace nnfusion
 {
@@ -206,7 +206,7 @@ namespace nnfusion
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
                     GENERIC_OP_LOGGING();
-                    if (!FLAGS_fantares_codegen_server.empty())
+                    if (FLAGS_fantares_mode)
                     {
                         // NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
 

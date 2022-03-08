@@ -24,6 +24,7 @@ DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(ffunction_codegen);
+DEFINE_bool(fhlsl_descriptor_heap, false, "enable DirectX descriptor heap");
 
 void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                     std::shared_ptr<TranslationUnit> tu)
@@ -66,6 +67,11 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
             lu_init_begin << "\nvoid hlsl_init(char* workspace)\n{\n";
         else
             lu_init_begin << "\nvoid hlsl_init()\n{\n";
+
+        if (FLAGS_fhlsl_descriptor_heap)
+        {
+            lu_init_begin << "dxInit(1);\n";
+        }
     }
 
     auto& lu_init_end = *(projgen->lup_init->end);

@@ -4,6 +4,7 @@
 import logging
 import os
 import site
+import subprocess
 import sys
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -17,8 +18,8 @@ def run_cli():
         logging.error("No nnfusion cli found: Try to reinstall nnfusion.")
         sys.exit(-1)
 
-    args = " ".join(sys.argv[1:])
-    os.system("%s %s" % (nnf_bin, args))
+    cmd = " ".join([nnf_bin] + sys.argv[1:])
+    return subprocess.call(cmd, shell=True)
 
 
 def welcome():
@@ -33,8 +34,8 @@ def welcome():
 
 def main():
     welcome()
-    run_cli()
+    return run_cli()
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

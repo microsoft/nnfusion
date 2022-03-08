@@ -109,16 +109,26 @@ add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 #-----------------------------------------------------------------------------------------------
 # STEP.5 Find thirdparty libraries
 #-----------------------------------------------------------------------------------------------
-###Dynamic###
-find_package(CURL)
-
 ###Static###
 set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Threads REQUIRED) # This is for test usage
 find_package(GTest)
 find_package(Protobuf 3.5.0)
-find_library(gflags NAMES libgflags.a)
-find_library(sqlite3 NAMES libsqlite3.a)
+
+SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+find_library(GFLAGS NAMES gflags)
+if (NOT "${GFLAGS}" STREQUAL "")
+    message(STATUS "Found gflags: ${GFLAGS}")
+else()
+    message(FATAL_ERROR "Not found gflags" )
+endif()
+
+find_library(SQLITE3 NAMES sqlite3)
+if (NOT "${SQLITE3}" STREQUAL "")
+    message(STATUS "Found sqlite3: ${SQLITE3}")
+else()
+    message(FATAL_ERROR "Not found sqlite3" )
+endif()
 
 #-----------------------------------------------------------------------------------------------
 # STEP.6 Check envs

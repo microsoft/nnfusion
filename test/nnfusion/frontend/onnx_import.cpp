@@ -12,6 +12,8 @@
 #include "nnfusion/engine/util/file_util.hpp"
 #include "nnfusion/frontend/onnx_import/onnx.hpp"
 
+DECLARE_bool(fantares_mode);
+
 using namespace nnfusion;
 using Inputs = vector<vector<float>>;
 using Outputs = vector<vector<float>>;
@@ -1567,4 +1569,87 @@ TEST(nnfusion_onnx_import, resize_upsample_scales_linear)
     {
         EXPECT_EQ(expected_outputs[i], outputs[i]);
     }
+}
+
+// enable by ./test/unit-test --gtest_filter="nnfusion_onnx_import.customized_op_slice" -fkernel_tuning_steps=0 -fantares_mode=true -fantares_codegen_server=127.0.0.1:8881 -fkernel_fusion_level=0 -fblockfusion_level=0 -fhost_entry=1 -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fir_based_fusion=true
+TEST(nnfusion_onnx_import, customized_op_slice)
+{
+    if (!FLAGS_fantares_mode)
+    {
+        return;
+    }
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/custom_slice.onnx"));
+
+    RawInputs
+        raw_inputs; // [[1, 2, 3, 4], [5, 6, 7, 8]], attr: {"axes":[0,1],"domain":"","ends":[2,3],"op":"Slice","starts":[1,0],"steps":[1,1],"version":11}
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<float>(raw_outputs[0])};
+
+    vector<float> expected_outputs{5., 6., 7.};
+
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_onnx_import, gru_op)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/gru_bidirectional.onnx"));
+
+    RawInputs raw_inputs;
+    raw_inputs.emplace_back(
+        convert_to_raw(vector<float>{1,
+                                     2,
+                                     3,
+                                     4,
+                                     5,
+                                     6,
+                                     7,
+                                     8,
+                                     9,
+                                     10,
+                                     11,
+                                     12,
+                                     13,
+                                     14,
+                                     15,
+                                     16,
+                                     17,
+                                     18})); // [seq_len=2, batch_size=3, input_size=3]
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<float>(raw_outputs[0])};
+
+    vector<float> expected_outputs{
+        1.0720683e-02, -7.9221731e-01, -5.8064010e-02, 9.1135913e-01, -9.9989843e-01,
+        5.4036913e-04, -1.3896774e-01, -2.2083531e-04, 9.7151285e-01, -1.0000005e+00,
+        2.6464471e-05, -6.7724022e-03, -8.3446542e-07, 9.9089122e-01, -1.0000005e+00,
+
+        1.3207304e-03, -8.5305351e-01, -1.0513758e-01, 9.9690926e-01, -9.9998397e-01,
+        6.5981556e-05, -1.9718896e-01, -4.2057058e-04, 9.9999201e-01, -1.0000004e+00,
+        3.2186520e-06, -1.0266423e-02, -1.4305122e-06, 1.0000000e+00, -1.0000004e+00,
+
+        1.0720860e-02, -7.9228514e-01, -5.8064010e-02, 9.9995363e-01, -1.0000005e+00,
+        5.4036913e-04, -1.3898313e-01, -2.2083531e-04, 9.9999678e-01, -1.0000004e+00,
+        2.6464471e-05, -6.7731128e-03, -8.3446542e-07, 1.0000001e+00, -1.0000004e+00,
+
+        1.2516981e-06, -2.8800979e-04, 0.0000000e+00,  9.9712622e-01, -1.0000005e+00,
+        1.1920935e-07, -1.2159353e-05, 0.0000000e+00,  9.9909741e-01, -1.0000005e+00,
+        0.0000000e+00, -4.7683739e-07, 0.0000000e+00,  9.9971712e-01, -1.0000005e+00,
+    }; // [seq_len=2, num_direction=2, batch_size=3, hidden_size=5]
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    // mask value near zero
+    for (size_t i = 0; i < expected_outputs.size(); i++)
+    {
+        if (expected_outputs[i] < 1e-5)
+            expected_outputs[i] = 0;
+        if (outputs[i] < 1e-5)
+            outputs[i] = 0;
+    }
+    EXPECT_TRUE(test::all_close_f(expected_outputs, outputs));
 }

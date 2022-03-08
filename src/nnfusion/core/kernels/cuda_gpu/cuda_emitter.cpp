@@ -260,12 +260,55 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
             find_launch_config(kernel_def, GridDim, BlockDim);
             std::string call;
             auto ki = kernel_info[i];
+            // map mediate name
+            std::vector<string> input_names, output_names;
+            size_t idx = 0;
+            std::unordered_map<string, string> mediate_map;
+            for (auto name : ki->input_names)
+            {
+                if (mediate_map.find(name) == mediate_map.end())
+                {
+                    if (name.find("mediate") != string::npos)
+                    {
+                        mediate_map[name] = "mediate" + to_string(idx);
+                        idx += 1;
+                    }
+                }
+            }
+
+            for (auto name : ki->output_names)
+            {
+                if (mediate_map.find(name) == mediate_map.end())
+                {
+                    if (name.find("mediate") != string::npos)
+                    {
+                        mediate_map[name] = "mediate" + to_string(idx);
+                        idx += 1;
+                    }
+                }
+            }
+
+            for (auto name : ki->input_names)
+            {
+                if (mediate_map.find(name) == mediate_map.end())
+                    input_names.push_back(name);
+                else
+                    input_names.push_back(mediate_map[name]);
+            }
+
+            for (auto name : ki->output_names)
+            {
+                if (mediate_map.find(name) == mediate_map.end())
+                    output_names.push_back(name);
+                else
+                    output_names.push_back(mediate_map[name]);
+            }
             NNFUSION_CHECK(ki->kernel_name == "template_op_kernel" + to_string(i));
             call = get_function_name() + "_kernel" + to_string(i) + "<<<dim3(" +
                    to_string(GridDim.x) + ", " + to_string(GridDim.y) + ", " +
                    to_string(GridDim.z) + "), dim3(" + to_string(BlockDim.x) + ", " +
                    to_string(BlockDim.y) + ", " + to_string(BlockDim.z) + "), mem, stream>>>(" +
-                   join(ki->input_names, ", ") + ", " + join(ki->output_names, ", ") + ");";
+                   join(input_names, ", ") + ", " + join(output_names, ", ") + ");";
             lu << call << "\n";
         }
     }
@@ -322,11 +365,24 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
     auto& lu = *_lu;
 
+    std::unordered_set<int> inplace_input, inplace_output;
+    if (m_context->annotations)
+    {
+        for (auto oi_pair : m_context->annotations->get_in_place_oi_pairs())
+        {
+            inplace_input.insert(oi_pair.input);
+            inplace_output.insert(oi_pair.output);
+        }
+    }
     vector<string> params;
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
         ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        if (inplace_input.find(i) == inplace_input.end())
+        {
+            ss << "__restrict__ ";
+        }
         ss << "input" << i;
         params.push_back(ss.str());
     }
@@ -335,6 +391,10 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     {
         stringstream ss;
         ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        if (inplace_output.find(i) == inplace_output.end())
+        {
+            ss << "__restrict__ ";
+        }
         ss << "output" << i;
         params.push_back(ss.str());
     }
@@ -343,6 +403,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     {
         stringstream ss;
         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << "__restrict__ ";
         ss << "mediate" << i;
         params.push_back(ss.str());
     }

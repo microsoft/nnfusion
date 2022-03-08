@@ -84,15 +84,17 @@ namespace nnfusion
             // Used for: 1) Infershape/Translation; 2) Kernel DB Attrs (e.g. get_op_ptr()->serialize().dump()); 3) Checkpoint to file;
             virtual nnfusion::json serialize()
             {
-                throw std::runtime_error("Serialize method is not defined for operator type: " +
-                                         m_op_type);
+                return m_config;
+                // throw std::runtime_error("Serialize method is not defined for operator type: " +
+                //                      m_op_type);
             }
 
             // Used for: 1) Build/Restore node properties from file;
             virtual void deserialize(const nnfusion::json& stat)
             {
-                throw std::runtime_error("Deserialize method is not defined for operator type: " +
-                                         m_op_type);
+                m_config = stat;
+                // throw std::runtime_error("Deserialize method is not defined for operator type: " +
+                //                          m_op_type);
             }
 
             virtual bool is_parameter() const;
@@ -144,6 +146,7 @@ namespace nnfusion
             const std::string m_unique_name;
             static std::atomic<size_t> m_next_instance_id;
             std::vector<size_t> m_shared_memory; // for reduce fusion
+            nlohmann::json m_config;
 
         private:
             std::shared_ptr<Annotations> m_op_annotations;

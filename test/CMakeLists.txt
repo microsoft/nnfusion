@@ -33,25 +33,6 @@ add_executable(unit-test ${SRC})
 
 target_include_directories(unit-test PRIVATE ".")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCURDIR=\\\"${CMAKE_CURRENT_SOURCE_DIR}\\\"")
-
-if(NGRAPH_ADDRESS_SANITIZER)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=address -fno-omit-frame-pointer")
-endif()
-
-target_link_libraries(unit-test PRIVATE GTest::GTest Threads::Threads gflags)
-target_link_libraries(unit-test PRIVATE ${CMAKE_DL_LIBS})
-target_link_libraries(unit-test PRIVATE nnfusion_operators)
-
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang$")
-    target_compile_options(unit-test PRIVATE -Wno-undef -Wno-reserved-id-macro)
-endif()
-
-target_link_libraries(unit-test PRIVATE nnfusion_backend nnfusion_engine_profiler nnfusion_engine_pass_graph)
-
-target_include_directories(unit-test PRIVATE ${Protobuf_INCLUDE_DIR})
-
 if (ONNX_FRONTEND)
     target_include_directories(unit-test PRIVATE ${ONNXPROTO_INCLUDE})
     target_link_libraries(unit-test PRIVATE onnx_import_interface onnx_import onnx_proto)
@@ -72,10 +53,41 @@ if (ONNX_FRONTEND)
     target_link_libraries(unit-test PRIVATE onnx_import_interface onnx_import onnx_proto)
 endif()
 
-if (NGRAPH_ONNXIFI_ENABLE)
-    target_include_directories(unit-test SYSTEM PUBLIC ${ONNX_INCLUDE_DIR})
-    target_link_libraries(unit-test PRIVATE onnxifi-ngraph)
-endif()
+target_link_libraries(unit-test PRIVATE
+    -Wl,--whole-archive
+    # Common feature
+    nnfusion_common
+    nnfusion_util
+    nnfusion_cache_manager
+    nnfusion_operators 
+    nnfusion_serialize
+    nnfusion_graph
+    nnfusion_ir
+    # Engine related
+    nnfusion_engine_base 
+    nnfusion_engine_profiler
+    nnfusion_engine_device
+    nnfusion_engine_pass
+    nnfusion_engine_pass_graph
+    nnfusion_engine_pass_graph_blockfusion
+    nnfusion_engine_pass_graph_subgraph_fusion
+    nnfusion_engine_pass_graph_autodiff
+    # Kernels and Operators
+    contrib_custom_operators
+    kernels_registration
+    kernels_cuda 
+    kernels_cpu
+    kernels_hlsl
+    # Depends
+    -Wl,--no-whole-archive
+    protobuf::libprotobuf
+    gflags 
+    dl
+    sqlite3
+    ${CURL_LIBRARIES} 
+    GTest::GTest
+    Threads::Threads
+)
 
 add_custom_target(unit-test-check
     COMMAND ${PROJECT_BINARY_DIR}/test/unit-test \${ARGS}

@@ -5,10 +5,10 @@
 
 #include "graph.hpp"
 #include "graph_util.hpp"
-#include "nnfusion/common/serialize/attr_value.pb.h"
-#include "nnfusion/common/serialize/graph_def.pb.h"
-#include "nnfusion/common/serialize/pbtypes.pb.h"
-#include "nnfusion/common/serialize/tensor_shape.pb.h"
+#include "nnfusion/common/serialize/nnf_attr_value.pb.h"
+#include "nnfusion/common/serialize/nnf_graph_def.pb.h"
+#include "nnfusion/common/serialize/nnf_pbtypes.pb.h"
+#include "nnfusion/common/serialize/nnf_tensor_shape.pb.h"
 #include "nnfusion/util/util.hpp"
 
 using namespace nnfusion::graph;

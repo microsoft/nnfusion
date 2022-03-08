@@ -211,6 +211,15 @@ namespace nnfusion
             }
 
             template <>
+            std::vector<std::string>
+                Node::get_attribute_value(const std::string& name,
+                                          std::vector<std::string> default_value) const
+            {
+                return m_pimpl->template get_attribute_value<std::vector<std::string>>(
+                    name, std::move(default_value));
+            }
+
+            template <>
             std::vector<Tensor> Node::get_attribute_value(const std::string& name,
                                                           std::vector<Tensor> default_value) const
             {

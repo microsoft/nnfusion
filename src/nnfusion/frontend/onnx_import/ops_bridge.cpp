@@ -45,6 +45,7 @@
 #include "op/flatten.hpp"
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
+#include "op/gru.hpp"
 #include "op/identity.hpp"
 #include "op/index_reduce.hpp"
 #include "op/layer_norm.hpp"
@@ -60,6 +61,7 @@
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
+#include "op/roll.hpp"
 #include "op/scatternd.hpp"
 #include "op/shape.hpp"
 #include "op/skip_layer_norm.hpp"
@@ -188,6 +190,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("GlobalAveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("GlobalMaxPool", 1, TranslatePoolOp<op::MaxPool>);
                 REGISTER_OPERATOR("Greater", 1, TranslateBinaryOp<op::Greater>);
+                REGISTER_OPERATOR("GRU", 1, TranslateGRUOp);
                 //REGISTER_OPERATOR("HardSigmoid", 1, hard_sigmoid);
                 REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
                 REGISTER_OPERATOR("LayerNormalization", 1, TranslateLayerNormalizationOp);
@@ -272,6 +275,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ScatterND", 11, TranslateScatterNDOp);
                 REGISTER_OPERATOR("DepthToSpace", 1, TranslateDepthToSpaceOp);
                 REGISTER_OPERATOR("DepthToSpace", 11, TranslateDepthToSpaceOp);
+                REGISTER_DOMAIN_OPERATOR("org.pytorch.aten", "roll", 1, TranslateRollOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }
 

@@ -13,7 +13,7 @@ DECLARE_bool(fkernels_as_files);
 DECLARE_int64(fkernels_files_number);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_string(fantares_perf_file);
-
+DECLARE_bool(ffunction_codegen);
 bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
                           std::shared_ptr<TranslationUnit> tu)
 {
@@ -181,11 +181,19 @@ bool BaseCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
         "total_memory", "// total memory:" + to_string(total_alloc) + "\n");
     lup_mem_alloc->unit_vec.push_back(total);
 
+    size_t offset = 0;
     for (const auto& allocator : allocator_list)
     {
         auto init = allocator.second->emit_memory_init();
         auto alloc = allocator.second->emit_memory_alloc();
         auto free = allocator.second->emit_memory_free();
+
+        if (FLAGS_ffunction_codegen)
+        {
+            auto mempool_offset = allocator.second->emit_memory_pool_offset(offset);
+            offset += allocator.second->max_allocated();
+            lup_mem_alloc->unit_vec.push_back(mempool_offset);
+        }
         lup_mem_alloc->unit_vec.push_back(alloc);
         lup_mem_alloc->require(init);
         lup_mem_free->unit_vec.push_back(free);
@@ -324,4 +332,22 @@ LanguageUnit_p BaseCodegenPass::codegen_device_type()
     *lu_devtype << "    return " << device_type() << ";\n";
     *lu_devtype << "}\n";
     return lu_devtype;
+}
+
+LanguageUnit_p BaseCodegenPass::codegen_workspace_size(std::shared_ptr<TranslationUnit> tu)
+{
+    auto lu_workspace = make_shared<LanguageUnit>("workspace_size");
+
+    auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
+
+    size_t total_alloc = 0;
+    for (const auto& allocator : allocator_list)
+    {
+        total_alloc += allocator.second->max_allocated();
+    }
+
+    *lu_workspace << "int get_workspace_size()\n{\n";
+    *lu_workspace << "    return " << total_alloc << ";\n";
+    *lu_workspace << "}\n";
+    return lu_workspace;
 }

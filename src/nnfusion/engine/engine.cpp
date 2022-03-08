@@ -17,6 +17,7 @@ DEFINE_bool(fcustomized_mem_imp, false, "Use customized memory implementation in
 DEFINE_bool(fhost_entry, false, "provide entry on host memory");
 DEFINE_bool(fuse_cpuprofiler, false, "");
 DEFINE_bool(fcodegen_pybind, false, "");
+DEFINE_bool(ffunction_codegen, false, "");
 
 using namespace nnfusion;
 

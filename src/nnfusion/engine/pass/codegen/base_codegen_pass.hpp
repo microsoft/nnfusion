@@ -94,6 +94,7 @@ namespace nnfusion
                 get_customized_mem_imp(nnfusion::ir::Instruction::Pointer ins);
             LanguageUnit_p codegen_mem_ref(KernelEmitter::Pointer kernel);
             LanguageUnit_p codegen_device_type();
+            LanguageUnit_p codegen_workspace_size(std::shared_ptr<TranslationUnit> tu);
             CodeGenerator::Pointer projgen;
             std::unordered_map<string, nnfusion::codegen::CodegenFuncCallsUnit_p> kernel_func_calls;
             std::unordered_map<string, std::pair<std::string, LanguageUnit_p>> kernel_func_defs;

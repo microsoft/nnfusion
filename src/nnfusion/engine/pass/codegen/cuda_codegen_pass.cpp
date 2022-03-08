@@ -34,6 +34,7 @@ DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
+DECLARE_bool(ffunction_codegen);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -127,8 +128,11 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
         }
         else
         {
-            lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
-            lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
+            if (FLAGS_ffunction_codegen)
+                lu_init_begin << "\nextern \"C\" void cuda_init(char* workspace)\n{\n";
+            else
+                lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
+            lu_init_begin << "// CUDA_SAFE_CALL(cudaDeviceReset());\n";
         }
     }
 
@@ -237,6 +241,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     if (!FLAGS_fcodegen_pybind)
         projgen->lup_codegen->require(macro::HALF_MAX);
     projgen->lup_codegen->require(codegen_device_type());
+    projgen->lup_codegen->require(codegen_workspace_size(tu));
     return;
 }
 
@@ -882,6 +887,7 @@ bool CudaCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
 
     std::regex r(R"(CUDA_SAFE_CALL\(cudaSetDevice\(\d)");
 
+    size_t offset = 0;
     for (const auto& allocator : allocator_list)
     {
         auto init = allocator.second->emit_memory_init();
@@ -899,6 +905,12 @@ bool CudaCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
         LanguageUnit_p alloc_lu(new LanguageUnit(alloc->get_symbol(), alloc_code));
         LanguageUnit_p free_lu(new LanguageUnit(free->get_symbol(), free_code));
 
+        if (FLAGS_ffunction_codegen)
+        {
+            auto mempool_offset = allocator.second->emit_memory_pool_offset(offset);
+            offset += allocator.second->max_allocated();
+            lup_mem_alloc->unit_vec.push_back(mempool_offset);
+        }
         lup_mem_alloc->unit_vec.push_back(alloc_lu);
         lup_mem_alloc->require(init);
         lup_mem_free->unit_vec.push_back(free_lu);
@@ -1104,6 +1116,7 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
 
         lu_header << header::cuda_fp16->get_code();
     lu_header << "extern \"C\" int get_device_type();\n";
+    lu_header << "extern \"C\" int get_workspace_size();\n";
     lu_header << "extern \"C\" int kernel_entry";
     if (FLAGS_fhost_entry)
         lu_header << "_host";
@@ -1112,6 +1125,8 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
 
     if (superscaler_enable)
         lu_header << "extern \"C\" void cuda_init(const char*);\n";
+    else if (FLAGS_ffunction_codegen)
+        lu_header << "extern \"C\" void cuda_init(char* workspace_size);\n";
     else
         lu_header << "extern \"C\" void cuda_init();\n";
 
@@ -1165,6 +1180,12 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
             lu_main << "\nif(!argv[1]) {throw std::runtime_error(\"superscaler resource dir is not "
                        "given!\"); }\n\n";
             lu_main << "\ncuda_init(argv[1]);\n\n";
+        }
+        else if (FLAGS_ffunction_codegen)
+        {
+            lu_main << "\nchar* workspace;\n";
+            lu_main << "CUDA_SAFE_CALL(cudaMalloc((void**)&workspace, get_workspace_size()));\n";
+            lu_main << "cuda_init(workspace);\n\n";
         }
         else
             lu_main << "\ncuda_init();\n\n";

@@ -17,7 +17,9 @@
 *.swo
 
 build/
+dist/
 custom_op/
+nnfusion.tar.gz
 
 # makeenv and test intermediate files
 tmp/

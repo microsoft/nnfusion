@@ -31,6 +31,7 @@ DECLARE_int64(fkernels_files_number);
 DECLARE_bool(frt_const_folding);
 DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fcustomized_mem_imp);
+DECLARE_bool(ffunction_codegen);
 
 void CpuCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                        std::shared_ptr<TranslationUnit> tu)
@@ -107,7 +108,10 @@ void CpuCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
-        lu_init_begin << "\nextern \"C\" void cpu_init()\n{\n";
+        if (FLAGS_ffunction_codegen)
+            lu_init_begin << "\nextern \"C\" void cpu_init(char* workspace)\n{\n";
+        else
+            lu_init_begin << "\nextern \"C\" void cpu_init()\n{\n";
     }
 
     auto& lu_init_end = *(projgen->lup_init->end);
@@ -152,6 +156,7 @@ void CpuCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     }
     //add requirements
     projgen->lup_codegen->require(codegen_device_type());
+    projgen->lup_codegen->require(codegen_workspace_size(tu));
     // add component
     // create_graph_config(ctx, tu);
     create_header_file(ctx, tu);
@@ -368,13 +373,15 @@ void CpuCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx,
     // if (device_type() == CUDA_GPU || device_type() == ROCM_GPU)
     //     lu_header << header::cuda->get_code();
     lu_header << "extern \"C\" int get_device_type();\n";
+    lu_header << "extern \"C\" int get_workspace_size();\n";
     lu_header << "extern \"C\" int kernel_entry(";
     std::string params = get_kernel_entry_paras(tu);
     lu_header << params;
     lu_header << ");\n";
-
-    lu_header << "extern \"C\" void cpu_init();\n";
-
+    if (FLAGS_ffunction_codegen)
+        lu_header << "extern \"C\" void cpu_init(char* workspace);\n";
+    else
+        lu_header << "extern \"C\" void cpu_init();\n";
     lu_header << "extern \"C\" void cpu_free();\n";
 
     LanguageUnit_p h =

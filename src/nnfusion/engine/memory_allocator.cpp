@@ -4,6 +4,7 @@
 #include "memory_allocator.hpp"
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fcustomized_mem_imp);
+DECLARE_bool(ffunction_codegen);
 
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)
     : m_size{size}
@@ -290,10 +291,13 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
     if (m_max_allocated > 0)
     {
         lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
-        lu << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << this->get_name() << "_memory_pool,"
-           << m_max_allocated << "));\n";
-        lu << "CUDA_SAFE_CALL(cudaMemset((void*)" << this->get_name() << "_memory_pool, 0, "
-           << m_max_allocated << "));\n";
+        if (!FLAGS_ffunction_codegen)
+        {
+            lu << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << this->get_name() << "_memory_pool,"
+               << m_max_allocated << "));\n";
+            lu << "CUDA_SAFE_CALL(cudaMemset((void*)" << this->get_name() << "_memory_pool, 0, "
+               << m_max_allocated << "));\n";
+        }
 
         for (auto tensor : m_allocated_tensors)
         {
@@ -313,6 +317,14 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
     return _lu;
 }
 
+LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_pool_offset(size_t offset)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_offset"));
+    auto& lu = *_lu;
+    lu << this->get_name() << "_memory_pool = (char*)(workspace + " << offset << ");\n";
+    return _lu;
+}
+
 LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_free()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_free"));
@@ -321,7 +333,8 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_free()
 
     auto& lu = *_lu;
     lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
-    lu << "CUDA_SAFE_CALL(cudaFree(" << this->get_name() + "_memory_pool));\n";
+    if (!FLAGS_ffunction_codegen)
+        lu << "CUDA_SAFE_CALL(cudaFree(" << this->get_name() + "_memory_pool));\n";
     return _lu;
 }
 
@@ -378,7 +391,8 @@ LanguageUnit_p nnfusion::HostMemoryAllocator::emit_memory_alloc()
     auto& lu = *_lu;
     if (m_max_allocated > 0)
     {
-        lu << this->get_name() << "_memory_pool = (char *)malloc(" << m_max_allocated << ");\n";
+        if (!FLAGS_ffunction_codegen)
+            lu << this->get_name() << "_memory_pool = (char *)malloc(" << m_max_allocated << ");\n";
         for (auto tensor : m_allocated_tensors)
         {
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
@@ -400,7 +414,7 @@ LanguageUnit_p nnfusion::HostMemoryAllocator::emit_memory_alloc()
 LanguageUnit_p nnfusion::HostMemoryAllocator::emit_memory_free()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_free"));
-    if (FLAGS_fcustomized_mem_imp)
+    if (FLAGS_fcustomized_mem_imp || FLAGS_ffunction_codegen)
         return _lu;
 
     auto& lu = *_lu;
@@ -456,7 +470,8 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
     auto& lu = *_lu;
     if (m_max_allocated > 0)
     {
-        lu << this->get_name() << "_memory_pool = dxMemAlloc(" << m_max_allocated << ");\n";
+        if (!FLAGS_ffunction_codegen)
+            lu << this->get_name() << "_memory_pool = dxMemAlloc(" << m_max_allocated << ");\n";
         for (auto tensor : m_allocated_tensors)
         {
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
@@ -482,10 +497,21 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
     return _lu;
 }
 
+LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_pool_offset(size_t offset)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_offset"));
+    auto& lu = *_lu;
+    if (FLAGS_fhlsl_codegen_type == "cpp")
+        lu << this->get_name() << "_memory_pool = (char*)(workspace + " << offset << ");\n";
+    else if (FLAGS_fhlsl_codegen_type == "csharp")
+        lu << this->get_name() << "_memory_pool = IntPtr.Add(workspace, " << offset << ");\n";
+    return _lu;
+}
+
 LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_free()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_free"));
-    if (FLAGS_fcustomized_mem_imp)
+    if (FLAGS_fcustomized_mem_imp || FLAGS_ffunction_codegen)
         return _lu;
 
     auto& lu = *_lu;

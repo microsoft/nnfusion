@@ -81,10 +81,9 @@ target_link_libraries(unit-test PRIVATE
     # Depends
     -Wl,--no-whole-archive
     protobuf::libprotobuf
-    gflags 
     dl
-    sqlite3
-    ${CURL_LIBRARIES} 
+    ${GFLAGS}
+    ${SQLITE3}
     GTest::GTest
     Threads::Threads
 )

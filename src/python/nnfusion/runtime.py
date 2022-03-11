@@ -16,6 +16,13 @@ from .session import build, codegen, modify_nnfusion_rt
 
 class NNFusionRT:
     def __init__(self, model, server="127.0.0.1:8880", steps=1000):
+        """
+        Parameters:
+            model: the `torch.nn.Module` to be compiled.
+            server: address to anteras server.
+            steps: number of steps for kernel tuning.
+        """
+
         self.model = model
 
         self.workdir = os.path.join("tmp", self._signature)
@@ -30,6 +37,15 @@ class NNFusionRT:
         self._reserved_mem = None
 
     def compile(self, inputs, outputs, force_build=False):
+        """
+        Perform nnfusion codegen and compilation for target input sizes.
+        Skip if a kernel with the same signature is found.
+
+        Parameters:
+            inputs: a list of model inputs.
+            outputs: a list of model outputs.
+            force_build: whether to replace the previous kernel (if exist).
+        """
 
         def export_onnx(fname):
             input_names = ["input" + str(i) for i in range(len(inputs))]
@@ -72,6 +88,13 @@ class NNFusionRT:
 
 
     def run(self, inputs, outputs):
+        """
+        Perform the computation. The result will be saved in `outputs`.
+
+        Parameters:
+            inputs: the input tensor(s). Can be a list or tuple.
+            outputs: the output tensor(s). Can be a list or tuple.
+        """
         if not isinstance(inputs, (tuple, list)):
             inputs = [inputs]
         if not isinstance(outputs, (tuple, list)):
@@ -106,6 +129,7 @@ class NNFusionRT:
         Signature of a function or torch.nn.Module instance to detect reusable
         kernel.
         """
+        # For details, please refer to https://github.com/microsoft/nnfusion/pull/379
         def get_qualname():
             if isinstance(self.model, TorchModule):
                 name = self.model.func.__qualname__

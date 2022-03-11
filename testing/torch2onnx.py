@@ -1,63 +1,60 @@
-from re import M
 import torch
 import numpy as np
+import os.path as osp
+import os
+import argparse
+import time
+from model.pytorch import *
 
-def resnet():
-    from torchvision.models import resnet18 as Net
-    model = Net()
-    input = torch.randn(64, 3, 224, 224)
-    return model, (input, )
+def torch2onnx(prefix, model, inputs):
+    outputs = model(*inputs)
+    if not isinstance(outputs, (tuple, list)):
+        outputs = (outputs, )
+    input_names = ["input"+str(i) for i in range(len(inputs))]
+    output_names = ["output"+str(i) for i in range(len(outputs))]
+    torch.onnx.export(
+        model, inputs,
+        osp.join(prefix, "model.onnx"),
+        input_names=input_names,
+        output_names=output_names,
+        export_params=True,
+        training=False,
+        do_constant_folding=False,
+        opset_version=9)
+    feed_dict = dict(zip(input_names, inputs))
+    np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
+    with open(osp.join(prefix, "output_names.txt"), "w") as f:
+        print(str(output_names), file=f)
 
-def profile_swin_transormer():
-    from model.pytorch.swin_transformer import SwinTransformer
-    model = SwinTransformer()
-    input = torch.randn(64, 3, 224, 224)
-    return model, (input, )
+def onnx2pb(prefix):
+    import onnx
+    from onnx_tf.backend import prepare
+    onnx_model = onnx.load(osp.join(prefix, "model.onnx"))
+    tf_rep = prepare(onnx_model, device="cuda")
+    tf_rep.export_graph(osp.join(prefix, "model.pb"))
 
-def profile_EDSR():
-    from model.pytorch.EDSR import EDSR
-    model = EDSR(num_channels=3, base_channel=64, num_residuals=4, upscale_factor=4)
-    input = torch.randn(1, 3, 512, 512)
-    return model, (input, )
-
-def profile_bert():
-    from model.pytorch.pytorch_bert import BertForPreTraining
-    from model.pytorch.bert_config import BertConfig
-    config = BertConfig(vocab_size=30522,
-                hidden_size=768,
-                num_hidden_layers=12,
-                num_attention_heads=12,
-                intermediate_size=3072,
-                max_position_embeddings=128,
-                attention_probs_dropout_prob=0.1,
-                hidden_dropout_prob=0.1,
-                batch_size=64)
-    model = BertForPreTraining(config)
-    input_ids = torch.LongTensor(np.ones([config.batch_size, config.max_position_embeddings]))
-    token_type_ids = torch.LongTensor(np.ones([config.batch_size, config.max_position_embeddings]))
-    attention_mask = torch.LongTensor(np.ones([config.batch_size, config.max_position_embeddings]))
-    masked_lm_labels = torch.LongTensor(np.ones([config.batch_size, config.max_position_embeddings]))
-    next_sentence_label = torch.LongTensor(np.ones([config.batch_size]))
-    inputs = (input_ids, token_type_ids, attention_mask, masked_lm_labels, next_sentence_label)
-    return model, inputs
-
-def profile_vit():
-    from vit_pytorch import ViT
-    model = ViT(
-        image_size = 256,
-        patch_size = 32,
-        num_classes = 1000,
-        dim = 1024,
-        depth = 6,
-        heads = 16,
-        mlp_dim = 2048,
-        dropout = 0.1,
-        emb_dropout = 0.1
-    )
-    input = torch.randn(64, 3, 256, 256)
-    return model, (input, )
+def run_torch(model, inputs):
+    model = model.cuda()
+    model.eval()
+    def get_runtime():
+        torch.cuda.synchronize()
+        tic = time.time()
+        cu_inputs = []
+        for item in inputs:
+            cu_inputs.append(item.cuda() if isinstance(item, torch.Tensor) else item)
+        with torch.no_grad():
+            _ = model(*cu_inputs)
+        torch.cuda.synchronize()
+        return time.time() - tic
+    _ = [get_runtime() for i in range(50)] # warmup
+    times = [get_runtime() for i in range(30)]
+    print(np.mean(times), np.min(times), np.max(times))
 
 if __name__ == "__main__":
-    model, inputs = resnet()
-    model(*inputs)
-    torch.onnx.export(model, inputs, "model.onnx", export_params=False, training=False, opset_version=9)
+    torch.random.manual_seed(0)
+    prefix="temp"
+    model, inputs = bert()
+    os.makedirs(prefix, exist_ok=True)
+    # torch2onnx(prefix, model, inputs)
+    # onnx2pb(prefix)
+    run_torch(model, inputs)

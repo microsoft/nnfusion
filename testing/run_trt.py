@@ -5,6 +5,8 @@ import time
 import argparse
 import torch
 
+torch.cuda.set_device(3)
+
 def run_trt(prefix):
     logger = trt.Logger(trt.Logger.ERROR)
     builder = trt.Builder(logger)
@@ -18,6 +20,7 @@ def run_trt(prefix):
         raise RuntimeError()
 
     engine = builder.build_cuda_engine(network)
+    print("Built engine successfully.")
 
     tensors = []
     for index, binding in enumerate(engine):
@@ -39,9 +42,9 @@ def run_trt(prefix):
             tensors[i] = tensor.cuda()
         buffer = [tensor.data_ptr() for tensor in tensors]
         context.execute(1, buffer)
-        return time.time() - tic
+        return (time.time() - tic) * 1000
     _ = [get_runtime() for i in range(50)] # warmup
-    times = [get_runtime() for i in range(30)]
+    times = [get_runtime() for i in range(100)]
     print(np.mean(times), np.min(times), np.max(times))
     # print(tensors[1])
 

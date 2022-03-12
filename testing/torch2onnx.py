@@ -6,6 +6,8 @@ import argparse
 import time
 from model.pytorch import *
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+
 def torch2onnx(prefix, model, inputs):
     outputs = model(*inputs)
     if not isinstance(outputs, (tuple, list)):
@@ -20,18 +22,9 @@ def torch2onnx(prefix, model, inputs):
         export_params=True,
         training=False,
         do_constant_folding=False,
-        opset_version=9)
+        opset_version=11)
     feed_dict = dict(zip(input_names, inputs))
     np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
-    with open(osp.join(prefix, "output_names.txt"), "w") as f:
-        print(str(output_names), file=f)
-
-def onnx2pb(prefix):
-    import onnx
-    from onnx_tf.backend import prepare
-    onnx_model = onnx.load(osp.join(prefix, "model.onnx"))
-    tf_rep = prepare(onnx_model, device="cuda")
-    tf_rep.export_graph(osp.join(prefix, "model.pb"))
 
 def run_torch(model, inputs):
     model = model.cuda()
@@ -45,16 +38,15 @@ def run_torch(model, inputs):
         with torch.no_grad():
             _ = model(*cu_inputs)
         torch.cuda.synchronize()
-        return time.time() - tic
+        return (time.time() - tic) * 1000
     _ = [get_runtime() for i in range(50)] # warmup
-    times = [get_runtime() for i in range(30)]
+    times = [get_runtime() for i in range(100)]
     print(np.mean(times), np.min(times), np.max(times))
 
 if __name__ == "__main__":
     torch.random.manual_seed(0)
     prefix="temp"
-    model, inputs = bert()
+    model, inputs = bert(64)
     os.makedirs(prefix, exist_ok=True)
-    # torch2onnx(prefix, model, inputs)
-    # onnx2pb(prefix)
+    torch2onnx(prefix, model, inputs)
     run_torch(model, inputs)

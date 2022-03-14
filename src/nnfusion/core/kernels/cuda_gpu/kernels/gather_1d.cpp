@@ -209,7 +209,7 @@ LanguageUnit_p cuda::Gather1DGrad::emit_function_body()
 
 void cuda::Gather1DGrad::set_launch_config()
 {
-    uint32_t nthreads = static_cast<uint32_t>(std::max(shape_size(x_shape), shape_size(y_shape)));
+    uint32_t nthreads = static_cast<uint32_t>(shape_size(y_shape));
     uint32_t block_size_x = 64;
     uint32_t aligned_grid_size_x = align_to_block_size(nthreads, block_size_x);
 

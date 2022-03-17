@@ -74,6 +74,7 @@ namespace nnfusion
                                                              {x_gnode, input_indices[3]});
                         return NamedNodeVector{{node_proto.output(0), resize_gnode}};
                     }
+                    return NamedNodeVector();
                 }
             } // namespace set_1
 

@@ -237,6 +237,7 @@ bool KernelTuning::parse_block_list()
         BlockList.insert(substr);
     }
     NNFUSION_LOG(INFO) << "Kernel Tuning BlockList: " << join(BlockList, ", ");
+    return true;
 }
 
 void extract_tunning_status_from_kernel(std::string code, std::shared_ptr<TuningStatus> status)

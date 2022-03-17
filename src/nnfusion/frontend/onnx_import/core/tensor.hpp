@@ -99,6 +99,7 @@ namespace nnfusion
                                    onnx::TensorProto_DataType(m_tensor_proto->data_type()));
                         break;
                     }
+                    return element::f32;
                 }
 
                 operator onnx::TensorProto_DataType() const

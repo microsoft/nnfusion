@@ -72,6 +72,7 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other)
     other.m_data = nullptr;
     other.m_len = 0U;
     other.bufDelete();
+    return *this;
 }
 
 DataBuffer& DataBuffer::operator=(const DataBuffer& other)
@@ -79,6 +80,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other)
     m_type = other.m_type;
     resize(other.m_len);
     typeMemProto.at(m_type).f_copy(m_data, other.m_data, m_len);
+    return *this;
 }
 
 void DataBuffer::setElement(size_t idx, const void* ele)

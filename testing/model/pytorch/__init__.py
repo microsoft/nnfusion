@@ -42,6 +42,28 @@ def bert(batch_size):
     # inputs = (input_ids, token_type_ids, attention_mask, masked_lm_labels, next_sentence_label)
     return model, inputs
 
+def transformer(batch_size):
+    from transformers import EncoderDecoderModel, BertConfig, EncoderDecoderConfig
+    config = BertConfig(vocab_size=30522,
+                hidden_size=768,
+                num_hidden_layers=12,
+                num_attention_heads=12,
+                intermediate_size=3072,
+                max_position_embeddings=128,
+                attention_probs_dropout_prob=0.1,
+                hidden_dropout_prob=0.1,
+                batch_size=batch_size)
+    config2 = EncoderDecoderConfig.from_encoder_decoder_configs(config, config)
+    model = EncoderDecoderModel(config2)
+    input_ids = torch.LongTensor(np.ones([config.batch_size, config.max_position_embeddings]))
+    token_type_ids = torch.LongTensor(np.ones([config.batch_size, config.max_position_embeddings]))
+    attention_mask = torch.LongTensor(np.ones([config.batch_size, config.max_position_embeddings]))
+    masked_lm_labels = None # torch.LongTensor(np.ones([config.batch_size, config.max_position_embeddings]))
+    next_sentence_label = None # torch.LongTensor(np.ones([config.batch_size]))
+    inputs = (input_ids, attention_mask, token_type_ids)
+    # inputs = (input_ids, token_type_ids, attention_mask, masked_lm_labels, next_sentence_label)
+    return model, inputs
+
 def vit(batch_size):
     from vit_pytorch import ViT
     model = ViT(

@@ -18,8 +18,9 @@ def run_trt(prefix):
         for idx in range(parser.num_errors):
             print(parser.get_error(idx))
         raise RuntimeError()
-
-    engine = builder.build_cuda_engine(network)
+    config = builder.create_builder_config()
+    config.set_flag(trt.BuilderFlag.STRICT_TYPES)
+    engine = builder.build_engine(network, config)
     print("Built engine successfully.")
 
     tensors = []

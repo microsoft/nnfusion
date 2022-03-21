@@ -1,5 +1,6 @@
 import pytest
 import torch
+from torch.nn import functional as F
 
 import nnfusion
 
@@ -77,39 +78,68 @@ def test_module_no_grad():
 
 
 def test_jit_class_method_using_decorator():
-    class Foo(torch.nn.Module):
+    def linear(input, weight, bias):
+        return F.linear(input, weight, bias)
+    class Foo(torch.nn.Linear):
         @nnfusion.jit
         def foo(self, t):
             return t + t
         @nnfusion.jit
         def bar(self, t):
             return self.forward(t) + 1
-        def forward(self, t):
-            return t * t
 
-    model = Foo().cuda().eval()
+    model = Foo(8, 8).cuda().eval()
     t = torch.randn(1, 8, device="cuda")
     assert_allclose(t + t, model.foo(t))
-    assert_allclose(t * t + 1, model.bar(t))
+    assert_allclose(linear(t, model.weight, model.bias) + 1, model.bar(t))
 
-    class Bar(torch.nn.Module):
+    class Bar(torch.nn.Linear):
         @nnfusion.jit
         def forward(self, t):
-            return t + t
-    model = Bar().cuda().eval()
-    assert_allclose(t + t, model(t))
+            return super().forward(t)
+    model = Bar(8, 8).cuda().eval()
+    assert_allclose(linear(t, model.weight, model.bias), model(t))
 
 
 def test_jit_class_method_using_function():
+    def linear(input, weight, bias):
+        return F.linear(input, weight, bias)
+    class Foo(torch.nn.Linear):
+        def foo(self, t):
+            return self.forward(t) + 1
+
+    t = torch.randn(1, 8, device="cuda")
+    model = Foo(8, 8).cuda().eval()
+    assert_allclose(linear(t, model.weight, model.bias) + 1, model.foo(t))
+
+
+def test_jit_class_using_decorator():
     def func(t):
         return t + t
-    class Foo(torch.nn.Module):
+    def linear(input, weight, bias):
+        return F.linear(input, weight, bias)
+
+    @nnfusion.jit
+    class Foo(torch.nn.Linear):
+        @nnfusion.jit
         def foo(self, t):
             return func(t)
 
+    model = Foo(8, 8).cuda().eval()
     t = torch.randn(1, 8, device="cuda")
-    model = Foo().cuda().eval()
-    compare_torch_and_nrt(model.foo, t)
+    assert_allclose(linear(t, model.weight, model.bias), model(t))
+    assert_allclose(func(t), model.foo(t))
+
+
+def test_jit_class_using_function():
+    def linear(input, weight, bias):
+        return F.linear(input, weight, bias)
+
+    LinearJIT = nnfusion.jit(torch.nn.Linear)
+
+    model = LinearJIT(8, 8).cuda().eval()
+    t = torch.randn(1, 8, device="cuda")
+    assert_allclose(linear(t, model.weight, model.bias), model(t))
 
 
 @pytest.mark.xfail(reason=(

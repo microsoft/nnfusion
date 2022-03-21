@@ -60,6 +60,9 @@ class NNFusionRT:
             if not os.path.exists(self.onnx_path):
                 return True
 
+            if not os.path.exists(os.path.join(self.rt_dir, 'main_test')):
+                return True
+
             # Compare onnx file to check if modified
             with tempfile.TemporaryDirectory(dir=self.workdir) as tmp:
                 temp_onnx_path = os.path.join(tmp, "temp.onnx")

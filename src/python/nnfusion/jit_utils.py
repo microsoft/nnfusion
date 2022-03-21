@@ -15,27 +15,32 @@ class TorchModule(torch.nn.Module):
         return self.func(*args, **kwargs)
 
 
-def get_signature(obj):
+def get_signature(obj, suffix=''):
     """
     Signature of a function or torch.nn.Module instance to detect reusable
     kernel.
+    For details, please refer to https://github.com/microsoft/nnfusion/pull/379
     """
-    # For details, please refer to https://github.com/microsoft/nnfusion/pull/379
+
+    if isinstance(obj, torch.nn.Module):
+        return get_signature(obj.__class__)
+
+    if not (
+        inspect.isfunction(obj)
+        or inspect.ismethod(obj)
+        or inspect.isclass(obj)
+    ):
+        raise Exception(f"Not support type {obj} for get_signature")
+
     def get_qualname():
-        if inspect.isfunction(obj) or inspect.ismethod(obj):
-            name = obj.__qualname__
-        else:
-            name = obj.__class__.__qualname__
+        name = obj.__qualname__
         # Remove special chars to avoid the trouble of dealing with paths
         return re.sub("[<>]", "", name)
 
     def get_path():
         # Avoid collision between different files
-        if inspect.isfunction(obj) or inspect.ismethod(obj):
-            obj_path = inspect.getsourcefile(obj)
-        else:
-            obj_path = inspect.getsourcefile(obj.__class__)
+        obj_path = inspect.getsourcefile(obj)
         relpath = os.path.relpath(obj_path)
         return "-".join(Path(os.path.splitext(relpath)[0]).parts)
 
-    return "-".join(('nnf', get_path(), get_qualname()))
+    return "-".join(('nnf', get_path(), get_qualname())) + suffix

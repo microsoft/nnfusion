@@ -224,7 +224,7 @@ namespace nnfusion
                         tensor.set_raw_data(raw_data);
                     }
                 }
-            }
+            } // namespace
 
             GraphConvert::GraphConvert(const onnx::ModelProto& model_proto,
                                        const std::unordered_map<std::string, size_t>& dim_params,
@@ -411,8 +411,23 @@ namespace nnfusion
                     }
                     else
                     {
-                        auto input_op = std::make_shared<op::Parameter>(
-                            input_value_info.get_element_type(), input_value_info.get_shape());
+                        std::shared_ptr<op::Parameter> input_op;
+                        if (FLAGS_ftraining_mode &&
+                            !(input_proto.name().find_first_not_of("0123456789") ==
+                              std::string::npos) &&
+                            (input_proto.name().compare(0, 6, "input_") != 0))
+                        {
+                            input_op =
+                                std::make_shared<op::Parameter>(input_value_info.get_element_type(),
+                                                                input_value_info.get_shape(),
+                                                                false,
+                                                                true);
+                        }
+                        else
+                        {
+                            input_op = std::make_shared<op::Parameter>(
+                                input_value_info.get_element_type(), input_value_info.get_shape());
+                        }
                         input_op->set_name(input_proto.name());
                         input_gnode = m_graph->add_node_and_edge(input_op, graph::GNodeVector({}));
                         m_node_map[input_proto.name()] = {GNodeIndex{input_gnode}};

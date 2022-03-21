@@ -25,6 +25,11 @@
 #include "util/graph_convert.hpp"
 
 DECLARE_bool(ftraining_mode);
+DEFINE_bool(
+    fonnx_external_optimization,
+    true,
+    "Optimize ONNX graph with external tool (models/pytorch2onnx/ort_run_frozen.py), it may have "
+    "problems in training mode (e.g., constant folding on training parameters)");
 
 namespace nnfusion
 {
@@ -53,7 +58,7 @@ namespace nnfusion
             load_onnx_model(const std::string& path,
                             const std::unordered_map<std::string, size_t>& dim_params)
         {
-            if (FLAGS_ftraining_mode)
+            if (!FLAGS_fonnx_external_optimization)
             {
                 string m_path = path;
                 std::ifstream ifs{m_path, std::ios::in | std::ios::binary};
@@ -70,8 +75,18 @@ namespace nnfusion
                 return graph;
             }
 
-            NNFUSION_LOG(INFO) << "Optimizing ONNX Graph with External Tool "
-                                  "(models/pytorch2onnx/ort_run_frozen.py)";
+            if (!FLAGS_ftraining_mode)
+            {
+                NNFUSION_LOG(INFO) << "Optimizing ONNX Graph with External Tool "
+                                      "(models/pytorch2onnx/ort_run_frozen.py)";
+            }
+            else
+            {
+                NNFUSION_LOG(INFO)
+                    << "Optimizing ONNX Graph with External Tool "
+                       "(models/pytorch2onnx/ort_run_frozen.py). This may have problems in "
+                       "training mode (e.g., constant folding on training parameters).";
+            }
             string optimized_filename = string(tmpnam(nullptr));
             string m_path = path;
             string script_path =

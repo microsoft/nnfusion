@@ -1,33 +1,32 @@
 import filecmp
-import inspect
 import os
-import re
 import tempfile
-from pathlib import Path
 
 import torch
 import torch.onnx
 
 from .data_format import cast_pytorch_tensor
 from .executor import Executor
-from .jit_utils import TorchModule
 from .session import build, codegen, modify_nnfusion_rt
 
 
 class NNFusionRT:
-    def __init__(self, model, server="127.0.0.1:8880", steps=1000):
+    def __init__(self, model, signature, steps=1000):
         self.model = model
+        self.weight_dict = {
+            name: cast_pytorch_tensor(tensor)
+            for name, tensor in model.state_dict().items()
+        }
 
-        self.workdir = os.path.join("tmp", self._signature)
+        self.workdir = os.path.join("tmp", signature)
         if not os.path.isdir(self.workdir):
             os.makedirs(self.workdir)
 
         self.onnx_path = os.path.join(self.workdir, "model.onnx")
         self.rt_dir = os.path.join(self.workdir, "nnfusion_rt/cuda_codegen")
 
-        self.compile_flag = self._get_compile_flag(steps, server)
+        self.compile_flag = self._get_compile_flag(steps)
         self.executor = None
-        self._reserved_mem = None
 
     def compile(self, inputs, outputs, force_build=False):
 
@@ -36,7 +35,9 @@ class NNFusionRT:
             output_names = ["output" + str(i) for i in range(len(outputs))]
             torch.onnx.export(self.model, inputs, fname,
                               input_names=input_names,
-                              output_names=output_names)  # , opset_version=11)
+                              output_names=output_names,
+                              export_params=False,
+                              )  # , opset_version=11)
 
         def check_if_need_build():
             if not os.path.exists(self.onnx_path):
@@ -70,24 +71,23 @@ class NNFusionRT:
 
         self.executor = Executor(self.rt_dir, device=inputs[0].device)
 
-
     def run(self, inputs, outputs):
         if not isinstance(inputs, (tuple, list)):
             inputs = [inputs]
         if not isinstance(outputs, (tuple, list)):
             outputs = [outputs]
 
-        in_dict = {
-            desc.name: cast_pytorch_tensor(tensor)
-            for desc, tensor in zip(self.executor.get_inputs(), inputs)
-        }
+        in_dict = dict(self.weight_dict, **{
+            f'input{i}': cast_pytorch_tensor(tensor)
+            for i, tensor in enumerate(inputs)
+        })
         out_dict = {
-            desc.name: cast_pytorch_tensor(tensor)
-            for desc, tensor in zip(self.executor.get_outputs(), outputs)
+            f'output{i}': cast_pytorch_tensor(tensor)
+            for i, tensor in enumerate(outputs)
         }
-        self.executor(in_dict, out_dict)
+        self.executor(in_dict, out_dict, strict=False)
 
-    def _get_compile_flag(self, tuning_step, codegen_server):
+    def _get_compile_flag(self, tuning_step):
         return " ".join([
             "-f onnx",
             "-fextern_result_memory=1",
@@ -96,31 +96,5 @@ class NNFusionRT:
             "-ffunction_codegen=1",
             "-fkernel_fusion_level=0",
             # "-fantares_mode=1",
-            # f"-fantares_codegen_server={codegen_server}",
             "-fblockfusion_level=0",
         ])
-
-    @property
-    def _signature(self):
-        """
-        Signature of a function or torch.nn.Module instance to detect reusable
-        kernel.
-        """
-        def get_qualname():
-            if isinstance(self.model, TorchModule):
-                name = self.model.func.__qualname__
-            else:
-                name = self.model.__class__.__qualname__
-            # Remove special chars to avoid the trouble of dealing with paths
-            return re.sub("[<>]", "", name)
-
-        def get_path():
-            # Avoid collision between different files
-            if isinstance(self.model, TorchModule):
-                obj_path = inspect.getsourcefile(self.model.func)
-            else:
-                obj_path = inspect.getsourcefile(self.model.__class__)
-            relpath = os.path.relpath(obj_path)
-            return "-".join(Path(os.path.splitext(relpath)[0]).parts)
-
-        return "-".join((get_path(), get_qualname()))

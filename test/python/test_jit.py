@@ -72,10 +72,59 @@ def test_single_input_multi_identical_output():
 
 def test_module_no_grad():
     model = torch.nn.Linear(8, 8).cuda().eval()
-    for param in model.parameters():
-        param.requires_grad = False
     t = torch.randn(1, 8, device="cuda")
     compare_torch_and_nrt(model, t)
+
+
+def test_jit_class_method_using_decorator():
+    class Foo(torch.nn.Module):
+        @nnfusion.jit
+        def foo(self, t):
+            return t + t
+        @nnfusion.jit
+        def bar(self, t):
+            return self.forward(t) + 1
+        def forward(self, t):
+            return t * t
+
+    model = Foo().cuda().eval()
+    t = torch.randn(1, 8, device="cuda")
+    assert_allclose(t + t, model.foo(t))
+    assert_allclose(t * t + 1, model.bar(t))
+
+    class Bar(torch.nn.Module):
+        @nnfusion.jit
+        def forward(self, t):
+            return t + t
+    model = Bar().cuda().eval()
+    assert_allclose(t + t, model(t))
+
+
+def test_jit_class_method_using_function():
+    def func(t):
+        return t + t
+    class Foo(torch.nn.Module):
+        def foo(self, t):
+            return func(t)
+
+    t = torch.randn(1, 8, device="cuda")
+    model = Foo().cuda().eval()
+    compare_torch_and_nrt(model.foo, t)
+
+
+@pytest.mark.xfail(reason=(
+    "nnfusion codegen and compile success exit with 0 "
+    "but para_info.json is null"))
+def test_nested_jit():
+    @nnfusion.jit
+    def func1(t): return t + t
+
+    @nnfusion.jit
+    def func2(t): return func1(t) + 1
+
+    t = torch.randn(1, 8, device="cuda")
+    assert_allclose(t + t, func1(t))
+    assert_allclose(t + t + 1, func2(t))
 
 
 @pytest.mark.parametrize("step", [1, 5])

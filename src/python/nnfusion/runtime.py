@@ -12,6 +12,14 @@ from .session import build, codegen, modify_nnfusion_rt
 
 class NNFusionRT:
     def __init__(self, model, signature, steps=1000):
+        """
+        Parameters:
+            model: the `torch.nn.Module` to be compiled.
+            signature: signature of model so that we can reuse compiled
+                kernel (if any).
+            steps: number of steps for kernel tuning.
+        """
+
         self.model = model
         self.weight_dict = {
             name: cast_pytorch_tensor(tensor)
@@ -29,6 +37,15 @@ class NNFusionRT:
         self.executor = None
 
     def compile(self, inputs, outputs, force_build=False):
+        """
+        Perform nnfusion codegen and compilation for target input sizes.
+        Skip if a kernel with the same signature is found.
+
+        Parameters:
+            inputs: a list of model inputs.
+            outputs: a list of model outputs.
+            force_build: whether to replace the previous kernel (if any).
+        """
 
         def export_onnx(fname):
             input_names = ["input" + str(i) for i in range(len(inputs))]
@@ -72,6 +89,13 @@ class NNFusionRT:
         self.executor = Executor(self.rt_dir, device=inputs[0].device)
 
     def run(self, inputs, outputs):
+        """
+        Perform the computation. The result will be saved in `outputs`.
+
+        Parameters:
+            inputs: the input tensor(s). Can be a list or tuple.
+            outputs: the output tensor(s). Can be a list or tuple.
+        """
         if not isinstance(inputs, (tuple, list)):
             inputs = [inputs]
         if not isinstance(outputs, (tuple, list)):

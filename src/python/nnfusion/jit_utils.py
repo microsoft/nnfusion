@@ -20,6 +20,7 @@ def get_signature(obj):
     Signature of a function or torch.nn.Module instance to detect reusable
     kernel.
     """
+    # For details, please refer to https://github.com/microsoft/nnfusion/pull/379
     def get_qualname():
         if inspect.isfunction(obj) or inspect.ismethod(obj):
             name = obj.__qualname__

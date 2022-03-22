@@ -109,8 +109,8 @@ def jit(_obj=None, signature=None, **kwargs):
             or is_method_of_instance(obj, torch.nn.Module)
         ):
             raise RuntimeError(
-                "Accept function or torch.nn.Module or class method of "
-                f"torch.nn.Module but found {obj}"
+                "Accept function or torch.nn.Module instance/method/class "
+                f"but found {obj}"
             )
 
         if is_subclass_of_cls(obj, torch.nn.Module):
@@ -119,7 +119,9 @@ def jit(_obj=None, signature=None, **kwargs):
                 Dummy class using dynamic inheritance to override forward
                 function and keep its signature.
                 """
-                @jit(signature='.'.join([get_signature(obj), 'forward']),
+                @jit(signature=('.'.join([get_signature(obj), 'forward'])
+                                if signature is None else
+                                signature),
                      **kwargs)
                 def forward(self, *args, **kwargs):
                     return super().forward(*args, **kwargs)

@@ -40,6 +40,10 @@ def compare_torch_and_nrt(obj, *inputs, step=1, run=None):
     assert_allclose(result_torch, result_nrt)
 
 
+def linear(input, weight, bias):
+    return F.linear(input, weight, bias)
+
+
 def test_single_input_multi_output():
     def func(t):
         return t + t, t * t
@@ -71,6 +75,15 @@ def test_single_input_multi_identical_output():
     compare_torch_and_nrt(func, t)
 
 
+@pytest.mark.xfail(reason="Compilation Error")
+def test_single_input_multi_identical_output_advanced():
+    def func(t):
+        t2 = t + t
+        return t2, t2
+    t = torch.randn(8, device="cuda")
+    compare_torch_and_nrt(func, t)
+
+
 def test_module_no_grad():
     model = torch.nn.Linear(8, 8).cuda().eval()
     t = torch.randn(1, 8, device="cuda")
@@ -78,8 +91,6 @@ def test_module_no_grad():
 
 
 def test_jit_class_method_using_decorator():
-    def linear(input, weight, bias):
-        return F.linear(input, weight, bias)
     class Foo(torch.nn.Linear):
         @nnfusion.jit
         def foo(self, t):
@@ -102,8 +113,6 @@ def test_jit_class_method_using_decorator():
 
 
 def test_jit_class_method_using_function():
-    def linear(input, weight, bias):
-        return F.linear(input, weight, bias)
     class Foo(torch.nn.Linear):
         def foo(self, t):
             return self.forward(t) + 1
@@ -116,8 +125,6 @@ def test_jit_class_method_using_function():
 def test_jit_class_using_decorator():
     def func(t):
         return t + t
-    def linear(input, weight, bias):
-        return F.linear(input, weight, bias)
 
     @nnfusion.jit
     class Foo(torch.nn.Linear):
@@ -132,9 +139,6 @@ def test_jit_class_using_decorator():
 
 
 def test_jit_class_using_function():
-    def linear(input, weight, bias):
-        return F.linear(input, weight, bias)
-
     LinearJIT = nnfusion.jit(torch.nn.Linear)
 
     model = LinearJIT(8, 8).cuda().eval()

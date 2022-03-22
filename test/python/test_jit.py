@@ -40,10 +40,6 @@ def compare_torch_and_nrt(obj, *inputs, step=1, run=None):
     assert_allclose(result_torch, result_nrt)
 
 
-def linear(input, weight, bias):
-    return F.linear(input, weight, bias)
-
-
 def test_single_input_multi_output():
     def func(t):
         return t + t, t * t
@@ -84,7 +80,7 @@ def test_single_input_multi_identical_output_advanced():
     compare_torch_and_nrt(func, t)
 
 
-def test_module_no_grad():
+def test_jit_instance_using_function():
     model = torch.nn.Linear(8, 8).cuda().eval()
     t = torch.randn(1, 8, device="cuda")
     compare_torch_and_nrt(model, t)
@@ -102,14 +98,14 @@ def test_jit_class_method_using_decorator():
     model = Foo(8, 8).cuda().eval()
     t = torch.randn(1, 8, device="cuda")
     assert_allclose(t + t, model.foo(t))
-    assert_allclose(linear(t, model.weight, model.bias) + 1, model.bar(t))
+    assert_allclose(F.linear(t, model.weight, model.bias) + 1, model.bar(t))
 
     class Bar(torch.nn.Linear):
         @nnfusion.jit
         def forward(self, t):
             return super().forward(t)
     model = Bar(8, 8).cuda().eval()
-    assert_allclose(linear(t, model.weight, model.bias), model(t))
+    assert_allclose(F.linear(t, model.weight, model.bias), model(t))
 
 
 def test_jit_class_method_using_function():
@@ -119,7 +115,7 @@ def test_jit_class_method_using_function():
 
     t = torch.randn(1, 8, device="cuda")
     model = Foo(8, 8).cuda().eval()
-    assert_allclose(linear(t, model.weight, model.bias) + 1, model.foo(t))
+    assert_allclose(F.linear(t, model.weight, model.bias) + 1, model.foo(t))
 
 
 def test_jit_class_using_decorator():
@@ -134,7 +130,7 @@ def test_jit_class_using_decorator():
 
     model = Foo(8, 8).cuda().eval()
     t = torch.randn(1, 8, device="cuda")
-    assert_allclose(linear(t, model.weight, model.bias), model(t))
+    assert_allclose(F.linear(t, model.weight, model.bias), model(t))
     assert_allclose(func(t), model.foo(t))
 
 
@@ -143,7 +139,7 @@ def test_jit_class_using_function():
 
     model = LinearJIT(8, 8).cuda().eval()
     t = torch.randn(1, 8, device="cuda")
-    assert_allclose(linear(t, model.weight, model.bias), model(t))
+    assert_allclose(F.linear(t, model.weight, model.bias), model(t))
 
 
 @pytest.mark.xfail(reason=(

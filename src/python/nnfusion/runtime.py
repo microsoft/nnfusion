@@ -8,6 +8,7 @@ import torch.onnx
 from .data_format import cast_pytorch_tensor
 from .executor import Executor
 from .session import build, codegen, modify_nnfusion_rt
+from .utils import get_sha256_of_file, get_sha256_of_str
 
 
 class NNFusionRT:
@@ -16,7 +17,7 @@ class NNFusionRT:
         Parameters:
             model: the `torch.nn.Module` to be compiled.
             config: nnfusion compilation config
-            signature: signature of model so that we can reuse compiled
+            signature (str): signature of model so that we can reuse compiled
                 kernel (if any).
         """
 
@@ -26,17 +27,14 @@ class NNFusionRT:
             for name, tensor in model.state_dict().items()
         }
 
-        self.workdir = os.path.join("tmp", signature)
-        if not os.path.isdir(self.workdir):
-            os.makedirs(self.workdir)
-
-        self.onnx_path = os.path.join(self.workdir, "model.onnx")
-        self.rt_dir = os.path.join(self.workdir, "nnfusion_rt/cuda_codegen")
+        self.root_dir = os.path.join("nnf-kernels", signature)
+        if not os.path.isdir(self.root_dir):
+            os.makedirs(self.root_dir)
 
         self.compile_flag = self._get_compile_flag(config)
         self.executor = None
 
-    def compile(self, inputs, outputs, force_build=False):
+    def compile(self, inputs, outputs):
         """
         Perform nnfusion codegen and compilation for target input sizes.
         Skip if a kernel with the same signature is found.
@@ -44,7 +42,6 @@ class NNFusionRT:
         Parameters:
             inputs: a list of model inputs.
             outputs: a list of model outputs.
-            force_build: whether to replace the previous kernel (if any).
         """
 
         def export_onnx(fname):
@@ -57,39 +54,45 @@ class NNFusionRT:
                               )  # , opset_version=11)
 
         def check_if_need_build():
-            if not os.path.exists(self.onnx_path):
-                return True
-
-            if not os.path.exists(os.path.join(self.rt_dir, 'main_test')):
-                return True
+            """
+            Note that this function assume no hash collision 
+            """
+            need_build = False
 
             # Compare onnx file to check if modified
-            with tempfile.TemporaryDirectory(dir=self.workdir) as tmp:
+            with tempfile.TemporaryDirectory(dir=self.root_dir) as tmp:
                 temp_onnx_path = os.path.join(tmp, "temp.onnx")
                 export_onnx(temp_onnx_path)
 
-                if not filecmp.cmp(temp_onnx_path, self.onnx_path):
-                    # Replace the original to avoid exporting onnx twice
-                    os.remove(self.onnx_path)
-                    os.link(temp_onnx_path, self.onnx_path)
-                    return True
-            return False
+                onnx_hash = get_sha256_of_file(temp_onnx_path)
+                onnx_dir = os.path.join(self.root_dir, onnx_hash)
 
-        def do_compile():
-            if not os.path.exists(self.onnx_path):
-                export_onnx(self.onnx_path)
+                flag_hash = get_sha256_of_str(self.compile_flag)
+                flag_dir = os.path.join(onnx_dir, flag_hash)
+                if not os.path.isdir(flag_dir):
+                    os.makedirs(flag_dir)
 
-            codegen(self.onnx_path, self.compile_flag, self.workdir)
-            modify_nnfusion_rt(self.rt_dir)
-            build(self.rt_dir)
+                onnx_path = os.path.join(onnx_dir, "model.onnx")
+                if not os.path.exists(onnx_path):
+                    os.link(temp_onnx_path, onnx_path)
+                    need_build = True
 
-        if force_build and os.path.exists(self.onnx_path):
-            os.remove(self.onnx_path)
+                nnf_dir = os.path.join(flag_dir, "nnfusion_rt/cuda_codegen")
+                if not os.path.exists(os.path.join(nnf_dir, 'libnnfusion_naive_rt.so')):
+                    need_build = True
 
-        if check_if_need_build():
-            do_compile()
+            return need_build, onnx_path, flag_dir, nnf_dir
 
-        self.executor = Executor(self.rt_dir, device=inputs[0].device)
+        def do_compile(onnx_path, work_dir, nnf_dir):
+            codegen(onnx_path, self.compile_flag, work_dir)
+            modify_nnfusion_rt(nnf_dir)
+            build(nnf_dir)
+
+        need_build, onnx_path, work_dir, nnf_dir = check_if_need_build()
+        if need_build:
+            do_compile(onnx_path, work_dir, nnf_dir)
+
+        self.executor = Executor(nnf_dir, device=inputs[0].device)
 
     def run(self, inputs, outputs):
         """

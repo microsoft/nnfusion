@@ -133,7 +133,7 @@ def parse_config(tune, tuning_steps, config):
                 "Expected optional 'tune' argument of type bool "
                 "but found {tune}"
             )
-        config['antares_mode'] = True
+        config['antares_mode'] = tune
 
     return config
 

@@ -6,6 +6,7 @@ import torch
 
 from .jit_utils import TorchModule, get_signature
 from .runtime import NNFusionRT
+from .config import Config
 
 
 def is_method_of_instance(obj, cls):
@@ -16,8 +17,8 @@ def is_subclass_of_cls(obj, cls):
     return isclass(obj) and issubclass(obj, cls)
 
 
-def get_nrt_forward(obj, signature, outputs, *inputs,
-                    is_method=False, **kwargs):
+def get_nrt_forward(obj, signature, config, outputs, *inputs,
+                    is_method=False):
     """
     Return a wrapped forward function that using nnf as runtime
     """
@@ -32,7 +33,8 @@ def get_nrt_forward(obj, signature, outputs, *inputs,
     if output_is_tensor:
         outputs = [outputs]
 
-    nnf = NNFusionRT(obj, signature, **kwargs)
+    # TODO nnf = NNFusionRT(obj, signature, **kwargs)
+    nnf = NNFusionRT(obj, config, signature)
     nnf.compile(inputs, outputs)
 
     # TODO free outputs and only save desc?
@@ -53,7 +55,7 @@ def get_nrt_forward(obj, signature, outputs, *inputs,
     return forward
 
 
-def nrt_forward(obj, *inputs, is_method=False, signature=None, **kwargs):
+def nrt_forward(obj, *inputs, config=None, signature=None, is_method=False):
     if signature is None:
         signature = get_signature(obj)
 
@@ -90,58 +92,113 @@ def nrt_forward(obj, *inputs, is_method=False, signature=None, **kwargs):
         forward.first_call = True
         self_.forward = forward
 
-        return get_nrt_forward(self_, signature, outputs,
-                               *inputs, is_method=True, **kwargs)
+        return get_nrt_forward(self_, signature, config, outputs,
+                               *inputs, is_method=True)
 
     if isfunction(obj) or is_method_of_instance(obj, torch.nn.Module):
-        return get_nrt_forward(TorchModule(obj), signature, outputs,
-                               *inputs, **kwargs)
-    return get_nrt_forward(obj, signature, outputs, *inputs, **kwargs)
+        return get_nrt_forward(TorchModule(obj), signature, config, outputs,
+                               *inputs)
+    return get_nrt_forward(obj, signature, config, outputs, *inputs)
 
 
-def jit(_obj=None, signature=None, **kwargs):
-    def decorator_jit(obj):
+def parse_config(tune, tuning_steps, config):
+    if config is None:
+        config = Config()
+    elif type(config) is dict:
+        config = Config(config)
 
-        if not (
-            isfunction(obj)
-            or isinstance(obj, torch.nn.Module)
-            or is_subclass_of_cls(obj, torch.nn.Module)
-            or is_method_of_instance(obj, torch.nn.Module)
-        ):
-            raise RuntimeError(
-                "Accept function or torch.nn.Module instance/method/class "
-                f"but found {obj}"
+    if not type(config) is Config:
+        raise TypeError(
+            "Expected optional 'config' argument of type dict or "
+            "nnfusion.Config but found {config}"
+        )
+
+    if tuning_steps is not None:
+        if not isinstance(tuning_steps, int):
+            raise TypeError(
+                "Expected optional 'tuning_steps' argument of type int "
+                "but found {tuning_steps}"
+            )
+        if tune is False:
+            raise ValueError(
+                f"Conflict is detected: tune={tune} and "
+                f"tuning_steps={tuning_steps}"
             )
 
-        if is_subclass_of_cls(obj, torch.nn.Module):
-            class JITModule(obj):
-                """
-                Dummy class using dynamic inheritance to override forward
-                function and keep its signature.
-                """
-                @jit(signature=('.'.join([get_signature(obj), 'forward'])
-                                if signature is None else
-                                signature),
-                     **kwargs)
-                def forward(self, *args, **kwargs):
-                    return super().forward(*args, **kwargs)
-            return JITModule
+        tune = True
+        config['kernel_tuning_steps'] = tuning_steps
 
-        @functools.wraps(obj)
+    if tune is not None:
+        if not isinstance(tune, bool):
+            raise TypeError(
+                "Expected optional 'tune' argument of type bool "
+                "but found {tune}"
+            )
+        config['antares_mode'] = True
+
+    return config
+
+
+def check_obj_type(obj):
+    if not (
+        isfunction(obj)
+        or isinstance(obj, torch.nn.Module)
+        or is_subclass_of_cls(obj, torch.nn.Module)
+        or is_method_of_instance(obj, torch.nn.Module)
+    ):
+        raise TypeError(
+            "Expected function or torch.nn.Module instance/method/class "
+            f"but found {obj}"
+        )
+
+
+def jit_class(obj, config):
+    """
+    Return jitted class using dynamic inheritance to override the forward
+    function and keep its signature.
+    """
+    class JITModule(obj):
+        @jit(config=config,
+             _signature='.'.join([get_signature(obj), 'forward']))
+        def forward(self, *args, **kwargs):
+            return super().forward(*args, **kwargs)
+    return JITModule
+
+
+def jit(obj=None, *, tune=None, tuning_steps=None, config=None, _signature=None):
+    """
+    Parameters:
+        obj:
+        tune:
+        tuning_steps:
+        config:
+        _signature:
+    """
+
+    config = parse_config(tune, tuning_steps, config)
+
+    def _jit(_obj):
+
+        check_obj_type(_obj)
+
+        if is_subclass_of_cls(_obj, torch.nn.Module):
+            return jit_class(_obj, config)
+
+        @functools.wraps(_obj)
         def wrapper(*args):  # TODO support kwargs?
             if wrapper.forward is None:
-                wrapper.forward = nrt_forward(obj, *args,
-                                              signature=signature, **kwargs)
+                wrapper.forward = nrt_forward(_obj, *args,
+                                              config=config,
+                                              signature=_signature)
             return wrapper.forward(*args)
         wrapper.forward = None
 
-        # If jit an instance, return itself instead of only a function
-        if isinstance(obj, torch.nn.Module):
-            obj._orig_forward = obj.forward
-            obj.forward = wrapper
-            return obj
+        if isinstance(_obj, torch.nn.Module):
+            _obj._orig_forward = _obj.forward
+            _obj.forward = wrapper
+            return _obj
         return wrapper
 
-    if _obj is None:
-        return decorator_jit
-    return decorator_jit(_obj)
+    if obj is None:
+        return _jit
+    return _jit(obj)

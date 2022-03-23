@@ -11,13 +11,13 @@ from .session import build, codegen, modify_nnfusion_rt
 
 
 class NNFusionRT:
-    def __init__(self, model, signature, steps=1000):
+    def __init__(self, model, config, signature):
         """
         Parameters:
             model: the `torch.nn.Module` to be compiled.
+            config: nnfusion compilation config
             signature: signature of model so that we can reuse compiled
                 kernel (if any).
-            steps: number of steps for kernel tuning.
         """
 
         self.model = model
@@ -33,7 +33,7 @@ class NNFusionRT:
         self.onnx_path = os.path.join(self.workdir, "model.onnx")
         self.rt_dir = os.path.join(self.workdir, "nnfusion_rt/cuda_codegen")
 
-        self.compile_flag = self._get_compile_flag(steps)
+        self.compile_flag = self._get_compile_flag(config)
         self.executor = None
 
     def compile(self, inputs, outputs, force_build=False):
@@ -114,14 +114,8 @@ class NNFusionRT:
         }
         self.executor(in_dict, out_dict, strict=False)
 
-    def _get_compile_flag(self, tuning_step):
+    def _get_compile_flag(self, config):
         return " ".join([
             "-f onnx",
-            "-fextern_result_memory=1",
-            "-fkernel_tuning_steps=" + str(tuning_step),
-            "-fir_based_fusion=1",
-            "-ffunction_codegen=1",
-            "-fkernel_fusion_level=0",
-            # "-fantares_mode=1",
-            "-fblockfusion_level=0",
+            config.to_flag()
         ])

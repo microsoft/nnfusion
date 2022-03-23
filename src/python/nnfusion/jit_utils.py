@@ -16,6 +16,8 @@ class TorchModule(torch.nn.Module):
 
 
 def get_signature(obj):
+    return get_primary_signature(obj)
+def get_primary_signature(obj):
     """
     Signature of an object to detect reusable kernel.
     """

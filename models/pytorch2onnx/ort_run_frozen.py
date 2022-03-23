@@ -82,7 +82,7 @@ if args.optimized_model_filepath != '':
 for k, v in args.symbolic_dims.items():
     sess_options.add_free_dimension_override_by_name(k, int(v))
 
-ort_session = ort.InferenceSession(args.file, sess_options)
+ort_session = ort.InferenceSession(args.file, sess_options, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
 
 if args.provider != '':
     ort_session.set_providers([args.provider])

@@ -1,4 +1,5 @@
 class Config(dict):
+    """NNFusion compilation flags"""
     def __init__(self,
                  *args,
                  antares_mode=True,
@@ -9,7 +10,7 @@ class Config(dict):
                  kernel_fusion_level=0,
                  kernel_tuning_steps=1000,
                  **kwargs):
-
+        """A `dict` with default values"""
         locals_ = locals()
         super().__init__({
             flag: locals_[flag]

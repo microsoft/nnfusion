@@ -168,11 +168,20 @@ def jit_class(obj, config):
 def jit(obj=None, *, tune=None, tuning_steps=None, config=None, _signature=None):
     """
     Parameters:
-        obj:
-        tune:
-        tuning_steps:
-        config:
-        _signature:
+        obj (function, `torch.nn.Module` instance/method/class):
+            The target object to be traced. When `obj` is an instance or a
+            class, it is equivalent to trace its `forward` function.
+        tune (Optional[bool]):
+            Whether to tune kernel.
+            By default it follows `config`, overwrite `config` if set.
+        tuning_steps (Optional[int]):
+            Number of kernel tuning steps.
+            By default it follows `config`, overwrite `config` if set.
+        config (Optional[dict, nnfusion.Config]):
+            NNFusion compilation config.
+            By default it will be set to `nnfusion.Config()`.
+            Pass a `dict` to overwrite default config or directly pass
+            in an instance of `nnfusion.Config`.
     """
 
     config = parse_config(tune, tuning_steps, config)

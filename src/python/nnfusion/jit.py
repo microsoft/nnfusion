@@ -109,14 +109,14 @@ def parse_config(tune, tuning_steps, config):
     if not type(config) is Config:
         raise TypeError(
             "Expected optional 'config' argument of type dict or "
-            "nnfusion.Config but found {config}"
+            f"nnfusion.Config but found {config}"
         )
 
     if tuning_steps is not None:
         if not isinstance(tuning_steps, int):
             raise TypeError(
                 "Expected optional 'tuning_steps' argument of type int "
-                "but found {tuning_steps}"
+                f"but found {tuning_steps}"
             )
         if tune is False:
             raise ValueError(
@@ -131,7 +131,7 @@ def parse_config(tune, tuning_steps, config):
         if not isinstance(tune, bool):
             raise TypeError(
                 "Expected optional 'tune' argument of type bool "
-                "but found {tune}"
+                f"but found {tune}"
             )
         config['antares_mode'] = tune
 
@@ -171,16 +171,16 @@ def jit(obj=None, *, tune=None, tuning_steps=None, config=None, _signature=None)
             The target object to be traced. When `obj` is an instance or a
             class, it is equivalent to trace its `forward` function.
         tune (Optional[bool]):
-            Whether to tune kernel.
-            By default it follows `config`, overwrite `config` if set.
+            Whether to tune kernel. By default it follows `config`.
+            If set, it overwrites `config`.
         tuning_steps (Optional[int]):
-            Number of kernel tuning steps.
-            By default it follows `config`, overwrite `config` if set.
+            Number of kernel tuning steps. By default it follows `config`.
+            If set, it overwrites `config` and `tune`.
         config (Optional[dict, nnfusion.Config]):
             NNFusion compilation config.
             By default it will be set to `nnfusion.Config()`.
-            Pass a `dict` to overwrite default config or directly pass
-            in an instance of `nnfusion.Config`.
+            Pass a `dict` to overwrite default config or directly pass an
+            instance of `nnfusion.Config`.
     """
 
     config = parse_config(tune, tuning_steps, config)

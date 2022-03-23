@@ -8,7 +8,7 @@
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-DECLARE_string(fantares_codegen_server);
+DECLARE_bool(fantares_mode);
 
 namespace nnfusion
 {
@@ -33,7 +33,7 @@ namespace nnfusion
                     : HLSLKernelEmitter(ctx)
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
-                    if (!FLAGS_fantares_codegen_server.empty())
+                    if (FLAGS_fantares_mode)
                     {
                         auto ir = nnfusion::op::get_translation(ctx->gnode);
                         if (!ir.empty())

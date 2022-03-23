@@ -12,10 +12,12 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <map>
 #include <algorithm>
 #include <numeric>
 #include <chrono>
+#include <iomanip>
 #include <direct.h>
 
 #ifdef _GAMING_XBOX_SCARLETT
@@ -48,7 +50,30 @@ using namespace std;
 using namespace Microsoft::WRL;
 
 
-#define IFE(x)  ((FAILED(x)) ? (printf((x) == E_OUTOFMEMORY ? "Error-line: (%s) %d\n\nDX out of memory": "Error-line: (%s) %d\n\nPossible Reason:\n\tWindows TDR might be triggered.\n\tTo avoid this, please download and apply https://github.com/microsoft/antares/releases/download/v0.1.0/antares_hlsl_tdr_v0.1.reg into Windows registry and reboot your system to take effect.\nIf this is not fixed, please report an issue to https://github.com/microsoft/antares/issues\n\n", __FILE__, __LINE__), abort(), 0): 1)
+string error_string(HRESULT x, string FILE, int LINE)
+{
+    string e_str = "Error-line: (" + FILE + ") " + std::to_string(LINE) + "\n\n";
+    if (x == D3D12_ERROR_ADAPTER_NOT_FOUND) e_str += "Reason: The specified cached PSO was created on a different adapter and cannot be reused on the current adapter.\n";
+    else if (x == D3D12_ERROR_DRIVER_VERSION_MISMATCH) e_str += "Reason: The specified cached PSO was created on a different driver version and cannot be reused on the current adapter.\n";
+    else if (x == DXGI_ERROR_INVALID_CALL) e_str += "Reason: The method call is invalid. For example, a method's parameter may not be a valid pointer.\n";
+    else if (x == DXGI_ERROR_WAS_STILL_DRAWING) e_str += "Reason: The previous blit operation that is transferring information to or from this surface is incomplete.\n";
+    else if (x == E_FAIL) e_str += "Reason: Attempted to create a device with the debug layer enabled and the layer is not installed.\n";
+    else if (x == E_INVALIDARG) e_str += "Reason: An invalid parameter was passed to the returning function.\n";
+    else if (x == E_OUTOFMEMORY) e_str += "Reason: Direct3D could not allocate sufficient memory to complete the call.\n";
+    else if (x == E_NOTIMPL) e_str += "Reason: The method call isn't implemented with the passed parameter combination.\n";
+    else if (x == S_FALSE) e_str += "Reason: Alternate success value, indicating a successful but nonstandard completion (the precise meaning depends on context).\n";
+    else
+    {
+        std::stringstream stream;
+        stream << "0x"
+            << std::setfill('0') << std::setw(sizeof(x) * 2)
+            << std::hex << x;
+        e_str += "Unknown reason, d3d error code: " + stream.str() + ".\n";
+    }
+    return e_str;
+}
+
+#define IFE(x)  ((FAILED(x)) ? (printf(error_string(x, __FILE__, __LINE__).c_str()), abort(), 0): 1)
 
 namespace {
 

@@ -43,16 +43,32 @@ namespace
         ret.push_back(str.substr(it));
         return std::move(ret);
     };
-}
+} // namespace
 
 std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
 {
-    if (FLAGS_fantares_codegen_server == "")
-        return std::make_pair("", false); // FLAGS_fantares_codegen_server = "10.150.145.98:8881";
+    auto it = code_cache.find(expr);
+    if (it != code_cache.end())
+    {
+        return it->second;
+    }
+
     std::string response;
     bool tuned = false;
-    auto it = code_cache.find(expr);
-    if (it == code_cache.end())
+    // fetch from local cache folder
+    if (FLAGS_fantares_codegen_server.size() == 0)
+    {
+        std::size_t file_id = std::hash<std::string>{}(expr);
+        std::string cache_folder = "./kernel_cache";
+        auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+        NNFUSION_LOG(INFO) << "fetch kernel from: " << file_name;
+        std::ifstream ifs(file_name);
+        std::string code((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+        // TODO: verify the IR in the code is the same as expr
+        response = code;
+    }
+    // fetch from tuning server
+    else
     {
         CurlRequest req(FLAGS_fantares_codegen_server);
         req.add_custom_header(("COMPUTE_V1: " + expr).c_str());
@@ -60,22 +76,21 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
         if (!req.send_request(response))
         {
             NNFUSION_LOG(INFO) << "[Autogen] " << expr << " (tuned = " << -1 << ")";
-            code_cache[expr] = std::make_pair(response, -1);
+            // code_cache[expr] = std::make_pair(response, -1);
             return std::make_pair("", tuned);
         }
-        if (strncmp(response.c_str(), "[ERROR]", 7) == 0)
-        {
-            NNFUSION_LOG(ERROR) << expr << "\n" << response;
-            return std::make_pair("", tuned);
-        }
-        tuned = response.find("\n// Saved Perf =") != std::string::npos;
-
-        NNFUSION_LOG(INFO) << "[Autogen] " << expr << " (tuned = " << tuned << ")";
-        code_cache[expr] = std::make_pair(response, tuned);
-        return std::make_pair(std::move(response), tuned);
     }
-    else
-        return it->second;
+
+    if (strncmp(response.c_str(), "[ERROR]", 7) == 0)
+    {
+        NNFUSION_LOG(ERROR) << expr << "\n" << response;
+        return std::make_pair("", tuned);
+    }
+
+    tuned = response.find("\n// Saved Perf =") != std::string::npos;
+    //NNFUSION_LOG(INFO) << "[Autogen] " << expr << " (tuned = " << tuned << ")";
+    code_cache[expr] = std::make_pair(response, tuned);
+    return std::make_pair(response, tuned);
 }
 
 double AntaresKEImp::get_perf(const std::string& response)

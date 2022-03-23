@@ -1,4 +1,7 @@
-class Config(dict):
+from collections.abc import MutableMapping
+
+
+class Config(MutableMapping):
     """NNFusion compilation flags"""
     def __init__(self,
                  *args,
@@ -12,11 +15,12 @@ class Config(dict):
                  **kwargs):
         """A `dict` with default values"""
         locals_ = locals()
-        super().__init__({
+
+        self._storage = {
             flag: locals_[flag]
             for flag in self.__init__.__kwdefaults__
-        })
-        super().__init__(*args, **kwargs)
+        }
+        self._storage.update(dict(*args, **kwargs))
 
     @staticmethod
     def _parse_flag_value(flag, value):
@@ -25,6 +29,21 @@ class Config(dict):
 
     def to_flag(self):
         return ' '.join([
-            self._parse_flag_value(flag, self[flag])
-            for flag in sorted(self.keys())
+            self._parse_flag_value(flag, value)
+            for flag, value in sorted(self._storage.items())
         ])
+
+    def __iter__(self):
+        return iter(self._storage)
+
+    def __len__(self):
+        return len(self._storage)
+
+    def __getitem__(self, key):
+        return self._storage[key]
+
+    def __setitem__(self, key, value):
+        self._storage[key] = value
+
+    def __delitem__(self, key):
+        del self._storage[key]

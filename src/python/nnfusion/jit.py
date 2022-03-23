@@ -33,7 +33,6 @@ def get_nrt_forward(obj, signature, config, outputs, *inputs,
     if output_is_tensor:
         outputs = [outputs]
 
-    # TODO nnf = NNFusionRT(obj, signature, **kwargs)
     nnf = NNFusionRT(obj, config, signature)
     nnf.compile(inputs, outputs)
 

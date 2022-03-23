@@ -142,6 +142,14 @@ def test_jit_class_using_function():
     assert_allclose(F.linear(t, model.weight, model.bias), model(t))
 
 
+def test_jit_with_kwargs():
+    @nnfusion.jit(tune=True, config=nnfusion.Config(kernel_tuning_steps=5))
+    def func(t):
+        return t + t
+    t = torch.randn(8, device="cuda")
+    assert_allclose(t + t, func(t))
+
+
 @pytest.mark.xfail(reason=(
     "nnfusion codegen and compile success exit with 0 "
     "but para_info.json is null"))

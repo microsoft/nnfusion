@@ -1,6 +1,7 @@
 import filecmp
 import os
 import tempfile
+from pathlib import Path
 
 import torch
 import torch.onnx
@@ -12,13 +13,14 @@ from .utils import get_sha256_of_file, get_sha256_of_str
 
 
 class NNFusionRT:
-    def __init__(self, model, config, signature):
+    def __init__(self, model, config, signature, cache_dir="nnf-kernels"):
         """
         Parameters:
             model: the `torch.nn.Module` to be compiled.
             config: nnfusion compilation config
             signature (str): signature of model so that we can reuse compiled
                 kernel (if any).
+            cache_dir: path to save compiled kernels
         """
 
         self.model = model
@@ -27,9 +29,8 @@ class NNFusionRT:
             for name, tensor in model.state_dict().items()
         }
 
-        self.root_dir = os.path.join("nnf-kernels", signature)
-        if not os.path.isdir(self.root_dir):
-            os.makedirs(self.root_dir)
+        self.root_dir = Path(cache_dir) / signature
+        self.root_dir.mkdir(parents=True, exist_ok=True)
 
         self.compile_flag = self._get_compile_flag(config)
         self.executor = None
@@ -61,24 +62,23 @@ class NNFusionRT:
 
             # Compare onnx file to check if modified
             with tempfile.TemporaryDirectory(dir=self.root_dir) as tmp:
-                temp_onnx_path = os.path.join(tmp, "temp.onnx")
+                temp_onnx_path = Path(tmp) / "temp.onnx"
                 export_onnx(temp_onnx_path)
 
                 onnx_hash = get_sha256_of_file(temp_onnx_path)
-                onnx_dir = os.path.join(self.root_dir, onnx_hash)
-
                 flag_hash = get_sha256_of_str(self.compile_flag)
-                flag_dir = os.path.join(onnx_dir, flag_hash)
-                if not os.path.isdir(flag_dir):
-                    os.makedirs(flag_dir)
 
-                onnx_path = os.path.join(onnx_dir, "model.onnx")
-                if not os.path.exists(onnx_path):
+                onnx_dir = self.root_dir / onnx_hash
+                flag_dir = onnx_dir / flag_hash
+                flag_dir.mkdir(parents=True, exist_ok=True)
+
+                onnx_path = onnx_dir / "model.onnx"
+                if not onnx_path.is_file():
                     os.link(temp_onnx_path, onnx_path)
                     need_build = True
 
-                nnf_dir = os.path.join(flag_dir, "nnfusion_rt/cuda_codegen")
-                if not os.path.exists(os.path.join(nnf_dir, 'libnnfusion_naive_rt.so')):
+                nnf_dir = flag_dir / "nnfusion_rt" / "cuda_codegen"
+                if not nnf_dir.joinpath('libnnfusion_naive_rt.so').is_file():
                     need_build = True
 
             return need_build, onnx_path, flag_dir, nnf_dir

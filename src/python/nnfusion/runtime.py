@@ -1,4 +1,3 @@
-import filecmp
 import os
 import tempfile
 from pathlib import Path
@@ -56,7 +55,7 @@ class NNFusionRT:
 
         def check_if_need_build():
             """
-            Note that this function assume no hash collision 
+            Note that this function assume no hash collision
             """
             need_build = False
 

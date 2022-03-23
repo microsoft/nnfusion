@@ -1,14 +1,14 @@
 class Config(dict):
     def __init__(self,
-		 *args,
-            	 antares_mode=True,
-            	 blockfusion_level=0,
-            	 extern_result_memory=True,
-            	 function_codegen=True,
-            	 ir_based_fusion=False,
-            	 kernel_fusion_level=0,
-            	 kernel_tuning_steps=1000,
-		 **kwargs):
+                 *args,
+                 antares_mode=True,
+                 blockfusion_level=0,
+                 extern_result_memory=True,
+                 function_codegen=True,
+                 ir_based_fusion=False,
+                 kernel_fusion_level=0,
+                 kernel_tuning_steps=1000,
+                 **kwargs):
 
         locals_ = locals()
         super().__init__({
@@ -27,4 +27,3 @@ class Config(dict):
             self._parse_flag_value(flag, self[flag])
             for flag in sorted(self.keys())
         ])
-

@@ -181,6 +181,10 @@ def jit(obj=None, *, tune=None, tuning_steps=None, config=None, _signature=None)
             By default it will be set to `nnfusion.Config()`.
             Pass a `dict` to overwrite default config or directly pass an
             instance of `nnfusion.Config`.
+            For example, `@nnfusion.jit(tune=True,
+            config={'kernel_tuning_steps': 42})`
+            For more flags information, please execute the command `nnfusion`
+            in the terminal.
     """
 
     config = parse_config(tune, tuning_steps, config)

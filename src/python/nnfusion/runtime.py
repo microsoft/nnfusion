@@ -12,7 +12,9 @@ from .utils import get_sha256_of_file, get_sha256_of_str
 
 
 class NNFusionRT:
-    def __init__(self, model, config, signature, cache_dir="nnf-kernels"):
+    def __init__(self, model, config, signature,
+                 cache_dir="nnf-kernels",
+                 is_method=False):
         """
         Parameters:
             model: the `torch.nn.Module` to be compiled.
@@ -33,6 +35,8 @@ class NNFusionRT:
 
         self.compile_flag = self._get_compile_flag(config)
         self.executor = None
+
+        self.run = self._run_method if is_method else self._run
 
     def compile(self, inputs, outputs):
         """
@@ -93,7 +97,7 @@ class NNFusionRT:
 
         self.executor = Executor(nnf_dir, device=inputs[0].device)
 
-    def run(self, inputs, outputs):
+    def _run(self, inputs, outputs, weights=None):
         """
         Perform the computation. The result will be saved in `outputs`.
 
@@ -101,12 +105,14 @@ class NNFusionRT:
             inputs: the input tensor(s). Can be a list or tuple.
             outputs: the output tensor(s). Can be a list or tuple.
         """
+        if weights is None:
+            weights = self.weight_dict
         if not isinstance(inputs, (tuple, list)):
             inputs = [inputs]
         if not isinstance(outputs, (tuple, list)):
             outputs = [outputs]
 
-        in_dict = dict(self.weight_dict, **{
+        in_dict = dict(weights, **{
             f'input{i}': cast_pytorch_tensor(tensor)
             for i, tensor in enumerate(inputs)
         })
@@ -115,6 +121,13 @@ class NNFusionRT:
             for i, tensor in enumerate(outputs)
         }
         self.executor(in_dict, out_dict, strict=False)
+
+    def _run_method(self, obj, inputs, outputs):
+        weights = {
+            name: cast_pytorch_tensor(tensor)
+            for name, tensor in obj.state_dict().items()
+        }
+        return self._run(inputs, outputs, weights)
 
     def _get_compile_flag(self, config):
         return " ".join([

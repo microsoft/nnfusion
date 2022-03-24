@@ -33,20 +33,23 @@ def get_nrt_forward(obj, signature, config, outputs, *inputs,
     if output_is_tensor:
         outputs = [outputs]
 
-    nnf = NNFusionRT(obj, config, signature)
+    nnf = NNFusionRT(obj, config, signature, is_method=is_method)
     nnf.compile(inputs, outputs)
 
     # TODO free outputs and only save desc?
 
     def forward(*inputs):
-        if is_method:
-            _, *inputs = inputs
         results = [
             torch.empty_like(output)
             for output in outputs
         ]
-        inputs = list(inputs)
-        nnf.run(inputs, results)
+
+        if is_method:
+            obj, *inputs = inputs
+            nnf.run(obj, inputs, results)
+        else:
+            inputs = list(inputs)
+            nnf.run(inputs, results)
 
         if output_is_tensor:
             return results[0]

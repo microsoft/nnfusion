@@ -134,6 +134,17 @@ def test_jit_class_using_decorator():
     assert_allclose(func(t), model.foo(t))
 
 
+def test_jit_class_using_decorator_multi_instance():
+    @nnfusion.jit
+    class Foo(torch.nn.Linear):
+        pass
+    model1 = Foo(2, 2).cuda().eval()
+    model2 = Foo(2, 2).cuda().eval()
+    t = torch.randn(1, 2, device="cuda")
+    assert_allclose(F.linear(t, model1.weight, model1.bias), model1(t))
+    assert_allclose(F.linear(t, model2.weight, model2.bias), model2(t))
+
+
 def test_jit_class_using_function():
     LinearJIT = nnfusion.jit(torch.nn.Linear)
 

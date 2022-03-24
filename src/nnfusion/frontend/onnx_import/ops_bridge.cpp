@@ -203,7 +203,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("MaxPool", 1, TranslatePoolOp<op::MaxPool>);
-                REGISTER_OPERATOR("Max", 1, TranslateLegacyBinaryOp<op::Maximum>);
+                REGISTER_OPERATOR("Max", 1, TranslateBinaryOp<op::Maximum>);
                 //REGISTER_OPERATOR("Mean", 1, mean);
                 REGISTER_OPERATOR("MemcpyFromHost", 1, TranslateMemcpyFromHostOp);
                 REGISTER_OPERATOR("MemcpyToHost", 1, TranslateMemcpyToHostOp);

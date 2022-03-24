@@ -51,15 +51,26 @@ namespace nnfusion
                       m_element_type.size(), nnfusion::shape_size(m_shape) * m_element_type.size()))
             {
                 size_t literal_num = values.size() * sizeof(T) / element_type.size();
-                // OP_VALIDATION(this,
-                //               values.size() == 1 || values.size() == nnfusion::shape_size(m_shape))
-                OP_VALIDATION(this,
+
+                if(element_type == element::f16 && nnfusion::shape_size(m_shape) % 2 == 1)
+                {
+                    OP_VALIDATION(this, values.size() * 4 >= nnfusion::shape_size(m_shape) * 2)
+                        << "Did not get the expected number of literals for a constant of shape "
+                        << m_shape << " (got " << values.size() << ", expected "
+                        << (nnfusion::shape_size(m_shape) == 1 ? "" : "1 or ")
+                        << nnfusion::shape_size(m_shape) << ")."
+                        << element_type;
+                }
+                else 
+                {
+                    OP_VALIDATION(this,
                               literal_num == 1 || literal_num == nnfusion::shape_size(m_shape))
-                    << "Did not get the expected number of literals for a constant of shape "
-                    << m_shape << " (got " << values.size() << ", expected "
-                    << (nnfusion::shape_size(m_shape) == 1 ? "" : "1 or ")
-                    << nnfusion::shape_size(m_shape) << ")."
-                    << element_type;
+                        << "Did not get the expected number of literals for a constant of shape "
+                        << m_shape << " (got " << values.size() << ", expected "
+                        << (nnfusion::shape_size(m_shape) == 1 ? "" : "1 or ")
+                        << nnfusion::shape_size(m_shape) << ")."
+                        << element_type;
+                }
 
                 if (values.size() == 1)
                 {

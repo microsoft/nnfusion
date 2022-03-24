@@ -46,12 +46,12 @@ namespace nnfusion
                 Tensor& operator=(Tensor&&) = delete;
 
                 const Shape& get_shape() const { return m_shape; }
+
                 template <typename T>
                 std::vector<T> get_data() const
                 {
                     NNFUSION_CHECK(!m_tensor_proto->has_segment())
                         << "loading tensor segments not supported.";
-
                     return detail::get_data<T>(*m_tensor_proto);
                 }
 
@@ -118,6 +118,7 @@ namespace nnfusion
                 return (outs << "<Tensor: " << tensor.get_name() << ">");
             }
 
+
         } // namespace onnx_import
     }     // namespace frontend
-} // namespace nnfuison
+} // namespace nnfusion

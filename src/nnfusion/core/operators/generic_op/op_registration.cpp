@@ -134,6 +134,23 @@ namespace nnfusion
 
         std::string get_ir_via_extension(std::shared_ptr<graph::GNode> gnode)
         {
+            char* nnfusion_home = getenv("NNFUSION_HOME");
+            std::string type = "extension/";
+            if (nnfusion_home == NULL)
+            {
+                char* home = getenv("HOME");
+                if (home != NULL)
+                {
+                    base_dir = std::string(home) + "/nnfusion/custom_op/" + type;
+                    NNFUSION_LOG(NNFUSION_WARNING)
+                        << "$NNFUSION_HOME was not set, use " << std::string(home) << "/nnfusion.";
+                }
+            }
+            else
+            {
+                base_dir = std::string(nnfusion_home) + "/custom_op/" + type;
+            }
+
             nnfusion::json message;
             message["output_name"] = "@output0@";
             std::vector<nnfusion::json> input_dict;
@@ -155,7 +172,7 @@ namespace nnfusion
             }
             message["config"] = config;
 
-            std::string file_path = "./extensions/" + gnode->get_op_type();
+            std::string file_path = std::string(base_dir) + gnode->get_op_type();
             struct stat buffer;
             if (stat(file_path.c_str(), &buffer) != 0)
             {
@@ -164,7 +181,8 @@ namespace nnfusion
                 return "";
             }
 
-            std::string cmd = file_path + " '" + message.dump() + "'", ir_string;
+            std::string cmd = file_path + " '" + message.dump() + "'";
+            std::string ir_string;
             NNFUSION_LOG(INFO) << "Execute: " << cmd;
 
             static char line[4096];

@@ -33,7 +33,7 @@ def get_nrt_forward(obj, signature, config, outputs, *inputs,
     if output_is_tensor:
         outputs = [outputs]
 
-    nnf = NNFusionRT(obj, config, signature, is_method=is_method)
+    nnf = NNFusionRT(obj, config, signature)
     nnf.compile(inputs, outputs)
 
     # TODO free outputs and only save desc?
@@ -46,7 +46,7 @@ def get_nrt_forward(obj, signature, config, outputs, *inputs,
 
         if is_method:
             obj, *inputs = inputs
-            nnf.run(obj, inputs, results)
+            nnf.run_method(obj, inputs, results)
         else:
             inputs = list(inputs)
             nnf.run(inputs, results)

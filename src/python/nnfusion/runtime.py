@@ -12,9 +12,7 @@ from .utils import get_sha256_of_file, get_sha256_of_str
 
 
 class NNFusionRT:
-    def __init__(self, model, config, signature,
-                 cache_dir="nnf-kernels",
-                 is_method=False):
+    def __init__(self, model, config, signature, cache_dir="nnf-kernels"):
         """
         Parameters:
             model: the `torch.nn.Module` to be compiled.
@@ -35,8 +33,6 @@ class NNFusionRT:
 
         self.compile_flag = self._get_compile_flag(config)
         self.executor = None
-
-        self.run = self._run_method if is_method else self._run
 
     def compile(self, inputs, outputs):
         """
@@ -97,7 +93,7 @@ class NNFusionRT:
 
         self.executor = Executor(nnf_dir, device=inputs[0].device)
 
-    def _run(self, inputs, outputs, weights=None):
+    def run(self, inputs, outputs, weights=None):
         """
         Perform the computation. The result will be saved in `outputs`.
 
@@ -122,12 +118,12 @@ class NNFusionRT:
         }
         self.executor(in_dict, out_dict, strict=False)
 
-    def _run_method(self, obj, inputs, outputs):
+    def run_method(self, obj, inputs, outputs):
         weights = {
             name: cast_pytorch_tensor(tensor)
             for name, tensor in obj.state_dict().items()
         }
-        return self._run(inputs, outputs, weights)
+        return self.run(inputs, outputs, weights)
 
     def _get_compile_flag(self, config):
         return " ".join([

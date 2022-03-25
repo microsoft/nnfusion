@@ -46,7 +46,6 @@ namespace nnfusion
                 Tensor& operator=(Tensor&&) = delete;
 
                 const Shape& get_shape() const { return m_shape; }
-
                 template <typename T>
                 std::vector<T> get_data() const
                 {
@@ -117,7 +116,6 @@ namespace nnfusion
             {
                 return (outs << "<Tensor: " << tensor.get_name() << ">");
             }
-
 
         } // namespace onnx_import
     }     // namespace frontend

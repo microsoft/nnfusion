@@ -184,7 +184,7 @@ namespace nnfusion
             return get_op_configs()[opname];
         }
 
-        inline const OpConfig& lookup_op_config(const std::string& opname)
+        inline OpConfig& lookup_op_config(const std::string& opname)
         {
             auto it = get_op_configs().find(opname);
             if (it != get_op_configs().end())
@@ -352,7 +352,18 @@ namespace nnfusion
                     localOpConfig.f_infershape !=
                         nnfusion::op::infershape::unimplemented_and_not_used)
                     localOpConfig.f_infershape(gnode);
-                else
+
+                bool not_infered = false;
+                for (auto i = 0; i < gnode->get_output_size(); i++)
+                {
+                    if (gnode->get_outputs()[i]->get_element_type().size() == 0)
+                    {
+                        not_infered = true;
+                        break;
+                    }
+                }
+
+                if (not_infered)
                 {
                     // Infershape with Antares IR (only for Opv2)
                     nnfusion::kernels::AntaresKEImp ke;

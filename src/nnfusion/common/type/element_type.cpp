@@ -95,6 +95,8 @@ bool element::Type::dtype_string_to_nnfusion_element_type(const std::string& dty
         ng_et = element::character;
     else if (dtype == "float16")
         ng_et = element::f16;
+    else if (dtype == "half")
+        ng_et = element::f16;
     else if (dtype == "float32")
         ng_et = element::f32;
     else if (dtype == "float64")

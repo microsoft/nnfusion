@@ -246,7 +246,7 @@ namespace nnfusion
                                     for (int i = 0; i < antares_output_shapes.size(); i++)
                                     {
                                         if (antares_output_shapes[i] !=
-                                            ctx->outputs[i]->get_shape() && 
+                                                ctx->outputs[i]->get_shape() &&
                                             nnfusion::shape_size(antares_output_shapes[i]) !=
                                                 nnfusion::shape_size(ctx->outputs[i]->get_shape()))
                                         {

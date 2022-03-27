@@ -15,9 +15,10 @@ namespace nnfusion
         {
             namespace set_1
             {
-                NamedNodeVector TranslateAveragePoolOp(const onnx::NodeProto& node_proto,
-                                                   const NodeMap& all_ng_nodes,
-                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                NamedNodeVector
+                    TranslateAveragePoolOp(const onnx::NodeProto& node_proto,
+                                           const NodeMap& all_ng_nodes,
+                                           std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
                     std::vector<int64_t> i_tf_strides;
@@ -26,9 +27,11 @@ namespace nnfusion
                     Node node(node_proto);
 
                     i_tf_strides = node.get_attribute_value<std::vector<std::int64_t>>("strides");
-                    i_ng_kernel_shape = node.get_attribute_value<std::vector<std::int64_t>>("kernel_shape");
+                    i_ng_kernel_shape =
+                        node.get_attribute_value<std::vector<std::int64_t>>("kernel_shape");
 
-                    nnfusion::Shape ng_kernel_shape(i_ng_kernel_shape.begin(), i_ng_kernel_shape.end());
+                    nnfusion::Shape ng_kernel_shape(i_ng_kernel_shape.begin(),
+                                                    i_ng_kernel_shape.end());
                     nnfusion::Shape ng_strides(i_tf_strides.begin(), i_tf_strides.end());
                     auto ng_image_shape = input_gnode->get_shape();
 

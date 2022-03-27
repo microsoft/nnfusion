@@ -167,6 +167,54 @@ namespace nnfusion
                 return rc;
             }
 
+            float half_to_float(uint16_t float16_value) const
+            {
+                uint32_t sign = float16_value >> 15;
+                uint32_t exponent = (float16_value >> 10) & 0x1F;
+                uint32_t fraction = (float16_value & 0x3FF);
+                uint32_t float32_value;
+                if (exponent == 0)
+                {
+                    if (fraction == 0)
+                    {
+                        float32_value = (sign << 31);
+                    }
+                    else
+                    {
+                        exponent = 127 - 14;
+                        while ((fraction & (1 << 10)) == 0)
+                        {
+                            exponent--;
+                            fraction <<= 1;
+                        }
+                        fraction &= 0x3FF;
+                        float32_value = (sign << 31) | (exponent << 23) | (fraction << 13);
+                    }
+                }
+                else if (exponent == 0x1F)
+                {
+                    float32_value = (sign << 31) | (0xFF << 23) | (fraction << 13);
+                }
+                else
+                {
+                    float32_value =
+                        (sign << 31) | ((exponent + (127 - 15)) << 23) | (fraction << 13);
+                }
+
+                return *((float*)&float32_value);
+            }
+
+            std::vector<float> get_float16_vector() const
+            {
+                std::vector<float> rc;
+                const uint16_t* p = reinterpret_cast<const uint16_t*>(m_data);
+                for (size_t i = 0; i < nnfusion::shape_size(m_shape); i++)
+                {
+                    rc.push_back(half_to_float(p[i]));
+                }
+                return rc;
+            }
+
             DataBuffer get_buffer() const;
             const void* get_data_ptr() const { return m_data; }
             size_t get_data_size() const
@@ -196,5 +244,5 @@ namespace nnfusion
             Constant(Constant&&) = delete;
             Constant operator=(const Constant*) = delete;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

@@ -104,9 +104,11 @@ nlohmann::json execute_script(std::shared_ptr<graph::GNode> gnode)
         json newjson = jstr;
         jstr = newjson.dump();
         replace_all(script, "<OP_JSON>", jstr);
-        auto json_res = json::parse(exec(script.c_str()));
+        auto json_res = exec(script.c_str());
+        auto json_out = json::parse(json_res);
+        // NNFUSION_LOG(INFO) << json_res;
 
-        return json_res;
+        return json_out;
     }
     return nlohmann::json("");
 }

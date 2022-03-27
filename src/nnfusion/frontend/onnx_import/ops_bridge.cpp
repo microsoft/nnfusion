@@ -46,6 +46,7 @@
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
 #include "op/gru.hpp"
+#include "op/averagepool.hpp"
 #include "op/identity.hpp"
 #include "op/index_reduce.hpp"
 #include "op/layer_norm.hpp"
@@ -57,6 +58,7 @@
 #include "op/non_zero.hpp"
 #include "op/one_hot.hpp"
 #include "op/pool.hpp"
+#include "op/pad.hpp"
 #include "op/range.hpp"
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
@@ -147,6 +149,7 @@ namespace nnfusion
             {
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
                 REGISTER_OPERATOR("Acos", 1, TranslateUnaryOp<op::Acos>);
+                REGISTER_OPERATOR("AveragePool", 1, TranslateAveragePoolOp);
                 REGISTER_OPERATOR("AdamOptimizer", 1, TranslateAdamOptimizerOp);
                 REGISTER_OPERATOR("Add", 1, TranslateLegacyBinaryOp<op::Add>);
                 REGISTER_OPERATOR("Add", 7, TranslateBinaryOp<op::Add>);
@@ -253,6 +256,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Split", 1, TranslateSplitOp);
                 REGISTER_OPERATOR("Sqrt", 1, TranslateUnaryOp<op::Sqrt>);
                 REGISTER_OPERATOR("Squeeze", 1, TranslateSqueezeOp);
+                REGISTER_OPERATOR("Pad", 1, TranslatePadOp);
                 REGISTER_OPERATOR("Squeeze", 11, TranslateSqueezeOp);
                 REGISTER_OPERATOR("Sub", 1, TranslateLegacyBinaryOp<op::Subtract>);
                 REGISTER_OPERATOR("Sub", 7, TranslateBinaryOp<op::Subtract>);

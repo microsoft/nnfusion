@@ -8,8 +8,7 @@ def debug_pass(f, mod, ctx):
     def printer(op):
         print(op, type(op))
         print("-----------------------------------------")
-    # import code
-    # code.interact(local=locals())
+
     tvm.tir.stmt_functor.post_order_visit(f.body, printer)
     return f
 

@@ -20,18 +20,13 @@ def modify_output_pass(f, mod, ctx):
             return op
         return op
 
-    ana = tvm.arith.Analyzer()
-    bounds = get_scope.bounds
+    ana = get_scope().analyzer
+    bounds = get_scope().bounds
     blockIdx_var_map = {}
     shared_output_shape = {}
-    for iterator, region in bounds.items():
-        if isinstance(region.min, tvm.tir.expr.IntImm) and isinstance(region.extent, tvm.tir.expr.IntImm):
-            if iterator.var.name.startswith("blockIdx"):
-                bound = tvm.arith.ConstIntBound(0, 0)
-                blockIdx_var_map[iterator.var] = tvm.tir.const(0)
-            else:
-                bound = tvm.arith.ConstIntBound(int(region.min), int(region.min) + int(region.extent) - 1)
-            ana.update(iterator.var, bound)
+    for iter_var in bounds:
+        if iter_var.var.name.startswith("blockIdx"):
+            blockIdx_var_map[iter_var.var] = tvm.tir.const(0)
 
     new_body = tvm.tir.stmt_functor.ir_transform(f.body, None, process, ["tir.BufferStore"])
 

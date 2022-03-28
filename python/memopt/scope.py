@@ -9,6 +9,7 @@ class Scope(Dict):
         self.bounds = tvm.te.schedule.InferBound(self.schedule)
         self.shared_mem_outputs = []
         self._build_analyzer()
+        self._get_grid_block_size()
 
     def _build_analyzer(self):
         self.analyzer = tvm.arith.Analyzer()
@@ -19,6 +20,19 @@ class Scope(Dict):
                 else:
                     bound = tvm.arith.ConstIntBound(int(region.min), int(region.min) + int(region.extent) - 1)
                 self.analyzer.update(iterator.var, bound)
+
+    def _get_grid_block_size(self):
+        grid_block_size = {
+            "threadIdx.x" : 1, "threadIdx.y" : 1, "threadIdx.z" : 1,
+            "blockIdx.x" : 1, "blockIdx.y" : 1, "blockIdx.z" : 1,
+        }
+        for iter_var, region in self.bounds.items():
+            name = iter_var.var.name
+            if name in grid_block_size:
+                grid_block_size[name] = max(int(region.extent), grid_block_size[name])
+        self.block_size = [grid_block_size[x] for x in ["threadIdx.x", "threadIdx.y", "threadIdx.z"]]
+        self.grid_size = [grid_block_size[x] for x in ["blockIdx.x", "blockIdx.y", "blockIdx.z"]]
+        print(grid_block_size)
 
     def __enter__(self):
         global _current_scope

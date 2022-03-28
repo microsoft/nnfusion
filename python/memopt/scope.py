@@ -6,7 +6,7 @@ _current_scope = None
 class Scope(Dict):
     def __init__(self, schedule):
         self.schedule = schedule
-        self.bounds = tvm.te.schedule.InferBound(self.schedule)
+        self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
         self.shared_mem_outputs = []
         self._build_analyzer()
         self._get_grid_block_size()

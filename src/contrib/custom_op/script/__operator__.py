@@ -2,6 +2,7 @@ import os
 import json
 import argparse
 import importlib.machinery
+from venv import create
 
 # This is to provide Operator interface
 # It will take input and output kernel code
@@ -26,6 +27,10 @@ class OperatorBase(dict):
             outputs["dtype"].append(ele)
         return outputs
 
+class OperatorTestBase(dict):
+    def __init__(self):
+        self.op_name = "Default"
+        self.test_cases = []
 
 class OperatorConfigSameAsInput(OperatorBase):
     def __init__(self, input_dict=None, config_infer=None):
@@ -50,7 +55,7 @@ class OperatorSingleOutputAsOneInput(OperatorBase):
 
 
 # Try loading every operators
-def load_operators():
+def load_operators(baseclass = OperatorBase):
     operator_map = dict()
     for file in os.listdir(os.path.dirname(__file__)):
         if file.endswith(".py") and not file.startswith("__"):
@@ -61,7 +66,7 @@ def load_operators():
                 handle = loader.load_module(hname)
                 for element in dir(handle):
                     element = getattr(handle, element)
-                    if isinstance(element, type) and issubclass(element, OperatorBase) and element is not OperatorBase:
+                    if isinstance(element, type) and issubclass(element, baseclass) and element is not baseclass:
                         operator_map[element.__name__] = element
             except:
                 pass
@@ -74,3 +79,9 @@ def get_operator_config(op_name, conf_dict):
         op = op_map[op_name](conf_dict)
         return op
     return {}
+
+def get_operator_tests(op_name):
+    test_map = load_operators(OperatorTestBase)
+    for test_key in test_map:
+        if op_name is test_map[test_key].name:
+            return  test_map[test_key].test_cases

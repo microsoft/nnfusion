@@ -115,6 +115,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL() << "unsupported value info element type: "
                                           << onnx::TensorProto_DataType_Name(onnx_et);
                 }
+                return make_constant_op<float>(element::f32, shape, tensor);
             }
 
             std::shared_ptr<graph::GNode> GetInputNode(const NodeMap& all_ng_nodes,

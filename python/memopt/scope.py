@@ -8,6 +8,8 @@ class Scope(Dict):
         self.schedule = schedule
         self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
         self.shared_mem_outputs = []
+        self.shared_mem_inputs = []
+        self.interal_shared_memory = {}
         self._build_analyzer()
         self._get_grid_block_size()
 
@@ -43,5 +45,5 @@ class Scope(Dict):
         global _current_scope
         _current_scope = None
 
-def get_scope():
+def get_scope() -> Scope:
     return _current_scope

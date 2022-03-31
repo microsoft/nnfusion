@@ -289,4 +289,5 @@ REGISTER_OP(Resize)
                  {"con", cond}});
             return expr;
         }
+        return "";
     });

@@ -145,6 +145,7 @@ private:
             m_blocklist.insert(substr);
         }
         NNFUSION_LOG(INFO) << "IR-based Fusion BlockList: " << join(m_blocklist, ", ");
+        return true;
     }
     unordered_set<shared_ptr<GNode>> m_tagged_nodes;
     std::shared_ptr<Graph> m_graph;

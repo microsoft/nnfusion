@@ -1,10 +1,11 @@
 import pytest
 import torch
+from torch.nn import functional as F
 
 import nnfusion
 
 
-def assert_allclose(output1, output2, rtol=1e-5, atol=1e-8):
+def assert_allclose(output1, output2, rtol=1e-5, atol=1e-5):
 
     if not isinstance(output1, (tuple, list)):
         assert not isinstance(output2, (tuple, list))
@@ -70,12 +71,109 @@ def test_single_input_multi_identical_output():
     compare_torch_and_nrt(func, t)
 
 
-def test_module_no_grad():
+@pytest.mark.xfail(reason="Compilation Error")
+def test_single_input_multi_identical_output_advanced():
+    def func(t):
+        t2 = t + t
+        return t2, t2
+    t = torch.randn(8, device="cuda")
+    compare_torch_and_nrt(func, t)
+
+
+def test_jit_instance_using_function():
     model = torch.nn.Linear(8, 8).cuda().eval()
-    for param in model.parameters():
-        param.requires_grad = False
     t = torch.randn(1, 8, device="cuda")
     compare_torch_and_nrt(model, t)
+
+
+def test_jit_class_method_using_decorator():
+    class Foo(torch.nn.Linear):
+        @nnfusion.jit
+        def foo(self, t):
+            return t + t
+        @nnfusion.jit
+        def bar(self, t):
+            return self.forward(t) + 1
+
+    model = Foo(8, 8).cuda().eval()
+    t = torch.randn(1, 8, device="cuda")
+    assert_allclose(t + t, model.foo(t))
+    assert_allclose(F.linear(t, model.weight, model.bias) + 1, model.bar(t))
+
+    class Bar(torch.nn.Linear):
+        @nnfusion.jit
+        def forward(self, t):
+            return super().forward(t)
+    model = Bar(8, 8).cuda().eval()
+    assert_allclose(F.linear(t, model.weight, model.bias), model(t))
+
+
+def test_jit_class_method_using_function():
+    class Foo(torch.nn.Linear):
+        def foo(self, t):
+            return self.forward(t) + 1
+
+    t = torch.randn(1, 8, device="cuda")
+    model = Foo(8, 8).cuda().eval()
+    assert_allclose(F.linear(t, model.weight, model.bias) + 1, model.foo(t))
+
+
+def test_jit_class_using_decorator():
+    def func(t):
+        return t + t
+
+    @nnfusion.jit
+    class Foo(torch.nn.Linear):
+        @nnfusion.jit
+        def foo(self, t):
+            return func(t)
+
+    model = Foo(8, 8).cuda().eval()
+    t = torch.randn(1, 8, device="cuda")
+    assert_allclose(F.linear(t, model.weight, model.bias), model(t))
+    assert_allclose(func(t), model.foo(t))
+
+
+def test_jit_class_using_decorator_multi_instance():
+    @nnfusion.jit
+    class Foo(torch.nn.Linear):
+        pass
+    model1 = Foo(2, 2).cuda().eval()
+    model2 = Foo(2, 2).cuda().eval()
+    t = torch.randn(1, 2, device="cuda")
+    assert_allclose(F.linear(t, model1.weight, model1.bias), model1(t))
+    assert_allclose(F.linear(t, model2.weight, model2.bias), model2(t))
+
+
+def test_jit_class_using_function():
+    LinearJIT = nnfusion.jit(torch.nn.Linear)
+
+    model = LinearJIT(8, 8).cuda().eval()
+    t = torch.randn(1, 8, device="cuda")
+    assert_allclose(F.linear(t, model.weight, model.bias), model(t))
+
+
+def test_jit_with_kwargs():
+    @nnfusion.jit(tune=True, config=nnfusion.Config(kernel_tuning_steps=5))
+    def func(t):
+        return t + t
+    t = torch.randn(8, device="cuda")
+    assert_allclose(t + t, func(t))
+
+
+@pytest.mark.xfail(reason=(
+    "nnfusion codegen and compile success exit with 0 "
+    "but para_info.json is null"))
+def test_nested_jit():
+    @nnfusion.jit
+    def func1(t): return t + t
+
+    @nnfusion.jit
+    def func2(t): return func1(t) + 1
+
+    t = torch.randn(1, 8, device="cuda")
+    assert_allclose(t + t, func1(t))
+    assert_allclose(t + t + 1, func2(t))
 
 
 @pytest.mark.parametrize("step", [1, 5])
@@ -90,26 +188,3 @@ def test_repeat(step):
 
     t = [torch.randn(8, device="cuda") for _ in range(2)]
     compare_torch_and_nrt(func, *t, step=step, run=run)
-
-
-@pytest.mark.xfail(reason=(
-    "Probably some bug when calling nnfusion to compile the same kernel "
-    "in **a single process** (works well for not a single process). "
-    "Not likely to happen in general use (but should work)."))
-def test_keep_signature_but_change_compute_graph():
-    def func(t):
-        return t + t
-    t = torch.randn(8, device="cuda")
-    compare_torch_and_nrt(func, t)
-
-    # just to show that it can pass for compiling another function
-    # TODO delete after fixing bug
-    def func2(t):
-        return t * 8
-    compare_torch_and_nrt(func2, t)
-
-    # same as the first one (identical jit-signature)
-    # to ensure the compiled kernel will be regenerated if graph don't match
-    def func(t):
-        return t * t
-    compare_torch_and_nrt(func, t)

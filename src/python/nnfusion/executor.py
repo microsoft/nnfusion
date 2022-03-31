@@ -87,6 +87,8 @@ class Executor(object):
         Parameters:
             nnf_rt_dir: A full string path to nnfusion runtime,
                 it's usually like "codegen_root/nnfusion_rt/cuda_codegen".
+            device: A device type (`torch.device`) that is used for workspace
+                memory reservation (if needed) by nnfusion runtime.
         """
         nnf_rt_dir = os.path.abspath(nnf_rt_dir)
         self.libnnf_path = find_nnf_rt(nnf_rt_dir)

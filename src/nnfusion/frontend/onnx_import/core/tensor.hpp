@@ -71,8 +71,9 @@ namespace nnfusion
                     case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
                         return element::boolean;
                     case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
-                    case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
                         return element::f32;
+                    case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
+                        return element::f16;
                     case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
                         return element::f64;
                     case onnx::TensorProto_DataType::TensorProto_DataType_INT8: return element::i8;

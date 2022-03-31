@@ -56,8 +56,18 @@ def get_numpy(tensor):
             raise NotImplementedError(onnx_dtype + " is not supported in this script yet.")
         return np.float32
 
+    def check_shape(shape):
+        for dim in shape:
+            if isinstance(dim, int):
+                continue
+            elif isinstance(dim, str):
+                raise Exception(f"Unknown symbilic dimension: {dim}")
+            else:
+                raise Exception(f"Unknown dimension type: {type(dim)}")
+    
     dtype = get_numpy_dtype(tensor.type)
     shape = tensor.shape
+    check_shape(shape)
     return np.ones(shape, dtype=dtype)
 
 model = onnx.load(args.file)
@@ -85,7 +95,11 @@ elif args.graph_optimization_level == 'ORT_ENABLE_EXTENDED':
 for k, v in args.symbolic_dims.items():
     sess_options.add_free_dimension_override_by_name(k, int(v))
 
-ort_session = ort.InferenceSession(model.SerializeToString(), sess_options)
+providers = args.provider.split(",")
+if "CPUExecutionProvider" not in providers:
+    providers.append("CPUExecutionProvider")
+
+ort_session = ort.InferenceSession(args.file, sess_options, providers=providers)
 
 if args.provider != '':
     ort_session.set_providers([args.provider])

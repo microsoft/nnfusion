@@ -2,7 +2,7 @@
 import json
 import sys
 import argparse
-from __operator__ import get_operator_config
+from __operator__ import get_operator_config, get_operator_tests
 
 
 if __name__ == "__main__":

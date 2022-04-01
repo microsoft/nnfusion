@@ -1,41 +1,8 @@
 #!/bin/python
-import numpy as np
-import sys
+from concurrent.futures import thread
+from pickletools import read_float8
+import sys, os
 from __operator__ import OperatorBase, OperatorTestBase
-
-# Pure antares will not need shape inference
-
-hlsl_kernel = '''
-// @dtype@ : input/output datatype
-// @BITONIC_BLOCK_SIZE@ : How many blocks
-RWStructuredBuffer<@dtype@> Input : register( t0 );
-RWStructuredBuffer<@dtype@> Data : register( u0 );
-
-groupshared @dtype@ shared_data[@BITONIC_BLOCK_SIZE@];
-
-[numthreads(@BITONIC_BLOCK_SIZE@, 1, 1)]
-void BitonicSort( uint3 Gid : SV_GroupID, 
-                  uint3 DTid : SV_DispatchThreadID, 
-                  uint3 GTid : SV_GroupThreadID, 
-                  uint GI : SV_GroupIndex )
-{
-    // Load shared data
-    shared_data[GI] = Data[DTid.x];
-    GroupMemoryBarrierWithGroupSync();
-
-    // Sort the shared data
-    for (unsigned int j = g_iLevel >> 1 ; j > 0 ; j >>= 1)
-    {
-        @dtype@ result = ((shared_data[GI & ~j] <= shared_data[GI | j]) == (bool)(g_iLevelMask & DTid.x))? shared_data[GI ^ j] : shared_data[GI];
-        GroupMemoryBarrierWithGroupSync();
-        shared_data[GI] = result;
-        GroupMemoryBarrierWithGroupSync();
-    }
-    
-    // Store shared data
-    Data[DTid.x] = shared_data[GI];
-}
-'''
 
 # ONNX Reference Link:https://github.com/onnx/onnx/blob/main/docs/Operators.md#topk
 
@@ -46,10 +13,37 @@ class TopK(OperatorBase):
         super().__init__(input_dict, self.config_infer)
         self.attach_directx_hlsl_kernel(input_dict)
 
+    def read_file(self, file_name):
+        with open(os.path.join(os.path.dirname(__file__), file_name)) as f:
+            lines = f.readlines()
+            return "".join(lines)
+
     # Generate a HLSL Kernels
     # How about generating host call?
     def attach_directx_hlsl_kernel(self, input_dict=None):
-        self["hlsl_kernel"] = hlsl_kernel
+        axis_stride = 1
+        for r in range(self['axis'] + 1, len(input_dict["input"]["shape"][0])):
+            axis_stride *= input_dict["input"]["shape"][0][r]
+        
+        blocks = 1
+        for r in range(0, len(input_dict["input"]["shape"][0])):
+            if r == self["axis"]:
+                continue
+            blocks *= input_dict["input"]["shape"][0][r]
+
+        threads = 1
+        while threads < input_dict["input"]["shape"][0][self["axis"]]:
+            threads *= 2
+
+        if threads <= 512:
+            self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl"
+                ).replace("__threads__", str(threads)
+                ).replace("__axis_stride__", str(axis_stride)
+                ).replace("__k__", str(self["K"])
+                ).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]]))
+            self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
+        self["entry_point"] = "TopK"
+        print(self["hlsl_kernel"])
 
     def config_infer(self, input_dict=None):
         if len(input_dict["input"]["shape"]) > 1:
@@ -89,6 +83,8 @@ class TopKTest(OperatorTestBase, TopK):
         self.name = "TopK"
 
     def create_topk_test(self):
+        import numpy as np
+        import torch
         self["axis"] = 1
         self["largest"] = 1
         self["K"] = 3

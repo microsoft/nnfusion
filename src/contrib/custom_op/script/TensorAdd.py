@@ -36,7 +36,7 @@ class TensorAdd(OperatorBase):
         blocks = math.ceil(size / threads)
         self["hlsl_kernel"] = hlsl_kernel_add.replace("__threads__", str(threads)).replace("__total_size__", str(size))
         self["launch_config"] = [[blocks, 1, 1], [1024, 1, 1]]
-        self["entry_piont"] = "CSMain"
+        self["entry_point"] = "CSMain"
 
 
     def config_infer(self, input_dict=None):

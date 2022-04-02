@@ -1,10 +1,28 @@
 #!/bin/python
 from concurrent.futures import thread
 from pickletools import read_float8
-import sys, os
+import sys
+import os
+import types
+
+from torch import rand
 from __operator__ import OperatorBase, OperatorTestBase
 
 # ONNX Reference Link:https://github.com/onnx/onnx/blob/main/docs/Operators.md#topk
+
+
+def get_type_info(typestr):
+    if typestr == "half" or typestr == "float16":
+        return ("float16", 2)
+    if typestr == "float32":
+        return ("float", 4)
+    if typestr == "double":
+        return ("double", 8)
+    if typestr == "int" or typestr == "int32":
+        return ("int", 4)
+    if typestr == "int64" or typestr == "long long":
+        return ("int64_t", 8)
+    exit(-1)
 
 
 class TopK(OperatorBase):
@@ -22,9 +40,11 @@ class TopK(OperatorBase):
     # How about generating host call?
     def attach_directx_hlsl_kernel(self, input_dict=None):
         axis_stride = 1
-        for r in range(self['axis'] + 1, len(input_dict["input"]["shape"][0])):
+        for r in range(self['axis']+1, len(input_dict["input"]["shape"][0])):
             axis_stride *= input_dict["input"]["shape"][0][r]
-        
+        # for r in range(0, self['axis']):
+        #    axis_stride *= input_dict["input"]["shape"][0][r]
+
         blocks = 1
         for r in range(0, len(input_dict["input"]["shape"][0])):
             if r == self["axis"]:
@@ -35,16 +55,25 @@ class TopK(OperatorBase):
         while max_element < input_dict["input"]["shape"][0][self["axis"]]:
             max_element *= 2
 
-        if max_element <= 512:
+        def_largest = "#define LARGEST"
+        if input_dict["largest"] == 0:
+            def_largest = ""
+
+        in_block_number = 512
+        (dx_type_str, dx_type_size) = get_type_info(
+            input_dict["input"]["dtype"][0])
+        # element is shared memory: {_type_, int}
+        # Only 4096 Bytes shared memory(L1 cache) in DX
+        in_block_number = 4096 // (dx_type_size + 4)
+
+        if max_element <= in_block_number:
             threads = max_element // 2
-            self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl"
-                ).replace("__threads__", str(threads)
-                ).replace("__max_element__", str(max_element)
-                ).replace("__axis_stride__", str(axis_stride)
-                ).replace("__k__", str(input_dict["K"])
-                ).replace("__type__", "float"
-                ).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]]))
+            self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl").replace("__threads__", str(threads)).replace("__max_element__", str(max_element)).replace("__axis_stride__", str(
+                axis_stride)).replace("__k__", str(input_dict["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]]))
             self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
+        else:
+            # Cannot use shared memory
+            pass
         self["entry_point"] = "TopK"
 
     def config_infer(self, input_dict=None):
@@ -56,7 +85,7 @@ class TopK(OperatorBase):
         for ele in input_dict["input"]["shape"]:
             outputs["shape"].append(ele.copy())
         for ele in input_dict["input"]["dtype"]:
-            outputs["dtype"].append(ele.copy())
+            outputs["dtype"].append(ele)
 
         if self['axis'] < 0:
             self['axis'] += len(outputs["shape"][0])
@@ -67,32 +96,17 @@ class TopK(OperatorBase):
 
 class TopKTest(OperatorTestBase, TopK):
     def __init__(self, input_dict=None, config_infer=None):
-        # <Inputs>
-        # self["x"]  # Tensor of shape [a_1, a_2, ..., a_n, r]
-        # self["K"]  # A 1-D tensor containing a single positive value corresponding to the number of top elements to retrieve
-        # <Outputs>
-        # Tensor of shape [a_1, a_2, ..., a_{axis-1}, k, a_{axis+1}, ... a_n] containing top K values from the input tensor
-        # self["Values"]
-        # Tensor of shape [a_1, a_2, ..., a_{axis-1}, k, a_{axis+1}, ... a_n] containing the corresponding input tensor indices for the top K values.
-        # self["Indices"]
-        # <Default Value>
-        # Attribute
-        # Dimension on which to do the sort. Negative value means counting dimensions from the back. Accepted range is [-r, r-1] where r = rank(input).
-        self["axis"] = -1
-        self["largest"] = 1 # Whether to return the top-K largest or smallest elements.
-        self["sorted"] = 1  # Whether to return the elements in sorted order.
-        self["K"] = 1
         self.name = "TopK"
 
     def create_topk_test(self):
         import numpy as np
-        import torch
         self["axis"] = 1
         self["largest"] = 1
+        self["sorted"] = 1
         self["K"] = 3
         self["input"] = {}
         self["input"]["shape"] = [[3, 4]]
-        self["input"]["dtype"] = [["float32"]]
+        self["input"]["dtype"] = ["float32"]
         X = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [
             8, 9, 10, 11], ], dtype=np.float32)
         values_ref = np.array(
@@ -101,3 +115,63 @@ class TopKTest(OperatorTestBase, TopK):
             [[3,  2,  1], [3, 2, 1], [3, 2, 1]], dtype=np.int64)
 
         return {"kernel": TopK(self), "input": [X], "output": [values_ref, indicies_ref]}
+
+    def create_topk_test_random_int(self):
+        import random
+        import torch
+        shape = [123, 123, 123]
+        self["input"] = {}
+        self["input"]["shape"] = [shape]
+        self["input"]["dtype"] = ["int32"]
+
+        self["axis"] = 0
+        self["largest"] = 1
+        self["K"] = 57
+
+        X = torch.randint(high=512, size=tuple(shape), dtype=torch.int32)
+        (values_ref, indicies_ref) = torch.topk(
+            X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
+
+        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
+    
+    def create_topk_test_random_fp16(self):
+        import torch
+        if not torch.cuda.is_available():
+            return {}
+        shape = [512, 512]
+        self["input"] = {}
+        self["input"]["shape"] = [shape]
+        self["input"]["dtype"] = ["float16"]
+
+        self["axis"] = 0
+        self["largest"] = 1
+        self["K"] = 500
+
+        X = torch.rand(size=tuple(shape), dtype=torch.float16).cuda()
+        (values_ref, indicies_ref) = torch.topk(
+            X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
+
+        return {"kernel": TopK(self), "input": [X.cpu().numpy()], "output": [values_ref.cpu().numpy(), indicies_ref.cpu().numpy()]}
+
+    def create_topk_test_random_float(self):
+        import random
+        import torch
+        shape = []
+        for i in range(0, random.randint(2, 3)):
+            shape.append(random.randint(100, 512))
+        self["input"] = {}
+        self["input"]["shape"] = [shape]
+        self["input"]["dtype"] = ["float32"]
+
+        self["axis"] = random.randint(0, len(shape)-1)
+        self["largest"] = 1
+        self["K"] = random.randint(1, shape[self["axis"]])
+
+        X = torch.rand(tuple(shape), dtype=torch.float32) * 100
+        (values_ref, indicies_ref) = torch.topk(
+            X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
+
+        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
+
+    def allclose(self, truth, output):
+        return super().allclose(truth[:1], output[:1])

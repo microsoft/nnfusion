@@ -3,9 +3,12 @@ import json
 import argparse
 import importlib.machinery
 from types import FunctionType, MethodType
-from venv import create
+import numpy as np
+import logging
 
-from numpy import empty
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.WARN
+)
 
 # This is to provide Operator interface
 # It will take input and output kernel code
@@ -35,6 +38,14 @@ class OperatorTestBase(dict):
     def __init__(self):
         self.name = "Default"
         self.test_cases = []
+    
+    def allclose(self, truth, output):
+        no_error_flag = True
+        for i in range(0, len(truth)):
+            if not np.allclose(truth[i], output[i]):
+                logging.error("numpy.allclose failed at output {0}. {1} vs {2}".format(i, truth[i], output[i]))
+                no_error_flag = False
+        return no_error_flag
 
 class OperatorConfigSameAsInput(OperatorBase):
     def __init__(self, input_dict=None, config_infer=None):
@@ -111,9 +122,17 @@ def get_operator_tests(op_name):
             # Generate all tests
             op_obj = op_map[op]()
             F = [getattr(op_obj, m) for m in dir(op_obj) if not m.startswith('__')]
+            allclose = None
+            for ac in F:
+                if ac.__name__ == "allclose":
+                   allclose = ac
+                   break
             for create_test_method in [f for f in F if type(f) is MethodType and f.__name__.startswith("create_")]:
                 test_case = create_test_method()
                 test_case["test"] = create_test_method.__name__[7:]
+                if "allclose" not in test_case:
+                    test_case["allclose"] = allclose
                 test_cases.append(test_case)
-    
+            
+            
     return test_cases

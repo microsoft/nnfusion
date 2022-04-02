@@ -38,6 +38,7 @@ namespace nnfusion
 
             std::string fused_op_ir2;
             std::vector<std::string> plan_rules;
+            bool is_memcpy;
         };
     }
 }

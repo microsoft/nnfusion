@@ -111,6 +111,7 @@ void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes,
     }
 
     int mediate_offset = 0;
+    is_memcpy = true;
     for (auto& m_node : gnodes)
     {
         // Step 1: Get the template expression of target node
@@ -183,7 +184,15 @@ void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes,
         {
             auto extra_plan = mediate_expr.substr(rule_split + 5);
             if (extra_plan.find_first_not_of(" ") != std::string::npos)
+            {
                 plan_rules.push_back(extra_plan);
+            }
+            if (extra_plan.find("memcpy") == std::string::npos)
+                is_memcpy = false;
+        }
+        else
+        {
+            is_memcpy = false;
         }
     }
 
@@ -193,6 +202,24 @@ void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes,
 std::string Fused::get_plan_rule()
 {
     // plan_rule = "## @: " + plan_rule;
+    if (!is_memcpy)
+    {
+        std::vector<string> new_rules;
+        // remove memcpy in each rule
+        for (auto rule : plan_rules)
+        {
+            if (auto pos = rule.find("memcpy") != std::string::npos)
+            {
+                rule.erase(pos, 6);
+                if (rule.find_first_not_of(" ") != std::string::npos)
+                    new_rules.push_back(rule);
+            }
+            else
+                new_rules.push_back(rule);
+        }
+        plan_rules = new_rules;
+    }
+
     std::string plan_expr = "## @: ";
     if (plan_rules.size() == 1)
     {

@@ -74,6 +74,7 @@ namespace nnfusion
             size_t get_pool_offset() const;
             void set_pool(const std::string& pool);
             const std::string& get_pool() const;
+            bool initialized() { return m_initialized; }
             bool is_same_address(std::shared_ptr<Tensor> tensor);
             size_t size(bool in_byte = true) const;
 
@@ -137,6 +138,7 @@ namespace nnfusion
             bool m_RDMA;
             bool m_memset;
             int m_memset_value;
+            bool m_initialized{false};
             std::shared_ptr<Tensor> m_root_tensor;
             size_t m_ref_count;
             std::string m_group;

@@ -161,7 +161,8 @@ REGISTER_OP(MaxPool)
                                    << " yet, fallback";
                 return std::string();
             }
-            when_condition = ".when([" + when_condition + "], " + min_value + ")";
+            when_condition =
+                ".when([" + when_condition + "], const(" + min_value + ").cast(@input0@.dtype()))";
         }
         if (!where_condition.empty())
         {

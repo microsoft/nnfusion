@@ -29,7 +29,7 @@ def modify_output_pass(f, mod, ctx):
             blockIdx_var_map[iter_var.var] = tvm.tir.const(0)
 
     new_body = tvm.tir.stmt_functor.ir_transform(f.body, None, process, ["tir.BufferStore"])
-    print(shared_output_shape)
+    print("Shared output shape :", shared_output_shape)
     # reshape outputs if use shared_memory
     new_buffer_map = {}
     for k, v in f.buffer_map.items():

@@ -51,7 +51,6 @@ namespace nnfusion
                 {
                     NNFUSION_CHECK(!m_tensor_proto->has_segment())
                         << "loading tensor segments not supported.";
-
                     return detail::get_data<T>(*m_tensor_proto);
                 }
 
@@ -120,4 +119,4 @@ namespace nnfusion
 
         } // namespace onnx_import
     }     // namespace frontend
-} // namespace nnfuison
+} // namespace nnfusion

@@ -1,0 +1,12 @@
+{
+    "ops": [
+        {
+            "op": "Round",
+            "script" : "python <NNFUSION_HOME>/custom_op/script --operator-name=\"<OP_NAME>\" --input-config=<OP_JSON>"
+        },
+        {
+            "op": "GridSample",
+            "script" : "python <NNFUSION_HOME>/custom_op/script --operator-name=\"<OP_NAME>\" --input-config=<OP_JSON>"
+        }
+    ]
+}

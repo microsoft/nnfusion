@@ -50,6 +50,12 @@ public:
                         {
                             register_json_ops(data_path);
                         }
+                        else if (type == "script")
+                        {
+                            // Only check json file in script folder
+                            if(file.find(".json")<file.length())
+                                register_json_ops(data_path);
+                        }
                         else if (type == "onnx")
                         {
                             register_onnx_ops(data_path);

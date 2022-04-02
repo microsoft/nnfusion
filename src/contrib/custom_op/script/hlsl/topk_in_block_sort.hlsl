@@ -21,7 +21,7 @@ __define_largest__
 #ifdef LARGEST
 #define CMP1 ((pos/gstep & 1) && buf[pos].val > buf[pos+step].val) || ((pos/gstep & 1) == 0 && (buf[pos].val < buf[pos+step].val))
 #else
-#define CMP1 buf[pos].val > buf[pos+step].val
+#define CMP1 ((pos/gstep & 1) && buf[pos].val < buf[pos+step].val) || ((pos/gstep & 1) == 0 && (buf[pos].val > buf[pos+step].val))
 #endif
 
 struct type {
@@ -83,7 +83,7 @@ void bitonic_sort(uint thread_id, uint step, uint gstep)
         else 
         {
             // Fill with padding value
-            buf[t].val = -1;
+            buf[t].val = __M_VALUE__;
             buf[t].index = __n__;
         }
     }

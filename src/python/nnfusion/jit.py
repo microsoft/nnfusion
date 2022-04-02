@@ -33,21 +33,23 @@ def get_nrt_forward(obj, signature, config, outputs, *inputs,
     if output_is_tensor:
         outputs = [outputs]
 
-    # TODO nnf = NNFusionRT(obj, signature, **kwargs)
     nnf = NNFusionRT(obj, config, signature)
     nnf.compile(inputs, outputs)
 
     # TODO free outputs and only save desc?
 
     def forward(*inputs):
-        if is_method:
-            _, *inputs = inputs
         results = [
             torch.empty_like(output)
             for output in outputs
         ]
-        inputs = list(inputs)
-        nnf.run(inputs, results)
+
+        if is_method:
+            obj, *inputs = inputs
+            nnf.run_method(obj, inputs, results)
+        else:
+            inputs = list(inputs)
+            nnf.run(inputs, results)
 
         if output_is_tensor:
             return results[0]
@@ -110,14 +112,14 @@ def parse_config(tune, tuning_steps, config):
     if not type(config) is Config:
         raise TypeError(
             "Expected optional 'config' argument of type dict or "
-            "nnfusion.Config but found {config}"
+            f"nnfusion.Config but found {config}"
         )
 
     if tuning_steps is not None:
         if not isinstance(tuning_steps, int):
             raise TypeError(
                 "Expected optional 'tuning_steps' argument of type int "
-                "but found {tuning_steps}"
+                f"but found {tuning_steps}"
             )
         if tune is False:
             raise ValueError(
@@ -132,9 +134,9 @@ def parse_config(tune, tuning_steps, config):
         if not isinstance(tune, bool):
             raise TypeError(
                 "Expected optional 'tune' argument of type bool "
-                "but found {tune}"
+                f"but found {tune}"
             )
-        config['antares_mode'] = True
+        config['antares_mode'] = tune
 
     return config
 
@@ -168,11 +170,24 @@ def jit_class(obj, config):
 def jit(obj=None, *, tune=None, tuning_steps=None, config=None, _signature=None):
     """
     Parameters:
-        obj:
-        tune:
-        tuning_steps:
-        config:
-        _signature:
+        obj (function, `torch.nn.Module` instance/method/class):
+            The target object to be traced. When `obj` is an instance or a
+            class, it is equivalent to trace its `forward` function.
+        tune (Optional[bool]):
+            Whether to tune kernel. By default it follows `config`.
+            If set, it overwrites `config`.
+        tuning_steps (Optional[int]):
+            Number of kernel tuning steps. By default it follows `config`.
+            If set, it overwrites `config` and `tune`.
+        config (Optional[dict, nnfusion.Config]):
+            NNFusion compilation config.
+            By default it will be set to `nnfusion.Config()`.
+            Pass a `dict` to overwrite default config or directly pass an
+            instance of `nnfusion.Config`.
+            For example, `@nnfusion.jit(tune=True,
+            config={'kernel_tuning_steps': 42})`
+            For more flags information, please execute the command `nnfusion`
+            in the terminal.
     """
 
     config = parse_config(tune, tuning_steps, config)

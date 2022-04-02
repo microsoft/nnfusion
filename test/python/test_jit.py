@@ -134,12 +134,31 @@ def test_jit_class_using_decorator():
     assert_allclose(func(t), model.foo(t))
 
 
+def test_jit_class_using_decorator_multi_instance():
+    @nnfusion.jit
+    class Foo(torch.nn.Linear):
+        pass
+    model1 = Foo(2, 2).cuda().eval()
+    model2 = Foo(2, 2).cuda().eval()
+    t = torch.randn(1, 2, device="cuda")
+    assert_allclose(F.linear(t, model1.weight, model1.bias), model1(t))
+    assert_allclose(F.linear(t, model2.weight, model2.bias), model2(t))
+
+
 def test_jit_class_using_function():
     LinearJIT = nnfusion.jit(torch.nn.Linear)
 
     model = LinearJIT(8, 8).cuda().eval()
     t = torch.randn(1, 8, device="cuda")
     assert_allclose(F.linear(t, model.weight, model.bias), model(t))
+
+
+def test_jit_with_kwargs():
+    @nnfusion.jit(tune=True, config=nnfusion.Config(kernel_tuning_steps=5))
+    def func(t):
+        return t + t
+    t = torch.randn(8, device="cuda")
+    assert_allclose(t + t, func(t))
 
 
 @pytest.mark.xfail(reason=(

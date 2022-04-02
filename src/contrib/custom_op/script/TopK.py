@@ -13,7 +13,7 @@ from __operator__ import OperatorBase, OperatorTestBase
 
 def get_type_info(typestr):
     if typestr == "half" or typestr == "float16":
-        return ("float16", 2)
+        return ("float16_t", 2)
     if typestr == "float32":
         return ("float", 4)
     if typestr == "double":

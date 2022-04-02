@@ -31,19 +31,21 @@ class TopK(OperatorBase):
                 continue
             blocks *= input_dict["input"]["shape"][0][r]
 
-        threads = 1
-        while threads < input_dict["input"]["shape"][0][self["axis"]]:
-            threads *= 2
+        max_element = 1
+        while max_element < input_dict["input"]["shape"][0][self["axis"]]:
+            max_element *= 2
 
-        if threads <= 512:
+        if max_element <= 512:
+            threads = max_element // 2
             self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl"
                 ).replace("__threads__", str(threads)
+                ).replace("__max_element__", str(max_element)
                 ).replace("__axis_stride__", str(axis_stride)
-                ).replace("__k__", str(self["K"])
+                ).replace("__k__", str(input_dict["K"])
+                ).replace("__type__", "float"
                 ).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]]))
             self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
         self["entry_point"] = "TopK"
-        print(self["hlsl_kernel"])
 
     def config_infer(self, input_dict=None):
         if len(input_dict["input"]["shape"]) > 1:
@@ -52,9 +54,9 @@ class TopK(OperatorBase):
             exit(-1)
         outputs = {"shape": [], "dtype": []}
         for ele in input_dict["input"]["shape"]:
-            outputs["shape"].append(ele)
+            outputs["shape"].append(ele.copy())
         for ele in input_dict["input"]["dtype"]:
-            outputs["dtype"].append(ele)
+            outputs["dtype"].append(ele.copy())
 
         if self['axis'] < 0:
             self['axis'] += len(outputs["shape"][0])

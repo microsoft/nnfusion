@@ -12,7 +12,7 @@ from __operator__ import OperatorBase, OperatorTestBase
 def get_type_info(typestr):
     if typestr == "half" or typestr == "float16":
         return ("float16_t", 2, np.finfo(np.float16).min, np.finfo(np.float16).max)
-    if typestr == "float32":
+    if typestr == "float32" or typestr == "float":
         return ("float", 4, np.finfo(np.float32).min, np.finfo(np.float32).max)
     if typestr == "double":
         return ("double", 8, np.finfo(np.double).min, np.finfo(np.double).max)
@@ -62,7 +62,7 @@ class TopK(OperatorBase):
 
         m_value = ""
         def_largest = "#define LARGEST"
-        if input_dict["largest"] == 0:
+        if 'largest' in input_dict and input_dict["largest"] == 0:
             def_largest = ""
             m_value = str(dx_type_max)
         else:
@@ -71,7 +71,7 @@ class TopK(OperatorBase):
         if max_element <= in_block_number:
             threads = max_element // 2
             self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl").replace("__threads__", str(threads)).replace("__max_element__", str(max_element)).replace("__axis_stride__", str(
-                axis_stride)).replace("__k__", str(input_dict["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])).replace("__M_VALUE__", m_value)
+                axis_stride)).replace("__k__", str(self["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])).replace("__M_VALUE__", m_value)
             self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
         else:
             # Cannot use shared memory
@@ -79,15 +79,11 @@ class TopK(OperatorBase):
         self["entry_point"] = "TopK"
 
     def config_infer(self, input_dict=None):
-        if len(input_dict["input"]["shape"]) > 1:
-            sys.stderr.write(
-                "TopK only support one input: K should be translated to constant attribution.")
-            exit(-1)
         outputs = {"shape": [], "dtype": []}
-        for ele in input_dict["input"]["shape"]:
-            outputs["shape"].append(ele.copy())
-        for ele in input_dict["input"]["dtype"]:
-            outputs["dtype"].append(ele)
+        outputs["shape"].append(input_dict["input"]["shape"][0].copy())
+        outputs["shape"].append(input_dict["input"]["shape"][0].copy())
+        outputs["dtype"].append(input_dict["input"]["dtype"][0])
+        outputs["dtype"].append("int64_t")
 
         if self['axis'] < 0:
             self['axis'] += len(outputs["shape"][0])
@@ -102,6 +98,7 @@ class TopK(OperatorBase):
                 input_dict['K'] = int(input_dict['input']['data'][1][0])
 
         outputs["shape"][0][self['axis']] = input_dict["K"]
+        outputs["shape"][1][self['axis']] = input_dict["K"]
         return outputs
 
 
@@ -181,7 +178,7 @@ class TopKTest(OperatorTestBase, TopK):
 
         X = torch.rand(tuple(shape), dtype=torch.float32) * 100
         (values_ref, indicies_ref) = torch.topk(
-            X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
+            X, k=k, dim=self["axis"], largest=True, sorted=True)
 
         return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
 

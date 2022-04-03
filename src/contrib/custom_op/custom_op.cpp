@@ -73,8 +73,8 @@ std::string get_base_dir()
 
 nlohmann::json execute_script(std::shared_ptr<graph::GNode> gnode)
 {
-    auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
-    auto& jsonroot = op_reg.getRoot();
+    auto ptr = dynamic_pointer_cast<op::GenericOp>(gnode->get_op_ptr());
+    auto jsonroot = ptr->serialize(); // op_reg.getRoot();
     if (jsonroot.contains("script"))
     {
         using namespace nlohmann;
@@ -125,7 +125,6 @@ nlohmann::json execute_script(std::shared_ptr<graph::GNode> gnode)
         replace_all(script, "<OP_JSON>", jstr);
         auto json_res = exec(script.c_str());
         auto json_out = json::parse(json_res);
-        // NNFUSION_LOG(INFO) << json_res;
 
         return json_out;
     }

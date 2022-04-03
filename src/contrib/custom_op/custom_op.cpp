@@ -93,6 +93,25 @@ nlohmann::json execute_script(std::shared_ptr<graph::GNode> gnode)
             json_input["input"]["dtype"].emplace_back(type.c_type_string());
         }
 
+        // Put all constant node value into consideration
+        //auto const_op = std::dynamic_pointer_cast<Constant>(gnode->get_inputs()[i]->get_op_ptr());
+        //FIXME: Edge nubmer might not matching Input number
+        auto const_data = map<int, vector<string>>();
+
+        for(int i = 0; i < gnode->get_in_edges().size(); i++)
+        {
+            auto e = gnode->get_in_edge(i);
+            auto n = e->get_src()->get_op_ptr();
+            auto const_op = std::dynamic_pointer_cast<op::Constant>(n);
+            if(const_op != nullptr)
+            {
+                auto strs = const_op->get_value_strings();
+                const_data.insert(make_pair(i, strs));
+            }
+        }
+        if(!const_data.empty())
+            json_input["input"]["data"] = map<int, vector<string>>();
+
         for (auto attr : jsonroot.items())
         {
             json_input[attr.key()] = attr.value();

@@ -93,7 +93,16 @@ class TopK(OperatorBase):
         if self['axis'] < 0:
             self['axis'] += len(outputs["shape"][0])
 
-        outputs["shape"][0][self['axis']] = input_dict['K']
+        k = outputs["shape"][0][self['axis']]
+
+        if "k" in input_dict:
+            input_dict['K'] = input_dict['k']
+
+        if 'data' in input_dict['input']:
+            if 1 in input_dict['input']['data']:
+                input_dict['K'] = int(input_dict['input']['data'][1][0])
+
+        outputs["shape"][0][self['axis']] = input_dict["K"]
         return outputs
 
 
@@ -136,7 +145,7 @@ class TopKTest(OperatorTestBase, TopK):
             X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
 
         return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
-    
+
     def create_topk_test_random_fp16(self):
         import torch
         if not torch.cuda.is_available():
@@ -168,14 +177,15 @@ class TopKTest(OperatorTestBase, TopK):
 
         self["axis"] = random.randint(0, len(shape)-1)
         self["largest"] = 1
-        self["K"] = random.randint(1, shape[self["axis"]])
+        k = random.randint(1, shape[self["axis"]])
+        self['input']['data'] = {1: [str(k)]}
 
         X = torch.rand(tuple(shape), dtype=torch.float32) * 100
         (values_ref, indicies_ref) = torch.topk(
             X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
 
         return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
-    
+
     def create_topk_test_random_float_smallest(self):
         import torch
         import random

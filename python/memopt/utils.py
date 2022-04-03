@@ -1,35 +1,50 @@
 import tvm
 from .modify_input_pass import modify_input_pass
 from .modify_output_pass import modify_output_pass
+from .debug_pass import get_kernel_info_pass
 from .scope import Scope, get_scope
 import numpy as np
+import regex as re
 
 import ctypes
 import os
 import tempfile
 
 _tvm_default_name = "default_function_kernel0"
+_type_map = {"float32" : "float"}
 
 def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_name, global_kernel=True):
     passes = [
         (0, modify_output_pass),
         (0, modify_input_pass),
+        (4, get_kernel_info_pass),
     ]
     assert(isinstance(sm_outputs, (tuple, list)))
     assert(isinstance(sm_inputs, (tuple, list)))
     scope = get_scope()
+    # from .debug import debug
+    # debug({**globals(), **locals()})
+    func_args = ", ".join(["{}* __restrict__ {}".format(_type_map[var.dtype], var.name) for var in args])
     with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
         scope.shared_mem_outputs = sm_outputs
         scope.shared_mem_inputs = sm_inputs
         mod = tvm.build(sch, args, target=target)
 
         src = mod.imported_modules[0].get_source()
-        index = src.index(_tvm_default_name)
+        index = src.index("{")
         if global_kernel:
             prefix = "__global__ void __launch_bounds__(%d) " % np.prod(scope.block_size)
         else:
             prefix = "__device__ void "
-        src = prefix + name + src[index+len(_tvm_default_name):]
+            func_args += ", char* shared"
+        src = prefix + name + "({}) ".format(func_args) + src[index:]
+        # removing shared memory allocation
+        for var in scope.shared_mem_inputs:
+            s_var = var+"_shared"
+            src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(s_var), r"\1* {} = {};".format(s_var, var), src, 1)
+        if not global_kernel:
+            for var, offset in scope.interal_shared_memory_offset.items():
+                src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
     return src
 
 def ctypesCloseLibrary(lib):

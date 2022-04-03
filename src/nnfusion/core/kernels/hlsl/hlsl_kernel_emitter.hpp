@@ -60,6 +60,12 @@ namespace nnfusion
                             }
                         }
 
+                        if(antares_code.empty())
+                        {
+                            auto ptr = std::dynamic_pointer_cast<op::GenericOp>(ctx->op);
+                            antares_code = ptr->localOpConfig.f_kernel_funcs["HLSL"](ctx->gnode);
+                        }
+
                         kernel_info =
                             nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
                         NNFUSION_CHECK(!kernel_info.empty());

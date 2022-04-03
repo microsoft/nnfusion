@@ -175,10 +175,9 @@ void CustomOpsRegistration::register_common(nnfusion::op::OpConfig& op_reg)
                     op_reg.hlsl_kernel(
                         [](std::shared_ptr<graph::GNode> gnode) -> std::string
                         {
-                            auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
                             auto out = execute_script(gnode);
-                            auto ir = out["hlsl_kernel"];
-                            return op::create_code_from_template(ir, op_reg.getRoot());
+                            auto hlsl = out["hlsl_kernel"];
+                            return hlsl;
                         },
                         {},
                         false);

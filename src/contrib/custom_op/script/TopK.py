@@ -1,6 +1,5 @@
 #!/bin/python
 from concurrent.futures import thread
-from pickletools import read_float8
 import sys
 import os
 import numpy as np
@@ -109,6 +108,7 @@ class TopK(OperatorBase):
 class TopKTest(OperatorTestBase, TopK):
     def __init__(self, input_dict=None, config_infer=None):
         self.name = "TopK"
+        #self.export_onnx_test()
 
     def create_topk_test(self):
         import numpy as np
@@ -208,3 +208,14 @@ class TopKTest(OperatorTestBase, TopK):
 
     def allclose(self, truth, output):
         return super().allclose(truth[:1], output[:1])
+    
+    def export_onnx_test(self):
+        import torch
+        from torch import nn
+        class T(nn.Module):
+            def forward(self, a, b):
+                m = torch.mm(a, b)
+                r = torch.topk(m, k = 97, dim = 0)
+                return r
+        m = T()
+        torch.onnx.export(m, (torch.randn((232,124), dtype=torch.float32),  torch.randn((124,499), dtype=torch.float32)), "topk.hlsl.onnx")

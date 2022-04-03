@@ -67,8 +67,11 @@ void bitonic_sort(uint thread_id, uint step, uint gstep)
     }
 }
 
-[numthreads(__threads__, 1, 1)] void TopK(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
+// numthreads(1, 1, 1) will be replaced by which in launch config when do compling
+[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
 {
+    // [thread_extent] blockIdx.x =  __blocks__
+    // [thread_extent] threadIdx.x = __threads__
     uint block_id = gid.x;
     uint thread_id = tid.x;
 

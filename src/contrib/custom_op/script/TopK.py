@@ -22,6 +22,18 @@ def get_type_info(typestr):
         return ("int64_t", 8, np.iinfo(np.int64).min, np.iinfo(np.int64).max)
     exit(-1)
 
+def get_antares_type_str(typestr):
+    if typestr == "half" or typestr == "float16":
+        return "float16"
+    if typestr == "float32" or typestr == "float":
+        return "float32"
+    if typestr == "double":
+        return "float64"
+    if typestr == "int" or typestr == "int32":
+        return "int32"
+    if typestr == "int64" or typestr == "int64_t" or typestr == "long long":
+        return "int64"
+
 
 class TopK(OperatorBase):
     def __init__(self, input_dict=None, config_infer=None):
@@ -71,12 +83,24 @@ class TopK(OperatorBase):
         if max_element <= in_block_number:
             threads = max_element // 2
             self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl").replace("__threads__", str(threads)).replace("__max_element__", str(max_element)).replace("__axis_stride__", str(
-                axis_stride)).replace("__k__", str(self["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])).replace("__M_VALUE__", m_value)
+                axis_stride)).replace("__k__", str(self["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])
+                ).replace("__M_VALUE__", m_value).replace("__blocks__", str(blocks))
             self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
         else:
             # Cannot use shared memory
             pass
-        self["entry_point"] = "TopK"
+        self["entry_point"] = "CSMain"
+    
+        antares_info = "// GLOBALS: input0:{0}[{1}] -> output0:{2}[{3}], output1:{4}[{5}]".format(
+            get_antares_type_str(self["input"]["dtype"][0]),
+            ", ".join([str(i) for i in self["input"]["shape"][0]]),
+            get_antares_type_str(self["output"]["dtype"][0]),
+            ", ".join([str(i) for i in self["output"]["shape"][0]]),
+            get_antares_type_str(self["output"]["dtype"][1]),
+            ", ".join([str(i) for i in self["output"]["shape"][1]]),
+        )
+
+        self["hlsl_kernel"] = antares_info + "\n" + self["hlsl_kernel"]
 
     def config_infer(self, input_dict=None):
         outputs = {"shape": [], "dtype": []}

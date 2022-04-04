@@ -53,7 +53,7 @@ std::string nnfusion::tmpnam(int* status)
         base_dir = std::string(nnfusion_home) + "/tmp/";
     }
 
-    system(("mkdir " + base_dir).c_str());
+    system(("mkdir -p " + base_dir).c_str());
 
     std::string tmp_dir = base_dir + "/XXXXXXXXXXXXXXXX";
     int stat = mkstemp((char*)tmp_dir.c_str());

@@ -59,8 +59,8 @@ std::string get_base_dir()
         if (home != NULL)
         {
             base_dir = std::string(home) + "/nnfusion/";
-            NNFUSION_LOG(NNFUSION_WARNING)
-                << "$NNFUSION_HOME was not set, use " << std::string(home) << "/nnfusion.";
+            NNFUSION_LOG(NNFUSION_WARNING) << "$NNFUSION_HOME was not set, use "
+                                           << std::string(home) << "/nnfusion.";
         }
     }
     else
@@ -134,102 +134,92 @@ nlohmann::json execute_script(std::shared_ptr<graph::GNode> gnode)
 void CustomOpsRegistration::register_common(nnfusion::op::OpConfig& op_reg)
 {
     // infer shapes
-    op_reg.infershape(
-        [](std::shared_ptr<graph::GNode> gnode) -> void
+    op_reg.infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
+        auto& jsonroot = op_reg.getRoot();
+        if (jsonroot.contains("script"))
         {
-            auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
-            auto& jsonroot = op_reg.getRoot();
-            if (jsonroot.contains("script"))
+            auto json_out = execute_script(gnode);
+            if (json_out.contains("output"))
             {
-                auto json_out = execute_script(gnode);
-                if (json_out.contains("output"))
+                if (json_out["output"].contains("shape") && json_out["output"].contains("dtype"))
                 {
-                    if (json_out["output"].contains("shape") &&
-                        json_out["output"].contains("dtype"))
+                    for (int i = 0; i < json_out["output"]["shape"].size(); i++)
                     {
-                        for (int i = 0; i < json_out["output"]["shape"].size(); i++)
-                        {
-                            element::Type t;
-                            std::string tn = json_out["output"]["dtype"][i].get<std::string>();
-                            element::Type::dtype_string_to_nnfusion_element_type(tn, t);
-                            auto d = json_out["output"]["shape"][i].get<std::vector<size_t>>();
-                            nnfusion::Shape s(d.begin(), d.end());
+                        element::Type t;
+                        std::string tn = json_out["output"]["dtype"][i].get<std::string>();
+                        element::Type::dtype_string_to_nnfusion_element_type(tn, t);
+                        auto d = json_out["output"]["shape"][i].get<std::vector<size_t>>();
+                        nnfusion::Shape s(d.begin(), d.end());
 
-                            gnode->set_output_type_and_shape(i, t, s);
-                        }
+                        gnode->set_output_type_and_shape(i, t, s);
                     }
                 }
-                if (json_out.contains("antares_ir"))
-                {
-                    op_reg.antares_ir(
-                        [](std::shared_ptr<graph::GNode> gnode) -> std::string
-                        {
-                            auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
-                            auto out = execute_script(gnode);
-                            auto ir = out["antares_ir"];
-                            return op::create_code_from_template(ir, op_reg.getRoot());
-                        });
-                }
-                if (json_out.contains("hlsl_kernel"))
-                {
-                    op_reg.hlsl_kernel(
-                        [](std::shared_ptr<graph::GNode> gnode) -> std::string
-                        {
-                            auto out = execute_script(gnode);
-                            auto hlsl = out["hlsl_kernel"];
-                            return hlsl;
-                        },
-                        {},
-                        false);
-                }
             }
-            else
+            if (json_out.contains("antares_ir"))
             {
-                auto& shape_0 = gnode->get_input_shape(0);
-                auto inshapes = op_reg.getRoot()["input_shapes"];
-                for (size_t i = 0; i < inshapes.size(); i++)
-                {
-                    nnfusion::Shape in_shape_t;
-                    for (auto d : inshapes[i])
-                        in_shape_t.push_back(d);
-                    if (in_shape_t == shape_0)
-                    {
-                        auto outshapes = op_reg.getRoot()["output_shapes"];
-                        NNFUSION_CHECK(i < outshapes.size());
-                        nnfusion::Shape out_shape_t;
-                        for (auto d : outshapes[i])
-                            out_shape_t.push_back(d);
-                        gnode->set_output_type_and_shape(
-                            0, gnode->get_input_element_type(0), out_shape_t);
-                        return;
-                    }
-                }
-                // by default set up the same as input shape
-                gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), shape_0);
+                op_reg.antares_ir([](std::shared_ptr<graph::GNode> gnode) -> std::string {
+                    auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
+                    auto out = execute_script(gnode);
+                    auto ir = out["antares_ir"];
+                    return op::create_code_from_template(ir, op_reg.getRoot());
+                });
             }
-        });
+            if (json_out.contains("hlsl_kernel"))
+            {
+                op_reg.hlsl_kernel(
+                    [](std::shared_ptr<graph::GNode> gnode) -> std::string {
+                        auto out = execute_script(gnode);
+                        auto hlsl = out["hlsl_kernel"];
+                        return hlsl;
+                    },
+                    {},
+                    false);
+            }
+        }
+        else
+        {
+            auto& shape_0 = gnode->get_input_shape(0);
+            auto inshapes = op_reg.getRoot()["input_shapes"];
+            for (size_t i = 0; i < inshapes.size(); i++)
+            {
+                nnfusion::Shape in_shape_t;
+                for (auto d : inshapes[i])
+                    in_shape_t.push_back(d);
+                if (in_shape_t == shape_0)
+                {
+                    auto outshapes = op_reg.getRoot()["output_shapes"];
+                    NNFUSION_CHECK(i < outshapes.size());
+                    nnfusion::Shape out_shape_t;
+                    for (auto d : outshapes[i])
+                        out_shape_t.push_back(d);
+                    gnode->set_output_type_and_shape(
+                        0, gnode->get_input_element_type(0), out_shape_t);
+                    return;
+                }
+            }
+            // by default set up the same as input shape
+            gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), shape_0);
+        }
+    });
 
     // kernel functions
     if (op_reg.getRoot().find("antares_ir") != op_reg.getRoot().end())
     {
-        op_reg.antares_ir(
-            [](std::shared_ptr<graph::GNode> gnode) -> std::string
-            {
-                auto op_config = nnfusion::op::lookup_op_config(gnode->get_op_type());
-                auto ir = op_config.get("antares_ir");
-                return op::create_code_from_template(ir, op_config.getRoot());
-            });
+        op_reg.antares_ir([](std::shared_ptr<graph::GNode> gnode) -> std::string {
+            auto op_config = nnfusion::op::lookup_op_config(gnode->get_op_type());
+            auto ir = op_config.get("antares_ir");
+            return op::create_code_from_template(ir, op_config.getRoot());
+        });
     }
 
     if (op_reg.getRoot().find("cpu_kernel") != op_reg.getRoot().end())
     {
-        op_reg.cpu_kernel(
-            [](std::shared_ptr<graph::GNode> gnode) -> std::string
-            {
-                auto op_config = nnfusion::op::lookup_op_config(gnode->get_op_type());
-                auto kernel = op_config.get("cpu_kernel");
-                return op::create_code_from_template(kernel, op_config.getRoot());
-            });
+        op_reg.cpu_kernel([](std::shared_ptr<graph::GNode> gnode) -> std::string {
+            auto op_config = nnfusion::op::lookup_op_config(gnode->get_op_type());
+            auto kernel = op_config.get("cpu_kernel");
+            return op::create_code_from_template(kernel, op_config.getRoot());
+        });
     }
 
     if (op_reg.getRoot().find("cuda_kernel") != op_reg.getRoot().end())
@@ -252,8 +242,7 @@ void CustomOpsRegistration::register_common(nnfusion::op::OpConfig& op_reg)
         }
 
         op_reg.cuda_kernel(
-            [](std::shared_ptr<graph::GNode> gnode) -> std::string
-            {
+            [](std::shared_ptr<graph::GNode> gnode) -> std::string {
                 auto op_config = nnfusion::op::lookup_op_config(gnode->get_op_type());
                 auto kernel = op_config.get("cuda_kernel");
                 NNFUSION_LOG(INFO) << kernel;

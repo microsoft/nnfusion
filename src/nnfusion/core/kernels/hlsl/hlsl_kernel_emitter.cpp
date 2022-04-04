@@ -105,11 +105,14 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
 
         if (int(options.find("|inplace_wg|")) < 0)
         {
-            lu << "NNfusionTensor ts_" << m_context->output_names[0] << "(device, {"
-               << nnfusion::codegen::join_collections(
-                      curr->get_output_shape(0),
-                      [](int idx, ssize_t it) { return std::to_string(it); })
-               << "}, sizeof(" << curr->get_output_element_type(0).c_type_string() << "));\n";
+            for (int i = 0; i < curr->get_output_size(); ++i)
+            {
+                lu << "NNfusionTensor ts_" << m_context->output_names[i] << "(device, {"
+                << nnfusion::codegen::join_collections(
+                        curr->get_output_shape(i),
+                        [](int idx, ssize_t it) { return std::to_string(it); })
+                << "}, sizeof(" << curr->get_output_element_type(i).c_type_string() << "));\n";
+            }
 
             lu << "  NNfusionOperator op_" << m_context->output_names[0] << "(device, {";
             for (int i = 0; i < curr->get_input_size(); ++i)
@@ -118,7 +121,14 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
                     lu << ", ";
                 lu << "ts_" << m_context->input_names[i];
             }
-            lu << "}, { ts_" << m_context->output_names[0] << " }, L\"" << get_function_name()
+            lu << "}, {";
+            for (int i = 0; i < curr->get_output_size(); ++i)
+            {
+                if (i)
+                    lu << ", ";
+                lu << "ts_" << m_context->output_names[i];
+            }
+            lu <<" }, L\"" << get_function_name()
                << ".hlsl\");\n\n";
         }
         else

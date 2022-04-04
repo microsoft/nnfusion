@@ -6,9 +6,9 @@
 // __k__ : axis elements size
 // __threads__ : thread in a block which is 
 
-RWStructuredBuffer<__type__> input0: register(u0);
-RWStructuredBuffer<__type__> output0: register(u1);
-RWStructuredBuffer<__out_type__> output1: register(u2);
+StructuredBuffer<__type__> input0: register(t0);
+RWStructuredBuffer<__type__> output0: register(u0);
+RWStructuredBuffer<__out_type__> output1: register(u1);
 
 __define_largest__
 

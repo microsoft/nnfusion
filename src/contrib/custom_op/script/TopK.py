@@ -112,7 +112,7 @@ class TopK(OperatorBase):
         outputs["shape"].append(input_dict["input"]["shape"][0].copy())
         outputs["dtype"].append(input_dict["input"]["dtype"][0])
         if self.cs_5_compatiable_mode:
-            outputs["dtype"].append("int")
+            outputs["dtype"].append("int32")
         else:
             outputs["dtype"].append("int64_t")
 

@@ -18,7 +18,7 @@ def get_type_info(typestr):
         return ("double", 8, np.finfo(np.double).min, np.finfo(np.double).max)
     if typestr == "int" or typestr == "int32":
         return ("int", 4, np.iinfo(np.int32).min, np.iinfo(np.int32).max)
-    if typestr == "int64" or typestr == "long long":
+    if typestr == "int64" or typestr == "long long" or typestr == "int64_t":
         return ("int64_t", 8, np.iinfo(np.int64).min, np.iinfo(np.int64).max)
     exit(-1)
 
@@ -68,6 +68,9 @@ class TopK(OperatorBase):
         in_block_number = 512
         (dx_type_str, dx_type_size, dx_type_min, dx_type_max) = get_type_info(
             input_dict["input"]["dtype"][0])
+        (dx_out_type_str, dx_out_type_size, dx_out_type_min, dx_out_type_max) = get_type_info(
+            self["output"]["dtype"][1])
+
         # element is shared memory: {_type_, int}
         # Only 4096 Bytes shared memory(L1 cache) in DX
         in_block_number = 4096 // (dx_type_size + 4)
@@ -84,7 +87,7 @@ class TopK(OperatorBase):
             threads = max_element // 2
             self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl").replace("__threads__", str(threads)).replace("__max_element__", str(max_element)).replace("__axis_stride__", str(
                 axis_stride)).replace("__k__", str(self["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])
-                ).replace("__M_VALUE__", m_value).replace("__blocks__", str(blocks))
+                ).replace("__M_VALUE__", m_value).replace("__blocks__", str(blocks)).replace("__out_type__", dx_out_type_str)
             self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
         else:
             # Cannot use shared memory

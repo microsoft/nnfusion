@@ -8,7 +8,7 @@
 
 RWStructuredBuffer<__type__> input0: register(u0);
 RWStructuredBuffer<__type__> output0: register(u1);
-RWStructuredBuffer<int64_t> output1: register(u2);
+RWStructuredBuffer<__out_type__> output1: register(u2);
 
 __define_largest__
 
@@ -109,7 +109,7 @@ void bitonic_sort(uint thread_id, uint step, uint gstep)
     {
         uint new_i = thread_id_to_idx(block_id, t, __k__);
         output0[new_i] = buf[t].val;
-        output1[new_i] = int64_t(buf[t].index);
+        output1[new_i] = __out_type__(buf[t].index);
     }
     GroupMemoryBarrierWithGroupSync();
 }

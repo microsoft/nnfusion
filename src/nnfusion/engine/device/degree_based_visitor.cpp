@@ -47,7 +47,7 @@ nnfusion::ir::Program::Pointer DegreeBasedVisitor::run_on_graph(shared_ptr<graph
         NNFUSION_CHECK(it.get() != nullptr);
         if (din[it] == 0 && dout[it] == 0)
             visited.insert(it), context->blacklist.insert(it);
-        NNFUSION_CHECK(it->get_output_size() == 1);
+        // NNFUSION_CHECK(it->get_output_size() == 1);
     }
     NNFUSION_LOG(INFO) << "There are " << context->blacklist.size()
                        << " standalone GNode(s) found.";
@@ -66,7 +66,8 @@ nnfusion::ir::Program::Pointer DegreeBasedVisitor::run_on_graph(shared_ptr<graph
 
     // Perform blockfusion
     int offset = 0, step = 0;
-    auto new_super_step = [&]() {
+    auto new_super_step = [&]()
+    {
         while (pend_q.size())
         {
             gen_q.push_back(pend_q.front());

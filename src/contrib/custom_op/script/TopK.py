@@ -100,7 +100,7 @@ class TopK(OperatorBase):
             ", ".join([str(i) for i in self["output"]["shape"][1]]),
         )
 
-        self["hlsl_kernel"] = antares_info + "\n" + self["hlsl_kernel"]
+        self["hlsl_kernel"] = antares_info + "\n" + antares_info.replace("GLOBALS:", "LOCAL: CSMain --") + "\n" + self["hlsl_kernel"]
 
     def config_infer(self, input_dict=None):
         outputs = {"shape": [], "dtype": []}

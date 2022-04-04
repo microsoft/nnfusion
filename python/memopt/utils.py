@@ -1,8 +1,10 @@
+from .graph import OutputNode, PlaceHolderNode
 import tvm
 from .modify_input_pass import modify_input_pass
 from .modify_output_pass import modify_output_pass
 from .debug_pass import get_kernel_info_pass
 from .scope import Scope, get_scope
+from .schedule_rewrite import CodeGenerator
 import numpy as np
 import regex as re
 
@@ -86,7 +88,7 @@ extern "C" void function({}) {{
 }}
 """
     header = "#include <cuda_runtime.h>\n"
-    host_call = template.format(def_args, name, block_str, grid_str, call_args)
+    host_call = template.format(def_args, name, grid_str, block_str, call_args)
     return header + kernel_code + "\n" + host_call
 
 def compile_and_load(kernel_code):
@@ -101,3 +103,38 @@ def compile_and_load(kernel_code):
     assert(ret == 0)
     return lib
 
+def compose_global_kernel(topo_order, configs, target, name):
+    # check inputs and outputs
+    subgraph_inputs_idx_map = {}
+    subgraph_outputs_idx_map = {}
+    for op in topo_order:
+        if isinstance(op, PlaceHolderNode):
+            idx = len(subgraph_inputs_idx_map)
+            subgraph_inputs_idx_map[op] = idx
+        elif isinstance(op, OutputNode):
+            idx = len(subgraph_outputs_idx_map)
+            subgraph_outputs_idx_map[op] = idx
+    # -------------------------------------------------
+    cgen = CodeGenerator()
+    idx = 0
+    total_interal_shared_memory = 0
+    for op in topo_order:
+        if isinstance(op, PlaceHolderNode):
+            continue
+        config = configs[op]
+        sch = tvm.te.create_schedule(op.args[-1].op)
+        sch = cgen.rewrite_schedule(sch, config, True, True, target_stage="C")
+        with Scope(sch) as scope:
+            shared_inputs = []
+            shared_outputs = []
+            for i, input in enumerate(op.inputs):
+                if not isinstance(input.src_node, PlaceHolderNode):
+                    shared_inputs.append(op.args[i].name)
+            for output in op.outputs:
+                if not isinstance(input.dst_node, OutputNode):
+                    shared_outputs.append(op.args[-1].name)
+                    break
+            kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=name+"_kernel_"+str(idx), global_kernel=False)
+            idx += 1
+            total_interal_shared_memory = max(total_interal_shared_memory, scope.total_interal_shared_memory)
+    return None

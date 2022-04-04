@@ -59,13 +59,17 @@ class PlaceHolderNode(Node):
     def __init__(self, name):
         super().__init__([], "PlaceHolder " + name)
 
+class OutputNode(Node):
+    def __init__(self, node, id=0):
+        super().__init__([(node, id)], "Output ")
+
 class MatMulNode(Node):
     def __init__(self, inputs, n, m ,k):
         super().__init__(inputs, "MatMul")
         from op import MatmulOp
         from .tvm_ops import tvm_matmul
         self.op = MatmulOp(m, k, n)
-        self.sch, self.args = tvm_matmul(n, m, k)
+        self.args = tvm_matmul(n, m, k)
 
     def emit_config(self):
         stage = self.sch[self.args[2]]

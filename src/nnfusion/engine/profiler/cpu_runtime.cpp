@@ -198,7 +198,7 @@ bool ReferenceRuntime::compile(const ProfilingContext::Pointer& ke)
 {
     if (ke->entry_point != nullptr)
         return true;
-    string filename = string(tmpnam(nullptr));
+    string filename = string(nnfusion::tmpnam(nullptr));
     string objname = filename + DLIB_SUFFIX;
     string srcname = filename + ".cpp";
     // ofstream source_file(ke->working_dir + "/" + ke->source_code->symbol);

@@ -21,7 +21,7 @@ bool RocmDefaultRuntime::compile(const ProfilingContext::Pointer& ke)
 {
     if (ke->entry_point != nullptr)
         return true;
-    string filename = string(tmpnam(nullptr));
+    string filename = string(nnfusion::tmpnam(nullptr));
     string objname = filename + DLIB_SUFFIX;
     string srcname = ke->source_code->get_symbol();
 
@@ -51,7 +51,7 @@ bool RocmDefaultRuntime::hipfy(const ProfilingContext::Pointer& ke)
 
     if (ke->entry_point != nullptr)
         return true;
-    string filename = string(tmpnam(nullptr));
+    string filename = string(nnfusion::tmpnam(nullptr));
     string objname = filename + DLIB_SUFFIX;
     string cu_srcname = filename + ".cu";
     string rocm_srcname = filename + ".cpp";

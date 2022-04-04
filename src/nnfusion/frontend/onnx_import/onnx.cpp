@@ -53,7 +53,7 @@ namespace nnfusion
         {
             NNFUSION_LOG(INFO) << "Optimizing ONNX Graph with External Tool "
                                   "(models/pytorch2onnx/ort_run_frozen.py)";
-            string optimized_filename = string(tmpnam(nullptr));
+            string optimized_filename = string(nnfusion::tmpnam(nullptr));
             string m_path = path;
             string script_path =
                 nnfusion::codegen::get_file_from_templates("onnx/ort_run_frozen.py");

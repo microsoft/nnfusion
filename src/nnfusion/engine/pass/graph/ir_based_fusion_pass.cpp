@@ -49,6 +49,13 @@ private:
     {
         for (auto node : m_graph->get_ordered_ops())
         {
+            auto ir = nnfusion::op::get_translation(node);
+            auto op_type = node->get_op_ptr()->get_op_type();
+            if (ir.empty())
+            {
+                m_blocklist.insert(op_type);
+            }
+
             // block list
             if (m_blocklist.find(node->get_op_type()) != m_blocklist.end())
             {
@@ -72,7 +79,6 @@ private:
                 m_tagged_nodes.insert(output);
             }
 
-            auto ir = nnfusion::op::get_translation(node);
             // multi ir
             if (ir.find("mediate") != string::npos)
             {

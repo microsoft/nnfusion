@@ -1,6 +1,5 @@
 #!/bin/python
 from concurrent.futures import thread
-from pickletools import read_float8
 import sys
 import os
 import numpy as np
@@ -13,20 +12,33 @@ from __operator__ import OperatorBase, OperatorTestBase
 def get_type_info(typestr):
     if typestr == "half" or typestr == "float16":
         return ("float16_t", 2, np.finfo(np.float16).min, np.finfo(np.float16).max)
-    if typestr == "float32":
+    if typestr == "float32" or typestr == "float":
         return ("float", 4, np.finfo(np.float32).min, np.finfo(np.float32).max)
     if typestr == "double":
         return ("double", 8, np.finfo(np.double).min, np.finfo(np.double).max)
     if typestr == "int" or typestr == "int32":
         return ("int", 4, np.iinfo(np.int32).min, np.iinfo(np.int32).max)
-    if typestr == "int64" or typestr == "long long":
+    if typestr == "int64" or typestr == "long long" or typestr == "int64_t":
         return ("int64_t", 8, np.iinfo(np.int64).min, np.iinfo(np.int64).max)
     exit(-1)
+
+def get_antares_type_str(typestr):
+    if typestr == "half" or typestr == "float16":
+        return "float16"
+    if typestr == "float32" or typestr == "float":
+        return "float32"
+    if typestr == "double":
+        return "float64"
+    if typestr == "int" or typestr == "int32":
+        return "int32"
+    if typestr == "int64" or typestr == "int64_t" or typestr == "long long":
+        return "int64"
 
 
 class TopK(OperatorBase):
     def __init__(self, input_dict=None, config_infer=None):
         # Here is some difference with original ONNX define
+        self.cs_5_compatiable_mode = True
         super().__init__(input_dict, self.config_infer)
         self.attach_directx_hlsl_kernel(input_dict)
 
@@ -57,13 +69,16 @@ class TopK(OperatorBase):
         in_block_number = 512
         (dx_type_str, dx_type_size, dx_type_min, dx_type_max) = get_type_info(
             input_dict["input"]["dtype"][0])
+        (dx_out_type_str, dx_out_type_size, dx_out_type_min, dx_out_type_max) = get_type_info(
+            self["output"]["dtype"][1])
+
         # element is shared memory: {_type_, int}
         # Only 4096 Bytes shared memory(L1 cache) in DX
         in_block_number = 4096 // (dx_type_size + 4)
 
         m_value = ""
         def_largest = "#define LARGEST"
-        if input_dict["largest"] == 0:
+        if 'largest' in input_dict and input_dict["largest"] == 0:
             def_largest = ""
             m_value = str(dx_type_max)
         else:
@@ -72,28 +87,49 @@ class TopK(OperatorBase):
         if max_element <= in_block_number:
             threads = max_element // 2
             self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl").replace("__threads__", str(threads)).replace("__max_element__", str(max_element)).replace("__axis_stride__", str(
-                axis_stride)).replace("__k__", str(input_dict["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])).replace("__M_VALUE__", m_value)
+                axis_stride)).replace("__k__", str(self["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])
+                ).replace("__M_VALUE__", m_value).replace("__blocks__", str(blocks)).replace("__out_type__", dx_out_type_str)
             self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
         else:
             # Cannot use shared memory
             pass
-        self["entry_point"] = "TopK"
+        self["entry_point"] = "CSMain"
+    
+        antares_info = "// GLOBALS: input0:{0}[{1}] -> output0:{2}[{3}], output1:{4}[{5}]".format(
+            get_antares_type_str(self["input"]["dtype"][0]),
+            ", ".join([str(i) for i in self["input"]["shape"][0]]),
+            get_antares_type_str(self["output"]["dtype"][0]),
+            ", ".join([str(i) for i in self["output"]["shape"][0]]),
+            get_antares_type_str(self["output"]["dtype"][1]),
+            ", ".join([str(i) for i in self["output"]["shape"][1]]),
+        )
+
+        self["hlsl_kernel"] = antares_info + "\n" + antares_info.replace("GLOBALS:", "LOCAL: CSMain --") + "\n" + self["hlsl_kernel"]
 
     def config_infer(self, input_dict=None):
-        if len(input_dict["input"]["shape"]) > 1:
-            sys.stderr.write(
-                "TopK only support one input: K should be translated to constant attribution.")
-            exit(-1)
         outputs = {"shape": [], "dtype": []}
-        for ele in input_dict["input"]["shape"]:
-            outputs["shape"].append(ele.copy())
-        for ele in input_dict["input"]["dtype"]:
-            outputs["dtype"].append(ele)
+        outputs["shape"].append(input_dict["input"]["shape"][0].copy())
+        outputs["shape"].append(input_dict["input"]["shape"][0].copy())
+        outputs["dtype"].append(input_dict["input"]["dtype"][0])
+        if self.cs_5_compatiable_mode:
+            outputs["dtype"].append("int32")
+        else:
+            outputs["dtype"].append("int64_t")
 
         if self['axis'] < 0:
             self['axis'] += len(outputs["shape"][0])
 
-        outputs["shape"][0][self['axis']] = input_dict['K']
+        k = outputs["shape"][0][self['axis']]
+
+        if "k" in input_dict:
+            input_dict['K'] = input_dict['k']
+
+        if 'data' in input_dict['input']:
+            if 1 in input_dict['input']['data']:
+                input_dict['K'] = int(input_dict['input']['data'][1][0])
+
+        outputs["shape"][0][self['axis']] = input_dict["K"]
+        outputs["shape"][1][self['axis']] = input_dict["K"]
         return outputs
 
 
@@ -136,7 +172,7 @@ class TopKTest(OperatorTestBase, TopK):
             X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
 
         return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
-    
+
     def create_topk_test_random_fp16(self):
         import torch
         if not torch.cuda.is_available():
@@ -168,14 +204,15 @@ class TopKTest(OperatorTestBase, TopK):
 
         self["axis"] = random.randint(0, len(shape)-1)
         self["largest"] = 1
-        self["K"] = random.randint(1, shape[self["axis"]])
+        k = random.randint(1, shape[self["axis"]])
+        self['input']['data'] = {1: [str(k)]}
 
         X = torch.rand(tuple(shape), dtype=torch.float32) * 100
         (values_ref, indicies_ref) = torch.topk(
-            X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
+            X, k=k, dim=self["axis"], largest=True, sorted=True)
 
         return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
-    
+
     def create_topk_test_random_float_smallest(self):
         import torch
         import random
@@ -198,3 +235,14 @@ class TopKTest(OperatorTestBase, TopK):
 
     def allclose(self, truth, output):
         return super().allclose(truth[:1], output[:1])
+    
+    def export_onnx_test(self):
+        import torch
+        from torch import nn
+        class T(nn.Module):
+            def forward(self, a, b):
+                m = a + b
+                r = torch.topk(m, k = 97, dim = 0)
+                return r
+        m = T()
+        torch.onnx.export(m, (torch.randn((232,124), dtype=torch.float32),  torch.randn((232, 124), dtype=torch.float32)), "topk.hlsl.onnx")

@@ -73,8 +73,8 @@ std::string get_base_dir()
 
 nlohmann::json execute_script(std::shared_ptr<graph::GNode> gnode)
 {
-    auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
-    auto& jsonroot = op_reg.getRoot();
+    auto ptr = dynamic_pointer_cast<op::GenericOp>(gnode->get_op_ptr());
+    auto jsonroot = ptr->serialize(); // op_reg.getRoot();
     if (jsonroot.contains("script"))
     {
         using namespace nlohmann;
@@ -93,6 +93,25 @@ nlohmann::json execute_script(std::shared_ptr<graph::GNode> gnode)
             json_input["input"]["dtype"].emplace_back(type.c_type_string());
         }
 
+        // Put all constant node value into consideration
+        //auto const_op = std::dynamic_pointer_cast<Constant>(gnode->get_inputs()[i]->get_op_ptr());
+        //FIXME: Edge nubmer might not matching Input number
+        auto const_data = map<int, vector<string>>();
+
+        for (int i = 0; i < gnode->get_in_edges().size(); i++)
+        {
+            auto e = gnode->get_in_edge(i);
+            auto n = e->get_src()->get_op_ptr();
+            auto const_op = std::dynamic_pointer_cast<op::Constant>(n);
+            if (const_op != nullptr)
+            {
+                auto strs = const_op->get_value_strings();
+                const_data.insert(make_pair(i, strs));
+            }
+        }
+        if (!const_data.empty())
+            json_input["input"]["data"] = map<int, vector<string>>();
+
         for (auto attr : jsonroot.items())
         {
             json_input[attr.key()] = attr.value();
@@ -106,7 +125,6 @@ nlohmann::json execute_script(std::shared_ptr<graph::GNode> gnode)
         replace_all(script, "<OP_JSON>", jstr);
         auto json_res = exec(script.c_str());
         auto json_out = json::parse(json_res);
-        // NNFUSION_LOG(INFO) << json_res;
 
         return json_out;
     }
@@ -147,23 +165,16 @@ void CustomOpsRegistration::register_common(nnfusion::op::OpConfig& op_reg)
                     return op::create_code_from_template(ir, op_reg.getRoot());
                 });
             }
-            if (json_out.contains("cuda_kernel"))
-            {
-                op_reg.antares_ir([](std::shared_ptr<graph::GNode> gnode) -> std::string {
-                    auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
-                    auto out = execute_script(gnode);
-                    auto ir = out["cuda_kernel"];
-                    return op::create_code_from_template(ir, op_reg.getRoot());
-                });
-            }
             if (json_out.contains("hlsl_kernel"))
             {
-                op_reg.antares_ir([](std::shared_ptr<graph::GNode> gnode) -> std::string {
-                    auto& op_reg = nnfusion::op::lookup_op_config(gnode->get_op_type());
-                    auto out = execute_script(gnode);
-                    auto ir = out["hlsl_kernel"];
-                    return op::create_code_from_template(ir, op_reg.getRoot());
-                });
+                op_reg.hlsl_kernel(
+                    [](std::shared_ptr<graph::GNode> gnode) -> std::string {
+                        auto out = execute_script(gnode);
+                        auto hlsl = out["hlsl_kernel"];
+                        return hlsl;
+                    },
+                    {},
+                    false);
             }
         }
         else

@@ -6,9 +6,9 @@
 // __k__ : axis elements size
 // __threads__ : thread in a block which is 
 
-RWStructuredBuffer<__type__> input0: register(u0);
-RWStructuredBuffer<__type__> output0: register(u1);
-RWStructuredBuffer<int64_t> output1: register(u2);
+StructuredBuffer<__type__> input0: register(t0);
+RWStructuredBuffer<__type__> output0: register(u0);
+RWStructuredBuffer<__out_type__> output1: register(u1);
 
 __define_largest__
 
@@ -67,8 +67,11 @@ void bitonic_sort(uint thread_id, uint step, uint gstep)
     }
 }
 
-[numthreads(__threads__, 1, 1)] void TopK(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
+// numthreads(1, 1, 1) will be replaced by which in launch config when do compling
+[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
 {
+    // [thread_extent] blockIdx.x =  __blocks__
+    // [thread_extent] threadIdx.x = __threads__
     uint block_id = gid.x;
     uint thread_id = tid.x;
 
@@ -106,7 +109,7 @@ void bitonic_sort(uint thread_id, uint step, uint gstep)
     {
         uint new_i = thread_id_to_idx(block_id, t, __k__);
         output0[new_i] = buf[t].val;
-        output1[new_i] = int64_t(buf[t].index);
+        output1[new_i] = __out_type__(buf[t].index);
     }
     GroupMemoryBarrierWithGroupSync();
 }

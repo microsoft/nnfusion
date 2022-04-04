@@ -45,6 +45,7 @@ namespace nnfusion
     // }
 
     // std::string to_cplusplus_sourcecode_literal(bool val);
+    std::string tmpnam(int* status);
 
     template <typename T>
     std::string join(const T& v, const std::string& sep = ", ")

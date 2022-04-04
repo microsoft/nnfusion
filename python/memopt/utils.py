@@ -105,36 +105,42 @@ def compile_and_load(kernel_code):
 
 def compose_global_kernel(topo_order, configs, target, name):
     # check inputs and outputs
-    subgraph_inputs_idx_map = {}
-    subgraph_outputs_idx_map = {}
+    subgraph_inputs_name_map = {}
+    subgraph_outputs_name_map = {}
     for op in topo_order:
         if isinstance(op, PlaceHolderNode):
-            idx = len(subgraph_inputs_idx_map)
-            subgraph_inputs_idx_map[op] = idx
+            idx = len(subgraph_inputs_name_map)
+            subgraph_inputs_name_map[op] = "input"+str(idx)
         elif isinstance(op, OutputNode):
-            idx = len(subgraph_outputs_idx_map)
-            subgraph_outputs_idx_map[op] = idx
+            idx = len(subgraph_outputs_name_map)
+            subgraph_outputs_name_map[op] = "output"+str(idx)
     # -------------------------------------------------
     cgen = CodeGenerator()
     idx = 0
-    total_interal_shared_memory = 0
     for op in topo_order:
-        if isinstance(op, PlaceHolderNode):
+        if isinstance(op, (PlaceHolderNode, OutputNode)):
             continue
         config = configs[op]
         sch = tvm.te.create_schedule(op.args[-1].op)
-        sch = cgen.rewrite_schedule(sch, config, True, True, target_stage="C")
+        shared_inputs = []
+        shared_outputs = []
+        for input in op.inputs:
+            if not isinstance(input.src_node, PlaceHolderNode):
+                shared_inputs.append(op.args[input.dst_id].name)
+        for output in op.outputs:
+            if not isinstance(output.dst_node, OutputNode):
+                shared_outputs.append(op.args[len(op.inputs)+output.src_id].name)
+            shared_outputs = list(set(shared_outputs)) # unique
+        sch = cgen.rewrite_schedule(sch, config, True, True, target_stage=op.args[-1].name, tile_blacklist=shared_inputs)
         with Scope(sch) as scope:
-            shared_inputs = []
-            shared_outputs = []
-            for i, input in enumerate(op.inputs):
-                if not isinstance(input.src_node, PlaceHolderNode):
-                    shared_inputs.append(op.args[i].name)
-            for output in op.outputs:
-                if not isinstance(input.dst_node, OutputNode):
-                    shared_outputs.append(op.args[-1].name)
-                    break
             kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=name+"_kernel_"+str(idx), global_kernel=False)
+            # from .debug import debug
+            # debug({**globals(), **locals()})
+            print(scope.exteral_shared_memroy_size)
             idx += 1
-            total_interal_shared_memory = max(total_interal_shared_memory, scope.total_interal_shared_memory)
+
+    # for op in topo_order:
+    #     if isinstance(op, [PlaceHolderNode, OutputNode]):
+    #         continue
+
     return None

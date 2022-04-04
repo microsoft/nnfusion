@@ -25,7 +25,7 @@ def get_kernel_info_pass(f, mod, ctx):
             normalized_name = name.replace(".", "_")
 
             if normalized_name in smem_inputs_name:
-                get_scope().exteral_shared_memroy_size[normalized_name] = num_bytes
+                get_scope().exteral_shared_memroy_size[name[:-len(".shared")]] = num_bytes
             else:
                 get_scope().interal_shared_memory_offset[normalized_name] = offset
                 offset += num_bytes

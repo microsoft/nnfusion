@@ -1,5 +1,6 @@
 import tvm
 from .scope import get_scope
+import numpy as np
 
 @tvm.tir.transform.prim_func_pass(opt_level=0)
 def modify_output_pass(f, mod, ctx):
@@ -16,6 +17,8 @@ def modify_output_pass(f, mod, ctx):
             assert all([bound.min_value == 0 for bound in indices_bound])
             assert all([bound.max_value < 1e9 for bound in indices_bound])
             shared_output_shape[lhs_name] = shape
+            num_bytes = np.prod(shape) * (int(tvm.DataType(op.buffer.dtype).bits) // 8)
+            get_scope().exteral_shared_memroy_size[lhs_name] = num_bytes
             op = tvm.tir.BufferStore(op.buffer, op.value, new_indices, op.span)
             return op
         return op
@@ -29,7 +32,6 @@ def modify_output_pass(f, mod, ctx):
             blockIdx_var_map[iter_var.var] = tvm.tir.const(0)
 
     new_body = tvm.tir.stmt_functor.ir_transform(f.body, None, process, ["tir.BufferStore"])
-    print("Shared output shape :", shared_output_shape)
     # reshape outputs if use shared_memory
     new_buffer_map = {}
     for k, v in f.buffer_map.items():

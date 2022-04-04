@@ -132,5 +132,5 @@ namespace nnfusion
         }
         */
 
-    } // namespace builder
+    } // namespace graph
 } // namespace nnfusion

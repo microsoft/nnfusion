@@ -74,4 +74,4 @@ namespace nnfusion
     };
 
     std::ostream& operator<<(std::ostream& s, const Coordinate& coordinate);
-}
+} // namespace nnfusion

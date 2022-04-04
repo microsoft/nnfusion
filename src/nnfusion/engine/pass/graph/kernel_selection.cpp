@@ -283,8 +283,8 @@ bool DefaultKernelSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>
         {
             if (!(*it)["DeviceType"].is_valid())
             {
-                NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass："
-                                      << it->get_name();
+                NNFUSION_CHECK_FAIL()
+                    << "GNode DeviceType should be assigned before this pass：" << it->get_name();
             }
             auto n_device_type = (*it)["DeviceType"].as<NNFusion_DeviceType>();
             NNFUSION_CHECK(n_device_type != UNKNOWN);
@@ -407,8 +407,8 @@ bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
         {
             if (!(*it)["DeviceType"].is_valid())
             {
-                NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass："
-                                      << it->get_name();
+                NNFUSION_CHECK_FAIL()
+                    << "GNode DeviceType should be assigned before this pass：" << it->get_name();
             }
             auto n_device_type = (*it)["DeviceType"].as<NNFusion_DeviceType>();
             NNFUSION_CHECK(n_device_type != UNKNOWN);

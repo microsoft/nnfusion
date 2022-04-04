@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a cosine operation.
             Cos();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

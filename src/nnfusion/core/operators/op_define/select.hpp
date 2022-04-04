@@ -48,5 +48,5 @@ namespace nnfusion
         protected:
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

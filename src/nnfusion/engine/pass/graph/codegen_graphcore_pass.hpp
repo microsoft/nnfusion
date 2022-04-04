@@ -78,8 +78,8 @@ namespace nnfusion
                 inline std::shared_ptr<T> get_op_object(std::shared_ptr<GNode>& curr)
                 {
                     auto _op = static_pointer_cast<T>(curr->get_op_ptr());
-                    NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not "
-                                                    << curr->get_op_ptr()->get_op_type();
+                    NNFUSION_CHECK_NOT_NULLPTR(_op)
+                        << "Node type is not " << curr->get_op_ptr()->get_op_type();
                     return _op;
                 }
 
@@ -153,8 +153,8 @@ namespace nnfusion
                             visited.insert(it), blacklist.insert(it);
                         NNFUSION_CHECK(it->get_output_size() == 1);
                     }
-                    NNFUSION_LOG(INFO) << "There are " << blacklist.size()
-                                       << " standalone GNode(s) found.";
+                    NNFUSION_LOG(INFO)
+                        << "There are " << blacklist.size() << " standalone GNode(s) found.";
                     name_used.clear();
 
                     // Fill offsetup nodes
@@ -190,55 +190,57 @@ namespace nnfusion
 
                     const int max_threads = 1216 * 6;
 
-                    auto print_standard_kernel_code = [&](
-                        std::shared_ptr<GNode>& curr,
-                        std::ofstream& fout,
-                        const std::string& code,
-                        std::vector<int> shards = {},
-                        std::vector<std::string> convert_input = {}) {
-                        if (!shards.size())
-                            shards = std::vector<int>(1 + curr->get_input_size(), 1);
-                        if (!convert_input.size())
-                            convert_input = std::vector<std::string>(curr->get_input_size());
+                    auto print_standard_kernel_code =
+                        [&](std::shared_ptr<GNode>& curr,
+                            std::ofstream& fout,
+                            const std::string& code,
+                            std::vector<int> shards = {},
+                            std::vector<std::string> convert_input = {}) {
+                            if (!shards.size())
+                                shards = std::vector<int>(1 + curr->get_input_size(), 1);
+                            if (!convert_input.size())
+                                convert_input = std::vector<std::string>(curr->get_input_size());
 
-                        int thread_uses = 1, pos = 0, next;
-                        while (next = code.find("// [thread_extent] threadIdx_", pos), next >= 0)
-                        {
-                            int eq = code.find(" = ", next);
-                            NNFUSION_CHECK(eq >= 0);
-                            thread_uses *= atoi(code.c_str() + eq + 3);
-                            pos = eq;
-                        }
-                        NNFUSION_CHECK(thread_uses == 1);
-                        thread_uses *= shards.back();
+                            int thread_uses = 1, pos = 0, next;
+                            while (next = code.find("// [thread_extent] threadIdx_", pos),
+                                   next >= 0)
+                            {
+                                int eq = code.find(" = ", next);
+                                NNFUSION_CHECK(eq >= 0);
+                                thread_uses *= atoi(code.c_str() + eq + 3);
+                                pos = eq;
+                            }
+                            NNFUSION_CHECK(thread_uses == 1);
+                            thread_uses *= shards.back();
 
-                        // if no enough thread_uses, then new_super_step()
-                        if (offset + thread_uses > max_threads)
-                        {
-                            new_super_step();
-                            NNFUSION_CHECK(offset + thread_uses <= max_threads);
-                        }
+                            // if no enough thread_uses, then new_super_step()
+                            if (offset + thread_uses > max_threads)
+                            {
+                                new_super_step();
+                                NNFUSION_CHECK(offset + thread_uses <= max_threads);
+                            }
 
-                        fout << "Tensor " << arg_names[curr] << " = compute_task(g, {";
-                        std::vector<int> range(curr->get_input_size());
-                        fout << join_collections(
-                                    range,
-                                    [&](int idx, int val) {
-                                        return arg_names[curr->get_in_edge(idx)->get_src()] +
-                                               convert_input[idx];
-                                    })
-                             << "}, R\"(" << code << ")\", ";
-                        fout << step << ", " << offset << ", " << offset + thread_uses << ", {"
-                             << join_collections(
-                                    shards, [](int idx, int val) { return std::to_string(val); })
-                             << "}).reshape({" << join_collections(curr->get_output_shape(0),
-                                                                   [&](int idx, ssize_t val) {
-                                                                       return std::to_string(val);
-                                                                   })
-                             << "})"
-                             << ";\n";
-                        offset += thread_uses;
-                    };
+                            fout << "Tensor " << arg_names[curr] << " = compute_task(g, {";
+                            std::vector<int> range(curr->get_input_size());
+                            fout << join_collections(
+                                        range,
+                                        [&](int idx, int val) {
+                                            return arg_names[curr->get_in_edge(idx)->get_src()] +
+                                                   convert_input[idx];
+                                        })
+                                 << "}, R\"(" << code << ")\", ";
+                            fout << step << ", " << offset << ", " << offset + thread_uses << ", {"
+                                 << join_collections(
+                                        shards,
+                                        [](int idx, int val) { return std::to_string(val); })
+                                 << "}).reshape({"
+                                 << join_collections(
+                                        curr->get_output_shape(0),
+                                        [&](int idx, ssize_t val) { return std::to_string(val); })
+                                 << "})"
+                                 << ";\n";
+                            offset += thread_uses;
+                        };
 
                     auto codegen_for_elementwise = [&](std::shared_ptr<GNode>& curr,
                                                        std::ofstream& fout,
@@ -756,10 +758,10 @@ namespace nnfusion
                                  << join_collections(
                                         _op->get_padding_below(),
                                         [](int idx, ssize_t val) { return std::to_string(val); })
-                                 << "}, {" << join_collections(_op->get_padding_below(),
-                                                               [](int idx, ssize_t val) {
-                                                                   return std::to_string(val);
-                                                               })
+                                 << "}, {"
+                                 << join_collections(
+                                        _op->get_padding_below(),
+                                        [](int idx, ssize_t val) { return std::to_string(val); })
                                  << "}, 0.0f);\n";
                         }
                         else
@@ -842,10 +844,10 @@ namespace nnfusion
                              << join_collections(
                                     _op->get_padding_below(),
                                     [](int idx, ssize_t val) { return std::to_string(val); })
-                             << "}, {" << join_collections(_op->get_padding_below(),
-                                                           [](int idx, ssize_t val) {
-                                                               return std::to_string(val);
-                                                           })
+                             << "}, {"
+                             << join_collections(
+                                    _op->get_padding_below(),
+                                    [](int idx, ssize_t val) { return std::to_string(val); })
                              << "}, " << pad_value << ").reshape({"
                              << join_collections(
                                     curr->get_output_shape(0),
@@ -1121,10 +1123,10 @@ namespace nnfusion
                                  << join_collections(
                                         _op->get_padding_below(),
                                         [](int idx, ssize_t val) { return std::to_string(val); })
-                                 << "}, {" << join_collections(_op->get_padding_below(),
-                                                               [](int idx, ssize_t val) {
-                                                                   return std::to_string(val);
-                                                               })
+                                 << "}, {"
+                                 << join_collections(
+                                        _op->get_padding_below(),
+                                        [](int idx, ssize_t val) { return std::to_string(val); })
                                  << "}, 0.0f);\n";
                         }
                         else

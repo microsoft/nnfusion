@@ -25,7 +25,7 @@ namespace nnfusion
     {
         class CodeWriter;
     }
-}
+} // namespace nnfusion
 
 class nnfusion::codegen::CodeWriter
 {

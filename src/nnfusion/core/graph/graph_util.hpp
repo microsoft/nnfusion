@@ -43,5 +43,5 @@ namespace nnfusion
                  const std::function<void(std::shared_ptr<GNode>)>& enter,
                  const std::function<void(std::shared_ptr<GNode>)>& leave,
                  const NodeComparator& stable_comparator);
-    }
-}
+    } // namespace graph
+} // namespace nnfusion

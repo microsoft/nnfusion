@@ -108,5 +108,5 @@ namespace nnfusion
             nnfusion::Shape m_window_shape;
             nnfusion::Strides m_window_movement_strides;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

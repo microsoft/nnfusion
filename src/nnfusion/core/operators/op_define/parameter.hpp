@@ -47,9 +47,10 @@ namespace nnfusion
             bool is_parameter() const override { return true; }
             bool require_grad() const { return m_require_grad; }
             void set_require_grad(bool value = true) { m_require_grad = value; }
+
         protected:
             bool m_cacheable;
             bool m_require_grad;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

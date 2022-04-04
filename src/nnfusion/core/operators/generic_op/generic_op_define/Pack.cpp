@@ -15,8 +15,8 @@ REGISTER_OP(Pack).attr<int>("axis", 0).infershape([](std::shared_ptr<graph::GNod
             << "Shape dimension size not match.";
         for (int j = 0; j < input_shape_0.size(); j++)
         {
-            NNFUSION_CHECK(input_shape_0[j] == input_shape_n[j]) << "Dimension " << j
-                                                                 << " in shapes must be equal.";
+            NNFUSION_CHECK(input_shape_0[j] == input_shape_n[j])
+                << "Dimension " << j << " in shapes must be equal.";
         }
     }
     auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());

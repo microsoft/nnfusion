@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs StopGradient
             StopGradient();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

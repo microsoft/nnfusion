@@ -57,13 +57,9 @@ void Op::delayed_validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
     }
 }
 
-void Op::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
-{
-}
+void Op::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) {}
 
-void Op::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
-{
-}
+void Op::infer_shared_memory(std::shared_ptr<graph::GNode> gnode) {}
 
 bool Op::is_parameter() const
 {
@@ -141,9 +137,7 @@ std::tuple<nnfusion::element::Type, nnfusion::PartialShape>
     return std::make_tuple(element_type, pshape);
 }
 
-Op::~Op()
-{
-}
+Op::~Op() {}
 
 void Op::Clear()
 {

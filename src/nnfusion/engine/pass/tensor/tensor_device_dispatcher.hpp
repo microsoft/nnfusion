@@ -23,5 +23,5 @@ namespace nnfusion
                                    NNFusion_DeviceType device_type,
                                    int device_id);
         };
-    }
-}
+    } // namespace pass
+} // namespace nnfusion

@@ -101,11 +101,12 @@ namespace nnfusion
             }
             /// \return The axis positions (0-based) to be eliminated through reduction.
             const nnfusion::AxisSet& get_reduction_axes() const { return m_reduction_axes; }
+
         protected:
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
 
             std::shared_ptr<graph::Graph> m_reduction_graph;
             nnfusion::AxisSet m_reduction_axes;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

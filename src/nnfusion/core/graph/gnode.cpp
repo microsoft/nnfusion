@@ -158,9 +158,7 @@ void GNode::set_name(const string& name)
     m_name = name;
 }
 
-GNode::~GNode()
-{
-}
+GNode::~GNode() {}
 
 int64_t GNode::set_id(int64_t id)
 {
@@ -194,9 +192,9 @@ std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_in_edges() const
 
 const std::shared_ptr<nnfusion::graph::Edge> GNode::get_in_edge(size_t i) const
 {
-    NNFUSION_CHECK(i < m_inputs.size()) << "Input index " << i
-                                        << " is out of range. GNode only has " << m_inputs.size()
-                                        << " inputs.";
+    NNFUSION_CHECK(i < m_inputs.size())
+        << "Input index " << i << " is out of range. GNode only has " << m_inputs.size()
+        << " inputs.";
     std::shared_ptr<nnfusion::graph::Edge> found_in_edge = nullptr;
     for (auto in_edge : m_in_edges)
     {
@@ -229,9 +227,9 @@ std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_out_edges() const
 
 std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_output_users(size_t i)
 {
-    NNFUSION_CHECK(i < m_outputs.size()) << "Output index " << i
-                                         << " is out of range. GNode only has " << m_outputs.size()
-                                         << " outputs.";
+    NNFUSION_CHECK(i < m_outputs.size())
+        << "Output index " << i << " is out of range. GNode only has " << m_outputs.size()
+        << " outputs.";
     std::vector<std::shared_ptr<nnfusion::graph::Edge>> output_users;
 
     auto edges = this->get_out_edges();
@@ -278,18 +276,18 @@ void GNode::set_input(size_t i, std::shared_ptr<Input> input)
 
 nnfusion::descriptor::Tensor& GNode::get_output_tensor(size_t i) const
 {
-    NNFUSION_CHECK(i < m_outputs.size()) << "Output index " << i
-                                         << " is out of range. GNode only has " << m_outputs.size()
-                                         << " outputs.";
+    NNFUSION_CHECK(i < m_outputs.size())
+        << "Output index " << i << " is out of range. GNode only has " << m_outputs.size()
+        << " outputs.";
 
     return m_outputs.at(i)->get_tensor();
 }
 
 std::shared_ptr<nnfusion::descriptor::Tensor> GNode::get_output_tensor_ptr(size_t i) const
 {
-    NNFUSION_CHECK(i < m_outputs.size()) << "Output index " << i
-                                         << " is out of range. GNode only has " << m_outputs.size()
-                                         << " outputs.";
+    NNFUSION_CHECK(i < m_outputs.size())
+        << "Output index " << i << " is out of range. GNode only has " << m_outputs.size()
+        << " outputs.";
 
     return m_outputs.at(i)->get_tensor_ptr();
 }

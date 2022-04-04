@@ -63,8 +63,8 @@ void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
             << "Lower bound for slice is greater than upper bound at axis " << i
             << " (lower bounds: " << m_lower_bounds << ", upper bounds: " << m_upper_bounds << ").";
 
-        OP_VALIDATION(this, m_strides[i] != 0) << "Stride for slice is zero at axis " << i
-                                               << " (strides: " << m_strides << ").";
+        OP_VALIDATION(this, m_strides[i] != 0)
+            << "Stride for slice is zero at axis " << i << " (strides: " << m_strides << ").";
     }
 
     const nnfusion::PartialShape& input_shape = gnode->get_input_partial_shape(0);

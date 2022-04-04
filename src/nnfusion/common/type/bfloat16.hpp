@@ -54,4 +54,4 @@ namespace nnfusion
     private:
         uint16_t m_value{0};
     };
-}
+} // namespace nnfusion

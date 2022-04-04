@@ -117,4 +117,4 @@ namespace nnfusion
     };
 
     using FunctionUnit_p = shared_ptr<FunctionUnit>;
-}
+} // namespace nnfusion

@@ -41,8 +41,8 @@ namespace nnfusion
             {
                 if (lhs[i] != rhs[i])
                 {
-                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << lhs[i] << " != rhs[" << i
-                                       << "] = " << rhs[i];
+                    NNFUSION_LOG(INFO)
+                        << "lhs[" << i << "] = " << lhs[i] << " != rhs[" << i << "] = " << rhs[i];
                     return false;
                 }
             }
@@ -58,8 +58,8 @@ namespace nnfusion
             {
                 if (lhs[i] != rhs[i])
                 {
-                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << lhs[i] << " != rhs[" << i
-                                       << "] = " << rhs[i];
+                    NNFUSION_LOG(INFO)
+                        << "lhs[" << i << "] = " << lhs[i] << " != rhs[" << i << "] = " << rhs[i];
                     return false;
                 }
             }
@@ -76,8 +76,8 @@ namespace nnfusion
                 buf.getElement(i, &x);
                 if (x != y)
                 {
-                    NNFUSION_LOG(INFO) << "lhs[" << i << "] = " << x << " != rhs[" << i
-                                       << "] = " << y;
+                    NNFUSION_LOG(INFO)
+                        << "lhs[" << i << "] = " << x << " != rhs[" << i << "] = " << y;
                     return false;
                 }
             }
@@ -206,5 +206,5 @@ namespace nnfusion
             basicTestDataBuffer<T>();
             testStringLoading<T>();
         }
-    }
-}
+    } // namespace test
+} // namespace nnfusion

@@ -21,5 +21,5 @@ namespace nnfusion
             void set_tensor_group(shared_ptr<descriptor::Tensor> tensor, const std::string& group);
             std::unordered_set<shared_ptr<descriptor::Tensor>> cross_stream;
         };
-    }
-}
+    } // namespace pass
+} // namespace nnfusion

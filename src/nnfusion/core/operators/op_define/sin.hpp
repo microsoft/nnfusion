@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a sine operation.
             Sin();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

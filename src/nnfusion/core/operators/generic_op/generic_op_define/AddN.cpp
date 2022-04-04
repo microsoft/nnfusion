@@ -16,8 +16,8 @@ REGISTER_OP(AddN).attr<nnfusion::op::OpConfig::any>("T").infershape(
             NNFUSION_CHECK(shape_0.size() == shape_n.size()) << "Shape dimension size not match.";
             for (int j = 0; j < shape_0.size(); j++)
             {
-                NNFUSION_CHECK(shape_0[j] == shape_n[j]) << "Dimension " << j
-                                                         << " in shapes must be equal.";
+                NNFUSION_CHECK(shape_0[j] == shape_n[j])
+                    << "Dimension " << j << " in shapes must be equal.";
             }
         }
 

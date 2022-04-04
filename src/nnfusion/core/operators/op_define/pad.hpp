@@ -43,6 +43,7 @@ namespace nnfusion
             const nnfusion::Shape& get_padding_above() const { return m_padding_above; }
             /// \return The interior padding sizes.
             const nnfusion::Shape& get_padding_interior() const { return m_padding_interior; }
+
         protected:
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
 
@@ -50,5 +51,5 @@ namespace nnfusion
             nnfusion::Shape m_padding_above;
             nnfusion::Shape m_padding_interior;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

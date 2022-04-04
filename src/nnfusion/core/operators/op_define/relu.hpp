@@ -67,5 +67,5 @@ namespace nnfusion
             /// \param arg Node that produces the relu forward input tensor.
             Relu6Backprop();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

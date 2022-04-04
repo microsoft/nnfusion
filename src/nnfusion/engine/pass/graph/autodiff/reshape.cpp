@@ -20,8 +20,8 @@ REGISTER_BACKWARD_TRANSLATOR(Reshape).translator([](std::shared_ptr<GNode> forwa
                                                     const GNodeIndexVector& outputs_grad,
                                                     std::shared_ptr<nnfusion::graph::Graph> graph)
                                                      -> GNodeIndexVector {
-    NNFUSION_CHECK(outputs_grad.size() == 1) << "reshape have only 1 output, but "
-                                             << outputs_grad.size() << " outputs_grad provided";
+    NNFUSION_CHECK(outputs_grad.size() == 1)
+        << "reshape have only 1 output, but " << outputs_grad.size() << " outputs_grad provided";
     auto reshape_op = std::dynamic_pointer_cast<op::Reshape>(forward_node->get_op_ptr());
 
     auto x_shape = forward_node->get_input_shape(0);

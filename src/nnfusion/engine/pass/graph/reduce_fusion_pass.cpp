@@ -28,7 +28,7 @@ namespace
         std::shared_ptr<GNode> root_node;
         std::vector<size_t> reduce_range;
     };
-}
+} // namespace
 
 class ReduceFusionOptimizer
 {

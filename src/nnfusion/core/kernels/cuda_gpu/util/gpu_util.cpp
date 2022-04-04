@@ -113,7 +113,7 @@ namespace
         }
         return std::pair<uint64_t, uint64_t>{magic, shift};
     }
-}
+} // namespace
 
 std::pair<uint64_t, uint64_t> kernels::cuda::idiv_magic_u32(uint64_t max_numerator,
                                                             uint64_t divisor)

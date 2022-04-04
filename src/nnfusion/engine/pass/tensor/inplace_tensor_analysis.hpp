@@ -21,5 +21,5 @@ namespace nnfusion
 
         private:
         };
-    }
-}
+    } // namespace pass
+} // namespace nnfusion

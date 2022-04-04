@@ -185,7 +185,7 @@ namespace nnfusion
                         *first = init_value;
                     }
                 }
-            }
+            } // namespace detail
 
             class Tensor;
             class Node;

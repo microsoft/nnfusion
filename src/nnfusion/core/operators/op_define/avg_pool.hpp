@@ -125,5 +125,5 @@ namespace nnfusion
             nnfusion::Shape m_padding_above;
             bool m_include_padding_in_avg_computation;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

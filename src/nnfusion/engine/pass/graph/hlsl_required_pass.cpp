@@ -88,7 +88,7 @@ namespace
         }
         return true;
     }
-}
+} // namespace
 
 bool HLSLRequiredPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
@@ -112,9 +112,9 @@ bool HLSLRequiredPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
             {
                 auto src_type = iter->first;
                 auto dst_type = iter->second;
-                NNFUSION_LOG(INFO) << "Convert Parameter " << node->get_name() << ": "
-                                   << src_type.c_type_string() << " -> "
-                                   << dst_type.c_type_string();
+                NNFUSION_LOG(INFO)
+                    << "Convert Parameter " << node->get_name() << ": " << src_type.c_type_string()
+                    << " -> " << dst_type.c_type_string();
                 auto old_op = std::dynamic_pointer_cast<op::Parameter>(node->get_op_ptr());
                 NNFUSION_CHECK(old_op);
                 auto new_op = std::make_shared<op::Parameter>(
@@ -134,9 +134,9 @@ bool HLSLRequiredPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
             {
                 auto src_type = iter->first;
                 auto dst_type = iter->second;
-                NNFUSION_LOG(INFO) << "Convert Constant " << node->get_name() << ": "
-                                   << src_type.c_type_string() << " -> "
-                                   << dst_type.c_type_string();
+                NNFUSION_LOG(INFO)
+                    << "Convert Constant " << node->get_name() << ": " << src_type.c_type_string()
+                    << " -> " << dst_type.c_type_string();
                 auto old_op = std::dynamic_pointer_cast<op::Constant>(node->get_op_ptr());
                 NNFUSION_CHECK(old_op);
                 auto data = old_op->get_value_strings();
@@ -157,9 +157,9 @@ bool HLSLRequiredPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
             {
                 auto src_type = iter->first;
                 auto dst_type = iter->second;
-                NNFUSION_LOG(INFO) << "Convert Convert " << node->get_name() << ": "
-                                   << src_type.c_type_string() << " -> "
-                                   << dst_type.c_type_string();
+                NNFUSION_LOG(INFO)
+                    << "Convert Convert " << node->get_name() << ": " << src_type.c_type_string()
+                    << " -> " << dst_type.c_type_string();
                 auto old_op = std::dynamic_pointer_cast<op::Convert>(node->get_op_ptr());
                 NNFUSION_CHECK(old_op);
 

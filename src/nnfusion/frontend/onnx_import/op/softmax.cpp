@@ -114,8 +114,8 @@ namespace nnfusion
                         }
                         else
                         {
-                            NNFUSION_CHECK_FAIL() << "unsupported weight input in op "
-                                                  << node_proto.op_type();
+                            NNFUSION_CHECK_FAIL()
+                                << "unsupported weight input in op " << node_proto.op_type();
                         }
                     }
                     else
@@ -233,8 +233,8 @@ namespace nnfusion
                     }
                     else
                     {
-                        NNFUSION_CHECK_FAIL() << "unsupported softmax cross entropy reduction: "
-                                              << reduction;
+                        NNFUSION_CHECK_FAIL()
+                            << "unsupported softmax cross entropy reduction: " << reduction;
                     }
 
                     return ret;
@@ -312,8 +312,8 @@ namespace nnfusion
                     }
                     else
                     {
-                        NNFUSION_CHECK_FAIL() << "unsupported softmax cross entropy reduction: "
-                                              << reduction;
+                        NNFUSION_CHECK_FAIL()
+                            << "unsupported softmax cross entropy reduction: " << reduction;
                     }
 
                     // CrossEntropyFwdBwdWithSoftmaxBwd will computing grad with every output_grad of 1, so we should multiply sample_loss

@@ -68,7 +68,7 @@ namespace
 
         std::vector<size_t> nodes;
     };
-}
+} // namespace
 
 class KernelFuseOptimizer
 {
@@ -342,7 +342,9 @@ private:
             }
 
             // Do nothing
-            case WORK_DONE: { break;
+            case WORK_DONE:
+            {
+                break;
             }
             } // switch
             if (tn)

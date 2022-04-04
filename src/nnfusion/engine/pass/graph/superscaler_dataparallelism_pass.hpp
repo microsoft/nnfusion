@@ -62,6 +62,6 @@ namespace nnfusion
                     }
                 }
             };
-        }
-    }
-}
+        } // namespace graph
+    }     // namespace pass
+} // namespace nnfusion

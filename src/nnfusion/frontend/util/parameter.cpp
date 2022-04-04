@@ -36,7 +36,7 @@ namespace nnfusion
                 result.push_back(s.substr(last, next - last));
                 return result;
             }
-        }
+        } // namespace
 
         // ParamInfo::ParamInfo(const nnfusion::Shape& shape, nnfusion::element::Type type): shape(shape), type(type) {}
         ParamInfo::ParamInfo(const nnfusion::Shape& shape, nnfusion::element::Type type)

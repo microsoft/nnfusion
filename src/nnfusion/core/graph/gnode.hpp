@@ -170,6 +170,7 @@ namespace nnfusion
 
             void set_implementation(std::string impl) { m_implementation = impl; };
             std::string get_implementation() { return m_implementation; };
+
         protected:
             int64_t m_id; // m_id is for graph, the index in graph m_nodes
             size_t m_instance_id;
@@ -229,6 +230,7 @@ namespace nnfusion
                                   std::shared_ptr<Graph> graph,
                                   bool clean_graph = true);
             std::vector<std::shared_ptr<OpContext>>& get_op_contexts() { return m_op_ctxs; }
+
         protected:
             void reorder_nodes(std::unordered_set<std::shared_ptr<GNode>> nodes,
                                std::shared_ptr<Graph> graph);

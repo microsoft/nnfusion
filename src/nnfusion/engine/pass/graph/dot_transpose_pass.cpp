@@ -74,7 +74,7 @@ namespace
     }
 
     string get_product_name() { return FLAGS_fproduct_name; }
-}
+} // namespace
 
 bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {

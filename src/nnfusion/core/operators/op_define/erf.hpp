@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a error function operation.
             Erf();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

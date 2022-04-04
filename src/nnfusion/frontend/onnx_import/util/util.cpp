@@ -136,8 +136,8 @@ namespace nnfusion
                     {
                         return nullptr;
                     }
-                    NNFUSION_CHECK_FAIL() << "Input Ngraph op not found for "
-                                          << node.input(input_idx);
+                    NNFUSION_CHECK_FAIL()
+                        << "Input Ngraph op not found for " << node.input(input_idx);
                 }
                 return result;
             }
@@ -158,8 +158,8 @@ namespace nnfusion
                     {
                         return GNodeIndex{nullptr};
                     }
-                    NNFUSION_CHECK_FAIL() << "Input Ngraph op not found for "
-                                          << node.input(input_idx);
+                    NNFUSION_CHECK_FAIL()
+                        << "Input Ngraph op not found for " << node.input(input_idx);
                 }
                 return result;
             }

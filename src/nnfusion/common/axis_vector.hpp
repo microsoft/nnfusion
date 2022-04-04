@@ -66,4 +66,4 @@ namespace nnfusion
     };
 
     std::ostream& operator<<(std::ostream& s, const AxisVector& axis_vector);
-}
+} // namespace nnfusion

@@ -19,4 +19,4 @@ namespace nnfusion
 
     std::string get_device_str(NNFusion_DeviceType dt);
     NNFusion_DeviceType get_device_type(std::string dt);
-}
+} // namespace nnfusion

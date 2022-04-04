@@ -16,7 +16,6 @@ REGISTER_OP(Slice)
              {"begin", vector_to_string(op->get_lower_bounds())},
              {"end", vector_to_string(op->get_upper_bounds())},
              {"strides", vector_to_string(op->get_strides())}});
-
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto expression_template =
@@ -49,5 +48,4 @@ REGISTER_OP(Slice)
              {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
              {"slice_dims", slice_dims}});
         return expression_code;
-
     });

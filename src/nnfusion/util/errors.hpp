@@ -67,6 +67,7 @@ namespace nnfusion
             }
 
             const char* what() const noexcept override { return m_what.c_str(); }
+
         private:
             std::string m_what;
         };
@@ -174,6 +175,7 @@ namespace nnfusion
             /// Returns an ostream to which additional error details can be written. The returned
             /// stream has the lifetime of the CheckHelper.
             std::ostream& get_stream() { return m_stream; }
+
         private:
             std::stringstream m_stream;
             std::string m_file;
@@ -194,11 +196,12 @@ namespace nnfusion
             /// to this stream will be ignored. The returned stream has the lifetime of the
             /// DummyCheckHelper.
             std::ostream& get_stream() { return m_stream; }
+
         private:
             std::stringstream m_stream;
         };
-    }
-}
+    } // namespace errors
+} // namespace nnfusion
 
 /// Check condition "cond" with an exception class of "T", at location "loc".
 #define _CHECK_STREAM_WITH_LOC(T, cond, loc)                                                       \

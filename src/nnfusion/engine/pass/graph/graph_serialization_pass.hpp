@@ -24,6 +24,6 @@ namespace nnfusion
                     return true;
                 }
             };
-        }
-    }
-}
+        } // namespace graph
+    }     // namespace pass
+} // namespace nnfusion

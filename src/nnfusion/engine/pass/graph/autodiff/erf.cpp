@@ -20,8 +20,8 @@ REGISTER_BACKWARD_TRANSLATOR(Erf).translator([](std::shared_ptr<GNode> forward_n
                                                 const GNodeIndexVector& outputs_grad,
                                                 std::shared_ptr<nnfusion::graph::Graph> graph)
                                                  -> GNodeIndexVector {
-    NNFUSION_CHECK(outputs_grad.size() == 1) << "erf have only 1 output, but "
-                                             << outputs_grad.size() << " outputs_grad provided";
+    NNFUSION_CHECK(outputs_grad.size() == 1)
+        << "erf have only 1 output, but " << outputs_grad.size() << " outputs_grad provided";
     // y = erf(x), x_grad = y_grad * (2 / sqrt(pi)) * exp ** (-x**2)
     auto x = get_node_input(forward_node, 0);
     auto y_grad = outputs_grad.at(0);

@@ -130,8 +130,8 @@ namespace nnfusion
                             auto p = value2uses.find(v);
                             if (p == value2uses.end())
                             {
-                                NNFUSION_LOG(INFO) << "Unused node output, node: " << name
-                                                   << ", output: " << v;
+                                NNFUSION_LOG(INFO)
+                                    << "Unused node output, node: " << name << ", output: " << v;
                                 continue;
                             }
                             for (auto use : p->second)
@@ -211,8 +211,8 @@ namespace nnfusion
                             }
                             else
                             {
-                                NNFUSION_CHECK_FAIL() << "unknown external proto key: "
-                                                      << kv_pair.key();
+                                NNFUSION_CHECK_FAIL()
+                                    << "unknown external proto key: " << kv_pair.key();
                             }
                         }
                         NNFUSION_CHECK(const_file_path != "")
@@ -224,7 +224,7 @@ namespace nnfusion
                         tensor.set_raw_data(raw_data);
                     }
                 }
-            }
+            } // namespace
 
             GraphConvert::GraphConvert(const onnx::ModelProto& model_proto,
                                        const std::unordered_map<std::string, size_t>& dim_params,

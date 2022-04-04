@@ -66,4 +66,4 @@ namespace nnfusion
     };
 
     std::ostream& operator<<(std::ostream& s, const CoordinateDiff& coordinate_diff);
-}
+} // namespace nnfusion

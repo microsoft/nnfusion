@@ -109,4 +109,4 @@ namespace nnfusion
             } // namespace set_7
         }     // namespace onnx_import
     }         // namespace frontend
-} // namespace ngraph
+} // namespace nnfusion

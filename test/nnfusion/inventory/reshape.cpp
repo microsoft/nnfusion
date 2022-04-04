@@ -644,5 +644,5 @@ namespace nnfusion
             default: return vector<float>();
             }
         }
-    }
-}
+    } // namespace inventory
+} // namespace nnfusion

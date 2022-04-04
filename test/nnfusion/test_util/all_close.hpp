@@ -22,7 +22,8 @@
 
 #include "nnfusion/common/common.hpp"
 
-union FloatUnion {
+union FloatUnion
+{
     float f;
     uint32_t i;
 };
@@ -67,5 +68,5 @@ namespace nnfusion
                          const DataBuffer& b,
                          int mantissa_bits = 8,
                          int tolerance_bits = 2);
-    }
-}
+    } // namespace test
+} // namespace nnfusion

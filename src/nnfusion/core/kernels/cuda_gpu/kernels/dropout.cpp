@@ -104,7 +104,8 @@ namespace nnfusion
                        << " input0,"
                        << " dropout_in_out_desc,"
                        << " output0,"
-                       << " output1," << m_context->outputs[1]->size(true)
+                       << " output1,"
+                       << m_context->outputs[1]->size(true)
                        //    << " dropout_reserve_size"
                        << "));\n";
 

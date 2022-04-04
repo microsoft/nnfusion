@@ -41,9 +41,10 @@ namespace nnfusion
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
 
             bool is_tensor_op() const override { return true; }
+
         protected:
             nnfusion::Shape m_shape{};
             nnfusion::element::Type m_element_type;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

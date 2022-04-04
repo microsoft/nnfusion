@@ -187,11 +187,12 @@ GNodeVector Graph::get_ordered_ops()
 {
     // todo: stored ops instead of calculate each time
     GNodeVector nodes;
-    ReverseDFS(this,
-               get_outputs(),
-               nullptr,
-               [&](std::shared_ptr<GNode> node) { nodes.push_back(node); },
-               nullptr);
+    ReverseDFS(
+        this,
+        get_outputs(),
+        nullptr,
+        [&](std::shared_ptr<GNode> node) { nodes.push_back(node); },
+        nullptr);
 
     return nodes;
 }
@@ -210,7 +211,8 @@ GNodeVector Graph::get_bfs_ordered_ops()
                 start.push_back(node);
         }
 
-        BFS(this,
+        BFS(
+            this,
             start,
             [&](std::shared_ptr<GNode> node) {
                 if (codegen_ops.find(node->get_id()) != codegen_ops.end())

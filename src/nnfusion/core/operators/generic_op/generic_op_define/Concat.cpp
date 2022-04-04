@@ -29,7 +29,6 @@ REGISTER_OP(Concat)
         expression << "axis=" << axis << "));";
 
         return expression.str();
-
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto expression_template =

@@ -37,9 +37,10 @@ namespace nnfusion
             bool needs_default_layout() const { return m_needs_default_layout; }
             void set_needs_copy_to_host(bool val) { m_needs_copy_to_host = val; }
             bool needs_copy_to_host() const { return m_needs_copy_to_host; }
+
         private:
             bool m_needs_default_layout{false};
             bool m_needs_copy_to_host{true};
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

@@ -49,9 +49,9 @@ namespace nnfusion
                     return _lu;
                 }
             };
-        }
-    }
-}
+        } // namespace hlsl
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

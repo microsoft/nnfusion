@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a floor operation.
             Floor();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

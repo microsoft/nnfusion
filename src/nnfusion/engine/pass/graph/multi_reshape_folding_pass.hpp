@@ -130,6 +130,6 @@ namespace nnfusion
                     return true;
                 }
             };
-        } // namespace pass
-    }     // namespace graph
+        } // namespace graph
+    }     // namespace pass
 } // namespace nnfusion

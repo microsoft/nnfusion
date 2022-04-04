@@ -59,7 +59,7 @@ namespace nnfusion
                 shared_ptr<nnfusion::op::Variable> op;
                 size_t element_num;
             };
-        } // namespace cuda
+        } // namespace cpu
     }     // namespace kernels
 } // namespace nnfusion
 

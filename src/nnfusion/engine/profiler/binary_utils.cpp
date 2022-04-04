@@ -29,8 +29,8 @@ namespace nnfusion
             handle = dlopen(object_name.c_str(), RTLD_NOW);
             if (!handle)
             {
-                NNFUSION_LOG(ERROR) << " could not open file [" << object_name
-                                    << "]: " << dlerror();
+                NNFUSION_LOG(ERROR)
+                    << " could not open file [" << object_name << "]: " << dlerror();
                 return nullptr;
             }
 #endif
@@ -56,5 +56,5 @@ namespace nnfusion
             return std::string(".");
 #endif
         }
-    }
-}
+    } // namespace profiler
+} // namespace nnfusion

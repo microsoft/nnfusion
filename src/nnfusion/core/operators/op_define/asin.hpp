@@ -32,5 +32,5 @@ namespace nnfusion
             /// \brief Constructs an arcsin operation.
             Asin();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

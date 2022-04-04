@@ -28,6 +28,6 @@ namespace nnfusion
                 std::string backend;
                 bool fast_debug;
             };
-        } // namespace pass
-    }     // namespace graph
+        } // namespace graph
+    }     // namespace pass
 } // namespace nnfusion

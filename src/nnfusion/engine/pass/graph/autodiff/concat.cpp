@@ -8,8 +8,8 @@ REGISTER_BACKWARD_TRANSLATOR(Concat).translator([](std::shared_ptr<GNode> forwar
                                                    const GNodeIndexVector& outputs_grad,
                                                    std::shared_ptr<nnfusion::graph::Graph> graph)
                                                     -> GNodeIndexVector {
-    NNFUSION_CHECK(outputs_grad.size() == 1) << "Concat have only 1 output, but "
-                                             << outputs_grad.size() << " outputs_grad provided";
+    NNFUSION_CHECK(outputs_grad.size() == 1)
+        << "Concat have only 1 output, but " << outputs_grad.size() << " outputs_grad provided";
     auto concat_result = get_node_output(forward_node, 0);
 
     Shape lower_bounds(concat_result.get_shape().size(), 0);

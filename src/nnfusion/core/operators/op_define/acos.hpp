@@ -33,5 +33,5 @@ namespace nnfusion
             ///
             Acos();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

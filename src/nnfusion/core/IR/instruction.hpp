@@ -71,5 +71,5 @@ namespace nnfusion
             std::unordered_set<std::shared_ptr<descriptor::Tensor>> liveness_new_list;
             std::unordered_set<std::shared_ptr<descriptor::Tensor>> liveness_free_list;
         };
-    }
-}
+    } // namespace ir
+} // namespace nnfusion

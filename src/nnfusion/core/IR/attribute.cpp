@@ -35,5 +35,5 @@ namespace nnfusion
             std::string c_str(val);
             return this->set(c_str);
         }
-    }
-}
+    } // namespace ir
+} // namespace nnfusion

@@ -20,8 +20,8 @@ ElementWiseFused::ElementWiseFused(shared_ptr<KernelContext> ctx)
 std::pair<std::string, shared_ptr<LanguageUnit>> get_op_kernel(shared_ptr<graph::OpContext> ctx)
 {
     auto iter = CudaElementOpMap.find(ctx->op->get_op_type());
-    NNFUSION_CHECK(iter != CudaElementOpMap.end()) << "unable find op type: "
-                                                   << ctx->op->get_op_type();
+    NNFUSION_CHECK(iter != CudaElementOpMap.end())
+        << "unable find op type: " << ctx->op->get_op_type();
     std::string op = iter->second.op;
     shared_ptr<LanguageUnit> kernel = nullptr;
 
@@ -123,8 +123,8 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         {
             if (CudaElementOpMap.find(op_ctx->op->get_op_type()) == CudaElementOpMap.end())
             {
-                NNFUSION_CHECK_FAIL() << "Illegal element-wise kernel: "
-                                      << op_ctx->op->get_op_type();
+                NNFUSION_CHECK_FAIL()
+                    << "Illegal element-wise kernel: " << op_ctx->op->get_op_type();
             }
 
             std::string invoke_func;
@@ -179,8 +179,8 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         }
         else
         {
-            NNFUSION_CHECK(in_args.count(pair.first) > 0) << m_context->gnode->get_name() << " "
-                                                          << lu.get_code() << " " << pair.first;
+            NNFUSION_CHECK(in_args.count(pair.first) > 0)
+                << m_context->gnode->get_name() << " " << lu.get_code() << " " << pair.first;
             lu << in_args[pair.first] << "[tid];\n";
         }
     }

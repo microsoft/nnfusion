@@ -127,6 +127,7 @@ namespace nnfusion
                 m_activation = act;
             }
             const std::string& get_activation() const { return m_activation; }
+
         protected:
             nnfusion::Strides m_window_movement_strides;
             nnfusion::Strides m_window_dilation_strides;
@@ -325,5 +326,5 @@ namespace nnfusion
             nnfusion::CoordinateDiff m_padding_above_backward;
             nnfusion::Strides m_data_dilation_strides_backward;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

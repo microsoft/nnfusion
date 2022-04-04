@@ -598,5 +598,5 @@ namespace nnfusion
                 }
             }
         };
-    };
-}
+    }; // namespace profiler
+} // namespace nnfusion

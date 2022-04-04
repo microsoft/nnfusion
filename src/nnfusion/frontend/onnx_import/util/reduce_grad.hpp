@@ -95,4 +95,4 @@ namespace nnfusion
             } // namespace  reduce
         }     // namespace onnx_import
     }         // namespace frontend
-} // namespace ngraph
+} // namespace nnfusion

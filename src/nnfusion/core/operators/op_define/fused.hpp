@@ -40,5 +40,5 @@ namespace nnfusion
             std::vector<std::string> plan_rules;
             bool is_memcpy;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

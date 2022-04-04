@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a hyperbolic cosine operation.
             Cosh();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

@@ -37,6 +37,6 @@ namespace nnfusion
                 bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph,
                                   std::shared_ptr<vector<vector<float>>> backward_inputs);
             };
-        }
-    }
-}
+        } // namespace graph
+    }     // namespace pass
+} // namespace nnfusion

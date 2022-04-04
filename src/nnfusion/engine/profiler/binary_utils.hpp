@@ -43,5 +43,5 @@ namespace nnfusion
         void close_library_handle(DL_HANDLE& handle);
 
         std::string get_current_dir();
-    }
-}
+    } // namespace profiler
+} // namespace nnfusion

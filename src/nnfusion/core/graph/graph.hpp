@@ -171,5 +171,5 @@ namespace nnfusion
             // so is the other one (add_edge checks this).
             return m_src_output == Graph::kControlSlot;
         }
-    }
-}
+    } // namespace graph
+} // namespace nnfusion

@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a square operation.
             Rsqrt();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

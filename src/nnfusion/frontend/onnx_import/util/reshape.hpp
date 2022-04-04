@@ -150,4 +150,4 @@ namespace nnfusion
             } // namespace  reshape
         }     // namespace onnx_import
     }         // namespace frontend
-} // namespace ngraph
+} // namespace nnfusion

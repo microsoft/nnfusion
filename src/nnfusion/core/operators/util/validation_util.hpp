@@ -79,5 +79,5 @@ namespace nnfusion
                                      const nnfusion::PartialShape& input_shape,
                                      const nnfusion::PartialShape& gamma_shape,
                                      const nnfusion::PartialShape& beta_shape);
-    }
-}
+    } // namespace op
+} // namespace nnfusion

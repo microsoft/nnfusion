@@ -33,5 +33,5 @@ namespace nnfusion
             /// \param reduction_axes The axis positions (0-based) to be eliminated.
             Max(const nnfusion::AxisSet& reduction_axes);
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

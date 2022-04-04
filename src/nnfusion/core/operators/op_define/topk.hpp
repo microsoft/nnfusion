@@ -45,11 +45,12 @@ namespace nnfusion
             nnfusion::element::Type get_index_element_type() const { return m_index_element_type; }
             size_t get_k() const { return m_k; }
             bool get_compute_max() const { return m_compute_max; }
+
         protected:
             size_t m_top_k_axis;
             nnfusion::element::Type m_index_element_type;
             size_t m_k;
             bool m_compute_max;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

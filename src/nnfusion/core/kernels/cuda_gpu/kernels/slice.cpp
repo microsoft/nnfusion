@@ -99,8 +99,9 @@ LanguageUnit_p cuda::Slice::emit_function_body()
             for (; i < output_shape.size() - 1; i++)
             {
                 lu << "input_idx += (((output_idx / output_strides[" << i << "]) * slice_strides["
-                   << i << "]) + "
-                           "lower_bounds["
+                   << i
+                   << "]) + "
+                      "lower_bounds["
                    << i << "]) * input_strides[" << i << "];\n";
                 lu << "output_idx %= output_strides[" << i << "];\n";
             }

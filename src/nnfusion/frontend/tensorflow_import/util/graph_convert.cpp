@@ -67,8 +67,8 @@ namespace nnfusion
                     }
                     break;
                     default:
-                        NNFUSION_CHECK(false) << "Unrecognized value case: "
-                                              << entry.second.value_case();
+                        NNFUSION_CHECK(false)
+                            << "Unrecognized value case: " << entry.second.value_case();
                     }
                 }
                 NNFUSION_LOG(INFO) << "GenericTFNode(" << node.op() << "): " << config << std::endl;
@@ -1226,9 +1226,9 @@ namespace nnfusion
                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
             {
                 const int input_cnt = node.input_size();
-                NNFUSION_CHECK(input_cnt >= 3) << "\"" << node.name()
-                                               << "\" requires at least 3 inputs, got " << input_cnt
-                                               << " instead";
+                NNFUSION_CHECK(input_cnt >= 3)
+                    << "\"" << node.name() << "\" requires at least 3 inputs, got " << input_cnt
+                    << " instead";
 
                 int max_inputs = INT_MAX - 1;
                 if (get_device_type(FLAGS_fdefault_device) == ROCM_GPU)
@@ -1618,10 +1618,10 @@ namespace nnfusion
                     }
 
                     err_msg = err_stream.str();
-                    NNFUSION_CHECK(err_msg.empty()) << "Cannot translate sliceop at position " << i
-                                                    << " of " << size_vec.size()
-                                                    << ". The reasons are:\n"
-                                                    << err_msg;
+                    NNFUSION_CHECK(err_msg.empty())
+                        << "Cannot translate sliceop at position " << i << " of " << size_vec.size()
+                        << ". The reasons are:\n"
+                        << err_msg;
                 }
 
                 std::vector<size_t> l(lower_vec.begin(), lower_vec.end());
@@ -1692,8 +1692,8 @@ namespace nnfusion
                 }
                 for (int i = 0; i < input_rank; i++)
                 {
-                    NNFUSION_CHECK(count[i]) << i << " is missing from {" << join(permutation)
-                                             << "}.";
+                    NNFUSION_CHECK(count[i])
+                        << i << " is missing from {" << join(permutation) << "}.";
                 }
 
                 nnfusion::AxisVector ng_axis_order;
@@ -1803,9 +1803,9 @@ namespace nnfusion
                 std::vector<int64> tf_axis;
                 bool status = GetValueFromNGraphOp<int64>(axis_gnode, &tf_axis);
                 NNFUSION_CHECK(status);
-                NNFUSION_CHECK(tf_axis.size() == 1) << "Found axis in GatherV2 op (" << node.name()
-                                                    << ") translation to be non scalar, of size "
-                                                    << tf_axis.size();
+                NNFUSION_CHECK(tf_axis.size() == 1)
+                    << "Found axis in GatherV2 op (" << node.name()
+                    << ") translation to be non scalar, of size " << tf_axis.size();
 
                 nnfusion::op::OpConfig::any myConfig;
                 myConfig["axis"] = tf_axis[0];
@@ -1850,9 +1850,9 @@ namespace nnfusion
                                             std::shared_ptr<nnfusion::graph::Graph> m_graph)
             {
                 const int input_cnt = node.input_size();
-                NNFUSION_CHECK(input_cnt >= 1) << "\"" << node.name()
-                                               << "\" requires at least 1 inputs, got " << input_cnt
-                                               << " instead";
+                NNFUSION_CHECK(input_cnt >= 1)
+                    << "\"" << node.name() << "\" requires at least 1 inputs, got " << input_cnt
+                    << " instead";
 
                 int pack_axis = 0;
                 bool status = GetNodeAttr(node.attr(), "axis", pack_axis);
@@ -1931,9 +1931,9 @@ namespace nnfusion
                 std::vector<int> tf_axis;
                 bool status = GetValueFromNGraphOp<int>(axis_gnode, &tf_axis);
                 NNFUSION_CHECK(status);
-                NNFUSION_CHECK(tf_axis.size() <= 1) << "Found axis in All op (" << node.name()
-                                                    << ") translation to be non scalar, of size "
-                                                    << tf_axis.size();
+                NNFUSION_CHECK(tf_axis.size() <= 1)
+                    << "Found axis in All op (" << node.name()
+                    << ") translation to be non scalar, of size " << tf_axis.size();
 
                 bool keep_dims = false;
                 status = GetNodeAttr(node.attr(), "keep_dims", keep_dims);

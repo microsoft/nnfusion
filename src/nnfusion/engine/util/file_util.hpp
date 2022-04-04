@@ -41,4 +41,4 @@ namespace file_util
     string path_join(const string& s1, const string& s2);
 
     string get_file_name(const string& s);
-}
+} // namespace file_util

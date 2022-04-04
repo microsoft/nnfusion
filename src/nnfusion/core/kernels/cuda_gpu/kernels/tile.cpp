@@ -139,9 +139,9 @@ namespace nnfusion
                     return declaration::rocm_division_by_invariant_multiplication;
                 }
             };
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

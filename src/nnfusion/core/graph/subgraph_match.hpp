@@ -30,7 +30,7 @@ namespace nnfusion
             bool reverse_order = false;
             /*
              cutomized check for the pattern
-             for example, if we want to ensure that the second node of the pattern 
+             for example, if we want to ensure that the second node of the pattern
              has 2 outputs, since such information is not included in description,
              we could add check function to check.
             */
@@ -83,7 +83,7 @@ namespace nnfusion
             /*
              pair< pattern nodes, pattern index>
              Pattern.descriptions may contain several descriptions with equal logic meaning,
-             PatternRecord.nodes contains all nodes of matched pattern. For each pattern 
+             PatternRecord.nodes contains all nodes of matched pattern. For each pattern
              descrpition in Pattern.descriptions, there may exist several pattern in the graph,
              pair.second is used to indentify which description pair.first matches.
             */
@@ -106,13 +106,13 @@ namespace nnfusion
              B          C
              |           |
              D           F
-             |           /                
-             E          /       
-              \        /                    
-                  G               
+             |           /
+             E          /
+              \        /
+                  G
 
-        , we can description it as pattern(A->B->D->E->G) with starting node A 
-        in non-reverse order followed by pattern(G->F->C) in reverse order.                                            
+        , we can description it as pattern(A->B->D->E->G) with starting node A
+        in non-reverse order followed by pattern(G->F->C) in reverse order.
         */
         struct SubGraph
         {
@@ -195,10 +195,11 @@ namespace nnfusion
                 return m_matched_records;
             }
             void clear_matched_records() { m_matched_records.clear(); };
+
         private:
             std::shared_ptr<Graph> m_graph;
             std::vector<SubGraphRecord::Pointer> m_matched_records;
             std::unordered_set<std::shared_ptr<GNode>> m_starting_nodes;
         };
-    }
-}
+    } // namespace graph
+} // namespace nnfusion

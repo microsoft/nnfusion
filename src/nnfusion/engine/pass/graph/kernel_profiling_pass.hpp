@@ -31,7 +31,7 @@ namespace nnfusion
                 bool default_profiling_pass(std::shared_ptr<nnfusion::graph::Graph>& graph);
                 bool merged_profiling_pass(std::shared_ptr<nnfusion::graph::Graph>& graph);
             };
-        }
-    }
+        } // namespace graph
+    }     // namespace pass
 
 } // namespace nnfusion

@@ -143,8 +143,8 @@ namespace nnfusion
                         lu << type << "* " << symbol << " = (" << type << "*)(shared_buffer + "
                            << shared_memory_size << ");\n";
                         auto iter = size_of_str_type.find(type);
-                        NNFUSION_CHECK(iter != size_of_str_type.end()) << "Unknown data type: "
-                                                                       << type;
+                        NNFUSION_CHECK(iter != size_of_str_type.end())
+                            << "Unknown data type: " << type;
                         shared_memory_size += size * iter->second;
 
                         shared_memory_log.symbol.push_back(symbol);

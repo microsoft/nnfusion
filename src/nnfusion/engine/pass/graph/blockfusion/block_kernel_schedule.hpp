@@ -113,6 +113,7 @@ public:
     double get_estimation_time() override;
 
     std::vector<std::vector<int>> get_be_lane() { return be_lane; }
+
 private:
     std::vector<std::vector<int>> be_lane; // -1 indicates sync, kernel_id indicates kernel running
 };
@@ -150,6 +151,7 @@ public:
     double get_estimation_time() override;
 
     std::vector<std::vector<int>> get_be_lane() { return be_lane; }
+
 private:
     std::vector<std::vector<int>> be_lane; // -1 indicates sync, kernel_id indicates kernel running
 };

@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a less-than-or-equal operation.
             LessEq();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

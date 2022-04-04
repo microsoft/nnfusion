@@ -43,6 +43,6 @@ namespace nnfusion
                     s = s.replace(found, 1, "_");
                 return s;
             }
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion

@@ -19,8 +19,8 @@ namespace nnfusion
             std::smatch match;
             if (!std::regex_search(address, match, pattern))
             {
-                NNFUSION_CHECK(false) << "Invalid address format: " << address
-                                      << "expect: <ip>:<port>";
+                NNFUSION_CHECK(false)
+                    << "Invalid address format: " << address << "expect: <ip>:<port>";
             }
         }
 
@@ -73,4 +73,4 @@ namespace nnfusion
             return response;
         }
     };
-}
+} // namespace nnfusion

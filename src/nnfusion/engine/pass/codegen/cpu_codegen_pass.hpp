@@ -47,5 +47,5 @@ namespace nnfusion
             int numa_node_num;
             unordered_map<std::string, int> cpu_kernel_thread_idx;
         };
-    }
-}
+    } // namespace codegen
+} // namespace nnfusion

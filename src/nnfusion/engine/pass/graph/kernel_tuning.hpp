@@ -52,6 +52,6 @@ namespace nnfusion
             private:
                 std::unordered_set<std::string> BlockList;
             };
-        }
-    }
+        } // namespace graph
+    }     // namespace pass
 } // namespace nnfusion

@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a hyperbolic sine operation.
             Sinh();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

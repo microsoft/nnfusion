@@ -133,9 +133,10 @@ bool KernelProfilingPass::merged_profiling_pass(std::shared_ptr<nnfusion::graph:
             if (kernel_pctx.find(kernel) != kernel_pctx.end())
             {
                 KernelProfilingRecord::Pointer result;
-                auto profiling_kernel = [&kernel_pctx](
-                    KernelEmitter::Pointer kernel,
-                    IProfilingRuntime::Pointer runtime) -> KernelProfilingRecord::Pointer {
+                auto profiling_kernel =
+                    [&kernel_pctx](
+                        KernelEmitter::Pointer kernel,
+                        IProfilingRuntime::Pointer runtime) -> KernelProfilingRecord::Pointer {
                     if (kernel->get_or_emit_source())
                     {
                         auto pctx = kernel_pctx[kernel];

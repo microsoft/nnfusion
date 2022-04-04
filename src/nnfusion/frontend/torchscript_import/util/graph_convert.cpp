@@ -929,8 +929,8 @@ namespace nnfusion
                 }
                 else
                 {
-                    NNFUSION_CHECK_FAIL() << "aten::to accept 3 ~ 5 params, but found"
-                                          << input_gnodes.size();
+                    NNFUSION_CHECK_FAIL()
+                        << "aten::to accept 3 ~ 5 params, but found" << input_gnodes.size();
                 }
 
                 nnfusion::element::Type ng_et;
@@ -1426,8 +1426,8 @@ namespace nnfusion
                 else
                 {
                     // TODO: convertFunc not found
-                    NNFUSION_CHECK_FAIL() << "Convert func for " << node->kind().toQualString()
-                                          << " not found";
+                    NNFUSION_CHECK_FAIL()
+                        << "Convert func for " << node->kind().toQualString() << " not found";
                 }
                 return std::move(ret);
             }

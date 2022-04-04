@@ -40,6 +40,7 @@ namespace nnfusion
 
             const nnfusion::AxisSet& get_axes() const { return m_axes; }
             const bool is_in_log_space() const { return m_in_log_space; }
+
         private:
             nnfusion::AxisSet m_axes;
             bool m_in_log_space;
@@ -59,9 +60,10 @@ namespace nnfusion
 
             const nnfusion::AxisSet& get_axes() const { return m_axes; }
             const bool is_in_log_space() const { return m_in_log_space; }
+
         private:
             nnfusion::AxisSet m_axes;
             bool m_in_log_space;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

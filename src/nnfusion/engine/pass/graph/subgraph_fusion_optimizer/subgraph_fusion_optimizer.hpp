@@ -40,6 +40,6 @@ namespace nnfusion
                 std::shared_ptr<SubGraphMatch> subgraph_match;
                 std::shared_ptr<nnfusion::graph::Graph> graph;
             };
-        }
-    }
-}
+        } // namespace graph
+    }     // namespace pass
+} // namespace nnfusion

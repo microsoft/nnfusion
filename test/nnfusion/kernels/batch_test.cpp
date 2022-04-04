@@ -42,7 +42,6 @@
 #include "nnfusion/core/operators/op_define/pad.hpp"
 #include "nnfusion/core/operators/op_define/product.hpp"
 #include "nnfusion/core/operators/op_define/relu.hpp"
-#include "nnfusion/core/operators/op_define/relu.hpp"
 #include "nnfusion/core/operators/op_define/replace_slice.hpp"
 #include "nnfusion/core/operators/op_define/reshape.hpp"
 #include "nnfusion/core/operators/op_define/reverse.hpp"
@@ -86,8 +85,8 @@ namespace nnfusion
             }
             return true;
         }
-    }
-}
+    } // namespace test
+} // namespace nnfusion
 
 ///param: node, device_type, data_type ... etc
 TEST(nnfusion_core_kernels, batch_kernel_tests_abs)
@@ -102,7 +101,7 @@ TEST(nnfusion_core_kernels, batch_kernel_tests_add)
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Add>(CUDA_GPU, element::f32));
 }
 
-/* TODO: arg type is bool, enable if bool data type is supported, the test case data type should also be modified 
+/* TODO: arg type is bool, enable if bool data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_and)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::And>(GENERIC_CPU, element::f32));
@@ -110,7 +109,7 @@ TEST(nnfusion_core_kernels, batch_kernel_tests_and)
 }
 */
 
-/* TODO: arg index type is i32/i64, enable if more data type is supported, the test case data type should also be modified 
+/* TODO: arg index type is i32/i64, enable if more data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_arg_max)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::ArgMax>(GENERIC_CPU, element::f32));
@@ -142,7 +141,7 @@ TEST(nnfusion_core_kernels, batch_kernel_tests_concat)
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Concat>(CUDA_GPU, element::f32));
 }
 
-/* TODO: enable if more data type is supported, the test case data type should also be modified 
+/* TODO: enable if more data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_convert)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Convert>(GENERIC_CPU, element::f32));
@@ -162,7 +161,7 @@ TEST(nnfusion_core_kernels, batch_kernel_tests_dot)
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Dot>(CUDA_GPU, element::f32));
 }
 
-/* TODO: return type is bool, enable if bool data type is supported, the test case data type should also be modified 
+/* TODO: return type is bool, enable if bool data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_equal)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Equal>(GENERIC_CPU, element::f32));
@@ -175,7 +174,7 @@ TEST(nnfusion_core_kernels, batch_kernel_tests_floor)
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Floor>(CUDA_GPU, element::f32));
 }
 
-/* TODO: return type is bool, enable if bool data type is supported, the test case data type should also be modified 
+/* TODO: return type is bool, enable if bool data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_greater)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Greater>(GENERIC_CPU, element::f32));
@@ -243,21 +242,21 @@ TEST(nnfusion_core_kernels, batch_kernel_tests_negative)
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Negative>(CUDA_GPU, element::f32));
 }
 
-/* TODO: enable if more data type is supported, the test case data type should also be modified 
+/* TODO: enable if more data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_not)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Not>(GENERIC_CPU, element::f32));
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Not>(CUDA_GPU, element::f32));
 }
 */
-/* TODO: return type is bool, enable if bool data type is supported, the test case data type should also be modified 
+/* TODO: return type is bool, enable if bool data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_not_equal)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::NotEqual>(GENERIC_CPU, element::f32));
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::NotEqual>(CUDA_GPU, element::f32));
 }
 */
-/* TODO: enable if bool data type is supported, the test case data type should also be modified 
+/* TODO: enable if bool data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_or)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Or>(GENERIC_CPU, element::f32));
@@ -308,7 +307,7 @@ TEST(nnfusion_core_kernels, batch_kernel_tests_reverse)
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Reverse>(CUDA_GPU, element::f32));
 }
 
-/* TODO: enable if bool data type is supported, the test case data type should also be modified 
+/* TODO: enable if bool data type is supported, the test case data type should also be modified
 TEST(nnfusion_core_kernels, batch_kernel_tests_select)
 {
     EXPECT_TRUE(nnfusion::test::check_kernels<nnfusion::op::Select>(GENERIC_CPU, element::f32));

@@ -21,8 +21,8 @@ REGISTER_BACKWARD_TRANSLATOR(Power).translator([](std::shared_ptr<GNode> forward
                                                   const GNodeIndexVector& outputs_grad,
                                                   std::shared_ptr<nnfusion::graph::Graph> graph)
                                                    -> GNodeIndexVector {
-    NNFUSION_CHECK(outputs_grad.size() == 1) << "power have only 1 output, but "
-                                             << outputs_grad.size() << " outputs_grad provided";
+    NNFUSION_CHECK(outputs_grad.size() == 1)
+        << "power have only 1 output, but " << outputs_grad.size() << " outputs_grad provided";
     // z = x**y, x_grad = z_grad * y * x ** (y - 1) = z_grad * y * z / x, y_grad = z_grad * x ** y * lnx = z_grad * z * lnx
     // update: cannot computing x_grad by z_grad * y * z / x, because it returns nan for where x=0, it's the same for y_grad
     // use dedicate power_backward op instead

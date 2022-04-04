@@ -122,5 +122,5 @@ namespace nnfusion
             std::string m_kernel_suffix;
             std::unordered_set<std::string> files_include_shared;
         };
-    }
-}
+    } // namespace codegen
+} // namespace nnfusion

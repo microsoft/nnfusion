@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a ceiling operation.
             Ceiling();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

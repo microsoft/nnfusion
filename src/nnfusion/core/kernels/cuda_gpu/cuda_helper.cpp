@@ -66,7 +66,9 @@ __device__ void atomic_@name@(@T@* ptr, @T@ x1) {
 
 )",
             {
-                {"name", name}, {"T", data_type}, {"math_kernel", math_kernel},
+                {"name", name},
+                {"T", data_type},
+                {"math_kernel", math_kernel},
             });
     }
     LanguageUnit_p cw(new LanguageUnit(mangled_name, code));

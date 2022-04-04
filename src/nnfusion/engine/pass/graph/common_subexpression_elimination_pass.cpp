@@ -138,7 +138,7 @@ namespace std
             return hashc;
         }
     };
-}
+} // namespace std
 
 bool CSEPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {

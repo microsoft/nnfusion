@@ -10,8 +10,8 @@ REGISTER_OP(Roll)
         auto generic_op = static_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         vector<int> shifts = generic_op->localOpConfig.getRoot()["shifts"];
         vector<size_t> dims = generic_op->localOpConfig.getRoot()["dims"];
-        NNFUSION_CHECK_NOT_NULLPTR(generic_op) << "Node type is not "
-                                               << gnode->get_op_ptr()->get_op_type();
+        NNFUSION_CHECK_NOT_NULLPTR(generic_op)
+            << "Node type is not " << gnode->get_op_ptr()->get_op_type();
 
         NNFUSION_CHECK(gnode->get_input_size() == 1) << "Inputs of Roll operator should be 1.";
         NNFUSION_CHECK(!dims.empty() && !shifts.empty());

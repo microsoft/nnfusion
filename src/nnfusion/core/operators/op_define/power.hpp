@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs an exponentiation operation.
             Power();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

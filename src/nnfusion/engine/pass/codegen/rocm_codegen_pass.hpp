@@ -31,5 +31,5 @@ namespace nnfusion
             virtual bool after_projgen() override;
             virtual NNFusion_DeviceType device_type() { return NNFusion_DeviceType::ROCM_GPU; }
         };
-    }
-}
+    } // namespace codegen
+} // namespace nnfusion

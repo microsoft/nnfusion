@@ -37,5 +37,5 @@ namespace nnfusion
             /// \brief Constructs a SigmoidBackprop operation.
             SigmoidBackprop();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

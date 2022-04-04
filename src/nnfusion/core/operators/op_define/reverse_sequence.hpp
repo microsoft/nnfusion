@@ -37,9 +37,10 @@ namespace nnfusion
 
             size_t get_batch_axis() const { return m_batch_axis; }
             size_t get_sequence_axis() const { return m_seq_axis; }
+
         private:
             size_t m_batch_axis{0};
             size_t m_seq_axis{0};
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

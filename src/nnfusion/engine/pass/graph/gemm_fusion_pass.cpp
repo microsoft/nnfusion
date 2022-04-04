@@ -57,7 +57,7 @@ namespace
     {
         return lhs->get_name() < rhs->get_name();
     }
-}
+} // namespace
 
 class GEMMFuseOptimizer
 {

@@ -47,6 +47,6 @@ namespace nnfusion
             protected:
                 size_t m_offset{0};
             };
-        }
-    }
-}
+        } // namespace layout
+    }     // namespace descriptor
+} // namespace nnfusion

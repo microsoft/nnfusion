@@ -33,5 +33,5 @@ namespace nnfusion
 
             virtual bool is_commutative() override { return true; }
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

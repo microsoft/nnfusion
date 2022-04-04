@@ -33,6 +33,6 @@ namespace nnfusion
                 KernelEmitter::Pointer get_kernel(std::shared_ptr<nnfusion::graph::GNode> gnode);
                 uint64_t get_time_cost(std::shared_ptr<nnfusion::graph::GNode> gnode);
             };
-        }
-    }
-}
+        } // namespace graph
+    }     // namespace pass
+} // namespace nnfusion

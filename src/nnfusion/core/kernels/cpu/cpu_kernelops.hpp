@@ -404,6 +404,6 @@ namespace nnfusion
                 static constexpr const char* antares_op = "topi.min";
                 static constexpr const char* eigen_op = "minCoeff";
             };
-        }
-    }
-}
+        } // namespace cpu
+    }     // namespace kernels
+} // namespace nnfusion

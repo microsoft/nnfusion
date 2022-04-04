@@ -5,12 +5,12 @@
 #include "nnfusion/core/operators/op_define/constant.hpp"
 
 /*
-Computes a tensor such that \(output[i] = {j...} data[j...]\) where 
-the sum is over tuples j... such that segment_ids[j...] == i. 
-Unlike SegmentSum, segment_ids need not be sorted and need not cover 
+Computes a tensor such that \(output[i] = {j...} data[j...]\) where
+the sum is over tuples j... such that segment_ids[j...] == i.
+Unlike SegmentSum, segment_ids need not be sorted and need not cover
 all values in the full range of valid values.
-If the sum is empty for a given segment ID i, output[i] = 0. 
-If the given segment ID i is negative, the value is dropped and 
+If the sum is empty for a given segment ID i, output[i] = 0.
+If the given segment ID i is negative, the value is dropped and
 will not be added to the sum of the segment.
 num_segments should equal the number of distinct segment IDs.
 */

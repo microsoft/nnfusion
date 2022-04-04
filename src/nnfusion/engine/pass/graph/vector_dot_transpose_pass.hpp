@@ -24,8 +24,8 @@ namespace nnfusion
                     if (!using_pass)
                         return true;
 
-                    NNFUSION_LOG(INFO) << "Vector Dot Transpose Pass starts up for Graph: "
-                                       << graph->get_name();
+                    NNFUSION_LOG(INFO)
+                        << "Vector Dot Transpose Pass starts up for Graph: " << graph->get_name();
 
                     std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
                     std::set<std::shared_ptr<GNode>> const_nodes = {};
@@ -89,12 +89,12 @@ namespace nnfusion
                     }
 
                     NNFUSION_LOG(INFO) << "";
-                    NNFUSION_LOG(INFO) << "Vector Dot Transpose Pass ends up for Graph: "
-                                       << graph->get_name();
+                    NNFUSION_LOG(INFO)
+                        << "Vector Dot Transpose Pass ends up for Graph: " << graph->get_name();
                     NNFUSION_LOG(INFO) << "";
                     return true;
                 }
             };
-        } // namespace pass
-    }     // namespace graph
+        } // namespace graph
+    }     // namespace pass
 } // namespace nnfusion

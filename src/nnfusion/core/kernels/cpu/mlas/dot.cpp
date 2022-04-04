@@ -51,10 +51,10 @@ LanguageUnit_p cpu::DotMlas::emit_function_body()
                 std::vector<std::string> arg_vec{"arg0", "arg1"};
                 std::vector<nnfusion::Shape> shape_vec{arg0_shape, arg1_shape};
 
-                NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
-                                      << nnfusion::join(shape_vec) << " respectively, at Node "
-                                      << m_context->gnode->get_name()
-                                      << ", do not match for dot op";
+                NNFUSION_CHECK_FAIL()
+                    << nnfusion::join(arg_vec) << " with " << nnfusion::join(shape_vec)
+                    << " respectively, at Node " << m_context->gnode->get_name()
+                    << ", do not match for dot op";
             }
         }
 

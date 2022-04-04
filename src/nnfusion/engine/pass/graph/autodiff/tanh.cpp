@@ -20,8 +20,8 @@ REGISTER_BACKWARD_TRANSLATOR(Tanh).translator([](std::shared_ptr<GNode> forward_
                                                  const GNodeIndexVector& outputs_grad,
                                                  std::shared_ptr<nnfusion::graph::Graph> graph)
                                                   -> GNodeIndexVector {
-    NNFUSION_CHECK(outputs_grad.size() == 1) << "tanh have only 1 output, but "
-                                             << outputs_grad.size() << " outputs_grad provided";
+    NNFUSION_CHECK(outputs_grad.size() == 1)
+        << "tanh have only 1 output, but " << outputs_grad.size() << " outputs_grad provided";
     // f = tanh(x), x_grad = f_grad - f_grad * f**2
     auto f = get_node_output(forward_node, 0);
     auto f_square_op = std::make_shared<op::Square>();

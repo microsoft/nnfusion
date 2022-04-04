@@ -284,5 +284,5 @@ namespace nnfusion
             return {arg1_out, arg2_out};
         }
 
-    } // namespace builder
+    } // namespace graph
 } // namespace nnfusion

@@ -71,6 +71,7 @@ namespace nnfusion
             }
 
             bool check_type() { return is_a<T>(); }
+
         private:
             ValueType value_;
         };
@@ -93,6 +94,7 @@ namespace nnfusion
                 return Ptr(new VectorAttributeValue(name, std::move(copy)));
             }
             bool check_type() { return is_a<T>(); }
+
         private:
             ValueType value_;
         };
@@ -149,8 +151,8 @@ namespace nnfusion
             CREATE_ACCESSOR(Strings, ss)
             CREATE_ACCESSOR(Int, i)
             CREATE_ACCESSOR(Ints, is)
-//CREATE_ACCESSOR(Tensor, t)
-//CREATE_ACCESSOR(Tensors, ts)
+            //CREATE_ACCESSOR(Tensor, t)
+            //CREATE_ACCESSOR(Tensors, ts)
 
 #undef CREATE_ACCESSOR
 
@@ -210,8 +212,8 @@ namespace nnfusion
                 auto it = std::find_if(values_.begin(), values_.end(), [&](const AVPtr& v) {
                     return v->name == name;
                 });
-                NNFUSION_CHECK(!required || it != values_.end()) << "required undefined attribute:"
-                                                                 << name;
+                NNFUSION_CHECK(!required || it != values_.end())
+                    << "required undefined attribute:" << name;
                 return it;
             }
         };
@@ -268,6 +270,7 @@ namespace nnfusion
         {
         private:
             TagProxy() {}
+
         public:
             TagProxy(Tagable* tags, Symbol sym)
                 : _tags(tags)
@@ -320,8 +323,8 @@ namespace nnfusion
             template <typename T>
             T& as()
             {
-                NNFUSION_CHECK(is_valid()) << "Tag doesn't have item who's name is: " << _sym
-                                           << ".";
+                NNFUSION_CHECK(is_valid())
+                    << "Tag doesn't have item who's name is: " << _sym << ".";
                 return _tags->Get<T>(_sym);
             }
 
@@ -329,8 +332,8 @@ namespace nnfusion
             template <typename T>
             T clone()
             {
-                NNFUSION_CHECK(is_valid()) << "Tag doesn't have item who's name is: " << _sym
-                                           << ".";
+                NNFUSION_CHECK(is_valid())
+                    << "Tag doesn't have item who's name is: " << _sym << ".";
                 return _tags->Get<T>(_sym);
             }
 
@@ -347,5 +350,5 @@ namespace nnfusion
         const Tagable* TagProxy::set<char*>(char* val);
         template <>
         const Tagable* TagProxy::set<char[]>(char val[]);
-    }
-}
+    } // namespace ir
+} // namespace nnfusion

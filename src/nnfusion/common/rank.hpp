@@ -25,4 +25,4 @@ namespace nnfusion
     ///
     /// XXX: THIS TYPE IS EXPERIMENTAL AND THE ENTIRE DESIGN IS SUBJECT TO CHANGE.
     using Rank = Dimension;
-}
+} // namespace nnfusion

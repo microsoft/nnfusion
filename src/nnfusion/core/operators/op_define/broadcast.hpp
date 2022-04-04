@@ -47,6 +47,7 @@ namespace nnfusion
             bool is_outer_broadcast() { return m_is_outer_broadcast; }
             size_t get_inner_broadcast_size() { return m_inner_bc_size; }
             size_t get_outer_broadcast_size() { return m_outer_bc_size; }
+
         protected:
             Broadcast(const std::string& node_type,
                       const nnfusion::Shape& shape,
@@ -80,5 +81,5 @@ namespace nnfusion
         protected:
             nnfusion::AxisSet m_initial_broadcast_axes;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

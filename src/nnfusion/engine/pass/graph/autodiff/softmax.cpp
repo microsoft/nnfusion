@@ -20,8 +20,8 @@ REGISTER_BACKWARD_TRANSLATOR(Softmax).translator([](std::shared_ptr<GNode> forwa
                                                     const GNodeIndexVector& outputs_grad,
                                                     std::shared_ptr<nnfusion::graph::Graph> graph)
                                                      -> GNodeIndexVector {
-    NNFUSION_CHECK(outputs_grad.size() == 1) << "softmax have only 1 output, but "
-                                             << outputs_grad.size() << " outputs_grad provided";
+    NNFUSION_CHECK(outputs_grad.size() == 1)
+        << "softmax have only 1 output, but " << outputs_grad.size() << " outputs_grad provided";
     auto softmax_op = std::dynamic_pointer_cast<op::Softmax>(forward_node->get_op_ptr());
     auto axis = softmax_op->get_axes();
     bool in_log_space = softmax_op->is_in_log_space();

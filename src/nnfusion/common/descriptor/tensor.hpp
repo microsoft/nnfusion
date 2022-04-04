@@ -150,5 +150,5 @@ namespace nnfusion
         };
 
         std::ostream& operator<<(std::ostream&, const nnfusion::descriptor::Tensor&);
-    }
-}
+    } // namespace descriptor
+} // namespace nnfusion

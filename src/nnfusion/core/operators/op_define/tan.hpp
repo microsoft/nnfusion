@@ -44,5 +44,5 @@ namespace nnfusion
             ///
             Tan();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

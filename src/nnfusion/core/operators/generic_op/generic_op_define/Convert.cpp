@@ -13,14 +13,14 @@ REGISTER_OP(Convert)
         std::string in_dtype;
         bool ret = element::Type::nnfusion_element_type_to_dtype_string(
             gnode->get_input_element_type(0), in_dtype);
-        NNFUSION_CHECK(ret == true) << "cast type is not supported: "
-                                    << gnode->get_input_element_type(0).c_type_string();
+        NNFUSION_CHECK(ret == true)
+            << "cast type is not supported: " << gnode->get_input_element_type(0).c_type_string();
 
         std::string out_dtype;
         ret = element::Type::nnfusion_element_type_to_dtype_string(op->get_convert_element_type(),
                                                                    out_dtype);
-        NNFUSION_CHECK(ret == true) << "cast type is not supported: "
-                                    << op->get_convert_element_type().c_type_string();
+        NNFUSION_CHECK(ret == true)
+            << "cast type is not supported: " << op->get_convert_element_type().c_type_string();
 
         return op::create_code_from_template(
             R"( - input("input0", @input_shape@, dtype="@in_dtype@"); output(@input_shape@, topi=topi.cast(args("input0"), dtype="@out_dtype@")); )",
@@ -35,8 +35,8 @@ REGISTER_OP(Convert)
         std::string out_dtype;
         bool ret = element::Type::nnfusion_element_type_to_dtype_string(
             op->get_convert_element_type(), out_dtype);
-        NNFUSION_CHECK(ret == true) << "cast type is not supported: "
-                                    << op->get_convert_element_type().c_type_string();
+        NNFUSION_CHECK(ret == true)
+            << "cast type is not supported: " << op->get_convert_element_type().c_type_string();
         out_dtype = out_dtype == "char" ? "int8" : out_dtype;
 
         return op::create_code_from_template(

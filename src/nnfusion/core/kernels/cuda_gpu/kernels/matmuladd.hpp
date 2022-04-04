@@ -20,6 +20,7 @@ namespace nnfusion
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_function_signature() override;
                 bool require_cublas_handle() override { return true; }
+
             private:
                 LanguageUnit_p get_add_kernel();
                 shared_ptr<op::GenericOp> generic_op;

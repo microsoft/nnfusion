@@ -71,5 +71,5 @@ namespace nnfusion
         private:
             BasicBlock::Pointer entry, exit;
         };
-    }
-}
+    } // namespace ir
+} // namespace nnfusion

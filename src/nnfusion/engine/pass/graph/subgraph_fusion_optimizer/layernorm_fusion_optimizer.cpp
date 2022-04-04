@@ -68,7 +68,6 @@ X --> ReduceMean --> Sub --> Pow --> ReduceMean --> Add --> Sqrt --> Div --> Mul
         p_reduce_mean1->reverse_order = false;
         p_reduce_mean1->check.push_back(check_reduce_mean);
         auto check_reduce_mean1 = [](const PatternRecord& pr) -> bool {
-
             // check axis value is available
             auto reducemean1_sum = pr.nodes[1];
             auto reducemean1_op = std::dynamic_pointer_cast<op::Sum>(reducemean1_sum->get_op_ptr());
@@ -200,7 +199,6 @@ X --> ReduceMean --> Sub --> Pow --> ReduceMean --> Add --> Sqrt --> Div --> Mul
     }
 
     auto check_layernorm1 = [](const SubGraphRecord& sr) -> bool {
-
         // check subtract after the first reducemean is the child of starting node
         auto pr_to_reducemean2 = sr.pattern_records[1];
         auto subtract = pr_to_reducemean2->nodes[3];
@@ -216,7 +214,6 @@ X --> ReduceMean --> Sub --> Pow --> ReduceMean --> Add --> Sqrt --> Div --> Mul
     s_layernorm->check.push_back(check_layernorm1);
 
     auto check_layernorm2 = [](const SubGraphRecord& sr) -> bool {
-
         // check div is the child of subtract
         auto pr_to_reducemean2 = sr.pattern_records[1];
         auto subtract = pr_to_reducemean2->nodes[3];

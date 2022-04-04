@@ -77,6 +77,7 @@ namespace nnfusion
         const std::string& get_name() const { return m_name; }
         size_t get_device_id() const { return m_device_id; }
         NNFusion_DeviceType get_device_type() const { return m_device_type; }
+
     protected:
         size_t first_fit(size_t size);
         size_t best_fit(size_t size);
@@ -204,4 +205,4 @@ namespace nnfusion
         // map from names to allocators
         std::unordered_map<std::string, MemoryAllocator*> m_allocator_list;
     };
-}
+} // namespace nnfusion

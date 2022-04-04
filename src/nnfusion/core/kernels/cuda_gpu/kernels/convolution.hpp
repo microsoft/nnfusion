@@ -20,6 +20,7 @@ namespace nnfusion
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_function_signature() override;
                 bool require_cudnn_handle() override { return true; }
+
             private:
                 nnfusion::Shape input_shape, filter_shape, output_shape;
                 element::Type input_type, filter_type, output_type, conv_type;
@@ -39,6 +40,7 @@ namespace nnfusion
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_function_signature() override;
                 bool require_cudnn_handle() override { return true; }
+
             private:
                 nnfusion::Shape filter_shape, dy_shape, dx_shape;
                 element::Type filter_type, dy_type, dx_type, conv_type;
@@ -57,6 +59,7 @@ namespace nnfusion
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_function_signature() override;
                 bool require_cudnn_handle() override { return true; }
+
             private:
                 nnfusion::Shape x_shape, dy_shape, dw_shape;
                 element::Type x_type, dy_type, dw_type, conv_type;

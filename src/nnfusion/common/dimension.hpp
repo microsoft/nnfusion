@@ -153,6 +153,7 @@ namespace nnfusion
         /// \param dim Right operand for multiplication.
         /// \return A reference to `*this`, after updating `*this` to the value `*this * dim`.
         Dimension& operator*=(const Dimension& dim) { return (*this = *this * dim); }
+
     private:
         // The actual numerical value of the dimension. s_dynamic_val is a special case,
         // representing a dynamic dimension.
@@ -166,4 +167,4 @@ namespace nnfusion
     ///
     /// Inserts the string `?` if `dimension` is dynamic; else inserts `size_t(dimension)`.
     std::ostream& operator<<(std::ostream& str, const Dimension& dimension);
-}
+} // namespace nnfusion

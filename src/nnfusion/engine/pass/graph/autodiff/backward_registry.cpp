@@ -153,8 +153,8 @@ void DiffEngine::differentiate_graph(const GNodeIndexVector& outputs,
         // backward from node output to input
         auto& backward_registry = Registry();
         auto it = backward_registry.find(node->get_op_type());
-        NNFUSION_CHECK(it != backward_registry.end()) << "backward translator not found for "
-                                                      << node->get_op_type();
+        NNFUSION_CHECK(it != backward_registry.end())
+            << "backward translator not found for " << node->get_op_type();
         GNodeIndexVector inputs_grad = it->second.m_translator(node, deltas, m_graph);
         NNFUSION_CHECK(inputs_grad.size() == node->get_input_size())
             << "inputs and inputs_grad must be equal size";

@@ -47,8 +47,8 @@ namespace nnfusion
 
             } // namespace set_1
 
-        } //namespace op
+        } // namespace onnx_import
 
-    } // namespace onnx_import
+    } // namespace frontend
 
 } // namespace nnfusion

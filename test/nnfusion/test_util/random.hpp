@@ -61,5 +61,5 @@ namespace nnfusion
             std::uniform_real_distribution<T> m_distribution;
             std::function<T()> m_r;
         };
-    }
-}
+    } // namespace test
+} // namespace nnfusion

@@ -51,5 +51,5 @@ namespace nnfusion
         std::shared_ptr<GNode> numpy_transpose(const std::shared_ptr<GNode>& node,
                                                nnfusion::AxisVector order = {},
                                                size_t output_index = 0);
-    } // namespace builder
-} // namespace ngraph
+    } // namespace graph
+} // namespace nnfusion

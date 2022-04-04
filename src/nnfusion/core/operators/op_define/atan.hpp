@@ -32,5 +32,5 @@ namespace nnfusion
             /// \brief Constructs an arctan operation.
             Atan();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

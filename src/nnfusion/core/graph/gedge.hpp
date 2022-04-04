@@ -55,5 +55,5 @@ namespace nnfusion
                 return lhs->get_dst_input() < rhs->get_dst_input();
             }
         };
-    }
-}
+    } // namespace graph
+} // namespace nnfusion

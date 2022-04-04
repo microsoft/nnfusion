@@ -112,13 +112,13 @@ namespace nnfusion
                     if (!all_close<T>(res_first, OUT))
                         return false;
 
-                    NNFUSION_LOG(INFO) << "Kernel with tag '" << kernel_reg->m_tag
-                                       << "' pass unit-test.";
+                    NNFUSION_LOG(INFO)
+                        << "Kernel with tag '" << kernel_reg->m_tag << "' pass unit-test.";
                 }
                 else
                 {
-                    NNFUSION_LOG(NNFUSION_WARNING) << "Kernel with tag '" << kernel_reg->m_tag
-                                                   << "' is not available.";
+                    NNFUSION_LOG(NNFUSION_WARNING)
+                        << "Kernel with tag '" << kernel_reg->m_tag << "' is not available.";
                 }
             }
             if (!kernel_found)
@@ -127,5 +127,5 @@ namespace nnfusion
             }
             return kernel_found;
         }
-    }
-}
+    } // namespace test
+} // namespace nnfusion

@@ -10,4 +10,4 @@ namespace nnfusion
     {
         extern LanguageUnit_p barrier_header;
     }
-}
+} // namespace nnfusion

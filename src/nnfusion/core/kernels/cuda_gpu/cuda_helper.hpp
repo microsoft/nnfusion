@@ -73,6 +73,6 @@ namespace nnfusion
                                        NVShape reduce_axis,
                                        NVShape& simplified_shape,
                                        NVShape& simplified_reduce_axis);
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion

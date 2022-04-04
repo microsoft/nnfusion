@@ -45,6 +45,6 @@ namespace nnfusion
             //     cuda_memcpyDtH(local.data(), p, size_in_bytes);
             //     NNFUSION_LOG(INFO) << "{" << nnfusion::join(local) << "}";
             // }
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion

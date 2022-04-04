@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs an elementwise sign operation.
             Sign();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

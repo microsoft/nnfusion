@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs an subtraction operation.
             Subtract();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

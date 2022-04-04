@@ -9,8 +9,8 @@ REGISTER_OP(MatMulAdd)
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         //AB + C
         auto generic_op = static_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
-        NNFUSION_CHECK_NOT_NULLPTR(generic_op) << "Node type is not "
-                                               << gnode->get_op_ptr()->get_op_type();
+        NNFUSION_CHECK_NOT_NULLPTR(generic_op)
+            << "Node type is not " << gnode->get_op_ptr()->get_op_type();
 
         NNFUSION_CHECK(gnode->get_input_size() == 3) << "Inputs of MatMulAdd operator should be 3.";
         auto A_shape = gnode->get_input_shape(0);

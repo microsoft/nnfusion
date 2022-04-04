@@ -140,9 +140,9 @@ namespace nnfusion
                     if (!prof.mixed_type_execute(_inputs, _outputs))
                         continue;
 
-                    NNFUSION_LOG(INFO) << "  For node `" << gnode->get_name()
-                                       << "`: get runtime output results of size "
-                                       << _outputs.size();
+                    NNFUSION_LOG(INFO)
+                        << "  For node `" << gnode->get_name()
+                        << "`: get runtime output results of size " << _outputs.size();
                     const_infer_success = true;
                     break;
                 }
@@ -183,8 +183,8 @@ namespace nnfusion
                     auto outs = get_node_outputs(gnode);
                     NNFUSION_CHECK(outs.size() == 1);
                     auto out_type = gnode->get_output_element_type(0);
-                    NNFUSION_LOG(INFO) << "Asking for Constant value from op-type: "
-                                       << gnode->get_op_type();
+                    NNFUSION_LOG(INFO)
+                        << "Asking for Constant value from op-type: " << gnode->get_op_type();
                     NNFUSION_LOG(INFO) << "Type of Output Value is " << out_type.c_type_string();
 
                     if (out_type == nnfusion::element::f32)
@@ -199,8 +199,8 @@ namespace nnfusion
                         fill_values<T, int64>(*values, outs[0]);
                     else
                     {
-                        NNFUSION_CHECK_FAIL() << "Unsupport op-type conversion, op-type = "
-                                              << out_type;
+                        NNFUSION_CHECK_FAIL()
+                            << "Unsupport op-type conversion, op-type = " << out_type;
                     }
                     return true;
                 }

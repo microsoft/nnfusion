@@ -44,6 +44,6 @@ namespace nnfusion
                                     shared_ptr<GNode> gnode,
                                     NNFusion_DeviceType devtype);
             };
-        }
-    }
+        } // namespace graph
+    }     // namespace pass
 } // namespace nnfusion

@@ -8,7 +8,6 @@ REGISTER_OP(ApplyMomentum)
     .attr<float>("lr", 0.001)
     .attr<float>("momentum", 0.001)
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
-
         NNFUSION_CHECK(gnode->get_input_size() == 3)
             << "Inputs of ApplyMomentum operator should be 3.";
 

@@ -24,9 +24,7 @@ DEFINE_string(fstream_assign_policy,
               "naive",
               "Choose stream-assign policy from [naive, kernel_prof_based].");
 
-AssignAsyncInfoPass::AssignAsyncInfoPass()
-{
-}
+AssignAsyncInfoPass::AssignAsyncInfoPass() {}
 
 bool AssignAsyncInfoPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
@@ -929,8 +927,8 @@ KernelEmitter::Pointer
                                   .as<pair<NNFusion_DeviceType, KernelEmitter::Pointer>>();
 
         if (!gnode->is_constant() && !emitted_kernel.second->is_emitted())
-            NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before this pass:"
-                                           << gnode->get_op_type();
+            NNFUSION_LOG(NNFUSION_WARNING)
+                << "Kernel should be emitted before this pass:" << gnode->get_op_type();
         kernel = emitted_kernel.second;
     }
 

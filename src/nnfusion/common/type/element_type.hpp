@@ -153,5 +153,5 @@ namespace nnfusion
         const Type& from<half>();
 
         std::ostream& operator<<(std::ostream& out, const nnfusion::element::Type& obj);
-    }
-}
+    } // namespace element
+} // namespace nnfusion

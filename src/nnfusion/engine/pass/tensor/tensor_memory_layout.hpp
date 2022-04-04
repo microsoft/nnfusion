@@ -39,5 +39,5 @@ namespace nnfusion
             size_t m_alignment;
             bool m_disable_memory_sharing;
         };
-    }
-}
+    } // namespace pass
+} // namespace nnfusion

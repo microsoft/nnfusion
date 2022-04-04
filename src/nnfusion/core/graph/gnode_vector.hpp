@@ -40,5 +40,5 @@ namespace nnfusion
 
             GNodeVector() {}
         };
-    }
-}
+    } // namespace graph
+} // namespace nnfusion

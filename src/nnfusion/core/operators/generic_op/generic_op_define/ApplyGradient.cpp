@@ -8,7 +8,6 @@
 REGISTER_OP(ApplyGradient)
     .attr<float>("learning_rate", 0.001)
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
-
         NNFUSION_CHECK(gnode->get_input_size() == 2)
             << "Inputs of ApplyGradient operator should be 2.";
 
@@ -19,8 +18,8 @@ REGISTER_OP(ApplyGradient)
             << "The two inputs should have the same dimentions.";
         for (int j = 0; j < weight_tensor.size(); j++)
         {
-            NNFUSION_CHECK(weight_tensor[j] == gradient_tensor[j]) << "Dimension " << j
-                                                                   << " in shapes must be equal.";
+            NNFUSION_CHECK(weight_tensor[j] == gradient_tensor[j])
+                << "Dimension " << j << " in shapes must be equal.";
         }
 
         nnfusion::Shape output_shape_0(weight_tensor);
@@ -37,8 +36,8 @@ REGISTER_OP(ApplyGradient)
             << "The two inputs should have the same dimentions.";
         for (int j = 0; j < weight_tensor.size(); j++)
         {
-            NNFUSION_CHECK(weight_tensor[j] == gradient_tensor[j]) << "Dimension " << j
-                                                                   << " in shapes must be equal.";
+            NNFUSION_CHECK(weight_tensor[j] == gradient_tensor[j])
+                << "Dimension " << j << " in shapes must be equal.";
         }
 
         auto op = static_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());

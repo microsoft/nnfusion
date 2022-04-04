@@ -157,8 +157,8 @@ REGISTER_OP(MaxPool)
             }
             else
             {
-                NNFUSION_LOG(INFO) << "not support padding with data type " << dtype
-                                   << " yet, fallback";
+                NNFUSION_LOG(INFO)
+                    << "not support padding with data type " << dtype << " yet, fallback";
                 return std::string();
             }
             when_condition =

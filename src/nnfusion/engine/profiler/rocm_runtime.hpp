@@ -30,5 +30,5 @@ namespace nnfusion
             double
                 invoke(const ProfilingContext::Pointer& ke, void** input, void** output) override;
         };
-    }
-}
+    } // namespace profiler
+} // namespace nnfusion

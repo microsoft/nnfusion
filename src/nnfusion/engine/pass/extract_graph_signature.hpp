@@ -51,5 +51,5 @@ namespace nnfusion
         private:
             nlohmann::json para_info;
         };
-    }
-}
+    } // namespace pass
+} // namespace nnfusion

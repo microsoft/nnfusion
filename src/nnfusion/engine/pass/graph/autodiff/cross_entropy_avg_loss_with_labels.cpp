@@ -88,5 +88,4 @@ REGISTER_BACKWARD_TRANSLATOR(CrossEntropyAvgLossWithLabels)
             return GNodeIndexVector{GNodeIndex{logit_grad_node, 0},
                                     nnfusion::pass::graph::autodiff::DiffEngine::EMPTY_GNODE_INDEX};
         }
-
     });

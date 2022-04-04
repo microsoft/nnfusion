@@ -26,6 +26,6 @@ namespace nnfusion
                                      const std::string& math_kernel,
                                      size_t data_size,
                                      const std::vector<std::string>& data_types);
-        }
-    }
-}
+        } // namespace cpu
+    }     // namespace kernels
+} // namespace nnfusion

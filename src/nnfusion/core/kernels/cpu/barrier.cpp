@@ -91,4 +91,4 @@ namespace nnfusion
 }
 )"));
     }
-}
+} // namespace nnfusion

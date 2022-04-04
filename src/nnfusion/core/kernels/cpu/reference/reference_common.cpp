@@ -647,4 +647,4 @@ namespace reference_common
 }
 )"));
     }
-}
+} // namespace nnfusion

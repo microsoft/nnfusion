@@ -72,6 +72,7 @@ namespace nnfusion
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_function_signature() override;
                 bool require_cudnn_handle() override { return true; }
+
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 nnfusion::Shape input_shape, output_shape, window_shape, padding_below,
@@ -90,6 +91,7 @@ namespace nnfusion
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_function_signature() override;
                 bool require_cudnn_handle() override { return true; }
+
             private:
                 shared_ptr<KernelContext> kernel_ctx;
                 nnfusion::Shape input_shape, output_shape, d_input_shape, d_output_shape,

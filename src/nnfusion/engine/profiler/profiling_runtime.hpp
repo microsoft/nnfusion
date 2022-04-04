@@ -457,7 +457,7 @@ INSERT INTO KernelCache(key_code, key_op, device_type, cost) VALUES(?, ?, ?, ?);
 
         private:
             kernels::KernelContext::Pointer kctx;
-            unique_ptr<char *> raw_inputs, raw_outputs;
+            unique_ptr<char*> raw_inputs, raw_outputs;
             vector<shared_ptr<char>> raw_input, raw_output;
         };
 
@@ -553,6 +553,7 @@ INSERT INTO KernelCache(key_code, key_op, device_type, cost) VALUES(?, ?, ?, ?);
             string get_device_name() { return nnfusion::get_device_str(_dt); };
             NNFusion_DeviceType get_device_type() { return _dt; };
             virtual string get_name() { return get_device_name(); };
+
         private:
             virtual double invoke(const ProfilingContext::Pointer& ke, void** input, void** output);
 
@@ -566,5 +567,5 @@ INSERT INTO KernelCache(key_code, key_op, device_type, cost) VALUES(?, ?, ?, ?);
             virtual bool memcpyDtoH(void* device, void* host, size_t bytes_size) = 0;
             */
         };
-    }
-}
+    } // namespace profiler
+} // namespace nnfusion

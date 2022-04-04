@@ -66,9 +66,9 @@ nnfusion::PartialShape nnfusion::op::infer_windowed_reduction_output_shape(
                                                     << ") has zero dimension at axis " << i << ".";
             OP_VALIDATION(op, window_strides[i] > 0) << "Window strides (" << window_strides
                                                      << ") has zero dimension at axis " << i << ".";
-            OP_VALIDATION(op, window_dilation[i] > 0) << "Window dilation (" << window_dilation
-                                                      << ") has zero dimension at axis " << i
-                                                      << ".";
+            OP_VALIDATION(op, window_dilation[i] > 0)
+                << "Window dilation (" << window_dilation << ") has zero dimension at axis " << i
+                << ".";
 
             bool data_dim_static = data_shape.rank().is_static() && data_shape[i].is_static();
             bool window_dim_static = window_shape.rank().is_static() && window_shape[i].is_static();
@@ -183,10 +183,10 @@ std::tuple<nnfusion::element::Type, nnfusion::PartialShape>
         (data_batch_shape.rank().is_static() ? data_batch_shape[0]
                                              : nnfusion::Dimension::dynamic());
     nnfusion::Dimension data_channel_count =
-        (data_batch_shape.rank().is_static()
-             ? (data_format == "NCW" || data_format == "NCHW") ? data_batch_shape[1]
-                                                               : data_batch_shape[3]
-             : nnfusion::Dimension::dynamic());
+        (data_batch_shape.rank().is_static() ? (data_format == "NCW" || data_format == "NCHW")
+                                                   ? data_batch_shape[1]
+                                                   : data_batch_shape[3]
+                                             : nnfusion::Dimension::dynamic());
     nnfusion::PartialShape data_spatial_shape(nnfusion::PartialShape::dynamic(spatial_rank));
 
     nnfusion::Dimension filter_output_channel_count =

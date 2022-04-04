@@ -61,7 +61,7 @@ namespace nnfusion
                 string folder;
                 string const_name;
             };
-        } // namespace cuda
+        } // namespace cpu
     }     // namespace kernels
 } // namespace nnfusion
 

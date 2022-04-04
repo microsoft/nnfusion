@@ -19,8 +19,8 @@ namespace nnfusion
         class Event;
         struct AsyncExecutionInfo;
         class AsyncManagerFactory;
-    }
-}
+    } // namespace async
+} // namespace nnfusion
 
 // Stream of nnfusion can represent the stream of gpu and the thread of cpu.
 // NNfuison stream managed by CPUAsyncManager is thread while by CUDAAsyncManager is stream.
@@ -71,6 +71,7 @@ public:
     const std::string& get_device_name() const { return m_stream->get_device_name(); }
     const std::string& get_name() const { return m_name; }
     const std::string& get_symbol() const { return m_symbol; }
+
 private:
     Event(size_t event_id,
           const shared_ptr<Stream>& stream,
@@ -216,8 +217,8 @@ struct nnfusion::async::AsyncExecutionInfo
          stream default: ------- kernel#0 ----------------
                                    |
                                    |--> trigger: event#0
-                                                 ^ 
-                                   wait: event#0 | 
+                                                 ^
+                                   wait: event#0 |
                                                  |
          stream      #1: -------------------- kernel#1---
          Its the stream who wait for the event.

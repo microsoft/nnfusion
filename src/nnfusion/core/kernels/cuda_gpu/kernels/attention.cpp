@@ -78,10 +78,10 @@ QkvToContext<@dtype@>(cublas_handle, stream,
          {"input1",
           (m_context->inputs.size() >= 2) ? "reinterpret_cast<const int*>(input1)" : "nullptr"},
          {"input2",
-          (m_context->inputs.size() == 3)
-              ? (dtype == element::f16) ? "reinterpret_cast<half*>(input2)"
-                                        : "reinterpret_cast<float*>(input2)"
-              : "nullptr"},
+          (m_context->inputs.size() == 3) ? (dtype == element::f16)
+                                                ? "reinterpret_cast<half*>(input2)"
+                                                : "reinterpret_cast<float*>(input2)"
+                                          : "nullptr"},
          {"output1",
           (m_context->outputs.size() > 1) ? "reinterpret_cast<const int*>(output1)" : "nullptr"},
          {"use_2d_attention_mask", use_2d_attention_mask},

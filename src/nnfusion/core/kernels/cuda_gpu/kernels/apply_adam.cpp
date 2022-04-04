@@ -98,9 +98,9 @@ if(i == 0)
                     m_blockDim = dim3(block_size_x, 1, 1);
                 }
             };
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

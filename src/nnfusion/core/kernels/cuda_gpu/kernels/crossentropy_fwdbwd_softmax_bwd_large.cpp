@@ -70,9 +70,9 @@ output0[i] = input0[i] + ((int)input1[i / @class_num@] == i % @class_num@ ? -1 :
                     m_blockDim = dim3(block_size_x, 1, 1);
                 }
             };
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

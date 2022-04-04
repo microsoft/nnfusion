@@ -35,6 +35,6 @@ namespace nnfusion
                                                   const NodeMap& all_ng_nodes,
                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph);
             }
-        }
-    }
-}
+        } // namespace onnx_import
+    }     // namespace frontend
+} // namespace nnfusion

@@ -10,4 +10,4 @@ namespace nnfusion
     {
         extern LanguageUnit_p reference_common_header;
     }
-}
+} // namespace nnfusion

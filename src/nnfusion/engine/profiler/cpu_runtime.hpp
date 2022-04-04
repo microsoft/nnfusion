@@ -48,6 +48,7 @@ namespace nnfusion
         public:
             static Pointer Runtime();
             ReferenceRuntime() { _dt = GENERIC_CPU; }
+
         private:
             // Tiny codegen function for runtime
             bool codegen(const ProfilingContext::Pointer& ke);
@@ -55,5 +56,5 @@ namespace nnfusion
             double
                 invoke(const ProfilingContext::Pointer& ke, void** input, void** output) override;
         };
-    }
-}
+    } // namespace profiler
+} // namespace nnfusion

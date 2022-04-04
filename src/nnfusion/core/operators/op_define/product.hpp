@@ -35,5 +35,5 @@ namespace nnfusion
             /// \param reduction_axes The axis positions (0-based) to be eliminated.
             Product(const nnfusion::AxisSet& reduction_axes);
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

@@ -43,5 +43,5 @@ namespace nnfusion
         protected:
             const nnfusion::element::Type m_element_type;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

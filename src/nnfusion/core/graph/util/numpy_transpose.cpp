@@ -89,5 +89,5 @@ namespace nnfusion
             return reshape_gnode;
         }
 
-    } // namespace builder
-} // namespace ngraph
+    } // namespace graph
+} // namespace nnfusion

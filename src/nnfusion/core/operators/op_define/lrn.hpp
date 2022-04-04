@@ -43,5 +43,5 @@ namespace nnfusion
             double m_bias;
             size_t m_size;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

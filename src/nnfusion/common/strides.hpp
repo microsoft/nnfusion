@@ -66,4 +66,4 @@ namespace nnfusion
     };
 
     std::ostream& operator<<(std::ostream& s, const Strides& strides);
-}
+} // namespace nnfusion

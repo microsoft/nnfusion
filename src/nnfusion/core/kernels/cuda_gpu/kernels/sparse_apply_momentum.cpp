@@ -46,9 +46,9 @@ namespace nnfusion
                     for (size_t i = 0; i < N; i++)
                     {
                         auto index = indices[i];
-                        NNFUSION_CHECK(index < first_dim_size) << "Index " << index << "at offset "
-                                                               << i
-                                                               << " in indices is out of range";
+                        NNFUSION_CHECK(index < first_dim_size)
+                            << "Index " << index << "at offset " << i
+                            << " in indices is out of range";
                     }
 
                     name = std::string("update_accum");
@@ -119,9 +119,9 @@ namespace nnfusion
                     m_blockDim = dim3(block_size_x, 1, 1);
                 }
             };
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

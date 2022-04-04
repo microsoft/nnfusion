@@ -70,8 +70,8 @@ namespace nnfusion
         class Nop;
         class Sigmoid;
         class SigmoidBackprop;
-    }
-}
+    } // namespace op
+} // namespace nnfusion
 
 namespace nnfusion
 {
@@ -456,6 +456,6 @@ namespace nnfusion
                 static constexpr const char* op = "sigmoid_backprop";
                 static constexpr const char* math_kernel = "x1 / (2 + expf(-x0) + expf(x0))";
             };
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion

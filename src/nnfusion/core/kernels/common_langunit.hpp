@@ -20,7 +20,7 @@ namespace nnfusion
         {
             LU_DECLARE(MIT1);
             LU_DECLARE(MIT2);
-        }
+        } // namespace boilerplate
         namespace header
         {
             LU_DECLARE(stdio);
@@ -40,13 +40,13 @@ namespace nnfusion
             LU_DECLARE(windows);
             LU_DECLARE(unordered_map);
             LU_DECLARE(torch_extension);
-        }
+        } // namespace header
 
         namespace macro
         {
             LU_DECLARE(NNFUSION_DEBUG);
             LU_DECLARE(MIN);
-        }
+        } // namespace macro
 
         namespace declaration
         {

@@ -114,30 +114,40 @@ LanguageUnit_p
 
     if (dimensions.size() <= 4)
     {
-        lu << "CUDNN_SAFE_CALL(cudnnSetFilter4dDescriptor(" << desc << ", "
+        lu << "CUDNN_SAFE_CALL(cudnnSetFilter4dDescriptor(" << desc
+           << ", "
            /*dataType=*/
-           << data_type << ", "
+           << data_type
+           << ", "
            /*format=*/
-           << tensor_format << ", "
+           << tensor_format
+           << ", "
            /*dimension_size*/
-           << dimensions[0] << ", "
+           << dimensions[0]
+           << ", "
            /*dimension_size*/
-           << dimensions[1] << ", "
+           << dimensions[1]
+           << ", "
            /*dimension_size*/
-           << dimensions[2] << ", "
+           << dimensions[2]
+           << ", "
            /*dimension_size*/
            << dimensions[3] << "));\n";
     }
     else
     {
         lu << "CUDNN_SAFE_CALL("
-           << "cudnnSetFilterNdDescriptor(" << desc << ", "
+           << "cudnnSetFilterNdDescriptor(" << desc
+           << ", "
            /*dataType=*/
-           << data_type << ", "
+           << data_type
+           << ", "
            /*format=*/
-           << tensor_format << ", "
+           << tensor_format
+           << ", "
            /*num_dimensions=*/
-           << static_cast<int>(dimensions.size()) << ", "
+           << static_cast<int>(dimensions.size())
+           << ", "
            /*dimensions*/
            << dimensions.data() << "));\n";
     }
@@ -231,7 +241,8 @@ void @prefix@_free()
 
 )",
         {
-            {"prefix", prefix}, {"ratio", ratio},
+            {"prefix", prefix},
+            {"ratio", ratio},
         });
     LanguageUnit_p lu(new LanguageUnit(mangled_name, code));
     return lu;
@@ -259,7 +270,9 @@ CUDNN_SAFE_CALL(cudnnSetActivationDescriptor(@activation_desc@, @activation_mode
 
 )",
         {
-            {"activation_mode", cudnn_activation_mode}, {"coef", coef}, {"activation_desc", desc},
+            {"activation_mode", cudnn_activation_mode},
+            {"coef", coef},
+            {"activation_desc", desc},
         });
 
     LanguageUnit_p lu(new LanguageUnit(mangled_name, code));

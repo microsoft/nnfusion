@@ -63,6 +63,6 @@ namespace nnfusion
                 }
                 return nodes;
             }
-        } // namespace tensorflow_import
+        } // namespace torchscript_import
     }     // namespace frontend
 } // namespace nnfusion

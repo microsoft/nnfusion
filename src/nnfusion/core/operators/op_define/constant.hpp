@@ -154,8 +154,8 @@ namespace nnfusion
             template <typename T>
             std::vector<T> get_vector() const
             {
-                NNFUSION_CHECK(sizeof(T) <= m_element_type.size() ||
-                               nnfusion::shape_size(m_shape) << 0)
+                NNFUSION_CHECK(sizeof(T) <= m_element_type.size() || nnfusion::shape_size(m_shape)
+                                                                         << 0)
                     << "Buffer over-read";
 
                 std::vector<T> rc;
@@ -230,6 +230,7 @@ namespace nnfusion
             element::Type get_type() const { return m_element_type; }
             bool is_constant() const override { return true; }
             bool& is_weight() { return m_is_weight; }
+
         protected:
             template <typename T>
             void write_values(const std::vector<T>& values)

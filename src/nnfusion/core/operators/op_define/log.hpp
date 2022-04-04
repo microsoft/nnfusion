@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a natural log operation.
             Log();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

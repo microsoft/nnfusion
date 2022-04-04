@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a greater-than operation.
             Greater();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

@@ -25,5 +25,5 @@ namespace nnfusion
         vector<dtype> generate_output(int option = 0);
         template <class T, class dtype>
         vector<dtype> generate_param(int option = 0);
-    }
-}
+    } // namespace inventory
+} // namespace nnfusion

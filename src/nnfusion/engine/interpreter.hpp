@@ -59,4 +59,4 @@ namespace nnfusion
         unordered_map<string, string> m_variable_name_map;
         TranslationUnitMap m_tus;
     };
-}
+} // namespace nnfusion

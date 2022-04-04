@@ -26,6 +26,7 @@ namespace nnfusion
                 NamedNodeVector convert_node(const tensorflow::NodeDef& node);
 
                 std::shared_ptr<nnfusion::graph::Graph> get_graph() { return m_graph; }
+
             private:
                 void generate_topology();
 

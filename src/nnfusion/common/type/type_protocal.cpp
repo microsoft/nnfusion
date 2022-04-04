@@ -28,7 +28,7 @@ const std::map<element::Type, element::TypeProtocal> element::typeMemProto = {
 };
 
 /*
-template <> 
+template <>
 void element::defaultCopy<uint16_t, element::half>(void *dst, void *src, size_t n) {
     uint16_t *lhs = reinterpret_cast<uint16_t*>(dst);
     const half *rhs = reinterpret_cast<const half*>(src);

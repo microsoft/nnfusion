@@ -102,5 +102,5 @@ namespace nnfusion
             }
             return rc;
         }
-    }
-}
+    } // namespace test
+} // namespace nnfusion

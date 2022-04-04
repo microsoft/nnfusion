@@ -32,5 +32,5 @@ namespace nnfusion
 
             Equal();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

@@ -71,5 +71,5 @@ namespace nnfusion
             Output(Output&&) = delete;
             Output& operator=(const Output&) = delete;
         };
-    }
-}
+    } // namespace graph
+} // namespace nnfusion

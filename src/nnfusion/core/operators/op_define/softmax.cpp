@@ -39,9 +39,9 @@ void Softmax::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
         << "softmax only support computing on the last dim";
     for (auto axis : m_axes)
     {
-        OP_VALIDATION(this, axis < shape.size()) << "Reduction axis (" << axis
-                                                 << ") is out of bounds (argument shape: " << shape
-                                                 << ").";
+        OP_VALIDATION(this, axis < shape.size())
+            << "Reduction axis (" << axis << ") is out of bounds (argument shape: " << shape
+            << ").";
     }
 
     // empty axes == all axes
@@ -77,9 +77,9 @@ void SoftmaxGrad::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
 
     for (auto axis : m_axes)
     {
-        OP_VALIDATION(this, axis < shape.size()) << "Reduction axis (" << axis
-                                                 << ") is out of bounds (argument shape: " << shape
-                                                 << ").";
+        OP_VALIDATION(this, axis < shape.size())
+            << "Reduction axis (" << axis << ") is out of bounds (argument shape: " << shape
+            << ").";
     }
 
     // empty axes == all axes

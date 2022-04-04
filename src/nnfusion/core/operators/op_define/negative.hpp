@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a negative operation.
             Negative();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

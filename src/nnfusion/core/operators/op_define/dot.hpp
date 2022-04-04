@@ -57,11 +57,12 @@ namespace nnfusion
 
             bool& get_transpose_A() { return m_transpose_A; }
             bool& get_transpose_B() { return m_transpose_B; }
+
         protected:
             size_t m_reduction_axes_count;
             bool m_has_reduction_axes_count;
             bool m_transpose_A = false;
             bool m_transpose_B = false;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

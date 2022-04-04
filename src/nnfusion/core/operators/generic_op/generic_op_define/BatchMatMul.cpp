@@ -103,7 +103,6 @@ REGISTER_OP(BatchMatMul)
         return expression;
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         NNFUSION_CHECK(curr->get_input_size() == 2);
 
         const nnfusion::Shape& input_shape_0 = curr->get_input_shape(0);

@@ -57,8 +57,9 @@ namespace nnfusion
 
             /// \return The set of axes to reverse.
             const nnfusion::AxisSet& get_reversed_axes() const { return m_reversed_axes; }
+
         protected:
             const nnfusion::AxisSet m_reversed_axes;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

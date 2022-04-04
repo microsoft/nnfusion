@@ -19,7 +19,7 @@ namespace nnfusion
             LU_DECLARE(threadpool);
             LU_DECLARE(barrier);
             LU_DECLARE(simd);
-        }
+        } // namespace header
 
         namespace macro
         {
@@ -32,6 +32,6 @@ namespace nnfusion
             LU_DECLARE(worker_thread_pool);
             LU_DECLARE(schedule_thread_pool);
             LU_DECLARE(superscaler_schedule_thread);
-        }
-    } // namespace kernels
+        } // namespace declaration
+    }     // namespace kernels
 } // namespace nnfusion

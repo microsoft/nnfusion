@@ -6,7 +6,6 @@
 REGISTER_OP(Softmax)
     .infershape(nnfusion::op::infershape::copy_shape_from_inputs)
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         auto make_layout = [](const std::set<int>& axes) -> std::string {
             std::string ret = "";
             for (auto ax : axes)

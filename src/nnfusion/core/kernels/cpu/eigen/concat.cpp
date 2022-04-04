@@ -79,9 +79,8 @@ namespace nnfusion
 
                 bool is_eliminative() override
                 {
-                    if (is_memcpy &&
-                        m_context->inputs[0]->get_pool_offset() ==
-                            m_context->outputs[0]->get_pool_offset())
+                    if (is_memcpy && m_context->inputs[0]->get_pool_offset() ==
+                                         m_context->outputs[0]->get_pool_offset())
                         return true;
                     else
                         return false;

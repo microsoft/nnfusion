@@ -50,5 +50,5 @@ namespace nnfusion
             virtual LanguageUnit_p get_sync() override;
             LanguageUnit_p lup_main, lup_header;
         };
-    }
-}
+    } // namespace codegen
+} // namespace nnfusion

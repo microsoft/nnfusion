@@ -108,10 +108,10 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
             for (int i = 0; i < curr->get_output_size(); ++i)
             {
                 lu << "NNfusionTensor ts_" << m_context->output_names[i] << "(device, {"
-                << nnfusion::codegen::join_collections(
-                        curr->get_output_shape(i),
-                        [](int idx, ssize_t it) { return std::to_string(it); })
-                << "}, sizeof(" << curr->get_output_element_type(i).c_type_string() << "));\n";
+                   << nnfusion::codegen::join_collections(
+                          curr->get_output_shape(i),
+                          [](int idx, ssize_t it) { return std::to_string(it); })
+                   << "}, sizeof(" << curr->get_output_element_type(i).c_type_string() << "));\n";
             }
 
             lu << "  NNfusionOperator op_" << m_context->output_names[0] << "(device, {";
@@ -128,8 +128,7 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
                     lu << ", ";
                 lu << "ts_" << m_context->output_names[i];
             }
-            lu <<" }, L\"" << get_function_name()
-               << ".hlsl\");\n\n";
+            lu << " }, L\"" << get_function_name() << ".hlsl\");\n\n";
         }
         else
         {

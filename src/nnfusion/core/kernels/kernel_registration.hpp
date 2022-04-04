@@ -54,6 +54,7 @@ namespace nnfusion
                                    << "m_factory: " << m_factory;
             }
             void set_priority(size_t priority) { m_priority = priority; }
+
         public:
             friend class KernelRegistry;
             string m_op_name;

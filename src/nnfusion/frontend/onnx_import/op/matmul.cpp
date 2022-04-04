@@ -118,9 +118,9 @@ namespace nnfusion
                         }
                         else
                         {
-                            NNFUSION_CHECK_FAIL() << "broadcast dim mismatch, left "
-                                                  << left_full_shape[i] << ", right "
-                                                  << right_full_shape[i];
+                            NNFUSION_CHECK_FAIL()
+                                << "broadcast dim mismatch, left " << left_full_shape[i]
+                                << ", right " << right_full_shape[i];
                         }
                     }
 

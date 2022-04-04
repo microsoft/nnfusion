@@ -101,4 +101,4 @@ namespace nnfusion
         size_t m_len;
         void* m_data;
     };
-}
+} // namespace nnfusion

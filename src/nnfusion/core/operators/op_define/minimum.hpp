@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a minimum operation.
             Minimum();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

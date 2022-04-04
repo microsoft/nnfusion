@@ -79,6 +79,7 @@ namespace nnfusion
                 const std::string& get_name() const { return m_value_info_proto->name(); }
                 const Shape& get_shape() const { return m_shape; }
                 const element::Type& get_element_type() const { return m_type; }
+
             private:
                 const onnx::ValueInfoProto* m_value_info_proto;
                 Shape m_shape;

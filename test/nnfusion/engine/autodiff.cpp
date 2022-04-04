@@ -85,7 +85,7 @@ namespace
         auto ad_pass = nnfusion::pass::graph::AutodiffPass();
         ad_pass.run_on_graph(graph, backward_inputs);
     }
-}
+} // namespace
 
 TEST(nnfusion_pass_autodiff, multiply)
 {
@@ -339,7 +339,15 @@ TEST(nnfusion_pass_autodiff, gelu)
     RawInputs raw_inputs;
     // a
     auto a = vector<float>{
-        1.0f, 2.0f, 3.0f, 1.0f, 2.0f, 3.0f, 1.0f, 2.0f, 3.0f,
+        1.0f,
+        2.0f,
+        3.0f,
+        1.0f,
+        2.0f,
+        3.0f,
+        1.0f,
+        2.0f,
+        3.0f,
     };
     raw_inputs.emplace_back(convert_to_raw(a));
 
@@ -533,7 +541,9 @@ TEST(nnfusion_pass_autodiff, sigmoid)
     RawInputs raw_inputs;
     // a
     auto a = vector<float>{
-        -1.0f, 0.0f, 1.0f,
+        -1.0f,
+        0.0f,
+        1.0f,
     };
     raw_inputs.emplace_back(convert_to_raw(a));
 

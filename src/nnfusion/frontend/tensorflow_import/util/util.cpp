@@ -66,8 +66,8 @@ namespace nnfusion
                 }
                 catch (const std::out_of_range&)
                 {
-                    NNFUSION_CHECK_FAIL() << "Input Ngraph op not found for "
-                                          << node.input(input_idx);
+                    NNFUSION_CHECK_FAIL()
+                        << "Input Ngraph op not found for " << node.input(input_idx);
                 }
                 return result;
             }

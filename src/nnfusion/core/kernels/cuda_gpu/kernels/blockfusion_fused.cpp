@@ -66,9 +66,7 @@ LanguageUnit_p BlockFusionFused::emit_comments()
     return blockfusion_function->comment_unit;
 }
 
-void BlockFusionFused::set_launch_config()
-{
-}
+void BlockFusionFused::set_launch_config() {}
 
 REGISTER_KERNEL_EMITTER(
     "BlockFusionFused",                                                           // op_name

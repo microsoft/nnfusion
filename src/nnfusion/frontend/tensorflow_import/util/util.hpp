@@ -356,9 +356,9 @@ namespace nnfusion
                 {
                     if (i < (int)-rank || i >= (int)rank)
                     {
-                        NNFUSION_LOG(ERROR) << "Axis Dimension is out of range. Got " << i
-                                            << ", should be in range [-" << rank << ", " << rank
-                                            << ")";
+                        NNFUSION_LOG(ERROR)
+                            << "Axis Dimension is out of range. Got " << i
+                            << ", should be in range [-" << rank << ", " << rank << ")";
                         return false;
                     }
                 }

@@ -81,8 +81,8 @@ void ReplaceSlice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
             << "Lower bound for slice is greater than upper bound at axis " << i
             << " (lower bounds: " << m_lower_bounds << ", upper bounds: " << m_upper_bounds << ").";
 
-        OP_VALIDATION(this, m_strides[i] != 0) << "Stride for slice is zero at axis " << i
-                                               << " (strides: " << m_strides << ").";
+        OP_VALIDATION(this, m_strides[i] != 0)
+            << "Stride for slice is zero at axis " << i << " (strides: " << m_strides << ").";
     }
 
     OP_VALIDATION(this, merged_args_rank.is_dynamic() || size_t(merged_args_rank) == output_rank)

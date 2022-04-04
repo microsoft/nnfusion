@@ -266,4 +266,4 @@ namespace nnfusion
     /// {2,3,4}
     /// \endcode
     std::ostream& operator<<(std::ostream& str, const PartialShape& shape);
-}
+} // namespace nnfusion

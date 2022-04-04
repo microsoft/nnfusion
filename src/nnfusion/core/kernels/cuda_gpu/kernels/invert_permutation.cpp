@@ -58,9 +58,9 @@ namespace nnfusion
             private:
                 int data_size;
             };
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

@@ -44,7 +44,6 @@ REGISTER_OP(Dot)
              {"output_shape", vector_to_string(shape_out)}});
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         auto _op = static_pointer_cast<nnfusion::op::Dot>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
         NNFUSION_CHECK(_op->get_reduction_axes_count() == 1);

@@ -100,10 +100,10 @@ namespace nnfusion
                 }
 
                 extern nlohmann::json training_optimizer_configs;
-            }
-        }
-    }
-}
+            } // namespace autodiff
+        }     // namespace graph
+    }         // namespace pass
+} // namespace nnfusion
 
 #define REGISTER_BACKWARD_TRANSLATOR(op_name)                                                      \
     static nnfusion::pass::graph::autodiff::BackwardTranslatorConfig                               \

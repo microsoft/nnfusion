@@ -81,5 +81,5 @@ namespace nnfusion
             unordered_set<string> global_required;
             bool superscaler_enable = false;
         };
-    }
-}
+    } // namespace codegen
+} // namespace nnfusion

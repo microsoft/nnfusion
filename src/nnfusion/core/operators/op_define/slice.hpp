@@ -61,5 +61,5 @@ namespace nnfusion
             nnfusion::Coordinate m_upper_bounds;
             nnfusion::Strides m_strides;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

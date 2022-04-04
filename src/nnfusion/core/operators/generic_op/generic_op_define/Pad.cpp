@@ -58,7 +58,6 @@ REGISTER_OP(Pad)
     })
     */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         NNFUSION_CHECK(2 == curr->get_input_size());
         auto op = static_pointer_cast<nnfusion::op::Pad>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
@@ -80,8 +79,7 @@ REGISTER_OP(Pad)
             NNFUSION_CHECK(1 == constant_values.size());
         }
 
-        auto ir_template =
-            R"( @output0@@output0_layout@ = @input0@@input0_layout@@conditions@; )";
+        auto ir_template = R"( @output0@@output0_layout@ = @input0@@input0_layout@@conditions@; )";
 
         auto input0_shape = curr->get_input_shape(0);
         auto output0_shape = curr->get_output_shape(0);

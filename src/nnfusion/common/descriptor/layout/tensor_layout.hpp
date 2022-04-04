@@ -54,10 +54,11 @@ namespace nnfusion
                 /// \brief Return true if this and other have the same element interpretation
                 virtual bool operator==(const TensorLayout& other) const = 0;
                 bool operator!=(const TensorLayout& other) const { return !(*this == other); }
+
             protected:
                 const nnfusion::element::Type m_element_type;
                 const nnfusion::Shape m_shape;
             };
-        }
-    }
-}
+        } // namespace layout
+    }     // namespace descriptor
+} // namespace nnfusion

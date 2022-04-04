@@ -22,8 +22,8 @@ REGISTER_OP(Attention)
         NNFUSION_CHECK(input_size >= 1) << "QkvtoCtx should have at least 1 inputs.";
 
         auto input_shape = gnode->get_input_shape(0);
-        NNFUSION_CHECK(input_shape.size() == 2) << "input shall be 2 dimensions, got "
-                                                << input_shape.size();
+        NNFUSION_CHECK(input_shape.size() == 2)
+            << "input shall be 2 dimensions, got " << input_shape.size();
 
         auto generic_op = static_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         auto& cfg = generic_op->localOpConfig.getRoot();
@@ -62,8 +62,8 @@ REGISTER_OP(Attention)
             {
                 NNFUSION_CHECK(unidirectional == true) << "past is only allowed for unidirectional";
                 auto past_shape = gnode->get_input_shape(4);
-                NNFUSION_CHECK(past_shape.size() == 5) << "past shall be 5 dimensions, got "
-                                                       << past_shape.size();
+                NNFUSION_CHECK(past_shape.size() == 5)
+                    << "past shall be 5 dimensions, got " << past_shape.size();
                 NNFUSION_CHECK(past_shape[0] == 2) << "past dimension 0 shall have length of 2";
                 NNFUSION_CHECK(past_shape[1] == batch_size)
                     << "past dimension 1 shall have same length as dimension 0 of input";
@@ -85,7 +85,6 @@ REGISTER_OP(Attention)
                     1, gnode->get_input_element_type(0), output1_shape);
             }
         }
-
     });
 
 // REGISTER_OP(Attention)

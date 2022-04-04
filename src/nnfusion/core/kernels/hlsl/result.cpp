@@ -139,9 +139,9 @@ namespace nnfusion
             private:
                 bool need_copy_to_host;
             };
-        }
-    }
-}
+        } // namespace hlsl
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

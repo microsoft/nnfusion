@@ -163,9 +163,9 @@ namespace nnfusion
                 string folder;
                 string const_name;
             };
-        }
-    }
-}
+        } // namespace hlsl
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

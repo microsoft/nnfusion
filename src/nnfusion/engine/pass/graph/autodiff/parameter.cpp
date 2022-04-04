@@ -20,8 +20,8 @@ REGISTER_BACKWARD_TRANSLATOR(Parameter).translator([](std::shared_ptr<GNode> for
                                                       const GNodeIndexVector& outputs_grad,
                                                       std::shared_ptr<nnfusion::graph::Graph> graph)
                                                        -> GNodeIndexVector {
-    NNFUSION_CHECK(outputs_grad.size() == 1) << "parameter have only 1 output, but "
-                                             << outputs_grad.size() << " outputs_grad provided";
+    NNFUSION_CHECK(outputs_grad.size() == 1)
+        << "parameter have only 1 output, but " << outputs_grad.size() << " outputs_grad provided";
     auto graph_outputs = graph->get_outputs();
     auto parameter_op = std::dynamic_pointer_cast<op::Parameter>(forward_node->get_op_ptr());
     ///\todo support other optimizer, support scheduled learning rate

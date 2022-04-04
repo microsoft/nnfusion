@@ -10,7 +10,6 @@ REGISTER_OP(SparseApplyMomentum)
     .attr<std::vector<int64_t>>("indices")
     .attr<nnfusion::op::OpConfig::any>("Tindices", "int32_t")
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
-
         NNFUSION_CHECK(gnode->get_input_size() == 3)
             << "Inputs of SparseApplyMomentum operator should be 3.";
 

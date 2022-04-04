@@ -72,11 +72,12 @@ namespace nnfusion
             const nnfusion::Shape& get_output_shape() const { return m_output_shape; }
             bool get_is_transpose() const { return m_is_transpose; }
             bool get_is_layout_change() const { return m_is_layout_change; }
+
         protected:
             const nnfusion::AxisVector m_input_order;
             const nnfusion::Shape m_output_shape;
             bool m_is_transpose{false};
             bool m_is_layout_change{false};
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

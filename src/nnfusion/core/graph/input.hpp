@@ -44,6 +44,7 @@ namespace nnfusion
                 return m_shape;
             };
             const nnfusion::PartialShape& get_partial_shape() const { return m_partial_shape; }
+
         private:
             nnfusion::element::Type m_element_type;
 
@@ -58,5 +59,5 @@ namespace nnfusion
             Input(Input&&) = delete;
             Input& operator=(const Input&) = delete;
         };
-    }
-}
+    } // namespace graph
+} // namespace nnfusion

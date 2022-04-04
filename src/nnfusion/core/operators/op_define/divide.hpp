@@ -39,5 +39,5 @@ namespace nnfusion
             /// \brief Constructs a division operation.
             DivNoNan();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

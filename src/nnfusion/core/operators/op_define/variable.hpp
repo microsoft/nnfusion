@@ -36,5 +36,5 @@ namespace nnfusion
             Variable(const nnfusion::element::Type& element_type, const nnfusion::Shape& shape);
             bool is_variable() const override { return true; }
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

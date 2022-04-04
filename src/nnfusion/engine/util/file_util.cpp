@@ -138,19 +138,20 @@ namespace file_util
             FindClose(hFind);
         }
 #else
-        iterate_files_worker(path,
-                             [&files, &dirs](const string& file, bool is_dir) {
-                                 if (is_dir)
-                                 {
-                                     dirs.push_back(file);
-                                 }
-                                 else
-                                 {
-                                     files.push_back(file);
-                                 }
-                             },
-                             recurse,
-                             include_links);
+        iterate_files_worker(
+            path,
+            [&files, &dirs](const string& file, bool is_dir) {
+                if (is_dir)
+                {
+                    dirs.push_back(file);
+                }
+                else
+                {
+                    files.push_back(file);
+                }
+            },
+            recurse,
+            include_links);
 #endif
 
         for (auto f : files)
@@ -216,7 +217,7 @@ namespace file_util
         }
     }
 #endif
-}
+} // namespace file_util
 
 // This doodad finds the full path of the containing shared library
 static string find_my_file()

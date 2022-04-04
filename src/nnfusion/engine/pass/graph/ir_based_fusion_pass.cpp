@@ -51,7 +51,7 @@ private:
         {
             auto ir = nnfusion::op::get_translation(node);
             auto op_type = node->get_op_ptr()->get_op_type();
-            if(ir.empty())
+            if (ir.empty())
             {
                 m_blocklist.insert(op_type);
             }

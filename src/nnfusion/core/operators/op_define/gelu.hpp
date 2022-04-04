@@ -42,5 +42,5 @@ namespace nnfusion
             /// \param arg Node that produces the gelu forward input tensor.
             GeluGrad();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

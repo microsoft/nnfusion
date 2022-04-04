@@ -113,4 +113,4 @@ namespace nnfusion
     }
 
     std::ostream& operator<<(std::ostream& s, const Shape& shape);
-}
+} // namespace nnfusion

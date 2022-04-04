@@ -20,8 +20,8 @@ REGISTER_BACKWARD_TRANSLATOR(Convert).translator([](std::shared_ptr<GNode> forwa
                                                     const GNodeIndexVector& outputs_grad,
                                                     std::shared_ptr<nnfusion::graph::Graph> graph)
                                                      -> GNodeIndexVector {
-    NNFUSION_CHECK(outputs_grad.size() == 1) << "convert have only 1 output, but "
-                                             << outputs_grad.size() << " outputs_grad provided";
+    NNFUSION_CHECK(outputs_grad.size() == 1)
+        << "convert have only 1 output, but " << outputs_grad.size() << " outputs_grad provided";
     auto x_grad = graph->add_node_and_edge(
         std::make_shared<op::Convert>(forward_node->get_input_element_type(0)), {outputs_grad[0]});
     return GNodeIndexVector{GNodeIndex{x_grad, 0}};

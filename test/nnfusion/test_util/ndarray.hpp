@@ -154,7 +154,7 @@ namespace nnfusion
                 *(it++) = init;
                 return it;
             }
-        }
+        } // namespace init
 
         template <typename T>
         class NDArrayBase
@@ -203,5 +203,5 @@ namespace nnfusion
                     NDArrayBase<T>::m_elements.begin(), NDArrayBase<T>::m_shape, initial_value);
             }
         };
-    }
-}
+    } // namespace test
+} // namespace nnfusion

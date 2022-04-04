@@ -28,7 +28,7 @@ namespace onnx
 {
     // forward declaration
     class NodeProto;
-}
+} // namespace onnx
 
 namespace nnfusion
 {

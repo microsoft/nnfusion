@@ -178,9 +178,9 @@ atomicAdd(output0 + output_index, input0[tid]);
                     return _lu;
                 }
             };
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;

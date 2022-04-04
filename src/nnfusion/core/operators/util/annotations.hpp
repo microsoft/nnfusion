@@ -100,4 +100,4 @@ namespace nnfusion
             op->set_op_annotations(op_annotations);
         }
     }
-}
+} // namespace nnfusion

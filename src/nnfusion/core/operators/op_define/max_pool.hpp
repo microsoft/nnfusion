@@ -68,6 +68,7 @@ namespace nnfusion
             const nnfusion::Shape& get_padding_above() const { return m_padding_above; }
             /// \return The data format.
             const std::string& get_data_format() const { return m_data_format; }
+
         protected:
             nnfusion::Shape m_window_shape;
             nnfusion::Strides m_window_movement_strides;
@@ -106,5 +107,5 @@ namespace nnfusion
             nnfusion::Shape m_padding_above;
             std::weak_ptr<MaxPool> m_forward_op;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

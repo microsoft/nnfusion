@@ -44,7 +44,7 @@ bool GeluFusionOptimizer::create_subgraphs()
                    |                                    v
                 [root] --> Div -----> Erf  --> Add --> Mul ==>
                           (B=1.4142...)        (1)
-    
+
 
     Subgraph 2
                    +------------------------------------+
@@ -137,7 +137,6 @@ bool GeluFusionOptimizer::create_subgraphs()
     }
 
     auto check_gelu1 = [](const SubGraphRecord& sr) -> bool {
-
         // check divide is the chid of starting node
         auto pr_div = sr.pattern_records[1];
         auto div = pr_div->nodes[3];

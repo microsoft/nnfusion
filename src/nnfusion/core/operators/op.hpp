@@ -151,8 +151,8 @@ namespace nnfusion
         private:
             std::shared_ptr<Annotations> m_op_annotations;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion
 
 #define OP_VALIDATION(op, cond)                                                                    \
     _CHECK_STREAM_WITH_LOC(                                                                        \

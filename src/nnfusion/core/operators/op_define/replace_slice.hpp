@@ -76,6 +76,7 @@ namespace nnfusion
             const nnfusion::Coordinate& get_upper_bounds() const { return m_upper_bounds; }
             /// \return The slicing strides.
             const nnfusion::Strides& get_strides() const { return m_strides; }
+
         protected:
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
 
@@ -83,5 +84,5 @@ namespace nnfusion
             nnfusion::Coordinate m_upper_bounds;
             nnfusion::Strides m_strides;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

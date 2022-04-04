@@ -88,5 +88,5 @@ namespace nnfusion
         public:
             virtual shared_ptr<Module> compile() = 0;
         };
-    }
-}
+    } // namespace ir
+} // namespace nnfusion

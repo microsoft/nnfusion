@@ -16,6 +16,4 @@
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 
-TEST(nnfusion_core_kernels, tensor_allocation)
-{
-}
+TEST(nnfusion_core_kernels, tensor_allocation) {}

@@ -31,5 +31,5 @@ namespace nnfusion
             /// \brief Constructs a hyperbolic tangent operation.
             Tanh();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

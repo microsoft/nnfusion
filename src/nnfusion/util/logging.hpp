@@ -51,6 +51,7 @@ namespace nnfusion
         }
         constexpr const char* get_ptr(size_t offset) const { return &m_string[offset]; }
         constexpr size_t size() const { return m_size; }
+
     private:
         const char* m_string;
         size_t m_size;
@@ -125,4 +126,4 @@ namespace nnfusion
         .stream()
 
 #define NNFUSION_LOG(level) _LOG_##level
-}
+} // namespace nnfusion

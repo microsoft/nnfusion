@@ -20,6 +20,7 @@ namespace nnfusion
             using Pointer = shared_ptr<CudaDefaultRuntime>;
             static Pointer Runtime();
             CudaDefaultRuntime() { _dt = CUDA_GPU; }
+
         protected:
             // Tiny codegen function for runtime
             virtual bool codegen(const ProfilingContext::Pointer& ke);
@@ -36,6 +37,7 @@ namespace nnfusion
             using Pointer = shared_ptr<CUPTIRuntime>;
             static Pointer Runtime();
             CUPTIRuntime() { _dt = CUDA_GPU; }
+
         protected:
             // Tiny codegen function for runtime
             virtual bool codegen(const ProfilingContext::Pointer& ke);
@@ -45,5 +47,5 @@ namespace nnfusion
 
             void set_dt(NNFusion_DeviceType dt) { _dt = dt; }
         };
-    }
-}
+    } // namespace profiler
+} // namespace nnfusion

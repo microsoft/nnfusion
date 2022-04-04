@@ -33,5 +33,5 @@ namespace nnfusion
             ///
             Abs();
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

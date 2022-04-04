@@ -113,8 +113,8 @@ void ExtractGraphSignature::propagate_in_place_output(std::shared_ptr<Interprete
                     if (input_tensor.get_pool_offset() == offset &&
                         !tmp_node->get_op_ptr()->is_tensor_op())
                     {
-                        NNFUSION_LOG(INFO) << "Reusing " << output_name << " for "
-                                           << input_tensor.get_name();
+                        NNFUSION_LOG(INFO)
+                            << "Reusing " << output_name << " for " << input_tensor.get_name();
 
                         ctx->m_variable_name_map[input_tensor.get_name()] = output_name;
 

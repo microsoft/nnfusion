@@ -88,5 +88,5 @@ namespace nnfusion
                     this->m_reduction_axes.insert((int)ax);
             }
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

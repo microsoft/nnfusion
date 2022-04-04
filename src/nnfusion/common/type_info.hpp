@@ -86,4 +86,4 @@ namespace nnfusion
     //     DT_UINT64,
     //     DT_CHAR,
     // };
-}
+} // namespace nnfusion

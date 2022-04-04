@@ -25,6 +25,6 @@ namespace nnfusion
                                         shared_ptr<nnfusion::descriptor::Tensor> tensor,
                                         vector<float>& d);
             void test_compare(CodeWriter& writer, shared_ptr<nnfusion::descriptor::Tensor> tensor);
-        }
-    }
-}
+        } // namespace cuda
+    }     // namespace kernels
+} // namespace nnfusion

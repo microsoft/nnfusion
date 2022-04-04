@@ -45,6 +45,7 @@ namespace nnfusion
                              const std::vector<nnfusion::element::Type>& input_types);
 
                 std::shared_ptr<nnfusion::graph::Graph> get_graph() { return m_graph; }
+
             private:
                 const std::shared_ptr<torch::jit::Graph> ts_graph_;
                 std::shared_ptr<nnfusion::graph::Graph> m_graph;
@@ -54,6 +55,6 @@ namespace nnfusion
                 std::vector<nnfusion::element::Type> input_types_;
                 NodeMap tnode2gnodes;
             };
-        } // namespace tensorflow_import
+        } // namespace torchscript_import
     }     // namespace frontend
 } // namespace nnfusion

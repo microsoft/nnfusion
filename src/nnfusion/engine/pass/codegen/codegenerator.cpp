@@ -34,8 +34,8 @@ void LanguageUnitwithVec::execute(bool append)
         {
             if (!this->pwd.empty() && lu->pwd.empty())
                 lu->pwd = this->pwd;
-            NNFUSION_CHECK(this->pwd == lu->pwd) << "Conflict pwd: " << this->pwd << " vs "
-                                                 << lu->pwd;
+            NNFUSION_CHECK(this->pwd == lu->pwd)
+                << "Conflict pwd: " << this->pwd << " vs " << lu->pwd;
 
             if (!this->write_to.empty() && lu->write_to.empty())
                 lu->write_to = this->write_to;
@@ -87,8 +87,8 @@ void CodegenMainBlockUnit::execute(bool append)
         {
             if (!this->pwd.empty() && lu->pwd.empty())
                 lu->pwd = this->pwd;
-            NNFUSION_CHECK(this->pwd == lu->pwd) << "Conflict pwd: " << this->pwd << " vs "
-                                                 << lu->pwd;
+            NNFUSION_CHECK(this->pwd == lu->pwd)
+                << "Conflict pwd: " << this->pwd << " vs " << lu->pwd;
 
             if (!this->write_to.empty() && lu->write_to.empty())
                 lu->write_to = this->write_to;
@@ -310,7 +310,6 @@ void CodeGenerator::pass_exec_info()
     std::unordered_map<LanguageUnit_p, LanguageUnit_p> receiver_giver;
 
     auto pass = [&](LanguageUnit_p giver, LanguageUnit_p receiver) {
-
         // NNFUSION_LOG(INFO) << "==================";
         // NNFUSION_LOG(INFO) << giver->symbol << "\t" << giver->pwd << "\t" << giver->write_to;
         // NNFUSION_LOG(INFO) << receiver->symbol << "\t" << receiver->pwd << "\t" << receiver->write_to;
@@ -399,7 +398,6 @@ void CodeGenerator::pass_exec_info()
             }
             curr->collect_requirement();
         }
-
     };
 
     while (!queue.empty())

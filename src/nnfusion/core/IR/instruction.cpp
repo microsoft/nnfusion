@@ -26,8 +26,8 @@ KernelEmitter::Pointer Instruction::get_kernel_from_gnode(std::shared_ptr<graph:
 {
     if (!(*gnode)["Kernel_Selection_Result"].is_valid())
     {
-        NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be selected before translating:"
-                                       << gnode->get_name();
+        NNFUSION_LOG(NNFUSION_WARNING)
+            << "Kernel should be selected before translating:" << gnode->get_name();
         return nullptr;
     }
     KernelEmitter::Pointer kernel = nullptr;
@@ -36,8 +36,8 @@ KernelEmitter::Pointer Instruction::get_kernel_from_gnode(std::shared_ptr<graph:
 
     // constant kernel emitter will write file to save weights, skip to do it when codegen.
     if (!gnode->is_constant() && emitted_kernel.second->get_or_emit_source() == nullptr)
-        NNFUSION_LOG(NNFUSION_WARNING) << "Kernel should be emitted before translating:"
-                                       << gnode->get_name();
+        NNFUSION_LOG(NNFUSION_WARNING)
+            << "Kernel should be emitted before translating:" << gnode->get_name();
     kernel = emitted_kernel.second;
     return kernel;
 }

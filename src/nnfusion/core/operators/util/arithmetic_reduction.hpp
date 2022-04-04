@@ -39,8 +39,9 @@ namespace nnfusion
 
             /// \return The axis positions (0-based) to be eliminated through reduction.
             const nnfusion::AxisSet& get_reduction_axes() const { return m_reduction_axes; }
+
         protected:
             nnfusion::AxisSet m_reduction_axes;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

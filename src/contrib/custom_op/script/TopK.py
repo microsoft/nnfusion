@@ -38,6 +38,7 @@ def get_antares_type_str(typestr):
 class TopK(OperatorBase):
     def __init__(self, input_dict=None, config_infer=None):
         # Here is some difference with original ONNX define
+        self.cs_5_compatiable_mode = True
         super().__init__(input_dict, self.config_infer)
         self.attach_directx_hlsl_kernel(input_dict)
 
@@ -110,7 +111,10 @@ class TopK(OperatorBase):
         outputs["shape"].append(input_dict["input"]["shape"][0].copy())
         outputs["shape"].append(input_dict["input"]["shape"][0].copy())
         outputs["dtype"].append(input_dict["input"]["dtype"][0])
-        outputs["dtype"].append("int64_t")
+        if self.cs_5_compatiable_mode:
+            outputs["dtype"].append("int")
+        else:
+            outputs["dtype"].append("int64_t")
 
         if self['axis'] < 0:
             self['axis'] += len(outputs["shape"][0])

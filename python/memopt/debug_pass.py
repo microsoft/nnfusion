@@ -32,6 +32,6 @@ def get_kernel_info_pass(f, mod, ctx):
 
     smem_inputs_name = [name + "_shared" for name in get_scope().shared_mem_inputs]
     offset = 0
-    get_scope().total_interal_shared_memory = offset
     tvm.tir.stmt_functor.post_order_visit(f.body, process)
+    get_scope().total_interal_shared_memory = offset
     return f

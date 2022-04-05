@@ -1,3 +1,4 @@
+from ast import Not
 from .graph import OutputNode, PlaceHolderNode
 import tvm
 from .modify_input_pass import modify_input_pass
@@ -5,8 +6,10 @@ from .modify_output_pass import modify_output_pass
 from .debug_pass import get_kernel_info_pass
 from .scope import Scope, get_scope
 from .schedule_rewrite import CodeGenerator
+from .bestfit import BestFit
 import numpy as np
 import regex as re
+import io
 
 import ctypes
 import os
@@ -72,9 +75,8 @@ extern "C" float function({}) {{
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
     {}<<<{}, {}>>>({});
-    cudaEventRecord(stop, 0);
-    if (cudaEventSynchronize(stop) != cudaSuccess)
-        return -1;
+    if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
+    if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
     cudaEventElapsedTime(&ms, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
@@ -103,44 +105,122 @@ def compile_and_load(kernel_code):
     assert(ret == 0)
     return lib
 
+def can_free(node, out_id, done_ops):
+    for edge in node.outputs:
+        if edge.src_id == out_id and edge.dst_node not in done_ops:
+            return False
+    return True
+
 def compose_global_kernel(topo_order, configs, target, name):
     # check inputs and outputs
-    subgraph_inputs_name_map = {}
-    subgraph_outputs_name_map = {}
+    kernel_args_name_map = {}
+    num_inputs, num_outputs = 0, 0
     for op in topo_order:
-        if isinstance(op, PlaceHolderNode):
-            idx = len(subgraph_inputs_name_map)
-            subgraph_inputs_name_map[op] = "input"+str(idx)
-        elif isinstance(op, OutputNode):
-            idx = len(subgraph_outputs_name_map)
-            subgraph_outputs_name_map[op] = "output"+str(idx)
+        if isinstance(op, (PlaceHolderNode, OutputNode)):
+            continue
+        else:
+            for edge in op.inputs:
+                if isinstance(edge.src_node, PlaceHolderNode):
+                    kernel_args_name_map[op.args[edge.dst_id]] = "input"+str(num_inputs)
+                    num_inputs += 1
+            for edge in op.outputs:
+                if isinstance(edge.dst_node, OutputNode):
+                    kernel_args_name_map[op.args[edge.src_id+len(op.inputs)]] = "output"+str(num_outputs)
+                    num_outputs += 1
+
     # -------------------------------------------------
     cgen = CodeGenerator()
-    idx = 0
+    allocator = BestFit()
+    block_map = {}
+    device_func_uid = 0
+    done_op = set()
+    statements = []
+    block_size, grid_size = None, None
+    code = io.StringIO()
     for op in topo_order:
+        done_op.add(op)
         if isinstance(op, (PlaceHolderNode, OutputNode)):
             continue
         config = configs[op]
         sch = tvm.te.create_schedule(op.args[-1].op)
         shared_inputs = []
         shared_outputs = []
+        shared_inputs_idx = []
+        shared_outputs_idx = []
         for input in op.inputs:
             if not isinstance(input.src_node, PlaceHolderNode):
                 shared_inputs.append(op.args[input.dst_id].name)
+                shared_inputs_idx.append(input.dst_id)
         for output in op.outputs:
             if not isinstance(output.dst_node, OutputNode):
                 shared_outputs.append(op.args[len(op.inputs)+output.src_id].name)
+                shared_outputs_idx.append(output.src_id)
             shared_outputs = list(set(shared_outputs)) # unique
         sch = cgen.rewrite_schedule(sch, config, True, True, target_stage=op.args[-1].name, tile_blacklist=shared_inputs)
         with Scope(sch) as scope:
-            kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=name+"_kernel_"+str(idx), global_kernel=False)
+            func_name = name+"_kernel_"+str(device_func_uid)
+            kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=func_name, global_kernel=False)
+            if block_size is None:
+                block_size = scope.block_size
+                grid_size = scope.grid_size
+            else:
+                assert(block_size == scope.block_size)
+                assert(grid_size == scope.grid_size)
+            code.write(kernel_code)
             # from .debug import debug
             # debug({**globals(), **locals()})
-            print(scope.exteral_shared_memroy_size)
-            idx += 1
+            block_map[op] = {}
+            for idx, var_name in zip(shared_outputs_idx, shared_outputs):
+                num_bytes = scope.exteral_shared_memroy_size[var_name]
+                block = allocator.malloc(num_bytes)
+                block_map[op][idx] = block
+                print(block)
+            internal_shared_mem = allocator.malloc(scope.total_interal_shared_memory)
+            for idx, var_name in zip(shared_inputs_idx, shared_inputs):
+                num_bytes = scope.exteral_shared_memroy_size[var_name]
+                src_node = op.inputs[idx].src_node
+                src_id = op.inputs[idx].src_id
+                if can_free(src_node, src_id, done_op):
+                    allocator.free(block_map[src_node][src_id])
 
-    # for op in topo_order:
-    #     if isinstance(op, [PlaceHolderNode, OutputNode]):
-    #         continue
+            allocator.free(internal_shared_mem)
+            print(allocator.limit)
+            arg_list = []
+            for idx in range(len(op.inputs)):
+                if idx in shared_inputs_idx:
+                    src_node = op.inputs[idx].src_node
+                    src_id = op.inputs[idx].src_id
+                    dtype = _type_map[src_node.args[src_id+len(src_node.inputs)].dtype]
+                    arg_list.append("({}*)(shared+{})".format(dtype, block_map[src_node][src_id].start))
+                else:
+                    arg_list.append(kernel_args_name_map[op.args[idx]])
+            for idx in range(len(op.args) - len(op.inputs)):
+                if idx in shared_outputs_idx:
+                    dtype = _type_map[op.args[idx+len(op.inputs)].dtype]
+                    arg_list.append("({}*)(shared+{})".format(dtype, block_map[op][idx].start))
+                else:
+                    arg_list.append(kernel_args_name_map[op.args[idx+len(op.inputs)]])
+            arg_list.append("shared+{}".format(internal_shared_mem.start))
+            call_str = func_name + "(" + ", ".join(arg_list) + ");"
+            statements.append(call_str)
+            device_func_uid += 1
 
-    return None
+    statements.insert(0, "__shared__ char shared[{}];".format(allocator.limit))
+    for stmt in statements:
+        print(stmt)
+    kernel_args_dtype_map = {v : _type_map[k.dtype] for k, v in kernel_args_name_map.items()}
+    kernel_args_name = ["{}* {}".format(kernel_args_dtype_map[arg], arg)
+        for arg in sorted(kernel_args_name_map.values())]
+    prefix = "__global__ void __launch_bounds__({}) {}({})".format(
+        np.prod(scope.block_size), name,
+        ", ".join(kernel_args_name)
+    )
+    print(prefix)
+    code.write(prefix)
+    code.write(" {\n")
+    for stmt in statements:
+        code.write("  "+stmt+"\n")
+    code.write("}\n")
+
+    args = sorted(kernel_args_name_map, key = lambda k: kernel_args_name_map[k])
+    return code.getvalue(), block_size, grid_size, args

@@ -51,7 +51,7 @@ std::string replace_all(std::string& str, const std::string& from, const std::st
 
 std::string get_base_dir()
 {
-    char* nnfusion_contrib= getenv("NNFUSION_CONTRIB");
+    char* nnfusion_contrib = getenv("NNFUSION_CONTRIB");
     std::string base_dir;
     if (nnfusion_contrib == NULL)
     {

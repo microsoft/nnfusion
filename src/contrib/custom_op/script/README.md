@@ -84,3 +84,6 @@ See [GridSample.py](https://github.com/microsoft/nnfusion/blob/master/src/contri
 1. Register the script kernel as TopK.
 2. Do shape inference without Antares.[Link](https://github.com/microsoft/nnfusion/blob/bc2fbb17594e4b10552e7745c0c28222e4b0a8b8/src/contrib/custom_op/script/GridSample.py#L32)
 3. Attach antares_ir into the output.[Link](https://github.com/microsoft/nnfusion/blob/bc2fbb17594e4b10552e7745c0c28222e4b0a8b8/src/contrib/custom_op/script/GridSample.py#L12)
+
+## Template
+We've provided two template for customized operator, see: [TemplateAntaresOperator.py](https://github.com/microsoft/nnfusion/blob/master/src/contrib/custom_op/script/TemplateAntaresOperator.py), [TemplateHLSLOperator.py](https://github.com/microsoft/nnfusion/blob/master/src/contrib/custom_op/script/TemplateHLSLOperator.py) 

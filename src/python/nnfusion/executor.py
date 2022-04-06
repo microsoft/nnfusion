@@ -234,6 +234,7 @@ class Executor(object):
         if get_workspace_size is None:
             return None
 
+        get_workspace_size.restype = ctypes.c_uint64
         n_byte = get_workspace_size()
         if not n_byte:
             return None

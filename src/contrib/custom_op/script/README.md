@@ -8,7 +8,7 @@ Firstly, register custom operator in $(NNFUSION_HOME)/contrib/custom_op/script/<
 { "ops":[
   {
     "op": "TopK",
-    "script" : "python <NNFUSION_HOME>/custom_op/script --operator-name=\"<OP_NAME>\" --input-config=<OP_JSON>"
+    "script" : "python <NNFUSION_CONTRIB>/custom_op/script --operator-name=\"<OP_NAME>\" --input-config=<OP_JSON>"
   }]
 }
 ```

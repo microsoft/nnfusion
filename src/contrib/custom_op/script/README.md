@@ -13,7 +13,7 @@ Firstly, register custom operator in $(NNFUSION_CONTRIB)/custom_op/script/<any_f
 }
 ```
 NNFusion will try to pass all config from an unkown operator trough standard input to the script and retrieve the result from standard output of the script.
-The script will have not to be $(NNFUSION_HOME)/custom_op/script/\_\_main\_\_.py. It could be any script accept JSON as input and write back in JSON.
+The script will have not to be $(NNFUSION_CONTRIB)/custom_op/script/\_\_main\_\_.py. It could be any script accept JSON as input and write back in JSON.
 The input for the script will contain all attributes, constant input and all inputs' shape with data type which is imported from the frontend.
 ```JSON
 {

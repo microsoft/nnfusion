@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-from pickle import GLOBAL
 import platform
 import sys
 import tarfile

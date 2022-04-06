@@ -3,7 +3,7 @@
 Script based custom op has same data interface with normal JSON custom op interface. Currently we've tested the inferface for antares and HLSL.
 
 ## How to add script-based custom operator?
-Firstly, register custom operator in $(NNFUSION_HOME)/contrib/custom_op/script/<any_file>.json, e.g. in op.json, using below code.
+Firstly, register custom operator in $(NNFUSION_CONTRIB)/custom_op/script/<any_file>.json, e.g. in op.json, using below code.
 ```JSON
 { "ops":[
   {

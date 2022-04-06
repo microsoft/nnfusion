@@ -43,9 +43,9 @@ std::string nnfusion::tmpnam(int* status)
         char* home = getenv("HOME");
         if (home != NULL)
         {
-            base_dir = std::string(home) + "/nnfusion/tmp/";
+            base_dir = std::string(home) + "/.nnfusion/tmp/";
             NNFUSION_LOG(NNFUSION_WARNING) << "$NNFUSION_HOME was not set, use "
-                                           << std::string(home) << "/nnfusion.";
+                                           << std::string(home) << "/.nnfusion.";
         }
     }
     else

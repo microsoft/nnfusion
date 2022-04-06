@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+from pickle import GLOBAL
 import platform
 import sys
 import tarfile
@@ -21,7 +22,8 @@ if sys.version_info < python_min_version:
 
 nnf_bin = "build/src/tools/nnfusion/nnfusion"
 nnf_tool = "build/src/tools/nnfusion/"
-nnf_blacklist = ["cmake_install.cmake", "Makefile", "CMakeFiles"]
+nnf_tgt_dir = "share/nnfusion"
+nnf_blacklist = ["cmake_install.cmake", "Makefile", "CMakeFiles", "__pycache__", "CMakeLists.txt"]
 
 if not os.path.exists(nnf_bin):
     print("Pleast build nnfusion in /build folder.")
@@ -31,7 +33,7 @@ if not os.path.exists(nnf_bin):
 def get_data_files(source_dir, ignore_list):
     def dir_files_pair(root, files):
         directory = os.path.relpath(root, source_dir)
-        directory = os.path.join('nnfusion-bin', directory)
+        directory = os.path.join(nnf_tgt_dir, directory)
         files = [
             os.path.join(root, file)
             for file in files
@@ -64,6 +66,8 @@ with open("requirements_test.txt") as f:
 with open("VERSION") as f:
     version = f.readline().strip()
 
+data_files = get_data_files(nnf_tool, nnf_blacklist) + get_data_files("src/contrib/", nnf_blacklist)
+
 setuptools.setup(
     name="nnfusion",
     version=version,
@@ -75,7 +79,7 @@ setuptools.setup(
     url="https://github.com/microsoft/nnfusion",
     packages=setuptools.find_packages(where="src/python", exclude=["example"]),
     package_dir={"": "src/python"},
-    data_files=get_data_files(nnf_tool, nnf_blacklist),
+    data_files= data_files,
     install_requires=install_requires,
     tests_require=tests_require,
     classifiers=[

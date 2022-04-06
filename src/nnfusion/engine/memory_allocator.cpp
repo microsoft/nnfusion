@@ -290,9 +290,9 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
     auto& lu = *_lu;
     if (m_max_allocated > 0)
     {
-        lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
         if (!FLAGS_ffunction_codegen)
         {
+            lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
             lu << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << this->get_name() << "_memory_pool,"
                << m_max_allocated << "));\n";
             lu << "CUDA_SAFE_CALL(cudaMemset((void*)" << this->get_name() << "_memory_pool, 0, "
@@ -332,9 +332,13 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_free()
         return _lu;
 
     auto& lu = *_lu;
-    lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
+
     if (!FLAGS_ffunction_codegen)
+    {
+        lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
         lu << "CUDA_SAFE_CALL(cudaFree(" << this->get_name() + "_memory_pool));\n";
+    }
+
     return _lu;
 }
 
@@ -342,7 +346,8 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_set(int value)
 {
     LanguageUnit_p _lu(new LanguageUnit(this->get_name() + "_memset"));
     auto& lu = *_lu;
-    lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
+    if (!FLAGS_ffunction_codegen)
+        lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
     lu << "CUDA_SAFE_CALL(cudaMemset((void*)" << this->get_name() + "_memory_pool, " << value
        << ", " << m_max_allocated << "));\n";
     return _lu;

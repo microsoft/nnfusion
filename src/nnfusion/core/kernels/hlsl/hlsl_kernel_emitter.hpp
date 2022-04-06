@@ -58,10 +58,18 @@ namespace nnfusion
                                                    << ctx->gnode->get_op_type();
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
+
+                            auto& op_reg =
+                                nnfusion::op::lookup_op_config(ctx->gnode->get_op_type());
+                            if (op_reg.f_kernel_funcs.count("HLSL") != 0)
+                            {
+                                antares_code = op_reg.f_kernel_funcs["HLSL"](ctx->gnode);
+                            }
                         }
 
                         kernel_info =
                             nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
+
                         NNFUSION_CHECK(!kernel_info.empty());
                         process_antares_kernel_info();
                     }
@@ -83,6 +91,6 @@ namespace nnfusion
                 std::unordered_map<std::string, std::string>
                     tensor_name_map; // antares tensor name : kernel tensor name
             };
-        }
-    }
-}
+        } // namespace hlsl
+    }     // namespace kernels
+} // namespace nnfusion

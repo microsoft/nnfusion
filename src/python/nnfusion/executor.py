@@ -1,13 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-
+import ctypes
+import json
 import os
 import platform
-import json
-import ctypes
-from . import dtypes
-from .utils import cd
+
+import torch
+
+from .data_format import cast_pytorch_tensor
 from .description import IODescription
+from .utils import cd
 
 
 def find_nnf_rt(nnf_rt_dir):
@@ -80,11 +82,13 @@ class Executor(object):
         5: ("", ""),  # UNKNOWN
     }
 
-    def __init__(self, nnf_rt_dir):
+    def __init__(self, nnf_rt_dir, device=None):
         """
         Parameters:
             nnf_rt_dir: A full string path to nnfusion runtime,
                 it's usually like "codegen_root/nnfusion_rt/cuda_codegen".
+            device: A device type (`torch.device`) that is used for workspace
+                memory reservation (if needed) by nnfusion runtime.
         """
         nnf_rt_dir = os.path.abspath(nnf_rt_dir)
         self.libnnf_path = find_nnf_rt(nnf_rt_dir)
@@ -113,9 +117,14 @@ class Executor(object):
         init_func_name, free_func_name = self.device_type_map[device_type]
         self.nnf_rt_init = getattr(self.libnnf, init_func_name, None)
         self.nnf_rt_free = getattr(self.libnnf, free_func_name, None)
+
         if self.nnf_rt_init:
             with cd(nnf_rt_dir):
-                self.nnf_rt_init()
+                workspace_ptr = self._maybe_reserve_mem(device)
+                if workspace_ptr is not None:
+                    self.nnf_rt_init(workspace_ptr)
+                else:
+                    self.nnf_rt_init()
                 self.init_flag = True
 
         # parse input/output
@@ -219,3 +228,16 @@ class Executor(object):
     def feed_pointers(self, signature, params):
         self.kernel_entry.argtypes = signature
         self.kernel_entry(*params)
+
+    def _maybe_reserve_mem(self, device):
+        get_workspace_size = getattr(self.libnnf, 'get_workspace_size', None)
+        if get_workspace_size is None:
+            return None
+
+        n_byte = get_workspace_size()
+        if not n_byte:
+            return None
+
+        self._reserved_mem = torch.empty(n_byte,
+                                         dtype=torch.int8, device=device)
+        return cast_pytorch_tensor(self._reserved_mem).pointer

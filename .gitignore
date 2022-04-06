@@ -18,6 +18,7 @@
 
 build/
 dist/
+__pycache__
 custom_op/
 nnfusion.tar.gz
 

@@ -50,12 +50,25 @@ namespace nnfusion
                 , m_data(nnfusion::aligned_alloc(
                       m_element_type.size(), nnfusion::shape_size(m_shape) * m_element_type.size()))
             {
-                OP_VALIDATION(this,
-                              values.size() == 1 || values.size() == nnfusion::shape_size(m_shape))
-                    << "Did not get the expected number of literals for a constant of shape "
-                    << m_shape << " (got " << values.size() << ", expected "
-                    << (nnfusion::shape_size(m_shape) == 1 ? "" : "1 or ")
-                    << nnfusion::shape_size(m_shape) << ").";
+                size_t literal_num = values.size() * sizeof(T) / element_type.size();
+
+                if (element_type == element::f16 && nnfusion::shape_size(m_shape) % 2 == 1)
+                {
+                    OP_VALIDATION(this, values.size() * 4 >= nnfusion::shape_size(m_shape) * 2)
+                        << "Did not get the expected number of literals for a constant of shape "
+                        << m_shape << " (got " << values.size() << ", expected "
+                        << (nnfusion::shape_size(m_shape) == 1 ? "" : "1 or ")
+                        << nnfusion::shape_size(m_shape) << ")." << element_type;
+                }
+                else
+                {
+                    OP_VALIDATION(this,
+                                  literal_num == 1 || literal_num == nnfusion::shape_size(m_shape))
+                        << "Did not get the expected number of literals for a constant of shape "
+                        << m_shape << " (got " << values.size() << ", expected "
+                        << (nnfusion::shape_size(m_shape) == 1 ? "" : "1 or ")
+                        << nnfusion::shape_size(m_shape) << ")." << element_type;
+                }
 
                 if (values.size() == 1)
                 {
@@ -154,6 +167,54 @@ namespace nnfusion
                 return rc;
             }
 
+            float half_to_float(uint16_t float16_value) const
+            {
+                uint32_t sign = float16_value >> 15;
+                uint32_t exponent = (float16_value >> 10) & 0x1F;
+                uint32_t fraction = (float16_value & 0x3FF);
+                uint32_t float32_value;
+                if (exponent == 0)
+                {
+                    if (fraction == 0)
+                    {
+                        float32_value = (sign << 31);
+                    }
+                    else
+                    {
+                        exponent = 127 - 14;
+                        while ((fraction & (1 << 10)) == 0)
+                        {
+                            exponent--;
+                            fraction <<= 1;
+                        }
+                        fraction &= 0x3FF;
+                        float32_value = (sign << 31) | (exponent << 23) | (fraction << 13);
+                    }
+                }
+                else if (exponent == 0x1F)
+                {
+                    float32_value = (sign << 31) | (0xFF << 23) | (fraction << 13);
+                }
+                else
+                {
+                    float32_value =
+                        (sign << 31) | ((exponent + (127 - 15)) << 23) | (fraction << 13);
+                }
+
+                return *((float*)&float32_value);
+            }
+
+            std::vector<float> get_float16_vector() const
+            {
+                std::vector<float> rc;
+                const uint16_t* p = reinterpret_cast<const uint16_t*>(m_data);
+                for (size_t i = 0; i < nnfusion::shape_size(m_shape); i++)
+                {
+                    rc.push_back(half_to_float(p[i]));
+                }
+                return rc;
+            }
+
             DataBuffer get_buffer() const;
             const void* get_data_ptr() const { return m_data; }
             size_t get_data_size() const
@@ -183,5 +244,5 @@ namespace nnfusion
             Constant(Constant&&) = delete;
             Constant operator=(const Constant*) = delete;
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

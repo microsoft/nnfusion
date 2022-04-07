@@ -87,6 +87,6 @@ NNFusion currently supports adding a custom operator in two ways: writing an ope
     ]
     ```
     Note:
-    * After written a JSON operator, you can just put it under `$NNFUSION_HOME/custom_op/json/`, then NNFusion will automaticlly import and register this opeartor in the compiler. By default, `NNFUSION_HOME` is set as `$HOME/nnfusion`.
+    * After written a JSON operator, you can just put it under `$NNFUSION_CONTRIB/custom_op/json/`, then NNFusion will automaticlly import and register this opeartor in the compiler. By default, `NNFUSION_CONTRIB` is set as `$HOME/.nnfusion` or `<sys.prefix>/share/nnfusion` if you install nnfusion by python wheel.
     * In JSON config files, you are not allowed to write arbitrary shape inference logics, thus you can only provide a pair of list of shapes. NNFusion will try to match the input shape and set the output shape as the corresponding one in the `output_shapes` list. If there is no input shape matched, we just set the output shape as the same as input shape. 
     * In both antares_ir or kernel strings, you can always use `@key@` to specify the key defined in operator attributes, NNFusion will automatically replace the key with real value.

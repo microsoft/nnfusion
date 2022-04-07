@@ -27,6 +27,7 @@
 
 #include "op/adam_optimizer.hpp"
 #include "op/attention.hpp"
+#include "op/averagepool.hpp"
 #include "op/batch_norm.hpp"
 #include "op/binaryop.hpp"
 #include "op/cast.hpp"
@@ -45,6 +46,7 @@
 #include "op/flatten.hpp"
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
+#include "op/gru.hpp"
 #include "op/identity.hpp"
 #include "op/index_reduce.hpp"
 #include "op/layer_norm.hpp"
@@ -55,6 +57,7 @@
 #include "op/memory_copy.hpp"
 #include "op/non_zero.hpp"
 #include "op/one_hot.hpp"
+#include "op/pad.hpp"
 #include "op/pool.hpp"
 #include "op/range.hpp"
 #include "op/reduce.hpp"
@@ -146,6 +149,7 @@ namespace nnfusion
             {
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
                 REGISTER_OPERATOR("Acos", 1, TranslateUnaryOp<op::Acos>);
+                REGISTER_OPERATOR("AveragePool", 1, TranslateAveragePoolOp);
                 REGISTER_OPERATOR("AdamOptimizer", 1, TranslateAdamOptimizerOp);
                 REGISTER_OPERATOR("Add", 1, TranslateLegacyBinaryOp<op::Add>);
                 REGISTER_OPERATOR("Add", 7, TranslateBinaryOp<op::Add>);
@@ -189,6 +193,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("GlobalAveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("GlobalMaxPool", 1, TranslatePoolOp<op::MaxPool>);
                 REGISTER_OPERATOR("Greater", 1, TranslateBinaryOp<op::Greater>);
+                REGISTER_OPERATOR("GRU", 1, TranslateGRUOp);
                 //REGISTER_OPERATOR("HardSigmoid", 1, hard_sigmoid);
                 REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
                 REGISTER_OPERATOR("LayerNormalization", 1, TranslateLayerNormalizationOp);
@@ -201,7 +206,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("MaxPool", 1, TranslatePoolOp<op::MaxPool>);
-                REGISTER_OPERATOR("Max", 1, TranslateLegacyBinaryOp<op::Maximum>);
+                REGISTER_OPERATOR("Max", 1, TranslateBinaryOp<op::Maximum>);
                 //REGISTER_OPERATOR("Mean", 1, mean);
                 REGISTER_OPERATOR("MemcpyFromHost", 1, TranslateMemcpyFromHostOp);
                 REGISTER_OPERATOR("MemcpyToHost", 1, TranslateMemcpyToHostOp);
@@ -251,6 +256,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Split", 1, TranslateSplitOp);
                 REGISTER_OPERATOR("Sqrt", 1, TranslateUnaryOp<op::Sqrt>);
                 REGISTER_OPERATOR("Squeeze", 1, TranslateSqueezeOp);
+                REGISTER_OPERATOR("Pad", 1, TranslatePadOp);
                 REGISTER_OPERATOR("Squeeze", 11, TranslateSqueezeOp);
                 REGISTER_OPERATOR("Sub", 1, TranslateLegacyBinaryOp<op::Subtract>);
                 REGISTER_OPERATOR("Sub", 7, TranslateBinaryOp<op::Subtract>);

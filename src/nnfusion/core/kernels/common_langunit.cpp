@@ -25,6 +25,7 @@ LU_DEFINE(header::limits, "#include <limits>\n");
 LU_DEFINE(header::iostream, "#include <iostream>\n");
 LU_DEFINE(header::windows, "#include <windows.h>\n");
 LU_DEFINE(header::unordered_map, "#include <unordered_map>\n");
+LU_DEFINE(header::torch_extension, "#include <torch/extension.h>\n");
 
 // Macro
 LU_DEFINE(macro::NNFUSION_DEBUG, "#define NNFUSION_DEBUG\n");

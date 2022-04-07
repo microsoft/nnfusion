@@ -57,6 +57,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL()
                         << "unsupported data type: "
                         << static_cast<onnx::TensorProto_DataType>(tensor.data_type());
+                    return std::vector<T>();
                 }
 
                 template <>
@@ -86,6 +87,7 @@ namespace nnfusion
                                    static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
                         break;
                     }
+                    return std::vector<double>();
                 }
 
                 template <>
@@ -95,8 +97,27 @@ namespace nnfusion
                     {
                         return __get_raw_data<float>(tensor.raw_data());
                     }
-                    if ((tensor.data_type() == onnx::TensorProto_DataType_FLOAT) ||
-                        (tensor.data_type() == onnx::TensorProto_DataType_FLOAT16))
+                    if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT16)
+                    {
+                        nnfusion::Shape shape{std::begin(tensor.dims()), std::end(tensor.dims())};
+                        size_t num_element = shape_size(shape);
+                        std::vector<int32_t> raw_data = __get_data<int32_t>(tensor.int32_data());
+                        std::vector<float> ret((num_element + 1) / 2, 0.0);
+                        uint32_t* src_p = (uint32_t*)raw_data.data();
+                        uint16_t* dst_p = (uint16_t*)ret.data();
+                        for (size_t i = 0; i < num_element; i++)
+                        {
+                            NNFUSION_CHECK((src_p[i] & 0xFFFF0000) == 0);
+                            dst_p[i] = src_p[i] & 0x0000FFFF;
+                        }
+                        if (num_element % 2 == 1)
+                        {
+                            dst_p[num_element] = 0;
+                        }
+
+                        return ret;
+                    }
+                    if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT)
                     {
                         return __get_data<float>(tensor.float_data());
                     }
@@ -116,6 +137,7 @@ namespace nnfusion
                         << "invalid data type: "
                         << onnx::TensorProto_DataType_Name(
                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
+                    return std::vector<float>();
                 }
 
                 template <>
@@ -132,6 +154,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL() << "invalid data type: "
                                           << onnx::TensorProto_DataType_Name(
                                                  onnx::TensorProto_DataType(tensor.data_type()));
+                    return std::vector<int32_t>();
                 }
 
                 template <>

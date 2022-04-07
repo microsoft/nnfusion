@@ -8,7 +8,7 @@
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-DECLARE_string(fantares_codegen_server);
+DECLARE_bool(fantares_mode);
 
 namespace nnfusion
 {
@@ -33,7 +33,7 @@ namespace nnfusion
                     : HLSLKernelEmitter(ctx)
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
-                    if (!FLAGS_fantares_codegen_server.empty())
+                    if (FLAGS_fantares_mode)
                     {
                         auto ir = nnfusion::op::get_translation(ctx->gnode);
                         if (!ir.empty())
@@ -58,10 +58,18 @@ namespace nnfusion
                                                    << ctx->gnode->get_op_type();
                                 log_cache.insert(ctx->gnode->get_op_type());
                             }
+
+                            auto& op_reg =
+                                nnfusion::op::lookup_op_config(ctx->gnode->get_op_type());
+                            if (op_reg.f_kernel_funcs.count("HLSL") != 0)
+                            {
+                                antares_code = op_reg.f_kernel_funcs["HLSL"](ctx->gnode);
+                            }
                         }
 
                         kernel_info =
                             nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
+
                         NNFUSION_CHECK(!kernel_info.empty());
                         process_antares_kernel_info();
                     }
@@ -83,6 +91,6 @@ namespace nnfusion
                 std::unordered_map<std::string, std::string>
                     tensor_name_map; // antares tensor name : kernel tensor name
             };
-        }
-    }
-}
+        } // namespace hlsl
+    }     // namespace kernels
+} // namespace nnfusion

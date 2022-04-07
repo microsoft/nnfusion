@@ -10,7 +10,7 @@
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/engine/async_manager.hpp"
 
-DECLARE_string(fantares_codegen_server);
+DECLARE_bool(fantares_mode);
 
 namespace nnfusion
 {
@@ -206,7 +206,7 @@ namespace nnfusion
                     , m_antares_ke_imp(new AntaresKEImp)
                 {
                     GENERIC_OP_LOGGING();
-                    if (!FLAGS_fantares_codegen_server.empty())
+                    if (FLAGS_fantares_mode)
                     {
                         // NNFUSION_LOG(INFO) << "Translate for " << ctx->gnode->get_op_type();
 
@@ -245,8 +245,8 @@ namespace nnfusion
                                 {
                                     for (int i = 0; i < antares_output_shapes.size(); i++)
                                     {
-                                        if (antares_output_shapes[i] !=
-                                            ctx->outputs[i]->get_shape())
+                                        if (simplify(antares_output_shapes[i]) !=
+                                            simplify(ctx->outputs[i]->get_shape()))
                                         {
                                             NNFUSION_LOG(INFO)
                                                 << "NNFusion shape: "
@@ -316,6 +316,15 @@ namespace nnfusion
                 std::string antares_code;
                 std::string ir;
                 bool is_memcpy = false;
+                // remove non-1 elements in a shape
+                nnfusion::Shape simplify(nnfusion::Shape s)
+                {
+                    nnfusion::Shape sim;
+                    for (auto i : s)
+                        if (i != 1)
+                            sim.push_back(i);
+                    return sim;
+                }
 
             protected:
                 // map tensor names and allocate tmp tensor

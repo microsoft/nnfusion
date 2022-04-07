@@ -35,8 +35,8 @@ namespace nnfusion
 
                     for (size_t i = 0; i < paddings.size() / 2; i++)
                     {
-                        padding_below[i] = paddings[2 * i];
-                        padding_above[i] = paddings[2 * i + 1];
+                        padding_below[i] = paddings[i];
+                        padding_above[i] = paddings[i + paddings.size() / 2];
                         padding_interior[i] = 0;
                     }
 

@@ -86,6 +86,14 @@ class ConvNode(Node):
         self.op = ConvOp(n, c, f, k, s, h, w, d, p)
         self.args = tvm_conv(n, c, h, w, f, k, s, d, p)
 
+class DepthwiseConvNode(Node):
+    def __init__(self, inputs, n, c, h, w, k, s=1, d=1, p="SAME", m=1):
+        super().__init__(inputs, "Conv")
+        from op import DepthwiseConvOp
+        from .tvm_ops import tvm_depthwise_conv
+        self.op = DepthwiseConvOp(n, c, k, s, h, w, d, p, m)
+        self.args = tvm_depthwise_conv(n, c, h, w, k, s, d, p, m)
+
 def topo_order(list_of_nodes):
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}
     ready = list(filter(lambda node : input_ready_count[node] == 0, list_of_nodes))

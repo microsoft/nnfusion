@@ -78,6 +78,14 @@ class MatMulNode(Node):
         policy = ConstructionPolicyV2(self.op, arch, saxis_names, raxis_names)
         return policy.emit_config_without_trails(10)[:10]
 
+class ConvNode(Node):
+    def __init__(self, inputs, n, c, h, w, f, k, s=1, d=1, p="SAME"):
+        super().__init__(inputs, "Conv")
+        from op import ConvOp
+        from .tvm_ops import tvm_conv
+        self.op = ConvOp(n, c, f, k, s, h, w, d, p)
+        self.args = tvm_conv(n, c, h, w, f, k, s, d, p)
+
 def topo_order(list_of_nodes):
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}
     ready = list(filter(lambda node : input_ready_count[node] == 0, list_of_nodes))

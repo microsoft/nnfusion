@@ -53,5 +53,8 @@ doc/doxygen/html/*
 # python egg
 *.egg-info
 
+# Macos
+**/.DS_Store
+
 nnfusion_rt/
 models/frozenmodels/

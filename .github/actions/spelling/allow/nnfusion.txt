@@ -2283,7 +2283,6 @@ weightq
 wenxh
 Wenxiang
 Werror
-wether
 Wextra
 Wfloat
 wget
@@ -2468,7 +2467,6 @@ UAVs
 UKY
 Vpdpbusds
 Vpdpwssds
-wether
 whitelisted
 wordpieces
 xdist

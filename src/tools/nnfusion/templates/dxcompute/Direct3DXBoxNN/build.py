@@ -102,7 +102,7 @@ def main():
         sys.exit(1)
 
     copy_to_output(output, build_type, platform)
-    logger.info(f"Build sucessfully, output dir: {output}")
+    logger.info(f"Build successfully, output dir: {output}")
 
 
 if __name__ == '__main__':

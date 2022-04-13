@@ -496,10 +496,10 @@ bool CudaDefaultRuntime::compile(const ProfilingContext::Pointer& ke)
 
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
         return false;
@@ -1035,10 +1035,10 @@ bool CUPTIRuntime::compile(const ProfilingContext::Pointer& ke)
                    .c_str());
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
         return false;

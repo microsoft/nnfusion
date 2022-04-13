@@ -333,7 +333,7 @@ namespace nnfusion
 
                 if (name != "")
                     set_name(name);
-                // NNFUSION_LOG(INFO) << "Managing GenericOp for Opeartor: type = " << opname
+                // NNFUSION_LOG(INFO) << "Managing GenericOp for operator: type = " << opname
                 //                    << ", name = " << name;
 
                 localOpConfig.check_constrait();

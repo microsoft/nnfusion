@@ -33,9 +33,9 @@ parser.add_argument('--xla', action='store_true',
 parser.add_argument('--parallel', type=int, default=0,
                     help='tf.ConfigProto.inter_op_parallelism_threads.')
 parser.add_argument('--warmup', type=int, default=5,
-                    help='Warmup steps when runing tf_run_frozen_graph.')
+                    help='Warmup steps when running tf_run_frozen_graph.')
 parser.add_argument('--num_iter', type=int, default=10,
-                    help='Iteration steps when runing tf_run_frozen_graph.') 
+                    help='Iteration steps when running tf_run_frozen_graph.') 
 parser.add_argument('--run_const_folded_graph', action='store_true',
                     help='Run tf_run_graph_graph with const_folded graph.')                    
 parser.add_argument('--debug', action='store_true',

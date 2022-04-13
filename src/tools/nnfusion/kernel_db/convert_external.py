@@ -116,7 +116,7 @@ def gen_key(data, dtype="float"):
 
 
 def gen_config(op_type, kernel, shared_memory, num_sync):
-    # the entries to retrive parameters depend on spec of json files
+    # the entries to retrieve parameters depend on spec of json files
     config = {
         "op_type": op_type,
         "function_body": "",

@@ -2298,7 +2298,7 @@ namespace nnfusion
                 auto input_gnode = GetInputNode(all_ng_nodes, node, 0);
                 auto axes_gnode = GetInputNode(all_ng_nodes, node, 1);
                 NNFUSION_CHECK(input_gnode->get_output_element_type(0).c_type_string() == "char")
-                    << "Input tensor of ReduceAny op should be bool(underlying char), but gaven as "
+                    << "Input tensor of ReduceAny op should be bool(underlying char), but given as "
                     << input_gnode->get_output_element_type(0).c_type_string() << ".";
 
                 nnfusion::Shape output_shape;

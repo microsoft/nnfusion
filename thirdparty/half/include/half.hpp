@@ -4532,7 +4532,7 @@ namespace half_float
 	/// but in that case manual flag management is the only way to raise flags.
 	///
 	/// **See also:** Documentation for [std::fegetexceptflag](https://en.cppreference.com/w/cpp/numeric/fenv/feexceptflag).
-	/// \param flagp adress to store flag state at
+	/// \param flagp address to store flag state at
 	/// \param excepts OR of flags to save
 	/// \retval 0 for success
 	inline int fegetexceptflag(int *flagp, int excepts) { *flagp = detail::errflags() & excepts; return 0; }

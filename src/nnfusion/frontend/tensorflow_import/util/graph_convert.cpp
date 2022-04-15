@@ -358,17 +358,69 @@ namespace nnfusion
                 status = GetNodeAttr(node.attr(), "adj_y", adj_y);
                 NNFUSION_CHECK(status);
 
+                std::shared_ptr<GNode> lhs_gnode_ts = lhs_gnode;
+                std::shared_ptr<GNode> rhs_gnode_ts = rhs_gnode;
+                auto lhs_shape = lhs_gnode->get_shape();
+                auto rhs_shape = rhs_gnode->get_shape();
                 int input_dims = lhs_gnode->get_output_shape(0).size();
+                if (adj_x)
+                {
+                    if (lhs_gnode->get_op_ptr()->is_constant())
+                    {
+                        NNFUSION_LOG(INFO) << "batchmatmul lhs_gnode is constant. " << node.name();
+                    }
+                    nnfusion::Shape ng_shape(input_dims);
+                    for (size_t i = 0; i < input_dims - 2; i++)
+                    {
+                        ng_shape[i] = lhs_shape[i];
+                    }
+
+                    ng_shape[input_dims - 2] = lhs_shape[input_dims - 1];
+                    ng_shape[input_dims - 1] = lhs_shape[input_dims - 2];
+
+                    nnfusion::AxisVector ng_axis_order{0, 1, 3, 2};
+                    auto reshape_op =
+                        std::make_shared<nnfusion::op::Reshape>(ng_axis_order, ng_shape);
+                    reshape_op->set_name(lhs_gnode->get_name() + "_ts");
+                    auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {lhs_gnode});
+                    lhs_gnode_ts = reshape_gnode;
+                }
+
+                if (adj_y)
+                {
+                    if (rhs_gnode->get_op_ptr()->is_constant())
+                    {
+                        NNFUSION_LOG(INFO) << "batchmatmul rhs_gnode is constant. " << node.name();
+                    }
+                    nnfusion::Shape ng_shape(input_dims);
+                    for (size_t i = 0; i < input_dims - 2; i++)
+                    {
+                        ng_shape[i] = rhs_shape[i];
+                    }
+
+                    ng_shape[input_dims - 2] = rhs_shape[input_dims - 1];
+                    ng_shape[input_dims - 1] = rhs_shape[input_dims - 2];
+
+                    nnfusion::AxisVector ng_axis_order{0, 1, 3, 2};
+                    auto reshape_op =
+                        std::make_shared<nnfusion::op::Reshape>(ng_axis_order, ng_shape);
+                    reshape_op->set_name(rhs_gnode->get_name() + "_ts");
+                    auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {rhs_gnode});
+                    rhs_gnode_ts = reshape_gnode;
+                }
 
                 nnfusion::op::OpConfig::any myConfig;
-                myConfig["adj_x"]["b"] = adj_x;
-                myConfig["adj_y"]["b"] = adj_y;
+                // myConfig["adj_x"]["b"] = adj_x;
+                // myConfig["adj_y"]["b"] = adj_y;
+                myConfig["adj_x"]["b"] = false;
+                myConfig["adj_y"]["b"] = false;
 
                 auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
                     node.name(),
                     "BatchMatMul", // select which existing kernels to use;
                     myConfig);
-                auto generic_gnode = m_graph->add_node_and_edge(generic_op, {lhs_gnode, rhs_gnode});
+                auto generic_gnode =
+                    m_graph->add_node_and_edge(generic_op, {lhs_gnode_ts, rhs_gnode_ts});
                 NamedNodeVector ret{{node.name(), generic_gnode}};
                 return ret;
             }
@@ -943,8 +995,17 @@ namespace nnfusion
                 auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
                     node.name(), "DepthwiseConv2dNative", op_config);
 
+                nnfusion::Shape filter_shape_ts{
+                    filter_shape[2], filter_shape[3], filter_shape[0], filter_shape[1]};
+
+                nnfusion::AxisVector filter_axis_order{2, 3, 0, 1};
+                auto reshape_op =
+                    std::make_shared<nnfusion::op::Reshape>(filter_axis_order, filter_shape_ts);
+                reshape_op->set_name(filter_gnode->get_name() + "_ts");
+                auto filter_gnode_ts = m_graph->add_node_and_edge(reshape_op, {filter_gnode});
+
                 auto conv_gnode =
-                    m_graph->add_node_and_edge(generic_op, {input_gnode, filter_gnode});
+                    m_graph->add_node_and_edge(generic_op, {input_gnode, filter_gnode_ts});
 
                 // auto reshape_conv_gnode = BatchToTensorflow(is_nhwc, conv_gnode);
                 // if (reshape_conv_gnode != nullptr && default_device != GENERIC_CPU &&

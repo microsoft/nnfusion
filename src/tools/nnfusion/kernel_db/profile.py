@@ -131,10 +131,13 @@ __init_input__
             f.write(profile_makefile)
 
     bytes_count = [0]
+    mul = 1
+    if len(config["in_shape"]) + len(config["out_shape"]) == 2:
+        mul = 2
     for shape in config["in_shape"]+config["out_shape"]:
         bytes_count.append(prod(shape)*4 + bytes_count[-1])
     profile_kernel = profile_kernel.replace(
-        "__maxbytes__", str(bytes_count[-1]))
+        "__maxbytes__", str(bytes_count[-1] * mul))
 
     init_input = ""
     input_parameters = ""

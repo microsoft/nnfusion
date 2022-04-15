@@ -245,6 +245,13 @@ bool RuntimeConstantFoldingPass::run_on_graph(std::shared_ptr<Graph>& graph)
     std::set<std::shared_ptr<GNode>> blocklist_nodes = {};
     for (auto& node : graph->get_outputs())
         blocklist_nodes.insert(node);
+    for (auto& node : graph->get_ordered_ops())
+    {
+        if (node->get_op_type() == "Broadcast")
+        {
+            blocklist_nodes.insert(node);
+        }
+    }
 
     int folding_cnt;
     do

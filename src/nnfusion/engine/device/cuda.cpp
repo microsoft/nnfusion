@@ -11,6 +11,7 @@
 #include "nnfusion/engine/pass/graph/blockfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/common_subexpression_elimination_pass.hpp"
 #include "nnfusion/engine/pass/graph/dot_transpose_pass.hpp"
+#include "nnfusion/engine/pass/graph/dump_op.hpp"
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
@@ -46,7 +47,9 @@ CudaEngine::CudaEngine()
     : Engine()
 {
     g_passes->push_back(make_shared<CSEPass>());
-    g_passes->push_back(make_shared<SubGraphFusionPass>());
+    // g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
+    // g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
+    // g_passes->push_back(make_shared<SubGraphFusionPass>());
     g_passes->push_back(make_shared<AutodiffPass>());
     g_passes->push_back(make_shared<GradientWeightMappingPass>());
     g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
@@ -54,6 +57,7 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<VectorDotTransposePass>());
     g_passes->push_back(make_shared<GemmFusionPass>());
     g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
+    g_passes->push_back(make_shared<SubGraphFusionPass>());
     g_passes->push_back(make_shared<AssignLayoutPass>());
     //superscaler pass
     g_passes->push_back(make_shared<SuperScalerDataParallelismPass>());
@@ -69,6 +73,7 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
     g_passes->push_back(make_shared<KernelFusionPass>());
     g_passes->push_back(make_shared<KernelTuning>());
+    g_passes->push_back(make_shared<DumpOp>());
     g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
     g_passes->push_back(make_shared<FetchBasedSelector>());
     g_passes->push_back(make_shared<DefaultKernelSelector>());

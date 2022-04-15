@@ -72,14 +72,17 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
     if (grids == 1)
     {
         lu << "int tid = threadIdx.x;\n";
+        lu << "int tid1 = threadIdx.x + 128;\n";
     }
     else
     {
-        lu << "int tid = blockIdx.x * " << std::to_string(blocks) << " + threadIdx.x;\n";
+        lu << "int tid = blockIdx.x * " << std::to_string(blocks) << " * 2 + threadIdx.x;\n";
+        lu << "int tid1 = blockIdx.x * " << std::to_string(blocks) << "* 2 + threadIdx.x + 128;\n";
     }
     if (bound)
     {
         lu << "if (tid >= " << bound << ") return;\n";
+        lu << "if (tid1 >= " << bound << ") return;\n";
     }
 
     for (auto op_ctx : m_gnode->get_op_contexts())
@@ -87,15 +90,17 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         auto& out_tw = op_ctx->outputs[0];
         if (auto bc = std::dynamic_pointer_cast<nnfusion::op::Broadcast>(op_ctx->op))
         {
-            std::string index = "";
+            std::string index = "", index1 = "";
             if (bc->is_inner_broadcast())
             {
                 index += "[tid / " + std::to_string(bc->get_inner_broadcast_size()) + "]";
+                index1 += "[tid1 / " + std::to_string(bc->get_inner_broadcast_size()) + "]";
             }
             else
             {
                 NNFUSION_CHECK(bc->is_outer_broadcast());
                 index += "[tid % " + std::to_string(bc->get_outer_broadcast_size()) + "]";
+                index1 += "[tid1 % " + std::to_string(bc->get_outer_broadcast_size()) + "]";
             }
             local_tensors[out_tw->get_name()] = "temp" + std::to_string(temp_tensor_id++);
             auto& in_tw = op_ctx->inputs[0];
@@ -104,6 +109,9 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
             lu << out_tw->get_element_type().c_type_string() << " "
                << local_tensors[out_tw->get_name()] << " = " << in_args[in_tw->get_name()] << index
                << ";\n";
+            lu << out_tw->get_element_type().c_type_string() << " "
+               << local_tensors[out_tw->get_name()] << "_1 = " << in_args[in_tw->get_name()]
+               << index1 << ";\n";
         }
         else if (auto rs = std::dynamic_pointer_cast<nnfusion::op::Reshape>(op_ctx->op))
         {
@@ -150,23 +158,29 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
                 invoke_func = op_kernel.first;
             }
             local_tensors[out_tw->get_name()] = "temp" + std::to_string(temp_tensor_id++);
-            std::vector<std::string> input_args;
+            std::vector<std::string> input_args, input_args1;
             for (int i = 0; i < op_ctx->inputs.size(); i++)
             {
                 auto& in_tw = op_ctx->inputs[i];
                 if (in_args.count(in_tw->get_name()) > 0)
                 {
                     input_args.push_back(in_args[in_tw->get_name()] + "[tid]");
+                    input_args1.push_back(in_args[in_tw->get_name()] + "[tid1]");
                 }
                 else
                 {
                     NNFUSION_CHECK(local_tensors.count(in_tw->get_name()) > 0);
                     input_args.push_back(local_tensors[in_tw->get_name()]);
+                    input_args1.push_back(local_tensors[in_tw->get_name()] + "_1");
                 }
             }
             lu << out_tw->get_element_type().c_type_string() << " "
                << local_tensors[out_tw->get_name()] << " = " << invoke_func << "("
                << join(input_args, ", ") << ");\n";
+
+            lu << out_tw->get_element_type().c_type_string() << " "
+               << local_tensors[out_tw->get_name()] << "_1 = " << invoke_func << "("
+               << join(input_args1, ", ") << ");\n";
         }
     }
 
@@ -182,6 +196,19 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
             NNFUSION_CHECK(in_args.count(pair.first) > 0) << m_context->gnode->get_name() << " "
                                                           << lu.get_code() << " " << pair.first;
             lu << in_args[pair.first] << "[tid];\n";
+        }
+
+        lu << pair.second << "[tid1] = ";
+        if (local_tensors.count(pair.first) > 0)
+        {
+            lu << local_tensors[pair.first] << "_1;\n";
+        }
+        else
+        {
+            NNFUSION_CHECK(in_args.count(pair.first) > 0) << m_context->gnode->get_name() << " "
+                                                          << lu.get_code() << " " << pair.first
+                                                          << "_1";
+            lu << in_args[pair.first] << "_1[tid1];\n";
         }
     }
 
@@ -261,26 +288,28 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
 {
     uint32_t num_ele =
         static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-    for (int i = 512; i >= 64; i >>= 1)
+    for (int i = 128; i >= 64; i >>= 1)
     {
         if (num_ele % i == 0)
         {
             grids = num_ele / i, blocks = i, bound = 0;
+            grids = grids / 2;
             return;
         }
     }
-    for (int i = 512; i >= 32; i--)
+    for (int i = 128; i >= 32; i--)
     {
         if (num_ele % i == 0)
         {
             grids = num_ele / i, blocks = i, bound = 0;
+            grids = grids / 2;
             return;
         }
     }
     if (num_ele < 32)
         grids = 1, blocks = num_ele, bound = 0;
     else
-        grids = (num_ele + 255) / 256, blocks = 256, bound = 1;
+        grids = (num_ele + 255) / 256, blocks = 128, bound = 1;
 }
 
 REGISTER_KERNEL_EMITTER(

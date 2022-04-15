@@ -3,6 +3,7 @@
 
 #include "batchnorm_inference_folding_pass.hpp"
 #include <queue>
+#include "nnfusion/core/kernels/cuda_gpu/kernels/anyop.hpp"
 #include "nnfusion/core/operators/op_define/add.hpp"
 #include "nnfusion/core/operators/op_define/batch_norm.hpp"
 #include "nnfusion/core/operators/op_define/broadcast.hpp"
@@ -621,6 +622,11 @@ private:
             auto new_broadcast_gnode = m_graph->add_node_and_edge(
                 std::make_shared<op::Broadcast>(conv_output_shape, broadcast_axes),
                 {new_conv_bias_gnode});
+            // shared_ptr<KernelContext> ke_ctx(new KernelContext(new_broadcast_gnode));
+            // KernelEmitter::Pointer any_op_ke = std::make_shared<nnfusion::kernels::cuda::AnyOP>(ke_ctx);
+            // any_op_ke->get_or_emit_source();
+            // (*new_broadcast_gnode)["Kernel_Selection_Result"] = std::make_pair(NNFusion_DeviceType::CUDA_GPU, any_op_ke);
+
             m_nodes.resize(m_graph->get_max_node_id());
             m_nodes[new_broadcast_gnode->get_id()] = std::make_shared<TaggedNode>();
             m_nodes[new_broadcast_gnode->get_id()]->node = new_broadcast_gnode;
@@ -790,6 +796,10 @@ private:
             auto new_broadcast_gnode = m_graph->add_node_and_edge(
                 std::make_shared<op::Broadcast>(conv_output_shape, broadcast_axes),
                 {bn_node->get_in_edge(1)->get_src()});
+            // shared_ptr<KernelContext> ke_ctx(new KernelContext(new_broadcast_gnode));
+            // KernelEmitter::Pointer any_op_ke = std::make_shared<nnfusion::kernels::cuda::AnyOP>(ke_ctx);
+            // any_op_ke->get_or_emit_source();
+            // (*new_broadcast_gnode)["Kernel_Selection_Result"] = std::make_pair(NNFusion_DeviceType::CUDA_GPU, any_op_ke);;
             m_nodes.resize(m_graph->get_max_node_id());
             m_nodes[new_broadcast_gnode->get_id()] = std::make_shared<TaggedNode>();
             m_nodes[new_broadcast_gnode->get_id()]->node = new_broadcast_gnode;
@@ -893,11 +903,11 @@ bool BatchNormInferenceFoldingPass::run_on_graph(std::shared_ptr<nnfusion::graph
             BatchNormInferenceOptimizer optimizer(graph, pattern);
             optimizer.MatchAndFolding();
         }
-        if (FLAGS_fconst_folding_backend != "")
-        {
-            auto const_folding_optimizer = RuntimeConstantFoldingPass();
-            const_folding_optimizer.run_on_graph(graph);
-        }
+        // if (FLAGS_fconst_folding_backend != "")
+        // {
+        //     auto const_folding_optimizer = RuntimeConstantFoldingPass();
+        //     const_folding_optimizer.run_on_graph(graph);
+        // }
         NNFUSION_LOG(INFO) << "batchnorm inference folding Pass ends for Graph: "
                            << graph->get_name();
     }

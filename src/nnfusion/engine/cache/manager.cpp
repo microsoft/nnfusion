@@ -88,7 +88,12 @@ CREATE TABLE IF NOT EXISTS KernelCache(
                               "MaxPool",
                               "Fused_Convolution_Relu",
                               "Fused_Convolution_Add_Relu",
-                              "Matched_Pattern"});
+                              "Fused_Convolution_Add",
+                              "Matched_Pattern",
+                              "BatchMatMul",
+                              "Broadcast",
+                              "Sum",
+                              "DepthwiseConv2dNative"});
     }
 }
 
@@ -130,8 +135,8 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
 
         if (SupportOpList.find(fetched_kernel->op_type) == SupportOpList.end())
         {
-            NNFUSION_LOG(DEBUG) << "Unsupported op_type: " << fetched_kernel->op_type
-                                << ", ingore this fetch";
+            NNFUSION_LOG(INFO) << "Unsupported op_type: " << fetched_kernel->op_type
+                               << ", ingore this fetch";
             fetched.clear();
             break;
         }

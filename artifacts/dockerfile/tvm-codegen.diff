@@ -1,0 +1,13 @@
+diff --git a/src/tir/transforms/inject_virtual_thread.cc b/src/tir/transforms/inject_virtual_thread.cc
+index 4964bec03..01dff24ab 100644
+--- a/src/tir/transforms/inject_virtual_thread.cc
++++ b/src/tir/transforms/inject_virtual_thread.cc
+@@ -414,7 +414,7 @@ class VTInjector : public StmtExprMutator {
+     vt_loop_injected_ = false;
+     visit_touched_var_ = false;
+     // only unroll if number of vthreads are small
+-    if (max_loop_depth_ == 0 && num_threads_ < 16) {
++    if (max_loop_depth_ == 0 && num_threads_ < 128) {
+       // do unrolling if it is inside innermost content.
+       Array<Stmt> seq;
+       for (int i = 0; i < num_threads_; ++i) {

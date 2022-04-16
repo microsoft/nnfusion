@@ -58,14 +58,14 @@ Now, you are ready to go!
 
 | Experiments   | Figure # in Paper |  Script Location | Instructions | 
 | -----------     | -----------  |  ----------- |    ----------- |              
-| #1. Operator performance  | Figure 10 | nnfusion/artifacts/figure10 | [run_all.sh](figure10/run_all.sh)  |
-| #2. Compilation time for each operator | Figure 11 | nnfusion/artifacts/figure11 | [run_all.sh](figure11/run_all.sh) |
-| #3. Scale-out MatMul operator | Figure 12 | nnfusion/artifacts/figure12 | [run_all.sh](figure12/run_all.sh) |
-| #4. Scale-out Conv2d operator | Figure 13 | nnfusion/artifacts/figure13 | [run_all.sh](figure13/run_all.sh) |
-| #5. Compilation time for MatMul and Conv2d | Figure 14 | nnfusion/artifacts/figure14 | [run_all.sh](figure14/run_all.sh) |
-| #6. Compile on TensorCore | Figure 15 | nnfusion/artifacts/figure15 | [run_all.sh](figure15/run_all.sh) |
-| #7. Performance for small operators | Figure 16 | nnfusion/artifacts/figure16 | [run_all.sh](figure16/run_all.sh) |
-| #8. Performance for operators with irregular shapes | Figure 17 | nnfusion/artifacts/figure17 | [run_all.sh](figure17/run_all.sh) |
-| #9. End-to-end model performance | Table2 | nnfusion/artifacts/table2 | [run_all.sh](table2/run_all.sh) |
-| #10. Operator performance on NVIDIA K80 GPUs | Table3 | nnfusion/artifacts/table3 | [run_all.sh](table3/run_all.sh) |
-| #11. Operator performance on ROCm MI50 GPUs | Table4 | nnfusion/artifacts/table4 | [run_all.sh](table4/run_all.sh) |
+| #1. Operator performance  | Figure 10 | nnfusion/artifacts/Figure10 | [run_all.sh](Figure10/run_all.sh)  |
+| #2. Compilation time for each operator | Figure 11 | nnfusion/artifacts/Figure11 | [run_all.sh](Figure11/run_all.sh) |
+| #3. Scale-out MatMul operator | Figure 12 | nnfusion/artifacts/Figure12 | [run_all.sh](Figure12/run_all.sh) |
+| #4. Scale-out Conv2d operator | Figure 13 | nnfusion/artifacts/Figure13 | [run_all.sh](Figure13/run_all.sh) |
+| #5. Compilation time for MatMul and Conv2d | Figure 14 | nnfusion/artifacts/Figure14 | [run_all.sh](Figure14/run_all.sh) |
+| #6. Compile on TensorCore | Figure 15 | nnfusion/artifacts/Figure15 | [run_all.sh](Figure15/run_all.sh) |
+| #7. Performance for small operators | Figure 16 | nnfusion/artifacts/Figure16 | [run_all.sh](Figure16/run_all.sh) |
+| #8. Performance for operators with irregular shapes | Figure 17 | nnfusion/artifacts/Figure17 | [run_all.sh](Figure17/run_all.sh) |
+| #9. End-to-end model performance | Table2 | nnfusion/artifacts/Table2 | [run_all.sh](Table2/run_all.sh) |
+| #10. Operator performance on NVIDIA K80 GPUs | Table3 | nnfusion/artifacts/Table3 | [run_all.sh](Table3/run_all.sh) |
+| #11. Operator performance on ROCm MI50 GPUs | Table4 | nnfusion/artifacts/Table4 | [run_all.sh](Table4/run_all.sh) |

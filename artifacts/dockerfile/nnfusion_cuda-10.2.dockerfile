@@ -58,5 +58,7 @@ export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$
 
 RUN bash /root/nnfusion/maint/script/install_dependency.sh
 
+RUN ln -s /root/nnfusion/artifacts/.deps/anaconda3/bin/python3 /root/nnfusion/artifacts/.deps/anaconda3/bin/python3.7
+
 RUN mkdir -p /root/nnfusion/artifacts/wheel
 RUN cd /root/nnfusion/artifacts/wheel && wget https://github.com/microsoft/nnfusion/raw/osdi20_artifact/artifacts/wheel/tensorflow-1.15.2-cp36-cp36m-linux_x86_64.whl

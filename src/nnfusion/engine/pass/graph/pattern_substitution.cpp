@@ -229,8 +229,9 @@ private:
                 m_node->node->get_op_type() == "Add")
             {
                 auto bias_edge = m_node->node->get_in_edge(1);
-                 auto bias_input = m_node->node->get_inputs().at(1);
-                if (m_pattern[0] == "Convolution" && m_node->node->get_op_type() == "Add" && FLAGS_fbiasadd_fix)
+                auto bias_input = m_node->node->get_inputs().at(1);
+                if (m_pattern[0] == "Convolution" && m_node->node->get_op_type() == "Add" &&
+                    FLAGS_fbiasadd_fix)
                 {
                     auto broadcast_node = bias_edge->get_src();
                     auto broadcast_op = std::dynamic_pointer_cast<nnfusion::op::Broadcast>(

@@ -4,9 +4,7 @@
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"
 
-DEFINE_bool(fcnhw,
-            false,
-            "Need to fix like concat after convolution with CNHW format.");
+DEFINE_bool(fcnhw, false, "Need to fix like concat after convolution with CNHW format.");
 
 namespace nnfusion
 {

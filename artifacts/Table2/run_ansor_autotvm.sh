@@ -10,7 +10,7 @@ output_log_dir=$current_dir/logs
 exe_dir=$current_dir/ansor_autotvm_exe
 
 nnfusion=~/nnfusion/build/src/tools/nnfusion/nnfusion
-model_dir=/home/lingm/projects0/sokoban/frozen_models_for_op_bench
+model_dir=$current_dir/frozen_models/frozen_pbs
 flag="-f tensorflow -b nnfusion -m graph -fkernel_fusion_level=3 -fblockfusion_level=1 -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=1000 -fkernels_as_files=true -fkernels_files_number=60 -fproduct_name=\"Tesla V100-PCIE-16GB\" -fpattern_substitution=1"
 bert_model=${model_dir}/frozen_lstm_infer_bs128.const_folded.pb
 lstm_model=${model_dir}/frozen_lstm_infer_bs128.const_folded.pb
@@ -27,8 +27,8 @@ function benchmark() {
     model_url=$1_model
 
     # generate cc
-    # bash ${script_dir}/bench0_${model}.sh ${!type_source_code} ${!type_log} > ${output_log_dir}/compile_time_${model}_${type}.log
-    # cp ${!type_log}/*.cc ${!type_cc}
+    bash ${script_dir}/bench0_${model}.sh ${!type_source_code} ${!type_log} > ${output_log_dir}/compile_time_${model}_${type}.log
+    cp ${!type_log}/*.cc ${!type_cc}
     
 
     # kernel injection

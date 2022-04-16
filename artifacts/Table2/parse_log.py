@@ -21,7 +21,9 @@ print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("TF",
 
 xla_time = []
 for model in model_name_list:
-    # TODO OOM
+    if 'bert' in model or 'nasnet' in model:
+        xla_time.append('OOM')
+        continue
     with open('logs/{}.xla.1000.log'.format(model), 'r') as f:
         for line in f:
             if 'Summary: [min, max, mean]' in line:
@@ -43,7 +45,7 @@ print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("TF-TRT",
 
 # TODO ansor time
 
-# TODO rammer + tvm time
+# rammer + tvm time
 rammer_autotvm_time = []
 for model in model_name_list_ansor_autotvm:
     with open('logs/run_nnfusion_{}_autotvm.log'.format(model), 'r') as f:
@@ -53,7 +55,7 @@ for model in model_name_list_ansor_autotvm:
 print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Rammer+TVM", 
             str(rammer_autotvm_time[0]), str(rammer_autotvm_time[1]), str(rammer_autotvm_time[2]), str(rammer_autotvm_time[3])))
 
-# TODO rammer + ansor time
+# rammer + ansor time
 rammer_ansor_time = []
 for model in model_name_list_ansor_autotvm:
     with open('logs/run_nnfusion_{}_ansor.log'.format(model), 'r') as f:
@@ -75,25 +77,51 @@ print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Rammer+Roller",
 
 print("--------------------------------------------------------------\n")
 
-# TODO ansor compile time
-ansor_compile_time = []
-for model in model_name_list_ansor_autotvm:
-    with open('logs/compile_time_{}_ansor.log'.format(model), 'r') as f:
-        compile_time = []
+# ansor compile time
+import json
+def get_ansor_e2e_log(filename):
+    compile_time = 0.0
+    with open(filename, "r") as f:
         lines = f.readlines()
-        for line in lines:
-            if "compilation time: " in line:
-                compile_time.append(float(line.rstrip().split()[-1]))
-        ansor_compile_time.append(sum(compile_time))
+        for idx, line in enumerate(lines):
+            obj = json.loads(line)
+            if "r" in obj:
+                result = obj["r"]
+            else:
+                result = obj["result"]
+            # result[0] runtime
+            # result[1] error code
+            # result[2] compilation time
+            if result[1] == 0:
+                compile_time += result[2]
+        return compile_time
+ansor_compile_time = []
+ansor_compile_time.append(get_ansor_e2e_log('frozen_bert_large_infer_bs128.pb.autotvm_tuned_1000.67.log'))
+ansor_compile_time[0] += get_ansor_e2e_log('matmul_65536_1024_1024.log')
+ansor_compile_time[0] += get_ansor_e2e_log('matmul_65536_1024_4096.log')
+ansor_compile_time[0] += get_ansor_e2e_log('matmul_65536_2_1024.log')
+ansor_compile_time[0] += get_ansor_e2e_log('matmul_65536_30522_1024.log')
+ansor_compile_time[0] += get_ansor_e2e_log('matmul_65536_4096_1024.log')
+ansor_compile_time.append(get_ansor_e2e_log('frozen_lstm_infer_bs128.pb.ansor_tuned_20000.log'))
+ansor_compile_time.append(get_ansor_e2e_log('frozen_nasnet_large_nchw_infer_bs128.pb.autotvm_tuned_93000.log'))
+ansor_compile_time.append(get_ansor_e2e_log('frozen_resnet50_infer_bs128.pb.ansor_tuned_27000.log'))
+# for model in model_name_list_ansor_autotvm:
+#     with open('logs/compile_time_{}_ansor.log'.format(model), 'r') as f:
+#         compile_time = []
+#         lines = f.readlines()
+#         for line in lines:
+#             if "compilation time: " in line:
+#                 compile_time.append(float(line.rstrip().split()[-1]))
+#         ansor_compile_time.append(sum(compile_time))
 
 print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Ansor compile-time", 
-            str(ansor_compile_time[0]), str(ansor_compile_time[1]), str(ansor_compile_time[2]), str(ansor_compile_time[3])))
+            str(ansor_compile_time[0] / 3600) + 'h(TVM)', str(ansor_compile_time[1] / 3600) + 'h', str(ansor_compile_time[2] / 3600) + 'h', str(ansor_compile_time[3] / 3600) + 'h'))
 
-roller compile time
+# roller compile time
 roller_compile_time = []
 for model in model_name_list:
     with open('logs/compile_time.{}.roller.log'.format(model), 'r') as f:
         for line in f:
             roller_compile_time.append(int(line))
 print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Roller compile-time", 
-            str(roller_compile_time[0] / 3600), str(roller_compile_time[1]/ 3600), str(roller_compile_time[2]/ 3600), str(roller_compile_time[3]/ 3600)))
+            str(roller_compile_time[0] + 's'), str(roller_compile_time[1] + 's'), str(roller_compile_time[2] + 's'), str(roller_compile_time[3] + 's')))

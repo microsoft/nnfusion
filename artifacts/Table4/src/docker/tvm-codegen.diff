@@ -1,0 +1,39 @@
+diff --git a/src/tir/transforms/inject_virtual_thread.cc b/src/tir/transforms/inject_virtual_thread.cc
+index 4964bec03..01dff24ab 100644
+--- a/src/tir/transforms/inject_virtual_thread.cc
++++ b/src/tir/transforms/inject_virtual_thread.cc
+@@ -414,7 +414,7 @@ class VTInjector : public StmtExprMutator {
+     vt_loop_injected_ = false;
+     visit_touched_var_ = false;
+     // only unroll if number of vthreads are small
+-    if (max_loop_depth_ == 0 && num_threads_ < 16) {
++    if (max_loop_depth_ == 0 && num_threads_ < 128) {
+       // do unrolling if it is inside innermost content.
+       Array<Stmt> seq;
+       for (int i = 0; i < num_threads_; ++i) {
+diff --git a/python/tvm/contrib/nvcc.py b/python/tvm/contrib/nvcc.py
+old mode 100644
+new mode 100755
+index 19196dc3e..eaf655265
+--- a/python/tvm/contrib/nvcc.py
++++ b/python/tvm/contrib/nvcc.py
+@@ -22,6 +22,8 @@ import subprocess
+ import os
+ import warnings
+ 
++import threading
++
+ import tvm._ffi
+ from tvm.target import Target
+ 
+@@ -54,6 +56,10 @@ def compile_cuda(code, target_format="ptx", arch=None, options=None, path_target
+     cubin : bytearray
+         The bytearray of the cubin
+     """
++    thread_id = threading.get_ident() 
++    with open("_tmp_cuda_{}".format(thread_id), "w") as outf:
++        outf.write(code)
++        
+     if arch is None:
+         # If None, then it will use `tvm.target.Target.current().arch`.
+         # Target arch could be a str like "sm_xx", or a list, such as

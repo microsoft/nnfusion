@@ -1,0 +1,1136 @@
+relu (128, 1008, 42, 42) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [227598336], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [227598336], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 869) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*32) + floordiv(blockIdx.x, 8)) < 27783), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 869; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 32) + (((int)blockIdx.x) >> 3)) < 27783) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 13.0382265000
+compilation time: 22.994608163833618
+relu (128, 256, 14, 14) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [6422528], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [6422528], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 25) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*2) + floordiv(blockIdx.x, 128)) < 49), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 25; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 2) + (((int)blockIdx.x) >> 7)) < 49) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 0.3586260000
+compilation time: 1.0706934928894043
+relu (128, 1024, 14, 14) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [25690112], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [25690112], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 98) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 98; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 1.4696901000
+compilation time: 2.9942190647125244
+relu (128, 512, 14, 14) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [12845056], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [12845056], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 49) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 49; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 0.7329164000
+compilation time: 1.7197926044464111
+relu (128, 96, 165, 165) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [334540800], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [334540800], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 1277) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*64) + floordiv(blockIdx.x, 4)) < 81675), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 1277; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 64) + (((int)blockIdx.x) >> 2)) < 81675) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 19.5329416000
+compilation time: 33.68664216995239
+relu (128, 1344, 21, 21) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [75866112], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [75866112], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 290) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*32) + floordiv(blockIdx.x, 8)) < 9261), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 290; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 32) + (((int)blockIdx.x) >> 3)) < 9261) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 4.3254870000
+compilation time: 7.99347710609436
+relu (128, 2688, 11, 11) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [41631744], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [41631744], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 159) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*16) + floordiv(blockIdx.x, 16)) < 2541), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 159; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 16) + (((int)blockIdx.x) >> 4)) < 2541) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 2.3562256000
+compilation time: 4.533442258834839
+relu (128, 64, 112, 112) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [102760448], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [102760448], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 392) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 392; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 5.9350511000
+compilation time: 10.624613046646118
+relu (128, 256, 56, 56) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [102760448], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [102760448], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 392) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 392; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 5.9351253000
+compilation time: 10.59924864768982
+relu (128, 128, 28, 28) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [12845056], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [12845056], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 49) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 49; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 0.7329742000
+compilation time: 1.7240164279937744
+relu (128, 512, 28, 28) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [51380224], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [51380224], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 196) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 196; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 2.9478522000
+compilation time: 5.593142747879028
+relu (128, 256, 28, 28) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [25690112], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [25690112], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 98) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 98; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 1.4697041000
+compilation time: 2.985710859298706
+relu (128, 2016, 21, 21) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [113799168], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [113799168], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 435) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*64) + floordiv(blockIdx.x, 4)) < 27783), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 435; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 64) + (((int)blockIdx.x) >> 2)) < 27783) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 6.4967237000
+compilation time: 11.640327453613281
+relu (128, 672, 11, 11) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [10407936], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [10407936], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 40) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*64) + floordiv(blockIdx.x, 4)) < 2541), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 40; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 64) + (((int)blockIdx.x) >> 2)) < 2541) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 0.5851466000
+compilation time: 1.488257646560669
+relu (128, 168, 83, 83) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [148141056], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [148141056], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 566) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*256) + blockIdx.x) < 144669), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 566; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 256) + ((int)blockIdx.x)) < 144669) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 8.4048588000
+compilation time: 14.956052780151367
+relu (128, 64, 56, 56) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [25690112], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [25690112], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 98) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 98; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 1.4698966000
+compilation time: 2.994945526123047
+relu (128, 168, 42, 42) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [37933056], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [37933056], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 145) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*64) + floordiv(blockIdx.x, 4)) < 9261), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 145; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 64) + (((int)blockIdx.x) >> 2)) < 9261) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 2.1509797000
+compilation time: 4.203373432159424
+relu (128, 336, 21, 21) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [18966528], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [18966528], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 73) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*128) + floordiv(blockIdx.x, 2)) < 9261), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 73; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 128) + (((int)blockIdx.x) >> 1)) < 9261) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 1.0741506000
+compilation time: 2.325538396835327
+relu (128, 4032, 11, 11) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [62447616], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [62447616], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 239) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*32) + floordiv(blockIdx.x, 8)) < 7623), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 239; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 32) + (((int)blockIdx.x) >> 3)) < 7623) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 3.6715682000
+compilation time: 6.749557971954346
+relu (128, 512, 7, 7) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [3211264], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [3211264], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 13) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*4) + floordiv(blockIdx.x, 64)) < 49), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 13; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 4) + (((int)blockIdx.x) >> 6)) < 49) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 0.1743152000
+compilation time: 0.8033671379089355
+relu (128, 2048, 7, 7) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [12845056], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [12845056], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 49) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 49; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 0.7330008000
+compilation time: 1.7449917793273926
+relu (128, 84, 83, 83) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [74070528], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [74070528], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 283) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*512) + (blockIdx.x*2)) + floordiv(threadIdx.x, 512)) < 144669), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 283; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 512) + (((int)blockIdx.x) * 2)) + (((int)threadIdx.x) >> 9)) < 144669) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 4.3466087000
+compilation time: 7.977398633956909
+relu (128, 336, 42, 42) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [75866112], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [75866112], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 290) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*32) + floordiv(blockIdx.x, 8)) < 9261), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 290; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 32) + (((int)blockIdx.x) >> 3)) < 9261) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 4.3250569000
+compilation time: 7.890056371688843
+relu (128, 42, 165, 165) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [146361600], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [146361600], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 559) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*1024) + (blockIdx.x*4)) + floordiv(threadIdx.x, 256)) < 571725), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 559; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 1024) + (((int)blockIdx.x) * 4)) + (((int)threadIdx.x) >> 8)) < 571725) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 8.6188069000
+compilation time: 15.240251064300537
+relu (128, 672, 21, 21) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [37933056], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [37933056], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 145) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*64) + floordiv(blockIdx.x, 4)) < 9261), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 145; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 64) + (((int)blockIdx.x) >> 2)) < 9261) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 2.1510680000
+compilation time: 4.278796434402466
+relu (128, 84, 42, 42) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [18966528], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [18966528], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 73) {
+    if @tir.likely((((i0.i1.fused.i2.fused.i3.fused.outer*128) + floordiv(blockIdx.x, 2)) < 9261), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 73; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if (((i0_i1_fused_i2_fused_i3_fused_outer * 128) + (((int)blockIdx.x) >> 1)) < 9261) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 1.0739139000
+compilation time: 2.3407795429229736
+relu (128, 42, 83, 83) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [37035264], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [37035264], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 142) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*1024) + (blockIdx.x*4)) + floordiv(threadIdx.x, 256)) < 144669), dtype=bool) {
+      compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 142; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 1024) + (((int)blockIdx.x) * 4)) + (((int)threadIdx.x) >> 8)) < 144669) {
+      compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+    }
+  }
+}
+
+
+best runtime: 2.0746382000
+compilation time: 4.0488669872283936
+relu (128, 128, 56, 56) 
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [51380224], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [51380224], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 196) {
+    compute[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max(input0[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 196; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))] = max(input0[(((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x))], 0.000000e+00f);
+  }
+}
+
+
+best runtime: 2.9480308000
+compilation time: 6.802883863449097

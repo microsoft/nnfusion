@@ -30,6 +30,7 @@ cd $tvmfolder && git submodule init && git submodule update && mkdir build && cd
 apt-get -y install antlr4
 pip install tornado==4.5.3 psutil==5.4.3 xgboost==0.90 decorator==4.2.1 attrs==17.4.0 mypy==0.720 orderedset==2.0.1 antlr4-python3-runtime==4.7.2
 pip install tflearn
+pip install scipy==1.1.0
 
 echo "Build tvm-0.8-codegen"
 tvmfoldercg=$THIS_SCRIPT_DIR/../.deps/tvm-0.8-codegen

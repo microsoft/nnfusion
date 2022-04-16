@@ -1,0 +1,24 @@
+python depthwise.py 128 84 83 83 5 2 1 SAME 100000 > log/depthwise/depthwise_0.log 2>&1
+python depthwise.py 128 42 83 83 5 1 1 SAME 10000 > log/depthwise/depthwise_1.log 2>&1
+python depthwise.py 128 336 21 21 5 1 1 SAME 100000 > log/depthwise/depthwise_2.log 2>&1
+python depthwise.py 128 42 165 165 5 2 1 SAME 10000 > log/depthwise/depthwise_3.log 2>&1
+python depthwise.py 128 84 83 83 7 2 1 SAME 100000 > log/depthwise/depthwise_4.log 2>&1
+python depthwise.py 128 672 11 11 3 1 1 SAME 100000 > log/depthwise/depthwise_5.log 2>&1
+python depthwise.py 128 168 42 42 5 1 1 SAME 100000 > log/depthwise/depthwise_6.log 2>&1
+python depthwise.py 128 672 21 21 5 2 1 SAME 100000 > log/depthwise/depthwise_7.log 2>&1
+python depthwise.py 128 336 21 21 3 1 1 SAME 100000 > log/depthwise/depthwise_8.log 2>&1
+python depthwise.py 128 672 21 21 7 2 1 SAME 100000 > log/depthwise/depthwise_9.log 2>&1
+python depthwise.py 128 42 83 83 7 1 1 SAME 10000 > log/depthwise/depthwise_10.log 2>&1
+python depthwise.py 128 84 42 42 7 1 1 SAME 100000 > log/depthwise/depthwise_11.log 2>&1
+python depthwise.py 128 84 42 42 5 1 1 SAME 100000 > log/depthwise/depthwise_12.log 2>&1
+python depthwise.py 128 168 42 42 3 1 1 SAME 100000 > log/depthwise/depthwise_13.log 2>&1
+python depthwise.py 128 672 11 11 7 1 1 SAME 100000 > log/depthwise/depthwise_14.log 2>&1
+python depthwise.py 128 336 42 42 5 2 1 SAME 100000 > log/depthwise/depthwise_15.log 2>&1
+python depthwise.py 128 96 165 165 5 2 1 SAME 10000 > log/depthwise/depthwise_16.log 2>&1
+python depthwise.py 128 336 21 21 7 1 1 SAME 100000 > log/depthwise/depthwise_17.log 2>&1
+python depthwise.py 128 336 42 42 7 2 1 SAME 100000 > log/depthwise/depthwise_18.log 2>&1
+python depthwise.py 128 42 83 83 3 1 1 SAME 100000 > log/depthwise/depthwise_19.log 2>&1
+python depthwise.py 128 96 165 165 7 2 1 SAME 10000 > log/depthwise/depthwise_20.log 2>&1
+python depthwise.py 128 84 42 42 3 1 1 SAME 100000 > log/depthwise/depthwise_21.log 2>&1
+python depthwise.py 128 672 11 11 5 1 1 SAME 100000 > log/depthwise/depthwise_22.log 2>&1
+ 

@@ -1,0 +1,123 @@
+avgpool2d_expr_S2P1_5376_83_83_3_3_3_55776_1_1_352_1_1.cu(78): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_3_55776_1_1_352_1_1.cu(86): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_0_59136_1_1_352_1_1.cu(93): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_0_59136_1_1_352_1_1.cu(101): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_6_28224_1_1_352_1_1.cu(124): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_6_28224_1_1_352_1_1.cu(132): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_8_14784_1_1_352_1_1.cu(169): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_8_14784_1_1_352_1_1.cu(177): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_1_56448_1_1_352_1_1.cu(91): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_1_56448_1_1_352_1_1.cu(99): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_4_29568_1_1_352_1_1.cu(117): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_4_29568_1_1_352_1_1.cu(125): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_7_27888_1_1_352_1_1.cu(102): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_7_27888_1_1_352_1_1.cu(110): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_9_14112_1_1_352_1_1.cu(164): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_9_14112_1_1_352_1_1.cu(172): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_2_56448_1_1_352_1_1.cu(93): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_2_56448_1_1_352_1_1.cu(101): warning: variable "output0h" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_5_28224_1_1_352_1_1.cu(115): warning: variable "output_size0" was declared but never referenced
+
+avgpool2d_expr_S2P1_5376_83_83_3_3_5_28224_1_1_352_1_1.cu(123): warning: variable "output0h" was declared but never referenced
+
+Namespace(arch='K80', backend='tvm', code_dir='roller_src/pooling', data_type='float32', eval_bar=[1, 5, 10, 20, 50], fuse=False, keep_tiny=False, num_threads=4, op='avgpool2d_expr_S2P1', padding_threshold_cap=1.0, reg_tiling=True, rtile0_shape=[64, 128, 32], rtile1_shape=[8, 8, 1], rtile2_shape=[1, 1, 1], schedule_fuse=False, shape=[5376, 83, 83, 3, 3], smem_tiling=True, st_align=False, topk=10, use_artificial_rtile=False, use_tc=False)
+IODependent:  False
+threshold 0
+failed to find results with padding threshold 0
+threshold 0.1
+found 10 results in first round with threshold 0.1
+evaluating top 10 configs
+{'b': [8, 1], 'ho': [2, 1], 'wo': [22, 4], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [8, 1], 'ho': [1, 1], 'wo': [44, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 8, 1], 'ho': [1, 2, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [4, 1], 'ho': [8, 1], 'wo': [11, 8], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 8, 1], 'ho': [1, 1, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 4, 1], 'ho': [1, 8, 1], 'wo': [8, 11, 1], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 1], 'ho': [8, 1], 'wo': [44, 2], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 2, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 1, 1], 'ho': [1, 8, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 1, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 2, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 8, 1], 'wo': [8, 11, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 1, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 2, 1], 'wo': [2, 22, 2], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 8, 1], 'wo': [8, 11, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 8, 1], 'wo': [4, 11, 2], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 1, 1], 'wo': [1, 44, 2], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 1, 1], 'ho': [1, 8, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 1, 1], 'ho': [1, 8, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 1, 1], 'ho': [1, 8, 1], 'wo': [1, 44, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [2, 1], 'ho': [4, 1], 'wo': [44, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 2, 1], 'ho': [1, 4, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 2, 1], 'ho': [1, 4, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 2, 1], 'ho': [1, 4, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 2, 1], 'ho': [1, 4, 1], 'wo': [1, 44, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [2, 1], 'ho': [8, 1], 'wo': [22, 4], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 2, 1], 'ho': [1, 8, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 2, 1], 'ho': [1, 8, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 2, 1], 'ho': [1, 8, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 2, 1], 'ho': [1, 8, 1], 'wo': [2, 22, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [16, 1], 'ho': [1, 1], 'wo': [22, 4], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 16, 1], 'ho': [1, 1, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 16, 1], 'ho': [1, 1, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 16, 1], 'ho': [1, 1, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 16, 1], 'ho': [1, 1, 1], 'wo': [2, 22, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [8, 1], 'ho': [4, 1], 'wo': [11, 8], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 8, 1], 'ho': [1, 4, 1], 'wo': [8, 11, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 4, 1], 'wo': [8, 11, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 4, 1], 'wo': [8, 11, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 8, 1], 'ho': [1, 4, 1], 'wo': [4, 11, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [4, 1], 'ho': [2, 1], 'wo': [44, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 4, 1], 'ho': [1, 2, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 2, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 2, 1], 'wo': [2, 44, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 2, 1], 'wo': [1, 44, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [4, 1], 'ho': [4, 1], 'wo': [22, 4], 'kh': [3, 1], 'kw': [3, 1]}
+{'b': [1, 4, 1], 'ho': [1, 4, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 4, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+shared mem tiling is too small.
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 4, 1], 'wo': [4, 22, 1], 'kh': [3, 1], 'kw': [3, 1]}
+updated self.tiling:  {'b': [1, 4, 1], 'ho': [1, 4, 1], 'wo': [2, 22, 2], 'kh': [3, 1], 'kw': [3, 1]}
+top1 time: 8.8533 ms
+top10 time: 8.8533 ms
+best idx: 0
+best config: [level 0: [tile: [1, 8, 88]; step: [3, 3]]][level 1: [tile: [1, 1, 2]; step: [1, 1]]][level 2: [tile: [1, 1, 1]; step: [1, 1]]]
+top1 compile time: 0.0051877498626708984 s
+top10 compile time: 11.972655057907104 s

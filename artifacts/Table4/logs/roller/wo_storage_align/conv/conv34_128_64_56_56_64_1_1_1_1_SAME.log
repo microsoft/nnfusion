@@ -1,0 +1,51 @@
+Namespace(arch='MI50', backend='tvm', code_dir='conv', data_type='float32', eval_bar=[1, 5, 10, 20, 50], fuse=False, keep_tiny=False, num_threads=4, op='fused_conv_expr_S1D1P0', padding_threshold_cap=1.0, reg_tiling=True, rtile0_shape=[64, 128, 32], rtile1_shape=[8, 8, 1], rtile2_shape=[1, 1, 1], schedule_fuse=True, shape=[128, 64, 56, 56, 64, 1, 1], smem_tiling=True, st_align=False, topk=10, use_artificial_rtile=False, use_tc=False)
+IODependent:  True
+found 10 results with threshold 0
+evaluating top 10 configs
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [8, 8], 'sa_fused0': [32, 4], 'ra_fused0': [32, 1]}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [8, 8, 1], 'sa_fused0': [4, 32, 1], 'ra_fused0': [32, 1]}
+{'f': [4, 4], 'sa_fused0': [64, 8], 'ra_fused0': [16, 1]}
+{'f': [4, 4, 1], 'sa_fused0': [8, 64, 1], 'ra_fused0': [16, 1]}{'f': [2, 16], 'sa_fused0': [128, 2], 'ra_fused0': [16, 1]}
+
+{'f': [16, 2, 1], 'sa_fused0': [2, 128, 1], 'ra_fused0': [16, 1]}
+{'f': [32, 2], 'sa_fused0': [8, 16], 'ra_fused0': [32, 1]}
+{'f': [2, 32, 1], 'sa_fused0': [16, 8, 1], 'ra_fused0': [32, 1]}
+[08:40:11] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:40:11] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:40:11] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:40:11] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [2, 8], 'sa_fused0': [128, 4], 'ra_fused0': [16, 1]}
+{'f': [8, 2, 1], 'sa_fused0': [4, 128, 1], 'ra_fused0': [16, 1]}
+[08:40:13] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [32, 2], 'sa_fused0': [8, 16], 'ra_fused0': [16, 1]}
+{'f': [2, 32, 1], 'sa_fused0': [16, 8, 1], 'ra_fused0': [16, 1]}
+[08:40:13] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [4, 16], 'sa_fused0': [64, 2], 'ra_fused0': [32, 1]}
+{'f': [16, 4, 1], 'sa_fused0': [2, 64, 1], 'ra_fused0': [32, 1]}
+[08:40:13] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [1, 16], 'sa_fused0': [256, 2], 'ra_fused0': [16, 1]}
+{'f': [16, 1, 1], 'sa_fused0': [2, 256, 1], 'ra_fused0': [16, 1]}
+[08:40:14] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [16, 4], 'sa_fused0': [16, 8], 'ra_fused0': [32, 1]}
+{'f': [4, 16, 1], 'sa_fused0': [8, 16, 1], 'ra_fused0': [32, 1]}
+[08:40:16] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [4, 16], 'sa_fused0': [64, 2], 'ra_fused0': [16, 1]}
+{'f': [16, 4, 1], 'sa_fused0': [2, 64, 1], 'ra_fused0': [16, 1]}
+[08:40:16] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+rm: cannot remove 'tmp': No such file or directory
+top1 time: 0.92353 ms
+top10 time: 0.593657 ms
+best idx: 5
+best config: [level 0: [tile: [64, 128]; step: [16]]][level 1: [tile: [16, 2]; step: [1]]][level 2: [tile: [1, 1]; step: [1]]]
+top1 compile time: 0.004029512405395508 s
+top10 compile time: 7.919198274612427 s

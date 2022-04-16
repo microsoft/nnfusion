@@ -1,0 +1,165 @@
+diff --git a/python/tvm/topi/gpu/dense.py b/python/tvm/topi/gpu/dense.py
+index 4dce6eec9..4a472036e 100644
+--- a/python/tvm/topi/gpu/dense.py
++++ b/python/tvm/topi/gpu/dense.py
+@@ -132,7 +132,6 @@ def schedule_dense_large_batch(cfg, outs):
+     """Schedule float32/64 dense with large batch size"""
+     outs = [outs] if isinstance(outs, te.tensor.Tensor) else outs
+     s = te.create_schedule([x.op for x in outs])
+-
+     def _callback(op):
+         if op.tag == "dense":
+             _schedule_dense_large_batch(cfg, s, op.output(0))
+@@ -147,7 +146,7 @@ def _schedule_dense_large_batch(cfg, s, C):
+     if len(B.op.input_tensors) == 1 and B.op.input_tensors[0] == A:
+         s[B].compute_inline()
+     batch, in_dim = get_const_tuple(A.shape)
+-    out_dim, _ = get_const_tuple(B.shape)
++    _, out_dim = get_const_tuple(B.shape)
+     k = C.op.reduce_axis[0]
+ 
+     # create tuning space
+diff --git a/python/tvm/topi/nn/dense.py b/python/tvm/topi/nn/dense.py
+index 58c458a7d..85bc7f5f6 100644
+--- a/python/tvm/topi/nn/dense.py
++++ b/python/tvm/topi/nn/dense.py
+@@ -31,30 +31,22 @@ def matmul(
+     auto_scheduler_rewritten_layout="",
+ ):
+     """The default implementation of matmul in topi.
+-
+     Parameters
+     ----------
+     tensor_a : tvm.te.Tensor
+         2-D with shape [batch, in_dim]
+-
+     tensor_b : tvm.te.Tensor
+         2-D with shape [out_dim, in_dim]
+-
+     bias : Optional[tvm.te.Tensor]
+         1-D with shape [out_dim]
+-
+     out_dtype : Optional[str]
+         The output type. This is used for mixed precision.
+-
+     transpose_a : Optional[bool] = False
+         Whether the tensor_a is in transposed format.
+-
+     transpose_b : Optional[bool] = False
+         Whether the tensor_b is in transposed format.
+-
+     auto_scheduler_rewritten_layout: Optional[str] = ""
+         The layout after auto-scheduler's layout rewrite pass.
+-
+     Returns
+     -------
+     output : tvm.te.Tensor
+@@ -108,7 +100,7 @@ def matmul(
+             tensor_a[i, k].astype(out_dtype) * tensor_b[k, j].astype(out_dtype), axis=k
+         )
+         compute_name = "T_matmul_NN"
+-        compute_tag = "matmul"
++        compute_tag = "dense"
+ 
+     mat = te.compute(
+         (batch, out_dim),
+@@ -134,7 +126,6 @@ def matmul(
+ @tvm.target.generic_func
+ def matmul_legalize(attrs, inputs, types):
+     """Legalizes matmul op.
+-
+     Parameters
+     ----------
+     attrs : tvm.ir.Attrs
+@@ -143,7 +134,6 @@ def matmul_legalize(attrs, inputs, types):
+         The args of the Relay expr to be legalized
+     types : list of types
+         List of input and output types
+-
+     Returns
+     -------
+     result : tvm.relay.Expr
+@@ -158,36 +148,29 @@ def dense(data, weight, bias=None, out_dtype=None, auto_scheduler_rewritten_layo
+     """The default implementation of dense in topi.
+     This is an alias of matmul_nt operator for data tensor in non-transposed format and weight
+     tensor in transposed format.
+-
+     Parameters
+     ----------
+     data : tvm.te.Tensor
+         2-D with shape [batch, in_dim]
+-
+     weight : tvm.te.Tensor
+         2-D with shape [out_dim, in_dim]
+-
+     bias : Optional[tvm.te.Tensor]
+         1-D with shape [out_dim]
+-
+     out_dtype : Optional[str]
+         The output type. This is used for mixed precision.
+-
+     auto_scheduler_rewritten_layout: str = ""
+         The layout after auto-scheduler's layout rewrite pass.
+-
+     Returns
+     -------
+     output : tvm.te.Tensor
+         2-D with shape [batch, out_dim]
+     """
+-    return matmul(data, weight, bias, out_dtype, False, True, auto_scheduler_rewritten_layout)
++    return matmul(data, weight, bias, out_dtype, False, False, auto_scheduler_rewritten_layout)
+ 
+ 
+ @tvm.target.generic_func
+ def dense_legalize(attrs, inputs, types):
+     """Legalizes dense op.
+-
+     Parameters
+     ----------
+     attrs : tvm.ir.Attrs
+@@ -196,7 +179,6 @@ def dense_legalize(attrs, inputs, types):
+         The args of the Relay expr to be legalized
+     types : list of types
+         List of input and output types
+-
+     Returns
+     -------
+     result : tvm.relay.Expr
+@@ -209,21 +191,16 @@ def dense_legalize(attrs, inputs, types):
+ 
+ def dense_pack(data, weight, bias=None, out_dtype=None):
+     """The default implementation of dense_pack in topi.
+-
+     Parameters
+     ----------
+     data : tvm.te.Tensor
+         2-D with shape [batch, in_dim]
+-
+     weight : tvm.te.Tensor
+         2-D with shape [out_dim, in_dim]
+-
+     bias : Optional[tvm.te.Tensor]
+         1-D with shape [out_dim]
+-
+     out_dtype : Optional[str]
+         The output type. This is used for mixed precision.
+-
+     Returns
+     -------
+     output : tvm.te.Tensor
+@@ -256,7 +233,6 @@ def dense_pack(data, weight, bias=None, out_dtype=None):
+ @tvm.target.generic_func
+ def dense_alter_layout(attrs, inputs, tinfos, out_type):
+     """Change dense layout.
+-
+     Parameters
+     ----------
+     attrs : tvm.ir.Attrs
+@@ -267,7 +243,6 @@ def dense_alter_layout(attrs, inputs, tinfos, out_type):
+         Input shape and dtype
+     out_type: type
+         The output type
+-
+     Note
+     ----
+     Unlike other TOPI functions, this function operates on both graph level and operator level.

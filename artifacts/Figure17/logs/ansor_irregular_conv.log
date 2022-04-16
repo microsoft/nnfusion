@@ -1,0 +1,30 @@
+128 42 83 83 42 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/ansor/conv
+Get devices for measurement successfully!
+(5312, 1, 1) (249, 1, 1)
+best runtime:  0.463072
+compilation time:  3057.491700000006
+128 96 83 83 42 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/ansor/conv
+Get devices for measurement successfully!
+(2656, 1, 1) (83, 1, 1)
+best runtime:  1.12749
+compilation time:  3761.404020000003
+128 96 165 165 42 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/ansor/conv
+Get devices for measurement successfully!
+(31680, 1, 1) (385, 1, 1)
+best runtime:  3.82179
+compilation time:  7656.584919999994
+128 336 21 21 336 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/ansor/conv
+Get devices for measurement successfully!
+(1568, 1, 1) (126, 1, 1)
+best runtime:  1.21916
+compilation time:  3558.7572299999983
+128 336 42 42 168 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/ansor/conv
+Get devices for measurement successfully!
+(5376, 1, 1) (126, 1, 1)
+best runtime:  2.4411799999999997
+compilation time:  3874.1468600000007
+128 3 331 331 96 3 3 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/ansor/conv
+Get devices for measurement successfully!
+(464640, 1, 1) (120, 1, 1)
+best runtime:  3.62897
+compilation time:  8415.873890000006

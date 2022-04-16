@@ -1,0 +1,31 @@
+Namespace(arch='MI50', backend='tvm', code_dir='matmul', data_type='float32', eval_bar=[1, 5, 10, 20, 50], fuse=False, keep_tiny=False, num_threads=4, op='matmul_expr', padding_threshold_cap=1.0, reg_tiling=True, rtile0_shape=[64, 128, 32], rtile1_shape=[8, 8, 1], rtile2_shape=[1, 1, 1], schedule_fuse=False, shape=[128, 1000, 4032], smem_tiling=True, st_align=False, topk=10, use_artificial_rtile=False, use_tc=False)
+IODependent:  True
+failed to find results with padding threshold 0
+found 5 results with threshold 0.2
+failed to find results with padding threshold 0.4
+failed to find results with padding threshold 0.6000000000000001
+failed to find results with padding threshold 0.8
+failed to find results with padding threshold 1.0
+evaluating top 5 configs
+{'y': [4, 4], 'x': [64, 2], 'k': [16, 1]}
+{'y': [8, 4], 'x': [32, 2], 'k': [32, 1]}{'y': [8, 4], 'x': [32, 2], 'k': [16, 1]}
+
+{'y': [4, 4, 1], 'x': [2, 64, 1], 'k': [16, 1]}
+{'y': [4, 8, 1], 'x': [2, 32, 1], 'k': [32, 1]}
+{'y': [4, 8, 1], 'x': [2, 32, 1], 'k': [16, 1]}{'y': [16, 4], 'x': [16, 2], 'k': [16, 1]}
+
+{'y': [4, 16, 1], 'x': [2, 16, 1], 'k': [16, 1]}
+[08:49:42] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:49:42] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:49:42] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:49:42] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+{'y': [16, 4], 'x': [16, 2], 'k': [32, 1]}
+{'y': [4, 16, 1], 'x': [2, 16, 1], 'k': [32, 1]}
+[08:49:44] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+rm: cannot remove 'tmp': No such file or directory
+top1 time: 0.826007 ms
+top10 time: 0.795457 ms
+best idx: 2
+best config: [level 0: [tile: [32, 64]; step: [16]]][level 1: [tile: [4, 2]; step: [1]]][level 2: [tile: [1, 1]; step: [1]]]
+top1 compile time: 0.002301454544067383 s
+top10 compile time: 5.2851402759552 s

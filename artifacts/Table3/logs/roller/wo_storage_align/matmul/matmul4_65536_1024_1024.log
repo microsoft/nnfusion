@@ -1,0 +1,91 @@
+matmul_expr_65536_1024_1024_8_3072_1_1_384_1_1.cu(258): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_6_2736_1_1_384_1_1.cu(254): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_8_3072_1_1_384_1_1.cu(266): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_6_2736_1_1_384_1_1.cu(262): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_0_4096_1_1_256_1_1.cu(208): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_0_4096_1_1_256_1_1.cu(216): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_3_4096_1_1_256_1_1.cu(224): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_3_4096_1_1_256_1_1.cu(232): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_4_4096_1_1_256_1_1.cu(209): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_4_4096_1_1_256_1_1.cu(217): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_7_2736_1_1_384_1_1.cu(280): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_9_3072_1_1_384_1_1.cu(300): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_7_2736_1_1_384_1_1.cu(288): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_9_3072_1_1_384_1_1.cu(308): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_1_4096_1_1_256_1_1.cu(220): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_1_4096_1_1_256_1_1.cu(228): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_2_4096_1_1_256_1_1.cu(209): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_2_4096_1_1_256_1_1.cu(217): warning: variable "output0h" was declared but never referenced
+
+matmul_expr_65536_1024_1024_5_4096_1_1_256_1_1.cu(224): warning: variable "output_size0" was declared but never referenced
+
+matmul_expr_65536_1024_1024_5_4096_1_1_256_1_1.cu(232): warning: variable "output0h" was declared but never referenced
+
+Namespace(arch='K80', backend='tvm', code_dir='roller_src/matmul', data_type='float32', eval_bar=[1, 5, 10, 20, 50], fuse=False, keep_tiny=False, num_threads=4, op='matmul_expr', padding_threshold_cap=1.0, reg_tiling=True, rtile0_shape=[64, 128, 32], rtile1_shape=[8, 8, 1], rtile2_shape=[1, 1, 1], schedule_fuse=False, shape=[65536, 1024, 1024], smem_tiling=True, st_align=False, topk=10, use_artificial_rtile=False, use_tc=False)
+IODependent:  True
+found 6 results with threshold 0
+found 10 results with threshold 0.2
+evaluating top 10 configs
+{'y': [16, 8], 'x': [24, 8], 'k': [8, 1]}
+{'y': [24, 8], 'x': [16, 8], 'k': [8, 1]}
+{'y': [8, 16, 1], 'x': [8, 24, 1], 'k': [8, 1]}
+{'y': [32, 8], 'x': [8, 8], 'k': [32, 1]}
+{'y': [16, 8], 'x': [16, 8], 'k': [8, 1]}
+{'y': [8, 32, 1], 'x': [8, 8, 1], 'k': [32, 1]}
+{'y': [8, 24, 1], 'x': [8, 16, 1], 'k': [8, 1]}
+{'y': [8, 16, 1], 'x': [8, 16, 1], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 16, 2], 'x': [8, 24, 1], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 32, 2], 'x': [8, 8, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 16, 2], 'x': [4, 24, 2], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 32, 2], 'x': [4, 8, 2], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 24, 2], 'x': [8, 16, 1], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 24, 2], 'x': [4, 16, 2], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 16, 2], 'x': [8, 16, 1], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 16, 2], 'x': [4, 16, 2], 'k': [8, 1]}
+{'y': [16, 8], 'x': [16, 8], 'k': [32, 1]}
+{'y': [8, 16, 1], 'x': [8, 16, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 16, 2], 'x': [8, 16, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 16, 2], 'x': [4, 16, 2], 'k': [32, 1]}
+{'y': [8, 8], 'x': [32, 8], 'k': [8, 1]}
+{'y': [8, 8, 1], 'x': [8, 32, 1], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 8, 2], 'x': [8, 32, 1], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 8, 2], 'x': [4, 32, 2], 'k': [8, 1]}
+{'y': [16, 8], 'x': [24, 8], 'k': [32, 1]}
+{'y': [8, 16, 1], 'x': [8, 24, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 16, 2], 'x': [8, 24, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 16, 2], 'x': [4, 24, 2], 'k': [32, 1]}
+{'y': [24, 8], 'x': [16, 8], 'k': [32, 1]}
+{'y': [8, 24, 1], 'x': [8, 16, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 24, 2], 'x': [8, 16, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 24, 2], 'x': [4, 16, 2], 'k': [32, 1]}
+{'y': [32, 8], 'x': [8, 8], 'k': [8, 1]}
+{'y': [8, 32, 1], 'x': [8, 8, 1], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 32, 2], 'x': [8, 8, 1], 'k': [8, 1]}
+updated self.tiling:  {'y': [4, 32, 2], 'x': [4, 8, 2], 'k': [8, 1]}
+{'y': [8, 8], 'x': [32, 8], 'k': [32, 1]}
+{'y': [8, 8, 1], 'x': [8, 32, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 8, 2], 'x': [8, 32, 1], 'k': [32, 1]}
+updated self.tiling:  {'y': [4, 8, 2], 'x': [4, 32, 2], 'k': [32, 1]}
+top1 time: 60.0 ms
+top10 time: 57.394 ms
+best idx: 1
+best config: [level 0: [tile: [128, 128]; step: [32]]][level 1: [tile: [8, 8]; step: [1]]][level 2: [tile: [1, 1]; step: [1]]]
+top1 compile time: 0.004270792007446289 s
+top10 compile time: 12.74759292602539 s

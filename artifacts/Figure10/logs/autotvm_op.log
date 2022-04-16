@@ -1,0 +1,2225 @@
+128 128 28 28 128 3 3 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_128_28_28_128_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 32, 1]), ('tile_y', [-1, 4, 1, 1]), ('tile_x', [-1, 1, 4, 7]), ('tile_rc', [-1, 2]), ('tile_ry', [-1, 3]), ('tile_rx', [-1, 3]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,29544270
+[Tensor(shape=[128, 128, 28, 28], op.name=placeholder), Tensor(shape=[128, 128, 3, 3], op.name=placeholder), Tensor(shape=[128, 128, 28, 28], op.name=compute)]
+best runtime:  2.5977797692307694
+compilation time:  2402.4530243873596
+128 128 58 58 128 3 3 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_128_58_58_128_3_3_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 2, 16, 2]), ('tile_y', [-1, 2, 2, 1]), ('tile_x', [-1, 7, 4, 1]), ('tile_rc', [-1, 1]), ('tile_ry', [-1, 3]), ('tile_rx', [-1, 3]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,10805699
+[Tensor(shape=[128, 128, 58, 58], op.name=placeholder), Tensor(shape=[128, 128, 3, 3], op.name=placeholder), Tensor(shape=[128, 128, 28, 28], op.name=compute)]
+best runtime:  2.841456333333334
+compilation time:  2831.205460548401
+128 256 30 30 256 3 3 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_256_30_30_256_3_3_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 2, 8, 2]), ('tile_y', [-1, 1, 1, 7]), ('tile_x', [-1, 1, 14, 1]), ('tile_rc', [-1, 1]), ('tile_ry', [-1, 3]), ('tile_rx', [-1, 3]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,7246207
+[Tensor(shape=[128, 256, 30, 30], op.name=placeholder), Tensor(shape=[256, 256, 3, 3], op.name=placeholder), Tensor(shape=[128, 256, 14, 14], op.name=compute)]
+best runtime:  3.124709921568628
+compilation time:  1713.554857969284
+128 168 42 42 168 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_168_42_42_168_1_1_1_VALID.log
+
+Best config:
+[('tile_f', [-1, 7, 6, 2]), ('tile_y', [-1, 1, 1, 3]), ('tile_x', [-1, 2, 21, 1]), ('tile_rc', [-1, 6]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,89652602
+[Tensor(shape=[128, 168, 42, 42], op.name=placeholder), Tensor(shape=[168, 168, 1, 1], op.name=placeholder), Tensor(shape=[128, 168, 42, 42], op.name=compute)]
+best runtime:  1.1797969647058824
+compilation time:  2936.495096921921
+128 512 7 7 512 3 3 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_512_7_7_512_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 2, 16, 2]), ('tile_y', [-1, 1, 7, 1]), ('tile_x', [-1, 1, 1, 7]), ('tile_rc', [-1, 2]), ('tile_ry', [-1, 3]), ('tile_rx', [-1, 3]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,675486
+[Tensor(shape=[128, 512, 7, 7], op.name=placeholder), Tensor(shape=[512, 512, 3, 3], op.name=placeholder), Tensor(shape=[128, 512, 7, 7], op.name=compute)]
+best runtime:  3.16899871875
+compilation time:  2336.417555809021
+128 256 14 14 1024 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_256_14_14_1024_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 4, 8, 1]), ('tile_y', [-1, 7, 2, 1]), ('tile_x', [-1, 1, 14, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,1502390
+[Tensor(shape=[128, 256, 14, 14], op.name=placeholder), Tensor(shape=[1024, 256, 1, 1], op.name=placeholder), Tensor(shape=[128, 1024, 14, 14], op.name=compute)]
+best runtime:  1.4581027101449275
+compilation time:  2227.387454509735
+128 1024 14 14 256 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_1024_14_14_256_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 16, 4]), ('tile_y', [-1, 7, 2, 1]), ('tile_x', [-1, 1, 14, 1]), ('tile_rc', [-1, 32]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,1162528
+[Tensor(shape=[128, 1024, 14, 14], op.name=placeholder), Tensor(shape=[256, 1024, 1, 1], op.name=placeholder), Tensor(shape=[128, 256, 14, 14], op.name=compute)]
+best runtime:  1.4835020095238096
+compilation time:  2472.5294728279114
+128 1024 14 14 512 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_1024_14_14_512_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 16, 4]), ('tile_y', [-1, 7, 2, 1]), ('tile_x', [-1, 1, 14, 1]), ('tile_rc', [-1, 16]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,874186
+[Tensor(shape=[128, 1024, 14, 14], op.name=placeholder), Tensor(shape=[512, 1024, 1, 1], op.name=placeholder), Tensor(shape=[128, 512, 14, 14], op.name=compute)]
+best runtime:  2.712791027027027
+compilation time:  2621.037273645401
+128 1008 21 21 168 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_1008_21_21_168_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 7, 6, 1]), ('tile_y', [-1, 7, 1, 1]), ('tile_x', [-1, 1, 21, 1]), ('tile_rc', [-1, 6]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,5284527
+[Tensor(shape=[128, 1008, 21, 21], op.name=placeholder), Tensor(shape=[168, 1008, 1, 1], op.name=placeholder), Tensor(shape=[128, 168, 21, 21], op.name=compute)]
+best runtime:  1.7320866724137933
+compilation time:  2836.6755952835083
+128 42 83 83 42 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_42_83_83_42_1_1_1_VALID.log
+
+Best config:
+[('tile_f', [-1, 3, 1, 14]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,43578
+[Tensor(shape=[128, 42, 83, 83], op.name=placeholder), Tensor(shape=[42, 42, 1, 1], op.name=placeholder), Tensor(shape=[128, 42, 83, 83], op.name=compute)]
+best runtime:  0.47917455952380955
+compilation time:  2813.459843158722
+128 4032 11 11 672 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_4032_11_11_672_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 4, 28, 1]), ('tile_y', [-1, 1, 1, 11]), ('tile_x', [-1, 1, 11, 1]), ('tile_rc', [-1, 16]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,1357587
+[Tensor(shape=[128, 4032, 11, 11], op.name=placeholder), Tensor(shape=[672, 4032, 1, 1], op.name=placeholder), Tensor(shape=[128, 672, 11, 11], op.name=compute)]
+best runtime:  8.972099833333333
+compilation time:  3907.752916097641
+128 512 16 16 512 3 3 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_512_16_16_512_3_3_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 4, 16, 1]), ('tile_y', [-1, 1, 1, 7]), ('tile_x', [-1, 1, 7, 1]), ('tile_rc', [-1, 2]), ('tile_ry', [-1, 3]), ('tile_rx', [-1, 3]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,815576
+[Tensor(shape=[128, 512, 16, 16], op.name=placeholder), Tensor(shape=[512, 512, 3, 3], op.name=placeholder), Tensor(shape=[128, 512, 7, 7], op.name=compute)]
+best runtime:  3.62613975
+compilation time:  2143.7147512435913
+128 96 83 83 42 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_96_83_83_42_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 14, 1, 3]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,64039
+[Tensor(shape=[128, 96, 83, 83], op.name=placeholder), Tensor(shape=[42, 96, 1, 1], op.name=placeholder), Tensor(shape=[128, 42, 83, 83], op.name=compute)]
+best runtime:  1.046354505154639
+compilation time:  2793.2507586479187
+128 96 165 165 42 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_96_165_165_42_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 21, 1, 2]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 165, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,13213726
+[Tensor(shape=[128, 96, 165, 165], op.name=placeholder), Tensor(shape=[42, 96, 1, 1], op.name=placeholder), Tensor(shape=[128, 42, 165, 165], op.name=compute)]
+best runtime:  3.737918666666667
+compilation time:  7661.944536924362
+128 168 83 83 84 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_168_83_83_84_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 7, 3, 4]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('tile_rc', [-1, 6]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,52584
+[Tensor(shape=[128, 168, 83, 83], op.name=placeholder), Tensor(shape=[84, 168, 1, 1], op.name=placeholder), Tensor(shape=[128, 84, 83, 83], op.name=compute)]
+best runtime:  3.307592064516129
+compilation time:  4929.682941198349
+128 336 21 21 336 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_336_21_21_336_1_1_1_VALID.log
+
+Best config:
+[('tile_f', [-1, 2, 3, 7]), ('tile_y', [-1, 3, 1, 1]), ('tile_x', [-1, 1, 21, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,3369893
+[Tensor(shape=[128, 336, 21, 21], op.name=placeholder), Tensor(shape=[336, 336, 1, 1], op.name=placeholder), Tensor(shape=[128, 336, 21, 21], op.name=compute)]
+best runtime:  1.4125833661971832
+compilation time:  2666.269138813019
+128 512 28 28 1024 1 1 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_512_28_28_1024_1_1_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 4, 32, 1]), ('tile_y', [-1, 7, 1, 1]), ('tile_x', [-1, 1, 7, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,3835307
+[Tensor(shape=[128, 512, 28, 28], op.name=placeholder), Tensor(shape=[1024, 512, 1, 1], op.name=placeholder), Tensor(shape=[128, 1024, 14, 14], op.name=compute)]
+best runtime:  4.203020291666667
+compilation time:  3043.174999475479
+128 64 56 56 256 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_64_56_56_256_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 16, 4]), ('tile_y', [-1, 2, 2, 2]), ('tile_x', [-1, 1, 8, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,39368608
+[Tensor(shape=[128, 64, 56, 56], op.name=placeholder), Tensor(shape=[256, 64, 1, 1], op.name=placeholder), Tensor(shape=[128, 256, 56, 56], op.name=compute)]
+best runtime:  1.3532874533333334
+compilation time:  3075.8879566192627
+128 256 56 56 64 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_256_56_56_64_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 2, 16]), ('tile_y', [-1, 2, 2, 1]), ('tile_x', [-1, 1, 56, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,10947713
+[Tensor(shape=[128, 256, 56, 56], op.name=placeholder), Tensor(shape=[64, 256, 1, 1], op.name=placeholder), Tensor(shape=[128, 64, 56, 56], op.name=compute)]
+best runtime:  1.387828870689655
+compilation time:  2848.1491878032684
+128 128 28 28 512 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_128_28_28_512_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 8, 8, 1]), ('tile_y', [-1, 2, 1, 2]), ('tile_x', [-1, 1, 28, 1]), ('tile_rc', [-1, 8]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,4025810
+[Tensor(shape=[128, 128, 28, 28], op.name=placeholder), Tensor(shape=[512, 128, 1, 1], op.name=placeholder), Tensor(shape=[128, 512, 28, 28], op.name=compute)]
+best runtime:  1.3474591764705883
+compilation time:  2071.132712364197
+128 512 28 28 128 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_512_28_28_128_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 8, 8]), ('tile_y', [-1, 4, 1, 1]), ('tile_x', [-1, 1, 28, 1]), ('tile_rc', [-1, 2]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 0), ('unroll_explicit', 1)],None,6033937
+[Tensor(shape=[128, 512, 28, 28], op.name=placeholder), Tensor(shape=[128, 512, 1, 1], op.name=placeholder), Tensor(shape=[128, 128, 28, 28], op.name=compute)]
+best runtime:  1.4319918857142857
+compilation time:  2019.4936842918396
+128 168 42 42 84 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_168_42_42_84_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 7, 3, 4]), ('tile_y', [-1, 3, 1, 1]), ('tile_x', [-1, 1, 42, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,44175784
+[Tensor(shape=[128, 168, 42, 42], op.name=placeholder), Tensor(shape=[84, 168, 1, 1], op.name=placeholder), Tensor(shape=[128, 84, 42, 42], op.name=compute)]
+best runtime:  0.6153616500000001
+compilation time:  2354.8785288333893
+128 512 28 28 256 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_512_28_28_256_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 4, 2, 4]), ('tile_y', [-1, 2, 1, 2]), ('tile_x', [-1, 1, 28, 1]), ('tile_rc', [-1, 2]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,5659425
+[Tensor(shape=[128, 512, 28, 28], op.name=placeholder), Tensor(shape=[256, 512, 1, 1], op.name=placeholder), Tensor(shape=[128, 256, 28, 28], op.name=compute)]
+best runtime:  2.9053944857142855
+compilation time:  2678.2159101963043
+128 64 56 56 64 3 3 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_64_56_56_64_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 4, 8]), ('tile_y', [-1, 1, 1, 6]), ('tile_x', [-1, 1, 27, 1]), ('tile_rc', [-1, 1]), ('tile_ry', [-1, 3]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,79213583
+[Tensor(shape=[128, 64, 56, 56], op.name=placeholder), Tensor(shape=[64, 64, 3, 3], op.name=placeholder), Tensor(shape=[128, 64, 56, 56], op.name=compute)]
+best runtime:  2.5708550769230767
+compilation time:  2713.061470746994
+128 2016 21 21 672 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_2016_21_21_672_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 4, 12, 2]), ('tile_y', [-1, 3, 1, 1]), ('tile_x', [-1, 1, 21, 1]), ('tile_rc', [-1, 12]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,18465939
+[Tensor(shape=[128, 2016, 21, 21], op.name=placeholder), Tensor(shape=[672, 2016, 1, 1], op.name=placeholder), Tensor(shape=[128, 672, 21, 21], op.name=compute)]
+best runtime:  17.735935166666664
+compilation time:  5234.006683111191
+128 512 7 7 2048 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_512_7_7_2048_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 8, 8, 1]), ('tile_y', [-1, 7, 1, 1]), ('tile_x', [-1, 1, 7, 1]), ('tile_rc', [-1, 8]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,253744
+[Tensor(shape=[128, 512, 7, 7], op.name=placeholder), Tensor(shape=[2048, 512, 1, 1], op.name=placeholder), Tensor(shape=[128, 2048, 7, 7], op.name=compute)]
+best runtime:  1.6561070819672132
+compilation time:  2281.4285366535187
+128 2048 7 7 512 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_2048_7_7_512_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 4, 16, 1]), ('tile_y', [-1, 1, 1, 7]), ('tile_x', [-1, 1, 7, 1]), ('tile_rc', [-1, 16]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,227736
+[Tensor(shape=[128, 2048, 7, 7], op.name=placeholder), Tensor(shape=[512, 2048, 1, 1], op.name=placeholder), Tensor(shape=[128, 512, 7, 7], op.name=compute)]
+best runtime:  1.7567834891304348
+compilation time:  2137.868951320648
+128 84 42 42 84 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_84_42_42_84_1_1_1_VALID.log
+
+Best config:
+[('tile_f', [-1, 1, 6, 14]), ('tile_y', [-1, 1, 1, 2]), ('tile_x', [-1, 2, 21, 1]), ('tile_rc', [-1, 6]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 0), ('unroll_explicit', 0)],None,2881906
+[Tensor(shape=[128, 84, 42, 42], op.name=placeholder), Tensor(shape=[84, 84, 1, 1], op.name=placeholder), Tensor(shape=[128, 84, 42, 42], op.name=compute)]
+best runtime:  0.3488476896551724
+compilation time:  2479.1706511974335
+128 336 42 42 168 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_336_42_42_168_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 2, 3, 14]), ('tile_y', [-1, 3, 1, 1]), ('tile_x', [-1, 1, 42, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,108012438
+[Tensor(shape=[128, 336, 42, 42], op.name=placeholder), Tensor(shape=[168, 336, 1, 1], op.name=placeholder), Tensor(shape=[128, 168, 42, 42], op.name=compute)]
+best runtime:  2.408677738095238
+compilation time:  3554.3931620121
+128 672 11 11 672 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_672_11_11_672_1_1_1_VALID.log
+
+Best config:
+[('tile_f', [-1, 21, 1, 2]), ('tile_y', [-1, 1, 11, 1]), ('tile_x', [-1, 1, 11, 1]), ('tile_rc', [-1, 7]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,768967
+[Tensor(shape=[128, 672, 11, 11], op.name=placeholder), Tensor(shape=[672, 672, 1, 1], op.name=placeholder), Tensor(shape=[128, 672, 11, 11], op.name=compute)]
+best runtime:  1.649917180327869
+compilation time:  1956.0113172531128
+128 1024 14 14 2048 1 1 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_1024_14_14_2048_1_1_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 2, 32, 2]), ('tile_y', [-1, 1, 1, 7]), ('tile_x', [-1, 1, 7, 1]), ('tile_rc', [-1, 8]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,85664
+[Tensor(shape=[128, 1024, 14, 14], op.name=placeholder), Tensor(shape=[2048, 1024, 1, 1], op.name=placeholder), Tensor(shape=[128, 2048, 7, 7], op.name=compute)]
+best runtime:  4.10967828
+compilation time:  2763.538022994995
+128 2016 11 11 336 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_2016_11_11_336_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 4, 14, 1]), ('tile_y', [-1, 11, 1, 1]), ('tile_x', [-1, 1, 11, 1]), ('tile_rc', [-1, 7]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,1340173
+[Tensor(shape=[128, 2016, 11, 11], op.name=placeholder), Tensor(shape=[336, 2016, 1, 1], op.name=placeholder), Tensor(shape=[128, 336, 11, 11], op.name=compute)]
+best runtime:  2.363400906976744
+compilation time:  2660.574705839157
+128 2016 21 21 336 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_2016_21_21_336_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 7, 3, 2]), ('tile_y', [-1, 7, 1, 1]), ('tile_x', [-1, 1, 21, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,21003526
+[Tensor(shape=[128, 2016, 21, 21], op.name=placeholder), Tensor(shape=[336, 2016, 1, 1], op.name=placeholder), Tensor(shape=[128, 336, 21, 21], op.name=compute)]
+best runtime:  7.2126535
+compilation time:  4101.282920837402
+128 1008 42 42 336 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_1008_42_42_336_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 7, 3, 4]), ('tile_y', [-1, 1, 1, 3]), ('tile_x', [-1, 1, 42, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,349603813
+[Tensor(shape=[128, 1008, 42, 42], op.name=placeholder), Tensor(shape=[336, 1008, 1, 1], op.name=placeholder), Tensor(shape=[128, 336, 42, 42], op.name=compute)]
+best runtime:  13.568208375
+compilation time:  6676.463663578033
+128 64 56 56 64 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_64_56_56_64_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 16, 4, 1]), ('tile_y', [-1, 1, 1, 2]), ('tile_x', [-1, 1, 56, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,5035817
+[Tensor(shape=[128, 64, 56, 56], op.name=placeholder), Tensor(shape=[64, 64, 1, 1], op.name=placeholder), Tensor(shape=[128, 64, 56, 56], op.name=compute)]
+best runtime:  0.376391581775701
+compilation time:  2502.734165430069
+128 3 230 230 64 7 7 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_3_230_230_64_7_7_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 2, 4, 4]), ('tile_y', [-1, 8, 2, 1]), ('tile_x', [-1, 1, 16, 1]), ('tile_rc', [-1, 1]), ('tile_ry', [-1, 7]), ('tile_rx', [-1, 7]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,62999555
+[Tensor(shape=[128, 3, 230, 230], op.name=placeholder), Tensor(shape=[64, 3, 7, 7], op.name=placeholder), Tensor(shape=[128, 64, 112, 112], op.name=compute)]
+best runtime:  2.6830807631578946
+compilation time:  3899.136387348175
+128 3 331 331 96 3 3 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_3_331_331_96_3_3_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 1, 4, 6]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 11, 15, 1]), ('tile_rc', [-1, 1]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 3]), ('auto_unroll_max_step', 0), ('unroll_explicit', 0)],None,3971240
+[Tensor(shape=[128, 3, 331, 331], op.name=placeholder), Tensor(shape=[96, 3, 3, 3], op.name=placeholder), Tensor(shape=[128, 96, 165, 165], op.name=compute)]
+best runtime:  3.13765978125
+compilation time:  6637.746349096298
+128 256 56 56 128 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_256_56_56_128_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 4, 8, 2]), ('tile_y', [-1, 1, 1, 2]), ('tile_x', [-1, 2, 28, 1]), ('tile_rc', [-1, 8]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,9488456
+[Tensor(shape=[128, 256, 56, 56], op.name=placeholder), Tensor(shape=[128, 256, 1, 1], op.name=placeholder), Tensor(shape=[128, 128, 56, 56], op.name=compute)]
+best runtime:  2.7281341621621618
+compilation time:  3236.196480035782
+128 256 14 14 256 3 3 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_256_14_14_256_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 4, 8, 1]), ('tile_y', [-1, 3, 4, 1]), ('tile_x', [-1, 1, 4, 3]), ('tile_rc', [-1, 2]), ('tile_ry', [-1, 3]), ('tile_rx', [-1, 3]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,26613536
+[Tensor(shape=[128, 256, 14, 14], op.name=placeholder), Tensor(shape=[256, 256, 3, 3], op.name=placeholder), Tensor(shape=[128, 256, 14, 14], op.name=compute)]
+best runtime:  1.7918785614035089
+compilation time:  1784.5255732536316
+128 2688 11 11 672 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_2688_11_11_672_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 14, 4]), ('tile_y', [-1, 1, 1, 11]), ('tile_x', [-1, 1, 11, 1]), ('tile_rc', [-1, 7]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,1916997
+[Tensor(shape=[128, 2688, 11, 11], op.name=placeholder), Tensor(shape=[672, 2688, 1, 1], op.name=placeholder), Tensor(shape=[128, 672, 11, 11], op.name=compute)]
+best runtime:  6.108046764705882
+compilation time:  2584.2897024154663
+128 1008 42 42 168 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_1008_42_42_168_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 7, 6, 2]), ('tile_y', [-1, 1, 1, 3]), ('tile_x', [-1, 2, 21, 1]), ('tile_rc', [-1, 6]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,202374522
+[Tensor(shape=[128, 1008, 42, 42], op.name=placeholder), Tensor(shape=[168, 1008, 1, 1], op.name=placeholder), Tensor(shape=[128, 168, 42, 42], op.name=compute)]
+best runtime:  6.804061125
+compilation time:  5306.191632032394
+128 96 83 83 42 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_96_83_83_42_1_1_1_VALID.log
+
+Best config:
+[('tile_f', [-1, 7, 1, 6]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,51758
+[Tensor(shape=[128, 96, 83, 83], op.name=placeholder), Tensor(shape=[42, 96, 1, 1], op.name=placeholder), Tensor(shape=[128, 42, 83, 83], op.name=compute)]
+best runtime:  1.0481203092783506
+compilation time:  2458.1683478355408
+128 256 56 56 512 1 1 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_256_56_56_512_1_1_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 2, 16, 4]), ('tile_y', [-1, 1, 1, 2]), ('tile_x', [-1, 2, 14, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,16688887
+[Tensor(shape=[128, 256, 56, 56], op.name=placeholder), Tensor(shape=[512, 256, 1, 1], op.name=placeholder), Tensor(shape=[128, 512, 28, 28], op.name=compute)]
+best runtime:  3.431728033333333
+compilation time:  3599.068375349045
+128 1344 21 21 336 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_1344_21_21_336_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 7, 6, 2]), ('tile_y', [-1, 1, 1, 7]), ('tile_x', [-1, 1, 21, 1]), ('tile_rc', [-1, 6]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,16708342
+[Tensor(shape=[128, 1344, 21, 21], op.name=placeholder), Tensor(shape=[336, 1344, 1, 1], op.name=placeholder), Tensor(shape=[128, 336, 21, 21], op.name=compute)]
+best runtime:  4.638825727272727
+compilation time:  3589.029227733612
+128 84 83 83 5 5 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+1517999616
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_84_83_83_5_5_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 1, 6]), ('tile_x', [-1, 1, 21, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,2874400
+best runtime:  0.5437928716216216
+compilation time:  2654.934828042984
+128 42 83 83 5 5 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+2136599808
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_42_83_83_5_5_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 2, 1, 1]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,4609
+best runtime:  1.1497754137931036
+compilation time:  1947.466091632843
+128 336 21 21 5 5 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+1136486400
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_336_21_21_5_5_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 3, 7]), ('tile_x', [-1, 1, 21, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 0)],None,222880
+best runtime:  0.24817977588871717
+compilation time:  1952.5114455223083
+128 42 165 165 5 5 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+2926570752
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_42_165_165_5_5_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,4608
+best runtime:  1.6689091999999999
+compilation time:  2453.347193479538
+128 84 83 83 7 7 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+2454885888
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_84_83_83_7_7_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 3, 2]), ('tile_x', [-1, 1, 21, 2]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,3640160
+best runtime:  0.6295908039215687
+compilation time:  2578.627597808838
+128 672 11 11 3 3 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+289099776
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_672_11_11_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 2, 1, 1]), ('tile_y', [-1, 1, 1, 11]), ('tile_x', [-1, 1, 11, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,67201
+best runtime:  0.13908206392294223
+compilation time:  1863.3288869857788
+128 168 42 42 5 5 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+2215170048
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_168_42_42_5_5_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 2, 7, 3]), ('tile_x', [-1, 1, 42, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,7099840
+best runtime:  0.46409648265895953
+compilation time:  2542.284348011017
+128 672 21 21 5 5 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+896716800
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_672_21_21_5_5_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 2]), ('tile_y', [-1, 1, 11, 1]), ('tile_x', [-1, 1, 11, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,66493
+best runtime:  0.3742690497630332
+compilation time:  2014.8069202899933
+128 336 21 21 3 3 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+500656128
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_336_21_21_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 3, 7]), ('tile_x', [-1, 1, 21, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,652960
+best runtime:  0.22432463150492263
+compilation time:  1888.1250638961792
+128 672 21 21 7 7 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+1458917376
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_672_21_21_7_7_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 2, 1, 1]), ('tile_y', [-1, 1, 11, 1]), ('tile_x', [-1, 1, 11, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,66305
+best runtime:  0.41792146493506493
+compilation time:  2158.779901742935
+128 42 83 83 7 7 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+3927538944
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_42_83_83_7_7_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 0)],None,2560
+best runtime:  1.67634615
+compilation time:  2222.0741772651672
+128 84 42 42 7 7 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+2032128000
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_84_42_42_7_7_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 2, 7, 3]), ('tile_x', [-1, 1, 42, 1]), ('auto_unroll_max_step', 0), ('unroll_explicit', 1)],None,2239200
+best runtime:  0.31348362426614484
+compilation time:  2178.315573692322
+128 84 42 42 5 5 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+1107585024
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_84_42_42_5_5_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 2, 7, 3]), ('tile_x', [-1, 1, 42, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,3549920
+best runtime:  0.2362522115384615
+compilation time:  2045.8274965286255
+128 168 42 42 3 3 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+974217216
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_168_42_42_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 3, 7]), ('tile_x', [-1, 1, 42, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,7103360
+best runtime:  0.4370922288828338
+compilation time:  2549.3712272644043
+128 672 11 11 7 7 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+1193988096
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_672_11_11_7_7_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 2, 2]), ('tile_y', [-1, 11, 1, 1]), ('tile_x', [-1, 1, 11, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,79953
+best runtime:  0.3070402375478927
+compilation time:  2039.2904088497162
+128 336 42 42 5 5 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+1585360896
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_336_42_42_5_5_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 1, 7]), ('tile_x', [-1, 1, 21, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,795200
+best runtime:  0.5397349163879598
+compilation time:  2236.9662685394287
+128 96 165 165 5 5 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+6689304576
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_96_165_165_5_5_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,16128
+best runtime:  3.805878592592593
+compilation time:  3970.6113328933716
+128 336 21 21 7 7 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+2078189568
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_336_21_21_7_7_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 7, 1, 3]), ('tile_x', [-1, 1, 21, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,794080
+best runtime:  0.29964755327102804
+compilation time:  1960.8063173294067
+128 336 42 42 7 7 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+2552352768
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_336_42_42_7_7_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 3, 1, 7]), ('tile_x', [-1, 1, 21, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,795760
+best runtime:  0.6461790890688258
+compilation time:  2509.9640510082245
+128 42 83 83 3 3 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+938525952
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_42_83_83_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 3, 1, 1]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,5634
+best runtime:  0.7181096071428571
+compilation time:  1879.7748384475708
+128 96 165 165 7 7 2 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+10811092992
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_96_165_165_7_7_2_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,16128
+best runtime:  5.415825842105262
+compilation time:  4777.857757091522
+128 84 42 42 3 3 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+487108608
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_84_42_42_3_3_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 1, 1]), ('tile_y', [-1, 1, 3, 2]), ('tile_x', [-1, 1, 42, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,2892640
+best runtime:  0.2223680209497207
+compilation time:  1774.5469596385956
+128 672 11 11 5 5 1 SAME 1 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise
+655872000
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/depthwise/depthwise_128_672_11_11_5_5_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 1, 4, 1]), ('tile_y', [-1, 1, 1, 11]), ('tile_x', [-1, 1, 11, 1]), ('auto_unroll_max_step', 256), ('unroll_explicit', 1)],None,67256
+best runtime:  0.19561028711656442
+compilation time:  1719.8221459388733
+relu (128, 1008, 42, 42) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 5.9890003820
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 1008, 42, 42], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 1008, 42, 42], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 869) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 227598336), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 869; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 227598336) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 15.188918590545654
+relu (128, 256, 14, 14) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.1580663600
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 256, 14, 14], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 256, 14, 14], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 25) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 6422528), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 25; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 6422528) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 1.368994951248169
+relu (128, 1024, 14, 14) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.6358855120
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 1024, 14, 14], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 1024, 14, 14], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 98) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 98; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 2.613948106765747
+relu (128, 512, 14, 14) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.3151511540
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 512, 14, 14], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 512, 14, 14], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 49) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 49; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 1.480355978012085
+relu (128, 96, 165, 165) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 9.1205665240
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 96, 165, 165], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 96, 165, 165], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 1277) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 334540800), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 1277; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 334540800) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 21.911627769470215
+relu (128, 1344, 21, 21) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 1.8688204980
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 1344, 21, 21], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 1344, 21, 21], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 290) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 75866112), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 290; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 75866112) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 5.125809192657471
+relu (128, 2688, 11, 11) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.9944406450
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 2688, 11, 11], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 2688, 11, 11], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 159) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 41631744), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 159; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 41631744) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 3.1953771114349365
+relu (128, 64, 112, 112) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 2.5408736440
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 64, 112, 112], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 64, 112, 112], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 392) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 392; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 7.12114953994751
+relu (128, 256, 56, 56) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 2.5420406030
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 256, 56, 56], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 256, 56, 56], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 392) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 392; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 6.81206488609314
+relu (128, 128, 28, 28) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.3180453520
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 128, 28, 28], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 128, 28, 28], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 49) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 49; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 1.5961823463439941
+relu (128, 512, 28, 28) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 1.2630029320
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 512, 28, 28], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 512, 28, 28], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 196) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 196; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 3.742581844329834
+relu (128, 256, 28, 28) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.6360314080
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 256, 28, 28], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 256, 28, 28], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 98) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 98; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 2.1011574268341064
+relu (128, 2016, 21, 21) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 2.8525728210
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 2016, 21, 21], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 2016, 21, 21], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 435) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 113799168), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 435; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 113799168) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 7.562382698059082
+relu (128, 672, 11, 11) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.2504476220
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 672, 11, 11], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 672, 11, 11], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 40) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 10407936), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 40; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 10407936) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 1.5448832511901855
+relu (128, 168, 83, 83) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 3.7061473040
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 168, 83, 83], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 168, 83, 83], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 566) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 148141056), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 566; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 148141056) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 9.989328384399414
+relu (128, 64, 56, 56) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.6403867550
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 64, 56, 56], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 64, 56, 56], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 98) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 98; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 2.4509472846984863
+relu (128, 168, 42, 42) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.9120574340
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 168, 42, 42], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 168, 42, 42], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 145) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 37933056), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 145; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 37933056) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 2.9709057807922363
+relu (128, 336, 21, 21) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.4498565330
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 336, 21, 21], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 336, 21, 21], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 73) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 18966528), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 73; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 18966528) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 1.6577444076538086
+relu (128, 4032, 11, 11) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 1.6025168350
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 4032, 11, 11], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 4032, 11, 11], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 239) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 62447616), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 239; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 62447616) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 4.677948951721191
+relu (128, 512, 7, 7) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.0803607830
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 512, 7, 7], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 512, 7, 7], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 13) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 3211264), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 13; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 3211264) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 1.013587474822998
+relu (128, 2048, 7, 7) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.3147102700
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 2048, 7, 7], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 2048, 7, 7], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 49) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 49; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 1.3116130828857422
+relu (128, 84, 83, 83) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 1.8953553720
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 84, 83, 83], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 84, 83, 83], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 283) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 74070528), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 283; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 74070528) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 5.231032371520996
+relu (128, 336, 42, 42) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 1.8748579900
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 336, 42, 42], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 336, 42, 42], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 290) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 75866112), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 290; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 75866112) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 5.602558612823486
+relu (128, 42, 165, 165) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 3.7819282520
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 42, 165, 165], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 42, 165, 165], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 559) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 146361600), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 559; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 146361600) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 9.656648397445679
+relu (128, 672, 21, 21) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.9125886160
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 672, 21, 21], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 672, 21, 21], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 145) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 37933056), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 145; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 37933056) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 3.0373611450195312
+relu (128, 84, 42, 42) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.4542690790
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 84, 42, 42], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 84, 42, 42], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 73) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 18966528), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 73; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 18966528) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 2.0632736682891846
+relu (128, 42, 83, 83) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 0.8890869400
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 42, 83, 83], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 42, 83, 83], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 142) {
+    if @tir.likely(((((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x) < 37035264), dtype=bool) {
+      compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 142; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    if ((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)) < 37035264) {
+      compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+    }
+  }
+}
+
+
+compilation time: 3.121386766433716
+relu (128, 128, 56, 56) /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/elementwise
+best runtime: 1.2802940290
+Lowered TIR:
+@main = primfn(input0_1: handle, compute_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {compute: Buffer(compute_2: Pointer(float32), float32, [128, 128, 56, 56], []),
+             input0: Buffer(input0_2: Pointer(float32), float32, [128, 128, 56, 56], [])}
+  buffer_map = {input0_1: input0, compute_1: compute} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 256;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024;
+  for (i0.i1.fused.i2.fused.i3.fused.outer: int32, 0, 196) {
+    compute_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)] = max((float32*)input0_2[(((i0.i1.fused.i2.fused.i3.fused.outer*262144) + (blockIdx.x*1024)) + threadIdx.x)], 0f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ compute, float* __restrict__ input0) {
+  for (int i0_i1_fused_i2_fused_i3_fused_outer = 0; i0_i1_fused_i2_fused_i3_fused_outer < 196; ++i0_i1_fused_i2_fused_i3_fused_outer) {
+    compute[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))] = max(input0[((((i0_i1_fused_i2_fused_i3_fused_outer * 262144) + (((int)blockIdx.x) * 1024)) + ((int)threadIdx.x)))], 0.000000e+00f);
+  }
+}
+
+
+compilation time: 4.0413289070129395
+65536 2 1024 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn
+dense_large_batch.gpu
+ConfigSpace (len=831402, space_map=
+   0 tile_x: Split(policy=factors, product=65536, num_outputs=4) len=969
+   1 tile_y: Split(policy=factors, product=1024, num_outputs=4) len=286
+   2 tile_k: Split(policy=factors, product=2, num_outputs=3) len=3
+)
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn/matmul_65536_2_1024.log
+
+Best config:
+[('tile_x', [-1, 2, 2, 4]), ('tile_y', [-1, 8, 2, 4]), ('tile_k', [-1, 1, 1])],None,129182
+best runtime:  1.3941326944444445
+compilation time:  1777.2067501544952
+128 4032 1000 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn
+dense_large_batch.gpu
+ConfigSpace (len=24192000, space_map=
+   0 tile_x: Split(policy=factors, product=128, num_outputs=4) len=120
+   1 tile_y: Split(policy=factors, product=1000, num_outputs=4) len=400
+   2 tile_k: Split(policy=factors, product=4032, num_outputs=3) len=504
+)
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn/matmul_128_4032_1000.log
+
+Best config:
+[('tile_x', [-1, 2, 4, 2]), ('tile_y', [-1, 5, 4, 1]), ('tile_k', [-1, 3, 6])],None,6627650
+best runtime:  0.8128003065326633
+compilation time:  1354.0634846687317
+128 2048 1000 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn
+dense_large_batch.gpu
+ConfigSpace (len=3744000, space_map=
+   0 tile_x: Split(policy=factors, product=128, num_outputs=4) len=120
+   1 tile_y: Split(policy=factors, product=1000, num_outputs=4) len=400
+   2 tile_k: Split(policy=factors, product=2048, num_outputs=3) len=78
+)
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn/matmul_128_2048_1000.log
+
+Best config:
+[('tile_x', [-1, 2, 4, 8]), ('tile_y', [-1, 5, 4, 2]), ('tile_k', [-1, 1, 32])],None,2414615
+best runtime:  1.794329
+compilation time:  1521.9695143699646
+65536 1024 4096 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn
+dense_large_batch.gpu
+ConfigSpace (len=29099070, space_map=
+   0 tile_x: Split(policy=factors, product=65536, num_outputs=4) len=969
+   1 tile_y: Split(policy=factors, product=4096, num_outputs=4) len=455
+   2 tile_k: Split(policy=factors, product=1024, num_outputs=3) len=66
+)
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn/matmul_65536_1024_4096.log
+
+Best config:
+[('tile_x', [-1, 2, 8, 2]), ('tile_y', [-1, 1, 8, 16]), ('tile_k', [-1, 8, 2])],None,6476995
+best runtime:  82.4837925
+compilation time:  24919.716250896454
+65536 1024 1024 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn
+dense_large_batch.gpu
+ConfigSpace (len=18290844, space_map=
+   0 tile_x: Split(policy=factors, product=65536, num_outputs=4) len=969
+   1 tile_y: Split(policy=factors, product=1024, num_outputs=4) len=286
+   2 tile_k: Split(policy=factors, product=1024, num_outputs=3) len=66
+)
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn/matmul_65536_1024_1024.log
+
+Best config:
+[('tile_x', [-1, 4, 4, 1]), ('tile_y', [-1, 4, 4, 2]), ('tile_k', [-1, 16, 1])],None,1192874
+best runtime:  36.99062625
+compilation time:  4985.6284346580505
+65536 4096 1024 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn
+dense_large_batch.gpu
+ConfigSpace (len=25219194, space_map=
+   0 tile_x: Split(policy=factors, product=65536, num_outputs=4) len=969
+   1 tile_y: Split(policy=factors, product=1024, num_outputs=4) len=286
+   2 tile_k: Split(policy=factors, product=4096, num_outputs=3) len=91
+)
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn/matmul_65536_4096_1024.log
+
+Best config:
+[('tile_x', [-1, 4, 2, 1]), ('tile_y', [-1, 1, 2, 16]), ('tile_k', [-1, 2, 2])],None,4082416
+best runtime:  411.6107005
+compilation time:  22567.888270378113
+65536 30522 1024 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn
+dense_large_batch.gpu
+ConfigSpace (len=7482618, space_map=
+   0 tile_x: Split(policy=factors, product=65536, num_outputs=4) len=969
+   1 tile_y: Split(policy=factors, product=1024, num_outputs=4) len=286
+   2 tile_k: Split(policy=factors, product=30522, num_outputs=3) len=27
+)
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/matmul_nn/matmul_65536_30522_1024.log
+
+Best config:
+[('tile_x', [-1, 4, 16, 1]), ('tile_y', [-1, 4, 16, 4]), ('tile_k', [-1, 1, 6])],None,4582465
+best runtime:  385.98065175
+compilation time:  28412.896250009537
+avg 128 168 83 83 1 2 VALID
+avg_pooling_128_168_83_83_1_1_2_VALID.log
+best runtime: 1.4076924125
+compilation time: 3.826082706451416
+avg 128 672 21 21 3 2 SAME
+avg_pooling_128_672_21_21_3_3_2_SAME.log
+best runtime: 0.5666878900
+compilation time: 1.3608853816986084
+avg 128 42 83 83 3 1 SAME
+avg_pooling_128_42_83_83_3_3_1_SAME.log
+best runtime: 1.7425184300
+compilation time: 2.3858561515808105
+avg 128 1008 42 42 1 2 VALID
+avg_pooling_128_1008_42_42_1_1_2_VALID.log
+best runtime: 2.3315252875
+compilation time: 4.9307475090026855
+avg 128 336 42 42 3 2 SAME
+avg_pooling_128_336_42_42_3_3_2_SAME.log
+best runtime: 1.1370706500
+compilation time: 2.5249667167663574
+avg 128 84 83 83 3 2 SAME
+avg_pooling_128_84_83_83_3_3_2_SAME.log
+best runtime: 1.0842915000
+compilation time: 2.6729319095611572
+avg 128 672 11 11 3 1 SAME
+avg_pooling_128_672_11_11_3_3_1_SAME.log
+best runtime: 0.2808204100
+compilation time: 1.232558012008667
+avg 128 96 165 165 1 2 VALID
+avg_pooling_128_96_165_165_1_1_2_VALID.log
+best runtime: 2.9812985175
+compilation time: 7.161752223968506
+avg 128 2016 21 21 1 2 VALID
+avg_pooling_128_2016_21_21_1_1_2_VALID.log
+best runtime: 1.4661681150
+compilation time: 2.8684160709381104
+avg 128 42 165 165 3 2 SAME
+avg_pooling_128_42_165_165_3_3_2_SAME.log
+best runtime: 2.3112250000
+compilation time: 3.900691032409668
+avg 128 84 42 42 3 1 SAME
+avg_pooling_128_84_42_42_3_3_1_SAME.log
+best runtime: 0.4990585075
+compilation time: 1.1955647468566895
+avg 128 336 21 21 3 1 SAME
+avg_pooling_128_336_21_21_3_3_1_SAME.log
+best runtime: 0.5016051725
+compilation time: 1.448747158050537
+avg 128 168 42 42 3 1 SAME
+avg_pooling_128_168_42_42_3_3_1_SAME.log
+best runtime: 1.0025223650
+compilation time: 2.310163736343384
+(128, 512, 1024) axis: 2
+[128, 512]
+best runtime: 0.7374130560
+Lowered TIR:
+@main = primfn(data_1: handle, data_red_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {data_red: Buffer(data_red_2: Pointer(float32), float32, [128, 512], []),
+             data: Buffer(data_2: Pointer(float32), float32, [128, 512, 1024], [])}
+  buffer_map = {data_1: data, data_red_1: data_red} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 2048;
+  allocate(data_red.rf: Pointer(local float32), float32, [1]), storage_scope = local;
+  allocate(reduce_temp0: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.y: int32, [0:32], "ThreadIndex", "threadIdx.y")] "thread_extent" = 32;
+  attr [IterVar(threadIdx.x: int32, [0:32], "ThreadIndex", "threadIdx.x")] "thread_extent" = 32 {
+    data_red.rf[0] = 0f32
+    for (k2.outer: int32, 0, 32) {
+      data_red.rf[0] = ((float32*)data_red.rf[0] + (float32*)data_2[((((blockIdx.x*32768) + (threadIdx.y*1024)) + (k2.outer*32)) + threadIdx.x)])
+    }
+    attr [meta[tir.CommReducer][0]] "reduce_scope" = @tir.reinterpret(0u64, dtype=handle);
+    @tir.tvm_thread_allreduce(1u32, (float32*)data_red.rf[0], True, reduce_temp0, threadIdx.x, dtype=handle)
+    if (threadIdx.x == 0) {
+      data_red_2[((blockIdx.x*32) + threadIdx.y)] = (float32*)reduce_temp0[0]
+    }
+  }
+}
+
+
+
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 700)
+#define __shfl_sync(mask, var, lane, width) \
+        __shfl((var), (lane), (width))
+
+#define __shfl_down_sync(mask, var, offset, width) \
+        __shfl_down((var), (offset), (width))
+
+#define __shfl_up_sync(mask, var, offset, width) \
+        __shfl_up((var), (offset), (width))
+#endif
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ data_red) {
+  float data_red_rf[1];
+  float red_buf0[1];
+  data_red_rf[(0)] = 0.000000e+00f;
+  for (int k2_outer = 0; k2_outer < 32; ++k2_outer) {
+    data_red_rf[(0)] = (data_red_rf[(0)] + data[(((((((int)blockIdx.x) * 32768) + (((int)threadIdx.y) * 1024)) + (k2_outer * 32)) + ((int)threadIdx.x)))]);
+  }
+  uint mask[1];
+  float t0[1];
+  red_buf0[(0)] = data_red_rf[(0)];
+  mask[(0)] = __activemask();
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 16, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 8, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 4, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 2, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 1, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  red_buf0[(0)] = __shfl_sync(mask[(0)], red_buf0[(0)], 0, 32);
+  if (((int)threadIdx.x) == 0) {
+    data_red[(((((int)blockIdx.x) * 32) + ((int)threadIdx.y)))] = red_buf0[(0)];
+  }
+}
+
+
+compilation time: 2.0941579341888428
+(65536, 1024) axis: 1
+[65536]
+best runtime: 0.7379404380
+Lowered TIR:
+@main = primfn(data_1: handle, data_red_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {data_red: Buffer(data_red_2: Pointer(float32), float32, [65536], []),
+             data: Buffer(data_2: Pointer(float32), float32, [65536, 1024], [])}
+  buffer_map = {data_1: data, data_red_1: data_red} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 2048;
+  allocate(data_red.rf: Pointer(local float32), float32, [1]), storage_scope = local;
+  allocate(reduce_temp0: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.y: int32, [0:32], "ThreadIndex", "threadIdx.y")] "thread_extent" = 32;
+  attr [IterVar(threadIdx.x: int32, [0:32], "ThreadIndex", "threadIdx.x")] "thread_extent" = 32 {
+    data_red.rf[0] = 0f32
+    for (k1.outer: int32, 0, 32) {
+      data_red.rf[0] = ((float32*)data_red.rf[0] + (float32*)data_2[((((blockIdx.x*32768) + (threadIdx.y*1024)) + (k1.outer*32)) + threadIdx.x)])
+    }
+    attr [meta[tir.CommReducer][0]] "reduce_scope" = @tir.reinterpret(0u64, dtype=handle);
+    @tir.tvm_thread_allreduce(1u32, (float32*)data_red.rf[0], True, reduce_temp0, threadIdx.x, dtype=handle)
+    if (threadIdx.x == 0) {
+      data_red_2[((blockIdx.x*32) + threadIdx.y)] = (float32*)reduce_temp0[0]
+    }
+  }
+}
+
+
+
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 700)
+#define __shfl_sync(mask, var, lane, width) \
+        __shfl((var), (lane), (width))
+
+#define __shfl_down_sync(mask, var, offset, width) \
+        __shfl_down((var), (offset), (width))
+
+#define __shfl_up_sync(mask, var, offset, width) \
+        __shfl_up((var), (offset), (width))
+#endif
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ data_red) {
+  float data_red_rf[1];
+  float red_buf0[1];
+  data_red_rf[(0)] = 0.000000e+00f;
+  for (int k1_outer = 0; k1_outer < 32; ++k1_outer) {
+    data_red_rf[(0)] = (data_red_rf[(0)] + data[(((((((int)blockIdx.x) * 32768) + (((int)threadIdx.y) * 1024)) + (k1_outer * 32)) + ((int)threadIdx.x)))]);
+  }
+  uint mask[1];
+  float t0[1];
+  red_buf0[(0)] = data_red_rf[(0)];
+  mask[(0)] = __activemask();
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 16, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 8, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 4, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 2, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 1, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  red_buf0[(0)] = __shfl_sync(mask[(0)], red_buf0[(0)], 0, 32);
+  if (((int)threadIdx.x) == 0) {
+    data_red[(((((int)blockIdx.x) * 32) + ((int)threadIdx.y)))] = red_buf0[(0)];
+  }
+}
+
+
+compilation time: 2.4830281734466553
+(128, 4032, 11, 11) axis: (2, 3)
+[128, 4032]
+best runtime: 0.7008104390
+Lowered TIR:
+@main = primfn(data_1: handle, data_red_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {data_red: Buffer(data_red_2: Pointer(float32), float32, [128, 4032], []),
+             data: Buffer(data_2: Pointer(float32), float32, [128, 4032, 11, 11], [])}
+  buffer_map = {data_1: data, data_red_1: data_red} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 16128;
+  allocate(data_red.rf: Pointer(local float32), float32, [1]), storage_scope = local;
+  allocate(reduce_temp0: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.y: int32, [0:32], "ThreadIndex", "threadIdx.y")] "thread_extent" = 32;
+  attr [IterVar(threadIdx.x: int32, [0:32], "ThreadIndex", "threadIdx.x")] "thread_extent" = 32 {
+    data_red.rf[0] = 0f32
+    for (k2.k3.fused.outer: int32, 0, 4) {
+      if @tir.likely(((((k2.k3.fused.outer*32) + threadIdx.x) < 121) && (((k2.k3.fused.outer*32) + threadIdx.x) < 121)), dtype=bool) {
+        data_red.rf[0] = ((float32*)data_red.rf[0] + (float32*)data_2[((((blockIdx.x*3872) + (threadIdx.y*121)) + (k2.k3.fused.outer*32)) + threadIdx.x)])
+      }
+    }
+    attr [meta[tir.CommReducer][0]] "reduce_scope" = @tir.reinterpret(0u64, dtype=handle);
+    @tir.tvm_thread_allreduce(1u32, (float32*)data_red.rf[0], True, reduce_temp0, threadIdx.x, dtype=handle)
+    if (threadIdx.x == 0) {
+      data_red_2[((blockIdx.x*32) + threadIdx.y)] = (float32*)reduce_temp0[0]
+    }
+  }
+}
+
+
+
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 700)
+#define __shfl_sync(mask, var, lane, width) \
+        __shfl((var), (lane), (width))
+
+#define __shfl_down_sync(mask, var, offset, width) \
+        __shfl_down((var), (offset), (width))
+
+#define __shfl_up_sync(mask, var, offset, width) \
+        __shfl_up((var), (offset), (width))
+#endif
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ data_red) {
+  float data_red_rf[1];
+  float red_buf0[1];
+  data_red_rf[(0)] = 0.000000e+00f;
+  for (int k2_k3_fused_outer = 0; k2_k3_fused_outer < 4; ++k2_k3_fused_outer) {
+    if ((((k2_k3_fused_outer * 32) + ((int)threadIdx.x)) < 121) && (((k2_k3_fused_outer * 32) + ((int)threadIdx.x)) < 121)) {
+      data_red_rf[(0)] = (data_red_rf[(0)] + data[(((((((int)blockIdx.x) * 3872) + (((int)threadIdx.y) * 121)) + (k2_k3_fused_outer * 32)) + ((int)threadIdx.x)))]);
+    }
+  }
+  uint mask[1];
+  float t0[1];
+  red_buf0[(0)] = data_red_rf[(0)];
+  mask[(0)] = __activemask();
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 16, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 8, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 4, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 2, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 1, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  red_buf0[(0)] = __shfl_sync(mask[(0)], red_buf0[(0)], 0, 32);
+  if (((int)threadIdx.x) == 0) {
+    data_red[(((((int)blockIdx.x) * 32) + ((int)threadIdx.y)))] = red_buf0[(0)];
+  }
+}
+
+
+compilation time: 2.1038904190063477
+(128, 2048, 7, 7) axis: (2, 3)
+[128, 2048]
+best runtime: 0.1627770950
+Lowered TIR:
+@main = primfn(data_1: handle, data_red_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {data_red: Buffer(data_red_2: Pointer(float32), float32, [128, 2048], []),
+             data: Buffer(data_2: Pointer(float32), float32, [128, 2048, 7, 7], [])}
+  buffer_map = {data_1: data, data_red_1: data_red} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 8192;
+  allocate(data_red.rf: Pointer(local float32), float32, [1]), storage_scope = local;
+  allocate(reduce_temp0: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.y: int32, [0:32], "ThreadIndex", "threadIdx.y")] "thread_extent" = 32;
+  attr [IterVar(threadIdx.x: int32, [0:32], "ThreadIndex", "threadIdx.x")] "thread_extent" = 32 {
+    data_red.rf[0] = 0f32
+    for (k2.k3.fused.outer: int32, 0, 2) {
+      if @tir.likely(((((k2.k3.fused.outer*32) + threadIdx.x) < 49) && (((k2.k3.fused.outer*32) + threadIdx.x) < 49)), dtype=bool) {
+        data_red.rf[0] = ((float32*)data_red.rf[0] + (float32*)data_2[((((blockIdx.x*1568) + (threadIdx.y*49)) + (k2.k3.fused.outer*32)) + threadIdx.x)])
+      }
+    }
+    attr [meta[tir.CommReducer][0]] "reduce_scope" = @tir.reinterpret(0u64, dtype=handle);
+    @tir.tvm_thread_allreduce(1u32, (float32*)data_red.rf[0], True, reduce_temp0, threadIdx.x, dtype=handle)
+    if (threadIdx.x == 0) {
+      data_red_2[((blockIdx.x*32) + threadIdx.y)] = (float32*)reduce_temp0[0]
+    }
+  }
+}
+
+
+
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 700)
+#define __shfl_sync(mask, var, lane, width) \
+        __shfl((var), (lane), (width))
+
+#define __shfl_down_sync(mask, var, offset, width) \
+        __shfl_down((var), (offset), (width))
+
+#define __shfl_up_sync(mask, var, offset, width) \
+        __shfl_up((var), (offset), (width))
+#endif
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ data_red) {
+  float data_red_rf[1];
+  float red_buf0[1];
+  data_red_rf[(0)] = 0.000000e+00f;
+  for (int k2_k3_fused_outer = 0; k2_k3_fused_outer < 2; ++k2_k3_fused_outer) {
+    if ((((k2_k3_fused_outer * 32) + ((int)threadIdx.x)) < 49) && (((k2_k3_fused_outer * 32) + ((int)threadIdx.x)) < 49)) {
+      data_red_rf[(0)] = (data_red_rf[(0)] + data[(((((((int)blockIdx.x) * 1568) + (((int)threadIdx.y) * 49)) + (k2_k3_fused_outer * 32)) + ((int)threadIdx.x)))]);
+    }
+  }
+  uint mask[1];
+  float t0[1];
+  red_buf0[(0)] = data_red_rf[(0)];
+  mask[(0)] = __activemask();
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 16, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 8, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 4, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 2, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  t0[(0)] = __shfl_down_sync(mask[(0)], red_buf0[(0)], 1, 32);
+  red_buf0[(0)] = (red_buf0[(0)] + t0[(0)]);
+  red_buf0[(0)] = __shfl_sync(mask[(0)], red_buf0[(0)], 0, 32);
+  if (((int)threadIdx.x) == 0) {
+    data_red[(((((int)blockIdx.x) * 32) + ((int)threadIdx.y)))] = red_buf0[(0)];
+  }
+}
+
+
+compilation time: 1.0465807914733887

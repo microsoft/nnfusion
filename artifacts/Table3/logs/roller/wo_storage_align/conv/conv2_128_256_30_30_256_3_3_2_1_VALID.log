@@ -1,0 +1,101 @@
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_6_262_1_1_384_1_1.cu(222): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_6_262_1_1_384_1_1.cu(230): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_8_262_1_1_384_1_1.cu(224): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_8_262_1_1_384_1_1.cu(232): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_0_392_1_1_256_1_1.cu(210): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_0_392_1_1_256_1_1.cu(218): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_3_392_1_1_256_1_1.cu(228): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_3_392_1_1_256_1_1.cu(236): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_9_262_1_1_384_1_1.cu(257): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_9_262_1_1_384_1_1.cu(265): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_7_262_1_1_384_1_1.cu(252): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_7_262_1_1_384_1_1.cu(260): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_1_392_1_1_256_1_1.cu(228): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_1_392_1_1_256_1_1.cu(236): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_4_392_1_1_256_1_1.cu(213): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_4_392_1_1_256_1_1.cu(221): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_2_392_1_1_256_1_1.cu(210): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_2_392_1_1_256_1_1.cu(218): warning: variable "output0h" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_5_392_1_1_256_1_1.cu(240): warning: variable "output_size0" was declared but never referenced
+
+fused_conv_expr_S2D1P0_128_256_14_14_256_3_3_5_392_1_1_256_1_1.cu(248): warning: variable "output0h" was declared but never referenced
+
+Namespace(arch='K80', backend='tvm', code_dir='roller_src/conv', data_type='float32', eval_bar=[1, 5, 10, 20, 50], fuse=False, keep_tiny=False, num_threads=4, op='fused_conv_expr_S2D1P0', padding_threshold_cap=1.0, reg_tiling=True, rtile0_shape=[64, 128, 32], rtile1_shape=[8, 8, 1], rtile2_shape=[1, 1, 1], schedule_fuse=True, shape=[128, 256, 14, 14, 256, 3, 3], smem_tiling=True, st_align=False, topk=10, use_artificial_rtile=False, use_tc=False)
+IODependent:  True
+found 6 results with threshold 0
+found 10 results with threshold 0.2
+evaluating top 10 configs
+pad:  {'f': 0, 'sa_fused0': 64, 'ra_fused0': 0}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+pad:  {'f': 0, 'sa_fused0': 64, 'ra_fused0': 0}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [16, 8], 'sa_fused0': [16, 8], 'ra_fused0': [8, 1]}
+{'f': [8, 16, 1], 'sa_fused0': [8, 16, 1], 'ra_fused0': [8, 1]}
+{'f': [16, 8], 'sa_fused0': [24, 8], 'ra_fused0': [8, 1]}
+{'f': [8, 16, 1], 'sa_fused0': [8, 24, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 16, 2], 'sa_fused0': [8, 24, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 16, 2], 'sa_fused0': [4, 24, 2], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 16, 2], 'sa_fused0': [8, 16, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 16, 2], 'sa_fused0': [4, 16, 2], 'ra_fused0': [8, 1]}
+{'f': [32, 8], 'sa_fused0': [8, 8], 'ra_fused0': [32, 1]}
+{'f': [8, 32, 1], 'sa_fused0': [8, 8, 1], 'ra_fused0': [32, 1]}
+{'f': [32, 8], 'sa_fused0': [12, 8], 'ra_fused0': [8, 1]}
+{'f': [8, 32, 1], 'sa_fused0': [8, 12, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 32, 2], 'sa_fused0': [8, 8, 1], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 32, 2], 'sa_fused0': [8, 12, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 32, 2], 'sa_fused0': [4, 8, 2], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 32, 2], 'sa_fused0': [4, 12, 2], 'ra_fused0': [8, 1]}
+pad:  {'f': 0, 'sa_fused0': 64, 'ra_fused0': 0}
+{'f': [32, 8], 'sa_fused0': [12, 8], 'ra_fused0': [32, 1]}
+{'f': [8, 32, 1], 'sa_fused0': [8, 12, 1], 'ra_fused0': [32, 1]}
+pad:  {'f': 0, 'sa_fused0': 64, 'ra_fused0': 0}
+updated self.tiling:  {'f': [4, 32, 2], 'sa_fused0': [8, 12, 1], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 32, 2], 'sa_fused0': [4, 12, 2], 'ra_fused0': [32, 1]}
+{'f': [16, 8], 'sa_fused0': [24, 8], 'ra_fused0': [32, 1]}
+{'f': [8, 16, 1], 'sa_fused0': [8, 24, 1], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 16, 2], 'sa_fused0': [8, 24, 1], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 16, 2], 'sa_fused0': [4, 24, 2], 'ra_fused0': [32, 1]}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [16, 8], 'sa_fused0': [16, 8], 'ra_fused0': [32, 1]}
+{'f': [8, 16, 1], 'sa_fused0': [8, 16, 1], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 16, 2], 'sa_fused0': [8, 16, 1], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 16, 2], 'sa_fused0': [4, 16, 2], 'ra_fused0': [32, 1]}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [8, 8], 'sa_fused0': [32, 8], 'ra_fused0': [8, 1]}
+{'f': [8, 8, 1], 'sa_fused0': [8, 32, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 8, 2], 'sa_fused0': [8, 32, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 8, 2], 'sa_fused0': [4, 32, 2], 'ra_fused0': [8, 1]}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+pad:  {'f': 0, 'sa_fused0': 0, 'ra_fused0': 0}
+{'f': [8, 8], 'sa_fused0': [32, 8], 'ra_fused0': [32, 1]}
+{'f': [8, 8, 1], 'sa_fused0': [8, 32, 1], 'ra_fused0': [32, 1]}
+{'f': [32, 8], 'sa_fused0': [8, 8], 'ra_fused0': [8, 1]}
+{'f': [8, 32, 1], 'sa_fused0': [8, 8, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 8, 2], 'sa_fused0': [8, 32, 1], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 8, 2], 'sa_fused0': [4, 32, 2], 'ra_fused0': [32, 1]}
+updated self.tiling:  {'f': [4, 32, 2], 'sa_fused0': [8, 8, 1], 'ra_fused0': [8, 1]}
+updated self.tiling:  {'f': [4, 32, 2], 'sa_fused0': [4, 8, 2], 'ra_fused0': [8, 1]}
+top1 time: 14.111 ms
+top10 time: 13.308 ms
+best idx: 1
+best config: [level 0: [tile: [128, 128]; step: [32]]][level 1: [tile: [8, 8]; step: [1]]][level 2: [tile: [1, 1]; step: [1]]]
+top1 compile time: 0.006968498229980469 s
+top10 compile time: 10.489959001541138 s

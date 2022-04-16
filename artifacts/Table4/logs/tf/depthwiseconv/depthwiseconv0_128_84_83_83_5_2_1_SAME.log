@@ -1,0 +1,72 @@
+WARNING:tensorflow:From ./src/depthwise.py:9: The name tf.logging.set_verbosity is deprecated. Please use tf.compat.v1.logging.set_verbosity instead.
+
+WARNING:tensorflow:From ./src/depthwise.py:9: The name tf.logging.ERROR is deprecated. Please use tf.compat.v1.logging.ERROR instead.
+
+N, C, H, W, K, S, D, P, repeat_time: 128 84 83 83 5 2 1 SAME 10000
+is eager mode:  True
+2022-04-15 13:54:51.082278: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libamdhip64.so
+2022-04-15 13:54:51.147766: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1650] Found device 0 with properties: 
+name: Vega 20
+AMDGPU ISA: gfx906
+memoryClockRate (GHz) 1.725
+pciBusID 0000:3f:00.0
+2022-04-15 13:54:51.147809: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1650] Found device 1 with properties: 
+name: Vega 20
+AMDGPU ISA: gfx906
+memoryClockRate (GHz) 1.725
+pciBusID 0000:43:00.0
+2022-04-15 13:54:51.147844: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1650] Found device 2 with properties: 
+name: Vega 20
+AMDGPU ISA: gfx906
+memoryClockRate (GHz) 1.725
+pciBusID 0000:46:00.0
+2022-04-15 13:54:51.147869: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1650] Found device 3 with properties: 
+name: Vega 20
+AMDGPU ISA: gfx906
+memoryClockRate (GHz) 1.725
+pciBusID 0000:49:00.0
+2022-04-15 13:54:51.151384: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library librocblas.so
+2022-04-15 13:54:51.152955: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libMIOpen.so
+2022-04-15 13:54:51.168664: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library librocfft.so
+2022-04-15 13:54:51.168956: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library librocrand.so
+2022-04-15 13:54:51.169105: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1767] Adding visible gpu devices: 0, 1, 2, 3
+2022-04-15 13:54:51.169401: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+2022-04-15 13:54:51.179681: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2300000000 Hz
+2022-04-15 13:54:51.183584: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x392e3e0 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2022-04-15 13:54:51.183610: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2022-04-15 13:54:51.184014: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1650] Found device 0 with properties: 
+name: Vega 20
+AMDGPU ISA: gfx906
+memoryClockRate (GHz) 1.725
+pciBusID 0000:3f:00.0
+2022-04-15 13:54:51.184051: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1650] Found device 1 with properties: 
+name: Vega 20
+AMDGPU ISA: gfx906
+memoryClockRate (GHz) 1.725
+pciBusID 0000:43:00.0
+2022-04-15 13:54:51.184092: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1650] Found device 2 with properties: 
+name: Vega 20
+AMDGPU ISA: gfx906
+memoryClockRate (GHz) 1.725
+pciBusID 0000:46:00.0
+2022-04-15 13:54:51.184121: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1650] Found device 3 with properties: 
+name: Vega 20
+AMDGPU ISA: gfx906
+memoryClockRate (GHz) 1.725
+pciBusID 0000:49:00.0
+2022-04-15 13:54:51.184146: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library librocblas.so
+2022-04-15 13:54:51.184165: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libMIOpen.so
+2022-04-15 13:54:51.184180: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library librocfft.so
+2022-04-15 13:54:51.184195: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library librocrand.so
+2022-04-15 13:54:51.184338: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1767] Adding visible gpu devices: 0, 1, 2, 3
+2022-04-15 13:54:51.184380: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1180] Device interconnect StreamExecutor with strength 1 edge matrix:
+2022-04-15 13:54:51.184393: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1186]      0 1 2 3 
+2022-04-15 13:54:51.184401: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1199] 0:   N Y Y Y 
+2022-04-15 13:54:51.184408: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1199] 1:   Y N Y Y 
+2022-04-15 13:54:51.184419: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1199] 2:   Y Y N Y 
+2022-04-15 13:54:51.184431: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1199] 3:   Y Y Y N 
+2022-04-15 13:54:51.184617: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1325] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 31114 MB memory) -> physical GPU (device: 0, name: Vega 20, pci bus id: 0000:3f:00.0)
+2022-04-15 13:54:51.547216: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1325] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:1 with 31114 MB memory) -> physical GPU (device: 1, name: Vega 20, pci bus id: 0000:43:00.0)
+2022-04-15 13:54:51.881514: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1325] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:2 with 31114 MB memory) -> physical GPU (device: 2, name: Vega 20, pci bus id: 0000:46:00.0)
+2022-04-15 13:54:52.171475: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1325] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:3 with 31114 MB memory) -> physical GPU (device: 3, name: Vega 20, pci bus id: 0000:49:00.0)
+6.688058471679687 ms on avg

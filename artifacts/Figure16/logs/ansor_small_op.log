@@ -1,0 +1,8 @@
+128 4032 1000 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/ansor/matmul
+Get devices for measurement successfully!
+best runtime:  0.189342
+compilation time:  2410.2695800000015
+128 2048 1000 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/ansor/matmul
+Get devices for measurement successfully!
+best runtime:  0.10047199999999999
+compilation time:  2864.0664599999936

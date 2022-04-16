@@ -1,0 +1,64 @@
+Namespace(arch='MI50', backend='tvm', code_dir='depthwiseconv', data_type='float32', eval_bar=[1, 5, 10, 20, 50], fuse=False, keep_tiny=False, num_threads=4, op='depthwiseconv_expr_S1D1P1', padding_threshold_cap=1.0, reg_tiling=True, rtile0_shape=[64, 128, 32], rtile1_shape=[8, 8, 1], rtile2_shape=[1, 1, 1], schedule_fuse=True, shape=[128, 336, 21, 21, 3, 3], smem_tiling=True, st_align=False, topk=10, use_artificial_rtile=False, use_tc=False)
+IODependent:  False
+threshold 0
+failed to find results with padding threshold 0
+threshold 0.1
+failed to find results with padding threshold 0.1
+threshold 0.2
+failed to find results with padding threshold 0.2
+threshold 0.30000000000000004
+failed to find results with padding threshold 0.30000000000000004
+threshold 0.4
+failed to find results with padding threshold 0.4
+threshold 0.5
+failed to find results with padding threshold 0.5
+threshold 0.6
+found 10 results in first round with threshold 0.6
+evaluating top 10 configs
+pad:  {'n': 0, 'c': 0, 'ho': 3, 'wo': 11, 'kh': 0, 'kw': 0}
+pad:  {'n': 0, 'c': 0, 'ho': 11, 'wo': 11, 'kh': 0, 'kw': 0}
+pad:  {'n': 0, 'c': 0, 'ho': 11, 'wo': 11, 'kh': 0, 'kw': 0}
+pad:  {'n': 0, 'c': 0, 'ho': 11, 'wo': 11, 'kh': 0, 'kw': 0}
+{'n': [1, 1], 'c': [1, 1], 'ho': [4, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1], 'c': [1, 1], 'ho': [16, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1, 1], 'c': [1, 1, 1], 'ho': [1, 4, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}{'n': [1, 1, 1], 'c': [1, 1, 1], 'ho': [1, 16, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+
+{'n': [1, 1], 'c': [1, 1], 'ho': [32, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1, 1], 'c': [1, 1, 1], 'ho': [1, 32, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [2, 1], 'c': [1, 1], 'ho': [16, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 2, 1], 'c': [1, 1, 1], 'ho': [1, 16, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+[08:42:55] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:42:55] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:42:55] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:42:55] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'n': 0, 'c': 0, 'ho': 3, 'wo': 11, 'kh': 0, 'kw': 0}
+pad:  {'n': 0, 'c': 0, 'ho': 3, 'wo': 11, 'kh': 0, 'kw': 0}
+{'n': [1, 1], 'c': [1, 1], 'ho': [24, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1, 1], 'c': [1, 1, 1], 'ho': [1, 24, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1], 'c': [1, 1], 'ho': [8, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1, 1], 'c': [1, 1, 1], 'ho': [1, 8, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+pad:  {'n': 0, 'c': 0, 'ho': 7, 'wo': 11, 'kh': 0, 'kw': 0}
+{'n': [1, 1], 'c': [2, 1], 'ho': [14, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1, 1], 'c': [1, 2, 1], 'ho': [1, 14, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+[08:42:58] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:42:58] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:42:58] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'n': 0, 'c': 0, 'ho': 11, 'wo': 11, 'kh': 0, 'kw': 0}
+{'n': [1, 1], 'c': [2, 1], 'ho': [16, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1, 1], 'c': [1, 2, 1], 'ho': [1, 16, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+[08:42:58] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'n': 0, 'c': 0, 'ho': 7, 'wo': 11, 'kh': 0, 'kw': 0}
+{'n': [1, 1], 'c': [1, 1], 'ho': [28, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1, 1], 'c': [1, 1, 1], 'ho': [1, 28, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+[08:43:00] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+pad:  {'n': 0, 'c': 0, 'ho': 3, 'wo': 11, 'kh': 0, 'kw': 0}
+{'n': [1, 1], 'c': [1, 1], 'ho': [12, 1], 'wo': [16, 2], 'kh': [3, 1], 'kw': [3, 1]}
+{'n': [1, 1, 1], 'c': [1, 1, 1], 'ho': [1, 12, 1], 'wo': [2, 16, 1], 'kh': [3, 1], 'kw': [3, 1]}
+[08:43:01] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+rm: cannot remove 'tmp': No such file or directory
+top1 time: 0.812184 ms
+top10 time: 0.538151 ms
+best idx: 6
+best config: [level 0: [tile: [1, 1, 32, 32]; step: [3, 3]]][level 1: [tile: [1, 1, 1, 2]; step: [1, 1]]][level 2: [tile: [1, 1, 1, 1]; step: [1, 1]]]
+top1 compile time: 0.0040798187255859375 s
+top10 compile time: 8.687272548675537 s

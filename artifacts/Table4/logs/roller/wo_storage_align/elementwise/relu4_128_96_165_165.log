@@ -1,0 +1,42 @@
+Namespace(arch='MI50', backend='tvm', code_dir='elementwise', data_type='float32', eval_bar=[1, 5, 10, 20, 50], fuse=False, keep_tiny=False, num_threads=4, op='relu_expr', padding_threshold_cap=1.0, reg_tiling=False, rtile0_shape=[64, 128, 32], rtile1_shape=[8, 8, 1], rtile2_shape=[1, 1, 1], schedule_fuse=False, shape=[334540800], smem_tiling=False, st_align=False, topk=10, use_artificial_rtile=False, use_tc=False)
+IODependent:  False
+threshold 0
+found 10 results in first round with threshold 0
+evaluating top 10 configs
+{'i0': [512, 2]}{'i0': [64, 2]}
+
+{'i0': [128, 4]}
+{'i0': [256, 2]}
+{'i0': [2, 64, 1]}{'i0': [2, 512, 1]}
+
+{'i0': [4, 128, 1]}
+{'i0': [2, 256, 1]}
+[08:46:01] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:46:01] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:46:01] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:46:01] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+{'i0': [320, 2]}
+{'i0': [192, 4]}
+{'i0': [2, 320, 1]}
+{'i0': [4, 192, 1]}
+[08:46:05] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:46:05] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+{'i0': [64, 4]}
+{'i0': [4, 64, 1]}
+{'i0': [128, 2]}
+{'i0': [2, 128, 1]}
+[08:46:05] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+[08:46:05] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+{'i0': [192, 2]}
+{'i0': [2, 192, 1]}
+[08:46:08] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+{'i0': [384, 2]}
+{'i0': [2, 384, 1]}
+[08:46:08] /host/home/v-ruofanwu/sokoban/tvm/src/target/target_kind.cc:163: Warning: Unable to detect CUDA version, default to "-arch=sm_20" instead
+rm: cannot remove 'tmp': No such file or directory
+top1 time: 6.41906 ms
+top10 time: 3.27467 ms
+best idx: 6
+best config: [level 0: [tile: [1024]; step: []]][level 1: [tile: [2]; step: []]][level 2: [tile: [1]; step: []]]
+top1 compile time: 0.001592397689819336 s
+top10 compile time: 10.32952618598938 s

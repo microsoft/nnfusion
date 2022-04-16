@@ -1,0 +1,132 @@
+512 1024 4096 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale
+Using tensorcore
+dense_tensorcore.cuda
+ConfigSpace (len=15552, space_map=
+   0 block_row_warps: OtherOption([1, 2, 4]) len=3
+   1 block_col_warps: OtherOption([1, 2, 4]) len=3
+   2 warp_row_tiles: OtherOption([1, 2, 4]) len=3
+   3 warp_col_tiles: OtherOption([1, 2, 4]) len=3
+   4 chunk: OtherOption([1, 2, 4, 8]) len=4
+   5 offset: OtherOption([0, 8]) len=2
+   6 offsetCS: OtherOption([0, 8]) len=2
+   7 vec: OtherOption([1, 2, 4, 8]) len=4
+   8 wmma_m: OtherOption([32, 16, 8]) len=3
+)
+Finish loading 1000 records
+Cannot find config for target=cuda -keys=cuda,gpu -max_num_threads=1024 -thread_warp_size=32, workload=('dense_tensorcore.cuda', ('TENSOR', (512, 1024), 'float16'), ('TENSOR', (1024, 4096), 'float16')). A fallback configuration is used, which may bring great performance regression.
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale/matmul_512_1024_4096.log
+
+Best config:
+,None
+best runtime:  3.6075765357142857
+compilation time:  1952.4948773384094
+1024 1024 4096 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale
+Using tensorcore
+dense_tensorcore.cuda
+ConfigSpace (len=15552, space_map=
+   0 block_row_warps: OtherOption([1, 2, 4]) len=3
+   1 block_col_warps: OtherOption([1, 2, 4]) len=3
+   2 warp_row_tiles: OtherOption([1, 2, 4]) len=3
+   3 warp_col_tiles: OtherOption([1, 2, 4]) len=3
+   4 chunk: OtherOption([1, 2, 4, 8]) len=4
+   5 offset: OtherOption([0, 8]) len=2
+   6 offsetCS: OtherOption([0, 8]) len=2
+   7 vec: OtherOption([1, 2, 4, 8]) len=4
+   8 wmma_m: OtherOption([32, 16, 8]) len=3
+)
+Finish loading 1000 records
+Cannot find config for target=cuda -keys=cuda,gpu -max_num_threads=1024 -thread_warp_size=32, workload=('dense_tensorcore.cuda', ('TENSOR', (1024, 1024), 'float16'), ('TENSOR', (1024, 4096), 'float16')). A fallback configuration is used, which may bring great performance regression.
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale/matmul_1024_1024_4096.log
+
+Best config:
+,None
+best runtime:  23.695728666666664
+compilation time:  3747.887714624405
+2048 1024 4096 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale
+Using tensorcore
+dense_tensorcore.cuda
+ConfigSpace (len=15552, space_map=
+   0 block_row_warps: OtherOption([1, 2, 4]) len=3
+   1 block_col_warps: OtherOption([1, 2, 4]) len=3
+   2 warp_row_tiles: OtherOption([1, 2, 4]) len=3
+   3 warp_col_tiles: OtherOption([1, 2, 4]) len=3
+   4 chunk: OtherOption([1, 2, 4, 8]) len=4
+   5 offset: OtherOption([0, 8]) len=2
+   6 offsetCS: OtherOption([0, 8]) len=2
+   7 vec: OtherOption([1, 2, 4, 8]) len=4
+   8 wmma_m: OtherOption([32, 16, 8]) len=3
+)
+Finish loading 1000 records
+Cannot find config for target=cuda -keys=cuda,gpu -max_num_threads=1024 -thread_warp_size=32, workload=('dense_tensorcore.cuda', ('TENSOR', (2048, 1024), 'float16'), ('TENSOR', (1024, 4096), 'float16')). A fallback configuration is used, which may bring great performance regression.
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale/matmul_2048_1024_4096.log
+
+Best config:
+,None
+best runtime:  3.547481724137931
+compilation time:  4508.283730745316
+4096 1024 4096 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale
+Using tensorcore
+dense_tensorcore.cuda
+ConfigSpace (len=15552, space_map=
+   0 block_row_warps: OtherOption([1, 2, 4]) len=3
+   1 block_col_warps: OtherOption([1, 2, 4]) len=3
+   2 warp_row_tiles: OtherOption([1, 2, 4]) len=3
+   3 warp_col_tiles: OtherOption([1, 2, 4]) len=3
+   4 chunk: OtherOption([1, 2, 4, 8]) len=4
+   5 offset: OtherOption([0, 8]) len=2
+   6 offsetCS: OtherOption([0, 8]) len=2
+   7 vec: OtherOption([1, 2, 4, 8]) len=4
+   8 wmma_m: OtherOption([32, 16, 8]) len=3
+)
+Finish loading 1000 records
+Cannot find config for target=cuda -keys=cuda,gpu -max_num_threads=1024 -thread_warp_size=32, workload=('dense_tensorcore.cuda', ('TENSOR', (4096, 1024), 'float16'), ('TENSOR', (1024, 4096), 'float16')). A fallback configuration is used, which may bring great performance regression.
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale/matmul_4096_1024_4096.log
+
+Best config:
+,None
+best runtime:  25.9128185
+compilation time:  3611.506828546524
+8192 1024 4096 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale
+Using tensorcore
+dense_tensorcore.cuda
+ConfigSpace (len=15552, space_map=
+   0 block_row_warps: OtherOption([1, 2, 4]) len=3
+   1 block_col_warps: OtherOption([1, 2, 4]) len=3
+   2 warp_row_tiles: OtherOption([1, 2, 4]) len=3
+   3 warp_col_tiles: OtherOption([1, 2, 4]) len=3
+   4 chunk: OtherOption([1, 2, 4, 8]) len=4
+   5 offset: OtherOption([0, 8]) len=2
+   6 offsetCS: OtherOption([0, 8]) len=2
+   7 vec: OtherOption([1, 2, 4, 8]) len=4
+   8 wmma_m: OtherOption([32, 16, 8]) len=3
+)
+Finish loading 1000 records
+Cannot find config for target=cuda -keys=cuda,gpu -max_num_threads=1024 -thread_warp_size=32, workload=('dense_tensorcore.cuda', ('TENSOR', (8192, 1024), 'float16'), ('TENSOR', (1024, 4096), 'float16')). A fallback configuration is used, which may bring great performance regression.
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale/matmul_8192_1024_4096.log
+
+Best config:
+,None
+best runtime:  16.210124714285712
+compilation time:  11561.609383583069
+16384 1024 4096 /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale
+Using tensorcore
+dense_tensorcore.cuda
+ConfigSpace (len=15552, space_map=
+   0 block_row_warps: OtherOption([1, 2, 4]) len=3
+   1 block_col_warps: OtherOption([1, 2, 4]) len=3
+   2 warp_row_tiles: OtherOption([1, 2, 4]) len=3
+   3 warp_col_tiles: OtherOption([1, 2, 4]) len=3
+   4 chunk: OtherOption([1, 2, 4, 8]) len=4
+   5 offset: OtherOption([0, 8]) len=2
+   6 offsetCS: OtherOption([0, 8]) len=2
+   7 vec: OtherOption([1, 2, 4, 8]) len=4
+   8 wmma_m: OtherOption([32, 16, 8]) len=3
+)
+Finish loading 1000 records
+Cannot find config for target=cuda -keys=cuda,gpu -max_num_threads=1024 -thread_warp_size=32, workload=('dense_tensorcore.cuda', ('TENSOR', (16384, 1024), 'float16'), ('TENSOR', (1024, 4096), 'float16')). A fallback configuration is used, which may bring great performance regression.
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/scale_out/matmul_bert_scale/matmul_16384_1024_4096.log
+
+Best config:
+,None
+best runtime:  13.759915875
+compilation time:  2894.8307390213013

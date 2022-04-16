@@ -1,0 +1,13 @@
+python pool.py 128 168 83 83 1 2 VALID 100000 > log/pool/pool_0.log 2>&1
+python pool.py 128 672 21 21 3 2 SAME 100000 > log/pool/pool_1.log 2>&1
+python pool.py 128 42 83 83 3 1 SAME 10000 > log/pool/pool_2.log 2>&1
+python pool.py 128 1008 42 42 1 2 VALID 10000 > log/pool/pool_3.log 2>&1
+python pool.py 128 336 42 42 3 2 SAME 100000 > log/pool/pool_4.log 2>&1
+python pool.py 128 84 83 83 3 2 SAME 100000 > log/pool/pool_5.log 2>&1
+python pool.py 128 672 11 11 3 1 SAME 100000 > log/pool/pool_6.log 2>&1
+python pool.py 128 96 165 165 1 2 VALID 10000 > log/pool/pool_7.log 2>&1
+python pool.py 128 2016 21 21 1 2 VALID 100000 > log/pool/pool_8.log 2>&1
+python pool.py 128 42 165 165 3 2 SAME 10000 > log/pool/pool_9.log 2>&1
+python pool.py 128 84 42 42 3 1 SAME 100000 > log/pool/pool_10.log 2>&1
+python pool.py 128 336 21 21 3 1 SAME 100000 > log/pool/pool_11.log 2>&1
+python pool.py 128 168 42 42 3 1 SAME 10000 > log/pool/pool_12.log 2>&1

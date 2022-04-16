@@ -1,0 +1,197 @@
+//1_83_2688_83_1_1
+//128_42_83_83_5_1_SAME
+//dim3 grid(1, 83, 2688);
+//dim3 block(83, 1, 1);
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(83) depthwise_kernel0(float* __restrict__ placeholder, float* __restrict__ placeholder1, float* __restrict__ DepthwiseConv2d) {
+  __shared__ float PaddedInput_shared[870];
+  __shared__ float placeholder_shared[50];
+  float PaddedInput_shared_local[50];
+  float placeholder_shared_local[50];
+  float DepthwiseConv2d_local[2];
+  PaddedInput_shared[(((int)threadIdx.x))] = (((2 <= ((int)blockIdx.y)) && (2 <= ((int)threadIdx.x))) ? placeholder[(((((((int)blockIdx.z) * 13778) + (((int)blockIdx.y) * 83)) + ((int)threadIdx.x)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 83))] = ((((2 <= (((((int)threadIdx.x) + 83) / 87) + ((int)blockIdx.y))) && (2 <= ((((int)threadIdx.x) + 83) % 87))) && (((((int)threadIdx.x) + 83) % 87) < 85)) ? placeholder[((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 83) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 83) % 87)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 166))] = ((((2 <= (((((int)threadIdx.x) + 166) / 87) + ((int)blockIdx.y))) && (2 <= ((((int)threadIdx.x) + 79) % 87))) && (((((int)threadIdx.x) + 79) % 87) < 85)) ? placeholder[((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 166) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 79) % 87)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 249))] = (((((((((int)threadIdx.x) + 249) / 87) + ((int)blockIdx.y)) < 85) && (2 <= ((((int)threadIdx.x) + 75) % 87))) && (((((int)threadIdx.x) + 75) % 87) < 85)) ? placeholder[((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 249) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 75) % 87)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 332))] = (((((((((int)threadIdx.x) + 332) / 87) + ((int)blockIdx.y)) < 85) && (2 <= ((((int)threadIdx.x) + 71) % 87))) && (((((int)threadIdx.x) + 71) % 87) < 85)) ? placeholder[((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 332) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 71) % 87)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 415))] = (((((2 <= ((((((int)threadIdx.x) + 415) % 435) / 87) + ((int)blockIdx.y))) && (((((((int)threadIdx.x) + 415) % 435) / 87) + ((int)blockIdx.y)) < 85)) && (2 <= ((((int)threadIdx.x) + 67) % 87))) && (((((int)threadIdx.x) + 67) % 87) < 85)) ? placeholder[(((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 415) / 435) * 6889)) + ((((((int)threadIdx.x) + 415) % 435) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 67) % 87)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 498))] = ((((2 <= (((((int)threadIdx.x) + 63) / 87) + ((int)blockIdx.y))) && (2 <= ((((int)threadIdx.x) + 63) % 87))) && (((((int)threadIdx.x) + 63) % 87) < 85)) ? placeholder[(((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 498) / 435) * 6889)) + (((((int)threadIdx.x) + 63) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 63) % 87)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 581))] = ((((2 <= (((((int)threadIdx.x) + 146) / 87) + ((int)blockIdx.y))) && (2 <= ((((int)threadIdx.x) + 59) % 87))) && (((((int)threadIdx.x) + 59) % 87) < 85)) ? placeholder[(((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 581) / 435) * 6889)) + (((((int)threadIdx.x) + 146) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 59) % 87)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 664))] = (((((((((int)threadIdx.x) + 229) / 87) + ((int)blockIdx.y)) < 85) && (2 <= ((((int)threadIdx.x) + 55) % 87))) && (((((int)threadIdx.x) + 55) % 87) < 85)) ? placeholder[(((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 664) / 435) * 6889)) + (((((int)threadIdx.x) + 229) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 55) % 87)) - 168))] : 0.000000e+00f);
+  PaddedInput_shared[((((int)threadIdx.x) + 747))] = (((((((((int)threadIdx.x) + 312) / 87) + ((int)blockIdx.y)) < 85) && (2 <= ((((int)threadIdx.x) + 51) % 87))) && (((((int)threadIdx.x) + 51) % 87) < 85)) ? placeholder[(((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 747) / 435) * 6889)) + (((((int)threadIdx.x) + 312) / 87) * 83)) + (((int)blockIdx.y) * 83)) + ((((int)threadIdx.x) + 51) % 87)) - 168))] : 0.000000e+00f);
+  if (((int)threadIdx.x) < 40) {
+    PaddedInput_shared[((((int)threadIdx.x) + 830))] = ((((((((int)threadIdx.x) + 395) / 87) + ((int)blockIdx.y)) < 85) && (((int)threadIdx.x) < 38)) ? placeholder[(((((((((int)blockIdx.z) * 13778) + (((((int)threadIdx.x) + 830) / 435) * 6889)) + (((((int)threadIdx.x) + 395) / 87) * 83)) + (((int)blockIdx.y) * 83)) + (((int)threadIdx.x) + 47)) - 168))] : 0.000000e+00f);
+  }
+  if (((int)threadIdx.x) < 50) {
+    placeholder_shared[(((int)threadIdx.x))] = placeholder1[((((((int)blockIdx.z) % 21) * 50) + ((int)threadIdx.x)))];
+  }
+  __syncthreads();
+  PaddedInput_shared_local[(0)] = PaddedInput_shared[(((int)threadIdx.x))];
+  PaddedInput_shared_local[(25)] = PaddedInput_shared[((((int)threadIdx.x) + 435))];
+  PaddedInput_shared_local[(1)] = PaddedInput_shared[((((int)threadIdx.x) + 1))];
+  PaddedInput_shared_local[(26)] = PaddedInput_shared[((((int)threadIdx.x) + 436))];
+  PaddedInput_shared_local[(2)] = PaddedInput_shared[((((int)threadIdx.x) + 2))];
+  PaddedInput_shared_local[(27)] = PaddedInput_shared[((((int)threadIdx.x) + 437))];
+  PaddedInput_shared_local[(3)] = PaddedInput_shared[((((int)threadIdx.x) + 3))];
+  PaddedInput_shared_local[(28)] = PaddedInput_shared[((((int)threadIdx.x) + 438))];
+  PaddedInput_shared_local[(4)] = PaddedInput_shared[((((int)threadIdx.x) + 4))];
+  PaddedInput_shared_local[(29)] = PaddedInput_shared[((((int)threadIdx.x) + 439))];
+  PaddedInput_shared_local[(5)] = PaddedInput_shared[((((int)threadIdx.x) + 87))];
+  PaddedInput_shared_local[(30)] = PaddedInput_shared[((((int)threadIdx.x) + 522))];
+  PaddedInput_shared_local[(6)] = PaddedInput_shared[((((int)threadIdx.x) + 88))];
+  PaddedInput_shared_local[(31)] = PaddedInput_shared[((((int)threadIdx.x) + 523))];
+  PaddedInput_shared_local[(7)] = PaddedInput_shared[((((int)threadIdx.x) + 89))];
+  PaddedInput_shared_local[(32)] = PaddedInput_shared[((((int)threadIdx.x) + 524))];
+  PaddedInput_shared_local[(8)] = PaddedInput_shared[((((int)threadIdx.x) + 90))];
+  PaddedInput_shared_local[(33)] = PaddedInput_shared[((((int)threadIdx.x) + 525))];
+  PaddedInput_shared_local[(9)] = PaddedInput_shared[((((int)threadIdx.x) + 91))];
+  PaddedInput_shared_local[(34)] = PaddedInput_shared[((((int)threadIdx.x) + 526))];
+  PaddedInput_shared_local[(10)] = PaddedInput_shared[((((int)threadIdx.x) + 174))];
+  PaddedInput_shared_local[(35)] = PaddedInput_shared[((((int)threadIdx.x) + 609))];
+  PaddedInput_shared_local[(11)] = PaddedInput_shared[((((int)threadIdx.x) + 175))];
+  PaddedInput_shared_local[(36)] = PaddedInput_shared[((((int)threadIdx.x) + 610))];
+  PaddedInput_shared_local[(12)] = PaddedInput_shared[((((int)threadIdx.x) + 176))];
+  PaddedInput_shared_local[(37)] = PaddedInput_shared[((((int)threadIdx.x) + 611))];
+  PaddedInput_shared_local[(13)] = PaddedInput_shared[((((int)threadIdx.x) + 177))];
+  PaddedInput_shared_local[(38)] = PaddedInput_shared[((((int)threadIdx.x) + 612))];
+  PaddedInput_shared_local[(14)] = PaddedInput_shared[((((int)threadIdx.x) + 178))];
+  PaddedInput_shared_local[(39)] = PaddedInput_shared[((((int)threadIdx.x) + 613))];
+  PaddedInput_shared_local[(15)] = PaddedInput_shared[((((int)threadIdx.x) + 261))];
+  PaddedInput_shared_local[(40)] = PaddedInput_shared[((((int)threadIdx.x) + 696))];
+  PaddedInput_shared_local[(16)] = PaddedInput_shared[((((int)threadIdx.x) + 262))];
+  PaddedInput_shared_local[(41)] = PaddedInput_shared[((((int)threadIdx.x) + 697))];
+  PaddedInput_shared_local[(17)] = PaddedInput_shared[((((int)threadIdx.x) + 263))];
+  PaddedInput_shared_local[(42)] = PaddedInput_shared[((((int)threadIdx.x) + 698))];
+  PaddedInput_shared_local[(18)] = PaddedInput_shared[((((int)threadIdx.x) + 264))];
+  PaddedInput_shared_local[(43)] = PaddedInput_shared[((((int)threadIdx.x) + 699))];
+  PaddedInput_shared_local[(19)] = PaddedInput_shared[((((int)threadIdx.x) + 265))];
+  PaddedInput_shared_local[(44)] = PaddedInput_shared[((((int)threadIdx.x) + 700))];
+  PaddedInput_shared_local[(20)] = PaddedInput_shared[((((int)threadIdx.x) + 348))];
+  PaddedInput_shared_local[(45)] = PaddedInput_shared[((((int)threadIdx.x) + 783))];
+  PaddedInput_shared_local[(21)] = PaddedInput_shared[((((int)threadIdx.x) + 349))];
+  PaddedInput_shared_local[(46)] = PaddedInput_shared[((((int)threadIdx.x) + 784))];
+  PaddedInput_shared_local[(22)] = PaddedInput_shared[((((int)threadIdx.x) + 350))];
+  PaddedInput_shared_local[(47)] = PaddedInput_shared[((((int)threadIdx.x) + 785))];
+  PaddedInput_shared_local[(23)] = PaddedInput_shared[((((int)threadIdx.x) + 351))];
+  PaddedInput_shared_local[(48)] = PaddedInput_shared[((((int)threadIdx.x) + 786))];
+  PaddedInput_shared_local[(24)] = PaddedInput_shared[((((int)threadIdx.x) + 352))];
+  PaddedInput_shared_local[(49)] = PaddedInput_shared[((((int)threadIdx.x) + 787))];
+  placeholder_shared_local[(0)] = placeholder_shared[(0)];
+  placeholder_shared_local[(25)] = placeholder_shared[(25)];
+  placeholder_shared_local[(1)] = placeholder_shared[(1)];
+  placeholder_shared_local[(26)] = placeholder_shared[(26)];
+  placeholder_shared_local[(2)] = placeholder_shared[(2)];
+  placeholder_shared_local[(27)] = placeholder_shared[(27)];
+  placeholder_shared_local[(3)] = placeholder_shared[(3)];
+  placeholder_shared_local[(28)] = placeholder_shared[(28)];
+  placeholder_shared_local[(4)] = placeholder_shared[(4)];
+  placeholder_shared_local[(29)] = placeholder_shared[(29)];
+  placeholder_shared_local[(5)] = placeholder_shared[(5)];
+  placeholder_shared_local[(30)] = placeholder_shared[(30)];
+  placeholder_shared_local[(6)] = placeholder_shared[(6)];
+  placeholder_shared_local[(31)] = placeholder_shared[(31)];
+  placeholder_shared_local[(7)] = placeholder_shared[(7)];
+  placeholder_shared_local[(32)] = placeholder_shared[(32)];
+  placeholder_shared_local[(8)] = placeholder_shared[(8)];
+  placeholder_shared_local[(33)] = placeholder_shared[(33)];
+  placeholder_shared_local[(9)] = placeholder_shared[(9)];
+  placeholder_shared_local[(34)] = placeholder_shared[(34)];
+  placeholder_shared_local[(10)] = placeholder_shared[(10)];
+  placeholder_shared_local[(35)] = placeholder_shared[(35)];
+  placeholder_shared_local[(11)] = placeholder_shared[(11)];
+  placeholder_shared_local[(36)] = placeholder_shared[(36)];
+  placeholder_shared_local[(12)] = placeholder_shared[(12)];
+  placeholder_shared_local[(37)] = placeholder_shared[(37)];
+  placeholder_shared_local[(13)] = placeholder_shared[(13)];
+  placeholder_shared_local[(38)] = placeholder_shared[(38)];
+  placeholder_shared_local[(14)] = placeholder_shared[(14)];
+  placeholder_shared_local[(39)] = placeholder_shared[(39)];
+  placeholder_shared_local[(15)] = placeholder_shared[(15)];
+  placeholder_shared_local[(40)] = placeholder_shared[(40)];
+  placeholder_shared_local[(16)] = placeholder_shared[(16)];
+  placeholder_shared_local[(41)] = placeholder_shared[(41)];
+  placeholder_shared_local[(17)] = placeholder_shared[(17)];
+  placeholder_shared_local[(42)] = placeholder_shared[(42)];
+  placeholder_shared_local[(18)] = placeholder_shared[(18)];
+  placeholder_shared_local[(43)] = placeholder_shared[(43)];
+  placeholder_shared_local[(19)] = placeholder_shared[(19)];
+  placeholder_shared_local[(44)] = placeholder_shared[(44)];
+  placeholder_shared_local[(20)] = placeholder_shared[(20)];
+  placeholder_shared_local[(45)] = placeholder_shared[(45)];
+  placeholder_shared_local[(21)] = placeholder_shared[(21)];
+  placeholder_shared_local[(46)] = placeholder_shared[(46)];
+  placeholder_shared_local[(22)] = placeholder_shared[(22)];
+  placeholder_shared_local[(47)] = placeholder_shared[(47)];
+  placeholder_shared_local[(23)] = placeholder_shared[(23)];
+  placeholder_shared_local[(48)] = placeholder_shared[(48)];
+  placeholder_shared_local[(24)] = placeholder_shared[(24)];
+  placeholder_shared_local[(49)] = placeholder_shared[(49)];
+  DepthwiseConv2d_local[(0)] = 0.000000e+00f;
+  DepthwiseConv2d_local[(1)] = 0.000000e+00f;
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(0)] * placeholder_shared_local[(0)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(25)] * placeholder_shared_local[(25)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(1)] * placeholder_shared_local[(1)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(26)] * placeholder_shared_local[(26)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(2)] * placeholder_shared_local[(2)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(27)] * placeholder_shared_local[(27)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(3)] * placeholder_shared_local[(3)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(28)] * placeholder_shared_local[(28)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(4)] * placeholder_shared_local[(4)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(29)] * placeholder_shared_local[(29)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(5)] * placeholder_shared_local[(5)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(30)] * placeholder_shared_local[(30)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(6)] * placeholder_shared_local[(6)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(31)] * placeholder_shared_local[(31)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(7)] * placeholder_shared_local[(7)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(32)] * placeholder_shared_local[(32)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(8)] * placeholder_shared_local[(8)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(33)] * placeholder_shared_local[(33)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(9)] * placeholder_shared_local[(9)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(34)] * placeholder_shared_local[(34)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(10)] * placeholder_shared_local[(10)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(35)] * placeholder_shared_local[(35)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(11)] * placeholder_shared_local[(11)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(36)] * placeholder_shared_local[(36)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(12)] * placeholder_shared_local[(12)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(37)] * placeholder_shared_local[(37)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(13)] * placeholder_shared_local[(13)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(38)] * placeholder_shared_local[(38)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(14)] * placeholder_shared_local[(14)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(39)] * placeholder_shared_local[(39)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(15)] * placeholder_shared_local[(15)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(40)] * placeholder_shared_local[(40)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(16)] * placeholder_shared_local[(16)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(41)] * placeholder_shared_local[(41)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(17)] * placeholder_shared_local[(17)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(42)] * placeholder_shared_local[(42)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(18)] * placeholder_shared_local[(18)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(43)] * placeholder_shared_local[(43)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(19)] * placeholder_shared_local[(19)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(44)] * placeholder_shared_local[(44)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(20)] * placeholder_shared_local[(20)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(45)] * placeholder_shared_local[(45)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(21)] * placeholder_shared_local[(21)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(46)] * placeholder_shared_local[(46)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(22)] * placeholder_shared_local[(22)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(47)] * placeholder_shared_local[(47)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(23)] * placeholder_shared_local[(23)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(48)] * placeholder_shared_local[(48)]));
+  DepthwiseConv2d_local[(0)] = (DepthwiseConv2d_local[(0)] + (PaddedInput_shared_local[(24)] * placeholder_shared_local[(24)]));
+  DepthwiseConv2d_local[(1)] = (DepthwiseConv2d_local[(1)] + (PaddedInput_shared_local[(49)] * placeholder_shared_local[(49)]));
+  DepthwiseConv2d[((((((int)blockIdx.z) * 13778) + (((int)blockIdx.y) * 83)) + ((int)threadIdx.x)))] = DepthwiseConv2d_local[(0)];
+  DepthwiseConv2d[(((((((int)blockIdx.z) * 13778) + (((int)blockIdx.y) * 83)) + ((int)threadIdx.x)) + 6889))] = DepthwiseConv2d_local[(1)];
+}
+

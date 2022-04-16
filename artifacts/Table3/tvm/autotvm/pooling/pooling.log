@@ -1,0 +1,634 @@
+avg 128 168 83 83 1 2 VALID
+avg_pooling_128_168_83_83_1_1_2_VALID.log
+best runtime: 3.3096852500
+compilation time: 4.443893909454346
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [37933056], []),
+             data: Buffer(data_2: Pointer(float32), float32, [148141056], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 37044;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    tensor_4[0] = (tensor_4[0] + data[(((floordiv(((blockIdx.x*256) + floordiv(threadIdx.x, 4)), 441)*6889) + (floordiv(floormod(((blockIdx.x*512) + floordiv(threadIdx.x, 2)), 882), 21)*166)) + (floormod(((blockIdx.x*1024) + threadIdx.x), 42)*2))])
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = tensor_4[0]
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  tensor1[0] = (tensor1[0] + data[((((((((int)blockIdx.x) * 256) + (((int)threadIdx.x) >> 2)) / 441) * 6889) + (((((((int)blockIdx.x) * 512) + (((int)threadIdx.x) >> 1)) % 882) / 21) * 166)) + ((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 42) * 2))]);
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = tensor1[0];
+}
+
+
+avg 128 672 21 21 3 2 SAME
+avg_pooling_128_672_21_21_3_3_2_SAME.log
+best runtime: 1.3672782500
+compilation time: 1.7029645442962646
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [10407936], []),
+             data: Buffer(data_2: Pointer(float32), float32, [37933056], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 10164;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((((1 <= ((floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 121), 11)*2) + rv0)) && ((floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 121), 11) + floordiv(rv0, 2)) < 11)) && (1 <= ((floormod(((blockIdx.x*1024) + threadIdx.x), 11)*2) + rv1))) && ((floordiv(rv1, 2) + floormod(((blockIdx.x*1024) + threadIdx.x), 11)) < 11)), data[((((((floordiv(((blockIdx.x*1024) + threadIdx.x), 121)*441) + (floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 121), 11)*42)) + (rv0*21)) + (floormod(((blockIdx.x*1024) + threadIdx.x), 11)*2)) + rv1) - 22)], 0f32, dtype=float32))
+      }
+    }
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      tensor1[0] = (tensor1[0] + (((((1 <= ((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 121) / 11) * 2) + rv0)) && ((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 121) / 11) + (rv0 >> 1)) < 11)) && (1 <= (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 11) * 2) + rv1))) && (((rv1 >> 1) + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 11)) < 11)) ? data[(((((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) / 121) * 441) + (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 121) / 11) * 42)) + (rv0 * 21)) + ((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 11) * 2)) + rv1) - 22)] : 0.000000e+00f));
+    }
+  }
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+}
+
+
+avg 128 42 83 83 3 1 SAME
+avg_pooling_128_42_83_83_3_3_1_SAME.log
+best runtime: 7.5889527500
+compilation time: 4.543089151382446
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [37035264], []),
+             data: Buffer(data_2: Pointer(float32), float32, [37035264], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 36168;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        if @tir.likely((((blockIdx.x*4) + floordiv(threadIdx.x, 256)) < 144669), dtype=bool) {
+          tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((((1 <= (floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 6889), 83) + rv0)) && ((floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 6889), 83) + rv0) < 84)) && (1 <= (rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 83)))) && ((rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 83)) < 84)), data[(((((blockIdx.x*1024) + (rv0*83)) + threadIdx.x) + rv1) - 84)], 0f32, dtype=float32))
+        }
+      }
+    }
+    if @tir.likely((((blockIdx.x*4) + floordiv(threadIdx.x, 256)) < 144669), dtype=bool) {
+      tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      if (((((int)blockIdx.x) * 4) + (((int)threadIdx.x) >> 8)) < 144669) {
+        tensor1[0] = (tensor1[0] + (((((1 <= (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 6889) / 83) + rv0)) && ((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 6889) / 83) + rv0) < 84)) && (1 <= (rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 83)))) && ((rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 83)) < 84)) ? data[(((((((int)blockIdx.x) * 1024) + (rv0 * 83)) + ((int)threadIdx.x)) + rv1) - 84)] : 0.000000e+00f));
+      }
+    }
+  }
+  if (((((int)blockIdx.x) * 4) + (((int)threadIdx.x) >> 8)) < 144669) {
+    tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+  }
+}
+
+
+avg 128 1008 42 42 1 2 VALID
+avg_pooling_128_1008_42_42_1_1_2_VALID.log
+best runtime: 5.1160280000
+compilation time: 6.520196437835693
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [56899584], []),
+             data: Buffer(data_2: Pointer(float32), float32, [227598336], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 55566;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    tensor_4[0] = (tensor_4[0] + data[((floordiv(((blockIdx.x*1024) + threadIdx.x), 21)*84) + (floormod(((blockIdx.x*1024) + threadIdx.x), 21)*2))])
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = tensor_4[0]
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  tensor1[0] = (tensor1[0] + data[(((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) / 21) * 84) + ((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 21) * 2))]);
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = tensor1[0];
+}
+
+
+avg 128 336 42 42 3 2 SAME
+avg_pooling_128_336_42_42_3_3_2_SAME.log
+best runtime: 2.5585867500
+compilation time: 2.8608548641204834
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [18966528], []),
+             data: Buffer(data_2: Pointer(float32), float32, [75866112], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 18522;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((1 <= ((floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 441), 21)*2) + rv0)) && (1 <= ((floormod(((blockIdx.x*1024) + threadIdx.x), 21)*2) + rv1))), data[(((((floordiv(((blockIdx.x*1024) + threadIdx.x), 21)*84) + (rv0*42)) + (floormod(((blockIdx.x*1024) + threadIdx.x), 21)*2)) + rv1) - 43)], 0f32, dtype=float32))
+      }
+    }
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      tensor1[0] = (tensor1[0] + (((1 <= ((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 441) / 21) * 2) + rv0)) && (1 <= (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 21) * 2) + rv1))) ? data[((((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) / 21) * 84) + (rv0 * 42)) + ((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 21) * 2)) + rv1) - 43)] : 0.000000e+00f));
+    }
+  }
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+}
+
+
+avg 128 84 83 83 3 2 SAME
+avg_pooling_128_84_83_83_3_3_2_SAME.log
+best runtime: 2.6934722500
+compilation time: 2.9005508422851562
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [18966528], []),
+             data: Buffer(data_2: Pointer(float32), float32, [74070528], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 18522;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((((1 <= ((floordiv(floormod(((blockIdx.x*512) + floordiv(threadIdx.x, 2)), 882), 21)*2) + rv0)) && ((floordiv(floormod(((blockIdx.x*512) + floordiv(threadIdx.x, 2)), 882), 21) + floordiv(rv0, 2)) < 42)) && (1 <= ((floormod(((blockIdx.x*1024) + threadIdx.x), 42)*2) + rv1))) && ((floordiv(rv1, 2) + floormod(((blockIdx.x*1024) + threadIdx.x), 42)) < 42)), data[((((((floordiv(((blockIdx.x*256) + floordiv(threadIdx.x, 4)), 441)*6889) + (floordiv(floormod(((blockIdx.x*512) + floordiv(threadIdx.x, 2)), 882), 21)*166)) + (rv0*83)) + (floormod(((blockIdx.x*1024) + threadIdx.x), 42)*2)) + rv1) - 84)], 0f32, dtype=float32))
+      }
+    }
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      tensor1[0] = (tensor1[0] + (((((1 <= ((((((((int)blockIdx.x) * 512) + (((int)threadIdx.x) >> 1)) % 882) / 21) * 2) + rv0)) && ((((((((int)blockIdx.x) * 512) + (((int)threadIdx.x) >> 1)) % 882) / 21) + (rv0 >> 1)) < 42)) && (1 <= (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 42) * 2) + rv1))) && (((rv1 >> 1) + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 42)) < 42)) ? data[(((((((((((int)blockIdx.x) * 256) + (((int)threadIdx.x) >> 2)) / 441) * 6889) + (((((((int)blockIdx.x) * 512) + (((int)threadIdx.x) >> 1)) % 882) / 21) * 166)) + (rv0 * 83)) + ((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 42) * 2)) + rv1) - 84)] : 0.000000e+00f));
+    }
+  }
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+}
+
+
+avg 128 672 11 11 3 1 SAME
+avg_pooling_128_672_11_11_3_3_1_SAME.log
+best runtime: 0.9845885000
+compilation time: 1.1645336151123047
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [10407936], []),
+             data: Buffer(data_2: Pointer(float32), float32, [10407936], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 10164;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((((1 <= (floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 121), 11) + rv0)) && ((floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 121), 11) + rv0) < 12)) && (1 <= (rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 11)))) && ((rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 11)) < 12)), data[(((((blockIdx.x*1024) + (rv0*11)) + threadIdx.x) + rv1) - 12)], 0f32, dtype=float32))
+      }
+    }
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      tensor1[0] = (tensor1[0] + (((((1 <= (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 121) / 11) + rv0)) && ((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 121) / 11) + rv0) < 12)) && (1 <= (rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 11)))) && ((rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 11)) < 12)) ? data[(((((((int)blockIdx.x) * 1024) + (rv0 * 11)) + ((int)threadIdx.x)) + rv1) - 12)] : 0.000000e+00f));
+    }
+  }
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+}
+
+
+avg 128 96 165 165 1 2 VALID
+avg_pooling_128_96_165_165_1_1_2_VALID.log
+best runtime: 7.0968205000
+compilation time: 9.274043321609497
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [84652032], []),
+             data: Buffer(data_2: Pointer(float32), float32, [334540800], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 82668;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    tensor_4[0] = (tensor_4[0] + data[(((floordiv(((blockIdx.x*1024) + threadIdx.x), 6889)*27225) + (floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 6889), 83)*330)) + (floormod(((blockIdx.x*1024) + threadIdx.x), 83)*2))])
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = tensor_4[0]
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  tensor1[0] = (tensor1[0] + data[((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) / 6889) * 27225) + (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 6889) / 83) * 330)) + ((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 83) * 2))]);
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = tensor1[0];
+}
+
+
+avg 128 2016 21 21 1 2 VALID
+avg_pooling_128_2016_21_21_1_1_2_VALID.log
+best runtime: 2.9591132500
+compilation time: 3.6827645301818848
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [31223808], []),
+             data: Buffer(data_2: Pointer(float32), float32, [113799168], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 30492;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    tensor_4[0] = (tensor_4[0] + data[(((floordiv(((blockIdx.x*1024) + threadIdx.x), 121)*441) + (floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 121), 11)*42)) + (floormod(((blockIdx.x*1024) + threadIdx.x), 11)*2))])
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = tensor_4[0]
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  tensor1[0] = (tensor1[0] + data[((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) / 121) * 441) + (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 121) / 11) * 42)) + ((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 11) * 2))]);
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = tensor1[0];
+}
+
+
+avg 128 42 165 165 3 2 SAME
+avg_pooling_128_42_165_165_3_3_2_SAME.log
+best runtime: 9.1326895000
+compilation time: 6.731616258621216
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [37035264], []),
+             data: Buffer(data_2: Pointer(float32), float32, [146361600], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 36168;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        if @tir.likely((((blockIdx.x*4) + floordiv(threadIdx.x, 256)) < 144669), dtype=bool) {
+          tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((((1 <= ((floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 6889), 83)*2) + rv0)) && ((floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 6889), 83) + floordiv(rv0, 2)) < 83)) && (1 <= ((floormod(((blockIdx.x*1024) + threadIdx.x), 83)*2) + rv1))) && ((floordiv(rv1, 2) + floormod(((blockIdx.x*1024) + threadIdx.x), 83)) < 83)), data[((((((floordiv(((blockIdx.x*1024) + threadIdx.x), 6889)*27225) + (floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 6889), 83)*330)) + (rv0*165)) + (floormod(((blockIdx.x*1024) + threadIdx.x), 83)*2)) + rv1) - 166)], 0f32, dtype=float32))
+        }
+      }
+    }
+    if @tir.likely((((blockIdx.x*4) + floordiv(threadIdx.x, 256)) < 144669), dtype=bool) {
+      tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+    }
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      if (((((int)blockIdx.x) * 4) + (((int)threadIdx.x) >> 8)) < 144669) {
+        tensor1[0] = (tensor1[0] + (((((1 <= ((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 6889) / 83) * 2) + rv0)) && ((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 6889) / 83) + (rv0 >> 1)) < 83)) && (1 <= (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 83) * 2) + rv1))) && (((rv1 >> 1) + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 83)) < 83)) ? data[(((((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) / 6889) * 27225) + (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 6889) / 83) * 330)) + (rv0 * 165)) + ((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 83) * 2)) + rv1) - 166)] : 0.000000e+00f));
+      }
+    }
+  }
+  if (((((int)blockIdx.x) * 4) + (((int)threadIdx.x) >> 8)) < 144669) {
+    tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+  }
+}
+
+
+avg 128 84 42 42 3 1 SAME
+avg_pooling_128_84_42_42_3_3_1_SAME.log
+best runtime: 1.9377765000
+compilation time: 1.8107542991638184
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [18966528], []),
+             data: Buffer(data_2: Pointer(float32), float32, [18966528], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 18522;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((((1 <= (floordiv(floormod(((blockIdx.x*512) + floordiv(threadIdx.x, 2)), 882), 21) + rv0)) && ((floordiv(floormod(((blockIdx.x*512) + floordiv(threadIdx.x, 2)), 882), 21) + rv0) < 43)) && (1 <= (rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 42)))) && ((rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 42)) < 43)), data[(((((blockIdx.x*1024) + (rv0*42)) + threadIdx.x) + rv1) - 43)], 0f32, dtype=float32))
+      }
+    }
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      tensor1[0] = (tensor1[0] + (((((1 <= (((((((int)blockIdx.x) * 512) + (((int)threadIdx.x) >> 1)) % 882) / 21) + rv0)) && ((((((((int)blockIdx.x) * 512) + (((int)threadIdx.x) >> 1)) % 882) / 21) + rv0) < 43)) && (1 <= (rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 42)))) && ((rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 42)) < 43)) ? data[(((((((int)blockIdx.x) * 1024) + (rv0 * 42)) + ((int)threadIdx.x)) + rv1) - 43)] : 0.000000e+00f));
+    }
+  }
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+}
+
+
+avg 128 336 21 21 3 1 SAME
+avg_pooling_128_336_21_21_3_3_1_SAME.log
+best runtime: 1.8072880000
+compilation time: 1.7478008270263672
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [18966528], []),
+             data: Buffer(data_2: Pointer(float32), float32, [18966528], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 18522;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((((1 <= (floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 441), 21) + rv0)) && ((floordiv(floormod(((blockIdx.x*1024) + threadIdx.x), 441), 21) + rv0) < 22)) && (1 <= (rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 21)))) && ((rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 21)) < 22)), data[(((((blockIdx.x*1024) + (rv0*21)) + threadIdx.x) + rv1) - 22)], 0f32, dtype=float32))
+      }
+    }
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      tensor1[0] = (tensor1[0] + (((((1 <= (((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 441) / 21) + rv0)) && ((((((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 441) / 21) + rv0) < 22)) && (1 <= (rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 21)))) && ((rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 21)) < 22)) ? data[(((((((int)blockIdx.x) * 1024) + (rv0 * 21)) + ((int)threadIdx.x)) + rv1) - 22)] : 0.000000e+00f));
+    }
+  }
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+}
+
+
+avg 128 168 42 42 3 1 SAME
+avg_pooling_128_168_42_42_3_3_1_SAME.log
+best runtime: 3.9270907500
+compilation time: 3.125702142715454
+Lowered TIR:
+@main = primfn(data_1: handle, tensor_1: handle) -> ()
+  attr = {"from_legacy_te_schedule": True, "global_symbol": "main", "tir.noalias": True}
+  buffers = {tensor: Buffer(tensor_2: Pointer(float32), float32, [37933056], []),
+             data: Buffer(data_2: Pointer(float32), float32, [37933056], [])}
+  buffer_map = {data_1: data, tensor_1: tensor} {
+  attr [IterVar(blockIdx.x: int32, (nullptr), "ThreadIndex", "blockIdx.x")] "thread_extent" = 37044;
+  allocate(tensor_3: Pointer(local float32), float32, [1]), storage_scope = local;
+  attr [IterVar(threadIdx.x: int32, (nullptr), "ThreadIndex", "threadIdx.x")] "thread_extent" = 1024 {
+    tensor_4: Buffer(tensor_3, float32, [1], [], scope="local", align=4)[0] = 0f32
+    for (rv0: int32, 0, 3) {
+      for (rv1: int32, 0, 3) {
+        tensor_4[0] = (tensor_4[0] + @tir.if_then_else(((((1 <= (floordiv(floormod(((blockIdx.x*512) + floordiv(threadIdx.x, 2)), 882), 21) + rv0)) && ((floordiv(floormod(((blockIdx.x*512) + floordiv(threadIdx.x, 2)), 882), 21) + rv0) < 43)) && (1 <= (rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 42)))) && ((rv1 + floormod(((blockIdx.x*1024) + threadIdx.x), 42)) < 43)), data[(((((blockIdx.x*1024) + (rv0*42)) + threadIdx.x) + rv1) - 43)], 0f32, dtype=float32))
+      }
+    }
+    tensor[((blockIdx.x*1024) + threadIdx.x)] = (tensor_4[0]*0.111111f32)
+  }
+}
+
+
+
+#ifdef _WIN32
+  using uint = unsigned int;
+  using uchar = unsigned char;
+  using ushort = unsigned short;
+  using int64_t = long long;
+  using uint64_t = unsigned long long;
+#else
+  #define uint unsigned int
+  #define uchar unsigned char
+  #define ushort unsigned short
+  #define int64_t long long
+  #define uint64_t unsigned long long
+#endif
+extern "C" __global__ void __launch_bounds__(1024) default_function_kernel0(float* __restrict__ data, float* __restrict__ tensor) {
+  float tensor1[1];
+  tensor1[0] = 0.000000e+00f;
+  for (int rv0 = 0; rv0 < 3; ++rv0) {
+    for (int rv1 = 0; rv1 < 3; ++rv1) {
+      tensor1[0] = (tensor1[0] + (((((1 <= (((((((int)blockIdx.x) * 512) + (((int)threadIdx.x) >> 1)) % 882) / 21) + rv0)) && ((((((((int)blockIdx.x) * 512) + (((int)threadIdx.x) >> 1)) % 882) / 21) + rv0) < 43)) && (1 <= (rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 42)))) && ((rv1 + (((((int)blockIdx.x) * 1024) + ((int)threadIdx.x)) % 42)) < 43)) ? data[(((((((int)blockIdx.x) * 1024) + (rv0 * 42)) + ((int)threadIdx.x)) + rv1) - 43)] : 0.000000e+00f));
+    }
+  }
+  tensor[((((int)blockIdx.x) * 1024) + ((int)threadIdx.x))] = (tensor1[0] * 1.111111e-01f);
+}
+
+

@@ -1,0 +1,54 @@
+128 42 83 83 42 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_42_83_83_42_1_1_1_VALID.log
+
+Best config:
+[('tile_f', [-1, 3, 1, 14]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,43578
+[Tensor(shape=[128, 42, 83, 83], op.name=placeholder), Tensor(shape=[42, 42, 1, 1], op.name=placeholder), Tensor(shape=[128, 42, 83, 83], op.name=compute)]
+best runtime:  0.47917455952380955
+compilation time:  2813.459843158722
+128 96 83 83 42 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_96_83_83_42_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 14, 1, 3]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 83, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 1500), ('unroll_explicit', 1)],None,64039
+[Tensor(shape=[128, 96, 83, 83], op.name=placeholder), Tensor(shape=[42, 96, 1, 1], op.name=placeholder), Tensor(shape=[128, 42, 83, 83], op.name=compute)]
+best runtime:  1.046354505154639
+compilation time:  2793.2507586479187
+128 96 165 165 42 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_96_165_165_42_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 21, 1, 2]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 1, 165, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,13213726
+[Tensor(shape=[128, 96, 165, 165], op.name=placeholder), Tensor(shape=[42, 96, 1, 1], op.name=placeholder), Tensor(shape=[128, 42, 165, 165], op.name=compute)]
+best runtime:  3.737918666666667
+compilation time:  7661.944536924362
+128 336 21 21 336 1 1 1 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_336_21_21_336_1_1_1_VALID.log
+
+Best config:
+[('tile_f', [-1, 2, 3, 7]), ('tile_y', [-1, 3, 1, 1]), ('tile_x', [-1, 1, 21, 1]), ('tile_rc', [-1, 4]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 0)],None,3369893
+[Tensor(shape=[128, 336, 21, 21], op.name=placeholder), Tensor(shape=[336, 336, 1, 1], op.name=placeholder), Tensor(shape=[128, 336, 21, 21], op.name=compute)]
+best runtime:  1.4125833661971832
+compilation time:  2666.269138813019
+128 336 42 42 168 1 1 1 SAME /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_336_42_42_168_1_1_1_SAME.log
+
+Best config:
+[('tile_f', [-1, 2, 3, 14]), ('tile_y', [-1, 3, 1, 1]), ('tile_x', [-1, 1, 42, 1]), ('tile_rc', [-1, 3]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 1]), ('auto_unroll_max_step', 512), ('unroll_explicit', 1)],None,108012438
+[Tensor(shape=[128, 336, 42, 42], op.name=placeholder), Tensor(shape=[168, 336, 1, 1], op.name=placeholder), Tensor(shape=[128, 168, 42, 42], op.name=compute)]
+best runtime:  2.408677738095238
+compilation time:  3554.3931620121
+128 3 331 331 96 3 3 2 VALID /home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv
+Finish loading 1000 records
+/home/shanbinke/TiledCompiler/tiled-compiler/microbenchmark/tvm/autotvm/conv/conv2d_128_3_331_331_96_3_3_2_VALID.log
+
+Best config:
+[('tile_f', [-1, 1, 4, 6]), ('tile_y', [-1, 1, 1, 1]), ('tile_x', [-1, 11, 15, 1]), ('tile_rc', [-1, 1]), ('tile_ry', [-1, 1]), ('tile_rx', [-1, 3]), ('auto_unroll_max_step', 0), ('unroll_explicit', 0)],None,3971240
+[Tensor(shape=[128, 3, 331, 331], op.name=placeholder), Tensor(shape=[96, 3, 3, 3], op.name=placeholder), Tensor(shape=[128, 96, 165, 165], op.name=compute)]
+best runtime:  3.13765978125
+compilation time:  6637.746349096298

@@ -17,13 +17,14 @@ RUN mkdir /root/nnfusion/artifacts/.deps && curl https://repo.anaconda.com/archi
 RUN apt install -y pkg-config zip g++ zlib1g-dev unzip && curl -L https://github.com/bazelbuild/bazel/releases/download/0.26.1/bazel-0.26.1-installer-linux-x86_64.sh -o /root/nnfusion/artifacts/.deps/bazel-0.26.1-installer-linux-x86_64.sh && bash /root/nnfusion/artifacts/.deps/bazel-0.26.1-installer-linux-x86_64.sh --prefix=/root/nnfusion/artifacts/.deps/bazel-0.26.1
 
 # Clone source code
-RUN git clone https://github.com/apache/tvm /root/nnfusion/artifacts/.deps/tvm-0.8 && cd /root/nnfusion/artifacts/.deps/tvm-0.8 && git checkout 22ba6523cbd14fc44a1b093c482c1d02f3bc4fa5
+RUN git clone https://github.com/apache/tvm /root/nnfusion/artifacts/.deps/tvm-0.8 && cd /root/nnfusion/artifacts/.deps/tvm-0.8 && git checkout 22ba6523cbd14fc44a1b093c482c1d02f3bc4fa5 && git apply /root/nnfusion/artifacts/dockerfile/tvm-autotvm-dense.diff
 RUN git clone https://github.com/apache/tvm /root/nnfusion/artifacts/.deps/tvm-0.8-codegen && cd /root/nnfusion/artifacts/.deps/tvm-0.8-codegen && git checkout 22ba6523cbd14fc44a1b093c482c1d02f3bc4fa5 && git apply /root/nnfusion/artifacts/dockerfile/tvm-codegen.diff
 RUN git clone https://github.com/tensorflow/tensorflow /root/nnfusion/artifacts/.deps/tensorflow-trt && cd /root/nnfusion/artifacts/.deps/tensorflow-trt && git checkout 5d80e1e8e6ee999be7db39461e0e79c90403a2e4 && cp /root/nnfusion/artifacts/dockerfile/compile_tf_trt7.sh /root/nnfusion/artifacts/.deps/tensorflow-trt/compile.sh && chmod +x /root/nnfusion/artifacts/.deps/tensorflow-trt/compile.sh
 
 # install gnuplot
 RUN apt install -y libcairo2-dev libpango1.0-dev
-RUN cd /root/nnfusion/artifacts/.deps/ && wget --no-check-certificate https://versaweb.dl.sourceforge.net/project/gnuplot/gnuplot/5.2.8/gnuplot-5.2.8.tar.gz && tar zxf gnuplot-5.2.8.tar.gz && cd gnuplot-5.2.8 && ./configure && make -j && make install
+# RUN cd /root/nnfusion/artifacts/.deps/ && wget --no-check-certificate https://versaweb.dl.sourceforge.net/project/gnuplot/gnuplot/5.2.8/gnuplot-5.2.8.tar.gz && tar zxf gnuplot-5.2.8.tar.gz && cd gnuplot-5.2.8 && ./configure && make -j && make install
+RUN cd /root/nnfusion/artifacts/.deps/ && wget --no-check-certificate https://versaweb.dl.sourceforge.net/project/gnuplot/gnuplot/5.0.6/gnuplot-5.0.6.tar.gz && tar zxf gnuplot-5.0.6.tar.gz && cd gnuplot-5.0.6 && ./configure && make -j && make install
 
 # install rammer
 # To be removed when open-sourced in github
@@ -56,3 +57,6 @@ export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$
 ' >> /root/.bashrc
 
 RUN bash /root/nnfusion/maint/script/install_dependency.sh
+
+RUN mkdir -p /root/nnfusion/artifacts/wheel
+RUN cd /root/nnfusion/artifacts/wheel && wget https://github.com/microsoft/nnfusion/raw/osdi20_artifact/artifacts/wheel/tensorflow-1.15.2-cp36-cp36m-linux_x86_64.whl

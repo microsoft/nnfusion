@@ -1,4 +1,4 @@
-SOURCE_DIR=/home/v-zhuho/TiledCompiler-1/tiled-compiler
+SOURCE_DIR=../roller
 LOGS_DIR=$SOURCE_DIR/logs/roller/wo_storage_align/scale/
 CURRENT_DIR=$PWD
 

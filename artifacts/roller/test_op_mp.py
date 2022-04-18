@@ -197,7 +197,7 @@ def get_tvm_source(rprog, arch, policy, dtype):
     return func.imported_modules[0].get_source()
 
 
-def compile_and_run_kernel(rprog, op, arch, policy, device_id, log_name, idx):
+def compile_and_run_kernel(rprog, op, arch, policy, device_id, idx):
     block_size = rprog.GetParallelism(1) * (32 if args.use_tc else 1)
     grid_size = rprog.GetParallelism(0)
     blocks = (block_size, 1, 1)
@@ -221,13 +221,19 @@ def compile_and_run_kernel(rprog, op, arch, policy, device_id, log_name, idx):
         blocks = (block_x, block_y, block_z)
         grids = (grid_x, grid_y, 1)
 
-    file_name = '{}_{}_{}_{}_{}'.format(
+    file_name = '{}_{}_{}_{}_{}_{}'.format(
         args.op,
         '_'.join([str(d) for d in args.shape]),
+        device_id,
         idx,
         '_'.join([str(d) for d in grids]),
         '_'.join([str(d) for d in blocks])
     )
+    log_name = "tmp_{}_{}_{}_{}".format(
+        args.op,
+        '_'.join([str(d) for d in args.shape]),
+        device_id,
+        idx)
     with open('{}.cu'.format(file_name), 'w') as ouf:
         ouf.write(main_source)
     os.system("/usr/local/cuda/bin/nvcc {}.cu -lcuda -gencode=arch=compute_70,code=compute_70 -o {} && " \
@@ -236,11 +242,12 @@ def compile_and_run_kernel(rprog, op, arch, policy, device_id, log_name, idx):
         "rm {} && " \
         "rm {}.cu".format(file_name, file_name, device_id, file_name, log_name, file_name, file_name))
 
-    return get_time_from_nvprof_file(log_name), source, blocks, grids
+    exec_time = get_time_from_nvprof_file(log_name)
+    os.system("rm {}".format(log_name))
+    return exec_time, source, blocks, grids
 
 
 def eval_thread(rprogs, rprog_idx, device_id, op, arch, policy):
-    log_name = "tmp" + args.op + str(device_id)
     best_time = 1e100
     best_idx = 0
     top1_time = -1
@@ -249,7 +256,7 @@ def eval_thread(rprogs, rprog_idx, device_id, op, arch, policy):
     best_grids = None
     for idx in range(rprog_idx[device_id], rprog_idx[device_id + 1]):
         rprog = rprogs[idx]
-        exec_time, source, blocks, grids = compile_and_run_kernel(rprog, op, arch, policy, device_id, log_name, idx)
+        exec_time, source, blocks, grids = compile_and_run_kernel(rprog, op, arch, policy, device_id, idx)
         if exec_time < best_time:
             best_idx = idx
             best_time = exec_time
@@ -258,7 +265,6 @@ def eval_thread(rprogs, rprog_idx, device_id, op, arch, policy):
             best_grids = grids
         if idx == 0 and device_id == 0:
             top1_time = exec_time
-    os.system("rm {}".format(log_name))
     return best_time, best_idx, top1_time, best_source, best_blocks, best_grids
 
 

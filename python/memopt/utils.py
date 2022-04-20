@@ -3,7 +3,7 @@ from .graph import OutputNode, PlaceHolderNode
 import tvm
 from .modify_input_pass import modify_input_pass
 from .modify_output_pass import modify_output_pass
-from .debug_pass import get_kernel_info_pass
+from .debug_pass import debug_pass, get_kernel_info_pass
 from .scope import Scope, get_scope
 from .schedule_rewrite import CodeGenerator
 from .bestfit import BestFit
@@ -18,6 +18,13 @@ import tempfile
 _tvm_default_name = "default_function_kernel0"
 _type_map = {"float32" : "float"}
 
+def get_valid_name(var):
+    if var.name.find(".") >= 0:
+        name = var.name[:var.name.index(".")]
+    else:
+        name = var.name
+    return name if var.value_index == 0 else name + str(var.value_index)
+
 def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_name, global_kernel=True):
     passes = [
         (0, modify_output_pass),
@@ -29,7 +36,7 @@ def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_n
     scope = get_scope()
     # from .debug import debug
     # debug({**globals(), **locals()})
-    func_args = ", ".join(["{}* __restrict__ {}".format(_type_map[var.dtype], var.name) for var in args])
+    func_args = ", ".join(["{}* __restrict__ {}".format(_type_map[var.dtype], get_valid_name(var)) for var in args])
     with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
         scope.shared_mem_outputs = sm_outputs
         scope.shared_mem_inputs = sm_inputs
@@ -146,15 +153,13 @@ def compose_global_kernel(topo_order, configs, target, name):
         shared_inputs = []
         shared_outputs = []
         shared_inputs_idx = []
-        shared_outputs_idx = []
         for input in op.inputs:
             if not isinstance(input.src_node, PlaceHolderNode):
                 shared_inputs.append(op.args[input.dst_id].name)
                 shared_inputs_idx.append(input.dst_id)
         for output in op.outputs:
             if not isinstance(output.dst_node, OutputNode):
-                shared_outputs.append(op.args[len(op.inputs)+output.src_id].name)
-                shared_outputs_idx.append(output.src_id)
+                shared_outputs.append(len(op.inputs)+output.src_id)
             shared_outputs = list(set(shared_outputs)) # unique
         sch = cgen.rewrite_schedule(sch, config, True, True, target_stage=op.args[-1].name, tile_blacklist=shared_inputs)
         with Scope(sch) as scope:
@@ -170,11 +175,10 @@ def compose_global_kernel(topo_order, configs, target, name):
             # from .debug import debug
             # debug({**globals(), **locals()})
             block_map[op] = {}
-            for idx, var_name in zip(shared_outputs_idx, shared_outputs):
-                num_bytes = scope.exteral_shared_memroy_size[var_name]
+            for idx in shared_outputs:
+                num_bytes = scope.exteral_shared_memroy_size[idx]
                 block = allocator.malloc(num_bytes)
-                block_map[op][idx] = block
-                print(block)
+                block_map[op][idx-len(op.inputs)] = block
             internal_shared_mem = allocator.malloc(scope.total_interal_shared_memory)
             for idx, var_name in zip(shared_inputs_idx, shared_inputs):
                 num_bytes = scope.exteral_shared_memroy_size[var_name]
@@ -194,12 +198,12 @@ def compose_global_kernel(topo_order, configs, target, name):
                     arg_list.append("({}*)(shared+{})".format(dtype, block_map[src_node][src_id].start))
                 else:
                     arg_list.append(kernel_args_name_map[op.args[idx]])
-            for idx in range(len(op.args) - len(op.inputs)):
-                if idx in shared_outputs_idx:
-                    dtype = _type_map[op.args[idx+len(op.inputs)].dtype]
-                    arg_list.append("({}*)(shared+{})".format(dtype, block_map[op][idx].start))
+            for idx in range(len(op.inputs), len(op.args)):
+                if idx in shared_outputs:
+                    dtype = _type_map[op.args[idx].dtype]
+                    arg_list.append("({}*)(shared+{})".format(dtype, block_map[op][idx-len(op.inputs)].start))
                 else:
-                    arg_list.append(kernel_args_name_map[op.args[idx+len(op.inputs)]])
+                    arg_list.append(kernel_args_name_map[op.args[idx]])
             arg_list.append("shared+{}".format(internal_shared_mem.start))
             call_str = func_name + "(" + ", ".join(arg_list) + ");"
             statements.append(call_str)

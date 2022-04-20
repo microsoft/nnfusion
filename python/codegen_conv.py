@@ -22,10 +22,10 @@ sch = te.create_schedule(Y.op)
 saxis_names = [axis.var.name for axis in sch[Y].op.axis]
 raxis_names = [axis.var.name for axis in sch[Y].op.reduce_axis]
 cgen = CodeGenerator()
-sch = cgen.rewrite_schedule(sch, codegen_dict, True, True, tile_blacklist=[])
+sch = cgen.recursive_schedule_up(sch, codegen_dict, tile_blacklist=[])
 
 with memopt.Scope(sch) as scope:
-    kernel_code = memopt.build_op(sch, [X, K, Y], target, [Y.name], [], name="MyPointWiseConv", global_kernel=True)
+    kernel_code = memopt.build_op(sch, [X, K, Y], target, [-1], [], name="MyPointWiseConv", global_kernel=True)
     code = memopt.utils.append_host_call(kernel_code, scope.block_size, scope.grid_size, 3, "MyPointWiseConv", True)
     print(code)
     lib = memopt.utils.compile_and_load(code)

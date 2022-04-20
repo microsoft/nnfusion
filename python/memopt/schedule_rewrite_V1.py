@@ -244,7 +244,7 @@ class CodeGenerator:
             out_shape = op.output(0).shape
             for tensor in op.input_tensors:
                 if isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
-                and np.prod(out_shape) > np.prod(tensor.shape):
+                and len(out_shape) > len(tensor.shape): # is broadcast
                     tensor_shared = self.sche.cache_read(tensor, "shared", [op])
                     self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
                     self.cooperative_fetch(tensor_shared, self.sche)

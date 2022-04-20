@@ -1,7 +1,7 @@
 mkdir -p ./logs/conv
 CODE_DIR=./src
 LOG_DIR=./logs/conv
-REPEAT_TIME=10000
+REPEAT_TIME=1000
 python3 -u $CODE_DIR/conv.py 128 128 28 28 128 3 3 1 1 SAME $REPEAT_TIME 2>&1 |tee $LOG_DIR/conv0_128_128_28_28_128_3_3_1_1_SAME.log
 python3 -u $CODE_DIR/conv.py 128 128 58 58 128 3 3 2 1 VALID $REPEAT_TIME 2>&1 |tee $LOG_DIR/conv1_128_128_58_58_128_3_3_2_1_VALID.log
 python3 -u $CODE_DIR/conv.py 128 256 30 30 256 3 3 2 1 VALID $REPEAT_TIME 2>&1 |tee $LOG_DIR/conv2_128_256_30_30_256_3_3_2_1_VALID.log

@@ -1,7 +1,7 @@
 mkdir -p ./logs/depthwiseconv
 CODE_DIR=./src
 LOG_DIR=./logs/depthwiseconv
-REPEAT_TIME=10000
+REPEAT_TIME=1000
 python3 -u $CODE_DIR/depthwise.py 128 84 83 83 5 2 1 SAME $REPEAT_TIME 2>&1 |tee $LOG_DIR/depthwiseconv0_128_84_83_83_5_2_1_SAME.log
 python3 -u $CODE_DIR/depthwise.py 128 42 83 83 5 1 1 SAME $REPEAT_TIME 2>&1 |tee $LOG_DIR/depthwiseconv1_128_42_83_83_5_1_1_SAME.log
 python3 -u $CODE_DIR/depthwise.py 128 336 21 21 5 1 1 SAME $REPEAT_TIME 2>&1 |tee $LOG_DIR/depthwiseconv2_128_336_21_21_5_1_1_SAME.log

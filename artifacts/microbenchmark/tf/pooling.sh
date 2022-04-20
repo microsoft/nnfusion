@@ -1,7 +1,7 @@
 mkdir -p ./logs/pooling
 CODE_DIR=./src
 LOG_DIR=./logs/pooling
-REPEAT_TIME=10000
+REPEAT_TIME=1000
 python3 -u $CODE_DIR/pool.py 128 168 83 83 1 2 VALID $REPEAT_TIME 2>&1 |tee $LOG_DIR/pooling0_avg_128_168_83_83_1_2_VALID.log
 python3 -u $CODE_DIR/pool.py 128 672 21 21 3 2 SAME $REPEAT_TIME 2>&1 |tee $LOG_DIR/pooling1_avg_128_672_21_21_3_2_SAME.log
 python3 -u $CODE_DIR/pool.py 128 42 83 83 3 1 SAME $REPEAT_TIME 2>&1 |tee $LOG_DIR/pooling2_avg_128_42_83_83_3_1_SAME.log

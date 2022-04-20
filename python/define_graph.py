@@ -21,7 +21,7 @@ config = {
 }
 target = tvm.target.cuda(arch="sm_61")
 code, block_size, grid_size, args = compose_global_kernel(topo, config, target, name="Fused")
-code = append_host_call(code, block_size, grid_size, 4, name="Fused", measure_time=True)
+code = append_host_call(code, block_size, grid_size, len(args), name="Fused", measure_time=True)
 print(args)
 lib = compile_and_load(code)
 lib.function.restype = ctypes.c_float

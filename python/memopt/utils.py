@@ -43,6 +43,7 @@ def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_n
         mod = tvm.build(sch, args, target=target)
 
         src = mod.imported_modules[0].get_source()
+        print(src)
         index = src.index("{")
         if global_kernel:
             prefix = "__global__ void __launch_bounds__(%d) " % np.prod(scope.block_size)
@@ -121,19 +122,16 @@ def can_free(node, out_id, done_ops):
 def compose_global_kernel(topo_order, configs, target, name):
     # check inputs and outputs
     kernel_args_name_map = {}
-    num_inputs, num_outputs = 0, 0
     for op in topo_order:
         if isinstance(op, (PlaceHolderNode, OutputNode)):
             continue
         else:
             for edge in op.inputs:
                 if isinstance(edge.src_node, PlaceHolderNode):
-                    kernel_args_name_map[op.args[edge.dst_id]] = "input"+str(num_inputs)
-                    num_inputs += 1
+                    kernel_args_name_map[op.args[edge.dst_id]] = "input"+str(edge.src_node.node_id)
             for edge in op.outputs:
                 if isinstance(edge.dst_node, OutputNode):
-                    kernel_args_name_map[op.args[edge.src_id+len(op.inputs)]] = "output"+str(num_outputs)
-                    num_outputs += 1
+                    kernel_args_name_map[op.args[edge.src_id+len(op.inputs)]] = "output"+str(edge.dst_node.node_id)
 
     # -------------------------------------------------
     cgen = CodeGenerator()
@@ -214,7 +212,7 @@ def compose_global_kernel(topo_order, configs, target, name):
         print(stmt)
     kernel_args_dtype_map = {v : _type_map[k.dtype] for k, v in kernel_args_name_map.items()}
     kernel_args_name = ["{}* {}".format(kernel_args_dtype_map[arg], arg)
-        for arg in sorted(kernel_args_name_map.values())]
+        for arg in sorted(set(kernel_args_name_map.values()))]
     prefix = "__global__ void __launch_bounds__({}) {}({})".format(
         np.prod(scope.block_size), name,
         ", ".join(kernel_args_name)
@@ -226,5 +224,11 @@ def compose_global_kernel(topo_order, configs, target, name):
         code.write("  "+stmt+"\n")
     code.write("}\n")
 
-    args = sorted(kernel_args_name_map, key = lambda k: kernel_args_name_map[k])
+    # fused kernel args
+    args = []
+    for name in sorted(set(kernel_args_name_map.values())):
+        for k, v in kernel_args_name_map.items():
+            if v == name:
+                args.append(k)
+                break
     return code.getvalue(), block_size, grid_size, args

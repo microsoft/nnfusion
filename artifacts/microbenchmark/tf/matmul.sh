@@ -1,7 +1,7 @@
 mkdir -p ./logs/matmul
 CODE_DIR=./src
 LOG_DIR=./logs/matmul
-REPEAT_TIME=10000
+REPEAT_TIME=1000
 python3 -u $CODE_DIR/matmul.py 65536 2 1024 $REPEAT_TIME 2>&1 | tee $LOG_DIR/matmul0_65536_1024_2.log
 python3 -u $CODE_DIR/matmul.py 128 4032 1000 $REPEAT_TIME 2>&1 | tee $LOG_DIR/matmul1_128_1000_4032.log
 python3 -u $CODE_DIR/matmul.py 128 2048 1000 $REPEAT_TIME 2>&1 | tee $LOG_DIR/matmul2_128_1000_2048.log

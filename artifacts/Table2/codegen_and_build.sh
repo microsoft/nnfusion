@@ -26,7 +26,7 @@ cd ../rammer_roller/
 cp ../roller_kernels/bert_kernels/kernel_cache.db $HOME/.cache/nnfusion
 nnfusion ../frozen_models/frozen_pbs/frozen_bert_large_infer_bs128.const_folded.pb \
     -f tensorflow -b nnfusion -m graph -fkernel_fusion_level=3 -fblockfusion_level=1 \
-    -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=1000 -fproduct_name="Tesla V100-PCIE-16GB" \
+    -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=100 -fproduct_name="Tesla V100-PCIE-16GB" \
     -fbiasadd_fix=1 -fpattern_substitution=1 -fcodegen_debug=0 -fkernels_as_files=true -fkernels_files_number=60
 
 cd nnfusion_rt/cuda_codegen
@@ -50,7 +50,7 @@ cd ../rammer_roller/
 cp ../roller_kernels/nasnet_kernels/kernel_cache.db $HOME/.cache/nnfusion
 nnfusion ../frozen_models/frozen_pbs/frozen_nasnet_large_nchw_infer_bs128.const_folded.pb \
     -f tensorflow -b nnfusion -m graph -fkernel_fusion_level=3 -fblockfusion_level=1 \
-    -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=1000 -fproduct_name="Tesla V100-PCIE-16GB" \
+    -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=100 -fproduct_name="Tesla V100-PCIE-16GB" \
     -fbiasadd_fix=1 -fcnhw=1 -fpattern_substitution=1 -fcodegen_debug=0 -fkernels_as_files=true -fkernels_files_number=60
 
 cd nnfusion_rt/cuda_codegen
@@ -74,7 +74,7 @@ cd ../rammer_roller/
 cp ../roller_kernels/lstm_kernels/kernel_cache.db $HOME/.cache/nnfusion
 nnfusion ../frozen_models/frozen_pbs/frozen_lstm_infer_bs128.const_folded.pb \
     -f tensorflow -b nnfusion -m graph -fkernel_fusion_level=3 -fblockfusion_level=1 \
-    -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=1000 -fproduct_name="Tesla V100-PCIE-16GB" \
+    -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=100 -fproduct_name="Tesla V100-PCIE-16GB" \
     -fbiasadd_fix=1 -fpattern_substitution=1 -fcodegen_debug=0 -fkernels_as_files=true -fkernels_files_number=60
 
 cd nnfusion_rt/cuda_codegen
@@ -97,7 +97,7 @@ cd ../rammer_roller/
 cp ../roller_kernels/resnet_kernels/kernel_cache.db $HOME/.cache/nnfusion
 nnfusion ../frozen_models/frozen_pbs/frozen_resnet50_infer_bs128.const_folded.pb \
     -f tensorflow -b nnfusion -m graph -fkernel_fusion_level=3 -fblockfusion_level=1 \
-    -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=1000 -fproduct_name="Tesla V100-PCIE-16GB" \
+    -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=100 -fproduct_name="Tesla V100-PCIE-16GB" \
     -fbiasadd_fix=1 -fpattern_substitution=1 -fcodegen_debug=0 -fkernels_as_files=true -fkernels_files_number=60
 
 cd nnfusion_rt/cuda_codegen

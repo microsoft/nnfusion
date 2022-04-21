@@ -11,7 +11,7 @@ exe_dir=$current_dir/ansor_autotvm_exe
 
 nnfusion=~/nnfusion/build/src/tools/nnfusion/nnfusion
 model_dir=$current_dir/frozen_models/frozen_pbs
-flag="-f tensorflow -b nnfusion -m graph -fkernel_fusion_level=3 -fblockfusion_level=1 -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=1000 -fkernels_as_files=true -fkernels_files_number=60 -fproduct_name=\"Tesla V100-PCIE-16GB\" -fpattern_substitution=1"
+flag="-f tensorflow -b nnfusion -m graph -fkernel_fusion_level=3 -fblockfusion_level=1 -fconst_folding_backend=CUDA -fwarmup_step=5 -frun_step=100 -fkernels_as_files=true -fkernels_files_number=60 -fproduct_name=\"Tesla V100-PCIE-16GB\" -fpattern_substitution=1"
 bert_model=${model_dir}/frozen_lstm_infer_bs128.const_folded.pb
 lstm_model=${model_dir}/frozen_lstm_infer_bs128.const_folded.pb
 nasnet_model=${model_dir}/frozen_nasnet_large_nchw_infer_bs128.const_folded.pb

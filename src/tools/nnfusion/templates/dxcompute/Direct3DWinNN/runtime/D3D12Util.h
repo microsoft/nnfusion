@@ -1031,33 +1031,135 @@ namespace antares {
 
         }
 
+#ifdef _GAMING_XBOX_SCARLETT
+        static std::vector<std::wstring> getXboxFlags(const std::string& text, std::string mode = "cu")
+        {
+            // Currently dxcompiler for xbox cann't work properly for some shaders thus hanging GPU.
+            // Before compiler team's fix, two additional flags are added to explicitly prohibit generating these shaders.
+            // 1. -D__XBOX_PER_THREAD_SCRATCH_SIZE_LIMIT_IN_BYTES=0, disable scratch usage
+            // 2. -D__XBOX_MAX_VGPR_COUNT=[VGPR_COUNT], limit VGPR as below:
+            //  ThreadGroup Size    Num Wave32s	Max VGPRs(CU_MODE)	Max VGPRs(wgp mode)
+            //  256x1x1	    8	    256	                            256
+            //  512x1x1	    16	    128	                            256
+            //  1024x1x1	32	    64	                            128
+            //  2048x1x1	64	    32	                            64
+
+            std::vector<std::wstring> flags{ L"-D__XBOX_PER_THREAD_SCRATCH_SIZE_LIMIT_IN_BYTES=0" };
+
+            // extract thread size from target snippet like [numthreads(870, 1, 1)]
+            size_t threadSize = 1;
+            size_t start = text.find("[numthreads(");
+            if (start != string::npos)
+            {
+                size_t startX = start + strlen("[numthreads(");
+                size_t endX = text.find(",", startX);
+                size_t startY = endX + 1;
+                size_t endY = text.find(",", startY);
+                size_t startZ = endY + 1;
+                size_t endZ = text.find(")", startZ);
+                if (endX != string::npos && endY != string::npos && endZ != string::npos)
+                {
+                    size_t threadX = std::stoi(text.substr(startX, endX - startX));
+                    size_t threadY = std::stoi(text.substr(startY, endY - startY));
+                    size_t threadZ = std::stoi(text.substr(startZ, endZ - startZ));
+                    threadSize = threadX * threadY * threadZ;
+                }
+            }
+
+            static auto getVgprLimit = [](int threadSize, std::string mode) -> size_t
+            {
+                if (mode == "cu")
+                {
+                    if (threadSize <= 256)
+                        return 256;
+                    else if (threadSize <= 512)
+                        return 128;
+                    else if (threadSize <= 1024)
+                        return 64;
+                    else if (threadSize <= 2048)
+                        return 32;
+                    else
+                        return 0;
+                }
+                else if (mode == "wgp")
+                {
+                    if (threadSize <= 256)
+                        return 256;
+                    else if (threadSize <= 512)
+                        return 256;
+                    else if (threadSize <= 1024)
+                        return 128;
+                    else if (threadSize <= 2048)
+                        return 64;
+                    else
+                        return 0;
+                }
+                return 0;
+            };
+
+            size_t vgprLimit = getVgprLimit(threadSize, mode);
+            if (vgprLimit > 0 && vgprLimit < 256)
+            {
+                flags.push_back(L"-D__XBOX_MAX_VGPR_COUNT=" + std::to_wstring(vgprLimit));
+            }
+            return flags;
+        }
+#endif
+
         ComPtr<IDxcBlob> Compile(LPCVOID pText, UINT32 size, LPCWSTR entryName, LPCWSTR profile)
         {
-            ComPtr<IDxcBlob> pRet;
+            ComPtr<IDxcBlob> pRet = nullptr;
             ComPtr<IDxcBlobEncoding> pSrcBlob;
             IFE(m_pLibrary->CreateBlobWithEncodingOnHeapCopy(pText, size, CP_UTF8, &pSrcBlob));
-            ComPtr<IDxcOperationResult> pResult;
-            // Just set a random name "ShaderFile"
-            const WCHAR* args[] = { NULL };
-            // const WCHAR* args[] = { L"-enable-templates", L"-enable-16bit-types", NULL }; // TODO: will be supported in HLSL 2021 & cs_6_2
-            if (FAILED(m_pCompiler->Compile(pSrcBlob.Get(), L"ShaderFile", entryName, profile, args, sizeof(args) / sizeof(*args) - 1, NULL, 0, NULL, &pResult)))
+            ComPtr<IDxcOperationResult> pResult = nullptr;
+
+            std::vector<const WCHAR*> args_i;
+#ifdef _GAMING_XBOX_SCARLETT
+            std::vector<std::wstring> args = getXboxFlags((char*)pText);
+            for (size_t i = 0; i < args.size(); i++)
             {
-                if (pResult)
+                args_i.push_back(args[i].c_str());
+            }
+#endif
+            args_i.push_back(NULL);
+            // Just set a random name "ShaderFile"
+            // const WCHAR* args[] = { L"-enable-templates", L"-enable-16bit-types", NULL }; // TODO: will be supported in HLSL 2021 & cs_6_2
+            std::string errStr;
+            if (SUCCEEDED(m_pCompiler->Compile(pSrcBlob.Get(), L"ShaderFile", entryName, profile, args_i.data(), args_i.size() - 1, NULL, 0, NULL, &pResult)))
+            {
+                HRESULT pStatus;
+                if (SUCCEEDED(pResult->GetStatus(&pStatus)) && SUCCEEDED(pStatus))
+                {
+                    pResult->GetResult(&pRet);
+                }
+                else
                 {
                     ComPtr<IDxcBlobEncoding> pErrorsBlob;
-                    if (SUCCEEDED(pResult->GetErrorBuffer(&pErrorsBlob)))
+                    if (SUCCEEDED(pResult->GetErrorBuffer(&pErrorsBlob)) && pErrorsBlob)
                     {
-                        if (pErrorsBlob)
-                        {
-                            printf("Compilation Error:\n%s\n", (const char*)pErrorsBlob->GetBufferPointer());
-                            return nullptr;
-                        }
+                        errStr = std::string("Compilation Error:\n") + (char*)pErrorsBlob->GetBufferPointer() + "\n";
                     }
                 }
             }
             else
             {
-                pResult->GetResult(&pRet);
+                if (pResult)
+                {
+                    ComPtr<IDxcBlobEncoding> pErrorsBlob;
+                    if (SUCCEEDED(pResult->GetErrorBuffer(&pErrorsBlob)) && pErrorsBlob)
+                    {
+                        errStr = std::string("Compilation Error:\n") + (char*)pErrorsBlob->GetBufferPointer() + "\n";
+                    }
+                }
+            }
+
+            if (pRet == nullptr)
+            {
+                if (errStr.empty())
+                {
+                    errStr = "Compilation Error:\nUnknown error\n";
+                }
+                printf(errStr.c_str());
             }
             return pRet;
         }

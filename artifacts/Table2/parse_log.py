@@ -43,7 +43,18 @@ for model in model_name_list:
 print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("TF-TRT", 
             str(trt_time[0]), str(trt_time[1]), str(trt_time[2]), str(trt_time[3])))
 
-# TODO ansor time
+# ansor time
+ansor_time = []
+for model in model_name_list:
+    try:
+        with open('logs/ansor_{}.log'.format(model), 'r') as f:
+            for line in f:
+                if line.startswith('Summary:'):
+                    ansor_time.append(float(line.split(',')[1]))
+    except:
+        ansor_time.append(-1)
+print("{:20s} {:12s} {:12s} {:12s} {:12s}".format("Ansor(TVM)",
+            str(ansor_time[0]), str(ansor_time[1]), str(ansor_time[2]), str(ansor_time[3])))
 
 # rammer + tvm time
 rammer_autotvm_time = []

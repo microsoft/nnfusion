@@ -52,9 +52,9 @@ for model in model_name_list:
                 if line.startswith('Summary:'):
                     ansor_time.append(float(line.split(',')[1]) * 1000)
     except:
-        ansor_time.append(0.0)
-print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Ansor(TVM)",
-            str(ansor_time[0])[:12], str(ansor_time[1])[:10], str(ansor_time[2])[:10], str(ansor_time[3])[:10]))
+        ansor_time.append(-1)
+print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Ansor",
+            "N/A" if ansor_time[0] < 0 else str(ansor_time[0])[:12], str(ansor_time[1])[:10], str(ansor_time[2])[:10], str(ansor_time[3])[:10]))
 
 # rammer + tvm time
 rammer_autotvm_time = []

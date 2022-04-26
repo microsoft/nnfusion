@@ -168,7 +168,7 @@ def main(_):
                 print("Iteration time %f ms" % (iter_time))
             profile_stop()
 
-            print("Iteration time: [min, max, mean] = [%f, %f, %f] ms" % (
+            print("Summary: [min, max, mean] = [%f, %f, %f] ms" % (
                 min(iter_times), max(iter_times), sum(iter_times) / len(iter_times)))
 
         else:

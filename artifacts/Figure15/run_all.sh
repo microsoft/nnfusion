@@ -6,18 +6,21 @@ TF_DIR=../microbenchmark/tf
 TF_LOGS_DIR=$TF_DIR/logs/tc_matmul/
 
 # Step1: reproduce results and generate roller's log file
+# Estimated running time: 2min
 source ../scripts/profile_tvm_codegen.profile
 cd $SOURCE_DIR
-bash script_v1/tc_mm.sh
+time bash script_v1/tc_mm.sh
 
 # Step2: reproduce results and generate TF's log file
+# Estimated running time: 2min
 cd $TF_DIR
-bash tc_matmul.sh
+time bash tc_matmul.sh
 
 # Step3: reproduce ansor and tvm results and collect their logs to autotvm_tensor_core.log
+# Estimated running time: 30s
 cd $CURRENT_DIR
 source ../scripts/profile_tvm.profile
-bash run_ansor_autotvm.sh
+time bash run_ansor_autotvm.sh
 
 # Step4: process roller's log files and generate .dat file
 cd $CURRENT_DIR

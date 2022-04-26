@@ -1,5 +1,5 @@
-PARSE=/home/shanbinke/nnfusion/src/tools/nnfusion/kernel_db/parse_code.py
-INJ=/home/shanbinke/nnfusion/src/tools/nnfusion/kernel_db/convert_external.py
+PARSE=~/nnfusion/src/tools/nnfusion/kernel_db/parse_code.py
+INJ=~/nnfusion/src/tools/nnfusion/kernel_db/convert_external.py
 
 if [ $2 == "ansor" ]; then
   prefix="ansor_"

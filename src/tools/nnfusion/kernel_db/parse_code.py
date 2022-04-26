@@ -87,11 +87,19 @@ with open(source_file, 'r', encoding='utf-8') as f:
             if match:
                 lb = match.group()
                 line = line.replace(lb, "")
-            kernel_name = re.search("void .*_kernel0", line).group()
-            # print(kernel_name)
-            line = line.replace(kernel_name, "void " + tvm_func_name)
-            code += line
-            flag = True
+            try:
+                kernel_name = re.search("void .*_kernel0", line).group()
+                line = line.replace(kernel_name, "void " + tvm_func_name)
+                code += line
+                flag = True
+            except:
+                pass
+            #print(line)
+            #kernel_name = re.search("void .*_kernel0", line).group()
+            ## print(kernel_name)
+            #line = line.replace(kernel_name, "void " + tvm_func_name)
+            #code += line
+            #flag = True
         if "dim3 grid(" in line:
             line = line.split("(")[1].split(")")[0].split(",")
             for i in line:

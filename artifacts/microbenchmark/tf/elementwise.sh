@@ -1,7 +1,7 @@
 mkdir -p ./logs/elementwise
 CODE_DIR=./src
 LOG_DIR=./logs/elementwise
-REPEAT_TIME=10000
+REPEAT_TIME=1000
 python3 -u $CODE_DIR/element.py 128 1008 42 42 $REPEAT_TIME 2>&1 |tee $LOG_DIR/elementwise0_128_1008_42_42.log
 python3 -u $CODE_DIR/element.py 128 256 14 14 $REPEAT_TIME 2>&1 |tee $LOG_DIR/elementwise1_128_256_14_14.log
 python3 -u $CODE_DIR/element.py 128 1024 14 14 $REPEAT_TIME 2>&1 |tee $LOG_DIR/elementwise2_128_1024_14_14.log

@@ -6,26 +6,28 @@ source .profile
 
 
 # Step1: Generate Roller kernels and compile end-to-end models with NNFusion(Rammer). 
-# NOTE: this whole step will take long time.
+# Estimated running time: 95min
 source ../scripts/profile_tvm_codegen.profile
-bash codegen_and_build.sh
+time bash codegen_and_build.sh
 
 
 # Step2: Run Tensorflow and TF-XLA baselines
+# Estimated running time: 16min
 mkdir logs
-
 cd tf-xla/
-bash run_tf_xla.sh
+time bash run_tf_xla.sh
 cd ..
 
 # Step3: Run TensorRT baseline
+# Estimated running time: 6min
 cd trt/
-bash run_trt.sh
+time bash run_trt.sh
 cd ..
 
 # Step4: Run TVM and Ansor baseline
+# Estimated running time: 170min
 source ../scripts/profile_tvm.profile
-bash run_ansor_autotvm.sh
+time bash run_ansor_autotvm.sh
 
 # Step5: Run Rammer+Roller code that compiled by Step1.
 cd rammer_roller/

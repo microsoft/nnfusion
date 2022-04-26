@@ -13,7 +13,6 @@ mkdir rammer_roller
 rm -rf $HOME/.cache/nnfusion
 mkdir -p $HOME/.cache/nnfusion
 
-rm -rf logs
 mkdir logs
 
 # bert

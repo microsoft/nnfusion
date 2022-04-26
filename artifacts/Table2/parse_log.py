@@ -50,11 +50,11 @@ for model in model_name_list:
         with open('logs/ansor_{}.log'.format(model), 'r') as f:
             for line in f:
                 if line.startswith('Summary:'):
-                    ansor_time.append(float(line.split(',')[1]))
+                    ansor_time.append(float(line.split(',')[1]) * 1000)
     except:
-        ansor_time.append(-1)
-print("{:20s} {:12s} {:12s} {:12s} {:12s}".format("Ansor(TVM)",
-            str(ansor_time[0]), str(ansor_time[1]), str(ansor_time[2]), str(ansor_time[3])))
+        ansor_time.append(0.0)
+print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Ansor(TVM)",
+            str(ansor_time[0])[:12], str(ansor_time[1])[:10], str(ansor_time[2])[:10], str(ansor_time[3])[:10]))
 
 # rammer + tvm time
 rammer_autotvm_time = []
@@ -64,7 +64,7 @@ for model in model_name_list_ansor_autotvm:
             if 'Summary: [min, max, mean]' in line:
                 rammer_autotvm_time.append(get_tf_avg_time(line))
 print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Rammer+TVM", 
-            str(rammer_autotvm_time[0]), str(rammer_autotvm_time[1]), str(rammer_autotvm_time[2]), str(rammer_autotvm_time[3])))
+            str(rammer_autotvm_time[0])[:11], str(rammer_autotvm_time[1]), str(rammer_autotvm_time[2]), str(rammer_autotvm_time[3])))
 
 # rammer + ansor time
 rammer_ansor_time = []
@@ -126,7 +126,7 @@ ansor_compile_time.append(get_ansor_e2e_log('logs/frozen_resnet50_infer_bs128.pb
 #         ansor_compile_time.append(sum(compile_time))
 
 print("{:20s}{:12s}{:12s}{:12s}{:12s}".format("Ansor compile-time", 
-            str(ansor_compile_time[0] / 3600) + 'h(TVM)', str(ansor_compile_time[1] / 3600) + 'h', str(ansor_compile_time[2] / 3600) + 'h', str(ansor_compile_time[3] / 3600) + 'h'))
+            str(ansor_compile_time[0] / 3600)[:4] + 'h(TVM)', str(ansor_compile_time[1] / 3600)[:4] + 'h', str(ansor_compile_time[2] / 3600)[:4] + 'h', str(ansor_compile_time[3] / 3600)[:4] + 'h'))
 
 # roller compile time
 roller_compile_time = []

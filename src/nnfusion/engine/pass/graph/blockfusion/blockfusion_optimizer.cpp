@@ -186,6 +186,13 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
         return false;
     }
 
+    auto ke = std::dynamic_pointer_cast<BlockCudaEmitter>(kernel);
+    if (ke->get_grid_dim().x * ke->get_grid_dim().y * ke->get_grid_dim().z >= 80 * 10)
+    {
+        //NNFUSION_LOG(INFO) << "Skip large operator";
+        return false;
+    }
+
     // TODO(lingm): process shared_memory and local_thread_sync for AntaresCudaKernelEmitter and CustomCudaKernelEmitter
     if (std::dynamic_pointer_cast<AntaresCudaKernelEmitter>(kernel) != nullptr ||
         std::dynamic_pointer_cast<CustomCudaKernelEmitter>(kernel) != nullptr)

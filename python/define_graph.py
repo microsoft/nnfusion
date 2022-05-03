@@ -16,8 +16,8 @@ f = op.OutputNode(e)
 topo = op.topo_order([a, b, d])
 print(topo)
 config = {
-    c : {'k': [8, 1], 'x': [16, 4], 'y': [16, 8]},
-    e : {'k': [8, 1], 'x': [16, 4], 'y': [16, 8]},
+    c : {'k': [16, 1], 'x': [8, 4], 'y': [16, 8]},
+    e : {'k': [16, 1], 'x': [8, 4], 'y': [16, 8]},
 }
 target = tvm.target.cuda(arch="sm_61")
 code, block_size, grid_size, args = compose_global_kernel(topo, config, target, name="Fused")
@@ -35,6 +35,6 @@ for arg in args:
 
 tm = lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
 assert(tm > 0)
-print(tm)
+print(memopt.utils.profile(lib, args))
 ref = torch.matmul(torch.matmul(torch_arrs[0], torch_arrs[1]), torch_arrs[2])
 assert(torch.max(torch.abs(ref - torch_arrs[3])) < 1e-3)

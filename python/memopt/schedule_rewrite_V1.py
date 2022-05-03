@@ -221,8 +221,11 @@ class CodeGenerator:
         reduce_outer_axis, reduce_inner_axis = [], []
         space_axis = list(self.sche[reg_tile].op.axis)
         for axis in self.sche[reg_tile].op.reduce_axis:
-            factor = self.tiling[axis.var.name][0]
-            ro, ri = self.sche[reg_tile].split(axis, factor=factor)
+            if axis.var.name not in self.tiling:
+                ro, ri = self.sche[reg_tile].split(axis, nparts=1)
+            else:
+                factor = self.tiling[axis.var.name][0]
+                ro, ri = self.sche[reg_tile].split(axis, factor=factor)
             reduce_outer_axis.append(ro)
             reduce_inner_axis.append(ri)
         axis_order = reduce_outer_axis + reduce_inner_axis + space_axis

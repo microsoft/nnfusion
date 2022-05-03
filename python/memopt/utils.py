@@ -93,7 +93,7 @@ extern "C" float function({}) {{
     else:
         template = """
 extern "C" void function({}) {{
-    default_function_kernel0<<<{}, {}>>>({});
+    {}<<<{}, {}>>>({});
 }}
 """
     header = "#include <cuda_runtime.h>\n"
@@ -105,6 +105,7 @@ def compile_and_load(kernel_code):
     lib_name = src.name.replace(".cu", ".so")
     src.write(kernel_code)
     src.flush()
+    # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -o {}".format(src.name, lib_name))
     ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -gencode=arch=compute_61,code=compute_61 -o {}".format(src.name, lib_name))
     assert(ret == 0)
     lib = ctypes.CDLL(lib_name)

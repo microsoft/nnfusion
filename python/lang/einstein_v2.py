@@ -621,7 +621,7 @@ def emit_tvm_ir_v2(exprss, input_dict, extra_outputs):
             for x in props['reduce_axes']:
                 axis_name = warp_axis(x['name'])
                 reduce_set.append(axis_name)
-                reduce_body += '%s = loop(%d); ' % (axis_name, x['range'])
+                reduce_body += '%s = loop(%d, "%s"); ' % (axis_name, x['range'], axis_name)
             reduce_maps = {'+': 'te.sum', '>': 'te.max', '<': 'te.min'}
             if props['reduce_type'] in reduce_maps:
                 reduce_func = reduce_maps[props['reduce_type']]

@@ -86,11 +86,11 @@ def input(name, shape, dtype="float32"):  # pylint:disable=redefined-builtin
     return result
 
 
-def loop(length, start=0):
+def loop(length, name="rv", start=0):
     """
     Reduce axis definition
     """
-    return te.reduce_axis((start, length))
+    return te.reduce_axis((start, length), name=name)
 
 
 def output(shape,  # pylint:disable=too-many-arguments

@@ -6,25 +6,30 @@ import numpy as np
 from .einstein_v2 import parse_to_ast
 
 class Statement():
-    def __init__(self, output: str, dependent_region: dict, analyzer: arith.Analyzer, var_map: OrderedDict):
+    def __init__(self, output: str, dependent_region: dict, var_map: OrderedDict, range_map: OrderedDict):
         self.output = output
         self.dependent_region = dependent_region
-        self.analyzer = analyzer
         self.var_map = var_map
+        self.range_map = range_map
 
 class InputShapeInference():
     def __init__(self, deps: List[Statement]):
         self.deps = deps
 
-    def _infer(self, shape: Dict[str, List[arith.ConstIntBound]]):
+    def _infer(self, shape: Dict[str, List[arith.ConstIntBound]], rstep: Dict[str, int]):
         shape = shape.copy()
         for dep in reversed(self.deps):
+            ana = arith.Analyzer()
             for var, bound in zip(dep.var_map.values(), shape[dep.output]):
-                dep.analyzer.update(var, bound)
+                ana.update(var, bound)
+            for var, bound in dep.range_map.items():
+                if var.name in rstep:
+                    bound = arith.ConstIntBound(0, min(bound.max_value, rstep[var.name] - 1))
+                ana.update(var, bound)
             for name, regions in dep.dependent_region.items():
                 assert(len(regions) == 1) # TODO: merge if there is multiple region for one input
                 for region in regions:
-                    bounds = [dep.analyzer.const_int_bound(index) for index in region]
+                    bounds = [ana.const_int_bound(index) for index in region]
                 shape[name] = bounds
 
         shape = dict(filter(lambda x: x[0].startswith("input"), shape.items()))
@@ -33,10 +38,10 @@ class InputShapeInference():
             assert(np.prod(shape[name]) < 1e8) # checking
         return shape
 
-    def infer(self, shape):
+    def infer(self, shape, rstep: Dict[str, int] = {}):
         if isinstance(shape, (list, tuple)):
             shape = {"output0" : [arith.ConstIntBound(0, val - 1) for val in shape]}
-        return self._infer(shape)
+        return self._infer(shape, rstep)
 
 def get_analyzer(expr: str, input_dict: dict, extra_outputs: Iterable) -> InputShapeInference:
     statements = [s_.strip() for s_ in expr.split(';')]
@@ -74,15 +79,15 @@ def _build_dependency(ast):
     data_axes = props['data_axes']
     reduce_axes = props['reduce_axes']
 
-    analyzer = arith.Analyzer()
     var_map = OrderedDict()
+    range_map = OrderedDict()
     for ax in data_axes:
         ax_name = ax['name']
         var_map[ax_name] = te.var(ax_name)
     for ax in reduce_axes:
         ax_name = ax['name']
         var_map[ax_name] = te.var(ax_name)
-        analyzer.update(var_map[ax_name], arith.ConstIntBound(0, ax['range'] - 1))
+        range_map[var_map[ax_name]] = arith.ConstIntBound(0, ax['range'] - 1)
     dependent_region = {}
 
     def traverse(op):
@@ -110,7 +115,7 @@ def _build_dependency(ast):
             raise Exception('Unhandled node type in traverse(): %s' % op._op)
 
     traverse(op)
-    return Statement(output, dependent_region, analyzer, var_map)
+    return Statement(output, dependent_region, var_map, range_map)
 
 
 def _get_index_expr(op, var_map):

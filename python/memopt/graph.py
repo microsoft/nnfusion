@@ -28,7 +28,10 @@ class Edge:
         return self._dst_id
 
 class Node:
+    node_id = 0
     def __init__(self, inputs, name):
+        self.node_id = Node.node_id
+        Node.node_id += 1
         self.name = name
         self._out_edges = []
         self._in_edges = []
@@ -93,6 +96,11 @@ class DepthwiseConvNode(Node):
         from .tvm_ops import tvm_depthwise_conv
         self.op = DepthwiseConvOp(n, c, k, s, h, w, d, p, m)
         self.args = tvm_depthwise_conv(n, c, h, w, k, s, d, p, m)
+
+class ComputeNode(Node):
+    def __init__(self, inputs, args):
+        super().__init__(inputs, "Compute")
+        self.args = args
 
 def topo_order(list_of_nodes):
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}

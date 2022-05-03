@@ -5,7 +5,7 @@ from .modify_input_pass import modify_input_pass
 from .modify_output_pass import modify_output_pass
 from .debug_pass import debug_pass, get_kernel_info_pass
 from .scope import Scope, get_scope
-from .schedule_rewrite import CodeGenerator
+from .schedule_rewrite_V1 import CodeGenerator
 from .bestfit import BestFit
 import numpy as np
 import regex as re
@@ -43,7 +43,6 @@ def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_n
         mod = tvm.build(sch, args, target=target)
 
         src = mod.imported_modules[0].get_source()
-        print(src)
         index = src.index("{")
         if global_kernel:
             prefix = "__global__ void __launch_bounds__(%d) " % np.prod(scope.block_size)
@@ -159,7 +158,7 @@ def compose_global_kernel(topo_order, configs, target, name):
             if not isinstance(output.dst_node, OutputNode):
                 shared_outputs.append(len(op.inputs)+output.src_id)
             shared_outputs = list(set(shared_outputs)) # unique
-        sch = cgen.rewrite_schedule(sch, config, True, True, target_stage=op.args[-1].name, tile_blacklist=shared_inputs)
+        sch = cgen.recursive_schedule_up(sch, config, tile_blacklist=shared_inputs)
         with Scope(sch) as scope:
             func_name = name+"_kernel_"+str(device_func_uid)
             kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=func_name, global_kernel=False)
@@ -232,3 +231,19 @@ def compose_global_kernel(topo_order, configs, target, name):
                 args.append(k)
                 break
     return code.getvalue(), block_size, grid_size, args
+
+def profile(lib, args, warmup=10, repeat=30):
+    import torch
+    torch_arrs = []
+    device = tvm.device("cuda", 3)
+    for arg in args:
+        shape = list(map(int, arg.shape))
+        dtype = torch.__getattribute__(arg.dtype)
+        arr = torch.randn(*shape).to("cuda:0", dtype=dtype)
+        torch_arrs.append(arr)
+
+    tm = lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
+    assert(tm > 0)
+    _ = [lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs]) for i in range(warmup)]
+    tests = [lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs]) for i in range(repeat)]
+    return np.mean(tests)

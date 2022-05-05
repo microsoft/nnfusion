@@ -246,3 +246,23 @@ class TopKTest(OperatorTestBase, TopK):
                 return r
         m = T()
         torch.onnx.export(m, (torch.randn((232,124), dtype=torch.float32),  torch.randn((232, 124), dtype=torch.float32)), "topk.hlsl.onnx")
+    
+    def create_topk_test_random_float_very_large(self):
+        # Get top 60 from 1x[1]3018 tensor
+        import random
+        import torch
+        shape = [1, 3018]
+        self["input"] = {}
+        self["input"]["shape"] = [shape]
+        self["input"]["dtype"] = ["float32"]
+
+        self["axis"] = random.randint(0, len(shape)-1)
+        self["largest"] = 1
+        k = 60
+        self['input']['data'] = {1: [str(k)]}
+
+        X = torch.rand(tuple(shape), dtype=torch.float32) * 100
+        (values_ref, indicies_ref) = torch.topk(
+            X, k=k, dim=self["axis"], largest=True, sorted=True)
+
+        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}

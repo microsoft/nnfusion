@@ -138,12 +138,12 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
             }
         }
         AllMemoryBarrierWithGroupSync();
+    }
 
-        if(thread_id < __K__)
-        {
-            uint index = output2[cur_i];
-            output0[cur_i] = input0[index];
-            output1[cur_i] = index;
-        }
+    if(thread_id < __K__)
+    {
+        uint index = output2[cur_i];
+        output0[cur_i] = input0[index];
+        output1[cur_i] = index;
     }
 }

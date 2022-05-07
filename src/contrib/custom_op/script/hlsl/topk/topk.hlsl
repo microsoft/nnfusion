@@ -80,8 +80,7 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
 
     if(thread_id < __axis_size__)
     {
-        output0[cur_i] = buf[element_id].val;
-        output1[cur_i] = buf[element_id].index;
+        output2[cur_i] = buf[element_id].index;
     }
 
     // Block all blocks untill output2 finished.
@@ -93,7 +92,7 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
         {
             if(thread_id < __axis_size__)
             {
-                buf[element_id].index = output1[cur_i];
+                buf[element_id].index = output2[cur_i];
                 buf[element_id].val = input0[buf[element_id].index];
             }
             else
@@ -106,7 +105,7 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
             uint next_i = thread_id_to_idx(bigger_block_id, next_thread_id, __axis_size__);
             if(next_thread_id < __axis_size__)
             {
-                buf[element_id + __thread_max_element__].index = output1[next_i];
+                buf[element_id + __thread_max_element__].index = output2[next_i];
                 buf[element_id + __thread_max_element__].val = input0[buf[element_id + __thread_max_element__].index];
             }
             else
@@ -117,6 +116,7 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
         }
         AllMemoryBarrierWithGroupSync();
 
+        uint largest = __largest__^((smaller_block_id>>mega_step)&1);
         if(smaller_block_id % (2 * mega_step) == 0)
         {
             for(uint merge_step = 1; merge_step <= __thread_max_element__ * 2 ; merge_step <<= 1)
@@ -133,14 +133,17 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
 
             if(thread_id < __axis_size__)
             {
-                uint right_half = largest;
-                output0[cur_i] = buf[element_id + __thread_max_element__ * right_half].val;
-                output1[cur_i] = buf[element_id + __thread_max_element__ * right_half].index;
+                uint right_half = largest ^ 1;
+                output2[cur_i] = buf[element_id + __thread_max_element__ * right_half].index;
             }
         }
         AllMemoryBarrierWithGroupSync();
+
+        if(thread_id < __K__)
+        {
+            uint index = output2[cur_i];
+            output0[cur_i] = input0[index];
+            output1[cur_i] = index;
+        }
     }
 }
-
-// Broken into pieces because DX12 doesn't have global sync
-// <cross_block_sort_functions>

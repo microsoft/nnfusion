@@ -63,13 +63,13 @@ class TopK(OperatorBase):
             self.__largest__ = 1
             if self.largest:
                 self.__largest__ = 1
-                self.__boundary_value__ = str(dx_type_max)
+                self.__boundary_value__ = str(dx_type_min)
             else:
                 self.__largest__ = 0
-                self.__boundary_value__ = str(dx_type_min)
+                self.__boundary_value__ = str(dx_type_max)
             self.__max_mega_step__ = 1
-            while self.__max_mega_step__< self.__smaller_blocks__:
-                self.__max_mega_step__*= 2
+            while self.__max_mega_step__ < self.__smaller_blocks__:
+                self.__max_mega_step__ *= 2
 
             if self.__thread_max_element__ > self.__block_max_seq_element__:
                 # max elements size makes algorithm needs more shared memory than DX12 can provide.
@@ -94,20 +94,11 @@ class TopK(OperatorBase):
         )
         self["hlsl_kernel"] = antares_info + "\n" + antares_info.replace("GLOBALS:", "LOCAL: CSMain --") + "\n" + self["hlsl_kernel"]
     
-    def get_cross_block_kernel(self):
-        # cross_block_kernel = read_file("hlsl/topk/topk.part2.cross_block.hlsl")
-        # self.cross_block_kernel = replace_tempalte_args(cross_block_kernel, topkconf)
-        return ""
-    
     # Generate a HLSL Kernels
     def attach_directx_hlsl_kernel(self):
         topkconf = self.TopKConfig(self)
-        print(topkconf)
-        in_block_kernel = read_file("hlsl/topk/topk.part1.in_block.hlsl")
+        in_block_kernel = read_file("hlsl/topk/topk.hlsl")
         self.in_block_kernel = replace_tempalte_args(in_block_kernel, topkconf)
-        self.cross_block_kernel = self.get_cross_block_kernel()
-        write_result_kernel = read_file("hlsl/topk/topk.part3.write_result.hlsl")
-        self.write_result_kernel = replace_tempalte_args(write_result_kernel, topkconf)
 
         self["hlsl_kernel"] = "\n".join([self.in_block_kernel])
         self["launch_config"] = [[topkconf.__greater_blocks__, topkconf.__smaller_blocks__, 1], [topkconf.__threads__, 1, 1]]
@@ -143,37 +134,8 @@ class TopK(OperatorBase):
 
         outputs["shape"][0][self['axis']] = input_dict["K"]
         outputs["shape"][1][self['axis']] = input_dict["K"]
-        print(outputs)
         return outputs
 
-class TopKTest(OperatorTestBase, TopK):
-    def __init__(self, input_dict=None, config_infer=None):
-        self.name = "TopK"
-
-    def create_topk_test(self):
-        import numpy as np
-        self["axis"] = 1
-        self["largest"] = 1
-        self["sorted"] = 1
-        self["K"] = 2
-        self["input"] = {}
-        self["input"]["shape"] = [[3, 4]]
-        self["input"]["dtype"] = ["float32"]
-        X = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [
-            8, 9, 10, 11], ], dtype=np.float32)
-        values_ref = np.array(
-            [[3,  2,  1, 0], [7,  6,  5, 4], [11, 10, 9, 8]], dtype=np.float32)
-        indicies_ref = np.array(
-            [[3,  2,  1, 0], [3, 2, 1, 0], [3, 2, 1, 0]], dtype=np.int32)
-        tmp = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [
-            0, 0, 0, 0], ], dtype=np.int32)
-
-        return {"kernel": TopK(self), "input": [X], "output": [values_ref, indicies_ref, tmp]}
-    
-    def allclose(self, truth, output):
-        return super().allclose(truth[:1], output[:1])
-
-'''
 class TopKTest(OperatorTestBase, TopK):
     def __init__(self, input_dict=None, config_infer=None):
         self.name = "TopK"
@@ -194,7 +156,8 @@ class TopKTest(OperatorTestBase, TopK):
         indicies_ref = np.array(
             [[3,  2,  1], [3, 2, 1], [3, 2, 1]], dtype=np.int64)
 
-        return {"kernel": TopK(self), "input": [X], "output": [values_ref, indicies_ref]}
+        buf = np.zeros(X.shape, dtype=np.int32)
+        return {"kernel": TopK(self), "input": [X], "output": [values_ref, indicies_ref, buf]}
 
     def create_topk_test_random_int(self):
         import random
@@ -212,7 +175,8 @@ class TopKTest(OperatorTestBase, TopK):
         (values_ref, indicies_ref) = torch.topk(
             X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
 
-        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
+        buf = np.zeros(X.shape, dtype=np.int32)
+        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy(), buf]}
 
     def create_topk_test_random_fp16(self):
         import torch
@@ -231,7 +195,8 @@ class TopKTest(OperatorTestBase, TopK):
         (values_ref, indicies_ref) = torch.topk(
             X, k=self["K"], dim=self["axis"], largest=True, sorted=True)
 
-        return {"kernel": TopK(self), "input": [X.cpu().numpy()], "output": [values_ref.cpu().numpy(), indicies_ref.cpu().numpy()]}
+        buf = np.zeros(X.shape, dtype=np.int32)
+        return {"kernel": TopK(self), "input": [X.cpu().numpy()], "output": [values_ref.cpu().numpy(), indicies_ref.cpu().numpy(), buf]}
 
     def create_topk_test_random_float(self):
         import random
@@ -252,7 +217,8 @@ class TopKTest(OperatorTestBase, TopK):
         (values_ref, indicies_ref) = torch.topk(
             X, k=k, dim=self["axis"], largest=True, sorted=True)
 
-        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
+        buf = np.zeros(X.shape, dtype=np.int32)
+        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy(), buf]}
 
     def create_topk_test_random_float_smallest(self):
         import torch
@@ -272,7 +238,8 @@ class TopKTest(OperatorTestBase, TopK):
         (values_ref, indicies_ref) = torch.topk(
             X, k=self["K"], dim=self["axis"], largest=False, sorted=True)
 
-        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
+        buf = np.zeros(X.shape, dtype=np.int32)
+        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy(), buf]}
 
     def allclose(self, truth, output):
         return super().allclose(truth[:1], output[:1])
@@ -306,5 +273,5 @@ class TopKTest(OperatorTestBase, TopK):
         (values_ref, indicies_ref) = torch.topk(
             X, k=k, dim=self["axis"], largest=True, sorted=True)
 
-        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
-'''
+        buf = np.zeros(X.shape, dtype=np.int32)
+        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy(), buf]}

@@ -1,35 +1,14 @@
-// Macros:
-// __type__ : sorted type
-// __axis_stride__ : stride for sorted axis 
-// __max_element__ : Maximum element size for sorting
-// __n__ : actual input element size for sorting
-// __k__ : axis elements size
-// __threads__ : thread in a block which is 
-
-StructuredBuffer<__type__> input0: register(t0);
-RWStructuredBuffer<__type__> output0: register(u0);
-RWStructuredBuffer<__out_type__> output1: register(u1);
-
-__define_largest__
-
-#ifdef LARGEST
-#define CMP0 ((pos/step & 1) && (buf[pos].val > buf[pos+step].val)) || ((pos/step & 1) == 0) && (buf[pos].val < buf[pos+step].val)
-#else
-#define CMP0 ((pos/step & 1) && (buf[pos].val < buf[pos+step].val)) || ((pos/step & 1) == 0) && (buf[pos].val > buf[pos+step].val)
-#endif
-
-#ifdef LARGEST
-#define CMP1 ((pos/gstep & 1) && buf[pos].val > buf[pos+step].val) || ((pos/gstep & 1) == 0 && (buf[pos].val < buf[pos+step].val))
-#else
-#define CMP1 ((pos/gstep & 1) && buf[pos].val < buf[pos+step].val) || ((pos/gstep & 1) == 0 && (buf[pos].val > buf[pos+step].val))
-#endif
+StructuredBuffer<__value_type__> input0: register(t0);
+RWStructuredBuffer<__value_type__> output0: register(u0);
+RWStructuredBuffer<__index_type__> output1: register(u1);
+RWStructuredBuffer<int> output2: register(u2);
 
 struct type {
-    __type__ val;
+    __value_type__ val;
     int index;
 };
 
-groupshared type buf[__max_element__];
+groupshared type buf[__block_max_element__];
 
 uint thread_id_to_idx(uint block_id, uint thread_id, uint axis_size)
 {
@@ -37,17 +16,10 @@ uint thread_id_to_idx(uint block_id, uint thread_id, uint axis_size)
 }
 
 // Bitonic Merging
-// total: n
-// partitian: n / (step * 2)
-// each partitian: step threads
-// total thread: n / 2
-// task:
-//  merge {pos, pos + step * 2}
-//  {pos, pos + step - 1}, {pos + step, pos + step * 2 - 1}
-void bitonic_merge(uint thread_id, uint step)
+void bitonic_merge(uint element_id, uint step, uint largest)
 {
-    uint pos = thread_id % step + (thread_id / step) * step * 2;
-    if(CMP0)
+    uint pos = element_id % step + (element_id / step) * step * 2;
+    if(((pos/step & 1) == largest) && (buf[pos].val > buf[pos+step].val)) || ((pos/step & 1) == (largest^1)) && (buf[pos].val < buf[pos+step].val)
     {
         type t =  buf[pos + step];
         buf[pos + step] = buf[pos];
@@ -56,10 +28,10 @@ void bitonic_merge(uint thread_id, uint step)
 }
 
 // Bitonic Sorting
-void bitonic_sort(uint thread_id, uint step, uint gstep)
+void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
 {
-    uint pos = thread_id % step + (thread_id / step) * step * 2;
-    if(CMP1)
+    uint pos = element_id % step + (element_id / step) * step * 2;
+    if(((pos/gstep & 1) == largest) && buf[pos].val > buf[pos+step].val) || ((pos/gstep & 1) == (largest^1) && (buf[pos].val < buf[pos+step].val))
     {
         type t =  buf[pos + step];
         buf[pos + step] = buf[pos];
@@ -67,49 +39,44 @@ void bitonic_sort(uint thread_id, uint step, uint gstep)
     }
 }
 
-// numthreads(1, 1, 1) will be replaced by which in launch config when do compling
-[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
+[numthreads(1, 1, 1)] void in_block_sort(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
 {
-    // [thread_extent] blockIdx.x =  __blocks__
-    // [thread_extent] threadIdx.x = __threads__
-    uint block_id = gid.x;
-    uint thread_id = tid.x;
+    uint bigger_block_id = gid.x;
+    uint smaller_block_id = gid.y;
+    uint thread_id = SV_GroupThreadID.x + smaller_block_id * __threads__;
+    uint element_id = SV_GroupThreadID.x;
+    uint cur_i = thread_id_to_idx(bigger_block_id, thread_id, __axis_size__);
 
-    for(int t = thread_id * 2; t < (thread_id + 1) * 2; t++)
+    if(thread_id < __axis_size__)
     {
-        uint cur_i = thread_id_to_idx(block_id, t, __n__);
-        if(t < __n__)
-        {
-            buf[t].val = input0[cur_i];
-            buf[t].index = t;
-        }
-        else 
-        {
-            // Fill with padding value
-            buf[t].val = __M_VALUE__;
-            buf[t].index = __n__;
-        }
+        buf[element_id].val = input0[cur_i];
+        buf[element_id].index = cur_i;
+    }
+    else
+    {
+        buf[element_id].val = __boundary_value__;
+        buf[element_id].index = cur_i;
     }
     GroupMemoryBarrierWithGroupSync();
 
-    for(uint merge_step = 1; merge_step <= __max_element__; merge_step <<= 1)
+    uint largest = __largest__;
+
+    for(uint merge_step = 1; merge_step <= __thread_max_element__; merge_step <<= 1)
     {
-        if(merge_step < __max_element__)
-            bitonic_merge(thread_id, merge_step);
+        if(merge_step < __thread_max_element__)
+            bitonic_merge(element_id, merge_step, largest);
         GroupMemoryBarrierWithGroupSync();
         for(uint sort_step = merge_step>>1; sort_step > 0; sort_step >>= 1)
         {
-            bitonic_sort(thread_id, sort_step, merge_step);
+            bitonic_sort(element_id, sort_step, merge_step, largest);
             GroupMemoryBarrierWithGroupSync();
         }
     }
-
-    // Write Back
-    for(int t = thread_id * 2; t < __k__ && t < (thread_id + 1) * 2; t++)
-    {
-        uint new_i = thread_id_to_idx(block_id, t, __k__);
-        output0[new_i] = buf[t].val;
-        output1[new_i] = __out_type__(buf[t].index);
-    }
     GroupMemoryBarrierWithGroupSync();
+
+    if(thread_id < __axis_size__)
+        output2[cur_i] = buf[element_id].index;
 }
+
+// Broken into pieces because DX12 doesn't have global sync
+// <cross_block_sort_functions>

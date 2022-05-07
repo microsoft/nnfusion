@@ -1,100 +1,93 @@
 #!/bin/python
 from concurrent.futures import thread
+from math import ceil
 import sys
 import os
 import numpy as np
-
-from __operator__ import OperatorBase, OperatorTestBase
-
-# ONNX Reference Link:https://github.com/onnx/onnx/blob/main/docs/Operators.md#topk
-
-
-def get_type_info(typestr):
-    if typestr == "half" or typestr == "float16":
-        return ("float16_t", 2, np.finfo(np.float16).min, np.finfo(np.float16).max)
-    if typestr == "float32" or typestr == "float":
-        return ("float", 4, np.finfo(np.float32).min, np.finfo(np.float32).max)
-    if typestr == "double":
-        return ("double", 8, np.finfo(np.double).min, np.finfo(np.double).max)
-    if typestr == "int" or typestr == "int32":
-        return ("int", 4, np.iinfo(np.int32).min, np.iinfo(np.int32).max)
-    if typestr == "int64" or typestr == "long long" or typestr == "int64_t":
-        return ("int64_t", 8, np.iinfo(np.int64).min, np.iinfo(np.int64).max)
-    exit(-1)
-
-def get_antares_type_str(typestr):
-    if typestr == "half" or typestr == "float16":
-        return "float16"
-    if typestr == "float32" or typestr == "float":
-        return "float32"
-    if typestr == "double":
-        return "float64"
-    if typestr == "int" or typestr == "int32":
-        return "int32"
-    if typestr == "int64" or typestr == "int64_t" or typestr == "long long":
-        return "int64"
+from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_antares_type_str, read_file
 
 
 class TopK(OperatorBase):
+    class TopKConfig:
+        def __init__(self, topkop) -> None:
+            self.input_dtype_0 = topkop["input"]["dtype"][0]
+            self.input_shape_0 = topkop["input"]["shape"][0]
+            self.output_dtype_1 = topkop["output"]["dtype"][1]
+            self.axis = topkop["axis"]
+            self.largest = False
+            self.K = topkop["K"]
+            if 'largest' in topkop and topkop["largest"] == 0:
+                self.largest = True
+            self.get_config()
+
+        def get_block_max_element(self, dtype):
+            (dx_type_str, dx_type_size, dx_type_min, dx_type_max) = get_type_info(dtype)
+            in_block_number = 512
+            # Element in shared memory: [{_type_, int}, ... ]
+            # Only 4096 Bytes shared memory(L1 cache) in DirectX
+            in_block_number = 4096 // (dx_type_size + 4)
+            return in_block_number
+        
+        def get_config(self):
+            # [GreaterBlock(SmallerBlock(Threads for max 512 elements))]
+            # Maximum elements processed by one block of threads
+            self.m_block_max_element = self.get_block_max_element(self.input_dtype_0)
+            # Maximum elements for one sequence in one block
+            self.m_block_max_seq_element = self.m_block_max_element / 2
+            # Stride between two elements in orginal 
+            self.m_axis_size = self.axis
+            self.m_axis_stride = 1 
+            for r in range(self.axis+1, len(self.input_shape_0)):
+                self.m_axis_stride *= self.input_shape_0[r]
+            # "Greader block" is which process one batch of data
+            self.m_greater_blocks = 1
+            for r in range(0, len(self.input_shape_0)):
+                if r == self.axis:
+                    continue
+                self.m_greater_blocks *= self.input_shape_0[r]
+            # Max element placeholders to process topK
+            self.m_thread_max_element = 1
+            while self.m_thread_max_element < self.K:
+                self.m_thread_max_element *= 2
+            self.m_thread = self.m_thread_max_element
+            self.m_smaller_blocks = ceil(float(self.axis) / float(self.m_thread_max_element))
+            self.m_value_type , _, dx_type_min, dx_type_max = get_type_info(self.input_dtype_0)
+            self.m_index_type , _, _, _ = get_type_info(self.output_dtype_1)
+            self.m_boundary_value = ""
+            self.macro_def_largest = "#define LARGEST"
+            if self.largest:
+                self.macro_def_largest = ""
+                self.m_boundary_value = str(dx_type_max)
+            else:
+                self.m_boundary_value = str(dx_type_min)
+            
+            if self.m_max_element > self.m_block_max_seq_element:
+                # max elements size makes algorithm needs more shared memory than DX12 can provide.
+                exit(0)
+
+            # Yield:
+            # - Blocks:
+            #  self.m_block_max_element
+            #  self.m_greater_blocks
+            #  self.m_smaller_blocks
+            # - Theads:
+            #  self.m_thread_max_element
+            #  self.m_threads
+            # - Data:
+            #  self.m_axis_stride
+            # - Other:
+            #  self.m_boundary_value
+            #  self.macro_def_largest
+
     def __init__(self, input_dict=None, config_infer=None):
         # Here is some difference with original ONNX define
         self.cs_5_compatiable_mode = True
         super().__init__(input_dict, self.config_infer)
         self.attach_directx_hlsl_kernel(input_dict)
+        self.attach_antares_hlsl_kernel_config()
 
-    def read_file(self, file_name):
-        with open(os.path.join(os.path.dirname(__file__), file_name)) as f:
-            lines = f.readlines()
-            return "".join(lines)
-
-    # Generate a HLSL Kernels
-    # How about generating host call?
-    def attach_directx_hlsl_kernel(self, input_dict=None):
-        axis_stride = 1
-        for r in range(self['axis']+1, len(input_dict["input"]["shape"][0])):
-            axis_stride *= input_dict["input"]["shape"][0][r]
-        # for r in range(0, self['axis']):
-        #    axis_stride *= input_dict["input"]["shape"][0][r]
-
-        blocks = 1
-        for r in range(0, len(input_dict["input"]["shape"][0])):
-            if r == self["axis"]:
-                continue
-            blocks *= input_dict["input"]["shape"][0][r]
-
-        max_element = 1
-        while max_element < input_dict["input"]["shape"][0][self["axis"]]:
-            max_element *= 2
-
-        in_block_number = 512
-        (dx_type_str, dx_type_size, dx_type_min, dx_type_max) = get_type_info(
-            input_dict["input"]["dtype"][0])
-        (dx_out_type_str, dx_out_type_size, dx_out_type_min, dx_out_type_max) = get_type_info(
-            self["output"]["dtype"][1])
-
-        # element is shared memory: {_type_, int}
-        # Only 4096 Bytes shared memory(L1 cache) in DX
-        in_block_number = 4096 // (dx_type_size + 4)
-
-        m_value = ""
-        def_largest = "#define LARGEST"
-        if 'largest' in input_dict and input_dict["largest"] == 0:
-            def_largest = ""
-            m_value = str(dx_type_max)
-        else:
-            m_value = str(dx_type_min)
-
-        if max_element <= in_block_number:
-            threads = max_element // 2
-            self["hlsl_kernel"] = self.read_file("hlsl/topk_in_block_sort.hlsl").replace("__threads__", str(threads)).replace("__max_element__", str(max_element)).replace("__axis_stride__", str(
-                axis_stride)).replace("__k__", str(self["K"])).replace("__type__", dx_type_str).replace("__define_largest__", def_largest).replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])
-                ).replace("__M_VALUE__", m_value).replace("__blocks__", str(blocks)).replace("__out_type__", dx_out_type_str)
-            self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
-        else:
-            # Cannot use shared memory
-            pass
-        self["entry_point"] = "CSMain"
-    
+    # Attach this to let the NNFusion HLSL codegen organize the kernel
+    def attach_antares_hlsl_kernel_config(self):
         antares_info = "// GLOBALS: input0:{0}[{1}] -> output0:{2}[{3}], output1:{4}[{5}]".format(
             get_antares_type_str(self["input"]["dtype"][0]),
             ", ".join([str(i) for i in self["input"]["shape"][0]]),
@@ -103,17 +96,44 @@ class TopK(OperatorBase):
             get_antares_type_str(self["output"]["dtype"][1]),
             ", ".join([str(i) for i in self["output"]["shape"][1]]),
         )
-
         self["hlsl_kernel"] = antares_info + "\n" + antares_info.replace("GLOBALS:", "LOCAL: CSMain --") + "\n" + self["hlsl_kernel"]
+    
+    # Generate a HLSL Kernels
+    def attach_directx_hlsl_kernel(self, input_dict=None):
+        topkconf = self.TopKConfig(input_dict)
+        print(topkconf.m_max_element)
+        exit(0)
+        return
+
+        self["hlsl_kernel"] = \
+            self.read_file("hlsl/topk_in_block_sort.hlsl") \
+            .replace("__threads__", str(threads)) \
+            .replace("__max_element__", str(m_max_element)) \
+            .replace("__axis_stride__", str(m_axis_stride)) \
+            .replace("__k__", str(self["K"])) \
+            .replace("__type__", dx_type_str) \
+            .replace("__define_largest__", def_largest) \
+            .replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])) \
+            .replace("__M_VALUE__", m_value) \
+            .replace("__blocks__", str(blocks)) \
+            .replace("__out_type__", dx_out_type_str)
+        self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
+        self["entry_point"] = "CSMain"
 
     def config_infer(self, input_dict=None):
         outputs = {"shape": [], "dtype": []}
+        # output 0: values
         outputs["shape"].append(input_dict["input"]["shape"][0].copy())
+        # output 1: indicies
+        outputs["shape"].append(input_dict["input"]["shape"][0].copy())
+        # output 2: temporary indicies
         outputs["shape"].append(input_dict["input"]["shape"][0].copy())
         outputs["dtype"].append(input_dict["input"]["dtype"][0])
         if self.cs_5_compatiable_mode:
             outputs["dtype"].append("int32")
+            outputs["dtype"].append("int32")
         else:
+            outputs["dtype"].append("int64_t")
             outputs["dtype"].append("int64_t")
 
         if self['axis'] < 0:

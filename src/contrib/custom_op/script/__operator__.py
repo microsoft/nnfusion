@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import argparse
 import importlib.machinery
 from types import FunctionType, MethodType
@@ -191,3 +192,14 @@ def read_file(file_name):
     with open(os.path.join(os.path.dirname(__file__), file_name)) as f:
         lines = f.readlines()
         return "".join(lines)
+
+def list_tempalte_args(content_str):
+    # match and list all variables begin with "__" and end with "__"
+    res = re.findall(r"__\w+__", content_str)
+    return set(res)
+
+def replace_tempalte_args(content_str, parameters):
+    tkeys = list_tempalte_args(content_str)
+    for tkey in list(tkeys):
+        content_str = content_str.replace(tkey, parameters[tkey])
+    return content_str

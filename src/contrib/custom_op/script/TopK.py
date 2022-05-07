@@ -4,21 +4,27 @@ from math import ceil
 import sys
 import os
 import numpy as np
-from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_antares_type_str, read_file
+from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_antares_type_str, read_file, replace_tempalte_args
 
 
 class TopK(OperatorBase):
-    class TopKConfig:
+    class TopKConfig(dict):
         def __init__(self, topkop) -> None:
             self.input_dtype_0 = topkop["input"]["dtype"][0]
             self.input_shape_0 = topkop["input"]["shape"][0]
             self.output_dtype_1 = topkop["output"]["dtype"][1]
             self.axis = topkop["axis"]
-            self.largest = False
-            self.K = topkop["K"]
+            self.largest = True 
+            self.__K__ = topkop["K"]
             if 'largest' in topkop and topkop["largest"] == 0:
-                self.largest = True
+                self.largest = False
             self.get_config()
+            self.init_dict()
+        
+        def init_dict(self):
+            for k in self.__dict__:
+                if k.startswith("__") and k.endswith("__"):
+                    self[k] = str(self.__dict__[k])
 
         def get_block_max_element(self, dtype):
             (dx_type_str, dx_type_size, dx_type_min, dx_type_max) = get_type_info(dtype)
@@ -31,59 +37,49 @@ class TopK(OperatorBase):
         def get_config(self):
             # [GreaterBlock(SmallerBlock(Threads for max 512 elements))]
             # Maximum elements processed by one block of threads
-            self.m_block_max_element = self.get_block_max_element(self.input_dtype_0)
+            self.__block_max_element__ = self.get_block_max_element(self.input_dtype_0)
             # Maximum elements for one sequence in one block
-            self.m_block_max_seq_element = self.m_block_max_element / 2
+            self.__block_max_seq_element__ = self.__block_max_element__ // 2
             # Stride between two elements in orginal 
-            self.m_axis_size = self.axis
-            self.m_axis_stride = 1 
+            self.__axis_stride__ = 1 
             for r in range(self.axis+1, len(self.input_shape_0)):
-                self.m_axis_stride *= self.input_shape_0[r]
+                self.__axis_stride__ *= self.input_shape_0[r]
             # "Greader block" is which process one batch of data
-            self.m_greater_blocks = 1
+            self.__greater_blocks__ = 1
             for r in range(0, len(self.input_shape_0)):
                 if r == self.axis:
                     continue
-                self.m_greater_blocks *= self.input_shape_0[r]
+                self.__greater_blocks__ *= self.input_shape_0[r]
             # Max element placeholders to process topK
-            self.m_thread_max_element = 1
-            while self.m_thread_max_element < self.K:
-                self.m_thread_max_element *= 2
-            self.m_thread = self.m_thread_max_element
-            self.m_smaller_blocks = ceil(float(self.axis) / float(self.m_thread_max_element))
-            self.m_value_type , _, dx_type_min, dx_type_max = get_type_info(self.input_dtype_0)
-            self.m_index_type , _, _, _ = get_type_info(self.output_dtype_1)
-            self.m_boundary_value = ""
-            self.macro_def_largest = "#define LARGEST"
+            self.__thread_max_element__ = 1
+            while self.__thread_max_element__ < self.__K__:
+                self.__thread_max_element__ *= 2
+            self.__axis_size__ = self.input_shape_0[self.axis]
+            self.__threads__ = self.__thread_max_element__
+            self.__smaller_blocks__ = ceil(float(self.__axis_size__) / float(self.__thread_max_element__))
+            self.__value_type__ , _, dx_type_min, dx_type_max = get_type_info(self.input_dtype_0)
+            self.__index_type__ , _, _, _ = get_type_info(self.output_dtype_1)
+            self.__boundary_value__ = ""
+            self.__largest__ = 1
             if self.largest:
-                self.macro_def_largest = ""
-                self.m_boundary_value = str(dx_type_max)
+                self.__largest__ = 1
+                self.__boundary_value__ = str(dx_type_max)
             else:
-                self.m_boundary_value = str(dx_type_min)
-            
-            if self.m_max_element > self.m_block_max_seq_element:
+                self.__largest__ = 0
+                self.__boundary_value__ = str(dx_type_min)
+            self.__max_mega_step__ = 1
+            while self.__max_mega_step__< self.__smaller_blocks__:
+                self.__max_mega_step__*= 2
+
+            if self.__thread_max_element__ > self.__block_max_seq_element__:
                 # max elements size makes algorithm needs more shared memory than DX12 can provide.
                 exit(0)
-
-            # Yield:
-            # - Blocks:
-            #  self.m_block_max_element
-            #  self.m_greater_blocks
-            #  self.m_smaller_blocks
-            # - Theads:
-            #  self.m_thread_max_element
-            #  self.m_threads
-            # - Data:
-            #  self.m_axis_stride
-            # - Other:
-            #  self.m_boundary_value
-            #  self.macro_def_largest
 
     def __init__(self, input_dict=None, config_infer=None):
         # Here is some difference with original ONNX define
         self.cs_5_compatiable_mode = True
         super().__init__(input_dict, self.config_infer)
-        self.attach_directx_hlsl_kernel(input_dict)
+        self.attach_directx_hlsl_kernel()
         self.attach_antares_hlsl_kernel_config()
 
     # Attach this to let the NNFusion HLSL codegen organize the kernel
@@ -98,27 +94,24 @@ class TopK(OperatorBase):
         )
         self["hlsl_kernel"] = antares_info + "\n" + antares_info.replace("GLOBALS:", "LOCAL: CSMain --") + "\n" + self["hlsl_kernel"]
     
+    def get_cross_block_kernel(self):
+        # cross_block_kernel = read_file("hlsl/topk/topk.part2.cross_block.hlsl")
+        # self.cross_block_kernel = replace_tempalte_args(cross_block_kernel, topkconf)
+        return ""
+    
     # Generate a HLSL Kernels
-    def attach_directx_hlsl_kernel(self, input_dict=None):
-        topkconf = self.TopKConfig(input_dict)
-        print(topkconf.m_max_element)
-        exit(0)
-        return
+    def attach_directx_hlsl_kernel(self):
+        topkconf = self.TopKConfig(self)
+        print(topkconf)
+        in_block_kernel = read_file("hlsl/topk/topk.part1.in_block.hlsl")
+        self.in_block_kernel = replace_tempalte_args(in_block_kernel, topkconf)
+        self.cross_block_kernel = self.get_cross_block_kernel()
+        write_result_kernel = read_file("hlsl/topk/topk.part3.write_result.hlsl")
+        self.write_result_kernel = replace_tempalte_args(write_result_kernel, topkconf)
 
-        self["hlsl_kernel"] = \
-            self.read_file("hlsl/topk_in_block_sort.hlsl") \
-            .replace("__threads__", str(threads)) \
-            .replace("__max_element__", str(m_max_element)) \
-            .replace("__axis_stride__", str(m_axis_stride)) \
-            .replace("__k__", str(self["K"])) \
-            .replace("__type__", dx_type_str) \
-            .replace("__define_largest__", def_largest) \
-            .replace("__n__", str(input_dict["input"]["shape"][0][self["axis"]])) \
-            .replace("__M_VALUE__", m_value) \
-            .replace("__blocks__", str(blocks)) \
-            .replace("__out_type__", dx_out_type_str)
-        self["launch_config"] = [[blocks, 1, 1], [threads, 1, 1]]
-        self["entry_point"] = "CSMain"
+        self["hlsl_kernel"] = "\n".join([self.in_block_kernel])
+        self["launch_config"] = [[topkconf.__greater_blocks__, topkconf.__smaller_blocks__, 1], [topkconf.__threads__, 1, 1]]
+        self["entry_point"] = "in_block_sort"
 
     def config_infer(self, input_dict=None):
         outputs = {"shape": [], "dtype": []}
@@ -150,9 +143,37 @@ class TopK(OperatorBase):
 
         outputs["shape"][0][self['axis']] = input_dict["K"]
         outputs["shape"][1][self['axis']] = input_dict["K"]
+        print(outputs)
         return outputs
 
+class TopKTest(OperatorTestBase, TopK):
+    def __init__(self, input_dict=None, config_infer=None):
+        self.name = "TopK"
 
+    def create_topk_test(self):
+        import numpy as np
+        self["axis"] = 1
+        self["largest"] = 1
+        self["sorted"] = 1
+        self["K"] = 2
+        self["input"] = {}
+        self["input"]["shape"] = [[3, 4]]
+        self["input"]["dtype"] = ["float32"]
+        X = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [
+            8, 9, 10, 11], ], dtype=np.float32)
+        values_ref = np.array(
+            [[3,  2,  1, 0], [7,  6,  5, 4], [11, 10, 9, 8]], dtype=np.float32)
+        indicies_ref = np.array(
+            [[3,  2,  1, 0], [3, 2, 1, 0], [3, 2, 1, 0]], dtype=np.int32)
+        tmp = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [
+            0, 0, 0, 0], ], dtype=np.int32)
+
+        return {"kernel": TopK(self), "input": [X], "output": [values_ref, indicies_ref, tmp]}
+    
+    def allclose(self, truth, output):
+        return super().allclose(truth[:1], output[:1])
+
+'''
 class TopKTest(OperatorTestBase, TopK):
     def __init__(self, input_dict=None, config_infer=None):
         self.name = "TopK"
@@ -286,3 +307,4 @@ class TopKTest(OperatorTestBase, TopK):
             X, k=k, dim=self["axis"], largest=True, sorted=True)
 
         return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy()]}
+'''

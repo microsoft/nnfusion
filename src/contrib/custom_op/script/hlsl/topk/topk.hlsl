@@ -12,9 +12,9 @@ struct type {
 
 groupshared type buf[__block_max_element__];
 
-uint thread_id_to_idx(uint block_id, uint thread_id, uint axis_size)
+uint thread_id_to_idx(uint block_id, uint thread_id, uint axis_size, uint axis_stride)
 {
-    return (block_id / __axis_stride__) * (axis_size * __axis_stride__) + block_id % __axis_stride__ + thread_id * __axis_stride__;
+    return (block_id / axis_stride) * (axis_size * axis_stride) + block_id % axis_stride + thread_id * axis_stride;
 }
 
 // Bitonic Merging
@@ -47,7 +47,8 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
     uint smaller_block_id = gid.y;
     uint thread_id = tid.x + smaller_block_id * __threads__;
     uint element_id = tid.x;
-    uint cur_i = thread_id_to_idx(bigger_block_id, thread_id, __axis_size__);
+    uint cur_i = thread_id_to_idx(bigger_block_id, thread_id, __axis_size__, __axis_stride__);
+    uint ans_i = thread_id_to_idx(bigger_block_id, thread_id, __K__, __axis_stride__);
 
     if(thread_id < __axis_size__)
     {
@@ -102,7 +103,7 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
             }
 
             uint next_thread_id = thread_id + mega_step * __threads__;
-            uint next_i = thread_id_to_idx(bigger_block_id, next_thread_id, __axis_size__);
+            uint next_i = thread_id_to_idx(bigger_block_id, next_thread_id, __axis_size__, __axis_stride__);
             if(next_thread_id < __axis_size__)
             {
                 buf[element_id + __thread_max_element__].index = output2[next_i];
@@ -116,6 +117,7 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
         }
         AllMemoryBarrierWithGroupSync();
 
+        GroupMemoryBarrierWithGroupSync();
         uint largest = __largest__^((smaller_block_id>>mega_step)&1);
         if(smaller_block_id % (2 * mega_step) == 0)
         {
@@ -143,7 +145,8 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
     if(thread_id < __K__)
     {
         uint index = output2[cur_i];
-        output0[cur_i] = input0[index];
-        output1[cur_i] = index;
+        output0[ans_i] = input0[index];
+        output1[ans_i] = index;
     }
+    AllMemoryBarrierWithGroupSync();
 }

@@ -17,6 +17,12 @@ uint thread_id_to_idx(uint block_id, uint thread_id, uint axis_size, uint axis_s
     return (block_id / axis_stride) * (axis_size * axis_stride) + block_id % axis_stride + thread_id * axis_stride;
 }
 
+uint idx_to_thread_id(uint block_id, uint idx, uint axis_size, uint axis_stride)
+{
+    // return (block_id / axis_stride) * (axis_size * axis_stride) + block_id % axis_stride + thread_id * axis_stride;
+    return (idx - (block_id / axis_stride) * (axis_size * axis_stride) - block_id % axis_stride) / axis_stride;
+}
+
 // Bitonic Merging
 void bitonic_merge(uint element_id, uint step, uint largest)
 {
@@ -41,7 +47,7 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
     }
 }
 
-[numthreads(1, 1, 1)] void in_block_sort(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
+[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
 {
     uint bigger_block_id = gid.x;
     uint smaller_block_id = gid.y;
@@ -82,10 +88,10 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
     if(thread_id < __axis_size__)
     {
         output2[cur_i] = buf[element_id].index;
+        output1[0] = 1;
     }
-
     // Block all blocks untill output2 finished.
-    AllMemoryBarrierWithGroupSync();
+    DeviceMemoryBarrierWithGroupSync();
 
     for(uint mega_step = 1; mega_step <= __max_mega_step__; mega_step <<= 1)
     {
@@ -114,13 +120,14 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
                 buf[element_id + __thread_max_element__].val = __boundary_value__;
                 buf[element_id + __thread_max_element__].index = next_i;
             }
+            AllMemoryBarrierWithGroupSync();
         }
-        AllMemoryBarrierWithGroupSync();
+        DeviceMemoryBarrierWithGroupSync();
 
-        GroupMemoryBarrierWithGroupSync();
-        uint largest = __largest__^((smaller_block_id>>mega_step)&1);
         if(smaller_block_id % (2 * mega_step) == 0)
         {
+            uint largest = __largest__^((smaller_block_id>>mega_step)&1);
+            GroupMemoryBarrierWithGroupSync();
             for(uint merge_step = 1; merge_step <= __thread_max_element__ * 2 ; merge_step <<= 1)
             {
                 if(merge_step < __thread_max_element__ * 2)
@@ -139,14 +146,15 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
                 output2[cur_i] = buf[element_id + __thread_max_element__ * right_half].index;
             }
         }
-        AllMemoryBarrierWithGroupSync();
+        DeviceMemoryBarrierWithGroupSync();
     }
 
     if(thread_id < __K__)
     {
         uint index = output2[cur_i];
+        uint local_tid = idx_to_thread_id(bigger_block_id, index, __axis_size__, __axis_stride__);
         output0[ans_i] = input0[index];
-        output1[ans_i] = index;
+        output1[ans_i] = __index_type__(local_tid);
+        output2[cur_i] = __index_type__(local_tid);
     }
-    AllMemoryBarrierWithGroupSync();
 }

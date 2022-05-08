@@ -163,31 +163,6 @@ def get_antares_type_str(typestr):
     if typestr == "int64" or typestr == "int64_t" or typestr == "long long":
         return "int64"
 
-def get_type_info(typestr):
-    if typestr == "half" or typestr == "float16":
-        return ("float16_t", 2, np.finfo(np.float16).min, np.finfo(np.float16).max)
-    if typestr == "float32" or typestr == "float":
-        return ("float", 4, np.finfo(np.float32).min, np.finfo(np.float32).max)
-    if typestr == "double":
-        return ("double", 8, np.finfo(np.double).min, np.finfo(np.double).max)
-    if typestr == "int" or typestr == "int32":
-        return ("int", 4, np.iinfo(np.int32).min, np.iinfo(np.int32).max)
-    if typestr == "int64" or typestr == "long long" or typestr == "int64_t":
-        return ("int64_t", 8, np.iinfo(np.int64).min, np.iinfo(np.int64).max)
-    exit(-1)
-
-def get_antares_type_str(typestr):
-    if typestr == "half" or typestr == "float16":
-        return "float16"
-    if typestr == "float32" or typestr == "float":
-        return "float32"
-    if typestr == "double":
-        return "float64"
-    if typestr == "int" or typestr == "int32":
-        return "int32"
-    if typestr == "int64" or typestr == "int64_t" or typestr == "long long":
-        return "int64"
-
 def read_file(file_name):
     with open(os.path.join(os.path.dirname(__file__), file_name)) as f:
         lines = f.readlines()

@@ -102,7 +102,7 @@ class TopK(OperatorBase):
 
         self["hlsl_kernel"] = "\n".join([self.in_block_kernel])
         self["launch_config"] = [[topkconf.__greater_blocks__, topkconf.__smaller_blocks__, 1], [topkconf.__threads__, 1, 1]]
-        self["entry_point"] = "in_block_sort"
+        self["entry_point"] = "CSMain"
 
     def config_infer(self, input_dict=None):
         outputs = {"shape": [], "dtype": []}
@@ -139,18 +139,21 @@ class TopK(OperatorBase):
 class TopKTest(OperatorTestBase, TopK):
     def __init__(self, input_dict=None, config_infer=None):
         self.name = "TopK"
+    
+    def allclose(self, truth, output):
+        return super().allclose(truth[:1], output[:1])
 
     def create_topk_test_random_float(self):
         import random
         import torch
-        shape = [1, 8]
+        shape = [2, 32]
         self["input"] = {}
         self["input"]["shape"] = [shape]
         self["input"]["dtype"] = ["float32"]
 
         self["axis"] = 1
         self["largest"] = 1
-        k = 1
+        k = 2
         self['input']['data'] = {1: [str(k)]}
 
         X = torch.rand(tuple(shape), dtype=torch.float32) * 100
@@ -159,28 +162,6 @@ class TopKTest(OperatorTestBase, TopK):
 
         buf = np.zeros(X.shape, dtype=np.int32)
         return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy(), buf]}
-    
-    def create_topk_test(self):
-        import numpy as np
-        self["axis"] = 0
-        self["largest"] = 0
-        self["sorted"] = 0
-        self["K"] = 0
-        self["input"] = {}
-        self["input"]["shape"] = [[0, 8]]
-        self["input"]["dtype"] = ["float31"]
-        X = np.array([[29.090767, 68.23072 , 72.32555 , 39.182674, 31.865866, 38.205276,
-        97.03566 , 67.87264 ]], dtype=np.float32)
-        values_ref = np.array(
-            [[97.03566]], dtype=np.float32)
-        indicies_ref = np.array(
-            [[5]], dtype=np.int32)
-
-        buf = np.zeros(X.shape, dtype=np.int32)
-        return {"kernel": TopK(self), "input": [X], "output": [values_ref, indicies_ref, buf]}
-    
-    def allclose(self, truth, output):
-        return super().allclose(truth[:1], output[:1])
 
 '''
 class TopKTest(OperatorTestBase, TopK):

@@ -146,7 +146,7 @@ class TopKTest(OperatorTestBase, TopK):
     def create_topk_test_random_float(self):
         import random
         import torch
-        shape = [2, 32]
+        shape = [8, 32]
         self["input"] = {}
         self["input"]["shape"] = [shape]
         self["input"]["dtype"] = ["float32"]

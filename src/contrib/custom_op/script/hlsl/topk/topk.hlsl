@@ -88,7 +88,6 @@ void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
     if(thread_id < __axis_size__)
     {
         output2[cur_i] = buf[element_id].index;
-        output1[0] = 1;
     }
     // Block all blocks untill output2 finished.
     DeviceMemoryBarrierWithGroupSync();

@@ -141,12 +141,12 @@ class TopKTest(OperatorTestBase, TopK):
         self.name = "TopK"
     
     def allclose(self, truth, output):
-        return super().allclose(truth[:1], output[:1])
+        return super().allclose(truth[:2], output[:2])
 
     def create_topk_test_random_float(self):
         import random
         import torch
-        shape = [8, 32]
+        shape = [8, 64]
         self["input"] = {}
         self["input"]["shape"] = [shape]
         self["input"]["dtype"] = ["float32"]
@@ -161,7 +161,7 @@ class TopKTest(OperatorTestBase, TopK):
             X, k=k, dim=self["axis"], largest=True, sorted=True)
 
         buf = np.zeros(X.shape, dtype=np.int32)
-        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy(), buf]}
+        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy().astype(np.int32), buf]}
 
 '''
 class TopKTest(OperatorTestBase, TopK):

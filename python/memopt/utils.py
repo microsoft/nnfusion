@@ -1,4 +1,3 @@
-from ast import Not
 from .graph import OutputNode, PlaceHolderNode
 import tvm
 from .modify_input_pass import modify_input_pass
@@ -73,6 +72,7 @@ def append_host_call(kernel_code, block, grid, num_params, name=_tvm_default_nam
     def_args = ", ".join(args)
     block_str = "dim3({}, {}, {})".format(block[0], block[1], block[2])
     grid_str = "dim3({}, {}, {})".format(grid[0], grid[1], grid[2])
+    call_str = "{}<<<{}, {}>>>({})".format(name, grid_str, block_str, call_args)
     if measure_time:
         template = """
 extern "C" float function({}) {{
@@ -81,24 +81,33 @@ extern "C" float function({}) {{
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
-    {}<<<{}, {}>>>({});
+    {};
+    if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
+    if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
+    cudaEventElapsedTime(&ms, start, stop);
+    int repeats = min(100, int(ceil(300.0 / ms)));
+    cudaEventRecord(start, 0);
+    for (int _ = 0; _ < repeats; _++)
+        {};
     if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
     if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
     cudaEventElapsedTime(&ms, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return ms;
+    return ms / repeats;
 }}
-"""
+""".format(def_args, call_str, call_str)
     else:
         template = """
 extern "C" void function({}) {{
-    {}<<<{}, {}>>>({});
+    {};
 }}
+""".format(def_args, call_str)
+    header = """
+#include <cuda_runtime.h>
+#include <math.h>
 """
-    header = "#include <cuda_runtime.h>\n"
-    host_call = template.format(def_args, name, grid_str, block_str, call_args)
-    return header + kernel_code + "\n" + host_call
+    return header + kernel_code + "\n" + template
 
 def compile_and_load(kernel_code):
     src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
@@ -233,10 +242,9 @@ def compose_global_kernel(topo_order, configs, target, name):
                 break
     return code.getvalue(), block_size, grid_size, args
 
-def profile(lib, args, warmup=10, repeat=30):
+def profile(lib, args):
     import torch
     torch_arrs = []
-    device = tvm.device("cuda", 3)
     for arg in args:
         shape = list(map(int, arg.shape))
         dtype = torch.__getattribute__(arg.dtype)
@@ -245,6 +253,4 @@ def profile(lib, args, warmup=10, repeat=30):
 
     tm = lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
     assert(tm > 0)
-    _ = [lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs]) for i in range(warmup)]
-    tests = [lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs]) for i in range(repeat)]
-    return np.mean(tests)
+    return tm

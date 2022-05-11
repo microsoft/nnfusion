@@ -9,12 +9,12 @@ import memopt
 from memopt.tvm_ops import tvm_matmul
 
 target = tvm.target.cuda(arch="sm_61")
-n, m, k = 4096, 128, 128
+n, m, k = 4096, 64, 64
 X, K, Y = tvm_matmul(n, m, k)
 sch = te.create_schedule(Y.op)
 cgen = CodeGenerator()
-codegen_dict = {'k': [32, 1], 'x': [16, 4], 'y': [16, 8]}
-sch = cgen.rewrite_schedule(sch, codegen_dict, True, True, tile_blacklist=[])
+codegen_dict = {'k': [16, 1], 'x': [4, 4, 2], 'y': [32, 2]}
+sch = cgen.recursive_schedule_up(sch, codegen_dict, tile_blacklist=[])
 
 with memopt.Scope(sch) as scope:
     kernel_code = memopt.build_op(sch, [X, K, Y], target, [], [], name="MyMatMul", global_kernel=True)
@@ -31,4 +31,5 @@ with memopt.Scope(sch) as scope:
         ctypes.c_void_p(c.data_ptr())
     )
     ref = torch.matmul(a, b)
+    print(memopt.utils.profile(lib, [X, K, Y]))
     memopt.utils.ctypesCloseLibrary(lib)

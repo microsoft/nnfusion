@@ -42,11 +42,18 @@ class CodeGenerator:
     def cooperative_fetch(self, shared, sch):
         axes = sch[shared].op.axis
         fused = sch[shared].fuse(*axes)
+        # bounds = tvm.te.schedule.InferBound(sch.normalize())
+
+        # if axes[-1].dom.extent % 4 == 0 and isinstance(shared.op.body, tvm.ir.container.Array):
+        #     print(np.prod([bounds[ax].extent for ax in axes]), [bounds[ax].extent for ax in axes])
+        #     oo, mid = sch[shared].split(fused, factor=4 * self.thread_per_block)
+        #     ii, vv = sch[shared].split(mid, factor=4)
+        #     sch[shared].reorder(oo, ii, vv)
+        #     sch[shared].vectorize(vv)
         oo, ii = sch[shared].split(fused, factor=self.thread_per_block)
         sch[shared].reorder(oo, ii)
         sch[shared].unroll(oo)
         sch[shared].bind(ii, te.thread_axis("threadIdx.x"))
-
     # [Parameters]
     #   schedule: the original TVM schedule of an op
     #   tile_dict: a dictionary holding split factors of each axis,
@@ -62,50 +69,34 @@ class CodeGenerator:
     #
     # [Return]
     #   new_s: an optimized TVM schedule
-    def rewrite_schedule(self, schedule, tile_dict, smem_bool, reg_bool, target_stage='compute', tile_blacklist=[]):
+    def rewrite_schedule_no_reduce(self, schedule, tile_dict, tile_blacklist=[]):
         self.tiling = tile_dict
-        self.need_smem_tiling = smem_bool
-        self.need_reg_tiling = reg_bool
         self.sche = schedule
 
-        input_tensors = []
         out = None
-        for tensor, stage in self.sche.stage_map.items():
-            if stage.is_output:
-                out = tensor.output(0)
-            elif isinstance(stage.op, tvm.te.tensor.PlaceholderOp):
-                input_tensors.append(tensor.output(0))
+        reduce_ops = []
+        elementwise_op = []
+        for op, stage in self.sche.stage_map.items():
+            if isinstance(op, tvm.te.ComputeOp):
+                if stage.is_output:
+                    out = op.output(0)
+                else:
+                    stage.compute_inline()
+                if len(op.reduce_axis) > 0:
+                    reduce_ops.append(op)
+                else:
+                    elementwise_op.append(op)
 
-        assert(out is not None)
+        assert(len(reduce_ops) == 0)
 
-        # adjust format
+        self.thread_per_block = 1
         for axis in self.sche[out].op.axis:
             name = axis.var.name
             if len(self.tiling[name]) == 2:
                 vthrd = self.tiling[name][1]
                 thrd = self.tiling[name][0]
                 self.tiling[name] = [vthrd, thrd, 1]
-        #print('reduce:', self.sche[out].op.reduce_axis)
-        #print('space:', self.sche[out].op.axis)
-
-        self.thread_per_block = 1
-        for axis in self.sche[out].op.axis:
-            self.thread_per_block *= self.tiling[axis.var.name][1]
-
-        shared_tensor_list = []
-        local_tensor_list = []
-        reg_tile = None
-        # print("[Add cache stage]")
-        if self.need_smem_tiling:
-            for input_tensor in input_tensors:
-                shared_tensor = self.sche.cache_read(input_tensor, "shared", [out])
-                shared_tensor_list.append(shared_tensor)
-
-        if self.need_reg_tiling:
-            for shared_tensor in shared_tensor_list:
-                local_tensor = self.sche.cache_read(shared_tensor, "local", [out])
-                local_tensor_list.append(local_tensor)
-            reg_tile = self.sche.cache_write(out, "local")
+            self.thread_per_block *= self.tiling[name][1]
 
         blck_axis = []
         vthd_axis = []
@@ -113,13 +104,12 @@ class CodeGenerator:
         tile_axis = []
         for axis in self.sche[out].op.axis:
             bx, vx, tx, tn = self.split_axis(out, axis)
-            # bx, tx, tn = self.split_axis(out, axis)
             blck_axis.append(bx)
             vthd_axis.append(vx)
             thrd_axis.append(tx)
             tile_axis.append(tn)
+        vthd_axis = list(reversed(vthd_axis)) # inner virtual thread first
         axis_order = blck_axis + vthd_axis + thrd_axis + tile_axis
-        # print("[Split spatial axis]\n", axis_order)
         self.sche[out].reorder(*axis_order)
         blck_fused = self.sche[out].fuse(*blck_axis)
         thrd_fused = self.sche[out].fuse(*thrd_axis)
@@ -128,41 +118,16 @@ class CodeGenerator:
             self.sche[out].bind(va, te.thread_axis("vthread"))
         self.sche[out].bind(thrd_fused, te.thread_axis("threadIdx.x"))
 
-        reduce_outer_axis, reduce_inner_axis = [], []
-
-        if reg_tile is not None:
-            self.sche[reg_tile].compute_at(self.sche[out], thrd_fused)
-            space_axis = list(self.sche[reg_tile].op.axis)
-            for axis in self.sche[reg_tile].op.reduce_axis:
-                factor = self.tiling[axis.var.name][0]
-                ro, ri = self.sche[reg_tile].split(axis, factor=factor)
-                reduce_outer_axis.append(ro)
-                reduce_inner_axis.append(ri)
-
-            axis_order = reduce_outer_axis + reduce_inner_axis + space_axis
-            self.sche[reg_tile].reorder(*axis_order)
-            space_fused = self.sche[reg_tile].fuse(*space_axis)
-            self.sche[reg_tile].unroll(space_fused)
-        else:
-            for axis in self.sche[out].op.reduce_axis:
-                factor = self.tiling[axis.var.name][0]
-                ro, ri = self.sche[out].split(axis, factor=factor)
-                reduce_outer_axis.append(ro)
-                reduce_inner_axis.append(ri)
-                # bind_idx = te.thread_axis("threadIdx.x")
-                # self.sche[out].bind(reduce_axis[1], bind_idx)
-                # self.sche[out].set_store_predicate(bind_idx.var.equal(0))
-
-        compute_stage = out if reg_tile is None else reg_tile
-        for rt in local_tensor_list:
-            self.sche[rt].compute_at(self.sche[compute_stage], space_fused)
-        for st in shared_tensor_list:
-            if st.name.endswith(".shared") and st.name[:-len(".shared")] in tile_blacklist:
-                self.sche[st].compute_at(self.sche[out], blck_fused)
-            else:
-                self.sche[st].compute_at(self.sche[compute_stage], reduce_outer_axis[-1])
-            self.cooperative_fetch(st, self.sche)
-
+        for op in elementwise_op:
+            out_shape = op.output(0).shape
+            for tensor in op.input_tensors:
+                if isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
+                and len(out_shape) > len(tensor.shape): # is broadcast
+                    tensor_shared = self.sche.cache_read(tensor, "shared", [op])
+                    self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
+                    self.cooperative_fetch(tensor_shared, self.sche)
+                    # tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
+                    # self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche
 
     def recursive_schedule_up(self, schedule, tile_dict, tile_blacklist=[]):
@@ -208,6 +173,7 @@ class CodeGenerator:
             vthd_axis.append(vx)
             thrd_axis.append(tx)
             tile_axis.append(tn)
+        vthd_axis = list(reversed(vthd_axis)) # inner virtual thread first
         axis_order = blck_axis + vthd_axis + thrd_axis + tile_axis
         self.sche[out].reorder(*axis_order)
         blck_fused = self.sche[out].fuse(*blck_axis)

@@ -8,21 +8,22 @@ import numpy as np
 
 a = op.PlaceHolderNode("A")
 b = op.PlaceHolderNode("w1")
-c = op.MatMulNode([a, b], 4096, 128, 128)
+c = op.MatMulNode([a, b], 4096, 64, 64)
 d = op.PlaceHolderNode("w2")
-e = op.MatMulNode([c, d], 4096, 128, 128)
+e = op.MatMulNode([c, d], 4096, 64, 64)
 f = op.OutputNode(e)
 
 topo = op.topo_order([a, b, d])
 print(topo)
 config = {
-    c : {'k': [16, 1], 'x': [8, 4], 'y': [16, 8]},
-    e : {'k': [16, 1], 'x': [8, 4], 'y': [16, 8]},
+    c : {'k': [16, 1], 'x': [4, 4, 2], 'y': [32, 2]},
+    e : {'k': [16, 1], 'x': [4, 4, 2], 'y': [32, 2]},
 }
 target = tvm.target.cuda(arch="sm_61")
 code, block_size, grid_size, args = compose_global_kernel(topo, config, target, name="Fused")
 code = append_host_call(code, block_size, grid_size, len(args), name="Fused", measure_time=True)
 print(args)
+print(code)
 lib = compile_and_load(code)
 lib.function.restype = ctypes.c_float
 torch_arrs = []

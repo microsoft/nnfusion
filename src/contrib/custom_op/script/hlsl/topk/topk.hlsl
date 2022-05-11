@@ -23,11 +23,11 @@ uint idx_to_thread_id(uint block_id, uint idx, uint axis_size, uint axis_stride)
     return (idx - (block_id / axis_stride) * (axis_size * axis_stride) - block_id % axis_stride) / axis_stride;
 }
 
-// Bitonic Merging
-void bitonic_merge(uint element_id, uint step, uint largest)
+// Bitonic Sorting
+void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
 {
     uint pos = element_id % step + (element_id / step) * step * 2;
-    if((((pos/step & 1) == largest) && (buf[pos].val > buf[pos+step].val)) || (((pos/step & 1) == (largest^1)) && (buf[pos].val < buf[pos+step].val)))
+    if((((pos/gstep>>1 & 1) == largest) && buf[pos].val > buf[pos+step].val) || (((pos/gstep>>1 & 1) == (largest^1) && (buf[pos].val < buf[pos+step].val))))
     {
         type t =  buf[pos + step];
         buf[pos + step] = buf[pos];
@@ -35,126 +35,110 @@ void bitonic_merge(uint element_id, uint step, uint largest)
     }
 }
 
-// Bitonic Sorting
-void bitonic_sort(uint element_id, uint step, uint gstep, uint largest)
+void bitonic(uint element_id, uint step, uint gstep, uint largest)
 {
     uint pos = element_id % step + (element_id / step) * step * 2;
-    if((((pos/gstep & 1) == largest) && buf[pos].val > buf[pos+step].val) || (((pos/gstep & 1) == (largest^1) && (buf[pos].val < buf[pos+step].val))))
-    {
-        type t =  buf[pos + step];
-        buf[pos + step] = buf[pos];
-        buf[pos] = t;
-    }
+
 }
 
 [numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
 {
     uint bigger_block_id = gid.x;
-    uint smaller_block_id = gid.y;
-    uint thread_id = tid.x + smaller_block_id * __threads__;
     uint element_id = tid.x;
-    uint cur_i = thread_id_to_idx(bigger_block_id, thread_id, __axis_size__, __axis_stride__);
-    uint ans_i = thread_id_to_idx(bigger_block_id, thread_id, __K__, __axis_stride__);
+    uint largest = __largest__;
 
-    if(thread_id < __axis_size__)
+    for(uint smaller_block_id = 0; smaller_block_id < __smaller_blocks__; smaller_block_id++)
     {
-        buf[element_id].val = input0[cur_i];
-        buf[element_id].index = cur_i;
-    }
-    else
-    {
-        buf[element_id].val = __boundary_value__;
-        buf[element_id].index = cur_i;
-    }
-    GroupMemoryBarrierWithGroupSync();
+        uint thread_id = tid.x + smaller_block_id * __threads__;
+        uint cur_i = thread_id_to_idx(bigger_block_id, thread_id, __axis_size__, __axis_stride__);
 
-    uint largest = __largest__^(smaller_block_id&1);
-    if(element_id < __thread_max_element__ / 2 )
-    {
+        if(thread_id < __axis_size__)
+        {
+            buf[element_id].val = input0[cur_i];
+            buf[element_id].index = cur_i;
+        }
+        else
+        {
+            buf[element_id].val = __boundary_value__;
+            buf[element_id].index = cur_i;
+        }
+        GroupMemoryBarrierWithGroupSync();
+
         for(uint merge_step = 1; merge_step <= __thread_max_element__; merge_step <<= 1)
         {
-            if(merge_step < __thread_max_element__)
-                bitonic_merge(element_id, merge_step, largest);
-            GroupMemoryBarrierWithGroupSync();
-            for(uint sort_step = merge_step>>1; sort_step > 0; sort_step >>= 1)
+            for(uint sort_step = merge_step; sort_step > 0; sort_step >>= 1)
             {
-                bitonic_sort(element_id, sort_step, merge_step, largest);
+                if(element_id < __thread_max_element__/2 && sort_step!=__thread_max_element__)
+                        bitonic_sort(element_id, sort_step, merge_step, largest);
                 GroupMemoryBarrierWithGroupSync();
             }
         }
-    }
-    GroupMemoryBarrierWithGroupSync();
 
-    if(thread_id < __axis_size__)
-    {
-        output2[cur_i] = buf[element_id].index;
-    }
-    DeviceMemoryBarrierWithGroupSync();
+        GroupMemoryBarrierWithGroupSync();
 
+        if(thread_id < __axis_size__)
+        {
+            output2[cur_i] = buf[element_id].index;
+        }
+        AllMemoryBarrierWithGroupSync();
+    }
+
+    // Per request to use single block to reduce all data
     for(uint mega_step = 1; mega_step <= __max_mega_step__; mega_step <<= 1)
     {
-        if(smaller_block_id % (2 * mega_step) == 0)
+        for(uint smaller_block_id = 0; smaller_block_id < __smaller_blocks__; smaller_block_id += 2 * mega_step)
         {
-            if(thread_id < __axis_size__)
+            uint local_thread_id = tid.x + smaller_block_id * __threads__;
+            uint local_i = thread_id_to_idx(bigger_block_id, local_thread_id, __axis_size__, __axis_stride__);
+            if(local_thread_id < __axis_size__)
             {
-                buf[element_id].index = output2[cur_i];
+                buf[element_id].index = output2[local_i];
                 buf[element_id].val = input0[buf[element_id].index];
-                //output2[cur_i] = mega_step;
             }
             else
             {
                 buf[element_id].val = __boundary_value__;
-                buf[element_id].index = cur_i;
+                buf[element_id].index = local_i;
             }
-            // This is magic!
             GroupMemoryBarrierWithGroupSync();
 
-            uint next_thread_id = thread_id + mega_step * __threads__;
+            uint next_thread_id = local_thread_id + mega_step * __threads__;
             uint next_i = thread_id_to_idx(bigger_block_id, next_thread_id, __axis_size__, __axis_stride__);
             if(next_thread_id < __axis_size__)
             {
-                buf[element_id + __thread_max_element__].index = output2[next_i];
-                buf[element_id + __thread_max_element__].val = input0[buf[element_id + __thread_max_element__].index];
-                //output2[next_i] = mega_step;
+                buf[ - element_id - 1 + 2 * __thread_max_element__].index = output2[next_i];
+                buf[ - element_id - 1 + 2 * __thread_max_element__].val = input0[buf[ - element_id - 1 + 2 * __thread_max_element__].index];
             }
             else
             {
-                buf[element_id + __thread_max_element__].val = __boundary_value__;
-                buf[element_id + __thread_max_element__].index = next_i;
+                buf[ - element_id - 1 + 2 * __thread_max_element__].val = __boundary_value__;
+                buf[ - element_id - 1 + 2 * __thread_max_element__].index = next_thread_id;
             }
             GroupMemoryBarrierWithGroupSync();
 
-            uint largest = __largest__^((smaller_block_id>>mega_step)&1);
-            for(uint merge_step = 1; merge_step <= __thread_max_element__ * 2 ; merge_step <<= 1)
+            for(uint sort_step = __thread_max_element__; sort_step > 0; sort_step >>= 1)
             {
-                if(merge_step < __thread_max_element__ * 2)
-                    bitonic_merge(element_id, merge_step, largest);
+                bitonic_sort(element_id, sort_step, __thread_max_element__ * 2, largest);
                 GroupMemoryBarrierWithGroupSync();
-                for(uint sort_step = merge_step>>1; sort_step > 0; sort_step >>= 1)
-                {
-                    bitonic_sort(element_id, sort_step, merge_step, largest);
-                    GroupMemoryBarrierWithGroupSync();
-                }
             }
+            GroupMemoryBarrierWithGroupSync();
 
-            if(thread_id < __axis_size__)
+            if(local_thread_id < __axis_size__)
             {
-                uint right_half = largest ^ 1;
-                output2[cur_i] = buf[element_id + __thread_max_element__ * right_half].index;
+                output2[local_i] = buf[element_id].index;
             }
-            // This one is also dark magic!!!
             AllMemoryBarrierWithGroupSync();
         }
-        AllMemoryBarrierWithGroupSync();
     }
-    AllMemoryBarrierWithGroupSync();
 
-    if(thread_id < __K__)
+    AllMemoryBarrierWithGroupSync();
+    if(element_id < __K__)
     {
+        uint cur_i = thread_id_to_idx(bigger_block_id, element_id, __axis_size__, __axis_stride__);
+        uint ans_i = thread_id_to_idx(bigger_block_id, element_id, __K__, __axis_stride__);
         uint index = output2[cur_i];
         uint local_tid = idx_to_thread_id(bigger_block_id, index, __axis_size__, __axis_stride__);
         output0[ans_i] = input0[index];
         output1[ans_i] = local_tid;
     }
-    AllMemoryBarrierWithGroupSync();
 }

@@ -84,15 +84,20 @@ class TopK(OperatorBase):
 
     # Attach this to let the NNFusion HLSL codegen organize the kernel
     def attach_antares_hlsl_kernel_config(self):
-        antares_info = "// GLOBALS: input0:{0}[{1}] -> output0:{2}[{3}], output1:{4}[{5}]".format(
+        antares_info = "// GLOBALS: input0:{0}[{1}] -> output0:{2}[{3}], output1:{4}[{5}], output2:{6}[{7}]".format(
             get_antares_type_str(self["input"]["dtype"][0]),
             ", ".join([str(i) for i in self["input"]["shape"][0]]),
             get_antares_type_str(self["output"]["dtype"][0]),
             ", ".join([str(i) for i in self["output"]["shape"][0]]),
             get_antares_type_str(self["output"]["dtype"][1]),
             ", ".join([str(i) for i in self["output"]["shape"][1]]),
+            get_antares_type_str(self["output"]["dtype"][2]),
+            ", ".join([str(i) for i in self["output"]["shape"][2]]),
         )
         self["hlsl_kernel"] = antares_info + "\n" + antares_info.replace("GLOBALS:", "LOCAL: CSMain --") + "\n" + self["hlsl_kernel"]
+
+        self["hlsl_kernel"] = self["hlsl_kernel"].replace("[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)\n{",
+            "[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID){\n// [thread_extent] blockIdx.x =  "+str(self["launch_config"][0][0])+"\n// [thread_extent] threadIdx.x = " + str(self["launch_config"][1][0]))
     
     # Generate a HLSL Kernels
     def attach_directx_hlsl_kernel(self):
@@ -101,8 +106,10 @@ class TopK(OperatorBase):
         self.in_block_kernel = replace_tempalte_args(in_block_kernel, topkconf)
 
         self["hlsl_kernel"] = "\n".join([self.in_block_kernel])
-        self["launch_config"] = [[topkconf.__greater_blocks__, topkconf.__smaller_blocks__, 1], [topkconf.__threads__, 1, 1]]
+        self["launch_config"] = [[topkconf.__greater_blocks__, 1, 1], [topkconf.__threads__, 1, 1]]
         self["entry_point"] = "CSMain"
+
+        self.attach_antares_hlsl_kernel_config()
 
     def config_infer(self, input_dict=None):
         outputs = {"shape": [], "dtype": []}
@@ -136,34 +143,6 @@ class TopK(OperatorBase):
         outputs["shape"][1][self['axis']] = input_dict["K"]
         return outputs
 
-class TopKTest(OperatorTestBase, TopK):
-    def __init__(self, input_dict=None, config_infer=None):
-        self.name = "TopK"
-    
-    def allclose(self, truth, output):
-        return super().allclose(truth[:2], output[:2])
-
-    def create_topk_test_random_float(self):
-        import random
-        import torch
-        shape = [8, 64]
-        self["input"] = {}
-        self["input"]["shape"] = [shape]
-        self["input"]["dtype"] = ["float32"]
-
-        self["axis"] = 1
-        self["largest"] = 1
-        k = 2
-        self['input']['data'] = {1: [str(k)]}
-
-        X = torch.rand(tuple(shape), dtype=torch.float32) * 100
-        (values_ref, indicies_ref) = torch.topk(
-            X, k=k, dim=self["axis"], largest=True, sorted=True)
-
-        buf = np.zeros(X.shape, dtype=np.int32)
-        return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy().astype(np.int32), buf]}
-
-'''
 class TopKTest(OperatorTestBase, TopK):
     def __init__(self, input_dict=None, config_infer=None):
         self.name = "TopK"
@@ -209,15 +188,16 @@ class TopKTest(OperatorTestBase, TopK):
     def create_topk_test_random_fp16(self):
         import torch
         if not torch.cuda.is_available():
+            print("No CUDA Runtime Found.")
             return {}
-        shape = [512, 512]
+        shape = [10, 512]
         self["input"] = {}
         self["input"]["shape"] = [shape]
         self["input"]["dtype"] = ["float16"]
 
-        self["axis"] = 0
+        self["axis"] = 1
         self["largest"] = 1
-        self["K"] = 500
+        self["K"] = 129
 
         X = torch.rand(size=tuple(shape), dtype=torch.float16).cuda()
         (values_ref, indicies_ref) = torch.topk(
@@ -231,7 +211,7 @@ class TopKTest(OperatorTestBase, TopK):
         import torch
         shape = []
         for i in range(0, random.randint(2, 3)):
-            shape.append(random.randint(100, 512))
+            shape.append(random.randint(100, 256))
         self["input"] = {}
         self["input"]["shape"] = [shape]
         self["input"]["dtype"] = ["float32"]
@@ -239,7 +219,7 @@ class TopKTest(OperatorTestBase, TopK):
         self["axis"] = random.randint(0, len(shape)-1)
         self["largest"] = 1
         k = random.randint(1, shape[self["axis"]])
-        self['input']['data'] = {1: [str(k)]}
+        self['K'] = k
 
         X = torch.rand(tuple(shape), dtype=torch.float32) * 100
         (values_ref, indicies_ref) = torch.topk(
@@ -253,7 +233,7 @@ class TopKTest(OperatorTestBase, TopK):
         import random
         shape = []
         for i in range(0, random.randint(2, 3)):
-            shape.append(random.randint(100, 512))
+            shape.append(random.randint(100, 256))
         self["input"] = {}
         self["input"]["shape"] = [shape]
         self["input"]["dtype"] = ["float32"]
@@ -292,10 +272,10 @@ class TopKTest(OperatorTestBase, TopK):
         self["input"]["shape"] = [shape]
         self["input"]["dtype"] = ["float32"]
 
-        self["axis"] = random.randint(0, len(shape)-1)
+        self["axis"] = 1
         self["largest"] = 1
-        k = 60
-        self['input']['data'] = {1: [str(k)]}
+        k = 6
+        self["K"] = k
 
         X = torch.rand(tuple(shape), dtype=torch.float32) * 100
         (values_ref, indicies_ref) = torch.topk(
@@ -303,4 +283,3 @@ class TopKTest(OperatorTestBase, TopK):
 
         buf = np.zeros(X.shape, dtype=np.int32)
         return {"kernel": TopK(self), "input": [X.numpy()], "output": [values_ref.numpy(), indicies_ref.numpy(), buf]}
-'''

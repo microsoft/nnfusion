@@ -37,6 +37,7 @@
 #include "op/constant.hpp"
 #include "op/conv.hpp"
 #include "op/conv_trans.hpp"
+#include "op/cum_sum.hpp"
 #include "op/depth_to_space.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
@@ -169,6 +170,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ConstantOfShape", 1, TranslateConstantOfShapeOp);
                 REGISTER_OPERATOR("Conv", 1, TranslateConvOp);
                 REGISTER_OPERATOR("Cos", 1, TranslateUnaryOp<op::Cos>);
+                REGISTER_OPERATOR("CumSum", 1, TranslateCumSumOp);
                 REGISTER_OPERATOR("Div", 1, TranslateLegacyBinaryOp<op::Divide>);
                 REGISTER_OPERATOR("Div", 7, TranslateBinaryOp<op::Divide>);
                 REGISTER_OPERATOR("DivGrad", 1, TranslateDivGradOp);

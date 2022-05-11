@@ -24,6 +24,7 @@
 #include "core/node.hpp"
 #include "nnfusion/core/graph/util/autobroadcast.hpp"
 
+DECLARE_bool(fantares_mode);
 namespace nnfusion
 {
     namespace frontend
@@ -32,10 +33,9 @@ namespace nnfusion
         {
             namespace set_1
             {
-                NamedNodeVector
-                    TranslateLayerNormalizationOp(const onnx::NodeProto& node_proto,
-                                                  const NodeMap& all_ng_nodes,
-                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                NamedNodeVector toSingleOp(const onnx::NodeProto& node_proto,
+                                           const NodeMap& all_ng_nodes,
+                                           std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     auto input_rank = input_indexes[0].get_shape().size();
@@ -63,10 +63,9 @@ namespace nnfusion
                     return ret;
                 }
 
-                NamedNodeVector
-                    TranslateLayerNormalizationOpV1(const onnx::NodeProto& node_proto,
-                                                    const NodeMap& all_ng_nodes,
-                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                NamedNodeVector toMultipleOp(const onnx::NodeProto& node_proto,
+                                             const NodeMap& all_ng_nodes,
+                                             std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_gnodes = GetAllInputNode(all_ng_nodes, node_proto);
 
@@ -165,9 +164,18 @@ namespace nnfusion
                     auto ret_gnode =
                         m_graph->add_node_and_edge(std::make_shared<op::Add>(), {mul_gnode, bias});
 
-                    return {{node_proto.output(0), ret_gnode},
-                            {node_proto.output(1), out1},
-                            {node_proto.output(2), out2}};
+                    NNFUSION_CHECK(node_proto.output_size() <= 3);
+                    NamedNodeVector ret;
+                    ret.emplace_back(node_proto.output(0), ret_gnode);
+                    if (node_proto.output_size() >= 2)
+                    {
+                        ret.emplace_back(node_proto.output(1), out1);
+                    }
+                    if (node_proto.output_size() == 3)
+                    {
+                        ret.emplace_back(node_proto.output(2), out2);
+                    }
+                    return ret;
                 }
 
                 NamedNodeVector TranslateLayerNormalizationGradOp(
@@ -300,6 +308,21 @@ namespace nnfusion
                     return {{node_proto.output(0), x_grad},
                             {node_proto.output(1), weight_grad_gnode},
                             {node_proto.output(2), bias_grad_gnode}};
+                }
+
+                NamedNodeVector
+                    TranslateLayerNormalizationOp(const onnx::NodeProto& node_proto,
+                                                  const NodeMap& all_ng_nodes,
+                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    if (FLAGS_fantares_mode)
+                    {
+                        return toMultipleOp(node_proto, all_ng_nodes, m_graph);
+                    }
+                    else
+                    {
+                        return toSingleOp(node_proto, all_ng_nodes, m_graph);
+                    }
                 }
             } // namespace set_1
         }     //namespace onnx_import

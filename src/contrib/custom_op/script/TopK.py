@@ -9,7 +9,7 @@ from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_anta
 
 class TopK(OperatorBase):
     class TopKConfig(dict):
-        def __init__(self, topkop) -> None:
+        def __init__(self, topkop):
             self.input_dtype_0 = topkop["input"]["dtype"][0]
             self.input_shape_0 = topkop["input"]["shape"][0]
             self.output_dtype_1 = topkop["output"]["dtype"][1]

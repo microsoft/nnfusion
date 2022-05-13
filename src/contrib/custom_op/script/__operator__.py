@@ -145,7 +145,7 @@ def get_type_info(typestr):
         return ("float", 4, np.finfo(np.float32).min, np.finfo(np.float32).max)
     if typestr == "double":
         return ("double", 8, np.finfo(np.double).min, np.finfo(np.double).max)
-    if typestr == "int" or typestr == "int32":
+    if typestr == "int" or typestr == "int32" or typestr == "int32_t":
         return ("int", 4, np.iinfo(np.int32).min, np.iinfo(np.int32).max)
     if typestr == "int64" or typestr == "long long" or typestr == "int64_t":
         return ("int64_t", 8, np.iinfo(np.int64).min, np.iinfo(np.int64).max)

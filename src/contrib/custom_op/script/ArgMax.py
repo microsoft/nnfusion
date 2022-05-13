@@ -11,7 +11,6 @@ from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_anta
 class ArgMax(OperatorBase):
     class ArgMaxConfig(dict):
         def __init__(self, op) -> None:
-            print(op)
             self.input_dtype_0 = op["input"]["dtype"][0]
             self.input_shape_0 = op["input"]["shape"][0]
             self.output_dtype_0 = op["output"]["dtype"][0]
@@ -69,7 +68,6 @@ class ArgMax(OperatorBase):
     # Generate a HLSL Kernels
     def attach_directx_hlsl_kernel(self):
         conf = self.ArgMaxConfig(self)
-        print(conf)
         in_block_kernel = read_file("hlsl/argmax/argmax.hlsl")
         self.in_block_kernel = replace_tempalte_args(in_block_kernel, conf)
 
@@ -83,6 +81,10 @@ class ArgMax(OperatorBase):
         # input is {shape[1], dtype[1], axis, keepdims}
         outputs = {"shape": [], "dtype": []}
         outputs["shape"].append(input_dict["input"]["shape"][0].copy())
+        if "axis" not in input_dict:
+            input_dict["axis"] = 0
+        if "keepdims" not in input_dict:
+            input_dict["keepdims"] = 0
         axis = input_dict["axis"]
         keepdims = input_dict["keepdims"]
 

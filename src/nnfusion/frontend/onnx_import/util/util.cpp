@@ -95,7 +95,7 @@ namespace nnfusion
                 case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
                     return make_constant_op<float>(element::f32, shape, tensor);
                 case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
-                    return make_constant_op<float>(element::f16, shape, tensor);
+                    return make_constant_op<half_float::half>(element::f16, shape, tensor);
                 case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
                     return make_constant_op<double>(element::f64, shape, tensor);
                 case onnx::TensorProto_DataType::TensorProto_DataType_INT8:

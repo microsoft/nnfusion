@@ -43,7 +43,7 @@ class InputShapeInference():
             shape = {"output0" : [arith.ConstIntBound(0, val - 1) for val in shape]}
         return self._infer(shape, rstep)
 
-def get_analyzer(expr: str, input_dict: dict, extra_outputs: Iterable) -> InputShapeInference:
+def get_analyzer(expr: str, input_dict: dict, extra_outputs: Iterable=[]) -> InputShapeInference:
     statements = [s_.strip() for s_ in expr.split(';')]
     inputs = copy.deepcopy(input_dict)
     output_dict = {}
@@ -137,3 +137,14 @@ def _get_index_expr(op, var_map):
         return expr
     else:
         raise Exception('Unhandled node type in _get_index_expr(): %s' % op._op)
+
+def get_analyzer_by_ir(antares_ir: str) -> InputShapeInference:
+    antares_ir = antares_ir.strip()
+    assert antares_ir.startswith(
+        '- '
+    ), "The computing expression doesn't start with proper prefix: - ..."
+
+    antares_ir = antares_ir[2:]
+    antares_ir = antares_ir.replace("einstein_v2", "get_analyzer")
+    result = eval(antares_ir, globals(), locals())
+    return result

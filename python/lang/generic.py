@@ -4,6 +4,7 @@ The entry of Antares-TVM bridge
 import json
 import importlib
 from collections import OrderedDict
+from threading import local
 from typing import Optional, List
 
 import numpy as np
@@ -169,51 +170,20 @@ def _assign_multiple_outputs(outputs: List[te.Tensor]):
                                   name='proxy_outputs')
     return assigned_outputs
 
+def translate_to_tvm(expr, input_dict):
+    OUTPUT_TEMP.clear()
+    INPUT_TEMP.clear()
+    einstein_v2(expr, input_dict)
+    assert len(OUTPUT_TEMP) == 1
+    return INPUT_TEMP + OUTPUT_TEMP
 
-# @autotvm.template("template_op")
-# def get_template_op(expr: str, backend, debug=False, **kwargs):
-#     """
-#     Entry function
-#     """
-#     del kwargs
-#     global OUTPUT_TEMP, INPUT_TEMP  # pylint:disable=global-statement
+def translate_ir_to_tvm(antares_ir):
+    antares_ir = antares_ir.strip()
+    assert antares_ir.startswith(
+        '- '
+    ), "The computing expression doesn't start with proper prefix: - ..."
 
-#     program = expr.strip()
-#     assert program.startswith(
-#         '- '
-#     ), "The computing expression doesn't start with proper prefix: - ..."
-
-#     program = program[2:].strip()
-#     assert program
-#     if debug:
-#         print(expr)
-#         print(program)
-
-#     exec('import tvm; from tvm import topi; ' + program, globals(), locals())  # pylint:disable=exec-used
-#     outputs = list(OUTPUT_TEMP)
-#     inputs = list(INPUT_TEMP)
-#     OUTPUT_TEMP = list()
-#     INPUT_TEMP = list()
-
-#     if len(outputs) > 1:
-#         # outputs = _assign_multiple_outputs(outputs)
-#         for out in outputs[1:]:
-#             assert np.prod(list(out.shape)) == np.prod(list(outputs[0].shape))
-#         outputs = te.compute(outputs[0].shape,
-#                              lambda *X: [v[X] for v in outputs],
-#                              name='proxy_outputs')
-#     sch = te.create_schedule([outputs[i].op for i in range(len(outputs))])
-
-#     tedd.viz_dataflow_graph(sch, dot_file_path='./graphub/temp.dot')
-
-#     expr_dict = json.loads(expr.split('##')[-1].replace("'", '\"'))
-#     plan_items = expr_dict['plan'].split('-')
-#     plan = plan_items[0]
-#     plan_args = plan_items[1:] if len(plan_items) > 1 else None
-
-#     _ = do_native_scheduling(sch, backend, plan, plan_args)
-
-#     return sch, [*inputs, *outputs]
-
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
+    antares_ir = antares_ir[2:]
+    antares_ir = antares_ir.replace("einstein_v2", "translate_to_tvm")
+    args = eval(antares_ir, globals(), locals())
+    return args

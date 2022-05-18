@@ -94,10 +94,10 @@ class TopK(OperatorBase):
             get_antares_type_str(self["output"]["dtype"][2]),
             ", ".join([str(i) for i in self["output"]["shape"][2]]),
         )
-        self["hlsl_kernel"] = antares_info + "\n" + antares_info.replace("GLOBALS:", "LOCAL: CSMain --") + "\n" + self["hlsl_kernel"]
+        self["hlsl_kernel"] = antares_info + "\n\n\n" + "// ---------------------------------------------------------------------------\n" + antares_info.replace("GLOBALS:", "LOCAL: CSMain --") + "\n" + self["hlsl_kernel"]
 
         self["hlsl_kernel"] = self["hlsl_kernel"].replace("[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)\n{",
-            "[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID){\n// [thread_extent] blockIdx.x =  "+str(self["launch_config"][0][0])+"\n// [thread_extent] threadIdx.x = " + str(self["launch_config"][1][0]))
+            "[numthreads(1, 1, 1)]\nvoid CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID){\n// [thread_extent] blockIdx.x =  "+str(self["launch_config"][0][0])+"\n// [thread_extent] threadIdx.x = " + str(self["launch_config"][1][0]))
     
     # Generate a HLSL Kernels
     def attach_directx_hlsl_kernel(self):

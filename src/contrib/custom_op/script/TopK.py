@@ -80,7 +80,6 @@ class TopK(OperatorBase):
         self.cs_5_compatiable_mode = True
         super().__init__(input_dict, self.config_infer)
         self.attach_directx_hlsl_kernel()
-        self.attach_antares_hlsl_kernel_config()
 
     # Attach this to let the NNFusion HLSL codegen organize the kernel
     def attach_antares_hlsl_kernel_config(self):

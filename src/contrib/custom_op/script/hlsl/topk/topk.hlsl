@@ -10,7 +10,7 @@ struct type {
     int index;
 };
 
-groupshared type buf[__block_max_element__];
+groupshared type buf[__thread_max_element__ * 2];
 
 uint thread_id_to_idx(uint block_id, uint thread_id, uint axis_size, uint axis_stride)
 {

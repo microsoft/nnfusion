@@ -9,8 +9,11 @@ uint thread_id_to_idx(uint block_id, uint e_id, uint axis_size, uint axis_stride
 }
 
 [RootSignature("DescriptorTable(SRV(t0, numDescriptors=1), UAV(u0, numDescriptors=1))")]
-[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
+[numthreads(__threads__, 1, 1)]
+void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
 {
+    // [thread_extent] blockIdx.x = __blocks__
+    // [thread_extent] threadIdx.x = __threads__
     uint block_id = gid.x;
     uint thread_id = tid.x;
     uint lane_count = WaveGetLaneCount();

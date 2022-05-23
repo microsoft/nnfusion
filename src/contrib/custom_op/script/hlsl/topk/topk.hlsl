@@ -40,8 +40,11 @@ void bitonic(uint element_id, uint step, uint gstep, uint largest)
 }
 
 [RootSignature("DescriptorTable(SRV(t0, numDescriptors=1), UAV(u0, numDescriptors=3))")]
-[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
+[numthreads(__threads__, 1, 1)]
+void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
 {
+    // [thread_extent] blockIdx.x = __greater_blocks__
+    // [thread_extent] threadIdx.x = __threads__
     uint bigger_block_id = gid.x;
     uint element_id = tid.x;
     uint largest = __largest__;

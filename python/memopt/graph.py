@@ -1,8 +1,10 @@
 from policy import ConstructionPolicyV2
-
+import tvm
 from arch import V100
 
 arch = V100()
+
+import lang
 
 class Edge:
     def __init__(self, src_node, dst_node, src_id, dst_id):
@@ -35,6 +37,12 @@ class Node:
         self.name = name
         self._out_edges = []
         self._in_edges = []
+        self._shapes = []
+
+        for i, node in enumerate(inputs):
+            if node is None:
+                inputs[i] = PlaceHolderNode("input" + str(i))
+
         for dst_id, n in enumerate(inputs):
             if isinstance(n, Node):
                 n = (n, 0)
@@ -55,12 +63,28 @@ class Node:
     def outputs(self):
         return self._out_edges
 
+    def get_shape(self, id=0):
+        return self._shapes[id]
+
+    def set_shape(self, shape, id=0):
+        if len(self._shapes) <= id:
+            self._shapes.extend([None for _ in range(id - len(self._shapes) + 1)])
+        elif self._shapes[id] is not None:
+            assert self._shapes[id] == list(map(int, shape)), (self._shapes, list(map(int, shape)))
+        self._shapes[id] = list(map(int, shape))
+
+    def is_placeholder(self):
+        return False
+
     def __repr__(self) -> str:
         return "<Node, " + self.name + ">"
 
 class PlaceHolderNode(Node):
     def __init__(self, name):
         super().__init__([], "PlaceHolder " + name)
+
+    def is_placeholder(self):
+        return True
 
 class OutputNode(Node):
     def __init__(self, node, id=0):
@@ -102,6 +126,46 @@ class ComputeNode(Node):
         super().__init__(inputs, "Compute")
         self.args = args
 
+class IRNode(Node):
+    def __init__(self, inputs, antares_ir):
+        super().__init__(inputs, "Compute")
+        self.args = lang.translate_ir_to_tvm(antares_ir)
+        self.ana = lang.get_analyzer_by_ir(antares_ir)
+        assert len(self.inputs) + 1 == len(self.args)
+        for edge, arg in zip(self.inputs, self.args):
+            edge.src_node.set_shape(arg.shape, edge.src_id)
+        self.set_shape(self.args[-1].shape)
+        self._extract_axis()
+        self.reduction_inputs = [int(name[5:]) for name in self.ana.get_reduction_inputs()]
+
+    def infer_dependency(self, shape, rstep={}):
+        shapes = self.ana.infer(shape, rstep)
+        shapes = {int(k[5:]) : v for k, v in shapes.items()}
+        # should not exceed original shape
+        for id, shape in shapes.items():
+            shapes[id] = list(map(min, zip(shape, self.inputs[id].src_node.get_shape())))
+
+        return shapes
+
+    # axis name -> axis length
+    def _extract_axis(self):
+        queue = [self.args[-1]]
+        self.raxis = {}
+        while len(queue) > 0:
+            t = queue.pop(0)
+            if isinstance(t.op, tvm.te.PlaceholderOp):
+                continue
+            for axis in t.op.reduce_axis:
+                assert(str(axis.var.name) not in self.raxis), axis.var.name
+                self.raxis[str(axis.var.name)] = int(axis.dom.extent)
+            for it in t.op.input_tensors:
+                queue.append(it)
+
+        self.saxis = {}
+        for axis in self.args[-1].op.axis:
+            assert(str(axis.var.name) not in self.saxis), axis.var.name
+            self.saxis[str(axis.var.name)] = int(axis.dom.extent)
+
 def topo_order(list_of_nodes):
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}
     ready = list(filter(lambda node : input_ready_count[node] == 0, list_of_nodes))
@@ -120,3 +184,17 @@ def topo_order(list_of_nodes):
                 ready.append(dst_node)
     assert(len(list_of_nodes) == len(output_list))
     return output_list
+
+def find_topo_sort(output_node_list):
+    def topo_sort_dfs(node, visited, topo_order):
+        if node in visited:
+            return
+        visited.add(node)
+        for edge in node.inputs:
+            topo_sort_dfs(edge.src_node, visited, topo_order)
+        topo_order.append(node)
+    visited = set()
+    topo_order = []
+    for node in output_node_list:
+        topo_sort_dfs(node, visited, topo_order)
+    return topo_order

@@ -217,6 +217,6 @@ class CodeGenerator:
                     tensor_shared = self.sche.cache_read(tensor, "shared", [op])
                     self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
                     self.cooperative_fetch(tensor_shared, self.sche)
-                    # tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
-                    # self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
+                    tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
+                    self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche

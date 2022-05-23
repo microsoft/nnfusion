@@ -182,10 +182,6 @@ def compose_global_kernel(topo_order, configs, target, name):
             # from .debug import debug
             # debug({**globals(), **locals()})
             block_map[op] = {}
-            for idx in shared_outputs:
-                num_bytes = scope.exteral_shared_memroy_size[idx]
-                block = allocator.malloc(num_bytes)
-                block_map[op][idx-len(op.inputs)] = block
             internal_shared_mem = allocator.malloc(scope.total_interal_shared_memory)
             for idx, var_name in zip(shared_inputs_idx, shared_inputs):
                 num_bytes = scope.exteral_shared_memroy_size[var_name]
@@ -193,8 +189,11 @@ def compose_global_kernel(topo_order, configs, target, name):
                 src_id = op.inputs[idx].src_id
                 if can_free(src_node, src_id, done_op):
                     allocator.free(block_map[src_node][src_id])
-
             allocator.free(internal_shared_mem)
+            for idx in shared_outputs:
+                num_bytes = scope.exteral_shared_memroy_size[idx]
+                block = allocator.malloc(num_bytes)
+                block_map[op][idx-len(op.inputs)] = block
             print(allocator.limit)
             arg_list = []
             for idx in range(len(op.inputs)):
@@ -244,6 +243,7 @@ def compose_global_kernel(topo_order, configs, target, name):
 
 def profile(lib, args):
     import torch
+    torch.random.manual_seed(0)
     torch_arrs = []
     for arg in args:
         shape = list(map(int, arg.shape))
@@ -252,5 +252,6 @@ def profile(lib, args):
         torch_arrs.append(arr)
 
     tm = lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
+    print(torch_arrs[-1])
     assert(tm > 0)
     return tm

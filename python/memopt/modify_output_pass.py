@@ -1,3 +1,4 @@
+from asyncore import write
 import tvm
 from .scope import get_scope
 import numpy as np
@@ -26,6 +27,8 @@ def modify_output_pass(f, mod, ctx):
                 op.buffer.elem_offset, op.buffer.scope, op.buffer.data_alignment, op.buffer.offset_factor)
             buffer_map[op.buffer] = buffer
             op = tvm.tir.BufferStore(buffer, op.value, new_indices, op.span)
+            barrier = tvm.tir.Call(None, "tir.tvm_storage_sync", tvm.runtime.convert(["shared"]))
+            return tvm.tir.stmt_seq(barrier, op)
             return op
         return op
 
@@ -46,7 +49,29 @@ def modify_output_pass(f, mod, ctx):
     new_body = tvm.tir.stmt_functor.ir_transform(f.body, None, process, ["tir.BufferStore"])
     new_body = tvm.tir.stmt_functor.ir_transform(new_body, None, process2, ["tir.BufferRealize"])
 
-    # reshape outputs if use shared_memory
+    # --------------------- add barrier before and after smem write ----------------
+    stack = []
+    write_stmt = None
+    def add_to_stack(op):
+        stack.append(op)
+
+    def process3(op):
+        nonlocal write_stmt, stack
+        stack.pop(-1)
+        if (isinstance(op, tvm.tir.BufferStore) and op.buffer in buffer_map.values()) or (write_stmt and write_stmt == op):
+            if not any([isinstance(x, tvm.tir.stmt.For) for x in stack]):
+                write_stmt = None
+                barrier = tvm.tir.Call(None, "tir.tvm_storage_sync", tvm.runtime.convert(["shared"]))
+                return tvm.tir.stmt_seq(barrier, op, barrier)
+            else:
+                write_stmt = stack[-1]
+                return None
+        return None
+    new_body = tvm.tir.stmt_functor.ir_transform(new_body, add_to_stack, process3)
+    assert (len(stack) == 0)
+    assert (write_stmt is None)
+
+    # ------------------- reshape outputs if use shared_memory ------------------------
     new_buffer_map = {}
     for k, v in f.buffer_map.items():
         if v in buffer_map:

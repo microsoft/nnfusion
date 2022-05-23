@@ -1,16 +1,14 @@
 StructuredBuffer<__value_type__> input0: register(t0);
 RWStructuredBuffer<__value_type__> output0: register(u0);
 RWStructuredBuffer<__index_type__> output1: register(u1);
-// globallycoherent : This storage class causes memory barriers and syncs to flush data across the entire GPU such that other groups can see writes.
-// Without this specifier, a memory barrier or sync will only flush a UAV within the current group.
-globallycoherent RWStructuredBuffer<int> output2: register(u2);
+RWStructuredBuffer<int> output2: register(u2);
 
 struct type {
     __value_type__ val;
     int index;
 };
 
-groupshared type buf[__block_max_element__];
+groupshared type buf[__thread_max_element__ * 2];
 
 uint thread_id_to_idx(uint block_id, uint thread_id, uint axis_size, uint axis_stride)
 {
@@ -42,8 +40,11 @@ void bitonic(uint element_id, uint step, uint gstep, uint largest)
 }
 
 [RootSignature("DescriptorTable(SRV(t0, numDescriptors=1), UAV(u0, numDescriptors=3))")]
-[numthreads(1, 1, 1)] void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
+[numthreads(__threads__, 1, 1)]
+void CSMain(uint3 gid: SV_GroupID, uint3 tid: SV_GroupThreadID)
 {
+    // [thread_extent] blockIdx.x = __greater_blocks__
+    // [thread_extent] threadIdx.x = __threads__
     uint bigger_block_id = gid.x;
     uint element_id = tid.x;
     uint largest = __largest__;

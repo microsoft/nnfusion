@@ -1,3 +1,4 @@
+from audioop import reverse
 from arch.Arch import Arch
 from lang.generic import output
 from memopt.graph import find_topo_sort
@@ -12,6 +13,17 @@ def get_all_factors(n: int):
     val = np.where(n % np.arange(1, n0) == 0)[0] + 1
     mid = np.array([], dtype=int) if n % n0 != 0 else [n0]
     return list(np.concatenate([val, mid, n // val[::-1]]))
+
+def factorize(n: int):
+    i = 2
+    result = []
+    while n > 1:
+        if n % i == 0:
+            n //= i
+            result.append(i)
+        else:
+            i += 1
+    return result
 
 def coalesced_factor(subtensor, tensor):
     if subtensor[-1] != tensor[-1] or len(subtensor) == 1:
@@ -37,11 +49,17 @@ class DefaultPolicy:
         rstep_map = {node : self._assign_reduce_step(node) for node in self.ordered_nodes}
         # print(rstep_map)
         smem_tile_condidates = self.DFS_smem_tile(base_tile, topk, rstep_map)[:topk]
+        results = []
         for tile, info in smem_tile_condidates:
             final_rstep_map = self._expand_reduce_axis(tile, info, rstep_map)
-            print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
-            self.assign_block_size(tile, final_rstep_map)
-        return []
+            # print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
+            codegen_dicts = self.assign_block_size(tile)
+            for node in self.ordered_nodes:
+                for ax in node.raxis:
+                    codegen_dicts[node][ax] = [final_rstep_map[node][ax], 1]
+            # print(codegen_dicts)
+            results.append(codegen_dicts)
+        return results
 
     def DFS_smem_tile(self, init_tile, topk, rstep_map):
         _steps = [get_all_factors(n) for n in self.output_nodes[0].get_shape()]
@@ -281,11 +299,45 @@ class DefaultPolicy:
         num_wave = np.ceil(grid_size / (block_per_SM * self.arch.compute_max_core[0])) # self.arch.compute_max_core[0]
         return TileInfo(footprint, smem_cost, block_per_SM, num_wave)
 
-    def assign_block_size(self, output_tile, rstep_map):
+    def assign_block_size(self, output_tile):
         tile_map = self.get_tile_map(output_tile)
         _, tile_map = self._compute_memory_footprint(tile_map)
         max_block_size = np.prod(output_tile)
         for node in self.ordered_nodes:
             max_block_size = math.gcd(max_block_size, np.prod(tile_map[node]))
+        result = {}
+        for node in self.ordered_nodes:
+            result[node] = self._assign_block_size(node, tile_map[node], 128)
+        return result
 
-        return max_block_size
+    def _assign_block_size(self, node, tile, block_size):
+        factors = factorize(block_size)
+        cur_threads = [1 for _ in tile]
+        rstep = {ax : 1 for ax in node.raxis}
+        ndim = len(tile)
+
+        def _score(node, thread): # small is better
+            score = 0
+            block_tile = [int(np.ceil(tile[i] / thread[i])) for i in range(ndim)]
+            shape = node.infer_dependency(block_tile)
+            sp = []
+            for edge in node.inputs:
+                score += np.prod(shape[edge.dst_id])
+                sp.append(shape[edge.dst_id])
+            return score
+        for factor in reversed(factors):
+            score_map = {}
+            for i in range(ndim):
+                if cur_threads[i] * factor > tile[i]:
+                    continue
+                divisible = (tile[i] % (cur_threads[i] * factor)) != 0
+                cur_threads[i] *= factor
+                score_map[i] = (divisible, _score(node, cur_threads), i)
+                cur_threads[i] //= factor
+            assert len(score_map) > 0
+            dim_order = sorted(score_map.keys(), key=lambda x:score_map[x])
+            cur_threads[dim_order[0]] *= factor
+        # print(cur_threads)
+        block_tile = [int(np.ceil(tile[i] / cur_threads[i])) for i in range(ndim)]
+        codegen_dict = {ax : [cur_threads[i], block_tile[i]] for i, ax in enumerate(node.saxis)}
+        return codegen_dict

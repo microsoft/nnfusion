@@ -1,9 +1,7 @@
 StructuredBuffer<__value_type__> input0: register(t0);
 RWStructuredBuffer<__value_type__> output0: register(u0);
 RWStructuredBuffer<__index_type__> output1: register(u1);
-// globallycoherent : This storage class causes memory barriers and syncs to flush data across the entire GPU such that other groups can see writes.
-// Without this specifier, a memory barrier or sync will only flush a UAV within the current group.
-globallycoherent RWStructuredBuffer<int> output2: register(u2);
+RWStructuredBuffer<int> output2: register(u2);
 
 struct type {
     __value_type__ val;

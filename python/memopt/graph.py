@@ -76,6 +76,9 @@ class Node:
     def is_placeholder(self):
         return False
 
+    def is_output(self):
+        return False
+
     def __repr__(self) -> str:
         return "<Node, " + self.name + ">"
 
@@ -89,6 +92,13 @@ class PlaceHolderNode(Node):
 class OutputNode(Node):
     def __init__(self, node, id=0):
         super().__init__([(node, id)], "Output ")
+        self.set_shape(node.get_shape(id))
+
+    def infer_dependency(self, shape, rstep={}):
+        return {0 : shape}
+
+    def is_output(self):
+        return True
 
 class MatMulNode(Node):
     def __init__(self, inputs, n, m ,k):
@@ -125,6 +135,7 @@ class ComputeNode(Node):
     def __init__(self, inputs, args):
         super().__init__(inputs, "Compute")
         self.args = args
+        self.set_shape(self.args[-1].shape)
 
 class IRNode(Node):
     def __init__(self, inputs, antares_ir):

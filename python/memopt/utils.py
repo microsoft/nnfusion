@@ -194,7 +194,7 @@ def compose_global_kernel(topo_order, configs, target, name):
                 num_bytes = scope.exteral_shared_memroy_size[idx]
                 block = allocator.malloc(num_bytes)
                 block_map[op][idx-len(op.inputs)] = block
-            print(allocator.limit)
+            # print(allocator.limit)
             arg_list = []
             for idx in range(len(op.inputs)):
                 if idx in shared_inputs_idx:
@@ -216,8 +216,6 @@ def compose_global_kernel(topo_order, configs, target, name):
             device_func_uid += 1
 
     statements.insert(0, "__shared__ char shared[{}];".format(allocator.limit))
-    for stmt in statements:
-        print(stmt)
     kernel_args_dtype_map = {v : _type_map[k.dtype] for k, v in kernel_args_name_map.items()}
     kernel_args_name = ["{}* {}".format(kernel_args_dtype_map[arg], arg)
         for arg in sorted(set(kernel_args_name_map.values()))]
@@ -252,6 +250,6 @@ def profile(lib, args):
         torch_arrs.append(arr)
 
     tm = lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
-    print(torch_arrs[-1])
+    # print(torch_arrs[-1])
     assert(tm > 0)
     return tm

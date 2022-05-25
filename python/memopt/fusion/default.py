@@ -1,4 +1,3 @@
-from audioop import reverse
 from arch.Arch import Arch
 from lang.generic import output
 from memopt.graph import find_topo_sort
@@ -31,12 +30,26 @@ def coalesced_factor(subtensor, tensor):
     else:
         return subtensor[-1] * coalesced_factor(subtensor[:-1], tensor[:-1])
 
+def get_block_size(n):
+    if n < 64:
+        return n
+    elif n % 32 == 0:
+        for blk in [128, 96, 160, 64, 192, 224, 32]:
+            if n % blk == 0:
+                return blk
+    else:
+        factors = get_all_factors(n)
+        factors = list(filter(lambda x: x <= 1024, factors))
+        roundup = [(n + 31) // 32 * 32 for n in factors]
+        pad = [(roundup[i] - factors[i]) / factors[i] for i in range(len(factors))]
+        score = [abs(factors[i] - 128) * pad[i] for i in range(len(factors))]
+        return min(zip(score, factors))[1]
 
 class DefaultPolicy:
     def __init__(self, output_nodes, arch:Arch) -> None:
         self.arch = arch
         self.ordered_nodes = list(filter(
-            lambda n: not n.is_placeholder(),
+            lambda n: not n.is_placeholder() and not n.is_output(),
             find_topo_sort(output_nodes)
         ))
         self.output_nodes = output_nodes
@@ -52,12 +65,12 @@ class DefaultPolicy:
         results = []
         for tile, info in smem_tile_condidates:
             final_rstep_map = self._expand_reduce_axis(tile, info, rstep_map)
-            # print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
+            print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
             codegen_dicts = self.assign_block_size(tile)
             for node in self.ordered_nodes:
                 for ax in node.raxis:
                     codegen_dicts[node][ax] = [final_rstep_map[node][ax], 1]
-            # print(codegen_dicts)
+            print(codegen_dicts)
             results.append(codegen_dicts)
         return results
 
@@ -81,7 +94,7 @@ class DefaultPolicy:
         while not (queue.empty() or len(visited_tile) > 10 * topk):
             _, tile = queue.get()
             dim_ids = [step.index(t) for step, t in zip(steps, tile)]
-            for i in range(len(dim_ids)):
+            for i in reversed(range(len(dim_ids))):
                 if dim_ids[i] + 1 < len(steps[i]):
                     new_tile = tile.copy()
                     new_tile[i] = steps[i][dim_ids[i] + 1]
@@ -268,19 +281,20 @@ class DefaultPolicy:
             dep = node.infer_dependency(tile_map[node], rstep_map[node])
             # internal
             node_internal_bytes = 0
-            for i, edge in enumerate(node.inputs):
+            for edge in node.inputs:
                 if edge.src_node.is_placeholder():
-                    node_internal_bytes += np.prod(dep[i]) * 4  # TODO: data type
+                    node_internal_bytes += np.prod(dep[edge.dst_id]) * 4  # TODO: data type
             block = allocator.malloc(node_internal_bytes)
             allocator.free(block)
             # free inputs
             processed.add(node)
-            for i, edge in enumerate(node.inputs):
+            for edge in node.inputs:
                 if not edge.src_node.is_placeholder() and can_free(edge.src_node, edge.src_id):
                     allocator.free(block_map.pop((edge.src_node, edge.src_id)))
             # alloc outputs
-            for i, edge in enumerate(node.outputs):
-                block_map[(node, i)] = allocator.malloc(np.prod(tile_map[node]) * 4)
+            for edge in node.outputs:
+                if not edge.dst_node.is_output() and (node, edge.src_id) not in block_map:
+                    block_map[(node, edge.src_id)] = allocator.malloc(np.prod(tile_map[node]) * 4)
 
         assert len(block_map) == 0
         return allocator.limit
@@ -295,7 +309,11 @@ class DefaultPolicy:
         out_tile = output_tile_map[out_node]
         out_shape = out_node.get_shape()
         grid_size = np.prod([np.ceil(y / x) for x, y in zip(out_tile, out_shape)])
-        block_per_SM = min(self.arch.max_smem_usage // max(smem_cost, 1), 4)
+        reg_usage = 2 * max([np.prod(tile_map[node]) for node in self.ordered_nodes]) # estimated reg usage
+        block_per_SM = min(
+            self.arch.max_smem_usage // max(smem_cost, 1),
+            self.arch.reg_cap[0] // reg_usage,
+            4)
         num_wave = np.ceil(grid_size / (block_per_SM * self.arch.compute_max_core[0])) # self.arch.compute_max_core[0]
         return TileInfo(footprint, smem_cost, block_per_SM, num_wave)
 
@@ -306,8 +324,9 @@ class DefaultPolicy:
         for node in self.ordered_nodes:
             max_block_size = math.gcd(max_block_size, np.prod(tile_map[node]))
         result = {}
+        recommended_block_size = get_block_size(max_block_size)
         for node in self.ordered_nodes:
-            result[node] = self._assign_block_size(node, tile_map[node], 128)
+            result[node] = self._assign_block_size(node, tile_map[node], recommended_block_size)
         return result
 
     def _assign_block_size(self, node, tile, block_size):
@@ -320,10 +339,11 @@ class DefaultPolicy:
             score = 0
             block_tile = [int(np.ceil(tile[i] / thread[i])) for i in range(ndim)]
             shape = node.infer_dependency(block_tile)
-            sp = []
             for edge in node.inputs:
-                score += np.prod(shape[edge.dst_id])
-                sp.append(shape[edge.dst_id])
+                score += np.prod(shape[edge.dst_id]) / self.arch.memory_bw(1)
+            if node in self.output_nodes:
+                factor = coalesced_factor(thread, tile)
+                score += 8 * np.prod(block_tile) / min(8, factor) / self.arch.memory_bw(0)
             return score
         for factor in reversed(factors):
             score_map = {}

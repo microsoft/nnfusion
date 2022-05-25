@@ -36,7 +36,6 @@ class Scope(Dict):
                 grid_block_size[name] = max(int(region.extent), grid_block_size[name])
         self.block_size = [grid_block_size[x] for x in ["threadIdx.x", "threadIdx.y", "threadIdx.z"]]
         self.grid_size = [grid_block_size[x] for x in ["blockIdx.x", "blockIdx.y", "blockIdx.z"]]
-        print(grid_block_size)
 
     def __enter__(self):
         global _current_scope

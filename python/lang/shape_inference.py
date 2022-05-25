@@ -39,7 +39,7 @@ class InputShapeInference():
 
         for name, bounds in shape.items():
             shape[name] = [c.max_value - c.min_value + 1 for c in bounds]
-            assert(np.prod(shape[name]) < 1e8) # checking
+            assert(max(shape[name]) < 1e8) # checking
         return shape
 
     def infer(self, shape, rstep: Dict[str, int] = {}):

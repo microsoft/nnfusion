@@ -21,7 +21,12 @@
 
 #pragma once
 
-#include "core/node.hpp"
+#include <memory>
+
+#include "../core/node.hpp"
+#include "../util/broadcasting.hpp"
+#include "../util/util.hpp"
+#include "nnfusion/core/graph/util/autobroadcast.hpp"
 
 namespace nnfusion
 {
@@ -31,22 +36,26 @@ namespace nnfusion
         {
             namespace set_1
             {
-                NamedNodeVector
-                    TranslateLayerNormalizationOp(const onnx::NodeProto& node_proto,
-                                                  const NodeMap& all_ng_nodes,
-                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph);
+                NamedNodeVector TranslateBiasGeluOp(const onnx::NodeProto& node_proto,
+                                                    const NodeMap& all_ng_nodes,
+                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto lhs_index = GetInputIndex(all_ng_nodes, node_proto, 0);
+                    auto rhs_index = GetInputIndex(all_ng_nodes, node_proto, 1);
 
-                NamedNodeVector TranslateLayerNormalizationGradOp(
-                    const onnx::NodeProto& node_proto,
-                    const NodeMap& all_ng_nodes,
-                    std::shared_ptr<nnfusion::graph::Graph> m_graph);
+                    std::tie(lhs_index, rhs_index) =
+                        graph::numpy_broadcast(std::make_pair(lhs_index, rhs_index), m_graph);
 
-                NamedNodeVector
-                    TranslateSkipLayerNormOp(const onnx::NodeProto& node_proto,
-                                             const NodeMap& all_ng_nodes,
-                                             std::shared_ptr<nnfusion::graph::Graph> m_graph);
+                    auto add_op = std::make_shared<op::Add>();
+                    auto gnode = m_graph->add_node_and_edge(add_op, {lhs_index, rhs_index});
+
+                    auto gelu_op = std::make_shared<op::Gelu>();
+                    gnode = m_graph->add_node_and_edge(gelu_op, {gnode});
+                    NamedNodeVector ret{{node_proto.output(0), gnode}};
+                    return ret;
+                }
 
             } // namespace set_1
-        }     //namespace onnx_import
+        }     // namespace onnx_import
     }         // namespace frontend
-} // namespace  nnfusion
+} // namespace ngraph

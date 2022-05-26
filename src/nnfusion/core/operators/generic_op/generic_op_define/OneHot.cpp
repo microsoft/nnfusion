@@ -82,8 +82,9 @@ REGISTER_OP(OneHot)
         NNFUSION_CHECK(ret);
 
         auto input0_layout = op::create_layout_from_dims(gnode->get_input_shape(0));
-        auto output_layout = op::create_layout_from_dims(gnode->get_output_shape(0));
-        axis = ((axis < 0) ? output_layout.size() + axis : axis);
+        axis = ((axis < 0) ? input0_layout.size() + 1 + axis : axis);
+        auto output_layout = input0_layout;
+        output_layout.insert(output_layout.begin() + axis, "F");
 
         //e.g., output0[N0, F, N1, N2] = parse(1.0).when([input0[N0, N1, N2]  == F], 0.0) where F in Depth;
         std::string expr =

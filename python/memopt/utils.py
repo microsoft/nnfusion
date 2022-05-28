@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from .graph import OutputNode, PlaceHolderNode
 import tvm
 from .modify_input_pass import modify_input_pass
@@ -12,6 +13,7 @@ import io
 
 import ctypes
 import os
+import subprocess
 import tempfile
 
 _tvm_default_name = "default_function_kernel0"
@@ -115,12 +117,20 @@ def compile_and_load(kernel_code):
     src.write(kernel_code)
     src.flush()
     # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -o {}".format(src.name, lib_name))
-    ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -gencode=arch=compute_61,code=compute_61 -o {}".format(src.name, lib_name))
-    assert(ret == 0)
+    ret = subprocess.run(
+        ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
+        "-gencode=arch=compute_70,code=compute_70", "-o", lib_name])
+    if ret.returncode != 0:
+        return None
+    # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -gencode=arch=compute_61,code=compute_61 -o {}".format(src.name, lib_name))
     lib = ctypes.CDLL(lib_name)
-    ret = os.system("rm {}".format(lib_name))
-    assert(ret == 0)
+    subprocess.run(["rm", lib_name], check=True)
     return lib
+
+def compile_and_load_parallel(kernel_codes):
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        libs = executor.map(compile_and_load, kernel_codes)
+    return list(libs)
 
 def can_free(node, out_id, done_ops):
     for edge in node.outputs:
@@ -168,7 +178,10 @@ def compose_global_kernel(topo_order, configs, target, name):
             if not isinstance(output.dst_node, OutputNode):
                 shared_outputs.append(len(op.inputs)+output.src_id)
             shared_outputs = list(set(shared_outputs)) # unique
-        sch = cgen.recursive_schedule_up(sch, config, tile_blacklist=shared_inputs)
+        if len(op.raxis) > 0:
+            sch = cgen.recursive_schedule_up(sch, config, tile_blacklist=shared_inputs)
+        else:
+            sch = cgen.rewrite_schedule_no_reduce(sch, config, tile_blacklist=shared_inputs)
         with Scope(sch) as scope:
             func_name = name+"_kernel_"+str(device_func_uid)
             kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=func_name, global_kernel=False)
@@ -215,7 +228,10 @@ def compose_global_kernel(topo_order, configs, target, name):
             statements.append(call_str)
             device_func_uid += 1
 
-    statements.insert(0, "__shared__ char shared[{}];".format(allocator.limit))
+    if allocator.limit > 0:
+        statements.insert(0, "__shared__ char shared[{}];".format(allocator.limit))
+    else:
+        statements.insert(0, "char* shared = NULL;".format(allocator.limit))
     kernel_args_dtype_map = {v : _type_map[k.dtype] for k, v in kernel_args_name_map.items()}
     kernel_args_name = ["{}* {}".format(kernel_args_dtype_map[arg], arg)
         for arg in sorted(set(kernel_args_name_map.values()))]
@@ -223,7 +239,6 @@ def compose_global_kernel(topo_order, configs, target, name):
         np.prod(scope.block_size), name,
         ", ".join(kernel_args_name)
     )
-    print(prefix)
     code.write(prefix)
     code.write(" {\n")
     for stmt in statements:

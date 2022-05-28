@@ -10,7 +10,7 @@ import math
 def get_all_factors(n: int):
     n0 = int(np.ceil(np.sqrt(n)))
     val = np.where(n % np.arange(1, n0) == 0)[0] + 1
-    mid = np.array([], dtype=int) if n % n0 != 0 else [n0]
+    mid = np.array([], dtype=int) if n0 * n0 != n else [n0]
     return list(np.concatenate([val, mid, n // val[::-1]]))
 
 def factorize(n: int):
@@ -29,6 +29,11 @@ def coalesced_factor(subtensor, tensor):
         return subtensor[-1]
     else:
         return subtensor[-1] * coalesced_factor(subtensor[:-1], tensor[:-1])
+
+def coalesced_tensor_shape(subtensor, tensor, transaction_size):
+    bytes = np.prod(subtensor)
+    factor = coalesced_factor(subtensor, tensor)
+    return transaction_size * bytes / min(transaction_size, factor)
 
 def get_block_size(n):
     if n < 64:
@@ -65,22 +70,26 @@ class DefaultPolicy:
         results = []
         for tile, info in smem_tile_condidates:
             final_rstep_map = self._expand_reduce_axis(tile, info, rstep_map)
-            print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
+            # print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
             codegen_dicts = self.assign_block_size(tile)
             for node in self.ordered_nodes:
                 for ax in node.raxis:
                     codegen_dicts[node][ax] = [final_rstep_map[node][ax], 1]
-            print(codegen_dicts)
+            # print(codegen_dicts)
             results.append(codegen_dicts)
         return results
 
     def DFS_smem_tile(self, init_tile, topk, rstep_map):
         _steps = [get_all_factors(n) for n in self.output_nodes[0].get_shape()]
         steps = [step[step.index(t):] for step, t in zip(_steps, init_tile)]
+        for i in range(len(steps)):
+            added = list(filter(lambda s:s < steps[i][-1] and s > steps[i][0] and s not in steps[i], [2, 4, 8, 16, 32]))
+            steps[i].extend(added)
+            steps[i] = sorted(steps[i])
         visited_tile = {}
         queue = PriorityQueue()
         def prio(info):
-            return info.footprint * info.num_wave # * (info.block_per_SM ** 0.5)
+            return (info.footprint + 1) * info.num_wave # * (info.block_per_SM ** 0.5)
         def add_to_queue(tile):
             if tuple(tile) in visited_tile:
                 return
@@ -91,7 +100,7 @@ class DefaultPolicy:
                 queue.put([prio(info), tile])
 
         add_to_queue(init_tile)
-        while not (queue.empty() or len(visited_tile) > 10 * topk):
+        while not (queue.empty()):
             _, tile = queue.get()
             dim_ids = [step.index(t) for step, t in zip(steps, tile)]
             for i in reversed(range(len(dim_ids))):
@@ -184,10 +193,8 @@ class DefaultPolicy:
             shape = node.infer_dependency(tile, rstep=rstep)
             num_steps = np.prod([node.raxis[ax] / rstep[ax] for ax in raxis])
             for edge in node.inputs:
-                if edge.src_node.is_placeholder() and edge.dst_id in node.reduction_inputs:
-                    loaded = num_steps * np.prod(shape[edge.dst_id])
-                    factor = coalesced_factor(shape[edge.dst_id], edge.src_node.get_shape())
-                    score -= loaded / min(8, factor)
+                if edge.src_node.is_placeholder() and "input{}".format(edge.dst_id) in node.reduction_inputs:
+                    score -= num_steps * coalesced_tensor_shape(shape[edge.dst_id], edge.src_node.get_shape(), 32)
             return score
 
         def _enlarge(rstep):
@@ -214,7 +221,7 @@ class DefaultPolicy:
         tile_map = self.get_tile_map(output_tile)
         _, tile_map = self._compute_memory_footprint(tile_map)
         cur_block_per_SM = info.block_per_SM
-        smem_limit = self.arch.max_smem_usage // cur_block_per_SM
+        smem_limit = min(self.arch.max_smem_usage // cur_block_per_SM, self.arch.mem_cap(0))
         def _optimize(node, rstep):
             def _score(rstep):
                 score = 0
@@ -264,6 +271,8 @@ class DefaultPolicy:
                 elif edge.src_node not in tile_map:
                     tile_map[edge.src_node] = dep[i]
                     queue.append(edge.src_node)
+        for node in self.output_nodes:
+            footprint += coalesced_tensor_shape(tile_map[node], node.get_shape(), 8)
         # output_shape = np.prod(tile_map[self.output_nodes[0]])
         # footprint /= output_shape
         return footprint, tile_map
@@ -278,12 +287,7 @@ class DefaultPolicy:
                     return False
             return True
         for node in self.ordered_nodes:
-            dep = node.infer_dependency(tile_map[node], rstep_map[node])
-            # internal
-            node_internal_bytes = 0
-            for edge in node.inputs:
-                if edge.src_node.is_placeholder():
-                    node_internal_bytes += np.prod(dep[edge.dst_id]) * 4  # TODO: data type
+            node_internal_bytes = node.infer_smem_usage(tile_map[node], rstep_map[node])
             block = allocator.malloc(node_internal_bytes)
             allocator.free(block)
             # free inputs
@@ -310,6 +314,8 @@ class DefaultPolicy:
         out_shape = out_node.get_shape()
         grid_size = np.prod([np.ceil(y / x) for x, y in zip(out_tile, out_shape)])
         reg_usage = 2 * max([np.prod(tile_map[node]) for node in self.ordered_nodes]) # estimated reg usage
+        if reg_usage > self.arch.reg_cap[0]:
+            return TileInfo(-1, -1, -1, -1)
         block_per_SM = min(
             self.arch.max_smem_usage // max(smem_cost, 1),
             self.arch.reg_cap[0] // reg_usage,
@@ -341,14 +347,14 @@ class DefaultPolicy:
             shape = node.infer_dependency(block_tile)
             for edge in node.inputs:
                 score += np.prod(shape[edge.dst_id]) / self.arch.memory_bw(1)
-            if node in self.output_nodes:
-                factor = coalesced_factor(thread, tile)
-                score += 8 * np.prod(block_tile) / min(8, factor) / self.arch.memory_bw(0)
+            for edge in node.outputs:
+                if edge.dst_node in self.output_nodes: # write to global
+                    score += coalesced_tensor_shape(thread, node.get_shape(), 8) / self.arch.memory_bw(0)
             return score
         for factor in reversed(factors):
             score_map = {}
             for i in range(ndim):
-                if cur_threads[i] * factor > tile[i]:
+                if cur_threads[i] >= tile[i]:
                     continue
                 divisible = (tile[i] % (cur_threads[i] * factor)) != 0
                 cur_threads[i] *= factor

@@ -1,10 +1,6 @@
-from policy import ConstructionPolicyV2
 import tvm
-from arch import V100
-
-arch = V100()
-
 import lang
+import numpy as np
 
 class Edge:
     def __init__(self, src_node, dst_node, src_id, dst_id):
@@ -108,13 +104,6 @@ class MatMulNode(Node):
         self.op = MatmulOp(m, k, n)
         self.args = tvm_matmul(n, m, k)
 
-    def emit_config(self):
-        stage = self.sch[self.args[2]]
-        saxis_names = [axis.var.name for axis in stage.op.axis]
-        raxis_names = [axis.var.name for axis in stage.op.reduce_axis]
-        policy = ConstructionPolicyV2(self.op, arch, saxis_names, raxis_names)
-        return policy.emit_config_without_trails(10)[:10]
-
 class ConvNode(Node):
     def __init__(self, inputs, n, c, h, w, f, k, s=1, d=1, p="SAME"):
         super().__init__(inputs, "Conv")
@@ -147,16 +136,28 @@ class IRNode(Node):
             edge.src_node.set_shape(arg.shape, edge.src_id)
         self.set_shape(self.args[-1].shape)
         self._extract_axis()
-        self.reduction_inputs = [int(name[5:]) for name in self.ana.get_reduction_inputs()]
+        self.reduction_inputs = self.ana.get_reduction_inputs()
 
     def infer_dependency(self, shape, rstep={}):
         shapes = self.ana.infer(shape, rstep)
+        shapes = dict(filter(lambda x: x[0].startswith("input"), shapes.items()))
         shapes = {int(k[5:]) : v for k, v in shapes.items()}
         # should not exceed original shape
         for id, shape in shapes.items():
             shapes[id] = list(map(min, zip(shape, self.inputs[id].src_node.get_shape())))
 
         return shapes
+
+    def infer_smem_usage(self, shape, rstep):
+        result = 0
+        shapes = self.ana.infer(shape, rstep)
+        for tensor in self.reduction_inputs:
+            if tensor.startswith("input"):
+                src_node = self.inputs[int(tensor[5:])].src_node
+                if not src_node.is_placeholder():
+                    continue
+            result += np.prod(shapes[tensor]) * 4 # TODO : Add data type
+        return result
 
     # axis name -> axis length
     def _extract_axis(self):

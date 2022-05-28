@@ -39,20 +39,19 @@ class InputShapeInference():
 
         for name, bounds in shape.items():
             shape[name] = [c.max_value - c.min_value + 1 for c in bounds]
-            assert(max(shape[name]) < 1e8) # checking
+            assert(max(shape[name]) < 1e9) # checking
         return shape
 
     def infer(self, shape, rstep: Dict[str, int] = {}):
         if isinstance(shape, (list, tuple)):
             shape = {"output0" : [arith.ConstIntBound(0, val - 1) for val in shape]}
         shape = self._infer(shape, rstep)
-        shape = dict(filter(lambda x: x[0].startswith("input"), shape.items()))
         return shape
 
     def get_reduction_inputs(self):
         # see what inputs are required in reductions stage.
         result = []
-        for dep in self.deps:
+        for dep in reversed(self.deps):
             if len(dep.range_map) > 0 or dep.output in result:
                 for name in dep.dependent_region:
                     result.append(name)

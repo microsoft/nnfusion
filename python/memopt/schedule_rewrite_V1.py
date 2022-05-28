@@ -70,7 +70,7 @@ class CodeGenerator:
     # [Return]
     #   new_s: an optimized TVM schedule
     def rewrite_schedule_no_reduce(self, schedule, tile_dict, tile_blacklist=[]):
-        self.tiling = tile_dict
+        self.tiling = tile_dict.copy()
         self.sche = schedule
 
         out = None
@@ -131,7 +131,7 @@ class CodeGenerator:
         return self.sche
 
     def recursive_schedule_up(self, schedule, tile_dict, tile_blacklist=[]):
-        self.tiling = tile_dict
+        self.tiling = tile_dict.copy()
         self.sche = schedule
 
         out = None
@@ -202,7 +202,7 @@ class CodeGenerator:
         for input_tensor in reduce_op.input_tensors:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
             local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
-            self.sche[local_tensor].compute_at(self.sche[reg_tile], space_fused)
+            self.sche[local_tensor].compute_at(self.sche[reg_tile], reduce_inner_axis[-1])
             if input_tensor.name in tile_blacklist:
                 self.sche[shared_tensor].compute_at(self.sche[out], thrd_fused)
             else:

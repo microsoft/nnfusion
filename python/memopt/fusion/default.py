@@ -187,8 +187,10 @@ class DefaultPolicy:
             return []
         raxis = node.raxis
         tile = node.get_shape()
-        cur_rstep = {ax : 1 for ax in raxis}
-        def _score(rstep):
+        all_steps = {k : get_all_factors(raxis[k]) for k in raxis}
+
+        def _score(rstep_id):
+            rstep = {k : all_steps[k][rstep_id[k]] for k in rstep_id}
             score = 0
             shape = node.infer_dependency(tile, rstep=rstep)
             num_steps = np.prod([node.raxis[ax] / rstep[ax] for ax in raxis])
@@ -197,25 +199,30 @@ class DefaultPolicy:
                     score -= num_steps * coalesced_tensor_shape(shape[edge.dst_id], edge.src_node.get_shape(), 32)
             return score
 
-        def _enlarge(rstep):
+        def _enlarge(rstep_id):
             candidates = []
-            for ax in rstep:
-                r = rstep.copy()
-                r[ax] = min(r[ax] * 2, raxis[ax])
+            candidates.append((rstep_id, _score(rstep_id)))
+            for ax in rstep_id:
+                if rstep_id[ax] + 1 == len(all_steps[ax]):
+                    continue
+                r = rstep_id.copy()
+                r[ax] += 1
                 candidates.append((r, _score(r)))
             best = max(candidates, key=lambda x:x[1])
             return best
 
         # enlarge rstep to ensure read is coaleased
-        cur_score = _score(cur_rstep)
+        cur_rstep_id = {ax : 0 for ax in raxis}
+        cur_score = _score(cur_rstep_id)
         while True:
             if cur_score == 0:break
-            new_rstep, new_score = _enlarge(cur_rstep)
+            new_rstep, new_score = _enlarge(cur_rstep_id)
             if new_score <= cur_score:
                 break
             else:
-                cur_rstep, cur_score = new_rstep, new_score
-        return cur_rstep
+                cur_rstep_id, cur_score = new_rstep, new_score
+        rstep = {k : all_steps[k][cur_rstep_id[k]] for k in cur_rstep_id}
+        return rstep
 
     def _expand_reduce_axis(self, output_tile, info, rstep_map):
         tile_map = self.get_tile_map(output_tile)
@@ -223,7 +230,10 @@ class DefaultPolicy:
         cur_block_per_SM = info.block_per_SM
         smem_limit = min(self.arch.max_smem_usage // cur_block_per_SM, self.arch.mem_cap(0))
         def _optimize(node, rstep):
-            def _score(rstep):
+            all_steps = {k : get_all_factors(node.raxis[k]) for k in node.raxis}
+
+            def _score(rstep_id):
+                rstep = {k : all_steps[k][rstep_id[k]] for k in node.raxis}
                 score = 0
                 shape = node.infer_dependency(tile_map[node], rstep=rstep)
                 for edge in node.inputs:
@@ -231,26 +241,34 @@ class DefaultPolicy:
                         factor = coalesced_factor(shape[edge.dst_id], edge.src_node.get_shape())
                         score += factor
                 return score
-            def _enlarge(rstep):
+
+            def _enlarge(rstep_id):
                 candidates = []
-                for ax in rstep:
-                    r = rstep.copy()
-                    r[ax] = min(r[ax] * 2, node.raxis[ax])
+                candidates.append((rstep_id, _score(rstep_id)))
+                for ax in rstep_id:
+                    if rstep_id[ax] + 1 == len(all_steps[ax]):
+                        continue
+                    r = rstep_id.copy()
+                    r[ax] += 1
                     candidates.append((r, _score(r)))
+
                 best = max(candidates, key=lambda x:x[1])
                 return best
 
-            cur_score = _score(rstep)
+            cur_rstep_id = {k : all_steps[k].index(rstep[k]) for k in node.raxis}
+            cur_score = _score(cur_rstep_id)
             new_rstep_map = rstep_map.copy()
             while True:
                 if cur_score == 0:break
-                new_rstep, new_score = _enlarge(rstep)
-                new_rstep_map[node] = new_rstep
+                new_rstep_id, new_score = _enlarge(cur_rstep_id)
+                new_rstep_map[node] = {k : all_steps[k][new_rstep_id[k]] for k in node.raxis}
                 if new_score <= cur_score or self._compute_shared_memory_usage(tile_map, new_rstep_map) > smem_limit:
                     break
                 else:
-                    rstep, cur_score = new_rstep, new_score
+                    cur_rstep_id, cur_score = new_rstep_id, new_score
+            rstep = {k : all_steps[k][cur_rstep_id[k]] for k in node.raxis}
             return rstep
+
         rstep_map = rstep_map.copy()
         for node in self.ordered_nodes:
             if len(node.raxis) > 0:

@@ -186,7 +186,18 @@ class CodeGenerator:
 
         reduce_outer_axis, reduce_inner_axis = [], []
         space_axis = list(self.sche[reg_tile].op.axis)
-        for axis in self.sche[reg_tile].op.reduce_axis:
+
+        # reorder reduce axis
+        if "raxis_order" not in tile_dict:
+            ordered_reduce_axis = self.sche[reg_tile].op.reduce_axis
+        else:
+            ordered_reduce_axis = []
+            for axis_name in tile_dict["raxis_order"]:
+                for axis in self.sche[reg_tile].op.reduce_axis:
+                    if str(axis.var.name) == axis_name:
+                        ordered_reduce_axis.append(axis)
+
+        for axis in ordered_reduce_axis:
             if axis.var.name not in self.tiling:
                 ro, ri = self.sche[reg_tile].split(axis, nparts=1)
             else:
@@ -201,8 +212,8 @@ class CodeGenerator:
 
         for input_tensor in reduce_op.input_tensors:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
-            local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
-            self.sche[local_tensor].compute_at(self.sche[reg_tile], reduce_inner_axis[-1])
+            # local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
+            # self.sche[local_tensor].compute_at(self.sche[reg_tile], space_fused)
             if input_tensor.name in tile_blacklist:
                 self.sche[shared_tensor].compute_at(self.sche[out], thrd_fused)
             else:

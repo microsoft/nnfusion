@@ -87,3 +87,9 @@ def average_pooling(b, h, w, kh, kw, s, p):
     }
     return ir, input_dict
 
+def transpose(n, m):
+    ir = "output0[N, M] = input0[M, N]"
+    input_dict = {
+        "input0": {"dtype": "float32", "shape": [n, m]},
+    }
+    return ir, input_dict

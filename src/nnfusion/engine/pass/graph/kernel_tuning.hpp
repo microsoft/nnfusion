@@ -39,6 +39,7 @@ namespace nnfusion
 
             private:
                 bool parse_block_list();
+                bool parse_tuning_list();
                 void submit_tuning_batch_asyc(
                     std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes,
                     std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels,
@@ -51,6 +52,7 @@ namespace nnfusion
 
             private:
                 std::unordered_set<std::string> BlockList;
+                std::unordered_set<std::string> TuningList;
             };
         }
     }

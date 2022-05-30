@@ -20,6 +20,7 @@ DEFINE_int64(fkernel_tuning_steps, 0, "Enable automatic kernel tuning for maximu
 DEFINE_string(ftuning_blocklist,
               "",
               "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
+DEFINE_string(ftuning_list, "", "List of op types for kernel tuning pass, e.g., \"Softmax,Add\"");
 DEFINE_string(fantares_perf_file, "./antares_perf.csv", "File to save Antares kernel performance.");
 DEFINE_string(ftuning_platform, "", "Antares platform: e.g., win64, xbox, etc.");
 DECLARE_bool(fantares_mode);
@@ -114,6 +115,7 @@ void dump_perf(std::string filename,
 
 std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<TuningStatus>>>
     get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph,
+                          const std::unordered_set<std::string> tuning_list,
                           const std::unordered_set<std::string> block_list,
                           std::unordered_map<std::string, size_t>& ir2cnt)
 {
@@ -125,11 +127,17 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
     {
         if (!(*gnode)["DeviceType"].is_valid())
         {
-            NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass："
+            NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass: "
                                   << gnode->get_name();
         }
         auto n_device_type = (*gnode)["DeviceType"].as<NNFusion_DeviceType>();
         NNFUSION_CHECK(n_device_type != UNKNOWN);
+
+        // filter ops not in TuningList
+        if (!tuning_list.empty() && tuning_list.find(gnode->get_op_type()) == tuning_list.end())
+        {
+            continue;
+        }
 
         // filter ops in BlockList
         if (block_list.find(gnode->get_op_type()) != block_list.end())
@@ -228,16 +236,37 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
 
 bool KernelTuning::parse_block_list()
 {
+    BlockList.clear();
     auto blocklist_str = FLAGS_ftuning_blocklist;
     stringstream ss(blocklist_str);
     while (ss.good())
     {
         string substr;
         getline(ss, substr, ',');
-        BlockList.insert(substr);
+        if (!substr.empty())
+        {
+            BlockList.insert(substr);
+        }
     }
     NNFUSION_LOG(INFO) << "Kernel Tuning BlockList: " << join(BlockList, ", ");
     return true;
+}
+
+bool KernelTuning::parse_tuning_list()
+{
+    TuningList.clear();
+    auto tuninglist_str = FLAGS_ftuning_list;
+    stringstream ss(tuninglist_str);
+    while (ss.good())
+    {
+        string substr;
+        getline(ss, substr, ',');
+        if (!substr.empty())
+        {
+            TuningList.insert(substr);
+        }
+    }
+    NNFUSION_LOG(INFO) << "Kernel Tuning List: " << join(TuningList, ", ");
 }
 
 void extract_tunning_status_from_kernel(std::string code, std::shared_ptr<TuningStatus> status)
@@ -410,7 +439,14 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
     if (FLAGS_fantares_mode)
     {
+        parse_tuning_list();
         parse_block_list();
+        for (auto item : TuningList)
+        {
+            NNFUSION_CHECK(BlockList.find(item) == BlockList.end())
+                << "Kernel Tuning Pass: There are same operators in TuningList and "
+                   "TuningBlockList.";
+        }
         // register antares kernels anyway here in case kernel selection pass will use them
         register_antares_kernel();
     }
@@ -424,7 +460,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     std::vector<std::shared_ptr<TuningStatus>> tuning_kernels;
     std::unordered_map<std::string, size_t> ir2cnt;
     std::vector<std::shared_ptr<GNode>> nodes;
-    std::tie(nodes, tuned_kernels) = get_tuning_candidates(graph, BlockList, ir2cnt);
+    std::tie(nodes, tuned_kernels) = get_tuning_candidates(graph, TuningList, BlockList, ir2cnt);
 
     if (FLAGS_fantares_codegen_server.size() > 0)
     {

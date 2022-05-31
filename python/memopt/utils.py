@@ -1,16 +1,16 @@
-from concurrent.futures import ThreadPoolExecutor
-from .graph import OutputNode, PlaceHolderNode
-import tvm
+from .graph import OutputNode, PlaceHolderNode, find_topo_sort
 from .modify_input_pass import modify_input_pass
 from .modify_output_pass import modify_output_pass
 from .debug_pass import debug_pass, get_kernel_info_pass
 from .scope import Scope, get_scope
 from .schedule_rewrite_V1 import CodeGenerator
 from .bestfit import BestFit
+
+from concurrent.futures import ThreadPoolExecutor
+import tvm
 import numpy as np
 import regex as re
 import io
-
 import ctypes
 import os
 import subprocess
@@ -18,6 +18,128 @@ import tempfile
 
 _tvm_default_name = "default_function_kernel0"
 _type_map = {"float32" : "float"}
+
+class CompileResult:
+    def __init__(self, config, code, block_size, grid_size, name, args) -> None:
+        self.config = config
+        self.code = code
+        self.block_size = block_size
+        self.grid_size = grid_size
+        self.args = args
+        self.name = name
+        self.host_code = None
+        self.lib = None
+
+    def append_host_call(self):
+        num_params = len(self.args)
+        args = ["args" + str(i) for i in range(num_params)]
+        call_args = ", ".join(args)
+        args = ["float* args" + str(i) for i in range(num_params)]
+        def_args = ", ".join(args)
+        block_str = "dim3({}, {}, {})".format(self.block_size[0], self.block_size[1], self.block_size[2])
+        grid_str = "dim3({}, {}, {})".format(self.grid_size[0], self.grid_size[1], self.grid_size[2])
+        call_str = "{}<<<{}, {}>>>({})".format(self.name, grid_str, block_str, call_args)
+        host_funcs = \
+"""
+extern "C" void call({}) {{
+    {};
+}}
+""".format(def_args, call_str)
+
+        host_funcs += \
+"""
+extern "C" float profile({}) {{
+    float ms;
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+    {};
+    if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
+    if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
+    cudaEventElapsedTime(&ms, start, stop);
+    int repeats = min(100, int(ceil(300.0 / ms)));
+    cudaEventRecord(start, 0);
+    for (int _ = 0; _ < repeats; _++)
+        {};
+    if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
+    if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
+    cudaEventElapsedTime(&ms, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return ms / repeats;
+}}
+""".format(def_args, call_str, call_str)
+        header = \
+"""
+#include <cuda_runtime.h>
+#include <math.h>
+"""
+        self.host_code = header + self.code + "\n" + host_funcs
+        return self.host_code
+
+    def compile_and_load(self):
+        assert self.host_code
+        src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
+        lib_name = src.name.replace(".cu", ".so")
+        src.write(self.host_code)
+        src.flush()
+        # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -o {}".format(src.name, lib_name))
+        ret = subprocess.run(
+            ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
+            "-gencode=arch=compute_70,code=compute_70", "-o", lib_name])
+        if ret.returncode != 0:
+            return None
+        # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -gencode=arch=compute_61,code=compute_61 -o {}".format(src.name, lib_name))
+        self.lib = ctypes.CDLL(lib_name)
+        self.lib.profile.restype = ctypes.c_float
+        subprocess.run(["rm", lib_name], check=True)
+        return self.lib
+
+    def profile(self, device="cuda:0"):
+        assert self.lib
+        import torch
+        torch.cuda.set_device(device)
+        torch_arrs = []
+        for arg in self.args:
+            shape = list(map(int, arg.shape))
+            dtype = torch.__getattribute__(arg.dtype)
+            arr = torch.randn(*shape, device=device, dtype=dtype)
+            torch_arrs.append(arr)
+        latency = self.lib.profile(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
+        assert(latency > 0)
+        return latency
+
+    def get_example_outputs(self, device="cuda:0", seed=0):
+        import torch
+        torch.cuda.set_device(device)
+        torch.random.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch_arrs = []
+        for arg in self.args:
+            shape = list(map(int, arg.shape))
+            dtype = torch.__getattribute__(arg.dtype)
+            arr = torch.randn(*shape, device=device, dtype=dtype)
+            torch_arrs.append(arr)
+        self.lib.call(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
+        torch.cuda.synchronize(device)
+        outputs = []
+        for i, arg in enumerate(self.args):
+            if arg.name.startswith("output"):
+                outputs.append(torch_arrs[i].cpu().numpy())
+        return outputs
+
+    def close_lib(self):
+        if self.lib is None:
+            return
+        dlclose_func = ctypes.CDLL(None).dlclose
+        dlclose_func.argtypes = [ctypes.c_void_p]
+        dlclose_func.restype = ctypes.c_int
+        dlclose_func(self.lib._handle)
+        self.lib = None
+
+    def __del__(self):
+        self.close_lib()
 
 def get_valid_name(var):
     if var.name.find(".") >= 0:
@@ -35,8 +157,6 @@ def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_n
     assert(isinstance(sm_outputs, (tuple, list)))
     assert(isinstance(sm_inputs, (tuple, list)))
     scope = get_scope()
-    # from .debug import debug
-    # debug({**globals(), **locals()})
     func_args = ", ".join(["{}* __restrict__ {}".format(_type_map[var.dtype], get_valid_name(var)) for var in args])
     with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
         scope.shared_mem_outputs = sm_outputs
@@ -60,76 +180,9 @@ def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_n
                 src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
     return src
 
-def ctypesCloseLibrary(lib):
-    dlclose_func = ctypes.CDLL(None).dlclose
-    dlclose_func.argtypes = [ctypes.c_void_p]
-    dlclose_func.restype = ctypes.c_int
-
-    dlclose_func(lib._handle)
-
-def append_host_call(kernel_code, block, grid, num_params, name=_tvm_default_name, measure_time=True):
-    args = ["args" + str(i) for i in range(num_params)]
-    call_args = ", ".join(args)
-    args = ["float* args" + str(i) for i in range(num_params)]
-    def_args = ", ".join(args)
-    block_str = "dim3({}, {}, {})".format(block[0], block[1], block[2])
-    grid_str = "dim3({}, {}, {})".format(grid[0], grid[1], grid[2])
-    call_str = "{}<<<{}, {}>>>({})".format(name, grid_str, block_str, call_args)
-    if measure_time:
-        template = """
-extern "C" float function({}) {{
-    float ms;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start, 0);
-    {};
-    if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
-    if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
-    cudaEventElapsedTime(&ms, start, stop);
-    int repeats = min(100, int(ceil(300.0 / ms)));
-    cudaEventRecord(start, 0);
-    for (int _ = 0; _ < repeats; _++)
-        {};
-    if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
-    if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
-    cudaEventElapsedTime(&ms, start, stop);
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
-    return ms / repeats;
-}}
-""".format(def_args, call_str, call_str)
-    else:
-        template = """
-extern "C" void function({}) {{
-    {};
-}}
-""".format(def_args, call_str)
-    header = """
-#include <cuda_runtime.h>
-#include <math.h>
-"""
-    return header + kernel_code + "\n" + template
-
-def compile_and_load(kernel_code):
-    src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
-    lib_name = src.name.replace(".cu", ".so")
-    src.write(kernel_code)
-    src.flush()
-    # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -o {}".format(src.name, lib_name))
-    ret = subprocess.run(
-        ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
-        "-gencode=arch=compute_70,code=compute_70", "-o", lib_name])
-    if ret.returncode != 0:
-        return None
-    # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -gencode=arch=compute_61,code=compute_61 -o {}".format(src.name, lib_name))
-    lib = ctypes.CDLL(lib_name)
-    subprocess.run(["rm", lib_name], check=True)
-    return lib
-
-def compile_and_load_parallel(kernel_codes):
+def compile_and_load_parallel(cpresults):
     with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-        libs = executor.map(compile_and_load, kernel_codes)
+        libs = executor.map(CompileResult.compile_and_load, cpresults)
     return list(libs)
 
 def can_free(node, out_id, done_ops):
@@ -138,8 +191,18 @@ def can_free(node, out_id, done_ops):
             return False
     return True
 
-def compose_global_kernel(topo_order, configs, target, name):
+def compose_global_kernel(output_nodes, configs, target, name) -> CompileResult:
     # check inputs and outputs
+    topo_order = find_topo_sort(output_nodes)
+    tensor_name_map = {}
+    num_inputs, num_outputs = 0, 0
+    for op in topo_order:
+        if isinstance(op, PlaceHolderNode):
+            tensor_name_map[op] = "input" + str(num_inputs)
+            num_inputs += 1
+        elif isinstance(op, OutputNode):
+            tensor_name_map[op] = "output" + str(num_outputs)
+            num_outputs += 1
     kernel_args_name_map = {}
     for op in topo_order:
         if isinstance(op, (PlaceHolderNode, OutputNode)):
@@ -147,10 +210,10 @@ def compose_global_kernel(topo_order, configs, target, name):
         else:
             for edge in op.inputs:
                 if isinstance(edge.src_node, PlaceHolderNode):
-                    kernel_args_name_map[op.args[edge.dst_id]] = "input"+str(edge.src_node.node_id)
+                    kernel_args_name_map[op.args[edge.dst_id]] = tensor_name_map[edge.src_node]
             for edge in op.outputs:
                 if isinstance(edge.dst_node, OutputNode):
-                    kernel_args_name_map[op.args[edge.src_id+len(op.inputs)]] = "output"+str(edge.dst_node.node_id)
+                    kernel_args_name_map[op.args[edge.src_id+len(op.inputs)]] = tensor_name_map[edge.dst_node]
 
     # -------------------------------------------------
     cgen = CodeGenerator()
@@ -166,7 +229,7 @@ def compose_global_kernel(topo_order, configs, target, name):
         if isinstance(op, (PlaceHolderNode, OutputNode)):
             continue
         config = configs[op]
-        sch = tvm.te.create_schedule(op.args[-1].op)
+        sch = op.create_schedule()
         shared_inputs = []
         shared_outputs = []
         shared_inputs_idx = []
@@ -179,9 +242,9 @@ def compose_global_kernel(topo_order, configs, target, name):
                 shared_outputs.append(len(op.inputs)+output.src_id)
             shared_outputs = list(set(shared_outputs)) # unique
         if len(op.raxis) > 0:
-            sch = cgen.recursive_schedule_up(sch, config, tile_blacklist=shared_inputs)
+            sch = cgen.recursive_schedule_up(sch, config, shared_inputs=shared_inputs)
         else:
-            sch = cgen.rewrite_schedule_no_reduce(sch, config, tile_blacklist=shared_inputs)
+            sch = cgen.rewrite_schedule_no_reduce(sch, config, shared_inputs=shared_inputs)
         with Scope(sch) as scope:
             func_name = name+"_kernel_"+str(device_func_uid)
             kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=func_name, global_kernel=False)
@@ -192,12 +255,9 @@ def compose_global_kernel(topo_order, configs, target, name):
                 assert(block_size == scope.block_size)
                 assert(grid_size == scope.grid_size)
             code.write(kernel_code)
-            # from .debug import debug
-            # debug({**globals(), **locals()})
             block_map[op] = {}
             internal_shared_mem = allocator.malloc(scope.total_interal_shared_memory)
             for idx, var_name in zip(shared_inputs_idx, shared_inputs):
-                num_bytes = scope.exteral_shared_memroy_size[var_name]
                 src_node = op.inputs[idx].src_node
                 src_id = op.inputs[idx].src_id
                 if can_free(src_node, src_id, done_op):
@@ -247,24 +307,10 @@ def compose_global_kernel(topo_order, configs, target, name):
 
     # fused kernel args
     args = []
-    for name in sorted(set(kernel_args_name_map.values())):
+    for arg_name in sorted(set(kernel_args_name_map.values())):
         for k, v in kernel_args_name_map.items():
-            if v == name:
+            if v == arg_name:
                 args.append(k)
                 break
-    return code.getvalue(), block_size, grid_size, args
+    return CompileResult(configs, code.getvalue(), block_size, grid_size, name, args)
 
-def profile(lib, args):
-    import torch
-    torch.random.manual_seed(0)
-    torch_arrs = []
-    for arg in args:
-        shape = list(map(int, arg.shape))
-        dtype = torch.__getattribute__(arg.dtype)
-        arr = torch.randn(*shape).to("cuda:0", dtype=dtype)
-        torch_arrs.append(arr)
-
-    tm = lib.function(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
-    # print(torch_arrs[-1])
-    assert(tm > 0)
-    return tm

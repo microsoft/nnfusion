@@ -26,14 +26,12 @@ class Edge:
         return self._dst_id
 
 class Node:
-    node_id = 0
     def __init__(self, inputs, name):
-        self.node_id = Node.node_id
-        Node.node_id += 1
         self.name = name
         self._out_edges = []
         self._in_edges = []
         self._shapes = []
+        self._dtypes = []
 
         for i, node in enumerate(inputs):
             if node is None:
@@ -69,6 +67,16 @@ class Node:
             assert self._shapes[id] == list(map(int, shape)), (self._shapes, list(map(int, shape)))
         self._shapes[id] = list(map(int, shape))
 
+    def get_dtype(self, id=0):
+        return self._dtypes[id]
+
+    def set_dtype(self, dtype, id=0):
+        if len(self._dtypes) <= id:
+            self._dtypes.extend([None for _ in range(id - len(self._dtypes) + 1)])
+        elif self._dtypes[id] is not None:
+            assert self._dtypes[id] == str(dtype), (self._dtypes, str(dtype))
+        self._dtypes[id] = str(dtype)
+
     def is_placeholder(self):
         return False
 
@@ -89,6 +97,7 @@ class OutputNode(Node):
     def __init__(self, node, id=0):
         super().__init__([(node, id)], "Output ")
         self.set_shape(node.get_shape(id))
+        self.set_dtype(node.get_dtype(id))
 
     def infer_dependency(self, shape, rstep={}):
         return {0 : shape}
@@ -120,33 +129,32 @@ class DepthwiseConvNode(Node):
         self.op = DepthwiseConvOp(n, c, k, s, h, w, d, p, m)
         self.args = tvm_depthwise_conv(n, c, h, w, k, s, d, p, m)
 
-class ComputeNode(Node):
-    def __init__(self, inputs, args):
-        super().__init__(inputs, "Compute")
-        self.args = args
-        self.set_shape(self.args[-1].shape)
-
 class IRNode(Node):
-    def __init__(self, inputs, antares_ir):
-        super().__init__(inputs, "Compute")
-        self.args = lang.translate_ir_to_tvm(antares_ir)
-        self.ana = lang.get_analyzer_by_ir(antares_ir)
+    def __init__(self, inputs, antares_ir, name="Compute"):
+        super().__init__(inputs, name)
+        self.ir = antares_ir
+        self._input_args, self._output_args = lang.translate_ir_to_tvm(self.ir)
+        self.args = self._input_args + self._output_args
+        self.ana = lang.get_analyzer_by_ir(self.ir)
         assert len(self.inputs) + 1 == len(self.args)
         for edge, arg in zip(self.inputs, self.args):
             edge.src_node.set_shape(arg.shape, edge.src_id)
-        self.set_shape(self.args[-1].shape)
+            edge.src_node.set_dtype(arg.dtype, edge.src_id)
+        for output_id, arg in enumerate(self._output_args):
+            self.set_shape(arg.shape, output_id)
+            self.set_dtype(arg.dtype, output_id)
         self._extract_axis()
         self.reduction_inputs = self.ana.get_reduction_inputs()
 
     def infer_dependency(self, shape, rstep={}):
         shapes = self.ana.infer(shape, rstep)
-        shapes = dict(filter(lambda x: x[0].startswith("input"), shapes.items()))
-        shapes = {int(k[5:]) : v for k, v in shapes.items()}
-        # should not exceed original shape
-        for id, shape in shapes.items():
-            shapes[id] = list(map(min, zip(shape, self.inputs[id].src_node.get_shape())))
-
-        return shapes
+        result = {}
+        for i in range(len(self.inputs)):
+            name = self._input_args[i].name
+            shape = shapes[name]
+            # should not exceed original shape
+            result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
+        return result
 
     def infer_smem_usage(self, shape, rstep):
         result = 0
@@ -159,24 +167,37 @@ class IRNode(Node):
             result += np.prod(shapes[tensor]) * 4 # TODO : Add data type
         return result
 
+    def infer_reduction_inputs(self, shape, rstep):
+        result = 0
+        shapes = self.ana.infer(shape, rstep)
+        for tensor in self.reduction_inputs:
+            result += np.prod(shapes[tensor])
+        return result
+
     # axis name -> axis length
     def _extract_axis(self):
-        queue = [self.args[-1]]
+        queue = self._output_args.copy()
         self.raxis = {}
+        visited = {}
         while len(queue) > 0:
             t = queue.pop(0)
+            visited[t] = True
             if isinstance(t.op, tvm.te.PlaceholderOp):
                 continue
             for axis in t.op.reduce_axis:
                 assert(str(axis.var.name) not in self.raxis), axis.var.name
                 self.raxis[str(axis.var.name)] = int(axis.dom.extent)
             for it in t.op.input_tensors:
-                queue.append(it)
+                if not it in visited:
+                    queue.append(it)
 
         self.saxis = {}
-        for axis in self.args[-1].op.axis:
+        for axis in self._output_args[0].op.axis:
             assert(str(axis.var.name) not in self.saxis), axis.var.name
             self.saxis[str(axis.var.name)] = int(axis.dom.extent)
+
+    def create_schedule(self):
+        return tvm.te.create_schedule([x.op for x in self._output_args])
 
 def topo_order(list_of_nodes):
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}

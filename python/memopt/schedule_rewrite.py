@@ -104,7 +104,7 @@ class CodeGenerator:
     #
     # [Return]
     #   new_s: an optimized TVM schedule
-    def rewrite_schedule(self, schedule, tile_dict, smem_bool, reg_bool, target_stage='compute', st_align=True, bank_size=4, tile_blacklist=[]):
+    def rewrite_schedule(self, schedule, tile_dict, smem_bool, reg_bool, target_stage='compute', st_align=True, bank_size=4, shared_inputs=[]):
         self.tiling = tile_dict
         self.binding = {"space": ["blockIdx.x", "vthread", "threadIdx.x"], "reduce": [None, None]}
         self.need_smem_tiling = smem_bool
@@ -213,7 +213,7 @@ class CodeGenerator:
                 for rt in reg_tensor:
                     self.sche[rt].compute_at(self.sche[reg_tile], reduce_axis[-1])
                 for st in smem_tensor:
-                    if st.name.endswith(".shared") and st.name[:-len(".shared")] in tile_blacklist:
+                    if st.name.endswith(".shared") and st.name[:-len(".shared")] in shared_inputs:
                         self.sche[st].compute_at(self.sche[out], vthd_axis[0])
                         self.cooperative_fetch(st, self.sche)
                     else:

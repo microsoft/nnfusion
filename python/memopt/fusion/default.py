@@ -285,7 +285,7 @@ class DefaultPolicy:
             dep = node.infer_dependency(tile_map[node])
             for i, edge in enumerate(node.inputs):
                 if edge.src_node.is_placeholder():
-                    footprint += np.prod(dep[i])
+                    footprint += coalesced_tensor_shape(dep[i], edge.src_node.get_shape(), 32)
                 elif edge.src_node not in tile_map:
                     tile_map[edge.src_node] = dep[i]
                     queue.append(edge.src_node)

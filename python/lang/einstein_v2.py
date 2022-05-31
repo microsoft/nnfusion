@@ -488,9 +488,14 @@ def emit_tvm_body(node, props):
         return '%s.astype(cast_dtype("%s"))' % (emit_tvm_body(
             node._value["inputs"][0], props), node._value['name'])
     elif node._op == 'call':
-        return 'tir.call_pure_extern(cast_dtype("%s"), "%s", %s)' % (
-            node._dtype, node._value['name'], ', '.join(
-                [emit_tvm_body(x, props) for x in node._value["inputs"]]))
+        f_map = {"max": "tir.Max", "min": "tir.Min", "exp": "tir.exp", "ceil": "tir.ceil"}
+        if node._value['name'] in f_map:
+            return '%s(%s)' % (f_map[node._value['name']], ', '.join(
+                    [emit_tvm_body(x, props) for x in node._value["inputs"]]))
+        else:
+            return 'tir.call_pure_extern(cast_dtype("%s"), "%s", %s)' % (
+                node._dtype, node._value['name'], ', '.join(
+                    [emit_tvm_body(x, props) for x in node._value["inputs"]]))
     elif node._op == 'when':
         all_conds = [emit_tvm_body(cond, props) for cond in node._value['if']]
         return 'tir.if_then_else(te.all(' + ', '.join(

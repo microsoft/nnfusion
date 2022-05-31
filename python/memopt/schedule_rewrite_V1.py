@@ -69,7 +69,7 @@ class CodeGenerator:
     #
     # [Return]
     #   new_s: an optimized TVM schedule
-    def rewrite_schedule_no_reduce(self, schedule, tile_dict, tile_blacklist=[]):
+    def rewrite_schedule_no_reduce(self, schedule, tile_dict, shared_inputs=[]):
         self.tiling = tile_dict.copy()
         self.sche = schedule
 
@@ -119,10 +119,12 @@ class CodeGenerator:
         self.sche[out].bind(thrd_fused, te.thread_axis("threadIdx.x"))
 
         for op in elementwise_op:
-            out_shape = op.output(0).shape
             for tensor in op.input_tensors:
-                if isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
-                and len(out_shape) > len(tensor.shape): # is broadcast
+                cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
+                    and len(op.output(0).shape) > len(tensor.shape) # is broadcast
+                if tensor.name in shared_inputs:
+                    cache = True
+                if cache:
                     tensor_shared = self.sche.cache_read(tensor, "shared", [op])
                     self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
                     self.cooperative_fetch(tensor_shared, self.sche)
@@ -130,7 +132,7 @@ class CodeGenerator:
                     # self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche
 
-    def recursive_schedule_up(self, schedule, tile_dict, tile_blacklist=[]):
+    def recursive_schedule_up(self, schedule, tile_dict, shared_inputs=[]):
         self.tiling = tile_dict.copy()
         self.sche = schedule
 
@@ -214,20 +216,22 @@ class CodeGenerator:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
             # local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
             # self.sche[local_tensor].compute_at(self.sche[reg_tile], space_fused)
-            if input_tensor.name in tile_blacklist:
+            if input_tensor.name in shared_inputs:
                 self.sche[shared_tensor].compute_at(self.sche[out], thrd_fused)
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
             self.cooperative_fetch(shared_tensor, self.sche)
 
         for op in elementwise_op:
-            out_shape = op.output(0).shape
             for tensor in op.input_tensors:
-                if isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
-                and len(out_shape) > len(tensor.shape): # is broadcast
+                cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
+                    and len(op.output(0).shape) > len(tensor.shape) # is broadcast
+                if tensor.name in shared_inputs:
+                    cache = True
+                if cache:
                     tensor_shared = self.sche.cache_read(tensor, "shared", [op])
                     self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
                     self.cooperative_fetch(tensor_shared, self.sche)
-                    tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
-                    self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
+                    # tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
+                    # self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche

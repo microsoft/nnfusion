@@ -2,41 +2,47 @@ from ops import *
 from memopt.graph import IRNode, OutputNode
 import memopt
 from memopt.fusion import DefaultPolicy
-import ctypes
 from arch import *
+import numpy as np
+from memopt.reference import get_subgraph_reference_outputs
 
-def test_policy(ir, input_dict, name="test"):
+def test_policy(ir, input_dict, name="test", check=False):
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     A = IRNode([None for _ in input_dict], expr)
     output_nodes = [OutputNode(A)]
     policy = DefaultPolicy(output_nodes, V100())
     configs = policy.emit_config(10)
-    codes = []
-    args_list = []
+
+    compile_results = []
     for config in configs:
-        code, block_size, grid_size, args = memopt.utils.compose_global_kernel(memopt.graph.find_topo_sort(output_nodes), config, "cuda", name="Fused")
-        code = memopt.utils.append_host_call(code, block_size, grid_size, len(args), name="Fused", measure_time=True)
-        codes.append(code)
-        args_list.append(args)
-    libs = memopt.utils.compile_and_load_parallel(codes)
-    best = 10000
-    best_config = None
+        cpresult = memopt.utils.compose_global_kernel(output_nodes, config, "cuda", name="Fused")
+        cpresult.append_host_call()
+        compile_results.append(cpresult)
+    memopt.utils.compile_and_load_parallel(compile_results)
+    best_latency = 10000
+    best = None
     values = []
-    for config, args, lib in zip(configs, args_list, libs):
-        print(config)
-        if lib == None:
-            tm = 10000
+    for cpresult in compile_results:
+        print(cpresult.config)
+        if cpresult.lib is None:
+            latency = 10000
         else:
-            lib.function.restype = ctypes.c_float
-            tm = memopt.utils.profile(lib, args)
-        values.append(tm)
-        if tm < best:
-            best = tm
-            best_config = config
-        print(tm)
-    print(best_config)
-    print(name, "top1: {} \ttop10: {}".format(values[0], min(values)))
+            latency = cpresult.profile()
+        values.append(latency)
+        if latency < best_latency:
+            best_latency = latency
+            best = cpresult
+        print(latency)
+    print(best.config)
+    print(name ,"top1: {} \ttop10: {}".format(values[0], min(values)))
     print("-" * 80, flush=True)
+    if check==True:
+        out = best.get_example_outputs()
+        ref_out = get_subgraph_reference_outputs(output_nodes)
+        for a, b in zip(out, ref_out):
+            diff = np.max(np.abs(a-b))
+            print("value diff:", diff)
+    return best, best_latency
 
 c_lists = [
     ('C0', conv_nchw, [128, 128, 28, 28, 128, 3, 3, 1, 1, 1]),
@@ -177,4 +183,4 @@ p_lists = [
 
 test_list = c_lists
 for name, func, args in test_list:
-    test_policy(*func(*args), name)
+    test_policy(*func(*args), name, False)

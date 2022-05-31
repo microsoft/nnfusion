@@ -175,7 +175,7 @@ def translate_to_tvm(expr, input_dict):
     INPUT_TEMP.clear()
     einstein_v2(expr, input_dict)
     assert len(OUTPUT_TEMP) == 1
-    return INPUT_TEMP + OUTPUT_TEMP
+    return INPUT_TEMP, OUTPUT_TEMP
 
 def translate_ir_to_tvm(antares_ir):
     antares_ir = antares_ir.strip()
@@ -185,5 +185,5 @@ def translate_ir_to_tvm(antares_ir):
 
     antares_ir = antares_ir[2:]
     antares_ir = antares_ir.replace("einstein_v2", "translate_to_tvm")
-    args = eval(antares_ir, globals(), locals())
-    return args
+    input_args, output_args = eval(antares_ir, globals(), locals())
+    return input_args.copy(), output_args.copy()

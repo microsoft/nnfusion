@@ -10,3 +10,4 @@ events.out.tfevents.*
 temp/
 *.pb
 *.onnx
+output

@@ -8,6 +8,38 @@ def tvm_matmul(n, m, k):
     C = te.compute((n, m), lambda x, y: te.sum(A[x, k] * B[k, y], axis=k))
     return (A, B, C)
 
+def linear(n, m, k):
+    A = te.placeholder((n, k), name="A")
+    A1 = tvm.topi.nn.relu(A)
+    B = te.placeholder((k, m), name="B")
+    k = te.reduce_axis((0, k), name="k")
+    bias = te.placeholder((m, ), name="bias")
+    C = te.compute((n, m), lambda x, y: te.sum(A1[x, k] * B[k, y], axis=k))
+    D = te.compute((n, m), lambda x, y: C[x, y] + bias[y])
+    reluC = tvm.topi.nn.relu(C)
+    E = te.compute((n, m), lambda x, y: D[x, y] + reluC[x, y])
+    # relu = tvm.topi.nn.relu(E)
+    return (A, B, bias, E)
+
+
+def proxy_output(*outputs):
+    op_shape = tuple(outputs[0].shape)
+    for op in outputs:
+        assert tuple(op.shape) == op_shape
+    proxy_output = te.compute(op_shape, lambda *args: [op[args] for op in outputs])
+    return proxy_output
+
+def test_multiple_outputs(n, m, k):
+    A = te.placeholder((n, k), name="A")
+    B = te.placeholder((k, m), name="B")
+    k = te.reduce_axis((0, k), name="k")
+    bias = te.placeholder((m, ), name="bias")
+    C = te.compute((n, m), lambda x, y: te.sum(A[x, k] * B[k, y], axis=k))
+    D = te.compute((n, m), lambda x, y: C[x, y] + bias[y])
+    from tvm import topi
+    relu = topi.nn.relu(D)
+    return (bias, A, B, *proxy_output(D, relu))
+
 def get_pad_tuple(padding, kernel):
     """Common code to get the pad option
     Parameters
@@ -195,6 +227,16 @@ def tvm_conv(N, C, H, W, F, K, S, D, P="SAME"):
     kernel = te.placeholder((F, C, K, K), name="K")
     conv = conv2d_nchw(PaddedX, kernel, S, D)
     return (X, kernel, conv)
+
+def tvm_conv_bias(N, C, H, W, F, K, S, D, P="SAME"):
+    pt, pl, pd, pr = get_pad_tuple(P, (K, K))
+    X = te.placeholder((N, C, H, W), name="X")
+    PaddedX = padding(X, pd, pt, pl, pr) if (pd + pt) * (pl + pr) != 0 else X
+    kernel = te.placeholder((F, C, K, K), name="K")
+    conv = conv2d_nchw(PaddedX, kernel, S, D)
+    bias = te.placeholder((F, ), name="b")
+    conv = te.compute(conv.shape, lambda b, c, i, j : te.tanh(conv[b, c, i, j] + bias[c]))
+    return (X, kernel, bias, conv)
 
 def tvm_depthwise_conv(N, C, H, W, K, S, D, P="SAME", M=1):
     pt, pl, pd, pr = get_pad_tuple(P, (K, K))

@@ -84,10 +84,11 @@ extern "C" float profile({}) {{
         lib_name = src.name.replace(".cu", ".so")
         src.write(self.host_code)
         src.flush()
-        # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -o {}".format(src.name, lib_name))
+        compute_version = "".join(tvm.contrib.nvcc.get_target_compute_version().split("."))
         ret = subprocess.run(
             ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
-            "-gencode=arch=compute_70,code=compute_70", "-o", lib_name])
+            "-gencode=arch=compute_{},code=compute_{}".format(compute_version, compute_version),
+            "-o", lib_name])
         if ret.returncode != 0:
             return None
         # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -gencode=arch=compute_61,code=compute_61 -o {}".format(src.name, lib_name))
@@ -161,7 +162,11 @@ def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_n
     with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
         scope.shared_mem_outputs = sm_outputs
         scope.shared_mem_inputs = sm_inputs
+
+        old_entry = tvm.get_global_func("tvm_callback_cuda_compile")
+        tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
         mod = tvm.build(sch, args, target=target)
+        tvm.register_func("tvm_callback_cuda_compile", override=True)(old_entry)
 
         src = mod.imported_modules[0].get_source()
         index = src.index("{")

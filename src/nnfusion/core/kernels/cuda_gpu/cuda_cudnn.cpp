@@ -200,6 +200,14 @@ LanguageUnit_p cuda::get_cudnn_convolution_descriptor(const Shape& padding,
            << "window_movement_strides_int, "
            << "window_dilation_strides_int, CUDNN_CROSS_CORRELATION, " << data_type << "));\n";
     }
+
+    if(type == nnfusion::element::f16){
+        // half precision, use tensor core
+        lu << "CUDNN_SAFE_CALL(cudnnSetConvolutionMathType(" << desc << ", "
+        << "CUDNN_TENSOR_OP_MATH"
+        << "));\n";
+    }
+
     return _lu;
 }
 

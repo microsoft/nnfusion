@@ -31,6 +31,10 @@ class CompileResult:
         self.lib = None
         self.latency = None
 
+    def set_io_desc(self, input_desc, output_desc):
+        self.input_desc = input_desc
+        self.output_desc = output_desc
+
     def append_host_call(self):
         num_params = len(self.args)
         args = ["args" + str(i) for i in range(num_params)]
@@ -275,7 +279,7 @@ def compose_global_kernel(output_nodes, configs, target, name) -> CompileResult:
                 num_bytes = scope.exteral_shared_memroy_size[idx]
                 block = allocator.malloc(num_bytes)
                 block_map[op][idx-len(op.inputs)] = block
-            # print(allocator.limit)
+
             arg_list = []
             for idx in range(len(op.inputs)):
                 if idx in shared_inputs_idx:

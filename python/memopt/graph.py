@@ -92,6 +92,11 @@ class Node:
             return None
         return self._tag[k]
 
+    def num_outputs(self):
+        if len(self.outputs) == 0:
+            return 0
+        return max([e.src_id for e in self.outputs]) + 1
+
     def __repr__(self) -> str:
         return "<Node, " + self.name + ">"
 

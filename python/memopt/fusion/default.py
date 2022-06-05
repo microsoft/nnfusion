@@ -64,7 +64,7 @@ class DefaultPolicy:
 
     def emit_config(self, topk):
         base_tile = self.get_base_tile()
-        if base_tile == -1:
+        if base_tile is None:
             return []
         rstep_map = {node : self._assign_reduce_step(node) for node in self.ordered_nodes}
         # print(rstep_map)
@@ -140,8 +140,7 @@ class DefaultPolicy:
         self.op_tile_map = self.get_tile_map(tile)
 
         if self._assign_basic_tile(tile):
-            print("Fail to find base tile")
-            return -1
+            return None
 
         return base_tile
 
@@ -178,7 +177,7 @@ class DefaultPolicy:
                     subtensor_shape = dep[i]
                     shape = edge.src_node.get_shape()
                     if np.prod(subtensor_shape) / np.prod(shape) != np.prod(output_tile) / np.prod(out_shape):
-                        print(subtensor_shape, shape, output_tile, out_shape)
+                        # print(subtensor_shape, shape, output_tile, out_shape)
                         return True
                     if edge.src_node in self.op_tile_map:
                         assert self.op_tile_map[edge.src_node] == subtensor_shape

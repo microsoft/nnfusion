@@ -29,6 +29,7 @@ class CompileResult:
         self.name = name
         self.host_code = None
         self.lib = None
+        self.latency = None
 
     def append_host_call(self):
         num_params = len(self.args)
@@ -108,7 +109,9 @@ extern "C" float profile({}) {{
             arr = torch.randn(*shape, device=device, dtype=dtype)
             torch_arrs.append(arr)
         latency = self.lib.profile(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
-        assert(latency > 0)
+        if latency < 0:
+            return 10000
+        self.latency = latency
         return latency
 
     def get_example_outputs(self, device="cuda:0", seed=0):

@@ -121,15 +121,16 @@ class CodeGenerator:
         for op in elementwise_op:
             for tensor in op.input_tensors:
                 cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) # is broadcast
+                    and len(op.output(0).shape) > len(tensor.shape) \
+                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
                 if tensor.name in shared_inputs:
                     cache = True
                 if cache:
                     tensor_shared = self.sche.cache_read(tensor, "shared", [op])
                     self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
                     self.cooperative_fetch(tensor_shared, self.sche)
-                    # tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
-                    # self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
+                    tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
+                    self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche
 
     def recursive_schedule_up(self, schedule, tile_dict, shared_inputs=[]):
@@ -225,13 +226,14 @@ class CodeGenerator:
         for op in elementwise_op:
             for tensor in op.input_tensors:
                 cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) # is broadcast
+                    and len(op.output(0).shape) > len(tensor.shape) \
+                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
                 if tensor.name in shared_inputs:
                     cache = True
                 if cache:
                     tensor_shared = self.sche.cache_read(tensor, "shared", [op])
                     self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
                     self.cooperative_fetch(tensor_shared, self.sche)
-                    # tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
-                    # self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
+                    tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
+                    self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche

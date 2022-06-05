@@ -32,6 +32,7 @@ class Node:
         self._in_edges = []
         self._shapes = []
         self._dtypes = []
+        self._tag = {}
 
         for i, node in enumerate(inputs):
             if node is None:
@@ -82,6 +83,14 @@ class Node:
 
     def is_output(self):
         return False
+
+    def add_tag(self, k, v=True):
+        self._tag[k] = v
+
+    def get_tag(self, k):
+        if k not in self._tag:
+            return None
+        return self._tag[k]
 
     def __repr__(self) -> str:
         return "<Node, " + self.name + ">"
@@ -198,6 +207,13 @@ class IRNode(Node):
 
     def create_schedule(self):
         return tvm.te.create_schedule([x.op for x in self._output_args])
+
+    def clone(self, inputs):
+        new_node = IRNode(inputs, self.ir, self.name)
+        for k, v in self._tag.items():
+            new_node.add_tag(k, v)
+        return new_node
+
 
 def topo_order(list_of_nodes):
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}

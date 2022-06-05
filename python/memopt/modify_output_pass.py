@@ -1,4 +1,3 @@
-from asyncore import write
 import tvm
 from .scope import get_scope
 import numpy as np
@@ -27,8 +26,6 @@ def modify_output_pass(f, mod, ctx):
                 op.buffer.elem_offset, op.buffer.scope, op.buffer.data_alignment, op.buffer.offset_factor)
             buffer_map[op.buffer] = buffer
             op = tvm.tir.BufferStore(buffer, op.value, new_indices, op.span)
-            barrier = tvm.tir.Call(None, "tir.tvm_storage_sync", tvm.runtime.convert(["shared"]))
-            return tvm.tir.stmt_seq(barrier, op)
             return op
         return op
 
@@ -59,7 +56,7 @@ def modify_output_pass(f, mod, ctx):
         nonlocal write_stmt, stack
         stack.pop(-1)
         if (isinstance(op, tvm.tir.BufferStore) and op.buffer in buffer_map.values()) or (write_stmt and write_stmt == op):
-            if not any([isinstance(x, tvm.tir.stmt.For) for x in stack]):
+            if not any([isinstance(x, (tvm.tir.stmt.For, tvm.tir.stmt.IfThenElse)) for x in stack]):
                 write_stmt = None
                 barrier = tvm.tir.Call(None, "tir.tvm_storage_sync", tvm.runtime.convert(["shared"]))
                 return tvm.tir.stmt_seq(barrier, op, barrier)

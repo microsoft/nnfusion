@@ -64,19 +64,24 @@ class DefaultPolicy:
 
     def emit_config(self, topk):
         base_tile = self.get_base_tile()
+        if base_tile == -1:
+            return []
         rstep_map = {node : self._assign_reduce_step(node) for node in self.ordered_nodes}
         # print(rstep_map)
-        smem_tile_condidates = self.DFS_smem_tile(base_tile, topk, rstep_map)[:topk]
+        smem_tile_condidates = self.DFS_smem_tile(base_tile, topk, rstep_map)
         results = []
         for tile, info in smem_tile_condidates:
             final_rstep_map = self._expand_reduce_axis(tile, info, rstep_map)
+            if not self.check_tile_shape_isvalid(tile):
+                continue
             # print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
             codegen_dicts = self.assign_block_size(tile)
             for node in self.ordered_nodes:
                 for ax in node.raxis:
                     codegen_dicts[node][ax] = [final_rstep_map[node][ax], 1]
-            # print(codegen_dicts)
             results.append(codegen_dicts)
+            if len(results) >= topk:
+                break
         return results
 
     def DFS_smem_tile(self, init_tile, topk, rstep_map):
@@ -100,7 +105,7 @@ class DefaultPolicy:
                 queue.put([prio(info), tile])
 
         add_to_queue(init_tile)
-        while not (queue.empty()):
+        while not (queue.empty() or len(visited_tile) > 2000):
             _, tile = queue.get()
             dim_ids = [step.index(t) for step, t in zip(steps, tile)]
             for i in reversed(range(len(dim_ids))):
@@ -341,6 +346,18 @@ class DefaultPolicy:
         num_wave = np.ceil(grid_size / (block_per_SM * self.arch.compute_max_core[0])) # self.arch.compute_max_core[0]
         return TileInfo(footprint, smem_cost, block_per_SM, num_wave)
 
+    def check_tile_shape_isvalid(self, out_tile):
+        output_tile_map = self.get_tile_map(out_tile)
+        _, tile_map = self._compute_memory_footprint(output_tile_map)
+        out_node = self.output_nodes[0]
+        grid_size = np.prod([np.ceil(y / x) for x, y in zip(out_tile, out_node.get_shape())])
+        for node in self.ordered_nodes:
+            node_grid_size = np.prod([np.ceil(y / x) for x, y in zip(tile_map[node], node.get_shape())])
+            if node_grid_size != grid_size:
+                return False
+        return True
+
+
     def assign_block_size(self, output_tile):
         tile_map = self.get_tile_map(output_tile)
         _, tile_map = self._compute_memory_footprint(tile_map)
@@ -384,4 +401,30 @@ class DefaultPolicy:
         # print(cur_threads)
         block_tile = [int(np.ceil(tile[i] / cur_threads[i])) for i in range(ndim)]
         codegen_dict = {ax : [cur_threads[i], block_tile[i]] for i, ax in enumerate(node.saxis)}
+        # # assign virtual threads
+        # codegen_dict = {}
+        # out_shape = node.get_shape()
+        # for i, ax in enumerate(node.saxis):
+        #     strided = coalesced_tensor_shape(cur_threads[i:], out_shape[i:], 8)
+        #     unstrided = cur_threads[i]
+        #     if i + 1 < len(node.saxis):
+        #         unstrided *= coalesced_tensor_shape(cur_threads[i+1:], out_shape[i:], 8)
+        #     else:
+        #         unstrided *= 8
+        #     if strided < unstrided:
+        #         codegen_dict[ax] = [block_tile[i], cur_threads[i], 1]
+        #     else:
+        #         codegen_dict[ax] = [1, cur_threads[i], block_tile[i]]
+
+        # # assign reduce order
+        # # more local memory reuse between two steps is ordered as inner loop
+        # if len(node.raxis) > 0:
+        #     thd_tile = [codegen_dict[ax][-1] for ax in node.saxis]
+        #     ax_score = {}
+        #     for i, rax in enumerate(node.raxis):
+        #         rstep = {ax : 1 for ax in node.raxis}
+        #         rstep[rax] = min(2, node.raxis[rax])
+        #         ax_score[rax] = node.infer_reduction_inputs(thd_tile, rstep)
+        #     axis_order = sorted(ax_score.keys(), key=lambda ax: ax_score[ax], reverse=True)
+        #     codegen_dict["raxis_order"] = axis_order
         return codegen_dict

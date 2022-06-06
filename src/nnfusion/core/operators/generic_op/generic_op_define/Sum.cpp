@@ -33,7 +33,7 @@ REGISTER_OP(Sum)
             "@output0@" + make_layout(output_ax) + " +=! @input0@" + make_layout(input_ax);
         if (output_ax.empty())
             expression += " where N in 1";
-
+        expression += ";";
         // FIXME: Need to include annotation
         if (reduce_size == 1L)
             expression += " ## @: memcpy";

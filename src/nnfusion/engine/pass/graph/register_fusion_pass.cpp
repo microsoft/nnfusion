@@ -6,7 +6,7 @@
 #include "nnfusion/core/operators/op_define/fused.hpp"
 #include "nnfusion/core/operators/op_define/reshape.hpp"
 #include "nnfusion/core/operators/util/elementwise_arithmetic.hpp"
-
+#include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "gflags/gflags.h"
 
 #include <queue>
@@ -14,6 +14,9 @@
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
+
+DEFINE_string(ftune_output_file, "", "the output json file path");
+DEFINE_string(ftune_input_file, "", "the input json file path");
 
 namespace
 {
@@ -41,7 +44,7 @@ namespace
         FuseGroup() {}
         std::unordered_set<shared_ptr<GNode>> nodes;
     };
-    const std::unordered_set<std::string> inlined_ops = {"Broadcast", "Reshape"};
+    const std::unordered_set<std::string> inlined_ops = {"Broadcast", "Reshape", "Slice"};
 }
 
 class RegisterFusionOptimizer {
@@ -68,6 +71,21 @@ public:
         for (auto group: groups) {
             insert_fuse_group(group);
         }
+        auto nodes = nlohmann::json().array();
+        for (auto& node : m_graph->get_ordered_ops()) {
+            if (node->get_op_ptr()->is_tensor_op()) continue;
+            auto str = nnfusion::op::get_translation_v2(node);
+            auto edge = nlohmann::json().array();
+            for (auto &e : node->get_in_edges()) {
+                edge.push_back({e->get_src()->get_id(), e->get_src_output()});
+            }
+            string op_type = node->get_op_type();
+            if (op_type == "Matched_Pattern") op_type = node->get_name();
+            nodes.push_back({node->get_id(), str, op_type, edge});
+        }
+        auto file = std::ofstream(FLAGS_ftune_output_file);
+        file << nodes.dump(/*indent=*/ 2);
+        file.close();
         return true;
     }
 private:
@@ -88,10 +106,20 @@ private:
     }
 
     void insert_fuse_group(shared_ptr<FuseGroup> group) {
+        // get a meaningful name
+        string name = "";
+        map<int, string> values;
+        for (auto node : group->nodes)
+            values[node->get_id()] = node->get_op_type();
+        for (auto pair: values) {
+            if (name.size() > 0) name += "_";
+            name += pair.second;
+        }
         auto fused_op = std::make_shared<nnfusion::op::Fused>("fused_kernel", "Matched_Pattern");
         auto fused_node = std::make_shared<FusedGNode>(fused_op);
         fused_node->build_fused_node(group->nodes, m_graph, true);
         m_graph->add_node(fused_node);
+        fused_node->set_name(name);
     }
 
     void fuse_from_node(shared_ptr<TaggedNode> &top_node) {
@@ -153,6 +181,7 @@ private:
     }
 
     void update_block_list(unordered_set<shared_ptr<TaggedNode>> &block_list, const shared_ptr<TaggedNode> &tnode) {
+        block_list.insert(tnode);
         for (auto edge : tnode->node_->get_out_edges()) {
             auto& out_node = node_map_[edge->get_dst()];
             if (block_list.count(out_node) == 0)
@@ -185,8 +214,90 @@ private:
     int cur_group_;
 };
 
+class ApplyFusionResult {
+public:
+    ApplyFusionResult(std::shared_ptr<Graph> g)
+    : m_graph(g) {
+    }
+    bool apply(const string &fname) {
+        auto fin = std::ifstream(fname, ios::in);
+        json fusion_groups = json::parse(fin);
+        NNFUSION_CHECK(fusion_groups.is_array());
+
+        unordered_map<int, shared_ptr<GNode>> id2gnode;
+        for (auto gnode : m_graph->get_ordered_ops())
+            id2gnode[gnode->get_id()] = gnode;
+
+        for (auto group : fusion_groups) {
+            NNFUSION_CHECK(group.contains("nodes") && group["nodes"].is_array());
+            if (!group.contains("code")) continue;
+
+            std::vector<int> node_list;
+            std::unordered_set<std::shared_ptr<GNode>> node_set;
+            group["nodes"].get_to(node_list);
+            for (auto node_id : node_list) node_set.insert(id2gnode[node_id]);
+
+            // get a meaningful name
+            int group_id;
+            group["group_id"].get_to(group_id);
+            string name = "Group" + to_string(group_id);
+            for (int node_id : node_list) {
+                NNFUSION_CHECK(id2gnode.count(node_id));
+                string op_type = id2gnode[node_id]->get_op_type();
+                if (op_type == "Matched_Pattern") op_type = id2gnode[node_id]->get_name();
+                name += "  " + op_type;
+            }
+            auto fused_op = std::make_shared<nnfusion::op::Fused>(name, "GroupFusion");
+            // handle inputs and outputs
+            std::vector<pair<int, int>> input_desc, output_desc;
+            group["input_desc"].get_to(input_desc);
+            group["output_desc"].get_to(output_desc);
+            auto fused_node = std::make_shared<GNode>();
+            fused_node->construct_from_op_ptr(fused_op);
+            for (int i = 0; i < input_desc.size(); i++) {
+                auto node = id2gnode[input_desc[i].first];
+                int in_id = input_desc[i].second;
+                auto edge = node->get_in_edges()[in_id];
+                fused_node->set_input(i, node->get_inputs().at(in_id));
+                m_graph->add_edge(edge->get_src(), edge->get_src_output(), fused_node, i);
+            }
+
+            for (int i = 0; i < output_desc.size(); i++) {
+                auto node = id2gnode[output_desc[i].first];
+                int out_id = output_desc[i].second;
+                fused_node->set_output(i, node->get_outputs().at(out_id));
+                auto out_edges = node->get_output_users(out_id);
+                for (auto out_edge : out_edges) {
+                    auto out_node = out_edge->get_dst();
+                    if (node_set.count(out_node)) continue;
+                    m_graph->add_edge(fused_node, out_id, out_node, out_edge->get_dst_input());
+                }
+            }
+            // cleanup
+            for (auto& node : node_set)
+                m_graph->remove_node(node);
+            m_graph->add_node(fused_node);
+            fused_node->set_name(name);
+            shared_ptr<KernelContext> ctx(new KernelContext(fused_node));
+            (*fused_node)["Kernel_Selection_Result"] = std::make_pair<NNFusion_DeviceType, KernelEmitter::Pointer>(
+                CUDA_GPU, make_shared<cuda::FusionCudaEmitter>(ctx, group));
+        }
+    }
+private:
+    shared_ptr<Graph> m_graph;
+};
+
 bool RegisterFusionPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
+    if (FLAGS_ftune_output_file == "")
+        return true;
+    NNFUSION_LOG(INFO) << "RegisterFusionPass Start";
     auto optimizer = RegisterFusionOptimizer(graph);
-    return optimizer.Optimize();
+    if (!optimizer.Optimize()) return false;
+    auto applier = ApplyFusionResult(graph);
+    if (FLAGS_ftune_input_file == "")
+        exit(0);
+    applier.apply(FLAGS_ftune_input_file);
+    NNFUSION_LOG(INFO) << "RegisterFusionPass Done";
+    return true;
 }

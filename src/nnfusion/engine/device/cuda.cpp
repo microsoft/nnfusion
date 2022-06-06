@@ -65,7 +65,7 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<IRBasedFusionPass>());
 
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
-    // g_passes->push_back(make_shared<RegisterFusionPass>());
+    g_passes->push_back(make_shared<RegisterFusionPass>());
 
     // Kernel selection
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());

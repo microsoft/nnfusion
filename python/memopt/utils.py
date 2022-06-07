@@ -157,16 +157,18 @@ def get_valid_name(var):
     return name if var.value_index == 0 else name + str(var.value_index)
 
 def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_name, global_kernel=True):
+    scope = get_scope()
     passes = [
         (0, modify_output_pass),
         (0, modify_input_pass),
         (4, get_kernel_info_pass),
     ]
+    disabled_pass = ["tir.StorageRewrite"] if sm_inputs else []
     assert(isinstance(sm_outputs, (tuple, list)))
     assert(isinstance(sm_inputs, (tuple, list)))
-    scope = get_scope()
     func_args = ", ".join(["{}* __restrict__ {}".format(_type_map[var.dtype], get_valid_name(var)) for var in args])
-    with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
+    with tvm.transform.PassContext(
+        config={"tir.add_lower_pass": passes}, disabled_pass=disabled_pass):
         scope.shared_mem_outputs = sm_outputs
         scope.shared_mem_inputs = sm_inputs
 
@@ -258,7 +260,7 @@ def compose_global_kernel(output_nodes, configs, target, name) -> CompileResult:
         else:
             sch = cgen.rewrite_schedule_no_reduce(sch, config, shared_inputs=shared_inputs)
         with Scope(sch) as scope:
-            func_name = name+"_kernel_"+str(device_func_uid)
+            func_name = "_".join([name, str(device_func_uid), op.name])
             kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=func_name, global_kernel=False)
             if block_size is None:
                 block_size = scope.block_size

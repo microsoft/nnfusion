@@ -33,7 +33,7 @@ def load_model(fname: str) -> List[Node]:
                 node.add_tag("skip")
         node_map[node_id] = node
         ordered_nodes.append(node)
-    return ordered_nodes, node_map
+    return ordered_nodes
 
 def dump(fusion_groups: List[FusionGroup]):
     obj = []

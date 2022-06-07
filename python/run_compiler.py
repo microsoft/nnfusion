@@ -14,7 +14,7 @@ if __name__ == "__main__":
     memopt.set_log_level(args.verbose)
     assert args.input.endswith(".json")
     assert args.output.endswith(".json")
-    ordered_nodes, _ = load_model(args.input)
+    ordered_nodes = load_model(args.input)
     fusion_groups = run(
         ordered_nodes,
         args.topk,

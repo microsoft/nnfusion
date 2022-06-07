@@ -93,7 +93,7 @@ def _build_fusion_group(top_node, node_topo_id, node2group, topk, arch):
             if edge.dst_node.is_output(): # model output can't be eliminated
                 valid = False
                 break
-            if edge.dst_node in fusing_nodes:
+            if edge.dst_node in fusing_nodes or edge.dst_node in cur_group:
                 continue
             assert edge.dst_node not in node2group
             fusing_nodes.append(edge.dst_node)
@@ -128,6 +128,13 @@ def _build_fusion_group(top_node, node_topo_id, node2group, topk, arch):
                 node2group[n] = cur_group_id
                 for i in range(n.num_outputs()):
                     queue.append((n, i))
+
+    if cp_result is None: # tune  single op if no fusion is possible
+        assert len(cur_group) == 1
+        cp_result = tune(cur_group, arch,
+            kernel_name="Group"+str(cur_group_id), topk=topk, check=True)
+        if cp_result is None:
+            print("Cannot generate code for", top_node)
 
     return FusionGroup(cur_group, cur_group_id, cp_result)
 

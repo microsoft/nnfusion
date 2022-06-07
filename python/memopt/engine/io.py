@@ -17,6 +17,9 @@ def load_model(fname: str) -> List[Node]:
     node_map = {}
     ordered_nodes = []
     for node_id, ir, op_type, inputs in a:
+        anno, options = ir.find('## @'), []
+        if anno >= 0:
+            ir, options = ir[:anno].strip(), ir[ir.index(':', anno) + 1:].strip().split('|')
         input_list = []
         if op_type == "Pad":
             inputs.pop(-1)
@@ -29,6 +32,8 @@ def load_model(fname: str) -> List[Node]:
             node = OutputNode(*input_list[0])
         else:
             node = IRNode(input_list, ir, get_node_name(node_id, op_type))
+            for option in options:
+                node.add_tag(option)
             if op_type == "Softmax":
                 node.add_tag("skip")
         node_map[node_id] = node
@@ -41,6 +46,7 @@ def dump(fusion_groups: List[FusionGroup]):
         group_desc = {}
         node_names = [node.name for node in group.nodes]
         group_desc["nodes"] = [get_id_by_name(name) for name in node_names]
+        group_desc["node_names"] = node_names
         group_desc["group_id"] = group.group_id
         if group.cpresult is not None:
             cpresult = group.cpresult

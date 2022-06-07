@@ -74,6 +74,7 @@ class DefaultPolicy:
             final_rstep_map = self._expand_reduce_axis(tile, info, rstep_map)
             if not self.check_tile_shape_isvalid(tile):
                 continue
+            # info = self.compute_smem_tile_meta_data(self.get_tile_map(tile), final_rstep_map)
             # print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
             codegen_dicts = self.assign_block_size(tile)
             for node in self.ordered_nodes:

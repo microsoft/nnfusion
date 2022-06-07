@@ -5,6 +5,15 @@ from memopt.reference import get_subgraph_reference_outputs
 from memopt import get_log_level
 import numpy as np
 
+def get_max_diff(tensor_list_a, tensor_list_b):
+    total_diff = [0]
+    for a, b in zip(tensor_list_a, tensor_list_b):
+        assert a.shape == b.shape
+        diff = np.max(np.abs(a-b))
+        total_diff.append(diff)
+    total_diff = max(total_diff)
+    return total_diff
+
 def _extract_subgraph(nodes):
     node_map = {}
     output_nodes = []
@@ -50,10 +59,9 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
     for config in configs:
         cpresult = compose_global_kernel(output_nodes, config, "cuda", name=kernel_name)
         cpresult.append_host_call()
+        cpresult.set_io_desc(input_desc, output_desc)
         compile_results.append(cpresult)
     compile_and_load_parallel(compile_results)
-    best_latency = 10000
-    best = None
     values = []
     for cpresult in compile_results:
         if get_log_level() >= 2: print(cpresult.config)
@@ -62,25 +70,24 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
         else:
             latency = cpresult.profile()
         values.append(latency)
-        if latency < best_latency:
-            best_latency = latency
-            best = cpresult
         if get_log_level() >= 2: print(latency)
-    if best is not None:
-        best.set_io_desc(input_desc, output_desc)
-        if get_log_level() >= 1:
-            print("Best Config:", best.config)
-            print("top1: {} \ttop10: {}".format(values[0], min(values)))
-        if check:
-            total_diff = 0
-            out = best.get_example_outputs()
-            ref_out = get_subgraph_reference_outputs(output_nodes)
-            for a, b in zip(out, ref_out):
-                diff = np.max(np.abs(a-b))
-                total_diff += diff
-            if get_log_level() >= 1: print("Diff:", total_diff)
-            if total_diff > 1e-3:
-                best = None
-        if get_log_level() >= 1:
-            print("-" * 80, flush=True)
-    return best
+    compile_results = list(filter(lambda x:x.latency<10000, compile_results))
+    compile_results = sorted(compile_results, key=lambda x:x.latency)
+    if len(compile_results) == 0:
+        return None
+
+    if get_log_level() >= 1:
+        print("Best Config:", compile_results[0].config)
+        print("top1: {} \ttop10: {}".format(values[0], min(values)), flush=True)
+    if not check:
+        return compile_results[0]
+
+    ref_out = get_subgraph_reference_outputs(output_nodes)
+    for best in compile_results:
+        out = best.get_example_outputs()
+        total_diff = get_max_diff(out, ref_out)
+        if get_log_level() >= 1: print("Diff:", total_diff)
+        if total_diff > 1e-3:
+            continue
+        return best
+    return None

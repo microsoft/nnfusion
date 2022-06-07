@@ -149,6 +149,6 @@ def run(ordered_nodes: List[Node], topk: int, arch) -> List[FusionGroup]:
             node, node_topo_id, node2group, topk, arch)
         fusion_groups.append(fg)
         if get_log_level() >= 1:
-            print("Fusion group created: ", [node.name for node in fg.nodes])
+            print("Fusion group created: ", fg.group_id , [node.name for node in fg.nodes])
 
     return fusion_groups

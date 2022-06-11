@@ -743,7 +743,9 @@ cuda::FusionCudaEmitter::FusionCudaEmitter(shared_ptr<KernelContext> ctx, json f
     int kernel_sig_end = m_code.find("{", kernel_sig_start);
     NNFUSION_CHECK(kernel_sig_end != string::npos);
     auto sig = m_code.substr(kernel_sig_start, kernel_sig_end - kernel_sig_start);
-    auto old_fname = "Group"+to_string(m_fusion_group["group_id"].get<int>());
+    // auto old_fname = "Group"+to_string(m_fusion_group["group_id"].get<int>());
+    auto old_fname = m_fusion_group["name"].get<string>();
+    NNFUSION_CHECK(sig.find(old_fname) != string::npos) << sig << old_fname;
     sig = sig.erase(sig.find(old_fname), old_fname.size());
 
     int kernel_body_start = kernel_sig_end + 1;
@@ -778,7 +780,8 @@ LanguageUnit_p cuda::FusionCudaEmitter::emit_function_body() {
 }
 
 LanguageUnit_p cuda::FusionCudaEmitter::emit_dependency() {
-    LanguageUnit_p lu(new LanguageUnit(get_function_name() + "_dep"));
+    auto old_fname = m_fusion_group["name"].get<string>();
+    LanguageUnit_p lu(new LanguageUnit(old_fname + "_dep"));
     lu->require(m_dep_unitp);
     return lu;
 }

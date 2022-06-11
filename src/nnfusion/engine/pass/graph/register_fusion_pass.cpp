@@ -237,7 +237,7 @@ public:
             group["nodes"].get_to(node_list);
             for (auto node_id : node_list) node_set.insert(id2gnode[node_id]);
 
-            // get a meaningful name
+            // generates a meaningful name (for comments only)
             int group_id;
             group["group_id"].get_to(group_id);
             string name = "Group" + to_string(group_id);
@@ -257,8 +257,8 @@ public:
             for (int i = 0; i < input_desc.size(); i++) {
                 auto node = id2gnode[input_desc[i].first];
                 int in_id = input_desc[i].second;
-                auto edge = node->get_in_edges()[in_id];
                 fused_node->set_input(i, node->get_inputs().at(in_id));
+                auto edge = node->get_in_edges()[in_id];
                 m_graph->add_edge(edge->get_src(), edge->get_src_output(), fused_node, i);
             }
 

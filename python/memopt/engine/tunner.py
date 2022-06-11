@@ -1,9 +1,22 @@
 from memopt.graph import OutputNode, find_topo_sort
 from memopt.fusion import DefaultPolicy
-from memopt.utils import compile_and_load_parallel, compose_global_kernel
+from memopt.utils import CompileResult, compile_and_load_parallel, compose_global_kernel
 from memopt.reference import get_subgraph_reference_outputs
 from memopt import get_log_level
 import numpy as np
+import hashlib
+
+_cache_store = {}
+
+def get_cache(sig):
+    return _cache_store[sig]
+
+def count_cache(sig):
+    return sig in _cache_store
+
+def set_cache(sig, value):
+    global _cache_store
+    _cache_store[sig] = value
 
 def get_max_diff(tensor_list_a, tensor_list_b):
     total_diff = [0]
@@ -13,6 +26,25 @@ def get_max_diff(tensor_list_a, tensor_list_b):
         total_diff.append(diff)
     total_diff = max(total_diff)
     return total_diff
+
+def subgraph_hash(output_nodes):
+    nodes = find_topo_sort(output_nodes)
+    node_hash, edge_hash = [], []
+    node_idx = {node : i for i, node in enumerate(nodes)}
+    for node in nodes:
+        if node.is_placeholder():
+            value = "placeholder"
+        elif node.is_output():
+            value = "output"
+        else:
+            value = node.ir
+        hex = hashlib.sha1(bytes(value, encoding="utf-8")).hexdigest()
+        node_hash.append(int(hex, 16))
+        for edge in node.outputs:
+            sig = (node_idx[edge.src_node], node_idx[edge.dst_node], edge.src_id, edge.dst_id)
+            edge_hash.append(hash(sig))
+    graph_sig = hash(tuple(node_hash + edge_hash))
+    return graph_sig
 
 def _extract_subgraph(nodes):
     node_map = {}
@@ -47,8 +79,21 @@ def _extract_subgraph(nodes):
 
 def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
     if get_log_level() >= 1:
-        print("Start fusing ", [node.name for node in nodes])
+        print("Tuning", [node.name for node in nodes])
     output_nodes, input_desc, output_desc = _extract_subgraph(nodes)
+
+    signature = subgraph_hash(output_nodes)
+    if count_cache(signature):
+        print("Found in cache")
+        cached = get_cache(signature)
+        if cached is None:
+            return None
+        result = CompileResult(cached.config, cached.code,
+            cached.block_size, cached.grid_size, cached.name, cached.args)
+        result.latency = cached.latency
+        result.set_io_desc(input_desc, output_desc)
+        return result
+
     policy = DefaultPolicy(output_nodes, arch)
     if any([node.get_tag("skip") for node in policy.ordered_nodes]):
         return None
@@ -76,9 +121,10 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
     if len(compile_results) == 0:
         return None
 
-    if get_log_level() >= 1:
+    if get_log_level() >= 2:
         print("Best Config:", compile_results[0].config)
-        print("top1: {} \ttop10: {}".format(values[0], min(values)), flush=True)
+    if get_log_level() >= 1:
+        print("top1: {} \ttopk: {}".format(values[0], min(values)), flush=True)
     if not check:
         return compile_results[0]
 
@@ -89,5 +135,7 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
         if get_log_level() >= 1: print("Diff:", total_diff)
         if total_diff > 1e-3:
             continue
+        set_cache(signature, best)
         return best
+    set_cache(signature, None)
     return None

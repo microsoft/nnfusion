@@ -23,8 +23,6 @@ def test(expr, input_dict, name="ansor.log"):
     global __expr, __input_dict
     __expr = expr
     __input_dict = input_dict
-    __input_dict={ "input0" : { "dtype" : "float32", "shape" : [1, 2160, 3840, 17]} }
-    __expr = " output0[N0, H0, W0, C0] = input0[N0, H0 * 2 + (C0 // 17) % 2, W0 * 2 + (C0 // 17) // 2, C0 % 17] where H0 in 1080, W0 in 1920, C0 in 68; "
     key = int(hashlib.md5(bytes("- einstein_v2('{}', {})".format(expr, str(input_dict)), encoding="utf-8")).hexdigest(), 16)
     task = tvm.auto_scheduler.SearchTask(func=workload, args=[key], target="cuda")
     log_file = os.path.join("temp", name)

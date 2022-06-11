@@ -77,78 +77,95 @@ def _get_nodes_dependency(nodes, processed):
             queue.append(edge.src_node)
     return list(deps)
 
-def _build_fusion_group(top_node, node_topo_id, node2group, topk, arch):
-    cur_group = [top_node]
-    cur_group_id = 0 if len(node2group) == 0 else max(node2group.values()) + 1
-    node2group[top_node] = cur_group_id
-    queue = [(top_node, i) for i in range(top_node.num_outputs())]
-    cp_result = None
-    while len(queue) > 0:
-        node, output_id = queue.pop(0)
-        fusing_nodes = []
-        valid = True
-        for edge in node.outputs:
-            if edge.src_id != output_id:
+class Engine:
+    def __init__(self, topk: int, arch) -> None:
+        self.topk = topk
+        self.arch = arch
+
+    def run(self, ordered_nodes: List[Node]) -> List[FusionGroup]:
+        self.node2group = {} # map node to fused group
+        self.node_topo_id = {ordered_nodes[i] : i for i in range(len(ordered_nodes))}
+        fusion_groups = []
+        for node in ordered_nodes:
+            if node in self.node2group or node.is_output():
                 continue
-            if edge.dst_node.is_output(): # model output can't be eliminated
-                valid = False
-                break
-            if edge.dst_node in fusing_nodes or edge.dst_node in cur_group:
-                continue
-            assert edge.dst_node not in node2group
-            fusing_nodes.append(edge.dst_node)
+            fg = self._build_fusion_group(node)
+            fusion_groups.append(fg)
+            if get_log_level() >= 1:
+                print("Fusion group created: ", fg.group_id , [node.name for node in fg.nodes])
+        return fusion_groups
 
-        if not valid:
-            continue
-
-        fusing_nodes = _get_nodes_dependency(fusing_nodes, node2group)
-        if len(fusing_nodes) == 0 or len(fusing_nodes) > 10: # too many dependency
-            continue
-
-        new_group = fusing_nodes + cur_group # create a new subgraph candidate
-
-        # checking group output is valid
-        in_group_outputs, out_group_outputs = set(), set()
-        for node in new_group:
+    def _build_fusion_group(self, top_node):
+        cur_group = [top_node]
+        cur_group_id = 0 if len(self.node2group) == 0 else max(self.node2group.values()) + 1
+        self.node2group[top_node] = cur_group_id
+        queue = [(top_node, i) for i in range(top_node.num_outputs())]
+        cp_result = None
+        while len(queue) > 0:
+            node, output_id = queue.pop(0)
+            fusing_nodes = []
+            valid = True
             for edge in node.outputs:
-                if edge.dst_node in new_group:
-                    in_group_outputs.add((node, edge.src_id))
-                else:
-                    out_group_outputs.add((node, edge.src_id))
-        if in_group_outputs.intersection(out_group_outputs):
-            continue
+                if edge.src_id != output_id:
+                    continue
+                if edge.dst_node.is_output(): # model output can't be eliminated
+                    valid = False
+                    break
+                if edge.dst_node in fusing_nodes or edge.dst_node in cur_group:
+                    continue
+                assert edge.dst_node not in self.node2group
+                fusing_nodes.append(edge.dst_node)
 
-        new_group = sorted(new_group, key=lambda n:node_topo_id[n])
-        result = tune(new_group, arch,
-            kernel_name="Group"+str(cur_group_id), topk=topk, check=True)
-        if result is not None:
+            if not valid:
+                continue
+
+            fusing_nodes = _get_nodes_dependency(fusing_nodes, self.node2group)
+            if len(fusing_nodes) == 0 or len(fusing_nodes) > 10: # too many dependency
+                continue
+
+            new_group = fusing_nodes + cur_group # create a new subgraph candidate
+
+            # checking group output is valid
+            in_group_outputs, out_group_outputs = set(), set()
+            for node in new_group:
+                for edge in node.outputs:
+                    if edge.dst_node in new_group:
+                        in_group_outputs.add((node, edge.src_id))
+                    else:
+                        out_group_outputs.add((node, edge.src_id))
+            if in_group_outputs.intersection(out_group_outputs):
+                continue
+
+            new_group = sorted(new_group, key=lambda n:self.node_topo_id[n])
+            result = tune(new_group, self.arch,
+                kernel_name="Group"+str(cur_group_id), topk=self.topk, check=True)
+            if result is None or self.compute_gain(new_group, result) <= 0:
+                continue
             cur_group = new_group
             cp_result = result
             for n in fusing_nodes:
-                node2group[n] = cur_group_id
+                self.node2group[n] = cur_group_id
                 for i in range(n.num_outputs()):
                     queue.append((n, i))
 
-    if cp_result is None: # tune  single op if no fusion is possible
-        assert len(cur_group) == 1
-        cp_result = tune(cur_group, arch,
-            kernel_name="Group"+str(cur_group_id), topk=topk, check=True)
-        if cp_result is None:
-            print("Cannot generate code for", top_node)
+        if cp_result is None: # tune  single op if no fusion is possible
+            assert len(cur_group) == 1
+            cp_result = tune(cur_group, self.arch,
+                kernel_name="Group"+str(cur_group_id), topk=self.topk, check=True)
+            if cp_result is None:
+                print("Cannot generate code for", top_node)
 
-    return FusionGroup(cur_group, cur_group_id, cp_result)
+        return FusionGroup(cur_group, cur_group_id, cp_result)
 
-def run(ordered_nodes: List[Node], topk: int, arch) -> List[FusionGroup]:
-    node2group = {} # map node to fused group
-    node_topo_id = {ordered_nodes[i] : i for i in range(len(ordered_nodes))}
-    fusion_groups = []
-    for node in ordered_nodes:
-        if node in node2group or node.is_output():
-            continue
-        fg = _build_fusion_group(
-            node, node_topo_id, node2group, topk, arch)
-        fusion_groups.append(fg)
-        if get_log_level() >= 1:
-            print("Fusion group created: ", fg.group_id , [node.name for node in fg.nodes])
-
-    return fusion_groups
+    def compute_gain(self, group, cp_result):
+        for node in group:
+            if node.get_tag("latency") is None:
+                result = tune([node], self.arch, node.name, self.topk)
+                if result is None:
+                    latency = 10000
+                else:
+                    latency = result.latency
+                node.add_tag("latency", latency)
+        base = sum([node.get_tag("latency") for node in group])
+        new = cp_result.latency
+        return base - new

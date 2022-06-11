@@ -307,11 +307,15 @@ def compose_global_kernel(output_nodes, configs, target, name) -> CompileResult:
     else:
         statements.insert(0, "char* shared = NULL;".format(allocator.limit))
     kernel_args_dtype_map = {v : _type_map[k.dtype] for k, v in kernel_args_name_map.items()}
-    kernel_args_name = ["{}* {}".format(kernel_args_dtype_map[arg], arg)
-        for arg in sorted(set(kernel_args_name_map.values()))]
+    kernel_args_name = []
+    for i in range(num_inputs):
+        kernel_args_name.append("input"+str(i))
+    for i in range(num_outputs):
+        kernel_args_name.append("output"+str(i))
+    kernel_args = ["{}* {}".format(kernel_args_dtype_map[arg], arg) for arg in kernel_args_name]
     prefix = "__global__ void __launch_bounds__({}) {}({})".format(
         np.prod(scope.block_size), name,
-        ", ".join(kernel_args_name)
+        ", ".join(kernel_args)
     )
     code.write(prefix)
     code.write(" {\n")
@@ -321,7 +325,7 @@ def compose_global_kernel(output_nodes, configs, target, name) -> CompileResult:
 
     # fused kernel args
     args = []
-    for arg_name in sorted(set(kernel_args_name_map.values())):
+    for arg_name in kernel_args_name:
         for k, v in kernel_args_name_map.items():
             if v == arg_name:
                 args.append(k)

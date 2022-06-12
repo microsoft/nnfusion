@@ -18,6 +18,8 @@ if __name__ == "__main__":
     ordered_nodes = load_model(args.input)
     engine = Engine(args.topk, arch.__getattribute__(args.arch)())
     fusion_groups = engine.run(ordered_nodes)
+    gain = sum([fg.gain for fg in fusion_groups])
+    print("Fusion gain: {}ms".format(gain))
     if args.output != "":
         save_results(fusion_groups, args.output)
     print("Total run time: ", time.time() - start_time)

@@ -229,11 +229,14 @@ class CodeGenerator:
                     and len(op.output(0).shape) > len(tensor.shape) \
                     and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
                 if tensor.name in shared_inputs:
+                    # Must create local tensor when writes into shared outputs
                     cache = True
                 if cache:
                     tensor_shared = self.sche.cache_read(tensor, "shared", [op])
                     self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
                     self.cooperative_fetch(tensor_shared, self.sche)
+                    if op.output(0) in reduce_op.input_tensors:continue
+                    # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
                     tensor_local = self.sche.cache_read(tensor_shared, "local", [op])
                     self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche

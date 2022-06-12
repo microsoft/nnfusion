@@ -54,10 +54,11 @@ from memopt import get_log_level
 #     return group
 
 class FusionGroup():
-    def __init__(self, node_list: List[Node], group_id: int, cpresult: CompileResult) -> None:
+    def __init__(self, node_list: List[Node], group_id: int, cpresult: CompileResult, gain: float) -> None:
         self.nodes = node_list
         self.group_id = group_id
         self.cpresult = cpresult
+        self.gain = gain
 
 def _get_nodes_dependency(nodes, processed):
     # nodes : target nodes in infer dependency
@@ -95,9 +96,21 @@ class Engine:
                 print("Fusion group created: ", fg.group_id , [node.name for node in fg.nodes])
         return fusion_groups
 
+    def run_no_fusion(self, ordered_nodes: List[Node]) -> List[FusionGroup]:
+        fusion_groups = []
+        group_id = 0
+        for node in ordered_nodes:
+            if node.is_output() or node.is_placeholder():
+                continue
+            result = tune([node], self.arch, node.name, self.topk)
+            fusion_groups.append(FusionGroup([node], group_id, result))
+            group_id += 1
+        return fusion_groups
+
     def _build_fusion_group(self, top_node):
         cur_group = [top_node]
         cur_group_id = 0 if len(self.node2group) == 0 else max(self.node2group.values()) + 1
+        cur_latency_gain = 0
         self.node2group[top_node] = cur_group_id
         queue = [(top_node, i) for i in range(top_node.num_outputs())]
         cp_result = None
@@ -139,8 +152,12 @@ class Engine:
             new_group = sorted(new_group, key=lambda n:self.node_topo_id[n])
             result = tune(new_group, self.arch,
                 kernel_name="Group"+str(cur_group_id), topk=self.topk, check=True)
-            if result is None or self.compute_gain(new_group, result) <= 0:
+            if result is None:
                 continue
+            gain = self.compute_gain(new_group, result)
+            if gain < cur_latency_gain:
+                continue
+            cur_latency_gain = gain
             cur_group = new_group
             cp_result = result
             for n in fusing_nodes:
@@ -154,8 +171,7 @@ class Engine:
                 kernel_name="Group"+str(cur_group_id), topk=self.topk, check=True)
             if cp_result is None:
                 print("Cannot generate code for", top_node)
-
-        return FusionGroup(cur_group, cur_group_id, cp_result)
+        return FusionGroup(cur_group, cur_group_id, cp_result, cur_latency_gain)
 
     def compute_gain(self, group, cp_result):
         for node in group:

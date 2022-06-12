@@ -88,8 +88,8 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
         cached = get_cache(signature)
         if cached is None:
             return None
-        result = CompileResult(cached.config, cached.code,
-            cached.block_size, cached.grid_size, cached.name, cached.args)
+        result = CompileResult(cached.config, cached.code.replace(cached.name, kernel_name),
+            cached.block_size, cached.grid_size, kernel_name, cached.args)
         result.latency = cached.latency
         result.set_io_desc(input_desc, output_desc)
         return result

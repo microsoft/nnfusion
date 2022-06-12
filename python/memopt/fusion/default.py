@@ -38,17 +38,14 @@ def coalesced_tensor_shape(subtensor, tensor, transaction_size):
 def get_block_size(n):
     if n < 64:
         return n
-    elif n % 32 == 0:
-        for blk in [128, 96, 160, 64, 192, 224, 32]:
-            if n % blk == 0:
-                return blk
     else:
         factors = get_all_factors(n)
         factors = list(filter(lambda x: x <= 1024, factors))
-        roundup = [(n + 31) // 32 * 32 for n in factors]
-        pad = [(roundup[i] - factors[i]) / factors[i] for i in range(len(factors))]
-        score = [abs(factors[i] - 128) * pad[i] for i in range(len(factors))]
-        return min(zip(score, factors))[1]
+        num_wrap = [(x + 31) // 32 for x in factors]
+        pad = [num_wrap[i] * 32 - factors[i] for i in range(len(factors))]
+        score = [(max(num_wrap[i]/4, 4/num_wrap[i]), pad[i] / factors[i]) for i in range(len(factors))]
+        factor_ordered = [x[1] for x in sorted(zip(score, factors))]
+        return factor_ordered[0]
 
 class DefaultPolicy:
     def __init__(self, output_nodes, arch:Arch) -> None:
@@ -76,7 +73,7 @@ class DefaultPolicy:
                 continue
             # info = self.compute_smem_tile_meta_data(self.get_tile_map(tile), final_rstep_map)
             # print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
-            codegen_dicts = self.assign_block_size(tile)
+            codegen_dicts = self.assign_block_size(tile, final_rstep_map)
             for node in self.ordered_nodes:
                 for ax in node.raxis:
                     codegen_dicts[node][ax] = [final_rstep_map[node][ax], 1]
@@ -249,16 +246,15 @@ class DefaultPolicy:
 
             def _enlarge(rstep_id):
                 candidates = []
-                candidates.append((rstep_id, _score(rstep_id)))
                 for ax in rstep_id:
                     if rstep_id[ax] + 1 == len(all_steps[ax]):
                         continue
                     r = rstep_id.copy()
                     r[ax] += 1
                     candidates.append((r, _score(r)))
-
-                best = max(candidates, key=lambda x:x[1])
-                return best
+                if len(candidates) == 0:
+                    return (None, None)
+                return max(candidates, key=lambda x:x[1])
 
             cur_rstep_id = {k : all_steps[k].index(rstep[k]) for k in node.raxis}
             cur_score = _score(cur_rstep_id)
@@ -266,8 +262,10 @@ class DefaultPolicy:
             while True:
                 if cur_score == 0:break
                 new_rstep_id, new_score = _enlarge(cur_rstep_id)
+                if new_rstep_id is None:
+                    break
                 new_rstep_map[node] = {k : all_steps[k][new_rstep_id[k]] for k in node.raxis}
-                if new_score <= cur_score or self._compute_shared_memory_usage(tile_map, new_rstep_map) > smem_limit:
+                if self._compute_shared_memory_usage(tile_map, new_rstep_map) > smem_limit:
                     break
                 else:
                     cur_rstep_id, cur_score = new_rstep_id, new_score
@@ -358,7 +356,7 @@ class DefaultPolicy:
         return True
 
 
-    def assign_block_size(self, output_tile):
+    def assign_block_size(self, output_tile, rstep_map):
         tile_map = self.get_tile_map(output_tile)
         _, tile_map = self._compute_memory_footprint(tile_map)
         max_block_size = np.prod(output_tile)
@@ -367,10 +365,10 @@ class DefaultPolicy:
         result = {}
         recommended_block_size = get_block_size(max_block_size)
         for node in self.ordered_nodes:
-            result[node] = self._assign_block_size(node, tile_map[node], recommended_block_size)
+            result[node] = self._assign_block_size(node, tile_map[node], rstep_map[node], recommended_block_size)
         return result
 
-    def _assign_block_size(self, node, tile, block_size):
+    def _assign_block_size(self, node, tile, rstep_map, block_size):
         factors = factorize(block_size)
         cur_threads = [1 for _ in tile]
         rstep = {ax : 1 for ax in node.raxis}
@@ -401,6 +399,8 @@ class DefaultPolicy:
         # print(cur_threads)
         block_tile = [int(np.ceil(tile[i] / cur_threads[i])) for i in range(ndim)]
         codegen_dict = {ax : [cur_threads[i], block_tile[i]] for i, ax in enumerate(node.saxis)}
+        # if len(rstep_map) > 0 and np.prod(block_tile) * np.prod(list(rstep_map.values())) < 1000:
+        #     codegen_dict["unroll"] = True
         # # assign virtual threads
         # codegen_dict = {}
         # out_shape = node.get_shape()

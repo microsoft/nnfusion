@@ -7,6 +7,18 @@ def resnet(batch_size):
     input = torch.randn(batch_size, 3, 224, 224)
     return model, (input, )
 
+def mobilenet(batch_size):
+    from torchvision.models import mobilenet_v2 as Net
+    model = Net()
+    input = torch.randn(batch_size, 3, 224, 224)
+    return model, (input, )
+
+def SqueezeNet(batch_size):
+    from torchvision.models import squeezenet1_0 as Net
+    model = Net()
+    input = torch.randn(batch_size, 3, 224, 224)
+    return model, (input, )
+
 def swin_transormer(batch_size):
     from .swin_transformer import SwinTransformer
     model = SwinTransformer()

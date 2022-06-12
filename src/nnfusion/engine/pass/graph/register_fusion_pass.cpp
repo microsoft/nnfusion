@@ -134,6 +134,7 @@ private:
         while (!queue.empty()) {
             auto tnode = queue.top();
             queue.pop();
+            if (tnode->visited_) continue;
             // std::cout << "process " <<  tnode->node_->get_op_type() << std::endl;
             if (block_list.count(tnode)) continue;
             auto& node = tnode->node_;
@@ -162,8 +163,10 @@ private:
     }
 
     bool is_inlinable(std::shared_ptr<GNode> node) const {
-        if (std::dynamic_pointer_cast<nnfusion::op::ElementwiseArithmetic>(node->get_op_ptr()))
+        if (std::dynamic_pointer_cast<nnfusion::op::ElementwiseArithmetic>(node->get_op_ptr())) {
+            if (node->get_op_type() == "Softmax") return false;
             return true;
+        }
         if (inlined_ops.count(node->get_op_type()))
             return true;
         return false;

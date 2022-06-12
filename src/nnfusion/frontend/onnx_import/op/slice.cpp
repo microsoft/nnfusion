@@ -122,7 +122,8 @@ namespace nnfusion
 
                     for (auto idx = 0; idx < axes.size(); ++idx)
                     {
-                        size_t axis = axes.at(idx);
+                        auto axis = axes.at(idx);
+                        if (axis < 0) axis += data_shape.size();
                         lower_bounds.at(axis) =
                             get_valid_array_idx(starts.at(idx), data_shape.at(axis));
                         upper_bounds.at(axis) =

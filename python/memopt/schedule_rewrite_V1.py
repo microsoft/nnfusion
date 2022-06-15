@@ -1,5 +1,3 @@
-from audioop import bias
-from functools import reduce
 import tvm
 from tvm import te
 import numpy as np
@@ -30,7 +28,7 @@ class CodeGenerator:
     def __init__(self):
         self.storage_align_on = False
 
-    def split_axis(self, op, axis, sche = None):
+    def split_axis(self, op, axis):
         ret = []
         factors = self.tiling[axis.var.name]
         for i in range(0, len(factors)):
@@ -212,6 +210,9 @@ class CodeGenerator:
         self.sche[reg_tile].reorder(*axis_order)
         space_fused = self.sche[reg_tile].fuse(*space_axis)
         self.sche[reg_tile].unroll(space_fused)
+        if "unroll" in tile_dict:
+            for ax in reduce_inner_axis:
+                self.sche[reg_tile].unroll(ax)
 
         for input_tensor in reduce_op.input_tensors:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])

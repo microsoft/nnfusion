@@ -8,6 +8,13 @@ from model.pytorch import *
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
+def tofp16model(in_file_name, out_file_name):
+    from onnx import load_model, save_model
+    from onnxmltools.utils import float16_converter
+    onnx_model = load_model(in_file_name)
+    trans_model = float16_converter.convert_float_to_float16(onnx_model,keep_io_types=True)
+    save_model(trans_model, out_file_name)
+
 def torch2onnx(prefix, model, inputs):
     outputs = model(*inputs)
     if not isinstance(outputs, (tuple, list)):
@@ -23,6 +30,7 @@ def torch2onnx(prefix, model, inputs):
         training=False,
         do_constant_folding=False,
         opset_version=11)
+    tofp16model( osp.join(prefix, "model.onnx"),  osp.join(prefix, "model_fp16.onnx"))
     feed_dict = dict(zip(input_names, inputs))
     np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
 
@@ -46,7 +54,7 @@ def run_torch(model, inputs):
 if __name__ == "__main__":
     torch.random.manual_seed(0)
     prefix="temp"
-    model, inputs = bert(64)
+    model, inputs = resnet(64)
     os.makedirs(prefix, exist_ok=True)
     torch2onnx(prefix, model, inputs)
-    run_torch(model, inputs)
+    # run_torch(model, inputs)

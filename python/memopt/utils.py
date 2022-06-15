@@ -17,7 +17,7 @@ import subprocess
 import tempfile
 
 _tvm_default_name = "default_function_kernel0"
-_type_map = {"float32" : "float"}
+_type_map = {"float32" : "float", "float16" : "half"}
 
 class CompileResult:
     def __init__(self, config, code, block_size, grid_size, name, args) -> None:
@@ -178,7 +178,8 @@ def build_op(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_n
         tvm.register_func("tvm_callback_cuda_compile", override=True)(old_entry)
 
         src = mod.imported_modules[0].get_source()
-        index = src.index("{")
+        index = src.rindex(_tvm_default_name)
+        index = src.index("{", index)
         if global_kernel:
             prefix = "__global__ void __launch_bounds__(%d) " % np.prod(scope.block_size)
         else:

@@ -79,12 +79,13 @@ class Node:
     def get_dtype(self, id=0):
         return self._dtypes[id]
 
-    def set_dtype(self, dtype, id=0):
+    def set_dtype(self, dtype: tvm.DataType, id=0):
+        assert isinstance(dtype, tvm.DataType), type(dtype)
         if len(self._dtypes) <= id:
             self._dtypes.extend([None for _ in range(id - len(self._dtypes) + 1)])
         elif self._dtypes[id] is not None:
-            assert self._dtypes[id] == str(dtype), (self._dtypes, str(dtype))
-        self._dtypes[id] = str(dtype)
+            assert self._dtypes[id] == dtype, (self._dtypes, dtype)
+        self._dtypes[id] = dtype
 
     def is_placeholder(self):
         return False
@@ -161,10 +162,10 @@ class IRNode(Node):
         assert len(self.inputs) + 1 == len(self.args)
         for edge, arg in zip(self.inputs, self.args):
             edge.src_node.set_shape(arg.shape, edge.src_id)
-            edge.src_node.set_dtype(arg.dtype, edge.src_id)
+            edge.src_node.set_dtype(tvm.DataType(arg.dtype), edge.src_id)
         for output_id, arg in enumerate(self._output_args):
             self.set_shape(arg.shape, output_id)
-            self.set_dtype(arg.dtype, output_id)
+            self.set_dtype(tvm.DataType(arg.dtype), output_id)
         self._extract_axis()
         self.reduction_inputs = self.ana.get_reduction_inputs()
 

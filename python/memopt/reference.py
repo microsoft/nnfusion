@@ -13,7 +13,7 @@ def get_subgraph_reference_outputs(output_nodes, device="cuda:0", seed=0):
     for node in topo_order:
         if node.is_placeholder():
             shape = list(map(int, node.get_shape()))
-            dtype = torch.__getattribute__(node.get_dtype())
+            dtype = torch.__getattribute__(str(node.get_dtype()))
             arr = torch.randn(*shape, device=device, dtype=dtype)
             arr = tvm.nd.array(arr.cpu().numpy())
             values[(node, 0)] = arr

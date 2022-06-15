@@ -319,7 +319,8 @@ class DefaultPolicy:
             # alloc outputs
             for edge in node.outputs:
                 if not edge.dst_node.is_output() and (node, edge.src_id) not in block_map:
-                    block_map[(node, edge.src_id)] = allocator.malloc(np.prod(tile_map[node]) * 4)
+                    dtype_bytes = node.get_dtype(edge.src_id).bits // 8
+                    block_map[(node, edge.src_id)] = allocator.malloc(np.prod(tile_map[node]) * dtype_bytes)
 
         assert len(block_map) == 0
         return allocator.limit

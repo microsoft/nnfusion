@@ -1,4 +1,4 @@
-from memopt.graph import OutputNode, find_topo_sort
+from memopt.graph import Edge, OutputNode, find_topo_sort
 from memopt.fusion import DefaultPolicy
 from memopt.utils import CompileResult, compile_and_load_parallel, compose_global_kernel
 from memopt.reference import get_subgraph_reference_outputs
@@ -77,10 +77,35 @@ def _extract_subgraph(nodes):
 
     return output_nodes, input_desc, output_desc
 
+def eliminate_memcpy(output_nodes):
+    nodes = find_topo_sort(output_nodes)
+    eliminated_node_cnt = 0
+    for node in nodes:
+        if node.get_tag("memcpy") and len(node.inputs) == 1 and len(node.outputs) == 1:
+            inode = node.inputs[0].src_node
+            onode = node.outputs[0].dst_node
+            inode_id = node.inputs[0].src_id
+            onode_id = node.outputs[0].dst_id
+            if inode.is_placeholder() and not onode.is_output():
+                inode.set_shape(node.get_shape(), overwrite=True)
+                edge = Edge(inode, onode, inode_id, onode_id)
+                inode.set_outputs(inode_id, edge)
+                onode.set_inputs(onode_id, edge)
+                eliminated_node_cnt += 1
+            elif not inode.is_placeholder() and onode.is_output():
+                onode.set_shape(inode.get_shape(inode_id), overwrite=True)
+                edge = Edge(inode, onode, inode_id, onode_id)
+                inode.set_outputs(inode_id, edge)
+                onode.set_inputs(onode_id, edge)
+                eliminated_node_cnt += 1
+    if eliminated_node_cnt > 0:
+        eliminate_memcpy(output_nodes)
+
 def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
     if get_log_level() >= 1:
         print("Tuning", [node.name for node in nodes])
     output_nodes, input_desc, output_desc = _extract_subgraph(nodes)
+    eliminate_memcpy(output_nodes)
 
     signature = subgraph_hash(output_nodes)
     if count_cache(signature):

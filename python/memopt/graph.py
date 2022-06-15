@@ -58,13 +58,21 @@ class Node:
     def outputs(self):
         return self._out_edges
 
+    def set_inputs(self, i, edge):
+        assert i < len(self._in_edges)
+        self._in_edges[i] = edge
+
+    def set_outputs(self, i, edge):
+        assert i < len(self._out_edges)
+        self._out_edges[i] = edge
+
     def get_shape(self, id=0):
         return self._shapes[id]
 
-    def set_shape(self, shape, id=0):
+    def set_shape(self, shape, id=0, overwrite=False):
         if len(self._shapes) <= id:
             self._shapes.extend([None for _ in range(id - len(self._shapes) + 1)])
-        elif self._shapes[id] is not None:
+        elif self._shapes[id] is not None and not overwrite:
             assert self._shapes[id] == list(map(int, shape)), (self._shapes, list(map(int, shape)))
         self._shapes[id] = list(map(int, shape))
 

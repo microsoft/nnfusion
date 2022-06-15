@@ -176,6 +176,9 @@ class Engine:
     def compute_gain(self, group, cp_result):
         for node in group:
             if node.get_tag("latency") is None:
+                if node.get_tag("memcpy"):
+                    node.add_tag("latency", 0)
+                    continue
                 result = tune([node], self.arch, node.name, self.topk)
                 if result is None:
                     latency = 10000

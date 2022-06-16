@@ -16,10 +16,12 @@ DECLARE_string(fhlsl_codegen_type);
 
 LanguageUnit_p extern_function(LanguageUnit_p lu)
 {
+    return lu;
 }
 
 LanguageUnit_p extern_variable(LanguageUnit_p lu)
 {
+    return lu;
 }
 
 void FunctionFile::save_file()

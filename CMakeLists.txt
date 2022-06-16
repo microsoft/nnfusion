@@ -73,7 +73,7 @@ endif()
 if(${DEBUG_ENABLE})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g")
 endif()
 
 if (CODE_COVERAGE_ENABLE)
@@ -115,7 +115,7 @@ find_package(CURL)
 ###Static###
 set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Threads REQUIRED) # This is for test usage
-find_package(GTest)
+# find_package(GTest)
 find_package(Protobuf 3.5.0)
 find_library(gflags NAMES libgflags.a)
 find_library(sqlite3 NAMES libsqlite3.a)
@@ -136,8 +136,8 @@ message(STATUS "thirdparty enabled")
 add_subdirectory(src)
 message(STATUS "nnfusion enabled")
 
-add_subdirectory(test)
-message(STATUS "unit tests enabled")
+# add_subdirectory(test)
+# message(STATUS "unit tests enabled")
 
 # add_subdirectory(doc)
 # message(STATUS "nnfusion documents enabled")

@@ -412,6 +412,7 @@ LanguageUnit_p HLSLAsyncManager::emit_event_init()
 LanguageUnit_p HLSLAsyncManager::emit_event_wait(shared_ptr<Stream> stream, shared_ptr<Event> event)
 {
     nnfusion::errors::NotSupported("HLSL async manager does not support event wait api.");
+    return nullptr;
 }
 
 LanguageUnit_p HLSLAsyncManager::emit_event_record(shared_ptr<Event> event)

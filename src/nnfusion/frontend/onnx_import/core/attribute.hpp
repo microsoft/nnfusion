@@ -38,6 +38,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL()
                         << "unsupported attribute type : "
                         << onnx::AttributeProto_AttributeType_Name(attribute.type());
+                    return T();
                 }
 
                 template <>
@@ -52,6 +53,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return 0;
                 }
 
                 template <>
@@ -71,6 +73,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<float>();
                 }
 
                 template <>
@@ -86,6 +89,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return 0;
                 }
 
                 template <>
@@ -106,6 +110,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<double>();
                 }
 
                 template <>
@@ -132,6 +137,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<std::size_t>();
                 }
 
                 template <>
@@ -156,6 +162,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<int64_t>();
                 }
 
                 template <>
@@ -181,6 +188,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<std::string>();
                 }
 
                 template <>
@@ -206,6 +214,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<Tensor>();
                 }
 
                 template <>
@@ -233,6 +242,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<onnx::GraphProto>();
                 }
 
             } // namespace detail

@@ -213,6 +213,7 @@ bool SuperScalerDataParallelismPass::add_allreduce(
         //                                 V
         // (gradient) --> allreduce --> ApplyGradient-> Result
     }
+    return true;
 }
 
 bool SuperScalerDataParallelismPass::add_fused_allreduce(

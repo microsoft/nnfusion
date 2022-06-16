@@ -261,6 +261,7 @@ bool KernelTuning::parse_block_list()
         BlockList.insert(substr);
     }
     NNFUSION_LOG(INFO) << "Kernel Tuning BlockList: " << join(BlockList, ", ");
+    return true;
 }
 
 bool KernelTuning::parse_tuning_list()
@@ -274,6 +275,7 @@ bool KernelTuning::parse_tuning_list()
         TuningList.insert(substr);
     }
     NNFUSION_LOG(INFO) << "Kernel Tuning List: " << join(TuningList, ", ");
+    return true;
 }
 
 bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)

@@ -8,6 +8,7 @@
 #include "nnfusion/engine/interpreter.hpp"
 #include "nnfusion/engine/memory_allocator.hpp"
 #include "nnfusion/engine/pass/graph/graph_pass_base.hpp"
+#include <cxxabi.h>
 
 /*
 Basically, this engine has three parts:
@@ -89,8 +90,11 @@ namespace nnfusion
             for (auto& pass : *this)
             {
                 status = pass->run_on_graph(graph);
-                if (!status)
+                if (!status) {
+                    int demangle_status;
+                    NNFUSION_LOG(ERROR) << "Pass " << abi::__cxa_demangle(typeid(*(pass.get())).name(), 0, 0, &demangle_status) << " failed";
                     break;
+                }
             }
             return status;
         };

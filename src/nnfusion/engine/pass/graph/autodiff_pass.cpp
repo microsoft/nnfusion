@@ -37,7 +37,7 @@ using namespace nnfusion::pass::graph::autodiff;
 
 bool AutodiffPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
-    run_on_graph(graph, nullptr);
+    return run_on_graph(graph, nullptr);
 }
 
 bool AutodiffPass::run_on_graph(std::shared_ptr<Graph>& graph,

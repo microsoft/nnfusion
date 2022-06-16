@@ -74,6 +74,8 @@ namespace nnfusion
                                                              {x_gnode, input_indices[3]});
                         return NamedNodeVector{{node_proto.output(0), resize_gnode}};
                     }
+                    NNFUSION_CHECK_FAIL() << "mode " << mode << " is not recognized";
+                    return NamedNodeVector();
                 }
             } // namespace set_1
 

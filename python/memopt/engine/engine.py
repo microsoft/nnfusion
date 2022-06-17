@@ -73,7 +73,7 @@ def _get_nodes_dependency(nodes, processed):
         for edge in node.inputs:
             if edge.src_node.is_placeholder():
                 continue
-            if edge.src_node in processed:
+            if edge.src_node in processed or edge.src_node in deps:
                 continue
             queue.append(edge.src_node)
     return list(deps)

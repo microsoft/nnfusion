@@ -13,6 +13,12 @@ def mobilenet(batch_size):
     input = torch.randn(batch_size, 3, 224, 224)
     return model, (input, )
 
+def shufflenet(batch_size):
+    from torchvision.models import shufflenet_v2_x1_0 as Net
+    model = Net()
+    input = torch.randn(batch_size, 3, 224, 224)
+    return model, (input, )
+
 def SqueezeNet(batch_size):
     from torchvision.models import squeezenet1_0 as Net
     model = Net()
@@ -96,4 +102,10 @@ def crnn(batch_size):
     from .crnn import CRNN
     model = CRNN()
     input = torch.randn(batch_size, 3, 32, 200)
+    return model, (input, )
+
+def BSRN(batch_size):
+    from .BSRN import BSRN
+    model = BSRN()
+    input = torch.randn(batch_size, 3, 256, 256)
     return model, (input, )

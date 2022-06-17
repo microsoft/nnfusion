@@ -1,5 +1,4 @@
 from arch.Arch import Arch
-from lang.generic import output
 from memopt.graph import find_topo_sort
 import numpy as np
 from memopt.bestfit import BestFit

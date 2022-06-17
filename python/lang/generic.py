@@ -1,48 +1,36 @@
 """
 The entry of Antares-TVM bridge
 """
-import json
 import importlib
 from collections import OrderedDict
-from threading import local
 from typing import Optional, List
 
 import numpy as np
-from tvm import autotvm
 from tvm import te, tir
-from tvm.contrib import tedd
 
 from . import einstein_v2 as einstein_core
 
 OUTPUT_TEMP = list()
 INPUT_TEMP = list()
 
-def einstein_v2(exprss: str, input_dict: List, output_dict: Optional[List] = None, **kwargs):
+def einstein_v2(exprss: str, input_dict: List, extra_outputs: Optional[List] = [], **kwargs):
     """
     The function to translate Antares to TVM IR
 
     Args:
         exprss (str): the Antares IR expression
         input_dict (List): input dict
-        extra_outputs (Optional[List], optional): output dict. Defaults to None.
     """
     del kwargs
-    if output_dict is None:
-        output_dict = list()
     if isinstance(input_dict, (list, )):
         ordered = OrderedDict()
         for i in input_dict:
             ordered[i[0]] = i[1]
         input_dict = ordered
-    if isinstance(output_dict, (list, )):
-        ordered = OrderedDict()
-        for i in output_dict:
-            ordered[i[0]] = i[1]
-        output_dict = ordered
     for k in input_dict:
         if len(input_dict[k]['shape']) == 0:
             input_dict[k]['shape'] = [1]
-    antares_ir = einstein_core.emit_tvm_ir(exprss, input_dict, output_dict)
+    antares_ir = einstein_core.emit_tvm_ir(exprss, input_dict, extra_outputs)
     assert len(antares_ir) > 0
     exec(antares_ir, globals())  # pylint:disable=exec-used
 
@@ -170,11 +158,10 @@ def _assign_multiple_outputs(outputs: List[te.Tensor]):
                                   name='proxy_outputs')
     return assigned_outputs
 
-def translate_to_tvm(expr, input_dict):
+def translate_to_tvm(expr, input_dict, extra_outputs=[]):
     OUTPUT_TEMP.clear()
     INPUT_TEMP.clear()
-    einstein_v2(expr, input_dict)
-    assert len(OUTPUT_TEMP) == 1
+    einstein_v2(expr, input_dict, extra_outputs)
     return INPUT_TEMP, OUTPUT_TEMP
 
 def translate_ir_to_tvm(antares_ir):

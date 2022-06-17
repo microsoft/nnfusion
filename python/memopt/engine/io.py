@@ -21,8 +21,6 @@ def load_model(fname: str) -> List[Node]:
         if anno >= 0:
             ir, options = ir[:anno].strip(), ir[ir.index(':', anno) + 1:].strip().split('|')
         input_list = []
-        if op_type == "Pad":
-            inputs.pop(-1)
         for src_node, src_id in inputs:
             if src_node not in node_map:
                 input_list.append(None)

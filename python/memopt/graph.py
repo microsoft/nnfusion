@@ -157,9 +157,17 @@ class IRNode(Node):
         super().__init__(inputs, name)
         self.ir = antares_ir
         self._input_args, self._output_args = lang.translate_ir_to_tvm(self.ir)
+        if len(self._input_args) < len(self.inputs):
+            # some placeholders are extra info that might not be used in tensor computation
+            new_input_edges = []
+            for arg in self._input_args:
+                name = arg.name
+                assert name.startswith('input')
+                input_edge = self.inputs[int(name[5:])]
+                new_input_edges.append(input_edge)
+            self._in_edges = new_input_edges
         self.args = self._input_args + self._output_args
         self.ana = lang.get_analyzer_by_ir(self.ir)
-        assert len(self.inputs) + 1 == len(self.args)
         for edge, arg in zip(self.inputs, self.args):
             edge.src_node.set_shape(arg.shape, edge.src_id)
             edge.src_node.set_dtype(tvm.DataType(arg.dtype), edge.src_id)
@@ -170,6 +178,7 @@ class IRNode(Node):
         self.reduction_inputs = self.ana.get_reduction_inputs()
 
     def infer_dependency(self, shape, rstep={}):
+        shape = {arg.name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for arg in self._output_args}
         shapes = self.ana.infer(shape, rstep)
         result = {}
         for i in range(len(self.inputs)):
@@ -181,6 +190,7 @@ class IRNode(Node):
 
     def infer_smem_usage(self, shape, rstep):
         result = 0
+        shape = {arg.name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for arg in self._output_args}
         shapes = self.ana.infer(shape, rstep)
         for tensor in self.reduction_inputs:
             if tensor.startswith("input"):
@@ -220,7 +230,8 @@ class IRNode(Node):
             self.saxis[str(axis.var.name)] = int(axis.dom.extent)
 
     def create_schedule(self):
-        return tvm.te.create_schedule([x.op for x in self._output_args])
+        args = self._output_args
+        return tvm.te.create_schedule([x.op for x in args])
 
     def clone(self, inputs):
         new_node = IRNode(inputs, self.ir, self.name)

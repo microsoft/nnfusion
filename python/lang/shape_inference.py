@@ -30,16 +30,14 @@ class InputShapeInference():
                     bound = arith.ConstIntBound(0, min(bound.max_value, rstep[var.name] - 1))
                 ana.update(var, bound)
             for name, regions in dep.dependent_region.items():
-                assert(len(regions) == 1) # TODO: merge if there is multiple region for one input
                 for region in regions:
                     bounds = [ana.const_int_bound(index) for index in region]
-                if name in shape: # simply merge two bounds
-                    bounds = [_merge_two_bounds(x, y) for x, y in zip(shape[name], bounds)]
-                shape[name] = bounds
+                    if name in shape: # simply merge two bounds
+                        bounds = [_merge_two_bounds(x, y) for x, y in zip(shape[name], bounds)]
+                    shape[name] = bounds
 
         for name, bounds in shape.items():
             shape[name] = [c.max_value - c.min_value + 1 for c in bounds]
-            assert(max(shape[name]) < 1e9) # checking
         return shape
 
     def infer(self, shape, rstep: Dict[str, int] = {}):
@@ -149,6 +147,8 @@ def _get_index_expr(op, var_map):
         else:
             raise Exception('Unhandled operator in _get_index_expr(): %s' % operator)
         return expr
+    elif op._op in ["call", "cast", "when"]:
+        return te.var("undefined")
     else:
         raise Exception('Unhandled node type in _get_index_expr(): %s' % op._op)
 

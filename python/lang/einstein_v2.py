@@ -1,10 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-
-import os
 import re
 import copy
-import json
 import numpy as np
 
 # Tensor name: the first charactor must be lower case letter, and the following charactors must be within [a-zA-Z_]
@@ -16,14 +13,32 @@ explicit_range = None
 
 class OpTensor:
     @staticmethod
-    def parse(other):
+    def parse(other, output_dtype=None):
         if isinstance(other, OpTensor):
-            return other
+          return other.cast(output_dtype)
+        if output_dtype is not None:
+          return OpTensor('const', other, output_dtype)
         if isinstance(other, int):
-            return OpTensor('const', other, 'int32', 0)
+          return OpTensor('const', other, 'int32')
         if isinstance(other, float):
-            return OpTensor('const', other, 'float32', 0)
+          return OpTensor('const', other, 'float32')
         raise Exception("Unrecognized const node type: %s" % type(other))
+
+    @staticmethod
+    def merge_dtype(first, second):
+        dtypes = (first._dtype, second._dtype)
+        ordered_dtypes = ['float64', 'float32', 'int32', 'int16', 'int8']
+        for _dtype in ordered_dtypes:
+          if _dtype in dtypes:
+            return _dtype
+        return first._dtype
+
+    def dtype(self):
+        return self._dtype
+
+    def val(self):
+        assert self._op == 'axis', "Only axis op can support value fetch for its range."
+        return OpTensor('axis_range', self._value, 'int32')
 
     def filter_flop(self, other):
         if self._op == 'get_item' or other._op == 'get_item':
@@ -65,16 +80,12 @@ class OpTensor:
     # Calculation Ops
     def __mul__(self, other):
         other = OpTensor.parse(other)
+        output_dtype = OpTensor.merge_dtype(self, other)
         if other._op == 'const' and other._value == 1:
-            return self
+            return self.cast(output_dtype)
         if self._op == 'const' and self._value == 1:
-            return other
-        return OpTensor(
-            'op', {
-                "name": "*",
-                "inputs": [self, other]
-            }, self._dtype,
-            self._flopbase + other._flopbase + self.filter_flop(other))
+            return other.cast(output_dtype)
+        return OpTensor('op', {"name": "*", "inputs": [self.cast(output_dtype), other.cast(output_dtype)]}, output_dtype)
 
     def __rmul__(self, other):
         other = OpTensor.parse(other)
@@ -82,20 +93,18 @@ class OpTensor:
 
     def __truediv__(self, other):
         other = OpTensor.parse(other)
-        op_name = '//' if self._dtype == 'int32' and other._dtype == 'int32' else '/'
+        op_name = '//' if re.match(r'^int[0-9]+$', self._dtype) and re.match(r'^int[0-9]+$', other._dtype) else '/'
+        output_dtype = OpTensor.merge_dtype(self, other)
         if other._op == 'const' and other._value == 1:
-            return self
+            return self.cast(output_dtype)
         if other._op == 'const' and self._op == 'axis':
-            assert self._value in explicit_range and explicit_range[
-                self._value] is not None
-            if op_name == '//' and explicit_range[self._value] < other._value:
-                return OpTensor.parse(int(0))
-        return OpTensor(
-            'op', {
-                "name": op_name,
-                "inputs": [self, other]
-            }, self._dtype,
-            self._flopbase + other._flopbase + self.filter_flop(other))
+            if self._value in explicit_range and explicit_range[self._value] is not None:
+                if op_name == '//' and explicit_range[self._value] < other._value:
+                    return OpTensor.parse(0, output_dtype)
+        result = OpTensor('op', {"name": op_name, "inputs": [self, other]}, output_dtype)
+        if 'float' in self._dtype and 'int' in other._dtype:
+            result = result.cast(self._dtype)
+        return result
 
     def __rtruediv__(self, other):
         other = OpTensor.parse(other)
@@ -114,31 +123,20 @@ class OpTensor:
         if other._op == 'const':
             assert other._dtype == 'int32'
             if other._value == 1:
-                return OpTensor.parse(int(0))
+                return OpTensor.parse(0, self._dtype)
             if self._op == 'axis':
-                assert self._value in explicit_range and explicit_range[
-                    self._value] is not None
-                if explicit_range[self._value] <= other._value:
+                if (explicit_range.get(self._value) or other._value + 1) <= other._value:
                     return self
-        return OpTensor(
-            'op', {
-                "name": "%",
-                "inputs": [self, other]
-            }, self._dtype,
-            self._flopbase + other._flopbase + self.filter_flop(other))
+        return OpTensor('op', {"name": "%", "inputs": [self, other]}, self._dtype)
 
     def __add__(self, other):
         other = OpTensor.parse(other)
+        output_dtype = OpTensor.merge_dtype(self, other)
         if other._op == 'const' and other._value == 0:
-            return self
+            return self.cast(output_dtype)
         if self._op == 'const' and self._value == 0:
-            return other
-        return OpTensor(
-            'op', {
-                "name": "+",
-                "inputs": [self, other]
-            }, self._dtype,
-            self._flopbase + other._flopbase + self.filter_flop(other))
+            return other.cast(output_dtype)
+        return OpTensor('op', {"name": "+", "inputs": [self.cast(output_dtype), other.cast(output_dtype)]}, output_dtype)
 
     def __radd__(self, other):
         other = OpTensor.parse(other)
@@ -146,14 +144,10 @@ class OpTensor:
 
     def __sub__(self, other):
         other = OpTensor.parse(other)
+        output_dtype = OpTensor.merge_dtype(self, other)
         if other._op == 'const' and other._value == 0:
-            return self
-        return OpTensor(
-            'op', {
-                "name": "-",
-                "inputs": [self, other]
-            }, self._dtype,
-            self._flopbase + other._flopbase + self.filter_flop(other))
+            return self.cast(output_dtype)
+        return OpTensor('op', {"name": "-", "inputs": [self.cast(output_dtype), other.cast(output_dtype)]}, output_dtype)
 
     def __rsub__(self, other):
         other = OpTensor.parse(other)
@@ -226,25 +220,26 @@ class OpTensor:
         }, 'int8', self._flopbase)
 
     # Special Ops
-    def cast(self, dtype):
-        return OpTensor('cast', {
-            "name": dtype,
-            "inputs": [self]
-        }, dtype, self._flopbase)
+    def cast(self, output_dtype):
+        if output_dtype is None or self._dtype == output_dtype:
+          return self
+        return OpTensor('cast', {"inputs": [self]}, output_dtype)
 
-    def call(self, func_name, others=None, dtype=None):
+    def call(self, func_name, others=None, output_dtype=None):
         if others is None:
             others = []
-        _flopbase = self._flopbase + self.filter_flop(self)
         for i in range(len(others)):
             others[i] = OpTensor.parse(others[i])
-            _flopbase += others[i]._flopbase
-        if dtype is None:
-            dtype = self._dtype
-        return OpTensor('call', {
-            "name": func_name,
-            "inputs": [self] + others
-        }, dtype, _flopbase)
+        if func_name == 'remainder' and len(others) == 0:
+            return self - self.cast('int64' if self._dtype == 'float64' else 'int32')
+        if func_name == 'floor' and len(others) == 0:
+            return self.cast('int64' if self._dtype == 'float64' else 'int32')
+        if func_name == 'ceil' and len(others) == 0:
+            floor_op = self.cast('int64' if self._dtype == 'float64' else 'int32')
+            return floor_op.when(self == floor_op, floor_op + const(1).cast(floor_op._dtype))
+        if output_dtype is None:
+            output_dtype = self._dtype
+        return OpTensor('call', {"name": func_name, "inputs": [self] + others}, output_dtype)
 
     def when(self, conditions, other):
         other = OpTensor.parse(other)
@@ -385,60 +380,6 @@ def warp_axis(ax_name):
     assert (ax_name[0].isupper() or ax_name == '_id')
     return ax_name
 
-
-def emit_antares_ir(ast):
-    def _emit(node):
-        if node._op == 'const':
-            return 'const(%s)' % node._value
-        elif node._op == 'axis':
-            if hasattr(node, '_func'):
-                return node._func(node._value)
-            return node._value
-        elif node._op == 'op':
-            if len(node._value['inputs']) == 2:
-                return '(%s %s %s)' % (_emit(
-                    node._value['inputs'][0]), node._value['name'],
-                                       _emit(node._value['inputs'][1]))
-            raise
-        elif node._op == 'get_item':
-            return '%s[%s]' % (node._value['tensor']._value, ', '.join(
-                [_emit(x) for x in node._value['index']]))
-        elif node._op == 'call':
-            if len(node._value['inputs']) == 1:
-                return '(%s).call(`%s`, dtype=`%s`)' % (_emit(
-                    node._value['inputs'][0]), node._value['name'],
-                                                        node._dtype)
-            return '(%s).call(`%s`, [%s], dtype=`%s`)' % (_emit(
-                node._value['inputs'][0]), node._value['name'], ', '.join(
-                    [_emit(x)
-                     for x in node._value['inputs'][1:]]), node._dtype)
-        elif node._op == 'when':
-            if len(node._value['if']) == 0:
-                return '(%s)' % _emit(node._value['true'])
-            return '(%s).when([%s], %s)' % (_emit(
-                node._value['true']), ', '.join(
-                    [_emit(x)
-                     for x in node._value['if']]), _emit(node._value['false']))
-        elif node._op == 'cast':
-            return '(%s).cast(`%s`)' % (_emit(
-                node._value['inputs'][0]), node._dtype)
-        else:
-            raise Exception(
-                "Emit Antares IR: Unhanled reverse-emit op type: %s" %
-                node._op)
-
-    lval = '%s[%s]' % (ast['props']['output_name'], ', '.join(
-        [x['name'] for x in ast['props']['data_axes']]))
-    comp_type = '%s=%s' % (ast['props']['reduce_type']
-                           if ast['props']['reduce_type'] else '',
-                           '!' if ast['props']['reduce_type'] else '')
-    return '%s %s %s where %s;' % (lval, comp_type, _emit(
-        ast['root']), ', '.join([
-            '%s in %d' % (x['name'], x['range'])
-            for x in ast['props']['data_axes'] + ast['props']['reduce_axes']
-        ]))
-
-
 def emit_tvm_body(node, props):
     if node._op == 'const':
         return 'tir.const(%s, dtype="%s")' % (node._value, node._dtype)
@@ -486,9 +427,9 @@ def emit_tvm_body(node, props):
                             (op_name, op_input_size))
     elif node._op == 'cast':
         return '%s.astype(cast_dtype("%s"))' % (emit_tvm_body(
-            node._value["inputs"][0], props), node._value['name'])
+            node._value["inputs"][0], props), node._dtype)
     elif node._op == 'call':
-        f_map = {"max": "tir.Max", "min": "tir.Min", "exp": "tir.exp", "ceil": "tir.ceil"}
+        f_map = {"max": "tir.Max", "min": "tir.Min", "exp": "tir.exp", "ceil": "tir.ceil", "erf" : "te.erf"}
         if node._value['name'] in f_map:
             return '%s(%s)' % (f_map[node._value['name']], ', '.join(
                     [emit_tvm_body(x, props) for x in node._value["inputs"]]))
@@ -504,63 +445,6 @@ def emit_tvm_body(node, props):
                     node._value['false'], props) + ')'
     else:
         raise Exception('Unrecognized node type: %s' % node._op)
-
-
-def walk_in_ast(node, func, args, parent, attr_id):
-    def _walk(node, parent, attr_id):
-        updated_node = func(node, *args)
-        if updated_node is not None:
-            if isinstance(updated_node, str) and updated_node == '':
-                return
-            updated_node = copy.deepcopy(updated_node)
-            if isinstance(parent, OpTensor):
-                setattr(parent, attr_id, updated_node)
-            else:
-                parent[attr_id] = updated_node
-            return
-        if node._op == 'get_item':
-            for i, ch in enumerate(node._value['index']):
-                _walk(ch, node._value['index'], i)
-        elif node._op in ['op', 'call', 'cast']:
-            for i, ch in enumerate(node._value['inputs']):
-                _walk(ch, node._value['inputs'], i)
-        elif node._op == 'when':
-            for i, ch in enumerate(node._value['if']):
-                _walk(ch, node._value['if'], i)
-            _walk(node._value['true'], node._value, 'true')
-            _walk(node._value['false'], node._value, 'false')
-        elif node._op in ['axis', 'const']:
-            pass
-        else:
-            raise Exception('Unhandled node type in walk_in_ast(): %s' %
-                            node._op)
-
-    _walk(node, parent, attr_id)
-
-
-def apply_fusion(ast, top_ast):
-    def _replace_axis(node, replace_maps):
-        if node._op == 'axis' and node._value['name'] in replace_maps:
-            return replace_maps[node._value['name']]
-        return None
-
-    def _replace_tensor(node):
-        if node._op == 'get_item':
-            tensor_name = node._value['tensor']._value['name']
-            if tensor_name not in top_ast:
-                return None
-            sub_ast = copy.deepcopy(top_ast[tensor_name])
-            replace_maps = {}
-            for i in range(len(node._value['index'])):
-                replace_maps[sub_ast['props']['data_axes'][i]
-                             ['name']] = node._value['index'][i]
-            walk_in_ast(sub_ast['root'], _replace_axis, [replace_maps],
-                        sub_ast, 'root')
-            return sub_ast['root']
-        return None
-
-    walk_in_ast(ast['root'], _replace_tensor, [], ast, 'root')
-    return ast
 
 
 def emit_tvm_ir_v2(exprss, input_dict, extra_outputs):

@@ -71,7 +71,11 @@ def _extract_subgraph(nodes):
     input_desc, output_desc = [], []
     for node in ordered_nodes:
         if node.is_placeholder():
-            input_desc.append([new2old[node.outputs[0].dst_node].name, node.outputs[0].dst_id])
+            origin_node = new2old[node.outputs[0].dst_node]
+            x = origin_node.args[node.outputs[0].dst_id].name
+            assert(x.startswith("input"))
+            dst_id = int(x[5:]) # node.outputs[0].dst_id is not the same with dst_id, since some inputs might be unused and removed
+            input_desc.append([origin_node.name, dst_id])
         elif node.is_output():
             output_desc.append([new2old[node.inputs[0].src_node].name, node.inputs[0].src_id])
 
@@ -117,6 +121,7 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
             cached.block_size, cached.grid_size, kernel_name, cached.args)
         result.latency = cached.latency
         result.set_io_desc(input_desc, output_desc)
+        result.origin = cached
         return result
 
     policy = DefaultPolicy(output_nodes, arch)

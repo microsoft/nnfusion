@@ -141,7 +141,7 @@ class CodeGenerator:
         for op, stage in self.sche.stage_map.items():
             if isinstance(op, tvm.te.ComputeOp):
                 if stage.is_output:
-                    out = op.output(0)
+                    out = op
                 else:
                     stage.compute_inline()
                 if len(op.reduce_axis) > 0:

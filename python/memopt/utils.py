@@ -30,6 +30,7 @@ class CompileResult:
         self.host_code = None
         self.lib = None
         self.latency = None
+        self.origin = self
 
     def set_io_desc(self, input_desc, output_desc):
         self.input_desc = input_desc

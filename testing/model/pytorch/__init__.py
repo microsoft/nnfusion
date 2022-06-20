@@ -109,3 +109,15 @@ def BSRN(batch_size):
     model = BSRN()
     input = torch.randn(batch_size, 3, 256, 256)
     return model, (input, )
+
+def NAFNet(batch_size):
+    from .nafnet import NAFNet
+    model = NAFNet(3, 16, 1, [1, 1, 1], [1, 1, 1])
+    input = torch.randn(batch_size, 3, 256, 256)
+    return model, (input, )
+
+def PMRID(batch_size):
+    from .PMRID import PMRID
+    model = PMRID()
+    input = torch.randn(batch_size, 4, 256, 256)
+    return model, (input, )

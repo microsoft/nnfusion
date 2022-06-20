@@ -61,6 +61,7 @@ def dump(fusion_groups: List[FusionGroup]):
             group_desc["grid_size"] = cpresult.grid_size
             group_desc["latency"] = cpresult.latency
             group_desc["name"] = cpresult.name
+            group_desc["gain"] = group.gain
         obj.append(group_desc)
     return obj
 

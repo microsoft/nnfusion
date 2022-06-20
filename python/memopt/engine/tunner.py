@@ -22,7 +22,9 @@ def get_max_diff(tensor_list_a, tensor_list_b):
     total_diff = [0]
     for a, b in zip(tensor_list_a, tensor_list_b):
         assert a.shape == b.shape
-        diff = np.max(np.abs(a-b))
+        diff = np.abs(a-b)
+        diff /= np.abs(b).clip(1) # handle large floating numbers
+        diff = np.max(diff)
         total_diff.append(diff)
     total_diff = max(total_diff)
     return total_diff
@@ -156,6 +158,7 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
     if get_log_level() >= 1:
         print("top1: {} \ttopk: {}".format(values[0], min(values)), flush=True)
     if not check:
+        set_cache(signature, compile_results[0])
         return compile_results[0]
 
     ref_out = get_subgraph_reference_outputs(output_nodes)

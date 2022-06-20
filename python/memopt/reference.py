@@ -4,6 +4,13 @@ import tvm
 import numpy as np
 import torch
 
+def get_ref_tensor(shape:list, device:str, dtype:str):
+    dtype = torch.__getattribute__(str(dtype))
+    if dtype.is_floating_point:
+        return torch.empty(*shape, device=device, dtype=dtype).uniform_(0.1, 1.0)
+    else:
+        return torch.ones(*shape, device=device, dtype=dtype)
+
 def get_subgraph_reference_outputs(output_nodes, device="cuda:0", seed=0):
     topo_order = find_topo_sort(output_nodes)
     torch.cuda.set_device(device)
@@ -13,8 +20,7 @@ def get_subgraph_reference_outputs(output_nodes, device="cuda:0", seed=0):
     for node in topo_order:
         if node.is_placeholder():
             shape = list(map(int, node.get_shape()))
-            dtype = torch.__getattribute__(str(node.get_dtype()))
-            arr = torch.randn(*shape, device=device, dtype=dtype)
+            arr = get_ref_tensor(shape, device, node.get_dtype())
             arr = tvm.nd.array(arr.cpu().numpy())
             values[(node, 0)] = arr
     ordered_nodes = list(filter(

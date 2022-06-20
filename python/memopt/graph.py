@@ -194,7 +194,9 @@ class IRNode(Node):
         shapes = self.ana.infer(shape, rstep)
         for tensor in self.reduction_inputs:
             if tensor.startswith("input"):
-                src_node = self.inputs[int(tensor[5:])].src_node
+                input_id = [arg.name for arg in self._input_args].index(tensor)
+                assert(input_id >= 0)
+                src_node = self.inputs[input_id].src_node
                 if not src_node.is_placeholder():
                     continue
             result += np.prod(shapes[tensor]) * 4 # TODO : Add data type
@@ -227,6 +229,7 @@ class IRNode(Node):
         self.saxis = {}
         for axis in self._output_args[0].op.axis:
             assert(str(axis.var.name) not in self.saxis), axis.var.name
+            assert(str(axis.var.name) not in self.raxis), axis.var.name
             self.saxis[str(axis.var.name)] = int(axis.dom.extent)
 
     def create_schedule(self):

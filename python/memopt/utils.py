@@ -5,6 +5,7 @@ from .debug_pass import debug_pass, get_kernel_info_pass
 from .scope import Scope, get_scope
 from .schedule_rewrite_V1 import CodeGenerator
 from .bestfit import BestFit
+from .reference import get_ref_tensor
 
 from concurrent.futures import ThreadPoolExecutor
 import tvm
@@ -110,8 +111,7 @@ extern "C" float profile({}) {{
         torch_arrs = []
         for arg in self.args:
             shape = list(map(int, arg.shape))
-            dtype = torch.__getattribute__(arg.dtype)
-            arr = torch.randn(*shape, device=device, dtype=dtype)
+            arr = get_ref_tensor(shape, device, arg.dtype)
             torch_arrs.append(arr)
         latency = self.lib.profile(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
         if latency < 0:
@@ -127,8 +127,7 @@ extern "C" float profile({}) {{
         torch_arrs = []
         for arg in self.args:
             shape = list(map(int, arg.shape))
-            dtype = torch.__getattribute__(arg.dtype)
-            arr = torch.randn(*shape, device=device, dtype=dtype)
+            arr = get_ref_tensor(shape, device, arg.dtype)
             torch_arrs.append(arr)
         self.lib.call(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
         torch.cuda.synchronize(device)
@@ -256,11 +255,10 @@ def compose_global_kernel(output_nodes, configs, target, name) -> CompileResult:
         for output in op.outputs:
             if not isinstance(output.dst_node, OutputNode):
                 shared_outputs.append(len(op.inputs)+output.src_id)
-            shared_outputs = list(set(shared_outputs)) # unique
-        if len(op.raxis) > 0:
-            sch = cgen.recursive_schedule_up(sch, config, shared_inputs=shared_inputs)
-        else:
-            sch = cgen.rewrite_schedule_no_reduce(sch, config, shared_inputs=shared_inputs)
+            shared_outputs = list(set(shared_outputs)) #
+
+        sch = cgen.rewrite_schedule(sch, config, shared_inputs=shared_inputs)
+
         with Scope(sch) as scope:
             func_name = "_".join([name, str(device_func_uid), op.name])
             kernel_code = build_op(sch, op.args, target, shared_outputs, shared_inputs, name=func_name, global_kernel=False)

@@ -1,3 +1,4 @@
+import functools
 from arch.Arch import Arch
 from memopt.graph import find_topo_sort
 import numpy as np
@@ -73,9 +74,6 @@ class DefaultPolicy:
             # info = self.compute_smem_tile_meta_data(self.get_tile_map(tile), final_rstep_map)
             # print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
             codegen_dicts = self.assign_block_size(tile, final_rstep_map)
-            for node in self.ordered_nodes:
-                for ax in node.raxis:
-                    codegen_dicts[node][ax] = [final_rstep_map[node][ax], 1]
             results.append(codegen_dicts)
             if len(results) >= topk:
                 break
@@ -185,7 +183,7 @@ class DefaultPolicy:
 
     def _assign_reduce_step(self, node):
         if len(node.raxis) == 0:
-            return []
+            return {}
         raxis = node.raxis
         tile = node.get_shape()
         all_steps = {k : get_all_factors(raxis[k]) for k in raxis}
@@ -359,11 +357,25 @@ class DefaultPolicy:
     def assign_block_size(self, output_tile, rstep_map):
         tile_map = self.get_tile_map(output_tile)
         _, tile_map = self._compute_memory_footprint(tile_map)
-        max_block_size = np.prod(output_tile)
-        for node in self.ordered_nodes:
-            max_block_size = math.gcd(max_block_size, np.prod(tile_map[node]))
+        node_space_sizes = [int(np.prod(tile_map[node])) for node in self.ordered_nodes]
+        max_block_size = functools.reduce(math.gcd, node_space_sizes)
+
+        # Assign more thread on reduction if space axis is not enough
+        if max_block_size < 32 and max_block_size == min(node_space_sizes):
+            node_reduce_sizes = [int(np.prod(list(rstep_map[node].values()))) for node in self.ordered_nodes]
+            total_sizes = [x * y for x, y in zip(node_space_sizes, node_reduce_sizes)]
+            max_possible_size = functools.reduce(math.gcd, total_sizes)
+            possible_block_sizes = list(filter(
+                lambda x: x % max_block_size == 0 and x <= 1024, get_all_factors(max_possible_size)))
+            for blk_size in possible_block_sizes: # increase to 32
+                if blk_size >= 32 or blk_size == possible_block_sizes[-1]:
+                    max_block_size = blk_size
+                    break
+            recommended_block_size = max_block_size
+        else:
+            recommended_block_size = get_block_size(max_block_size)
+
         result = {}
-        recommended_block_size = get_block_size(max_block_size)
         for node in self.ordered_nodes:
             result[node] = self._assign_block_size(node, tile_map[node], rstep_map[node], recommended_block_size)
         return result
@@ -371,6 +383,7 @@ class DefaultPolicy:
     def _assign_block_size(self, node, tile, rstep_map, block_size):
         factors = factorize(block_size)
         cur_threads = [1 for _ in tile]
+        reduce_thread = {k : 1 for k in rstep_map}
         rstep = {ax : 1 for ax in node.raxis}
         ndim = len(tile)
 
@@ -389,16 +402,29 @@ class DefaultPolicy:
             for i in range(ndim):
                 if cur_threads[i] >= tile[i]:
                     continue
-                divisible = (tile[i] % (cur_threads[i] * factor)) != 0
+                if (tile[i] % (cur_threads[i] * factor)) != 0:
+                    continue
                 cur_threads[i] *= factor
-                score_map[i] = (divisible, _score(node, cur_threads), i)
+                score_map[i] = (_score(node, cur_threads), i)
                 cur_threads[i] //= factor
-            assert len(score_map) > 0
-            dim_order = sorted(score_map.keys(), key=lambda x:score_map[x])
-            cur_threads[dim_order[0]] *= factor
-        # print(cur_threads)
+            if len(score_map) > 0:
+                # assign to space axis
+                dim_order = sorted(score_map.keys(), key=lambda x:score_map[x])
+                cur_threads[dim_order[0]] *= factor
+            else:
+                # assign to reduce axis
+                target_ax = None
+                for ax, ax_len in reversed(list(rstep_map.items())):
+                    if ax_len % (reduce_thread[ax] * factor) == 0:
+                        target_ax = ax
+                        break
+                assert target_ax
+                reduce_thread[target_ax] *= factor
+
         block_tile = [int(np.ceil(tile[i] / cur_threads[i])) for i in range(ndim)]
         codegen_dict = {ax : [cur_threads[i], block_tile[i]] for i, ax in enumerate(node.saxis)}
+        for ax in node.raxis:
+            codegen_dict[ax] = [rstep_map[ax] // reduce_thread[ax], reduce_thread[ax]]
         # if len(rstep_map) > 0 and np.prod(block_tile) * np.prod(list(rstep_map.values())) < 1000:
         #     codegen_dict["unroll"] = True
         # # assign virtual threads

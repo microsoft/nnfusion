@@ -5,6 +5,7 @@ from .scope import get_scope
 
 import regex as re
 import tvm
+import numpy as np
 
 _tvm_default_name = "default_function_kernel0"
 _type_map = {"float32" : "float", "float16" : "half"}
@@ -16,7 +17,16 @@ def get_valid_name(var):
         name = var.name
     return name if var.value_index == 0 else name + str(var.value_index)
 
-def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_name, global_kernel=True):
+def get_block_flatten_code(block_size):
+    if block_size[1] == 1 and block_size[2] == 1:
+        return ""
+    elif block_size[2] == 1:
+        return "  int __flatten_tid = threadIdx.x;\n  const dim3 threadIdx(__flatten_tid % {}, __flatten_tid / {}, 0);\n"\
+            .format(block_size[0], block_size[0])
+    else: # not possible in our schedule
+        raise NotImplementedError()
+
+def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_name, global_kernel=True, flatten_block=True):
     scope = get_scope()
     passes = [
         (0, modify_output_pass),
@@ -40,6 +50,10 @@ def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_
         src = mod.imported_modules[0].get_source()
         index = src.rindex(_tvm_default_name)
         index = src.index("{", index)
+        if flatten_block:
+            flat_block_code = get_block_flatten_code(scope.block_size)
+            scope.block_size = [int(np.prod(scope.block_size)), 1, 1]
+            src = src[:index+2] + flat_block_code + src[index+2:]
         if global_kernel:
             prefix = "__global__ void __launch_bounds__(%d) " % np.prod(scope.block_size)
         else:

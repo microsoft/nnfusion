@@ -115,6 +115,9 @@ class DefaultPolicy:
 
     # get the minimum tile that could satisfy no redundancy computation
     def get_base_tile(self):
+        if len(set([len(node.get_shape()) for node in self.output_nodes])) > 1:
+            # If output dim sizes are not same, don't know how to handle them
+            return None
         out_node = self.output_nodes[0]
         shape = out_node.get_shape()
         base_tile = [1 for _ in shape]

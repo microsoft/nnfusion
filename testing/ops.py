@@ -93,3 +93,42 @@ def transpose(n, m):
         "input0": {"dtype": "float32", "shape": [n, m]},
     }
     return ir, input_dict
+
+def conv_nhwc(n, f, h, w, c, kh, kw, s, d, p):
+    if p == 0:
+        return conv_nhwc_nopad(n, f, h, w, c, kh, kw, s, d, p)
+    inh = (h - 1) * s + (kh - 1) * d + 1 - 2 * p
+    inw = (w - 1) * s + (kw - 1) * d + 1 - 2 * p
+    padh = inh + 2 * p
+    padw = inw + 2 * p
+    ir = f"pad[N, H0, W0, C] = input0[N, H0-{p}, W0-{p}, C].when([H0>={p}, H0<{inh+p}, W0>={p}, W0<{inw+p}], const(0.0).cast(input0[N, H0-{p}, W0-{p}, C].dtype())) where H0 in {padh}, W0 in {padw}; \
+           output0[N, HO, WO, F] +=! pad[N, KH*{d} + HO*{s}, KW*{d} + WO*{s}, C] * input1[KH, KW, C, F] where HO in {h}, WO in {w};"
+    input_dict = {
+        "input0": {"dtype": "float32", "shape": [n, inh, inw, c]},
+        "input1": {"dtype": "float32", "shape": [kh, kw, c, f]}
+    }
+    return ir, input_dict
+
+def conv_nhwc_nopad(n, f, h, w, c, kh, kw, s, d, p):
+    assert p == 0
+    inh = (h - 1) * s + (kh - 1) * d + 1 - 2 * p
+    inw = (w - 1) * s + (kw - 1) * d + 1 - 2 * p
+    ir = f"output0[N, HO, WO, F] +=! input0[N, KH*{d} + HO*{s}, KW*{d} + WO*{s}, C] * input1[KH, KW, C, F] where HO in {h}, WO in {w};"
+    input_dict = {
+        "input0": {"dtype": "float32", "shape": [n, inh, inw, c]},
+        "input1": {"dtype": "float32", "shape": [kh, kw, c, f]}
+    }
+    return ir, input_dict
+
+def dwconv_nhwc(n, c, h, w, kh, kw, s, d, p):
+    inh = (h - 1) * s + (kh - 1) * d + 1 - 2 * p
+    inw = (w - 1) * s + (kw - 1) * d + 1 - 2 * p
+    padh = inh + 2 * p
+    padw = inw + 2 * p
+    ir = f"pad[N, H0, W0, C] = input0[N, H0-{p}, W0-{p}, C].when([H0>={p}, H0<{inh+p}, W0>={p}, W0<{inw+p}], const(0.0).cast(input0[N, H0-{p}, W0-{p}, C].dtype())) where H0 in {padh}, W0 in {padw}; \
+           output0[N, HO, WO, C] +=! pad[N, KH*{d} + HO*{s}, KW*{d} + WO*{s}, C] * input1[KH, KW, C] where HO in {h}, WO in {w};"
+    input_dict = {
+        "input0": {"dtype": "float32", "shape": [n, inh, inw, c]},
+        "input1": {"dtype": "float32", "shape": [kh, kw, c]}
+    }
+    return ir, input_dict

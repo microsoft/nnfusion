@@ -19,6 +19,7 @@ def set_cache(sig, value):
     _cache_store[sig] = value
 
 def get_max_diff(tensor_list_a, tensor_list_b):
+    assert len(tensor_list_a) > 0
     total_diff = [0]
     for a, b in zip(tensor_list_a, tensor_list_b):
         assert a.shape == b.shape

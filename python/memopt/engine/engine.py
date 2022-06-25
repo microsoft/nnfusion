@@ -1,5 +1,5 @@
 from typing import List
-from memopt.graph import Node
+from memopt.graph import Node, find_topo_sort_priority
 from memopt.utils import CompileResult
 from .tunner import tune
 from memopt import get_log_level
@@ -84,11 +84,14 @@ class Engine:
         self.arch = arch
 
     def run(self, ordered_nodes: List[Node]) -> List[FusionGroup]:
+        output_list = list(filter(lambda node : node.is_output(), ordered_nodes))
+        ordered_nodes = find_topo_sort_priority(output_list)
+
         self.node2group = {} # map node to fused group
         self.node_topo_id = {ordered_nodes[i] : i for i in range(len(ordered_nodes))}
         fusion_groups = []
         for node in ordered_nodes:
-            if node in self.node2group or node.is_output():
+            if node in self.node2group or node.is_output() or node.is_placeholder():
                 continue
             fg = self._build_fusion_group(node)
             fusion_groups.append(fg)

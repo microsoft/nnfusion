@@ -157,6 +157,9 @@ class IRNode(Node):
         super().__init__(inputs, name)
         self.ir = antares_ir
         self._input_args, self._output_args = lang.translate_ir_to_tvm(self.ir)
+        self._output_names = [arg.name for arg in self._output_args]
+        if len(self._output_args) > 1:
+            self._process_multiple_output()
         if len(self._input_args) < len(self.inputs):
             # some placeholders are extra info that might not be used in tensor computation
             new_input_edges = []
@@ -178,7 +181,7 @@ class IRNode(Node):
         self.reduction_inputs = self.ana.get_reduction_inputs()
 
     def infer_dependency(self, shape, rstep={}):
-        shape = {arg.name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for arg in self._output_args}
+        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
         result = {}
         for i in range(len(self.inputs)):
@@ -190,7 +193,7 @@ class IRNode(Node):
 
     def infer_smem_usage(self, shape, rstep):
         result = 0
-        shape = {arg.name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for arg in self._output_args}
+        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
         for tensor in self.reduction_inputs:
             if tensor.startswith("input"):
@@ -213,10 +216,9 @@ class IRNode(Node):
     def _extract_axis(self):
         queue = self._output_args.copy()
         self.raxis = {}
-        visited = {}
+        visited = {item : True for item in queue}
         while len(queue) > 0:
             t = queue.pop(0)
-            visited[t] = True
             if isinstance(t.op, tvm.te.PlaceholderOp):
                 continue
             for axis in t.op.reduce_axis:
@@ -224,6 +226,7 @@ class IRNode(Node):
                 self.raxis[str(axis.var.name)] = int(axis.dom.extent)
             for it in t.op.input_tensors:
                 if not it in visited:
+                    visited[it] = True
                     queue.append(it)
 
         self.saxis = {}
@@ -235,6 +238,14 @@ class IRNode(Node):
     def create_schedule(self):
         args = self._output_args
         return tvm.te.create_schedule([x.op for x in args])
+
+    def _process_multiple_output(self):
+        layout = ", ".join([ax.var.name for ax in self._output_args[0].op.axis])
+        sandbox = {"args" : self._output_args}
+        exec("func=lambda {}: [op[{}] for op in args]".format(layout, layout), sandbox)
+        args = tvm.te.compute(self._output_args[0].shape, sandbox["func"], name="output_proxy")
+        self._output_args = list(args)
+        self.args = self._input_args + self._output_args
 
     def clone(self, inputs):
         new_node = IRNode(inputs, self.ir, self.name)
@@ -261,6 +272,32 @@ def topo_order(list_of_nodes):
                 ready.append(dst_node)
     assert(len(list_of_nodes) == len(output_list))
     return output_list
+
+def find_topo_sort_priority(output_node_list):
+    def topo_sort_get_layer(node, topo_layer):
+        if node in topo_layer:
+            return
+        topo_layer[node] = 0
+        for edge in node.inputs:
+            topo_sort_get_layer(edge.src_node, topo_layer)
+            topo_layer[node] = max(topo_layer[node], topo_layer[edge.src_node] + 1)
+    topo_layer = {}
+    for node in output_node_list:
+        topo_sort_get_layer(node, topo_layer)
+
+    def topo_sort_dfs(node, visited, topo_order):
+        if node in visited:
+            return
+        visited.add(node)
+        ordered_input_nodes = sorted([edge.src_node for edge in node.inputs], key=lambda n:topo_layer[n], reverse=True)
+        for n in ordered_input_nodes:
+            topo_sort_dfs(n, visited, topo_order)
+        topo_order.append(node)
+    visited = set()
+    topo_order = []
+    for node in output_node_list:
+        topo_sort_dfs(node, visited, topo_order)
+    return topo_order
 
 def find_topo_sort(output_node_list):
     def topo_sort_dfs(node, visited, topo_order):

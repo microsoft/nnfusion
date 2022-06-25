@@ -14,7 +14,7 @@ def load_model(fname: str) -> List[Node]:
     with open(fname) as f:
         a = json.load(f)
 
-    node_map = {}
+    node_map = {item[0] : None for item in a}
     ordered_nodes = []
     for node_id, ir, op_type, inputs in a:
         anno, options = ir.find('## @'), []
@@ -25,6 +25,7 @@ def load_model(fname: str) -> List[Node]:
             if src_node not in node_map:
                 input_list.append(None)
             else:
+                assert node_map[src_node] is not None, "Detected ring in topo order {}->{} !".format(src_node, node_id)
                 input_list.append([node_map[src_node], src_id])
         if op_type == "Result":
             node = OutputNode(*input_list[0])

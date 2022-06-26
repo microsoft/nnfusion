@@ -35,16 +35,19 @@ def coalesced_tensor_shape(subtensor, tensor, transaction_size):
     factor = coalesced_factor(subtensor, tensor)
     return transaction_size * bytes / min(transaction_size, factor)
 
+def score_block_size(n):
+    num_wrap = (n + 31) // 32
+    r1 = max(num_wrap/4, 4/num_wrap)
+    r2 = (num_wrap * 32 - n) / n
+    return (r1, r2)
+
 def get_block_size(n):
     if n < 64:
         return n
     else:
         factors = get_all_factors(n)
         factors = list(filter(lambda x: x <= 1024, factors))
-        num_wrap = [(x + 31) // 32 for x in factors]
-        pad = [num_wrap[i] * 32 - factors[i] for i in range(len(factors))]
-        score = [(max(num_wrap[i]/4, 4/num_wrap[i]), pad[i] / factors[i]) for i in range(len(factors))]
-        factor_ordered = [x[1] for x in sorted(zip(score, factors))]
+        factor_ordered = sorted(factors, key=score_block_size)
         return factor_ordered[0]
 
 class DefaultPolicy:
@@ -364,17 +367,14 @@ class DefaultPolicy:
         max_block_size = functools.reduce(math.gcd, node_space_sizes)
 
         # Assign more thread on reduction if space axis is not enough
-        if max_block_size < 32 and max_block_size == min(node_space_sizes):
+        if max_block_size < 128 and max_block_size == min(node_space_sizes):
             node_reduce_sizes = [int(np.prod(list(rstep_map[node].values()))) for node in self.ordered_nodes]
             total_sizes = [x * y for x, y in zip(node_space_sizes, node_reduce_sizes)]
             max_possible_size = functools.reduce(math.gcd, total_sizes)
             possible_block_sizes = list(filter(
                 lambda x: x % max_block_size == 0 and x <= 1024, get_all_factors(max_possible_size)))
-            for blk_size in possible_block_sizes: # increase to 32
-                if blk_size >= 32 or blk_size == possible_block_sizes[-1]:
-                    max_block_size = blk_size
-                    break
-            recommended_block_size = max_block_size
+            factor_ordered = sorted(possible_block_sizes, key=score_block_size)
+            recommended_block_size = factor_ordered[0]
         else:
             recommended_block_size = get_block_size(max_block_size)
 

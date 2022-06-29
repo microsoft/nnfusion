@@ -138,9 +138,7 @@ class DefaultPolicy:
                 else:
                     break
 
-        self.op_tile_map = self.get_tile_map(tile)
-
-        if self._assign_basic_tile(tile):
+        if self._check_basic_tile(base_tile):
             return None
 
         return base_tile
@@ -167,9 +165,10 @@ class DefaultPolicy:
                     queue.append((edge.src_node, subtensor_shape))
         return compute / np.prod(output_tile)
 
-    def _assign_basic_tile(self, output_tile):
+    def _check_basic_tile(self, output_tile):
+        op_tile_map = self.get_tile_map(output_tile)
         out_shape = self.output_nodes[0].get_shape()
-        queue = list(self.op_tile_map.items())
+        queue = list(op_tile_map.items())
         while len(queue) > 0:
             node, tile = queue.pop(0)
             dep = node.infer_dependency(tile)
@@ -180,10 +179,10 @@ class DefaultPolicy:
                     if np.prod(subtensor_shape) / np.prod(shape) != np.prod(output_tile) / np.prod(out_shape):
                         # print(subtensor_shape, shape, output_tile, out_shape)
                         return True
-                    if edge.src_node in self.op_tile_map:
-                        assert self.op_tile_map[edge.src_node] == subtensor_shape
+                    if edge.src_node in op_tile_map:
+                        assert op_tile_map[edge.src_node] == subtensor_shape
                     else:
-                        self.op_tile_map[edge.src_node] = subtensor_shape
+                        op_tile_map[edge.src_node] = subtensor_shape
                         queue.append((edge.src_node, subtensor_shape))
         return False
 

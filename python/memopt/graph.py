@@ -274,6 +274,8 @@ def topo_order(list_of_nodes):
     return output_list
 
 def find_topo_sort_priority(output_node_list):
+    import sys
+    sys.setrecursionlimit(10000)
     def topo_sort_get_layer(node, topo_layer):
         if node in topo_layer:
             return

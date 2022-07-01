@@ -14,10 +14,10 @@ args = tvm_matmul(n, m, k)
 sch = te.create_schedule(args[-1].op)
 cgen = CodeGenerator()
 codegen_dict = {'k': [16, 1], 'x': [4, 4, 2], 'y': [32, 2]}
-sch = cgen.recursive_schedule_up(sch, codegen_dict, shared_inputs=[])
+sch = cgen.rewrite_schedule(sch, codegen_dict, shared_inputs=[])
 
 with memopt.Scope(sch) as scope:
-    kernel_code = memopt.build_op(sch, args, target, [], [], name="MatMul", global_kernel=True)
+    kernel_code = memopt.tvm_build.tvm_build(sch, args, target, [], [], name="MatMul", global_kernel=True)
     cp = memopt.utils.CompileResult(None, kernel_code, scope.block_size, scope.grid_size, "MatMul", args)
     cp.append_host_call()
     print(kernel_code)

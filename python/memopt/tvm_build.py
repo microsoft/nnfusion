@@ -9,6 +9,7 @@ import numpy as np
 
 _tvm_default_name = "default_function_kernel0"
 _type_map = {"float32" : "float", "float16" : "half"}
+_type_bytes = {"float" : 4, "double" : 8, "half" : 2, "int" : 4}
 
 def get_valid_name(var):
     if var.name.find(".") >= 0:
@@ -65,6 +66,10 @@ def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_
             s_var = var+"_shared"
             src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(s_var), r"\1* {} = {};".format(s_var, var), src, 1)
         if not global_kernel:
-            for var, offset in scope.interal_shared_memory_offset.items():
+            pattern = r"__shared__ (\w+) (\w+)\[(\d+)\];"
+            offset = 0
+            for dtype, var, size in re.findall(pattern, src):
                 src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
+                offset += int(size) * _type_bytes[dtype]
+            scope.total_interal_shared_memory = offset
     return src

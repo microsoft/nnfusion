@@ -27,6 +27,7 @@ set(SRC
     dot_transpose_pass.cpp
     reduce_fusion_pass.cpp
     register_fusion_pass.cpp
+    split_softmax_pass.cpp
     superscaler_dataparallelism_pass.cpp
     ir_based_fusion_pass.cpp
     subgraph_fusion_pass.cpp

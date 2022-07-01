@@ -26,6 +26,7 @@
 #include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/register_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
+#include "nnfusion/engine/pass/graph/split_softmax_pass.hpp"
 #include "nnfusion/engine/pass/graph/subgraph_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/superscaler_dataparallelism_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
@@ -65,6 +66,7 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<IRBasedFusionPass>());
 
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
+    g_passes->push_back(make_shared<SplitSoftmaxPass>());
     g_passes->push_back(make_shared<RegisterFusionPass>());
 
     // Kernel selection

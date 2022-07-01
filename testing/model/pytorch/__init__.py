@@ -116,6 +116,12 @@ def NAFNet(batch_size):
     input = torch.randn(batch_size, 3, 256, 256)
     return model, (input, )
 
+def Restormer(batch_size):
+    from .restormer import Restormer
+    model = Restormer()
+    input = torch.randn(batch_size, 3, 256, 256)
+    return model, (input, )
+
 def PMRID(batch_size):
     from .PMRID import PMRID
     model = PMRID()

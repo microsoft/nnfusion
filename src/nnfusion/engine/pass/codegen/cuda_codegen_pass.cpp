@@ -1283,6 +1283,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         lu_main << "//kernel call\n";
 
         lu_main << "int steps = " << test_step << ";\n";
+        lu_main << get_h2dcopy(tu)->get_code();
         lu_main << "cudaProfilerStart();\n";
         lu_main << "for (int i_=0; i_<steps; i_++)\n";
         lu_main.block_begin();
@@ -1294,7 +1295,6 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         }
         else
         {
-            lu_main << get_h2dcopy(tu)->get_code();
             lu_main << "kernel_entry(" << args << ");\n";
             // lu_main << get_d2hcopy(tu)->get_code();
             // lu_main << get_sync()->get_code();
@@ -1430,8 +1430,8 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
     }
 
     lu << R"(
-cuda_add_executable(main_test main_test.cpp)   
-target_link_libraries(main_test ${TARGET_NAME}) 
+cuda_add_executable(main_test main_test.cpp)
+target_link_libraries(main_test ${TARGET_NAME})
 )";
     return;
 }

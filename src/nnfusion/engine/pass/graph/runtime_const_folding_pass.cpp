@@ -47,6 +47,7 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
                         break;
                     }
                 }
+                if (dst->get_op_type() == "Broadcast") inferable = false;
                 if (inferable)
                     down_streams.insert(dst);
             }

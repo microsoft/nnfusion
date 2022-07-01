@@ -44,7 +44,7 @@ namespace
         FuseGroup() {}
         std::unordered_set<shared_ptr<GNode>> nodes;
     };
-    const std::unordered_set<std::string> inlined_ops = {"Broadcast", "Reshape", "Slice"};
+    const std::unordered_set<std::string> inlined_ops = {"Broadcast", "Reshape", "Slice", "BatchNormInference"};
 }
 
 class RegisterFusionOptimizer {
@@ -66,6 +66,25 @@ public:
                 continue;
             // found a new reduce op
             fuse_from_node(tnode);
+        }
+        for (auto& tnode : node_list_) {
+            tnode->visited_ = false;
+            tnode->inlined_ = false;
+        }
+        update_inline_nodes();
+        for (auto& tnode : node_list_) {
+            if (tnode->node_->get_op_ptr()->is_tensor_op() || tnode->visited_)
+                continue;
+            else if (tnode->group_id_ >= 0) { // already processed
+                tnode->visited_ = true;
+                update_inline_nodes();
+            } else if (tnode->node_->get_out_edges().size() == 1 &&
+                node_map_[tnode->node_->get_out_edges()[0]->get_dst()]->group_id_ == -1) {
+                continue;
+            } else {
+               // fuse remaining elem op
+                fuse_from_node(tnode, true);
+            }
         }
         auto groups = extract_fusion_group();
         for (auto group: groups) {
@@ -122,7 +141,7 @@ private:
         fused_node->set_name(name);
     }
 
-    void fuse_from_node(shared_ptr<TaggedNode> &top_node) {
+    void fuse_from_node(shared_ptr<TaggedNode> &top_node, bool second = false) {
         unordered_set<shared_ptr<TaggedNode>> block_list;
         auto cmp = [](const shared_ptr<TaggedNode> &a, const shared_ptr<TaggedNode> &b) { return a->id_ > b->id_; };
         std::priority_queue<shared_ptr<TaggedNode>, vector<shared_ptr<TaggedNode>>, decltype(cmp)> queue(cmp);
@@ -134,17 +153,18 @@ private:
         while (!queue.empty()) {
             auto tnode = queue.top();
             queue.pop();
-            if (tnode->visited_) continue;
             // std::cout << "process " <<  tnode->node_->get_op_type() << std::endl;
             if (block_list.count(tnode)) continue;
             auto& node = tnode->node_;
             NNFUSION_CHECK(node->get_output_size() == 1) << "Only support one output ops.";
-            NNFUSION_CHECK(!tnode->visited_);
 
             // check fusible
             bool fusible = true;
             if (tnode != top_node) {
-                fusible = (node->get_output_shape(0) == output_shape) && (tnode->inlined_);
+                fusible &= tnode->group_id_ == -1;
+                fusible &= !tnode->visited_;
+                fusible &= tnode->inlined_;
+                fusible &= node->get_output_shape(0) == output_shape;
             }
 
             // add to group
@@ -202,7 +222,7 @@ private:
             } else if (is_inlinable(node)) {
                 tnode->inlined_ = true;
                 for (auto& edge : node->get_in_edges()) {
-                    if (!(node_map_[edge->get_src()]->inlined_ || node_map_[edge->get_src()]->visited_)) {
+                    if (!((node_map_[edge->get_src()]->inlined_ && edge->get_src()->get_out_edges().size() == 1) || node_map_[edge->get_src()]->visited_)) {
                         tnode->inlined_ = false;
                         break;
                     }

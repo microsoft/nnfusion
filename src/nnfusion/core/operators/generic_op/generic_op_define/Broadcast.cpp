@@ -42,7 +42,7 @@ REGISTER_OP(Broadcast)
 
         auto op = static_pointer_cast<nnfusion::op::Broadcast>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
-        auto input_shape = curr->get_output_shape(0);
+        auto input_shape = curr->get_input_shape(0);
         auto output_shape = curr->get_output_shape(0);
         auto output_layout = op::create_layout_from_dims(output_shape);
         auto boardcast_dims = op->get_broadcast_axes();

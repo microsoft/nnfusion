@@ -30,9 +30,8 @@ REGISTER_OP(Convolution)
     })
     */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-        auto ir_template =
-            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
-
+        string ir_template =
+            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
         auto _op = static_pointer_cast<nnfusion::op::Convolution>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
         const auto& dilation_h = _op->get_window_dilation_strides()[0];
@@ -50,35 +49,38 @@ REGISTER_OP(Convolution)
             is_nchw ? curr->get_input_shape(1)[3] : curr->get_input_shape(1)[1];
         const auto& in_shape = curr->get_input_shape(0);
         const auto& out_shape = curr->get_output_shape(0);
-        const std::string data_format = is_nchw ? "nchw" : "nhwc";
-        NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
-        NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
         NNFUSION_CHECK(padding_below == padding_above)
             << "Asymetric padding is not supported by now.";
         nnfusion::op::OpConfig::any config;
-        std::string HO = "-@pad_0@ + KH + HO * " + to_string(stride_h);
-        std::string WO = "-@pad_1@ + KW + WO * " + to_string(stride_w);
-        std::string shape_template =
+        std::string HO = "KH*" + to_string(dilation_h) + "+HO*" + to_string(stride_h);
+        std::string WO = "KW*" + to_string(dilation_w) + "+WO*" + to_string(stride_w);
+        config["input0_layout"] =
             is_nchw ? "[N, C, " + HO + ", " + WO + "]" : "[N, " + HO + ", " + WO + ", C]";
         config["input1_layout"] = is_nchw ? "[F, C, KH, KW]" : "[KH, KW, C, F]";
         config["output0_layout"] = is_nchw ? "[N, F, HO, WO]" : "[N, HO, WO, F]";
         config["height"] = is_nchw ? out_shape[2] : out_shape[1];
         config["width"] = is_nchw ? out_shape[3] : out_shape[2];
-        config["pad_0"] = to_string(padding_h);
-        config["pad_1"] = to_string(padding_w);
-        config["input0_layout"] = op::create_code_from_template(shape_template, config);
 
-        std::string pad_cond;
         if (padding_h || padding_w)
         {
-            config["in_height"] = is_nchw ? in_shape[2] : in_shape[1];
-            config["in_width"] = is_nchw ? in_shape[3] : in_shape[2];
-            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @in_height@, " + WO +
-                                " >= 0, " + WO +
-                                " < @in_width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
-            pad_cond = op::create_code_from_template(pad_template, config);
+            string pad_template =
+                R"( pad@pad_layout@ = @input0@@pad_input_layout@@pad_cond@ where H0 in @pad_height@, W0 in @pad_width@;)";
+            ir_template =
+                R"( @output0@@output0_layout@ +=! pad@input0_layout@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
+            ir_template = pad_template + ir_template;
+            size_t in_height = is_nchw ? in_shape[2] : in_shape[1];
+            size_t in_width = is_nchw ? in_shape[3] : in_shape[2];
+            config["pad_height"] = in_height + 2 * padding_h;
+            config["pad_width"] = in_width + 2 * padding_w;
+            config["pad_layout"] = is_nchw ? "[N, C, H0, W0]" : "[N, H0, W0, C]";
+            config["pad_input_layout"] = is_nchw ? "[N, C, H0-"+to_string(padding_h)+", W0-"+to_string(padding_w)+"]" :
+                "[N, H0-"+to_string(padding_h)+", W0-"+to_string(padding_w)+", C]";
+            string dtype;
+            NNFUSION_CHECK(element::Type::nnfusion_element_type_to_dtype_string(curr->get_element_type(), dtype));
+            config["pad_cond"] = ".when([H0>="+ to_string(padding_h) + ", H0<" + to_string(in_height + padding_h) +
+                ", W0>="+ to_string(padding_w) + ", W0<"+ to_string(in_width + padding_w) +
+                "], const(0.0).cast(`"+ dtype +"`))";
         }
-        config["pad_cond"] = pad_cond;
 
         return op::create_code_from_template(ir_template, config);
     });

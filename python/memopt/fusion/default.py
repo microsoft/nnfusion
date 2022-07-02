@@ -262,7 +262,6 @@ class DefaultPolicy:
             cur_score = _score(cur_rstep_id)
             new_rstep_map = rstep_map.copy()
             while True:
-                if cur_score == 0:break
                 new_rstep_id, new_score = _enlarge(cur_rstep_id)
                 if new_rstep_id is None:
                     break

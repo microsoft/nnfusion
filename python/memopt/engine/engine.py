@@ -79,9 +79,10 @@ def _get_nodes_dependency(nodes, processed):
     return list(deps)
 
 class Engine:
-    def __init__(self, topk: int, arch) -> None:
+    def __init__(self, topk: int, arch, device="cuda:0") -> None:
         self.topk = topk
         self.arch = arch
+        self.device = device
 
     def run(self, ordered_nodes: List[Node]) -> List[FusionGroup]:
         output_list = list(filter(lambda node : node.is_output(), ordered_nodes))
@@ -105,8 +106,9 @@ class Engine:
         for node in ordered_nodes:
             if node.is_output() or node.is_placeholder():
                 continue
-            result = tune([node], self.arch, node.name, self.topk)
-            fusion_groups.append(FusionGroup([node], group_id, result))
+            result = tune([node], self.arch, device=self.device,
+                kernel_name=node.name, topk=self.topk, check=True)
+            fusion_groups.append(FusionGroup([node], group_id, result, 0))
             group_id += 1
         return fusion_groups
 
@@ -153,7 +155,7 @@ class Engine:
                 continue
 
             new_group = sorted(new_group, key=lambda n:self.node_topo_id[n])
-            result = tune(new_group, self.arch,
+            result = tune(new_group, self.arch, device=self.device,
                 kernel_name="Group"+str(cur_group_id), topk=self.topk, check=True)
             if result is None:
                 continue
@@ -170,7 +172,7 @@ class Engine:
 
         if cp_result is None: # tune  single op if no fusion is possible
             assert len(cur_group) == 1
-            cp_result = tune(cur_group, self.arch,
+            cp_result = tune(cur_group, self.arch, device=self.device,
                 kernel_name="Group"+str(cur_group_id), topk=self.topk, check=True)
             if cp_result is None:
                 print("Cannot generate code for", top_node)
@@ -182,7 +184,8 @@ class Engine:
                 if node.get_tag("memcpy"):
                     node.add_tag("latency", 0)
                     continue
-                result = tune([node], self.arch, node.name, self.topk)
+                result = tune([node], self.arch, device=self.device,
+                    kernel_name=node.name, topk=self.topk, check=True)
                 if result is None:
                     latency = 10000
                 else:

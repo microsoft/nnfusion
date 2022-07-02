@@ -108,7 +108,7 @@ def eliminate_memcpy(output_nodes):
     if eliminated_node_cnt > 0:
         eliminate_memcpy(output_nodes)
 
-def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
+def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=True):
     if get_log_level() >= 1:
         print("Tuning", [node.name for node in nodes])
     output_nodes, input_desc, output_desc = _extract_subgraph(nodes)
@@ -146,7 +146,7 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
         if cpresult.lib is None:
             latency = 10000
         else:
-            latency = cpresult.profile()
+            latency = cpresult.profile(device)
         values.append(latency)
         if get_log_level() >= 2: print(latency)
     compile_results = list(filter(lambda x:x.latency<10000, compile_results))
@@ -162,9 +162,9 @@ def tune(nodes, arch, kernel_name="Fused", topk=10, check=True):
         set_cache(signature, compile_results[0])
         return compile_results[0]
 
-    ref_out = get_subgraph_reference_outputs(output_nodes)
+    ref_out = get_subgraph_reference_outputs(output_nodes, device=device)
     for best in compile_results:
-        out = best.get_example_outputs()
+        out = best.get_example_outputs(device)
         total_diff = get_max_diff(out, ref_out)
         if get_log_level() >= 1: print("Diff:", total_diff)
         if total_diff > 1e-3:

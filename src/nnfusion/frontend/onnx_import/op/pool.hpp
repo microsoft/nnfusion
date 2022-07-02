@@ -59,6 +59,9 @@ namespace nnfusion
 
                     auto strides = get_strides(node, input_gnode);
                     auto dilations = get_dilations(node, input_gnode);
+                    bool ceil_mode = node.get_attribute_value<int64_t>("ceil_mode", 0);
+                    NNFUSION_CHECK(!ceil_mode) << "Ceil mode not supported.";
+
                     auto paddings = get_pads(node, input_gnode);
 
                     bool count_include_pad =

@@ -20,7 +20,7 @@ def shufflenet(batch_size):
     return model, (input, )
 
 def SqueezeNet(batch_size):
-    from torchvision.models import squeezenet1_0 as Net
+    from .squeezenet import SqueezeNet as Net
     model = Net()
     input = torch.randn(batch_size, 3, 224, 224)
     return model, (input, )

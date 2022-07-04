@@ -35,7 +35,7 @@ class CompileResult:
         num_params = len(self.args)
         args = ["args" + str(i) for i in range(num_params)]
         call_args = ", ".join(args)
-        args = ["float* args" + str(i) for i in range(num_params)]
+        args = ["{}* args{}".format(_type_map[self.args[i].dtype], i) for i in range(num_params)]
         def_args = ", ".join(args)
         block_str = "dim3({}, {}, {})".format(self.block_size[0], self.block_size[1], self.block_size[2])
         grid_str = "dim3({}, {}, {})".format(self.grid_size[0], self.grid_size[1], self.grid_size[2])

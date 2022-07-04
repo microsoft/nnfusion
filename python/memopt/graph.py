@@ -178,7 +178,7 @@ class IRNode(Node):
             self.set_shape(arg.shape, output_id)
             self.set_dtype(tvm.DataType(arg.dtype), output_id)
         self._extract_axis()
-        self.reduction_inputs = self.ana.get_reduction_inputs()
+        self._sche = self.create_schedule()
 
     def infer_dependency(self, shape, rstep={}):
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
@@ -195,21 +195,25 @@ class IRNode(Node):
         result = 0
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
-        for tensor in self.reduction_inputs:
-            if tensor.startswith("input"):
-                input_id = [arg.name for arg in self._input_args].index(tensor)
+        cached_tensor = set()
+        for op in self._sche.stage_map:
+            if not isinstance(op, tvm.te.ComputeOp):continue
+            for tensor in op.input_tensors:
+                cache = isinstance(self._sche[tensor].op, tvm.te.PlaceholderOp) \
+                    and len(op.output(0).shape) > len(tensor.shape) \
+                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
+                if len(op.reduce_axis) > 0:
+                    cache = True
+                if cache:
+                    cached_tensor.add(tensor)
+        for tensor in cached_tensor:
+            if tensor.name.startswith("input"):
+                input_id = [arg.name for arg in self._input_args].index(tensor.name)
                 assert(input_id >= 0)
                 src_node = self.inputs[input_id].src_node
                 if not src_node.is_placeholder():
                     continue
-            result += np.prod(shapes[tensor]) * 4 # TODO : Add data type
-        return result
-
-    def infer_reduction_inputs(self, shape, rstep):
-        result = 0
-        shapes = self.ana.infer(shape, rstep)
-        for tensor in self.reduction_inputs:
-            result += np.prod(shapes[tensor])
+            result += np.prod(shapes[tensor.name]) * int(tvm.DataType(tensor.dtype).bits // 8)
         return result
 
     # axis name -> axis length

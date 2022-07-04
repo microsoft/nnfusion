@@ -59,6 +59,7 @@ def get_analyzer(expr: str, input_dict: dict, extra_outputs: Iterable=[]) -> Inp
     statements = [s_.strip() for s_ in expr.split(';')]
     inputs = copy.deepcopy(input_dict)
     output_dict = {}
+    shape_dict = {k : v['shape'] for k, v in input_dict.items()}
     ast_seq = []
     for s in statements:
         if not s:
@@ -71,6 +72,7 @@ def get_analyzer(expr: str, input_dict: dict, extra_outputs: Iterable=[]) -> Inp
                 'dtype': ast['root']._dtype
             }
         }
+        shape_dict[k] = ast_outputs_dict[k]['shape']
         inputs[k] = ast_outputs_dict[k]
         if k in extra_outputs:
             output_dict[k] = ast_outputs_dict[k]
@@ -79,12 +81,12 @@ def get_analyzer(expr: str, input_dict: dict, extra_outputs: Iterable=[]) -> Inp
     if k not in extra_outputs:
         output_dict[k] = ast_outputs_dict[k]
 
-    deps = [_build_dependency(ast) for ast in ast_seq]
+    deps = [_build_dependency(ast, shape_dict) for ast in ast_seq]
 
     return InputShapeInference(deps)
 
 
-def _build_dependency(ast):
+def _build_dependency(ast, shape_dict):
     props = ast['props']
     op = ast['root']
     output = props['output_name']
@@ -109,8 +111,12 @@ def _build_dependency(ast):
             if tensor_name not in dependent_region:
                 dependent_region[tensor_name] = []
             index = []
-            for ax in op._value['index']:
-                index.append(_get_index_expr(ax, var_map))
+            for ax, shape_limit in zip(op._value['index'], shape_dict[tensor_name]):
+                expr = _get_index_expr(ax, var_map)
+                if expr is None: # set to shape limit
+                    expr = te.var("undefined") % shape_limit
+                index.append(expr)
+                traverse(ax)
             dependent_region[tensor_name].append(index)
 
         elif op._op in ['op', 'call', 'cast']:
@@ -147,8 +153,8 @@ def _get_index_expr(op, var_map):
         else:
             raise Exception('Unhandled operator in _get_index_expr(): %s' % operator)
         return expr
-    elif op._op in ["call", "cast", "when"]:
-        return te.var("undefined")
+    elif op._op in ["call", "cast", "when", "get_item"]:
+        return None
     else:
         raise Exception('Unhandled node type in _get_index_expr(): %s' % op._op)
 

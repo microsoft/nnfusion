@@ -197,10 +197,10 @@ class DefaultPolicy:
             rstep = {k : all_steps[k][rstep_id[k]] for k in rstep_id}
             score = 0
             shape = node.infer_dependency(tile, rstep=rstep)
-            num_steps = np.prod([node.raxis[ax] / rstep[ax] for ax in raxis])
+            # num_steps = np.prod([node.raxis[ax] / rstep[ax] for ax in raxis])
             for edge in node.inputs:
-                if edge.src_node.is_placeholder() and "input{}".format(edge.dst_id) in node.reduction_inputs:
-                    score -= num_steps * coalesced_tensor_shape(shape[edge.dst_id], edge.src_node.get_shape(), 32)
+                if edge.src_node.is_placeholder():
+                    score += min(coalesced_factor(shape[edge.dst_id], edge.src_node.get_shape()), 32)
             return score
 
         def _enlarge(rstep_id):

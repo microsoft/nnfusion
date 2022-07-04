@@ -4,6 +4,7 @@ import tvm
 from tvm import auto_scheduler
 import ctypes
 import memopt
+from memopt.tvm_build import tvm_build
 import os
 import hashlib
 
@@ -46,7 +47,7 @@ def test(expr, input_dict, name="ansor.log"):
     # run_tuning()
     sch, args = task.apply_best(log_file)
     with memopt.Scope(sch) as scope:
-        kernel_code = memopt.build_op(sch, args, "cuda", [], [], name="MyMatMul", global_kernel=True)
+        kernel_code = tvm_build(sch, args, "cuda", [], [], name="MyMatMul", global_kernel=True)
         cp = memopt.utils.CompileResult(None, kernel_code, scope.block_size, scope.grid_size, "MyMatMul", args)
         cp.append_host_call()
         cp.compile_and_load()
@@ -55,4 +56,4 @@ def test(expr, input_dict, name="ansor.log"):
 # test(*matmul_nt(4096, 128, 128))
 # test(*conv_nchw(64, 64, 64, 64, 63, 3, 3))
 # test(*dwconv_nhwc_v2(64, 64, 64, 64, 3, 3))
-test(*transpose(8192, 8192))
+test(*matmul_nn(65, 1024, 3072))

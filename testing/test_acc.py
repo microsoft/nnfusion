@@ -29,7 +29,12 @@ def ref_output(onnx_model_path):
     ort_inputs = {}
     inputs = []
     for value in ort_session.get_inputs():
-        tensor = np.random.normal(size=value.shape).astype(np.float32)
+        if value.type.find("int64") >= 0:
+            tensor = np.ones(value.shape).astype(np.int64)
+        elif value.type.find("float") >= 0:
+            tensor = np.random.normal(size=value.shape).astype(np.float32)
+        else:
+            raise NotImplementedError(value.type)
         ort_inputs[value.name] = tensor
         inputs.append(tensor)
     outputs = ort_session.get_outputs()

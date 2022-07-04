@@ -68,8 +68,8 @@ add_library(onnx_import STATIC
         op/where.cpp
         op/embed_layer_norm.hpp
         op/embed_layer_norm.cpp
-        op/skip_layer_norm.hpp
-        op/skip_layer_norm.cpp
+        op/layer_norm.hpp
+        op/layer_norm.cpp
         op/attention.hpp
         op/attention.cpp
         op/scatternd.hpp

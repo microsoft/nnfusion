@@ -401,6 +401,13 @@ namespace nnfusion
                         return std::move(ret);
                     };
                     // GLOBALS: input0:float32[2, 4] -> output0:float32[1, 3]\n
+                    if (result.first.find("// GLOBALS: ") == std::string::npos)
+                    {
+                        std::string err = "Unexpected response for Op " + gnode->get_op_type() +
+                                          "\nIR: " + get_translation(gnode) + "\nResponse: \n" +
+                                          result.first;
+                        throw std::runtime_error(err);
+                    }
                     auto output_params = ssplit(
                         ssplit(get_between(result.first, "// GLOBALS: ", "\n"), "->")[1], "],");
                     for (int i = 0; i < output_params.size(); ++i)

@@ -253,6 +253,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
     // collect code
     auto pairs = collect_ins(ctx, tu);
+    std::unordered_map<std::string, std::string> replaced_extern_result_memory;
     for (size_t i = 0; i < pairs.size(); i++)
     {
         auto& it = pairs[i];
@@ -334,6 +335,17 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                         std::string out_name = output->get_output_tensor(0).get_name();
                         int pos = call_str.find(", " + in_name);
                         call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        replaced_extern_result_memory[in_name] = out_name;
+                    }
+                }
+                for (size_t i = 0; i < gnode->get_in_edges().size(); i++) {
+                    std::string in_name = gnode->get_input_tensor(i).get_name();
+                    if (replaced_extern_result_memory.count(in_name)) {
+                        const auto& out_name = replaced_extern_result_memory[in_name];
+                        int pos = call_str.find(in_name + ", ");
+                        if (pos == std::string::npos)
+                            continue;
+                        call_str.replace(pos, in_name.size(), out_name);
                     }
                 }
             }

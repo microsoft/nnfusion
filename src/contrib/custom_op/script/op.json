@@ -11,6 +11,10 @@
         {
             "op": "GridSample",
             "script" : "python <NNFUSION_CONTRIB>/custom_op/script --operator-name=\"<OP_NAME>\" --input-config=<OP_JSON>"
+        },
+        {
+            "op": "ArgMax",
+            "script" : "python <NNFUSION_CONTRIB>/custom_op/script --operator-name=\"<OP_NAME>\" --input-config=<OP_JSON>"
         }
     ]
 }

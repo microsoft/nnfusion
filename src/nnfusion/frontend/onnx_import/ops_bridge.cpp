@@ -29,6 +29,7 @@
 #include "op/attention.hpp"
 #include "op/averagepool.hpp"
 #include "op/batch_norm.hpp"
+#include "op/bias_gelu.hpp"
 #include "op/binaryop.hpp"
 #include "op/cast.hpp"
 #include "op/clip.hpp"
@@ -37,6 +38,7 @@
 #include "op/constant.hpp"
 #include "op/conv.hpp"
 #include "op/conv_trans.hpp"
+#include "op/cum_sum.hpp"
 #include "op/depth_to_space.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
@@ -66,7 +68,6 @@
 #include "op/roll.hpp"
 #include "op/scatternd.hpp"
 #include "op/shape.hpp"
-#include "op/skip_layer_norm.hpp"
 #include "op/slice.hpp"
 #include "op/softmax.hpp"
 #include "op/split.hpp"
@@ -155,12 +156,13 @@ namespace nnfusion
                 REGISTER_OPERATOR("Add", 7, TranslateBinaryOp<op::Add>);
                 REGISTER_OPERATOR("And", 1, TranslateBinaryOp<op::And>);
                 REGISTER_OPERATOR("ArgMin", 1, TranslateIndexReductionOp<op::ArgMin>);
-                REGISTER_OPERATOR("ArgMax", 1, TranslateIndexReductionOp<op::ArgMax>);
+                // REGISTER_OPERATOR("ArgMax", 1, TranslateIndexReductionOp<op::ArgMax>);
                 REGISTER_OPERATOR("Asin", 1, TranslateUnaryOp<op::Asin>);
                 REGISTER_OPERATOR("Atan", 1, TranslateUnaryOp<op::Atan>);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "Attention", 1, TranslateAttentionOp);
                 REGISTER_OPERATOR("AveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("BatchNormalization", 1, TranslateBatchNormOp);
+                REGISTER_DOMAIN_OPERATOR("com.microsoft", "BiasGelu", 1, TranslateBiasGeluOp);
                 REGISTER_OPERATOR("Cast", 1, TranslateCastOp);
                 REGISTER_OPERATOR("Ceil", 1, TranslateUnaryOp<op::Ceiling>);
                 REGISTER_OPERATOR("Clip", 1, TranslateClipOp);
@@ -169,6 +171,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ConstantOfShape", 1, TranslateConstantOfShapeOp);
                 REGISTER_OPERATOR("Conv", 1, TranslateConvOp);
                 REGISTER_OPERATOR("Cos", 1, TranslateUnaryOp<op::Cos>);
+                REGISTER_OPERATOR("CumSum", 1, TranslateCumSumOp);
                 REGISTER_OPERATOR("Div", 1, TranslateLegacyBinaryOp<op::Divide>);
                 REGISTER_OPERATOR("Div", 7, TranslateBinaryOp<op::Divide>);
                 REGISTER_OPERATOR("DivGrad", 1, TranslateDivGradOp);

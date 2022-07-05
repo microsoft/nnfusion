@@ -5,6 +5,8 @@ from memopt.reference import get_subgraph_reference_outputs
 from memopt import get_log_level
 import numpy as np
 import hashlib
+import traceback
+import sys
 
 _cache_store = {}
 
@@ -135,7 +137,11 @@ def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=True)
         return None
     compile_results = []
     for config in configs:
-        cpresult = compose_global_kernel(output_nodes, config, "cuda", name=kernel_name)
+        try:
+            cpresult = compose_global_kernel(output_nodes, config, "cuda", name=kernel_name)
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+            continue
         cpresult.append_host_call()
         cpresult.set_io_desc(input_desc, output_desc)
         compile_results.append(cpresult)

@@ -371,6 +371,8 @@ class DefaultPolicy:
             max_possible_size = functools.reduce(math.gcd, total_sizes)
             possible_block_sizes = list(filter(
                 lambda x: x % max_block_size == 0 and x <= 1024, get_all_factors(max_possible_size)))
+            possible_block_sizes = list(filter( # either be a factor of space or cover fully cover the space
+                lambda x: all([x % s == 0 or s % x == 0 for s in node_space_sizes]) , possible_block_sizes))
             factor_ordered = sorted(possible_block_sizes, key=score_block_size)
             recommended_block_size = factor_ordered[0]
         else:

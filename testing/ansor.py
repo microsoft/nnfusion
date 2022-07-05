@@ -7,7 +7,7 @@ from tvm import relay, auto_scheduler
 import tvm.relay.testing
 from tvm.contrib import graph_executor
 
-prefix = "/home/v-yiningshi/learn_tvm/testing/temp/resnet"
+prefix = "/home/v-yiningshi/learn_tvm/testing/temp/bert"
 target = tvm.target.cuda(arch="sm_70")
 # import tensorflow.compat.v1 as tf
 # pt_model = open(osp.join(prefix, "classifier.pb"), "rb")
@@ -31,7 +31,7 @@ def run_tuning():
 
     tuner = auto_scheduler.TaskScheduler(tasks, task_weights, load_log_file=log_file)
     tune_option = auto_scheduler.TuningOptions(
-        num_measure_trials=10000,
+        num_measure_trials=len(tasks) * 512,
         runner=measure_ctx.runner,
         measure_callbacks=[auto_scheduler.RecordToFile(log_file)],
     )

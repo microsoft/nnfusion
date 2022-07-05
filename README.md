@@ -3,6 +3,8 @@ TVM version '0.9.dev0'
 
 commit 55cfc4ad2df0120411b6b5ae2a2f28d8b467a25a
 
+NNFUSION https://github.com/nox-410/nnfusion/tree/smem_fuse
+
 python==3.7
 
 pip:
@@ -10,3 +12,37 @@ pip:
 - torchvision==0.10.0
 - onnx
 - onnxruntime
+
+Finally, add ./python to PYTHONPATH.
+
+## Usage
+### Prepare onnx model
+
+Supporting opset11, use ./testing/torch2onnx.py to get some supported models.
+
+### Run the compiler
+
+```bash
+nnfusion model.onnx -f onnx -ftune_output_file=model.json -fconst_folding_backend="CUDA" &&
+python3 -m run_compiler model.json tuned_t.json --device 0 --topk 10 &&
+nnfusion model.onnx -f onnx -ftune_output_file=model.json -fconst_folding_backend="CUDA" -ftune_input_file=tuned.json &&
+cmake -S nnfusion_rt/cuda_codegen/ -B nnfusion_rt/cuda_codegen/build/ &&
+make -C nnfusion_rt/cuda_codegen/build/
+```
+This will extract the IR compute graph first (first line).
+
+Then run the compiler (second line).
+
+Compose final code and compile (third & fourth line).
+
+### run test
+
+```bash
+cd nnfusion_rt/cuda_codegen && ./build/main_test
+```
+
+## Extra
+
+compare end to end model correctness : ./testing/test_acc.py prefix
+
+single operator tuning : ./testing/test_policy.py

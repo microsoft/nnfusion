@@ -141,6 +141,7 @@ const nnfusion::Shape& nnfusion::descriptor::Tensor::get_shape() const
 
 void nnfusion::descriptor::Tensor::set_pool_offset(size_t offset)
 {
+    m_initialized = true;
     m_pool_offset = offset;
 }
 
@@ -161,7 +162,8 @@ const std::string& nnfusion::descriptor::Tensor::get_pool() const
 
 bool nnfusion::descriptor::Tensor::is_same_address(std::shared_ptr<Tensor> tensor)
 {
-    return (m_pool == tensor->get_pool()) && (m_pool_offset == tensor->get_pool_offset());
+    return m_initialized && tensor->initialized() && (m_pool == tensor->get_pool()) &&
+           (m_pool_offset == tensor->get_pool_offset());
 }
 
 size_t nnfusion::descriptor::Tensor::size(bool in_byte) const

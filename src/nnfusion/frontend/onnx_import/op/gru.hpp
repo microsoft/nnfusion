@@ -12,10 +12,9 @@ namespace nnfusion
         {
             namespace set_1
             {
-                NamedNodeVector
-                    TranslateSkipLayerNormOp(const onnx::NodeProto& node_proto,
-                                             const NodeMap& all_ng_nodes,
-                                             std::shared_ptr<nnfusion::graph::Graph> m_graph);
+                NamedNodeVector TranslateGRUOp(const onnx::NodeProto& node_proto,
+                                               const NodeMap& all_ng_nodes,
+                                               std::shared_ptr<nnfusion::graph::Graph> m_graph);
 
             } // namespace set_1
 

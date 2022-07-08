@@ -22,10 +22,33 @@ This tutorial demonstrates how to use NNFusion to compile a TensorFlow model and
     ```
     
 5. By default, NNFusion select some pre-defined kernels to generate the model. Now, if you would like to further improve  your model execution performance by tuning each kernel on this device, you can add the following args:
+
+    ```
+    nnfusion frozen_lstm_l8s8h256_bs1.pb -fkernel_tuning_steps=100 -fantares_mode=true
+    ```
+    The `fkernel_tuning_steps=N` option allows you to tune each operator in your model for `N` steps with our Antares tuning service. By default, this tuning process is running in a blocking mode, which will usually takes for hours to finish a full model tuning. The progress is showed as below:
+
+    ```
+    Tuning [0/17 ops]: op=Concat, name=BasicLSTMCellZeroState/c..:
+    [##################################################] 100%
+    Tuning [1/17 ops]: op=Slice, name=Slice_195:
+    [##################################################] 100%
+    Tuning [2/17 ops]: op=Reshape, name=strided_slice:
+    [##################################################] 100%
+    Tuning [3/17 ops]: op=Slice, name=Slice_197:
+    [##################################################] 100%
+    Tuning [4/17 ops]: op=Slice, name=Slice_199:
+    [##################################################] 100%
+    Tuning [5/17 ops]: op=Slice, name=Slice_201:
+    [########################                          ] 48%
+
+    ```
+    NNFusion also support tunning kernels in a non-blocking model, by specifing an Antares server with `-fantares_codegen_server` option, as below:
+
     ```
     nnfusion frozen_lstm_l8s8h256_bs1.pb -fkernel_tuning_steps=5 -fantares_mode=true -fantares_codegen_server=127.0.0.1:8880
     ```
-    The `fkernel_tuning_steps=N` option allows you to tune each operator in your model for `N` steps with our Antares tuning service. Note that this is not a blocking execution, and NNFusion is only submitting each tuning task into the Antares service and reports the status. It looks like,
+    Then the compilation process is not a blocking execution, and NNFusion is only submitting each tuning task into the Antares service and reports the status. It looks like,
 
     ```
     [INFO] 2020-12-15T05:48:27z src/nnfusion/engine/pass/graph/kernel_tuning.cpp 92  Kernel Tuning Status:

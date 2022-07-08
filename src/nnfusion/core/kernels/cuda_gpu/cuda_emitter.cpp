@@ -260,12 +260,55 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
             find_launch_config(kernel_def, GridDim, BlockDim);
             std::string call;
             auto ki = kernel_info[i];
+            // map mediate name
+            std::vector<string> input_names, output_names;
+            size_t idx = 0;
+            std::unordered_map<string, string> mediate_map;
+            for (auto name : ki->input_names)
+            {
+                if (mediate_map.find(name) == mediate_map.end())
+                {
+                    if (name.find("mediate") != string::npos)
+                    {
+                        mediate_map[name] = "mediate" + to_string(idx);
+                        idx += 1;
+                    }
+                }
+            }
+
+            for (auto name : ki->output_names)
+            {
+                if (mediate_map.find(name) == mediate_map.end())
+                {
+                    if (name.find("mediate") != string::npos)
+                    {
+                        mediate_map[name] = "mediate" + to_string(idx);
+                        idx += 1;
+                    }
+                }
+            }
+
+            for (auto name : ki->input_names)
+            {
+                if (mediate_map.find(name) == mediate_map.end())
+                    input_names.push_back(name);
+                else
+                    input_names.push_back(mediate_map[name]);
+            }
+
+            for (auto name : ki->output_names)
+            {
+                if (mediate_map.find(name) == mediate_map.end())
+                    output_names.push_back(name);
+                else
+                    output_names.push_back(mediate_map[name]);
+            }
             NNFUSION_CHECK(ki->kernel_name == "template_op_kernel" + to_string(i));
             call = get_function_name() + "_kernel" + to_string(i) + "<<<dim3(" +
                    to_string(GridDim.x) + ", " + to_string(GridDim.y) + ", " +
                    to_string(GridDim.z) + "), dim3(" + to_string(BlockDim.x) + ", " +
                    to_string(BlockDim.y) + ", " + to_string(BlockDim.z) + "), mem, stream>>>(" +
-                   join(ki->input_names, ", ") + ", " + join(ki->output_names, ", ") + ");";
+                   join(input_names, ", ") + ", " + join(output_names, ", ") + ");";
             lu << call << "\n";
         }
     }

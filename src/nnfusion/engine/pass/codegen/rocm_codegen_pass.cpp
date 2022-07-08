@@ -19,6 +19,7 @@ using namespace nnfusion::async;
 
 DECLARE_bool(fkernels_as_files);
 DECLARE_int64(fkernels_files_number);
+DECLARE_bool(ffunction_codegen);
 
 void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                  std::shared_ptr<TranslationUnit> tu)
@@ -61,8 +62,11 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
-        lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
-        lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
+        if (FLAGS_ffunction_codegen)
+            lu_init_begin << "\nextern \"C\" void cuda_init(char* workspace)\n{\n";
+        else
+            lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
+        lu_init_begin << "// CUDA_SAFE_CALL(cudaDeviceReset());\n";
     }
 
     auto& lu_init_end = *(projgen->lup_init->end);
@@ -123,6 +127,7 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
     projgen->lup_codegen->require(codegen_device_type());
+    projgen->lup_codegen->require(codegen_workspace_size(tu));
 
     return;
 }

@@ -93,7 +93,7 @@ namespace nnfusion
                 nnfusion::codegen::get_file_from_templates("onnx/ort_run_frozen.py");
             string cmd = "python3 " + script_path +
                          " --graph_optimization_level ORT_ENABLE_BASIC "
-                         "--warmup 1 --iters 0 --provider CPUExecutionProvider --file " +
+                         "--warmup 1 --iters 0 --file " +
                          path + " --optimized_model_filepath " + optimized_filename;
             if (dim_params.size() > 0)
             {

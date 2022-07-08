@@ -1,48 +1,36 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-import sys, os, tarfile, shutil, logging
-from typing_extensions import runtime
+import logging
+import os
+import site
+import subprocess
+import sys
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
-this_folder = os.path.split(os.path.realpath(__file__))[0]
-nnf_bin=os.path.join(this_folder, "bin/nnfusion")
-nnf_dir=os.path.join(this_folder, "bin/")
-nnf_pkg = os.path.join(this_folder, "nnfusion.tar.gz")
 
-def check_pkg():
-    if os.path.exists(nnf_bin) and os.path.exists(nnf_pkg):
-        old_time = os.path.getctime(nnf_bin)
-        new_time = os.path.getctime(nnf_pkg) 
-        if new_time > old_time:
-            logging.info("Replacing old nnfusion cli.")
-            shutil.rmtree(nnf_dir)
-    else:
-        if os.path.exists(nnf_bin):
-            logging.info("No nnfusion cli found: Try to extract it from nnfusion.tar.gz.")
-
-
-def extract_pkg():
-    if os.path.exists(nnf_pkg):
-        if os.path.exists(nnf_bin):
-            return
-        tar = tarfile.open(nnf_pkg, 'r:gz')
-        tar.extractall(nnf_dir)
-        tar.close()
-        if not os.path.exists(nnf_bin):
-            logging.error("Corrupted nnfusion.tar.gz: Please reinstall nnfusion python package.")
-            exit(-1)
-    else:
-        logging.error("Missing nnfusion.tar.gz: Please reinstall nnfusion python package.")
-        exit(-1)
 
 def run_cli():
-    if os.path.exists(nnf_bin):
-        args = " ".join(sys.argv[1:])
-        os.system("%s %s"%(nnf_bin, args))
-    else:
+    nnf_bin = os.path.join(site.USER_BASE, "share/nnfusion/nnfusion")
+    if not os.path.exists(nnf_bin):
+        nnf_bin = os.path.join(sys.prefix, "share/nnfusion/nnfusion")
+    if not os.path.exists(nnf_bin):
         logging.error("No nnfusion cli found: Try to reinstall nnfusion.")
-        exit(-1)
+        sys.exit(-1)
+
+    cmd = " ".join([nnf_bin] + sys.argv[1:])
+    return subprocess.call(cmd, shell=True)
+
+def init_env():
+    if "NNFUSION_HOME" not in os.environ:
+        os.environ["NNFUSION_HOME"] = os.path.join(os.path.expanduser('~'), ".nnfusion")
+    logging.info("$NNFUSION_HOME is set as " + os.environ["NNFUSION_HOME"])
+    if "NNFUSION_CONTRIB" not in os.environ:
+        nnf_contrib = os.path.join(sys.prefix, "share/nnfusion")
+        if not os.path.exists(nnf_contrib):
+            nnf_contrib = os.path.join(os.environ["NNFUSION_HOME"], "contrib")
+        os.environ["NNFUSION_CONTRIB"] = nnf_contrib
+    logging.info("$NNFUSION_CONTRIB is set as " + os.environ["NNFUSION_CONTRIB"])
 
 def welcome():
     print("     _  __ _  __ ____            _ ")
@@ -51,15 +39,14 @@ def welcome():
     print("  /_/|_//_/|_//_/   \\_,_//___//_/ \\___//_//_/")
     print("      MSRAsia NNFusion Team(@nnfusion)")
     print("    https://github.com/microsoft/nnfusion")
-    print("") 
+    print("")
 
 
 def main():
     welcome()
-    check_pkg()
-    extract_pkg()
-    run_cli()
+    init_env()
+    return run_cli()
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

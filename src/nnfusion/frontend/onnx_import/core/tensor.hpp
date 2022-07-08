@@ -51,7 +51,6 @@ namespace nnfusion
                 {
                     NNFUSION_CHECK(!m_tensor_proto->has_segment())
                         << "loading tensor segments not supported.";
-
                     return detail::get_data<T>(*m_tensor_proto);
                 }
 
@@ -71,8 +70,9 @@ namespace nnfusion
                     case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
                         return element::boolean;
                     case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
-                    case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
                         return element::f32;
+                    case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
+                        return element::f16;
                     case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
                         return element::f64;
                     case onnx::TensorProto_DataType::TensorProto_DataType_INT8: return element::i8;
@@ -99,6 +99,7 @@ namespace nnfusion
                                    onnx::TensorProto_DataType(m_tensor_proto->data_type()));
                         break;
                     }
+                    return element::f32;
                 }
 
                 operator onnx::TensorProto_DataType() const
@@ -118,4 +119,4 @@ namespace nnfusion
 
         } // namespace onnx_import
     }     // namespace frontend
-} // namespace nnfuison
+} // namespace nnfusion

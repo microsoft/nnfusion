@@ -37,8 +37,10 @@ namespace nnfusion
                     *nnfusion_et = element::boolean;
                     break;
                 case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
                     *nnfusion_et = element::f32;
+                    break;
+                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
+                    *nnfusion_et = element::f16;
                     break;
                 case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
                     *nnfusion_et = element::f64;
@@ -91,8 +93,9 @@ namespace nnfusion
                 case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
                     return make_constant_op<bool>(element::boolean, shape, tensor);
                 case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
                     return make_constant_op<float>(element::f32, shape, tensor);
+                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
+                    return make_constant_op<float>(element::f16, shape, tensor);
                 case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
                     return make_constant_op<double>(element::f64, shape, tensor);
                 case onnx::TensorProto_DataType::TensorProto_DataType_INT8:
@@ -115,6 +118,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL() << "unsupported value info element type: "
                                           << onnx::TensorProto_DataType_Name(onnx_et);
                 }
+                return make_constant_op<float>(element::f32, shape, tensor);
             }
 
             std::shared_ptr<graph::GNode> GetInputNode(const NodeMap& all_ng_nodes,

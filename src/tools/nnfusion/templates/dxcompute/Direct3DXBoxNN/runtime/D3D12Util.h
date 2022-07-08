@@ -12,10 +12,12 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <map>
 #include <algorithm>
 #include <numeric>
 #include <chrono>
+#include <iomanip>
 #include <direct.h>
 
 #ifdef _GAMING_XBOX_SCARLETT
@@ -48,7 +50,30 @@ using namespace std;
 using namespace Microsoft::WRL;
 
 
-#define IFE(x)  ((FAILED(x)) ? (printf((x) == E_OUTOFMEMORY ? "Error-line: (%s) %d\n\nDX out of memory": "Error-line: (%s) %d\n\nPossible Reason:\n\tWindows TDR might be triggered.\n\tTo avoid this, please download and apply https://github.com/microsoft/antares/releases/download/v0.1.0/antares_hlsl_tdr_v0.1.reg into Windows registry and reboot your system to take effect.\nIf this is not fixed, please report an issue to https://github.com/microsoft/antares/issues\n\n", __FILE__, __LINE__), abort(), 0): 1)
+string error_string(HRESULT x, string FILE, int LINE)
+{
+    string e_str = "Error-line: (" + FILE + ") " + std::to_string(LINE) + "\n\n";
+    if (x == D3D12_ERROR_ADAPTER_NOT_FOUND) e_str += "Reason: The specified cached PSO was created on a different adapter and cannot be reused on the current adapter.\n";
+    else if (x == D3D12_ERROR_DRIVER_VERSION_MISMATCH) e_str += "Reason: The specified cached PSO was created on a different driver version and cannot be reused on the current adapter.\n";
+    else if (x == DXGI_ERROR_INVALID_CALL) e_str += "Reason: The method call is invalid. For example, a method's parameter may not be a valid pointer.\n";
+    else if (x == DXGI_ERROR_WAS_STILL_DRAWING) e_str += "Reason: The previous blit operation that is transferring information to or from this surface is incomplete.\n";
+    else if (x == E_FAIL) e_str += "Reason: Attempted to create a device with the debug layer enabled and the layer is not installed.\n";
+    else if (x == E_INVALIDARG) e_str += "Reason: An invalid parameter was passed to the returning function.\n";
+    else if (x == E_OUTOFMEMORY) e_str += "Reason: Direct3D could not allocate sufficient memory to complete the call.\n";
+    else if (x == E_NOTIMPL) e_str += "Reason: The method call isn't implemented with the passed parameter combination.\n";
+    else if (x == S_FALSE) e_str += "Reason: Alternate success value, indicating a successful but nonstandard completion (the precise meaning depends on context).\n";
+    else
+    {
+        std::stringstream stream;
+        stream << "0x"
+            << std::setfill('0') << std::setw(sizeof(x) * 2)
+            << std::hex << x;
+        e_str += "Unknown reason, d3d error code: " + stream.str() + ".\n";
+    }
+    return e_str;
+}
+
+#define IFE(x)  ((FAILED(x)) ? (printf(error_string(x, __FILE__, __LINE__).c_str()), abort(), 0): 1)
 
 namespace {
 
@@ -1006,33 +1031,135 @@ namespace antares {
 
         }
 
+#ifdef _GAMING_XBOX_SCARLETT
+        static std::vector<std::wstring> getXboxFlags(const std::string& text, std::string mode = "cu")
+        {
+            // Currently dxcompiler for xbox cann't work properly for some shaders thus hanging GPU.
+            // Before compiler team's fix, two additional flags are added to explicitly prohibit generating these shaders.
+            // 1. -D__XBOX_PER_THREAD_SCRATCH_SIZE_LIMIT_IN_BYTES=0, disable scratch usage
+            // 2. -D__XBOX_MAX_VGPR_COUNT=[VGPR_COUNT], limit VGPR as below:
+            //  ThreadGroup Size    Num Wave32s	Max VGPRs(CU_MODE)	Max VGPRs(wgp mode)
+            //  256x1x1	    8	    256	                            256
+            //  512x1x1	    16	    128	                            256
+            //  1024x1x1	32	    64	                            128
+            //  2048x1x1	64	    32	                            64
+
+            std::vector<std::wstring> flags{ L"-D__XBOX_PER_THREAD_SCRATCH_SIZE_LIMIT_IN_BYTES=0" };
+
+            // extract thread size from target snippet like [numthreads(870, 1, 1)]
+            size_t threadSize = 1;
+            size_t start = text.find("[numthreads(");
+            if (start != string::npos)
+            {
+                size_t startX = start + strlen("[numthreads(");
+                size_t endX = text.find(",", startX);
+                size_t startY = endX + 1;
+                size_t endY = text.find(",", startY);
+                size_t startZ = endY + 1;
+                size_t endZ = text.find(")", startZ);
+                if (endX != string::npos && endY != string::npos && endZ != string::npos)
+                {
+                    size_t threadX = std::stoi(text.substr(startX, endX - startX));
+                    size_t threadY = std::stoi(text.substr(startY, endY - startY));
+                    size_t threadZ = std::stoi(text.substr(startZ, endZ - startZ));
+                    threadSize = threadX * threadY * threadZ;
+                }
+            }
+
+            static auto getVgprLimit = [](int threadSize, std::string mode) -> size_t
+            {
+                if (mode == "cu")
+                {
+                    if (threadSize <= 256)
+                        return 256;
+                    else if (threadSize <= 512)
+                        return 128;
+                    else if (threadSize <= 1024)
+                        return 64;
+                    else if (threadSize <= 2048)
+                        return 32;
+                    else
+                        return 0;
+                }
+                else if (mode == "wgp")
+                {
+                    if (threadSize <= 256)
+                        return 256;
+                    else if (threadSize <= 512)
+                        return 256;
+                    else if (threadSize <= 1024)
+                        return 128;
+                    else if (threadSize <= 2048)
+                        return 64;
+                    else
+                        return 0;
+                }
+                return 0;
+            };
+
+            size_t vgprLimit = getVgprLimit(threadSize, mode);
+            if (vgprLimit > 0 && vgprLimit < 256)
+            {
+                flags.push_back(L"-D__XBOX_MAX_VGPR_COUNT=" + std::to_wstring(vgprLimit));
+            }
+            return flags;
+        }
+#endif
+
         ComPtr<IDxcBlob> Compile(LPCVOID pText, UINT32 size, LPCWSTR entryName, LPCWSTR profile)
         {
-            ComPtr<IDxcBlob> pRet;
+            ComPtr<IDxcBlob> pRet = nullptr;
             ComPtr<IDxcBlobEncoding> pSrcBlob;
             IFE(m_pLibrary->CreateBlobWithEncodingOnHeapCopy(pText, size, CP_UTF8, &pSrcBlob));
-            ComPtr<IDxcOperationResult> pResult;
-            // Just set a random name "ShaderFile"
-            const WCHAR* args[] = { NULL };
-            // const WCHAR* args[] = { L"-enable-templates", L"-enable-16bit-types", NULL }; // TODO: will be supported in HLSL 2021 & cs_6_2
-            if (FAILED(m_pCompiler->Compile(pSrcBlob.Get(), L"ShaderFile", entryName, profile, args, sizeof(args) / sizeof(*args) - 1, NULL, 0, NULL, &pResult)))
+            ComPtr<IDxcOperationResult> pResult = nullptr;
+
+            std::vector<const WCHAR*> args_i;
+#ifdef _GAMING_XBOX_SCARLETT
+            std::vector<std::wstring> args = getXboxFlags((char*)pText);
+            for (size_t i = 0; i < args.size(); i++)
             {
-                if (pResult)
+                args_i.push_back(args[i].c_str());
+            }
+#endif
+            args_i.push_back(NULL);
+            // Just set a random name "ShaderFile"
+            // const WCHAR* args[] = { L"-enable-templates", L"-enable-16bit-types", NULL }; // TODO: will be supported in HLSL 2021 & cs_6_2
+            std::string errStr;
+            if (SUCCEEDED(m_pCompiler->Compile(pSrcBlob.Get(), L"ShaderFile", entryName, profile, args_i.data(), args_i.size() - 1, NULL, 0, NULL, &pResult)))
+            {
+                HRESULT pStatus;
+                if (SUCCEEDED(pResult->GetStatus(&pStatus)) && SUCCEEDED(pStatus))
+                {
+                    pResult->GetResult(&pRet);
+                }
+                else
                 {
                     ComPtr<IDxcBlobEncoding> pErrorsBlob;
-                    if (SUCCEEDED(pResult->GetErrorBuffer(&pErrorsBlob)))
+                    if (SUCCEEDED(pResult->GetErrorBuffer(&pErrorsBlob)) && pErrorsBlob)
                     {
-                        if (pErrorsBlob)
-                        {
-                            printf("Compilation Error:\n%s\n", (const char*)pErrorsBlob->GetBufferPointer());
-                            return nullptr;
-                        }
+                        errStr = std::string("Compilation Error:\n") + (char*)pErrorsBlob->GetBufferPointer() + "\n";
                     }
                 }
             }
             else
             {
-                pResult->GetResult(&pRet);
+                if (pResult)
+                {
+                    ComPtr<IDxcBlobEncoding> pErrorsBlob;
+                    if (SUCCEEDED(pResult->GetErrorBuffer(&pErrorsBlob)) && pErrorsBlob)
+                    {
+                        errStr = std::string("Compilation Error:\n") + (char*)pErrorsBlob->GetBufferPointer() + "\n";
+                    }
+                }
+            }
+
+            if (pRet == nullptr)
+            {
+                if (errStr.empty())
+                {
+                    errStr = "Compilation Error:\nUnknown error\n";
+                }
+                printf(errStr.c_str());
             }
             return pRet;
         }

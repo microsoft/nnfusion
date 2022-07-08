@@ -17,20 +17,20 @@ class CustomOpsRegistration
 public:
     CustomOpsRegistration(std::string type)
     {
-        char* nnfusion_home = getenv("NNFUSION_HOME");
-        if (nnfusion_home == NULL)
+        char* nnfusion_contrib = getenv("NNFUSION_CONTRIB");
+        if (nnfusion_contrib == NULL)
         {
             char* home = getenv("HOME");
             if (home != NULL)
             {
-                base_dir = std::string(home) + "/nnfusion/custom_op/" + type;
+                base_dir = std::string(home) + "/.nnfusion/custom_op/" + type;
                 NNFUSION_LOG(NNFUSION_WARNING)
-                    << "$NNFUSION_HOME was not set, use " << std::string(home) << "/nnfusion.";
+                    << "$NNFUSION_HOME was not set, use " << std::string(home) << "/.nnfusion.";
             }
         }
         else
         {
-            base_dir = std::string(nnfusion_home) + "/custom_op/" + type;
+            base_dir = std::string(nnfusion_contrib) + "/custom_op/" + type;
         }
 
         if (base_dir != "")
@@ -49,6 +49,12 @@ public:
                         if (type == "json")
                         {
                             register_json_ops(data_path);
+                        }
+                        else if (type == "script")
+                        {
+                            // Only check json file in script folder
+                            if(file.find(".json")<file.length())
+                                register_json_ops(data_path);
                         }
                         else if (type == "onnx")
                         {

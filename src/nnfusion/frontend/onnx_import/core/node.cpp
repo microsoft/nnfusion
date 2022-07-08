@@ -211,6 +211,15 @@ namespace nnfusion
             }
 
             template <>
+            std::vector<std::string>
+                Node::get_attribute_value(const std::string& name,
+                                          std::vector<std::string> default_value) const
+            {
+                return m_pimpl->template get_attribute_value<std::vector<std::string>>(
+                    name, std::move(default_value));
+            }
+
+            template <>
             std::vector<Tensor> Node::get_attribute_value(const std::string& name,
                                                           std::vector<Tensor> default_value) const
             {
@@ -309,6 +318,24 @@ namespace nnfusion
             std::vector<onnx::GraphProto> Node::get_attribute_value(const std::string& name) const
             {
                 return m_pimpl->template get_attribute_value<std::vector<onnx::GraphProto>>(name);
+            }
+
+            template <>
+            std::vector<float> Tensor::get_data() const
+            {
+                NNFUSION_CHECK(!m_tensor_proto->has_segment())
+                    << "loading tensor segments not supported.";
+
+                // Need to fill the rest space
+                if (m_tensor_proto->data_type() == onnx::TensorProto_DataType_FLOAT16 &&
+                    shape_size(m_shape) % 2 == 1)
+                {
+                    std::vector<float> rdata(shape_size(m_shape) / 2 + 1);
+                    auto raw = m_tensor_proto->raw_data();
+                    memcpy((void*)rdata.data(), (void*)raw.c_str(), shape_size(m_shape) * 2);
+                    return rdata;
+                }
+                return detail::get_data<float>(*m_tensor_proto);
             }
 
         } // namespace onnx_import

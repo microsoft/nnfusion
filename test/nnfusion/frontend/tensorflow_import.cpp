@@ -551,13 +551,61 @@ TEST(nnfusion_tensorflow_import, sigmoid_op)
     }
 }
 
+TEST(nnfusion_tensorflow_import, scatteradd_op)
+{
+    auto model = frontend::load_tensorflow_model(file_util::path_join(
+        SERIALIZED_ZOO, "tensorflow/frozen_op_graph/frozen_scatteradd_graph.pb"));
+
+    Inputs inputs{test::NDArray<float, 2>{{1, 1}, {1, 1}, {-1, -4}, {0, 1}}.get_vector()};
+    Outputs expected_outputs{{0, 0, 2, 3, 0, -1, 1, 1}};
+
+    Outputs outputs{execute(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (std::size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
 TEST(nnfusion_tensorflow_import, scattersub_op)
 {
     auto model = frontend::load_tensorflow_model(file_util::path_join(
         SERIALIZED_ZOO, "tensorflow/frozen_op_graph/frozen_scattersub_graph.pb"));
 
-    Inputs inputs{};
-    Outputs expected_outputs{{1, 1, 1, 1, -3, -9, -1, 1}};
+    Inputs inputs{test::NDArray<float, 2>{{1, 1}, {1, 1}, {-1, -4}, {0, 1}}.get_vector()};
+    Outputs expected_outputs{{2, 2, 0, -1, -2, -7, -1, 1}};
+
+    Outputs outputs{execute(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (std::size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_tensorflow_import, scattermax_op)
+{
+    auto model = frontend::load_tensorflow_model(file_util::path_join(
+        SERIALIZED_ZOO, "tensorflow/frozen_op_graph/frozen_scattermax_graph.pb"));
+
+    Inputs inputs{test::NDArray<float, 2>{{1, 1}, {1, 1}, {-1, -4}, {0, 1}}.get_vector()};
+    Outputs expected_outputs{{1, 1, 1, 2, 1, 3, 1, 1}};
+
+    Outputs outputs{execute(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (std::size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
+TEST(nnfusion_tensorflow_import, scattermin_op)
+{
+    auto model = frontend::load_tensorflow_model(file_util::path_join(
+        SERIALIZED_ZOO, "tensorflow/frozen_op_graph/frozen_scattermin_graph.pb"));
+
+    Inputs inputs{test::NDArray<float, 2>{{1, 1}, {1, 1}, {-1, -4}, {0, 1}}.get_vector()};
+    Outputs expected_outputs{{-1, -1, 1, 1, -1, -4, 0, 0}};
 
     Outputs outputs{execute(model, inputs, "NNFusion")};
     EXPECT_EQ(outputs.size(), expected_outputs.size());

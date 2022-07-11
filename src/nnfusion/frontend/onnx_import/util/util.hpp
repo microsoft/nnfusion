@@ -55,6 +55,7 @@ namespace nnfusion
                 inline std::vector<T> get_data(const onnx::TensorProto& tensor)
                 {
                     NNFUSION_CHECK_FAIL()
+                        << tensor.name() << " "
                         << "unsupported data type: "
                         << static_cast<onnx::TensorProto_DataType>(tensor.data_type());
                     return std::vector<T>();

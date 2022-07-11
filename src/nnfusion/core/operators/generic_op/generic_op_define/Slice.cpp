@@ -24,23 +24,22 @@ REGISTER_OP(Slice)
 
         auto op = static_pointer_cast<nnfusion::op::Slice>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
-        for (auto& s : op->get_strides())
-        {
-            if (s == 1)
-                continue;
-            std::cout << "Slice operation with strides larger than 1 is not supported by Antares "
-                      << std::endl;
-            return "";
-        }
 
+        auto steps = op->get_strides();
+        auto starts = op->get_lower_bounds();
+        auto ends = op->get_upper_bounds();
         auto output_layout = op::create_layout_from_dims(curr->get_output_shape(0));
         std::string slice_dims;
         std::vector<std::string> input_layout;
         for (int d = 0; d < output_layout.size(); d++)
         {
-            input_layout.push_back(output_layout[d] + " + " + to_string(op->get_lower_bounds()[d]));
-            slice_dims = slice_dims + (slice_dims.empty() ? "" : " , ") + output_layout[d] +
-                         " in " + to_string(curr->get_output_shape(0)[d]);
+            auto step = steps[d];
+            auto start = starts[d];
+            auto end = ends[d];
+            auto range = (u_int64_t)ceil((double)(end-start)/(double)step);
+            input_layout.push_back((step == 1? output_layout[d] : output_layout[d] + " * " + to_string(step))  + " + " + to_string(start));
+            slice_dims += (slice_dims.empty() ? "" : " , ") + output_layout[d] +
+                         " in " + to_string(range);
         }
 
         auto expression_code = op::create_code_from_template(
@@ -48,6 +47,7 @@ REGISTER_OP(Slice)
             {{"output0_layout", vector_to_string<std::vector<std::string>>(output_layout)},
              {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
              {"slice_dims", slice_dims}});
+        NNFUSION_LOG(INFO) << expression_code.c_str() << ::std::endl;
         return expression_code;
 
     });

@@ -47,7 +47,6 @@ REGISTER_OP(Slice)
             {{"output0_layout", vector_to_string<std::vector<std::string>>(output_layout)},
              {"input0_layout", vector_to_string<std::vector<std::string>>(input_layout)},
              {"slice_dims", slice_dims}});
-        NNFUSION_LOG(INFO) << expression_code.c_str() << ::std::endl;
-        return expression_code;
 
+        return expression_code;
     });

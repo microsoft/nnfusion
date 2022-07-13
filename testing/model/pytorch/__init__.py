@@ -98,6 +98,12 @@ def vit(batch_size):
     input = torch.randn(batch_size, 3, 256, 256)
     return model, (input, )
 
+def localvit(batch_size):
+    from .LocalViT import LocalViT as Net
+    model = Net(image_size=224, patch_size=16, num_classes=1000)
+    input = torch.randn(batch_size, 3, 224, 224)
+    return model, (input, )
+
 def crnn(batch_size):
     from .crnn import CRNN
     model = CRNN()

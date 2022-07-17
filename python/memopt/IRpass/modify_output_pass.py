@@ -1,5 +1,5 @@
 import tvm
-from .scope import get_scope
+from ..scope import get_scope
 import numpy as np
 
 @tvm.tir.transform.prim_func_pass(opt_level=0)

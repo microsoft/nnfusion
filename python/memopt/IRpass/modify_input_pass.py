@@ -1,5 +1,5 @@
 import tvm
-from .scope import Scope, get_scope
+from ..scope import Scope, get_scope
 
 @tvm.tir.transform.prim_func_pass(opt_level=0)
 def modify_input_pass(f, mod, ctx):

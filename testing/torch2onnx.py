@@ -4,9 +4,8 @@ import os.path as osp
 import os
 import argparse
 import time
-from model.pytorch import *
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+from model.pytorch import *
 
 def tofp16model(in_file_name, out_file_name):
     from onnx import load_model, save_model
@@ -30,9 +29,9 @@ def torch2onnx(prefix, model, inputs):
         training=False,
         do_constant_folding=False,
         opset_version=11)
-    tofp16model( osp.join(prefix, "model.onnx"),  osp.join(prefix, "model_fp16.onnx"))
-    feed_dict = dict(zip(input_names, inputs))
-    np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
+    # tofp16model( osp.join(prefix, "model.onnx"),  osp.join(prefix, "model_fp16.onnx"))
+    # feed_dict = dict(zip(input_names, inputs))
+    # np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
 
 def run_torch(model, inputs):
     model = model.cuda()
@@ -49,12 +48,22 @@ def run_torch(model, inputs):
         return (time.time() - tic) * 1000
     _ = [get_runtime() for i in range(50)] # warmup
     times = [get_runtime() for i in range(100)]
-    print(np.mean(times), np.min(times), np.max(times))
+    print("mean: {}ms min: {}ms max: {}ms".format(np.mean(times), np.min(times), np.max(times)))
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("model", type=str)
+    parser.add_argument("--bs", type=int, default=1)
+    parser.add_argument("--prefix", type=str, default="temp")
+    parser.add_argument("--run_torch", action="store_true", default=False)
+    args = parser.parse_args()
+    assert (args.model in globals()), "Model {} not found.".format(args.model)
+
     torch.random.manual_seed(0)
-    prefix="temp"
-    model, inputs = resnet(64)
-    os.makedirs(prefix, exist_ok=True)
-    torch2onnx(prefix, model, inputs)
-    # run_torch(model, inputs)
+    model, inputs = globals()[args.model](args.bs)
+
+    if args.run_torch:
+        run_torch(model, inputs)
+    else:
+        os.makedirs(args.prefix, exist_ok=True)
+        torch2onnx(args.prefix, model, inputs)

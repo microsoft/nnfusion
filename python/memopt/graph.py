@@ -1,6 +1,7 @@
 import tvm
 import lang
 import numpy as np
+from tvm import arith
 
 class Edge:
     def __init__(self, src_node, dst_node, src_id, dst_id):
@@ -214,6 +215,30 @@ class IRNode(Node):
                 if not src_node.is_placeholder():
                     continue
             result += np.prod(shapes[tensor.name]) * int(tvm.DataType(tensor.dtype).bits // 8)
+        return result
+
+    def block_infer(self, tile_map, block_expr, block_idx):
+        space_expr = []
+        grid_size = 1
+        for ax_len, tile_len in zip(reversed(self.get_shape()), reversed(tile_map[self])):
+            num_block = int(np.ceil(ax_len / tile_len))
+            grid_size *= num_block
+            space_expr.append(block_expr % num_block * tile_len)
+            block_expr = block_expr // num_block
+        output_exprs = {name : reversed(space_expr) for name in self._output_names}
+        input_exprs = self.ana.get_input_exprs(output_exprs)
+        result = {}
+        ana = arith.Analyzer()
+        ana.update(block_idx, arith.ConstIntBound(0, grid_size - 1))
+        for i in range(len(self.inputs)):
+            block_expr = 0
+            inode = self.inputs[i].src_node
+            if isinstance(inode, PlaceHolderNode):
+                continue
+            for expr, ax_len, tile_len in zip(input_exprs[self._input_args[i].name], inode.get_shape(), tile_map[inode]):
+                num_block = int(np.ceil(ax_len / tile_len))
+                block_expr = block_expr * num_block + tvm.te.max(expr // tile_len, 0)
+            result[i] = ana.simplify(block_expr)
         return result
 
     # axis name -> axis length

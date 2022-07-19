@@ -26,7 +26,7 @@ Supporting opset11, use ./testing/torch2onnx.py to get some supported models.
 nnfusion model.onnx -f onnx -ftune_output_file=model.json -fconst_folding_backend="CUDA" &&
 python3 -m run_compiler model.json tuned.json --device 0 --topk 10 &&
 nnfusion model.onnx -f onnx -ftune_output_file=model.json -fconst_folding_backend="CUDA" -ftune_input_file=tuned.json &&
-cmake -S nnfusion_rt/cuda_codegen/ -B nnfusion_rt/cuda_codegen/build/ &&
+rm -rf nnfusion_rt/cuda_codegen/build/ && cmake -S nnfusion_rt/cuda_codegen/ -B nnfusion_rt/cuda_codegen/build/ &&
 make -C nnfusion_rt/cuda_codegen/build/
 ```
 This will extract the IR compute graph first (first line).

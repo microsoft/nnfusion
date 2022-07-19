@@ -209,7 +209,8 @@ def compose_global_kernel(output_nodes, configs, target, name) -> CompileResult:
 
         with Scope(sch) as scope:
             func_name = "_".join([name, str(device_func_uid), op.name])
-            kernel_code = tvm_build(sch, op.args, target, shared_outputs, shared_inputs, name=func_name, global_kernel=False)
+            kernel_code = tvm_build(sch, op.args, target, shared_outputs, shared_inputs, name=func_name, global_kernel=False,
+                block_reorder=config["block_reorder"] if "block_reorder" in config else None)
             if block_size is None:
                 block_size = scope.block_size
                 grid_size = scope.grid_size

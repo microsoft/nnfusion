@@ -1,11 +1,12 @@
 import functools
 from arch.Arch import Arch
-from memopt.graph import find_topo_sort
+from memopt.graph import OutputNode, find_topo_sort
 import numpy as np
 from memopt.bestfit import BestFit
 from .utils import TileInfo
 from queue import PriorityQueue
 import math
+import tvm
 
 def get_all_factors(n: int):
     n0 = int(np.ceil(np.sqrt(n)))
@@ -77,6 +78,11 @@ class DefaultPolicy:
             # info = self.compute_smem_tile_meta_data(self.get_tile_map(tile), final_rstep_map)
             # print(tile, final_rstep_map, info.smem_cost, info.num_wave, info.block_per_SM)
             codegen_dicts = self.assign_block_size(tile, final_rstep_map)
+
+            # handle cases where block is not ordinal (e.g. transpose)
+            block_orders = self._assign_block_order(tile)
+            for node, block_order in block_orders.items():
+                codegen_dicts[node]["block_reorder"] = block_order
             results.append(codegen_dicts)
             if len(results) >= topk:
                 break
@@ -381,6 +387,31 @@ class DefaultPolicy:
         result = {}
         for node in self.ordered_nodes:
             result[node] = self._assign_block_size(node, tile_map[node], rstep_map[node], recommended_block_size)
+        return result
+
+    def _assign_block_order(self, output_tile):
+        tile_map = self.get_tile_map(output_tile)
+        _, tile_map = self._compute_memory_footprint(tile_map)
+        queue = [node for node in self.output_nodes]
+        block_idx = tvm.te.var("block_idx")
+        block_idx_map = {node : block_idx for node in self.output_nodes}
+        result = {}
+        while len(queue) > 0:
+            node = queue.pop(0)
+            if isinstance(node, OutputNode):
+                block_idx_map[node.inputs[0].src_node] = block_idx_map[node]
+                queue.append(node.inputs[0].src_node)
+                continue
+
+            deps = node.block_infer(tile_map, block_idx_map[node], block_idx)
+            for i, edge in enumerate(node.inputs):
+                if edge.src_node.is_placeholder():
+                    continue
+                elif edge.src_node not in block_idx_map:
+                    block_idx_map[edge.src_node] = deps[i]
+                    queue.append(edge.src_node)
+                    if not (deps[i].same_as(block_idx) or isinstance(deps[i], tvm.tir.expr.ConstExpr)):
+                        result[edge.src_node] = deps[i]
         return result
 
     def _assign_block_size(self, node, tile, rstep_map, block_size):

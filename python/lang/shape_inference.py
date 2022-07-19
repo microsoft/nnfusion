@@ -46,13 +46,20 @@ class InputShapeInference():
         shape = self._infer(shape, rstep)
         return shape
 
-    def get_reduction_inputs(self):
-        # see what inputs are required in reductions stage.
-        result = []
+    def get_input_exprs(self, output_exprs):
+        result = output_exprs.copy()
+        ana = arith.Analyzer()
         for dep in reversed(self.deps):
-            if len(dep.range_map) > 0 or dep.output in result:
-                for name in dep.dependent_region:
-                    result.append(name)
+            for var, expr in zip(dep.var_map.values(), result[dep.output]):
+                ana.bind(var, expr)
+            for var in dep.range_map:
+                ana.bind(var, 0)
+            for name, regions in dep.dependent_region.items():
+                if name in result:
+                    continue
+                region = regions[0]
+                input_expr = [ana.simplify(index) for index in region]
+                result[name] = input_expr
         return result
 
 def get_analyzer(expr: str, input_dict: dict, extra_outputs: Iterable=[]) -> InputShapeInference:

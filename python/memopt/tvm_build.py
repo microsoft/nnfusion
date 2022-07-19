@@ -25,7 +25,29 @@ def get_block_flatten_code(block_size):
     else: # not possible in our schedule
         raise NotImplementedError()
 
-def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_name, global_kernel=True, flatten_block=True):
+_c_op_map = {tvm.tir.FloorMod : '%', tvm.tir.FloorDiv : "/", tvm.tir.Add : "+", tvm.tir.Sub : "-", tvm.tir.Mul: "*"}
+
+def _lower_C_simple(expr : tvm.tir.PrimExpr) -> str:
+    if isinstance(expr, tvm.tir.expr.BinaryOpExpr):
+        left = _lower_C_simple(expr.a)
+        right = _lower_C_simple(expr.b)
+        if type(expr) in _c_op_map:
+            return "({} {} {})".format(left, _c_op_map[type(expr)], right)
+        else:
+            raise NotImplementedError(expr)
+    elif isinstance(expr, tvm.tir.expr.Var):
+        assert expr.name == "block_idx"
+        return "__bid"
+    elif isinstance(expr, tvm.tir.expr.ConstExpr):
+        return str(expr.value)
+    else:
+        raise NotImplementedError(expr)
+
+def get_block_reorder_code(block_reoder_expr : tvm.tir.PrimExpr) -> str:
+    return "  int __bid = blockIdx.x;\n  const dim3 blockIdx({}, 0, 0);\n"\
+        .format(_lower_C_simple(block_reoder_expr))
+
+def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_name, global_kernel=True, block_reorder=None, flatten_block=True):
     scope = get_scope()
     passes = [
         (0, modify_output_pass),
@@ -53,6 +75,9 @@ def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_
             flat_block_code = get_block_flatten_code(scope.block_size)
             scope.block_size = [int(np.prod(scope.block_size)), 1, 1]
             src = src[:index+2] + flat_block_code + src[index+2:]
+        if block_reorder is not None:
+            block_reorder_code = get_block_reorder_code(block_reorder)
+            src = src[:index+2] + block_reorder_code + src[index+2:]
         if global_kernel:
             prefix = "__global__ void __launch_bounds__(%d) " % np.prod(scope.block_size)
         else:

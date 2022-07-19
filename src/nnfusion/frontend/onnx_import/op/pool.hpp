@@ -41,12 +41,27 @@ namespace nnfusion
                                     std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
+                    Shape input_shape = input_gnode->get_shape();
                     Node node(node_proto);
+                    bool reshaped = false;
 
                     // Parse ONNX op attributes
                     Shape kernel_shape;
                     if (node_proto.op_type().find("Global") != std::string::npos)
                     {
+                        if (input_shape.size() == 3)
+                        {
+                            // extend to 4 dim
+                            nnfusion::Shape extended_shape(input_shape);
+                            nnfusion::AxisVector ng_axis_order(extended_shape.size());
+                            std::iota(ng_axis_order.begin(), ng_axis_order.end(), 0);
+                            extended_shape.push_back(1);
+                            auto reshape_op =
+                                std::make_shared<op::Reshape>(ng_axis_order, extended_shape);
+                            input_gnode = m_graph->add_node_and_edge(reshape_op, {input_gnode});
+                            reshaped = true;
+                        }
+
                         kernel_shape = input_gnode->get_shape();
                         // Remove N and C dimensions and leave only spatial dims.
                         kernel_shape.erase(std::begin(kernel_shape),
@@ -85,11 +100,30 @@ namespace nnfusion
                             kernel_shape, strides, padding_below_shape, padding_above_shape);
                     }
 
-                    pool_op->set_name(node_proto.output(0));
-                    auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode});
-
-                    NamedNodeVector ret{{node_proto.output(0), pool_gnode}};
-                    return ret;
+                    if (reshaped)
+                    {
+                        auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode});
+                        // shrink to 3 dim
+                        nnfusion::Shape shrink_shape(pool_gnode->get_shape());
+                        NNFUSION_CHECK(shrink_shape.size() == 4 && shrink_shape[3] == 1)
+                            << shrink_shape;
+                        nnfusion::AxisVector ng_axis_order(shrink_shape.size());
+                        std::iota(ng_axis_order.begin(), ng_axis_order.end(), 0);
+                        shrink_shape.pop_back();
+                        auto reshape_op =
+                            std::make_shared<op::Reshape>(ng_axis_order, shrink_shape);
+                        reshape_op->set_name(node_proto.output(0));
+                        auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {pool_gnode});
+                        NamedNodeVector ret{{node_proto.output(0), reshape_gnode}};
+                        return ret;
+                    }
+                    else
+                    {
+                        pool_op->set_name(node_proto.output(0));
+                        auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode});
+                        NamedNodeVector ret{{node_proto.output(0), pool_gnode}};
+                        return ret;
+                    }
                 }
 
             } // namespace set_1

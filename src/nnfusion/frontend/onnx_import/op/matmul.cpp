@@ -50,7 +50,7 @@ namespace nnfusion
                     NNFUSION_CHECK(!adj_x && !adj_y) << "transpose matmul not supported";
                     // numpy matmul: https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.matmul.html
 
-                    // optimzed for a general pattern in BERT, otherwise rt_const_folding staticly folds broadcast operation.
+                    // optimized for a general pattern in BERT, otherwise rt_const_folding staticly folds broadcast operation.
                     if (lhs_rank >= 2 && rhs_rank == 2)
                     {
                         auto dot_op = std::make_shared<nnfusion::op::Dot>(0, false, adj_x, adj_y);

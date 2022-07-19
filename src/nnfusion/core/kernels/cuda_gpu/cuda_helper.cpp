@@ -184,8 +184,8 @@ void cuda::simplify_reduce_shape(NVShape in,
     // Clear simplified_shape and axis
     simplified_shape.clear();
     simplified_reduce_axis.clear();
-    // Combine axis if there is two or more adjeciant reuce_axis
-    // combine axis if there is two or more adjeciant non_reuce_axis
+    // Combine axis if there is two or more adjacent reduce_axis
+    // combine axis if there is two or more adjacent non_reduce_axis
     // update combined shape and axis
     NVShape combined_reduce_axis;
     NVShape adj_map(rank, 0);

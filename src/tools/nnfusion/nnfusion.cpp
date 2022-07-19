@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     shared_ptr<nnfusion::graph::Graph> graph = nullptr;
     if (format == "tensorflow")
     {
-        // load tensorlfow model as graph
+        // load tensorflow model as graph
         graph = nnfusion::frontend::load_tensorflow_model(model);
     }
 #if TORCHSCRIPT_FRONTEND

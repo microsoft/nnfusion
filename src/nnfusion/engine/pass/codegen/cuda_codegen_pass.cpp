@@ -321,7 +321,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 }
             }
 
-            std::string call_str = fu->get_specialized_funciton_call(func_name);
+            std::string call_str = fu->get_specialized_function_call(func_name);
             // todo: this hack is to eliminate d2d copy caused by extern result memory
             if (FLAGS_fextern_result_memory && gnode)
             {

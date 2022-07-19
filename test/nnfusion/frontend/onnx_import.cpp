@@ -1419,7 +1419,7 @@ TEST(nnfusion_onnx_import, trainable_dropout_op)
     auto model = frontend::load_onnx_model(
         file_util::path_join(SERIALIZED_ZOO, "onnx/trainable_dropout.onnx"));
 
-    float dropout_raito = 0.5;
+    float dropout_ratio = 0.5;
     vector<float> input(2 * 128 * 1024, 1);
     RawInputs raw_inputs;
     // (2, 128, 1024)
@@ -1444,7 +1444,7 @@ TEST(nnfusion_onnx_import, trainable_dropout_op)
     {
         if (mask[i])
         {
-            EXPECT_EQ(output[i], input[i] / (1 - dropout_raito));
+            EXPECT_EQ(output[i], input[i] / (1 - dropout_ratio));
         }
         else
         {
@@ -1454,7 +1454,7 @@ TEST(nnfusion_onnx_import, trainable_dropout_op)
     }
 
     auto ratio = (float)num_output_zero / input.size();
-    EXPECT_NEAR(ratio, dropout_raito, 0.02);
+    EXPECT_NEAR(ratio, dropout_ratio, 0.02);
 }
 
 TEST(nnfusion_onnx_import, depthtospace_dcr_op)

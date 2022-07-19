@@ -31,7 +31,7 @@ namespace nnfusion
     public:
         virtual ~TypeInfo() = default;
         // Helper functions to request information about the underlying c-type
-        // that is implicitly associated with the registed element::Type
+        // that is implicitly associated with the registered element::Type
         virtual std::string lowest() const = 0;
         virtual std::string min() const = 0;
         virtual std::string max() const = 0;

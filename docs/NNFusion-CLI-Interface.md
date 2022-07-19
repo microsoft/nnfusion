@@ -45,7 +45,7 @@
 ### Engine
 |Name|Default|Message|
 |-|-|-|
-|-fdefault_device|CUDA|Choose defualt device from [CUDA, CPU, ROCm, HLSL] in the codegen.|
+|-fdefault_device|CUDA|Choose default device from [CUDA, CPU, ROCm, HLSL] in the codegen.|
 
 ### Utility
 |Name|Default|Message|

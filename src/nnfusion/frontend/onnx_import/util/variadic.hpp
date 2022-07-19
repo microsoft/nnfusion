@@ -42,7 +42,7 @@ namespace ngraph
             ///        This creates a subgraph with a series of binary operations.
             ///
             /// \tparam T Class of an nGraph binary operation (e.g. Add, Minimum, Maximum)
-            /// \param node incoming ONNX opearation
+            /// \param node incoming ONNX operation
             /// \return nGraph node equivalent of the ONNX operation
             template <class T>
             inline NodeVector make_ng_variadic_op(const Node& node)

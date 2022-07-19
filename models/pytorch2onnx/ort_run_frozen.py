@@ -126,7 +126,7 @@ for warmup in range(args.warmup):
             # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
 
 if args.iters > 0:
-    print('>> Evalutating Benchmark ...')
+    print('>> Evaluating Benchmark ...')
     t_start = time.time()
     for step in range(args.iters):
         ort_session.run(outputs_name, ort_inputs)

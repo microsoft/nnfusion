@@ -74,7 +74,7 @@ public:
     {
         auto gnodes = m_graph->get_ordered_ops();
 
-        // Step 1: find all the MatMul opterators and group them using their hash value.
+        // Step 1: find all the MatMul operators and group them using their hash value.
         std::unordered_map<size_t, int> hash_to_gid;
         std::vector<std::shared_ptr<MatGroup>> merge_groups;
 

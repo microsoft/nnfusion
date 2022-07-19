@@ -346,7 +346,7 @@ LanguageUnit_p BaseCodegenPass::codegen_workspace_size(std::shared_ptr<Translati
         total_alloc += allocator.second->max_allocated();
     }
 
-    *lu_workspace << "int get_workspace_size()\n{\n";
+    *lu_workspace << "uint64_t get_workspace_size()\n{\n";
     *lu_workspace << "    return " << total_alloc << ";\n";
     *lu_workspace << "}\n";
     return lu_workspace;

@@ -128,3 +128,8 @@ def Restormer(batch_size):
     input = torch.randn(batch_size, 3, 256, 256)
     return model, (input, )
 
+def mobilevit(batch_size):
+    from .mobilevit import mobilevit_s
+    model = mobilevit_s()
+    input = torch.randn(batch_size, 3, 256, 256)
+    return model, (input, )

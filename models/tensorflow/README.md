@@ -38,7 +38,7 @@ cd nnfusion_rt/cuda_codegen/
 cmake . && make
 ./main_test
 ```
-The test will iterattively run the mdoel for 100 times and calculate the average latency. The example logs will look like:
+The test will iterattively run the model for 100 times and calculate the average latency. The example logs will look like:
 ```
 Result_2261_0: 
 8.921492e-03 1.182089e-02 8.937407e-03 7.932202e-03 1.574193e-02 3.844392e-03 -1.505094e-02 -1.112035e-02 5.026605e-03 -8.032203e-03  .. (size = 256, ends with 1.357487e-02);

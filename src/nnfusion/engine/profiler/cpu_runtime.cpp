@@ -209,10 +209,10 @@ bool ReferenceRuntime::compile(const ProfilingContext::Pointer& ke)
     int ret = system(("gcc\t-fPIC\t-shared\t-std=c++11\t" + srcname + "\t-o\t" + objname).c_str());
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
         return false;
@@ -612,7 +612,7 @@ add_library(${TARGET_NAME} SHARED ${SOURCE_FILE})
         if (it.second->symbol == "header::cblas")
         {
             lu_cmake << R"(
-set(NNFUSION_THIRDPARTY_FOLDER "~/repo/Thirdparty" CACHE STRING "NNFusion Thirdpary libraries folder location")
+set(NNFUSION_THIRDPARTY_FOLDER "~/repo/Thirdparty" CACHE STRING "NNFusion Thirdparty libraries folder location")
 if(EXISTS "${NNFUSION_THIRDPARTY_FOLDER}")
 else()
 message(SEND_ERROR "NNFUSION_THIRDPARTY_FOLDER not exists." )
@@ -840,10 +840,10 @@ bool CPUDefaultRuntime::compile(const ProfilingContext::Pointer& ke)
     int ret = system((cmd.c_str()));
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
         return false;
@@ -872,7 +872,7 @@ bool CPUDefaultRuntime::general_compile()
     int ret = system((cmd.c_str()));
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
 
     status = chdir("../");
@@ -918,7 +918,7 @@ double
 
     std::string objname = working_dir + std::string("libcpu_kernel_prof") + DLIB_SUFFIX;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
     {

@@ -49,7 +49,7 @@ namespace nnfusion
                     }
                     auto num_inputs = data_types.size() - 1;
                     NNFUSION_CHECK(num_inputs > 0)
-                        << "At least one input and one output tesnor for elementwise-op.";
+                        << "At least one input and one output tensor for elementwise-op.";
 
                     lu << op << "_" << data_size << "(thread_pool, ";
                     for (size_t i = 0; i < num_inputs; ++i)

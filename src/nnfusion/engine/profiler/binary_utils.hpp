@@ -34,11 +34,11 @@ namespace nnfusion
         // test.cu contains test_simple(void** args) entry point;
         // test.cu -> test.so
         // This doodad finds the full path of the containing shared library
-        bool file_exsits(std::string filename);
+        bool file_exists(std::string filename);
 
         DL_HANDLE get_library_handle(std::string object_name);
 
-        void* get_funcion_pointer(std::string func_name, DL_HANDLE handle);
+        void* get_function_pointer(std::string func_name, DL_HANDLE handle);
 
         void close_library_handle(DL_HANDLE& handle);
 

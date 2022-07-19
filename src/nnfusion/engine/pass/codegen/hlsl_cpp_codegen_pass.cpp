@@ -326,7 +326,7 @@ void HLSLCPPCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> 
     auto& lu_header = *lup_header;
 
     lu_header << "extern \"C\" RUNTIME_API int get_device_type();\n";
-    lu_header << "extern \"C\" RUNTIME_API int get_workspace_size();\n";
+    lu_header << "extern \"C\" RUNTIME_API int64_t get_workspace_size();\n";
     lu_header << "extern \"C\" RUNTIME_API int kernel_entry";
     if (FLAGS_fhost_entry)
         lu_header << "_host";

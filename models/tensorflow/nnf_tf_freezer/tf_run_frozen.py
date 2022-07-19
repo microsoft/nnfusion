@@ -132,7 +132,7 @@ with tf.Session(graph=graph, config=config) as sess:
                 # max_len = min(10, len(out_flat) - print_offset)
                 # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
 
-    print('>> Evalutating Benchmark ...')
+    print('>> Evaluating Benchmark ...')
     num_steps = args.iters
     t_start = time.time()
     for step in range(num_steps):

@@ -321,7 +321,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 }
             }
 
-            std::string call_str = fu->get_specialized_funciton_call(func_name);
+            std::string call_str = fu->get_specialized_function_call(func_name);
             // todo: this hack is to eliminate d2d copy caused by extern result memory
             if (FLAGS_fextern_result_memory && gnode)
             {
@@ -1116,7 +1116,7 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
 
         lu_header << header::cuda_fp16->get_code();
     lu_header << "extern \"C\" int get_device_type();\n";
-    lu_header << "extern \"C\" int get_workspace_size();\n";
+    lu_header << "extern \"C\" int64_t get_workspace_size();\n";
     lu_header << "extern \"C\" int kernel_entry";
     if (FLAGS_fhost_entry)
         lu_header << "_host";

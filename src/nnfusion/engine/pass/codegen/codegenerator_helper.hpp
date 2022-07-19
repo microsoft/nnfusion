@@ -31,7 +31,7 @@ namespace nnfusion
             string suffix_str = ".cu";
 
             /*
-            Origninal FunctionUnit includes:
+            Original FunctionUnit includes:
             LanguageUnit_p name_unit;
             LanguageUnit_p signature_unit; // void (float* input0, float* input1, float* output0)
             LanguageUnit_p body_unit;
@@ -42,7 +42,7 @@ namespace nnfusion
             Based on the profiler's codegen:
                 1. put dep_unit into extern; ------------------> in to function.cu
                 2. put sig & body into single file; -----------^
-                3. generate extern function def from sig; -----> Replacing original funciton def
+                3. generate extern function def from sig; -----> Replacing original function def
 
             In the cmakelist files:
                 1. Compiling <function>.cu in to objects <function>;

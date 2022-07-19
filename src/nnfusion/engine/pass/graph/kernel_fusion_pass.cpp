@@ -76,7 +76,7 @@ public:
     KernelFuseOptimizer(std::shared_ptr<Graph> g)
         : m_graph(g)
     {
-        // reserved for careating new nodes during the optimization
+        // reserved for creating new nodes during the optimization
         const size_t empty_node_ids = 10000;
         m_nodes.resize(m_graph->get_max_node_id() + empty_node_ids);
 

@@ -13,7 +13,7 @@ This figure lists some commonly-used frozen models that are well tested with NNF
 | BERT_large_L2      | inference | frozen |
 | deepspeech2        | inference | frozen |
 | nasnet_cifar       | inference | frozen |
-| resnext            | inference | frozen |
+| resnet            | inference | frozen |
 | seq2seq            | inference | frozen |
 
 Note: If your model is not supported by NNFusion, you're welcome to file an issue on our project or to contribute.

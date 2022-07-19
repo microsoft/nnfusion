@@ -107,7 +107,7 @@ LanguageUnit_p ir::Function::codegen_source()
     definition_unit->clean_require();
     test_unit->clean_require();
 
-    // orgaize dep
+    // organize dep
     this->definition_unit->require(this->dep_unit);
     NNFUSION_CHECK(this->call_unit->require(this->definition_unit));
     NNFUSION_CHECK(this->test_unit->require(this->definition_unit));

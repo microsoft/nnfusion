@@ -209,7 +209,7 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
                 {
-                    // do not add requre
+                    // do not add require
                 }
                 else
                 {

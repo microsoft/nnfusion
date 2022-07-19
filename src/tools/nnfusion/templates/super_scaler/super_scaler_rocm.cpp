@@ -192,18 +192,18 @@ void super_scaler_initialization()
     NNSCALER_MPICHECK(MPI_Comm_size(MPI_COMM_WORLD, &super_scaler_nRanks));
 
     //calculating super_scaler_localRank which is used in selecting a GPU
-    uint64_t hostHashs[super_scaler_nRanks];
+    uint64_t hostHashes[super_scaler_nRanks];
     char hostname[1024];
     super_scaler_getHostName(hostname, 1024);
-    hostHashs[super_scaler_myRank] = super_scaler_getHostHash(hostname);
+    hostHashes[super_scaler_myRank] = super_scaler_getHostHash(hostname);
     NNSCALER_MPICHECK(MPI_Allgather(
-        MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, hostHashs, sizeof(uint64_t), MPI_BYTE, MPI_COMM_WORLD));
+        MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, hostHashes, sizeof(uint64_t), MPI_BYTE, MPI_COMM_WORLD));
 
     // printf("[SuperScaler:Info] TotalRank = %d; MyRank = %d; HostName = %s; HostHash = %u;\n",
     //       super_scaler_nRanks,
     //       super_scaler_myRank,
     //       hostname,
-    //       hostHashs[super_scaler_myRank]);
+    //       hostHashes[super_scaler_myRank]);
     auto dev_no = getenv("NNFUSION_DEV_NO");
     if (dev_no == nullptr)
     {
@@ -214,7 +214,7 @@ void super_scaler_initialization()
             {
                 break;
             }
-            if (hostHashs[p] == hostHashs[super_scaler_myRank])
+            if (hostHashes[p] == hostHashes[super_scaler_myRank])
             {
                 super_scaler_localRank++;
             }

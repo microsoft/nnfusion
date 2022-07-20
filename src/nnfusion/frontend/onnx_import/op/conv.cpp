@@ -78,10 +78,10 @@ namespace nnfusion
                     {
                         conv_data_format = "NCHW";
                     }
-                    // else if (data_shape.size() == 5)
-                    // {
-                    //     conv_data_format = "NCDHW";
-                    // }
+                    else if (data_shape.size() == 5)
+                    {
+                        conv_data_format = "NCDHW";
+                    }
                     else
                     {
                         NNFUSION_CHECK_FAIL() << "Convolution with dimensions of "
@@ -168,7 +168,7 @@ namespace nnfusion
                             strides, dilations, padding_below, padding_above, conv_data_format);
                         conv_node = m_graph->add_node_and_edge(conv_op, {data, filters});
                     }
-                    else
+                    else if (conv_data_format == "NCHW")
                     {
                         // split data and filters for group conv
                         std::size_t n_data_channels{data_shape.at(1)};
@@ -263,6 +263,10 @@ namespace nnfusion
                                 std::make_shared<op::Concat>(concatenation_axis),
                                 convolution_nodes);
                         }
+                    }
+                    else
+                    {
+                        NNFUSION_CHECK_FAIL() << "Not support this Convolution yet.";
                     }
 
                     // add bias

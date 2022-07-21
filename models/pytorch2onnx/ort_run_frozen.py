@@ -99,6 +99,8 @@ for k, v in args.symbolic_dims.items():
 providers = args.provider.split(",")
 if "CPUExecutionProvider" not in providers:
     providers.append("CPUExecutionProvider")
+if 'CUDAExecutionProvider' in ort.get_available_providers() and 'CUDAExecutionProvider' not in providers:
+    providers = ['CUDAExecutionProvider'] + providers
 
 ort_session = ort.InferenceSession(args.file, sess_options, providers=providers)
 
@@ -126,7 +128,7 @@ for warmup in range(args.warmup):
             # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
 
 if args.iters > 0:
-    print('>> Evalutating Benchmark ...')
+    print('>> Evaluating Benchmark ...')
     t_start = time.time()
     for step in range(args.iters):
         ort_session.run(outputs_name, ort_inputs)

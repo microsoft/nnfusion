@@ -15,7 +15,7 @@ if [ $? -ne 0 ]; then
     echo "Code style check failed. Please using apply_code_style.sh to apply code style."
     exit 1
 else
-    echo "Code style check succeded."
+    echo "Code style check succeeded."
 fi
 
 # build the repo
@@ -29,7 +29,7 @@ if [ $? -ne 0 ]; then
     echo "CMake failed."
     exit 1
 else
-    echo "CMake succeded."
+    echo "CMake succeeded."
 fi
 
 # Make
@@ -39,7 +39,7 @@ if [ $? -ne 0 ]; then
     echo "Build failed."
     exit 1
 else
-    echo "Build succeded."
+    echo "Build succeeded."
 fi
 
 if [ -f "/.dockerenv" ]; then
@@ -50,7 +50,7 @@ if [ -f "/.dockerenv" ]; then
         echo "Install failed."
         exit 1
     else
-        echo "Install succeded."
+        echo "Install succeeded."
     fi
 fi
 

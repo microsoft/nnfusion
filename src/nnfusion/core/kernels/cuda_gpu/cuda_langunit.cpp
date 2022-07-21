@@ -1673,7 +1673,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward) 
+// The code below(from the definition of softmax_warp_forward to the definition of dispatch_softmax_forward) 
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.
@@ -1908,7 +1908,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward) 
+// The code below(from the definition of softmax_warp_forward to the definition of dispatch_softmax_forward) 
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.

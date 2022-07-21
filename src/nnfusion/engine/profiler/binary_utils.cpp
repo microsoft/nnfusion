@@ -8,7 +8,7 @@ namespace nnfusion
 {
     namespace profiler
     {
-        bool file_exsits(std::string filename)
+        bool file_exists(std::string filename)
         {
             std::ifstream ifile(filename.c_str());
             return (bool)ifile;
@@ -16,7 +16,7 @@ namespace nnfusion
 
         DL_HANDLE get_library_handle(std::string object_name)
         {
-            if (!file_exsits(object_name))
+            if (!file_exists(object_name))
             {
                 NNFUSION_LOG(ERROR) << "Failed compiling the target source file.";
                 return nullptr;
@@ -37,7 +37,7 @@ namespace nnfusion
             return handle;
         }
 
-        void* get_funcion_pointer(std::string func_name, DL_HANDLE handle)
+        void* get_function_pointer(std::string func_name, DL_HANDLE handle)
         {
             void* fhdl = DLSYM(handle, func_name.c_str());
             return fhdl;

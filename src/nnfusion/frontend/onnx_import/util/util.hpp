@@ -55,6 +55,7 @@ namespace nnfusion
                 inline std::vector<T> get_data(const onnx::TensorProto& tensor)
                 {
                     NNFUSION_CHECK_FAIL()
+                        << tensor.name() << " "
                         << "unsupported data type: "
                         << static_cast<onnx::TensorProto_DataType>(tensor.data_type());
                     return std::vector<T>();
@@ -97,6 +98,7 @@ namespace nnfusion
                     {
                         return __get_raw_data<float>(tensor.raw_data());
                     }
+
                     if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT16)
                     {
                         nnfusion::Shape shape{std::begin(tensor.dims()), std::end(tensor.dims())};
@@ -147,7 +149,6 @@ namespace nnfusion
                     {
                         return  __get_raw_data<half_float::half>(tensor.raw_data());
                     }
-
                 }
 
                 template <>

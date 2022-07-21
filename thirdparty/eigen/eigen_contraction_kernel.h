@@ -310,10 +310,10 @@ struct DirectColMajorAccess {
       data = Side == Lhs ? data : data + vert_offset + horiz_offset * stride;  \
                                                                                \
       const bool is_no_op_packing = stride == rows;                            \
-      const StorageIndex adressable_mem = (stride * cols * sizeof(Scalar));    \
+      const StorageIndex addressable_mem = (stride * cols * sizeof(Scalar));    \
       const bool use_direct_access =                                           \
           is_no_op_packing || num_kernels == 1 /* used once */ ||              \
-          ((num_kernels == 2) && (adressable_mem < (256 << 10) /* 256 kb */)); \
+          ((num_kernels == 2) && (addressable_mem < (256 << 10) /* 256 kb */)); \
                                                                                \
       if (use_direct_access) {                                                 \
         block->is_direct_access = true;                                        \

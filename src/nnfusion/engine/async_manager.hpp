@@ -23,7 +23,7 @@ namespace nnfusion
 }
 
 // Stream of nnfusion can represent the stream of gpu and the thread of cpu.
-// NNfuison stream managed by CPUAsyncManager is thread while by CUDAAsyncManager is stream.
+// NNfusion stream managed by CPUAsyncManager is thread while by CUDAAsyncManager is stream.
 class nnfusion::async::Stream
 {
 public:
@@ -56,7 +56,7 @@ private:
 };
 
 // Event of nnfusion can represent the event of gpu and the barrier of cpu.
-// NNfuison event managed by CPUAsyncManager is barrier while by CUDAAsyncManager is event.
+// NNfusion event managed by CPUAsyncManager is barrier while by CUDAAsyncManager is event.
 class nnfusion::async::Event
 {
 public:

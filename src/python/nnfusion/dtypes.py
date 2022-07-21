@@ -10,6 +10,12 @@ TypeObject = collections.namedtuple(
     "TypeObject", ["type_str", "c_type", "torch_type", "numpy_type"])
 
 str2type = {
+    "half":
+        TypeObject._make(["float16", ctypes.c_uint16, torch.float16,
+                          numpy.float16]),
+    "float16":
+        TypeObject._make(["float16", ctypes.c_uint16, torch.float16,
+                          numpy.float16]),
     "float":
     TypeObject._make(["float32", ctypes.c_float, torch.float32,
                       numpy.float32]),

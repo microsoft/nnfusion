@@ -63,6 +63,7 @@
 #include "op/pool.hpp"
 #include "op/range.hpp"
 #include "op/reduce.hpp"
+#include "op/reducel2.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
 #include "op/roll.hpp"
@@ -228,7 +229,7 @@ namespace nnfusion
                 //REGISTER_OPERATOR("ReduceLogSum", 1, reduce_log_sum);
                 //REGISTER_OPERATOR("ReduceLogSumExp", 1, reduce_log_sum_exp);
                 //REGISTER_OPERATOR("ReduceL1", 1, reduce_l1);
-                //REGISTER_OPERATOR("ReduceL2", 1, reduce_l2);
+                REGISTER_OPERATOR("ReduceL2", 1, TranslateReduceL2Op);
                 //REGISTER_OPERATOR("ReduceMax", 1, reduce_max);
                 REGISTER_OPERATOR("ReduceMean", 1, TranslateReduceMeanOp);
                 //REGISTER_OPERATOR("ReduceMin", 1, reduce_min);

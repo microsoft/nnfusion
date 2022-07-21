@@ -416,7 +416,7 @@ void FusedGNode::set_inputs_and_outputs(std::shared_ptr<Graph> graph)
         m_op_ctxs.push_back(ctx);
     }
 
-    // Regirster input tensors
+    // Register input tensors
     for (const auto& m_node : m_order_nodes)
     {
         // Add non-control-edges as inputs of fused node

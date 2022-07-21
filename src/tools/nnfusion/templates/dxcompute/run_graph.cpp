@@ -31,17 +31,17 @@ int main(int argc, char** argv)
 
     if (profCostDict.size() > 0)
     {
-        double evalutate_sum = 0.0;
+        double evaluate_sum = 0.0;
         std::multimap<double, std::wstring> orderedProf;
         for (auto& it : profCostDict)
         {
             double timecost = it.second.first * it.second.second;
-            evalutate_sum += timecost;
+            evaluate_sum += timecost;
             orderedProf.insert(std::make_pair(timecost, it.first));
         }
         for (auto it = orderedProf.rbegin(); it != orderedProf.rend(); ++it)
         {
-            auto ratio = std::to_wstring(it->first * 1e2 / evalutate_sum);
+            auto ratio = std::to_wstring(it->first * 1e2 / evaluate_sum);
             if (ratio.size() > 6)
                 ratio = ratio.substr(0, 6);
             printf("%8ls%%  %6d  %4.8lf\t%ls\n",
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
                    it->first,
                    it->second.c_str());
         }
-        printf("DxCompute Time per Run for [Profile Sum] = %g sec.\n", evalutate_sum);
+        printf("DxCompute Time per Run for [Profile Sum] = %g sec.\n", evaluate_sum);
     }
 
     evaluateQueue(cmdQueue, "Standard Queue");

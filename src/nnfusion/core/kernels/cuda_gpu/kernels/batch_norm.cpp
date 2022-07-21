@@ -9,7 +9,7 @@ using namespace nnfusion::kernels;
 cuda::BatchNorm::BatchNorm(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {
-    // nnfusion::op::BatchNormInferece <-> nnfusion::ir::BatchNorm
+    // nnfusion::op::BatchNormInference <-> nnfusion::ir::BatchNorm
     auto bn_op = static_pointer_cast<nnfusion::op::BatchNormInference>(ctx->gnode->get_op_ptr());
     dtype = nnfusion::element::Type(ctx->outputs[0]->get_element_type());
     // <todo> need to check the index
@@ -95,7 +95,7 @@ LanguageUnit_p cuda::BatchNorm::emit_function_signature()
     {
         stringstream ss;
         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-        // defult name is: "persit0", "persist1" ...
+        // default name is: "persit0", "persist1" ...
         ss << m_context->tensors[i]->get_name();
         params.push_back(ss.str());
     }
@@ -108,7 +108,7 @@ LanguageUnit_p cuda::BatchNorm::emit_function_signature()
 cuda::BatchNormNCHW::BatchNormNCHW(shared_ptr<KernelContext> ctx)
     : BlockCudaEmitter(ctx)
 {
-    // nnfusion::op::BatchNormInferece <-> nnfusion::ir::BatchNormNCHW
+    // nnfusion::op::BatchNormInference <-> nnfusion::ir::BatchNormNCHW
     auto bn_op = static_pointer_cast<nnfusion::op::BatchNormInference>(ctx->gnode->get_op_ptr());
     dtype = nnfusion::element::Type(ctx->outputs[0]->get_element_type());
     // <todo> need to check the index
@@ -168,13 +168,22 @@ LanguageUnit_p cuda::BatchNormNCHW::emit_function_body()
     {
         lu << alpha << " * ";
     }
-    lu << "(input1[c_id] + (input0[c_id] * "
-          "(input2[st + i] - input3[c_id]) / sqrtf("
-       << epsilon << " + input4[c_id])));\n";
-    // lu << "output0[st + i] = " << beta << " * output0[st + i] + " << alpha
-    //    << " * (input1[c_id] + (input0[c_id] * "
-    //       "(input2[st + i] - input3[c_id]) / sqrtf("
-    //    << epsilon << " + input4[c_id])));\n";
+    /*
+     * todo: may have better solution, details in https://github.com/microsoft/nnfusion/issues/434
+     * */
+    if(dtype == nnfusion::element::f16){
+        lu << "output0[st + i] = __hadd(input1[c_id] , __hdiv(__hmul(input0[c_id], __hsub(input2[st + i], input3[c_id])), sqrtf(__hadd(__float2half("
+           << epsilon << "), input4[c_id]))));\n";
+    }else{
+        lu << "(input1[c_id] + (input0[c_id] * "
+              "(input2[st + i] - input3[c_id]) / sqrtf("
+           << epsilon << " + input4[c_id])));\n";
+        // lu << "output0[st + i] = " << beta << " * output0[st + i] + " << alpha
+        //    << " * (input1[c_id] + (input0[c_id] * "
+        //       "(input2[st + i] - input3[c_id]) / sqrtf("
+        //    << epsilon << " + input4[c_id])));\n";
+    }
+
     lu.block_end();
 
     return _lu;

@@ -109,7 +109,7 @@ class Executor(object):
         elif hasattr(self.libnnf, "kernel_entry"):
             self.kernel_entry = self.libnnf.kernel_entry
         else:
-            raise Exception("No kernel_entry found in nnfurion_rt")
+            raise Exception("No kernel_entry found in nnfusion_rt")
         device_type = self.get_device_type()
         if device_type not in self.device_type_map:
             raise Exception(f"Unknown device type: {device_type}")
@@ -233,7 +233,7 @@ class Executor(object):
         get_workspace_size = getattr(self.libnnf, 'get_workspace_size', None)
         if get_workspace_size is None:
             return None
-
+        get_workspace_size.restype = ctypes.c_int64
         n_byte = get_workspace_size()
         if not n_byte:
             return None

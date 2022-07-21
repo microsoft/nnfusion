@@ -21,6 +21,8 @@ namespace nnfusion
                 Reduce(shared_ptr<KernelContext> ctx)
                     : CudaEmitter(ctx)
                 {
+                    dtype = nnfusion::element::Type(ctx->outputs[0]->get_element_type());
+
                     if (auto reduce =
                             dynamic_pointer_cast<nnfusion::op::Reduce>(ctx->gnode->get_op_ptr()))
                     {
@@ -220,7 +222,7 @@ int thread_idx = threadIdx.x;
 int block_idx = blockIdx.x;
 int data_idx_offset = block_idx * width;
 
-float val = 0.0;
+@dataType@ val = 0.0;
 for (int tidx = thread_idx; tidx < width; tidx += block_size) {
     int data_idx = tidx + data_idx_offset;
     val += input0[data_idx];
@@ -228,7 +230,7 @@ for (int tidx = thread_idx; tidx < width; tidx += block_size) {
 val = reduceSum(val, thread_idx, block_size, shm);
 if (thread_idx == 0) output0[block_idx] = val;
 )",
-                        {{"width", width}, {"block_size", expected_block_size}, {"warp_size", 32}});
+                        {{"width", width}, {"block_size", expected_block_size}, {"warp_size", 32},{"dataType", dtype==nnfusion::element::f16? "half" : "float"}});
 
                     lu << code << "\n";
                     return _lu;
@@ -580,6 +582,7 @@ if (thread_idx == 0) output0[block_idx] = val;
                             m_gridDim = dim3(1, 1, 1);
                             m_blockDim = dim3(block_size_x, 1, 1);
                         }
+
                     }
                 }
 
@@ -595,6 +598,9 @@ if (thread_idx == 0) output0[block_idx] = val;
                 bool is_row_reduction;
                 size_t reduction_split_factor,
                     reduction_split_number; // split reduction axis for column reduction
+
+                // Fields for codegen
+                element::Type dtype;
             };
 
             template <class T>
@@ -735,7 +741,7 @@ if (thread_idx == 0) output0[block_idx] = val;
                     {
                         stringstream ss;
                         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-                        // defult name is: "persit0", "persist1" ...
+                        // default name is: "persit0", "persist1" ...
                         ss << m_context->tensors[i]->get_name();
                         params.push_back(ss.str());
                     }

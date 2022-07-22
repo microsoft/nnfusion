@@ -709,12 +709,17 @@ private:
 
             // compute and replace constant data
             std::shared_ptr<op::Constant> new_conv_weight_op_ptr;
+            std::shared_ptr<op::Constant> new_conv_bias_op_ptr;
             if (dtype == element::f64)
             {
                 auto conv_weight_converted =
                     ConvertConvolutionWeight<double>(conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<double>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data()
+                );
             }
             else if (dtype == element::f32)
             {
@@ -722,6 +727,12 @@ private:
                     ConvertConvolutionWeight<float>(conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<float>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data()
+                );
+                NNFUSION_LOG(INFO) << "bias shape" << bn_node->get_input_shape(0);
+                exit(1);
             }
             else if (dtype == element::bf16)
             {
@@ -729,6 +740,10 @@ private:
                     ConvertConvolutionWeight<float>(conv_weight, bn_gain, bn_variance, bn_epsilon));
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = bfloat16::from_float_vector(ConvertConvolutionBias<float>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon));
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data()
+                );
             }
             else if (dtype == element::i64)
             {
@@ -736,6 +751,9 @@ private:
                     conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<int64_t>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data());
             }
             else if (dtype == element::i32)
             {
@@ -743,6 +761,9 @@ private:
                     conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<int32_t>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data());
             }
             else if (dtype == element::i16)
             {
@@ -750,6 +771,9 @@ private:
                     conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<int16_t>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data());
             }
             else if (dtype == element::i8)
             {
@@ -757,6 +781,9 @@ private:
                     ConvertConvolutionWeight<int8_t>(conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<int8_t>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data());
             }
             else
             {
@@ -787,12 +814,19 @@ private:
                     }
                 }
             }
+
+            auto new_conv_bias_gnode = m_graph->add_node_and_edge(new_conv_bias_op_ptr, GNodeIndexVector());            
+            m_nodes.resize(m_graph->get_max_node_id());
+            m_nodes[new_conv_bias_gnode->get_id()] = std::make_shared<TaggedNode>();
+            m_nodes[new_conv_bias_gnode->get_id()]->node = new_conv_bias_gnode;
+
             auto new_broadcast_gnode = m_graph->add_node_and_edge(
                 std::make_shared<op::Broadcast>(conv_output_shape, broadcast_axes),
-                {bn_node->get_in_edge(1)->get_src()});
+                {new_conv_bias_gnode});
             m_nodes.resize(m_graph->get_max_node_id());
             m_nodes[new_broadcast_gnode->get_id()] = std::make_shared<TaggedNode>();
             m_nodes[new_broadcast_gnode->get_id()]->node = new_broadcast_gnode;
+            
             auto new_add_gnode = m_graph->add_node_and_edge(std::make_shared<op::Add>(),
                                                             {conv_node, new_broadcast_gnode});
             m_nodes.resize(m_graph->get_max_node_id());

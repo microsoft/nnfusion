@@ -9,8 +9,12 @@
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 
+DECLARE_string(ftune_output_file);
+
 bool SplitSoftmaxPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
+    if (FLAGS_ftune_output_file == "")
+        return true;
     for (auto node : graph->get_ordered_ops()) {
         if (node->get_op_type() != "Softmax") continue;
         auto op = std::dynamic_pointer_cast<op::Softmax>(node->get_op_ptr());

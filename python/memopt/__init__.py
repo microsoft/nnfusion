@@ -1,3 +1,4 @@
+import torch
 from .IRpass import *
 from .scope import get_scope, Scope
 from .schedule_rewrite import CodeGenerator

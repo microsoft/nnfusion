@@ -5,8 +5,6 @@ import time
 import argparse
 import torch
 
-torch.cuda.set_device(3)
-
 def run_trt(prefix):
     logger = trt.Logger(trt.Logger.ERROR)
     builder = trt.Builder(logger)
@@ -35,13 +33,13 @@ def run_trt(prefix):
     feed_dict = dict(np.load(osp.join(prefix, "inputs.npz"), allow_pickle=True))
     for item in feed_dict.values():
         input_tensor.append(torch.from_numpy(item))
+    for i, tensor in enumerate(input_tensor):
+        tensors[i] = tensor.cuda()
 
     context = engine.create_execution_context()
+    buffer = [tensor.data_ptr() for tensor in tensors]
     def get_runtime():
         tic = time.time()
-        for i, tensor in enumerate(input_tensor):
-            tensors[i] = tensor.cuda()
-        buffer = [tensor.data_ptr() for tensor in tensors]
         context.execute(1, buffer)
         return (time.time() - tic) * 1000
     _ = [get_runtime() for i in range(50)] # warmup
@@ -50,6 +48,8 @@ def run_trt(prefix):
     # print(tensors[1])
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--prefix', type=str, default="temp")
+    args = parser.parse_args()
     torch.random.manual_seed(0)
-    prefix = "temp"
-    run_trt(prefix)
+    run_trt(args.prefix)

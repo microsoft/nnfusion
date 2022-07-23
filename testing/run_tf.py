@@ -1,4 +1,3 @@
-from ast import arg
 import tensorflow as tf
 import numpy as np
 import argparse
@@ -7,8 +6,6 @@ import time
 import os.path as osp
 import onnx
 from onnx_tf.backend import prepare
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 def load_graph(onnx_file):
     onnx_model = onnx.load(onnx_file)
@@ -47,8 +44,8 @@ def run_tf(prefix, compiler=None):
         tic = time.time()
         _ = sess.run(outputs, feed_dict=feed_dict)
         return (time.time() - tic) * 1000
-    _ = [get_runtime() for i in range(50)] # warmup
-    times = [get_runtime() for i in range(100)]
+    _ = [get_runtime() for i in range(200)] # warmup
+    times = [get_runtime() for i in range(800)]
     print(np.mean(times), np.min(times), np.max(times))
 
 if __name__ == "__main__":

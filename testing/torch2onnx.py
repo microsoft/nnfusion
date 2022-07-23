@@ -30,24 +30,23 @@ def torch2onnx(prefix, model, inputs):
         do_constant_folding=False,
         opset_version=11)
     # tofp16model( osp.join(prefix, "model.onnx"),  osp.join(prefix, "model_fp16.onnx"))
-    # feed_dict = dict(zip(input_names, inputs))
-    # np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
+    feed_dict = dict(zip(input_names, inputs))
+    np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
 
 def run_torch(model, inputs):
     model = model.cuda()
     model.eval()
+    cu_inputs = []
+    for item in inputs:
+        cu_inputs.append(item.cuda() if isinstance(item, torch.Tensor) else item)
     def get_runtime():
-        torch.cuda.synchronize()
         tic = time.time()
-        cu_inputs = []
-        for item in inputs:
-            cu_inputs.append(item.cuda() if isinstance(item, torch.Tensor) else item)
-        with torch.no_grad():
-            _ = model(*cu_inputs)
+        _ = model(*cu_inputs)
         torch.cuda.synchronize()
         return (time.time() - tic) * 1000
-    _ = [get_runtime() for i in range(50)] # warmup
-    times = [get_runtime() for i in range(100)]
+    with torch.no_grad():
+        _ = [get_runtime() for i in range(50)] # warmup
+        times = [get_runtime() for i in range(100)]
     print("mean: {}ms min: {}ms max: {}ms".format(np.mean(times), np.min(times), np.max(times)))
 
 if __name__ == "__main__":

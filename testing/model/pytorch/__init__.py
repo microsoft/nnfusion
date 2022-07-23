@@ -19,7 +19,7 @@ def shufflenet(batch_size):
     input = torch.randn(batch_size, 3, 224, 224)
     return model, (input, )
 
-def SqueezeNet(batch_size):
+def squeezenet(batch_size):
     from .squeezenet import SqueezeNet as Net
     model = Net()
     input = torch.randn(batch_size, 3, 224, 224)
@@ -83,19 +83,9 @@ def transformer(batch_size):
     return model, inputs
 
 def vit(batch_size):
-    from vit_pytorch import ViT
-    model = ViT(
-        image_size = 256,
-        patch_size = 32,
-        num_classes = 1000,
-        dim = 1024,
-        depth = 6,
-        heads = 16,
-        mlp_dim = 2048,
-        dropout = 0.1,
-        emb_dropout = 0.1
-    )
-    input = torch.randn(batch_size, 3, 256, 256)
+    from timm.models import vit_small_patch32_224 as Net
+    model = Net()
+    input = torch.randn(batch_size, 3, 224, 224)
     return model, (input, )
 
 def localvit(batch_size):

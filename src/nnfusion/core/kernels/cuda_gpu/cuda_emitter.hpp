@@ -316,6 +316,7 @@ namespace nnfusion
                         TuningList.insert(substr);
                     }
                     NNFUSION_LOG(INFO) << "Kernel Tuning List: " << join(TuningList, ", ");
+                    return true;
                 }
 
                 virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(

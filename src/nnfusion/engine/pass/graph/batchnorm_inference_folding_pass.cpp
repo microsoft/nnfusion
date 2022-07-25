@@ -731,8 +731,6 @@ private:
                 new_conv_bias_op_ptr = std::make_shared<op::Constant>(
                     dtype, bn_node->get_input_shape(0), conv_bias_converted.data()
                 );
-                NNFUSION_LOG(INFO) << "bias shape" << bn_node->get_input_shape(0);
-                exit(1);
             }
             else if (dtype == element::bf16)
             {

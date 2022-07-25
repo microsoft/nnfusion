@@ -11,12 +11,14 @@
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "nnfusion/core/operators/op_define/noop.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
+#include "nnfusion/engine/cache/manager.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::blockfusion;
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
+using namespace nnfusion::cache;
 
 const size_t BlockFusionWavefrontOptimizer::DEFAULT_GROUP_ID = -1;
 size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
@@ -577,19 +579,37 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
                 auto node = m_nodes[group->nodes.at(i)]->node;
                 std::shared_ptr<KernelContext> ctx(new KernelContext(node));
                 std::string identifier = ctx->generate_identifier();
-                auto fetched_kernel =
-                    m_kernel_db->fetch_with_tags(identifier, "CUDA_GPU", set<string>{}, true);
-                if (fetched_kernel != nullptr)
+                std::string device = "CUDA_GPU";
+                auto fetched_kernels = m_kernel_db->fetch_all(identifier, device);
+                if (fetched_kernels.size() > 0)
                 {
+                    KernelEntry fetched_kernel;
+                    fetched_kernel.profile[device] = 1048576;
+                    fetched_kernel.function = fetched_kernels[0]->function;
+                    fetched_kernel.resource = fetched_kernels[0]->resource;
+                    for (auto matched_kernel : fetched_kernels)
+                    {
+                        if (matched_kernel->profile.find(device) != matched_kernel->profile.end())
+                        {
+                            if (matched_kernel->profile[device] * matched_kernel->resource <
+                                fetched_kernel.profile[device] * fetched_kernel.resource)
+                            {
+                                fetched_kernel.function = matched_kernel->function;
+                                fetched_kernel.profile[device] = matched_kernel->profile[device];
+                                fetched_kernel.resource = matched_kernel->resource;
+                            }
+                        }
+                    }
+                    auto fetched_kernel_p = std::make_shared<KernelEntry>(fetched_kernel);
                     auto kernel =
-                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, fetched_kernel);
+                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, fetched_kernel_p);
                     kernel->get_or_emit_source();
                     group->block_kernels[i] = kernel;
-                    group->duration[i] = fetched_kernel->profile[m_device_name];
+                    group->duration[i] = fetched_kernel_p->profile[m_device_name];
                     NNFUSION_LOG(DEBUG) << "fetched kernel " << identifier << " with resource "
-                                        << fetched_kernel->resource << " and profiled on "
+                                        << fetched_kernel_p->resource << " and profiled on "
                                         << m_device_name << " in "
-                                        << fetched_kernel->profile[m_device_name] << "us";
+                                        << fetched_kernel_p->profile[m_device_name] << "us";
                 }
             }
         }

@@ -21,6 +21,7 @@ if (TORCHSCRIPT_FRONTEND)
     target_link_libraries(nnfusion torchscript_import_interface torchscript_import frontend_util)
 endif()
 
+message(STATUS "Python lib ${Python_LIBRARIES}")
 target_link_libraries(nnfusion 
     -Wl,--whole-archive
     # Common feature
@@ -54,6 +55,7 @@ target_link_libraries(nnfusion
     dl
     sqlite3
     ${CURL_LIBRARIES} 
+    ${Python_LIBRARIES}
 )
 
 add_custom_command(

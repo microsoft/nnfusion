@@ -435,7 +435,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
     std::string identifier("");
 
     // operator type as identifier
-    identifier += op_type;
+    identifier += op_type + "[";
 
     // shapes of input and output tensors as identifier
     std::function<std::string(std::vector<size_t>::const_iterator)> f_shape =
@@ -505,6 +505,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         ///\todo: need to encode dot reduction_axes_count?
         identifier += str.str();
     }
+    identifier += "]";
 
     return identifier;
 }

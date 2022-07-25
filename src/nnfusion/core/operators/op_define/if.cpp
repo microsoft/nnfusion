@@ -65,7 +65,7 @@ void If::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
 {
     nnfusion::Shape cond_shape = gnode->get_input_shape(0);
     nnfusion::element::Type cond_et = gnode->get_input_element_type(0);
-    NNFUSION_CHECK(cond_shape.size() == 0)
+    NNFUSION_CHECK(shape_size(cond_shape) == 1)
         << "The condition tensor of the If operation mush be scalar.";
     NNFUSION_CHECK(cond_et == nnfusion::element::boolean)
         << "The condition tensor of the If operation mush be boolean.";

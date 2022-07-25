@@ -171,6 +171,7 @@ namespace nnfusion
 
                 NamedNodeVector TranslateLoopOp(
                     const onnx::NodeProto& node_proto,
+                    const onnx::GraphProto& graph_proto,
                     const NodeMap& all_ng_nodes,
                     std::shared_ptr<nnfusion::graph::Graph> m_graph,
                     const std::unordered_map<std::string, ConvertFuncMap>& domain_convert_func_map,

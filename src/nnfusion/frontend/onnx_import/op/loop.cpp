@@ -200,6 +200,7 @@ namespace nnfusion
 
                 NamedNodeVector TranslateLoopOp(
                     const onnx::NodeProto& node_proto,
+                    const onnx::GraphProto& graph_proto,
                     const NodeMap& all_ng_nodes,
                     std::shared_ptr<nnfusion::graph::Graph> m_graph,
                     const std::unordered_map<std::string, ConvertFuncMap>& domain_convert_func_map,
@@ -238,7 +239,7 @@ namespace nnfusion
                     // process loop_body_graph
                     std::shared_ptr<nnfusion::graph::Graph> loop_body_graph;
                     {
-                        loop_body_graph_proto = complete_graphproto(loop_body_graph_proto);
+                        loop_body_graph_proto = complete_graphproto(loop_body_graph_proto, graph_proto);
                         GraphProtoConvert loop_body_graph_convert(loop_body_graph_proto,
                                                                   domain_convert_func_map,
                                                                   model_dir,

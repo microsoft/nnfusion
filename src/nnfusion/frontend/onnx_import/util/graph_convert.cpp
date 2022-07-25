@@ -392,7 +392,7 @@ namespace nnfusion
 
                 for (const auto& node_proto : onnx_nodes)
                 {
-                    auto results = convert_node(node_proto);
+                    auto results = convert_node(node_proto, *onnx_graph_proto);
                     for (auto& named_gnode : results)
                     {
                         m_node_map[named_gnode.name] = {named_gnode.gnode_index};
@@ -429,13 +429,14 @@ namespace nnfusion
                 m_graph->set_outputs(m_graph_outputs);
             }
 
-            NamedNodeVector GraphProtoConvert::convert_node(const onnx::NodeProto& node_proto)
+            NamedNodeVector GraphProtoConvert::convert_node(const onnx::NodeProto& node_proto, const onnx::GraphProto& graph_proto)
             {
                 NNFUSION_LOG(INFO) << "convert node: " << node_proto.name();
                 NamedNodeVector ret;
                 if (node_proto.op_type() == "If")
                 {
                     ret = set_1::TranslateIfOp(node_proto,
+                                               graph_proto,
                                                m_node_map,
                                                m_graph,
                                                m_domain_convert_func_map,
@@ -446,6 +447,7 @@ namespace nnfusion
                 else if (node_proto.op_type() == "Loop")
                 {
                     ret = set_1::TranslateLoopOp(node_proto,
+                                                 graph_proto,
                                                  m_node_map,
                                                  m_graph,
                                                  m_domain_convert_func_map,
@@ -457,6 +459,7 @@ namespace nnfusion
                          node_proto.op_type() == "func_forward")
                 {
                     ret = set_1::TranslateRecursionOp(node_proto,
+                                                      graph_proto,
                                                       m_node_map,
                                                       m_graph,
                                                       m_domain_convert_func_map,

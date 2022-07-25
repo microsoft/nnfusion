@@ -310,7 +310,7 @@ namespace nnfusion
                 return graph_inputs;
             }
 
-            onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto)
+            onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto, const onnx::GraphProto& full_graph_proto)
             {
                 onnx::GraphProto completed_graphproto(graph_proto);
 
@@ -331,10 +331,22 @@ namespace nnfusion
                     }
                 }
 
+                std::unordered_map<std::string, size_t> full_graph_initializer_index;
+                for (size_t i = 0; i < full_graph_proto.initializer().size(); i++) {
+                    auto& initializer = full_graph_proto.initializer(i);
+                    full_graph_initializer_index[initializer.name()] = i;
+                }
+
                 for (auto item : missing_inputs)
                 {
-                    auto input = completed_graphproto.add_input();
-                    input->set_name(item);
+                    if (full_graph_initializer_index.find(item) != full_graph_initializer_index.end()) {
+                        auto initializer = completed_graphproto.add_initializer();
+                        initializer->CopyFrom(full_graph_proto.initializer(full_graph_initializer_index[item]));
+                        NNFUSION_LOG(INFO) << "Copy initializer to inner graph: " << item;
+                    } else {
+                        auto input = completed_graphproto.add_input();
+                        input->set_name(item);
+                    }
                 }
 
                 // std::cout << completed_graphproto.DebugString() << std::endl;

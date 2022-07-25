@@ -253,6 +253,7 @@ namespace nnfusion
 
                 NamedNodeVector TranslateIfOp(
                     const onnx::NodeProto& node_proto,
+                    const onnx::GraphProto& graph_proto,
                     const NodeMap& all_ng_nodes,
                     std::shared_ptr<nnfusion::graph::Graph> m_graph,
                     const std::unordered_map<std::string, ConvertFuncMap>& domain_convert_func_map,
@@ -277,7 +278,7 @@ namespace nnfusion
                     std::shared_ptr<nnfusion::graph::Graph> then_branch_graph;
                     std::shared_ptr<nnfusion::graph::Graph> else_branch_graph;
                     {
-                        then_branch_graph_proto = complete_graphproto(then_branch_graph_proto);
+                        then_branch_graph_proto = complete_graphproto(then_branch_graph_proto, graph_proto);
                         GraphProtoConvert then_branch_graph_convert(then_branch_graph_proto,
                                                                     domain_convert_func_map,
                                                                     model_dir,
@@ -286,7 +287,7 @@ namespace nnfusion
                                                                     all_ng_nodes,
                                                                     true);
                         then_branch_graph = then_branch_graph_convert.get_graph();
-                        else_branch_graph_proto = complete_graphproto(else_branch_graph_proto);
+                        else_branch_graph_proto = complete_graphproto(else_branch_graph_proto, graph_proto);
                         GraphProtoConvert else_branch_graph_convert(else_branch_graph_proto,
                                                                     domain_convert_func_map,
                                                                     model_dir,

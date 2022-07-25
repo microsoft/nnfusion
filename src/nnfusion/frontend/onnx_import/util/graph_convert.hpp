@@ -52,7 +52,7 @@ namespace nnfusion
 
                 std::shared_ptr<nnfusion::graph::Graph> get_graph() { return m_graph; }
                 const onnx::GraphProto& get_onnx_proto_graph() const { return *onnx_graph_proto; }
-                NamedNodeVector convert_node(const onnx::NodeProto& node_proto);
+                NamedNodeVector convert_node(const onnx::NodeProto& node_proto, const onnx::GraphProto& graph_proto);
 
                 /// \brief Access an operator object by its type name and domain name
                 /// The function will return the operator object if it exists, or report an error

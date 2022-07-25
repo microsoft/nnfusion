@@ -42,6 +42,7 @@ set(SRC
     op_define/gelu.cpp
     op_define/greater_eq.cpp
     op_define/greater.cpp
+    op_define/identity.cpp
     op_define/if.cpp
     op_define/less_eq.cpp
     op_define/less.cpp

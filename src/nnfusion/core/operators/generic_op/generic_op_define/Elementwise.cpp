@@ -47,6 +47,7 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Mod", element_op("fmod", "")},
     {"Square", element_op("square", "x0 * x0")},
     {"Negative", element_op("negative", "-x0")},
+    {"Identity", element_op("identity", "x0")},
     {"Select", element_op("select", "x2.when([x0 == 0], x1)")},
     {"Sign", element_op("sign", "const(1).when([x0 > 0], const(-1).when([x0 < 0], 0))")},
     {"Gelu", element_op("gelu", "x0 * x0.call(`normcdf`)")},

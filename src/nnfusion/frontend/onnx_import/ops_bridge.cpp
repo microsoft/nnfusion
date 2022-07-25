@@ -192,7 +192,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("GlobalMaxPool", 1, TranslatePoolOp<op::MaxPool>);
                 REGISTER_OPERATOR("Greater", 1, TranslateBinaryOp<op::Greater>);
                 //REGISTER_OPERATOR("HardSigmoid", 1, hard_sigmoid);
-                REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
+                REGISTER_OPERATOR("Identity", 1, TranslateUnaryOp<op::Identity>);
                 // REGISTER_OPERATOR("If", 1, TranslateIfOp);
                 REGISTER_OPERATOR(
                     "If", 1, TranslateIdentityOp); // TODO(lingm): fix convert_func map

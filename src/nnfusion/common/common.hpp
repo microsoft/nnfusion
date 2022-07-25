@@ -58,6 +58,7 @@
 #include "nnfusion/core/operators/op_define/gelu.hpp"
 #include "nnfusion/core/operators/op_define/greater.hpp"
 #include "nnfusion/core/operators/op_define/greater_eq.hpp"
+#include "nnfusion/core/operators/op_define/identity.hpp"
 #include "nnfusion/core/operators/op_define/less.hpp"
 #include "nnfusion/core/operators/op_define/less_eq.hpp"
 #include "nnfusion/core/operators/op_define/log.hpp"

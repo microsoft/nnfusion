@@ -82,6 +82,7 @@ namespace nnfusion
                 {"LessEq", cuda_op("less_equal", "x0 <= x1", "")},
                 {"Relu", cuda_op("relu", "fmaxf(0,x0)", "")},
                 {"Relu6", cuda_op("relu6", "fminf(6,fmaxf(0,x0))", "")},
+                {"Identity", cuda_op("identity", "x0", "")},
                 {"Not", cuda_op("logical_not", "!x0", "")},
                 {"Negative", cuda_op("negative", "-x0", "")},
                 {"Select", cuda_op("select", "(x0 == 0) ? x2 : x1", "")},

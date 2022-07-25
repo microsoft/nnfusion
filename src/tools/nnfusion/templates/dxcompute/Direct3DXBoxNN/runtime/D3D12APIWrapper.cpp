@@ -243,7 +243,7 @@ void* dxShaderLoad_v2(const char* shader_src)
 
 #ifdef _USE_DXC_
     // Use cs_6_0 since dxc only supports cs_6_0 or higher shader models.
-    auto computeShader = antares::DXCompiler::Get()->Compile(source.data(), (uint32_t)source.size(), L"CSMain", L"cs_6_0");
+    auto computeShader = antares::DXCompiler::Get()->Compile(source.data(), (uint32_t)source.size(), L"CSMain", L"cs_6_2");
     if (computeShader != nullptr)
         handle->bytecode = CD3DX12_SHADER_BYTECODE(computeShader->GetBufferPointer(), computeShader->GetBufferSize());
     else

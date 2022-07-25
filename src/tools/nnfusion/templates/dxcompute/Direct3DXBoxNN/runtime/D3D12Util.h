@@ -1121,6 +1121,7 @@ namespace antares {
                 args_i.push_back(args[i].c_str());
             }
 #endif
+            args_i.push_back(L"-enable-16bit-types");
             args_i.push_back(NULL);
             // Just set a random name "ShaderFile"
             // const WCHAR* args[] = { L"-enable-templates", L"-enable-16bit-types", NULL }; // TODO: will be supported in HLSL 2021 & cs_6_2

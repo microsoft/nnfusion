@@ -284,7 +284,7 @@ void KernelTuning::submit_tuning_batch_asyc(
         NNFUSION_CHECK(n_device_type != UNKNOWN);
 
         auto ir = nnfusion::op::get_translation(gnode);
-        // NNFUSION_LOG(INFO) << gnode->get_op_type() << ", ir: " << ir;
+        NNFUSION_LOG(INFO) << gnode->get_op_type() << " " << gnode->get_name() << ", ir: " << ir;
         if (!ir.empty())
         {
             auto status = std::make_shared<TuningStatus>(gnode);

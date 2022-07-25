@@ -380,6 +380,21 @@ const nnfusion::element::Type& GNodeIndex::get_element_type() const
     return gnode->get_output_element_type(index);
 }
 
+std::ostream& nnfusion::graph::operator<<(std::ostream& s, const GNode& gnode) {
+    s << gnode.get_name() << "(" <<  gnode.get_op_type() << ") in {";
+    for (auto edge: gnode.get_in_edges()) {
+        s << edge->get_src()->get_name();
+        s << ", ";
+    }
+    s << "} out {";
+    for (auto edge: gnode.get_out_edges()) {
+        s << edge->get_src()->get_name();
+        s << ", ";
+    }
+    s << "}";
+    return s;
+}
+
 void FusedGNode::build_fused_node(std::unordered_set<std::shared_ptr<GNode>> nodes,
                                   std::shared_ptr<Graph> graph,
                                   bool clean_graph)

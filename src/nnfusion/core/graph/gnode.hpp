@@ -186,6 +186,7 @@ namespace nnfusion
             std::vector<std::shared_ptr<Input>> m_inputs;
             std::vector<std::shared_ptr<Output>> m_outputs;
         };
+        std::ostream& operator<<(std::ostream& s, const GNode& gnode);
 
         class OpContext
         {

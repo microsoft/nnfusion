@@ -176,29 +176,18 @@ LanguageUnit_p cuda::BlockCudaEmitter::emit_device_function_signature()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_sig"));
     auto& lu = *_lu;
+    LanguageUnit_p _sig(emit_function_signature());
+    std::string sig_code = _sig->get_code();
+    size_t param_start = sig_code.find("void (") + 6;
+    std::string param_str = sig_code.substr(param_start, sig_code.find_last_of(')') - param_start);
 
     vector<string> params;
-    for (size_t i = 0; i < m_context->inputs.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
-        ss << "input" << i;
-        params.push_back(ss.str());
-    }
-
-    for (size_t i = 0; i < m_context->outputs.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
-        ss << "output" << i;
-        params.push_back(ss.str());
-    }
     params.push_back("int thread_id");
     params.push_back("int block_id");
     params.push_back("char *shared_buffer");
 
     lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
-       << "(" << join(params, ", ") << ")";
+       << "(" << param_str << ", " << join(params, ", ") << ")";
     return _lu;
 }
 

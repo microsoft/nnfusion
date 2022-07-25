@@ -32,6 +32,7 @@ namespace nnfusion
             LU_DECLARE(CUBLAS_SAFE_CALL);
             LU_DECLARE(CUDA_SAFE_LAUNCH);
             LU_DECLARE(CUPTI_CALL);
+            LU_DECLARE(DBG_TENSOR);
         } // namespace macro
 
         namespace declaration

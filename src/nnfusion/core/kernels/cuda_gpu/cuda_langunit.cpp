@@ -159,6 +159,23 @@ LU_DEFINE(macro::CUPTI_CALL,
     } while (0)
 )");
 
+LU_DEFINE(macro::DBG_TENSOR,
+R"(
+__global__ void printTensor(float* data, int n) {
+    for (int i = 0; i < min(n, 10); i++) printf("%f ", data[i]);
+    if (n > 10) printf("... %f", data[n-1]);
+}
+
+#define DEBUG_TENSOR(tensor, size) { \
+    printf("%s: ", #tensor); \
+    printTensor<<<1, 1>>>(tensor, size); \
+    CUDA_SAFE_CALL(cudaDeviceSynchronize()); \
+    fflush(stdout); \
+    printf("\n"); \
+}
+)"
+);
+
 // Declaration
 //<TODO>Need special code for this global_cublas_handle
 LU_DEFINE(declaration::num_SMs, "int num_SMs;\n");

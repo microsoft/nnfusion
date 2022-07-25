@@ -256,6 +256,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
+    projgen->lup_codegen->require(macro::DBG_TENSOR);
     if (!FLAGS_fcodegen_pybind)
         projgen->lup_codegen->require(macro::HALF_MAX);
     projgen->lup_codegen->require(codegen_device_type());

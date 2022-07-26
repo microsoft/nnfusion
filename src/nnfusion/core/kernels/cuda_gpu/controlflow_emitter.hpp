@@ -26,6 +26,7 @@ namespace nnfusion
                 static std::map<std::string, int> get_subgraph_inputs(const ir::Program& program);
 
                 void allocate_shared_memory(LanguageUnit_p _lu);
+                void allocate_shared_memory(LanguageUnit_p _lu, size_t shared_memory_size);
 
                 ir::BasicBlock::Pointer create_param_map(
                     const ir::Program& program,
@@ -33,6 +34,7 @@ namespace nnfusion
 
                 std::string get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor);
                 std::string get_launch_bound(nnfusion::ir::Instruction::Pointer ins);
+                size_t get_kernel_shared_memory(std::shared_ptr<KernelEmitter> kernel);
                 size_t get_subgraph_shared_memory(const ir::Program& program);
                 size_t m_shared_memory_size = 0;
                 bool is_emitting_block_kernel = false;

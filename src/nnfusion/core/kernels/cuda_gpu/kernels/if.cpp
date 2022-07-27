@@ -69,7 +69,7 @@ void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, bool else_branch
     }
 }
 
-LanguageUnit_p cuda::If::generate_branch_seperate_kernel(const std::string& outer_control, std::shared_ptr<ir::Instruction> ins) {
+LanguageUnit_p cuda::If::generate_branch_seperate_kernel(const std::string& outer_control, std::shared_ptr<descriptor::Tensor> cond_tensor, std::shared_ptr<ir::Instruction> ins) {
     auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
     std::string func_name = kernel->get_function_name() + "_branch_wrapper";
     LanguageUnit_p _lu(new LanguageUnit(func_name));
@@ -77,27 +77,30 @@ LanguageUnit_p cuda::If::generate_branch_seperate_kernel(const std::string& oute
     // function signature
     std::vector<std::string> params;
     std::vector<std::string> param_names;
-    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    auto inputs = ins->get_inputs();
+    inputs.insert(inputs.begin(), cond_tensor);
+    for (size_t i = 0; i < inputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << inputs[i]->get_element_type().c_type_string() << "* ";
         ss << "input" << i;
         params.push_back(ss.str());
     }
-    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    for (size_t i = 1; i < inputs.size(); i++) // skip the cond tensor
     {
         stringstream ss;
         ss << "input" << i;
         param_names.push_back(ss.str());
     }
-    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    auto& outputs = ins->get_outputs();
+    for (size_t i = 0; i < outputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << outputs[i]->get_element_type().c_type_string() << "* ";
         ss << "output" << i;
         params.push_back(ss.str());
     }
-    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    for (size_t i = 0; i < outputs.size(); i++)
     {
         stringstream ss;
         ss << "output" << i;
@@ -122,6 +125,7 @@ void cuda::If::emit_kernel_wrapper(std::shared_ptr<ir::Instruction> ins, Languag
     cuda::dim3 grid_dim = kernel->get_grid_dim();
     cuda::dim3 block_dim = kernel->get_block_dim();
     std::vector<string> params;
+    params.push_back("input0");
     for (auto tensor : ins->get_inputs())
         params.push_back(m_param_map[tensor]);
     for (auto tensor : ins->get_outputs())
@@ -159,6 +163,15 @@ LanguageUnit_p cuda::If::emit_function_body()
     return _lu;
 }
 
+LanguageUnit_p cuda::If::emit_function_call()
+{
+    if (!FLAGS_fif_launch_then_else) {
+        return CudaEmitter::emit_function_call();
+    } else {
+        return KernelEmitter::emit_function_call();
+    }
+}
+
 void cuda::If::set_launch_config()
 {
     auto cfg0 = get_subgraph_launch_config(m_then_branch_instructions);
@@ -179,7 +192,7 @@ LanguageUnit_p cuda::If::emit_dependency()
         auto block_kernel = kernel->emit_block_kernel();
         block_kernel->require(body->dep_unit);
         if (FLAGS_fif_launch_then_else) {
-            auto ins_kernel = generate_branch_seperate_kernel("if (*input0) ", ins);
+            auto ins_kernel = generate_branch_seperate_kernel("if (*input0) ", m_context->inputs[0], ins);
             ins_kernel->require(block_kernel);
             _lu->require(ins_kernel);
         } else {
@@ -193,7 +206,7 @@ LanguageUnit_p cuda::If::emit_dependency()
         auto block_kernel = kernel->emit_block_kernel();
         block_kernel->require(body->dep_unit);
         if (FLAGS_fif_launch_then_else) {
-            auto ins_kernel = generate_branch_seperate_kernel("if (!(*input0)) ", ins);
+            auto ins_kernel = generate_branch_seperate_kernel("if (!(*input0)) ", m_context->inputs[0], ins);
             ins_kernel->require(block_kernel);
             _lu->require(ins_kernel);
         } else {
@@ -202,6 +215,46 @@ LanguageUnit_p cuda::If::emit_dependency()
     }
     return _lu;
 }
+
+LanguageUnit_p cuda::If::emit_function_signature()
+{
+    if (!FLAGS_fif_launch_then_else) return ControlFlowEmitter::emit_function_signature();
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
+    auto& lu = *_lu;
+
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+
+    // the temp tensor have been included in input tensors. Duplicate here to align with KernelEmiter::emit_function_call();
+    for (size_t i = 0; i < m_context->tensors.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << "tensor" << i;
+        params.push_back(ss.str());
+    }
+
+    set_launch_config();
+    emit_function_body();
+    lu << "void "
+       << "(" << join(params, ", ") << ")";
+    return _lu;
+}
+
 
 REGISTER_KERNEL_EMITTER("If",                                                      // op_name
                         Device(CUDA_GPU).TypeConstraint(element::f32).Priority(2), // attrs

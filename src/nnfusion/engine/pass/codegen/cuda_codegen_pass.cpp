@@ -12,6 +12,7 @@
 #include "nnfusion/core/kernels/cuda_gpu/cuda_langunit.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 #include "nnfusion/core/kernels/kernel_registration.hpp"
+#include "nnfusion/core/kernels/cuda_gpu/kernels/if.hpp"
 
 #include <regex>
 
@@ -35,6 +36,7 @@ DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
 DEFINE_bool(fcheck_result, false, "Check result with external inputs and outputs");
+DECLARE_bool(fif_launch_then_else);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -368,6 +370,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 }
             }
             int pos_right = call_str.find(">>>(");
+            NNFUSION_LOG(INFO) << "call_str" << call_str;
             if (pos_right >= 0)
             {
 #ifdef __USING_HOST_CALL_FORMAT___

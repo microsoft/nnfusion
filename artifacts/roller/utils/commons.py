@@ -15,7 +15,7 @@ def str_to_ms(string):
     elif string.endswith("s"):
         return float(string[:-1]) * 1000
 
-def get_time_from_nvprof_file(out, backend="tvm"):    
+def get_time_from_nvprof_file(out, backend="tvm"):
     with open(out, "r") as inf:
         lines = inf.readlines()
         if backend == "tvm":

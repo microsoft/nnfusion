@@ -1,5 +1,5 @@
-from config import *
-from op import *
+from roller.config import *
+from roller.op import *
 from .CostModelBase import *
 
 def _align(x, unit_size):
@@ -34,7 +34,7 @@ class SimpleCostModel(CostModelBase):
     """
         A very simple implementation of the cost model
         The compute estimation:
-            1, assumes that we can always achieve peak FLOPS if 
+            1, assumes that we can always achieve peak FLOPS if
             2, estimates the penalty due to non-aligned warps
         The memory estimation:
             1, assumes that we can always achieve peak throughput if all transactions are utilized
@@ -63,7 +63,7 @@ class SimpleCostModel(CostModelBase):
         # Calculate compute latency
         compute_workload_thread = self.op.compute_workload(reg_tile_dim, tile_tensor)
         compute_workload_raw = compute_workload_thread * grid_size * block_size
-        
+
         return compute_workload_raw * compute_penalty / compute_throughput
 
 
@@ -75,7 +75,7 @@ class SimpleCostModel(CostModelBase):
         tile_dim, reduction_size = schedule.get_tile(mem_level)
         num_tiles = _num_tiles(full_dim, tile_dim)
         memory_latency_tile = 0
-        
+
         workloads = self.op.memory_workload(tile_dim, tile_tensor, mem_level)
         mem_transaction_size = self.arch.Transaction_size[mem_level]
         # the dimension of subtensors
@@ -83,7 +83,7 @@ class SimpleCostModel(CostModelBase):
         # Calculate bank conflict when estimating smem-reg throughput given dram-smem tile is ready
         #if mem_level == 0 and level == 1:
         #    bc_penalty = Bank_Conflict_Penalty(schedule, self)
-        
+
         for tensor_name in workloads:
             rw_bytes = workloads[tensor_name]
             # Memory bandwidth penalized due to non-aligned transactions

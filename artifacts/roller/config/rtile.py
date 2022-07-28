@@ -1,22 +1,26 @@
 import tvm
 from tvm import te
-from utils import *
+from roller.utils import *
 import inspect
+from copy import deepcopy
 
 class rTile:
     def __init__(self, expr, shape, saxis, raxis, tvm_out_tensor):
         self.expr = expr
         self.shape = shape
-        # todo: what if multi-output tensors?    
+        # todo: what if multi-output tensors?
         self.tvm_out_tensor = tvm_out_tensor
         self.ori_in = []
-        self.pad_in = [] 
+        self.pad_in = []
         self.outs = []
         self.unpad_outs = []
-        self.expr_out = self.expr(self.shape, for_rtile=True)
-        self.input_tensors = self.expr_out[0]
-        self.output_tensors =self.expr_out[1]
-        
+        # self.expr_out = self.expr(self.shape, for_rtile=True)
+        # self.input_tensors = self.expr_out[0]
+        # self.output_tensors =self.expr_out[1]
+        M, N, K = shape
+        self.input_tensors = [(deepcopy(expr.input_tensors[0].name), [M, K]), (deepcopy(expr.input_tensors[1].name), [K, N])]
+        self.output_tensors = [(deepcopy(expr.output(0).name), [M, N])]
+
         for it in self.input_tensors:
             if '_pad' in it[0]:
                 self.pad_in.append(it)
@@ -27,12 +31,12 @@ class rTile:
             if '_unpad' in ot[0]:
                 self.unpad_outs.append(ot)
             else:
-                self.outs.append(ot)    
+                self.outs.append(ot)
         # self.saxis, self.raxis = get_axis_names(self.tvm_out_tensor)
         self.saxis = saxis
         self.raxis = raxis
         self.spatial_dim = len(self.saxis)
-        
+
         self.axis_shape_map = {}
         aid = 0
         for axis_name in self.saxis:
@@ -40,7 +44,7 @@ class rTile:
             aid += 1
         for axis_name in self.raxis:
             self.axis_shape_map[axis_name] = self.shape[aid]
-            aid += 1 
+            aid += 1
 
         if len(self.pad_in) > 0:
             self.storage_padding = [[0 for _ in range(len(t[1]))] for t in self.pad_in]
@@ -98,7 +102,7 @@ class rTile:
                     if find and count == 0:
                         ins_axis_string.append(source[left: i + 1])
                         left = -1
-                        find = False                   
+                        find = False
 
         self.ins_axis_name = []
         for i in range(len(ins_axis_string)):
@@ -171,10 +175,10 @@ class rTile:
         newTile = rTile(self.expr, self.shape, self.saxis, self.raxis, self.tvm_out_tensor)
         newTile.storage_padding = self.storage_padding.copy()
         return newTile
-        
+
     def GetInputTensors(self):
         return self.pad_in if len(self.pad_in) > 0 else self.input_tensors
-    
+
     def GetOutputTensors(self):
         return self.unpad_outs if self.unpad_outs else self.output_tensors
 

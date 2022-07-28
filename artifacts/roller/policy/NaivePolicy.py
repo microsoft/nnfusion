@@ -1,5 +1,5 @@
-from config import *
-from cost_model import *
+from roller.config import *
+from roller.cost_model import *
 from .PolicyBase import *
 
 Tiling = "regular" # 'all' or 'regular'
@@ -50,7 +50,7 @@ class NaivePolicy(PolicyBase):
     def BFS_Tiles(self, last_level_schedules, mem_level, tile_tensor = "output"):
         # Run BFS and return all configs that satisfy memory limit
         # last_level_schedules: the base dim lists
-        
+
         dim_size = len(self.op.dims[tile_tensor])
         candidates = [] # list of Schedule()
 
@@ -167,6 +167,6 @@ class NaivePolicy(PolicyBase):
         def sort_key(a):
             return a[0]
         perf_config.sort(key=sort_key)
-            
+
         return [x for (_, x) in perf_config[:topk]]
 

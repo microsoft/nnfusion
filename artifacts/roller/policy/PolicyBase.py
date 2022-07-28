@@ -80,7 +80,7 @@ class PolicyBase():
             # space_iters = list(set(all_iters) - set(reduce_iters))
             # self.calc_grid(reduce_iters, space_iters, False)
             # print("Target: {}\nSpace Iters: {}\nReduce Iters: {}\n".format(out, space_iters, reduce_iters))
-            
+
             smem_tensor = []
             reg_tensor = []
             reg_tile = None
@@ -95,7 +95,7 @@ class PolicyBase():
                     local_tensor = self.sche_simu.cache_read(shared_tensor, "local", [out])
                     reg_tensor.append(local_tensor)
                 reg_tile = self.sche_simu.cache_write(out, "local")
-            
+
             blck_axis = []
             # vthd_axis = []
             thrd_axis = []
@@ -177,7 +177,7 @@ class PolicyBase():
         output_num = 0
         output_tensors = []
         write_tensor = None
- 
+
         for item in self.sche_simu.stage_map.items():
             if isinstance(item[0], tvm.te.tensor.ComputeOp):
                 output_num = item[0].num_outputs
@@ -188,8 +188,8 @@ class PolicyBase():
                     elif item[0].name == write_stage:
                         write_tensor = item[0].output(i)
         i=0
-        smem_tensor = []      
-        reg_tensor = []   
+        smem_tensor = []
+        reg_tensor = []
         for out in output_tensors:
             #print('reduce:', self.sche_simu[out].op.reduce_axis)
             #print('space:', self.sche_simu[out].op.axis)
@@ -203,7 +203,7 @@ class PolicyBase():
             # space_iters = list(set(all_iters) - set(reduce_iters))
             # self.calc_grid(reduce_iters, space_iters, False)
             # print("Target: {}\nSpace Iters: {}\nReduce Iters: {}\n".format(out, space_iters, reduce_iters))
-            
+
             smem_tensor = []
             reg_tensor = []
             reg_tile = self.sche_simu.cache_write(out, "local")
@@ -213,14 +213,14 @@ class PolicyBase():
                     self.sche_simu[input_tensor].compute_inline()
                     shared_tensor = self.sche_simu.cache_read(input_tensor, "shared", [reg_tile])
                     smem_tensor.append(shared_tensor)
-            
+
             if reg_bool:
                 for shared_tensor in smem_tensor:
                     local_tensor = self.sche_simu.cache_read(shared_tensor, "local", [reg_tile])
                     reg_tensor.append(local_tensor)
                 # reg_tile = self.sche_simu.cache_write(out, "local")
 
-            
+
             blck_axis = []
             # vthd_axis = []
             thrd_axis = []
@@ -311,7 +311,7 @@ class PolicyBase():
                         factor = factor * num_ele
                         offset = math.ceil(int(inner_most)/num_ele) * num_ele
                         res.append((j, factor, int(offset)))
-        return res 
+        return res
 
     def update_thread_per_block(self, stage, sche = None, vthread=True):
         if sche == None:

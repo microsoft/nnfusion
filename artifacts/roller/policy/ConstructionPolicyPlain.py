@@ -1,5 +1,5 @@
-from config import *
-from cost_model import *
+from roller.config import *
+from roller.cost_model import *
 from .PolicyBase import *
 import math
 import numpy
@@ -164,7 +164,7 @@ class ConstructionPolicyPlain(PolicyBase):
         self.saxis_names = saxis_names
         self.raxis_names = raxis_names
         self.small_op_sets = [[] for _ in range(self.num_level)]
-        
+
         # active block per sm database
         self.activeblock_db = ActiveBlockDB()
         activeblock_filename = 'policy/activeblock_matmul.csv'
@@ -189,13 +189,13 @@ class ConstructionPolicyPlain(PolicyBase):
         glbmem_lookup_filename = 'policy/glbmem_small_lookup.csv'
         with open(glbmem_lookup_filename, 'r') as fin:
             glbmem_lookup_str = fin.readlines()
-            fin.close()  
+            fin.close()
         for config_str in glbmem_lookup_str:
             if config_str.find('warp') != -1: continue
             config_list = config_str.split(',')
             throughput = float(config_list[-1])
             self.small_glbmem_db.insert(config_list[0], config_list[1], throughput)
-        
+
         # computation database
         self.compute_db = ComputeDB()
         compute_filename = 'policy/basicbuildingblk_compute_mm_v2.csv'
@@ -207,7 +207,7 @@ class ConstructionPolicyPlain(PolicyBase):
             config_list = config_str.split(',')
             throughput = float(config_list[-1])
             self.compute_db.insert(config_list[0], config_list[1], config_list[2], throughput)
-        
+
         self.raw_configs = []
         self.all_results = []
         self.in_results = set()
@@ -263,7 +263,7 @@ class ConstructionPolicyPlain(PolicyBase):
                 rstep[self.raxis_names[-1]] = min(self.op.reduction_axis_len(), self.arch.transaction_size[0] // size_of(self.op.input_type))
                 if self.op.use_tc:
                     rstep[self.raxis_names[-1]] = 64
-        
+
         # scan through all steps, remove the ones with too much padding
         steps = [[] for _ in range(dim)]
         for d in range(dim):
@@ -333,7 +333,7 @@ class ConstructionPolicyPlain(PolicyBase):
         tile_dim, rstep = schedule.get_tile(mem_level)
 
         if aligned_to_cu and (reg_size >= 2):
-            if mem_level == 0: 
+            if mem_level == 0:
                 if self.AlignedToMemory(tile_dim, rstep, mem_level):
                     self.top_results.append(schedule)
                     if len(self.top_results) == self.TOPK:
@@ -376,7 +376,7 @@ class ConstructionPolicyPlain(PolicyBase):
         # initialize uni tiles
         mem_level = self.num_level - 1
         uni_tile, uni_step = self.op.uni_schedule(self.saxis_names, self.raxis_names)
-        
+
         uni_schedule = Schedule(self.dim_size, self.saxis_names, self.raxis_names)
         uni_schedule.add_tile(mem_level + 1, uni_tile, uni_step)
         uni_schedule.add_tile(mem_level, uni_tile, uni_step)
@@ -389,7 +389,7 @@ class ConstructionPolicyPlain(PolicyBase):
 
         self.visited = set()
         self.DFS_tile(uni_schedule, uni_schedule, steps, mem_level)
-        
+
         # expand reduce axis
         if len(self.raxis_names) > 0:
             for i in range(len(self.top_results)):
@@ -409,7 +409,7 @@ class ConstructionPolicyPlain(PolicyBase):
                 grid_size = self.op.get_grid_size(smem_tile)
             if grid_size >= self.arch.compute_max_core[0]:
                 return schedule
-            
+
             # otherwise, shrink dimentions based on data reuse
             #print("try shrink small config: {}".format(schedule.dump_to_string()))
             for d in range(len(smem_tile)):
@@ -421,7 +421,7 @@ class ConstructionPolicyPlain(PolicyBase):
                     schedule.update_tile(l, tile, reduction_dict=None)
             #print("config after shrinking: {}".format(schedule.dump_to_string()))
         return schedule
-                    
+
 
     def emit_config_without_trails(self, topk):
         # directly compute the theoretical performance for each raw configs and pick the optimal k configs
@@ -446,7 +446,7 @@ class ConstructionPolicyPlain(PolicyBase):
                         self.in_results.add(key)
                         self.all_results.append(result)
             th += 0.2
-        
+
         # handling small configs
         for config in self.all_results:
             config = self.try_shrink(config)
@@ -455,7 +455,7 @@ class ConstructionPolicyPlain(PolicyBase):
         for schedule in self.all_results[:self.TOPK]:
             # print('init schedule:', schedule.dump_to_string())
             new_sche = RewriteSche_BankSize(schedule,self.arch.smem_bank_size)
-            # print('updated schedule:', schedule.dump_to_string()) 
+            # print('updated schedule:', schedule.dump_to_string())
             output_results.append(new_sche)
 
         return output_results

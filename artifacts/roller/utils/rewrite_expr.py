@@ -3,7 +3,6 @@ import tvm
 import re
 import inspect
 from tvm import te
-from test_config import *
 
 '''
 rewrite_expr fuse contigous axis with the same type of the orginal expr,
@@ -36,7 +35,7 @@ to use rewrite_expr, the original expr must follow the rules below:
                                 , name='conv')
 
             return [data, kernel], [conv]
-        
+
         wrong expr1:
             def conv_expr(shape, for_rtile=False, pad={}):
             N, F, HO, WO, CI, KH, KW = shape    # axis is c, while the length is CI
@@ -79,7 +78,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
     saxis_name = [a.var.name for a in saxis]
     raxis_name = [a.var.name for a in raxis]
     loop_order = saxis_name + raxis_name
-    axis_set = set(loop_order)           
+    axis_set = set(loop_order)
 
     expr_str = inspect.getsource(expr) # original expr
 
@@ -118,7 +117,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
             for a_i in a:
                 if a_i in axis_set:
                     ins_axis[i].append(a_i)
-     
+
     updated_ins_axis = [[] for _ in range(len(ins_str))]
     in_axis_dict = [{} for _ in range(len(ins_str))]
     out_axis_dict = {saxis_name[i]: i for i in range(len(saxis_name))}
@@ -158,12 +157,12 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                     fusable = False
                     break
             for c in range(len(cand)):
-                if nxt not in cand[c]: 
+                if nxt not in cand[c]:
                     fusable = False
                     break
                 if cand[c][nxt] != cand[c][cur] + 1:
                     fusable = False
-                    break          
+                    break
             cur = nxt
             n += 1
         if fusable:
@@ -192,7 +191,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                     fusable = False
                     break
             for c in range(len(cand)):
-                if nxt not in cand[c]: 
+                if nxt not in cand[c]:
                     fusable = False
                     break
                 if cand[c][nxt] != cand[c][cur] + 1:
@@ -203,7 +202,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
         if fusable:
             ra_fusable.append((i, n))
             ra_fused_axis['ra_fused' + str(len(ra_fused_axis))] = raxis_name[i: n]
-    
+
     if len(sa_fused_axis) == 0 and len(ra_fused_axis) == 0:
         print("expr axis is not fusable")
         return expr
@@ -281,7 +280,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                     if ai in fs and aj in fs:
                         fusable = True
                         cache_idx.append(s)
-            
+
             if fusable:
                 ori = []
                 if ai in updated_sa_fused_axis:
@@ -292,7 +291,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                     ori.extend(updated_sa_fused_axis[aj])
                 else:
                     ori.append(aj)
-                fused_name = ai + '_' + aj      
+                fused_name = ai + '_' + aj
                 updated_sa_fused_axis[fused_name]  = ori
                 updated_sa_fused_axis.pop(ai, None)
                 updated_sa_fused_axis.pop(aj, None)
@@ -305,7 +304,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                     for t in range(len(fs)):
                         if fs[t] == aj:
                             fs[t] = fused_name
-                            break                    
+                            break
 
                     fs_set = fused_axis_set[idx]
                     fs_set.discard(ai)
@@ -338,7 +337,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                     if ai in fs and aj in fs:
                         fusable = True
                         cache_idx.append(s)
-            
+
             if fusable:
                 ori = []
                 if ai in updated_ra_fused_axis:
@@ -349,7 +348,7 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                     ori.extend(updated_ra_fused_axis[aj])
                 else:
                     ori.append(aj)
-                fused_name = ai + '_' + aj      
+                fused_name = ai + '_' + aj
                 updated_ra_fused_axis[fused_name]  = ori
                 updated_ra_fused_axis.pop(ai, None)
                 updated_ra_fused_axis.pop(aj, None)
@@ -374,10 +373,10 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                 else:
                     i += 1
                     j += 1
-            
+
         sa_fused_axis = updated_sa_fused_axis
         ra_fused_axis = updated_ra_fused_axis
-        
+
     # get fused axis length and pad length
     fused_axis_len = {}
     fused_axis_len_list = {}
@@ -409,8 +408,8 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                 pre = ori_axis[i - 1]
                 fused_indice_map[oa] = '%'.join(fused_indice_map[pre].rsplit('//', 1))
             else:
-                fused_indice_map[oa] = fa + ' % (' + ' * '.join([a.upper() for a in ori_axis[i: ]]) + ') // ' + '(' + ' * '.join([a.upper() for a in ori_axis[i+1: ]]) +')' 
-    
+                fused_indice_map[oa] = fa + ' % (' + ' * '.join([a.upper() for a in ori_axis[i: ]]) + ') // ' + '(' + ' * '.join([a.upper() for a in ori_axis[i+1: ]]) +')'
+
     for fa in ra_fused_axis:
         ori_axis = ra_fused_axis[fa]
         for i in range(len(ori_axis)):
@@ -421,8 +420,8 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                 pre = ori_axis[i - 1]
                 fused_indice_map[oa] = '%'.join(fused_indice_map[pre].rsplit('//', 1))
             else:
-                fused_indice_map[oa] = fa + ' % (' + ' * '.join([a.upper() for a in ori_axis[i: ]]) + ') // ' + '(' + ' * '.join([a.upper() for a in ori_axis[i+1: ]]) +')' 
-    
+                fused_indice_map[oa] = fa + ' % (' + ' * '.join([a.upper() for a in ori_axis[i: ]]) + ') // ' + '(' + ' * '.join([a.upper() for a in ori_axis[i+1: ]]) +')'
+
     # get padded input expr
     ins_pad_decl = '\n'
     ins_pad = ''
@@ -435,8 +434,8 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
         axis_pad += indent + pad_axis_name + ' = ' + l + '\n'
         axis_pad += indent + 'if \'' + a + "\' in pad: " + pad_axis_name + ' += pad[\'' + a + '\']\n'
         fused_axis_len_pad[a] = pad_axis_name
-    ins_pad_decl += axis_pad  
-    
+    ins_pad_decl += axis_pad
+
     padded_ins_name = [n + '_pad' for n in ins_name]
     padded_ins_name_shape = []
     for i in range(len(ins_name)):
@@ -459,14 +458,14 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
                 else:
                     fused.append(a)
             indice.append(' '.join(fused))
-        
+
         in_pad = indent + '{} = te.compute([{}],\n'\
             '           lambda {}: te.if_then_else(te.all({}),\n'\
             '           {}[{}], 0.0),\n'\
             '           tag="{}", name="{}")\n'.format(
-            padded_name, 
-            ', '.join(shape_pad), 
-            ', '.join(f_axis), 
+            padded_name,
+            ', '.join(shape_pad),
+            ', '.join(f_axis),
             ', '.join(condition),
             name,
             ',\n                '.join(indice),
@@ -492,9 +491,9 @@ def rewrite_expr(expr, shape, new_expr_name, transpose=True):
     final_out_shape = [fused_axis_len[a] for a in fused_axis[-1]]
     final_out_expr = out_name +'[' + ', '.join(fused_axis[-1]) + ']'
     final_out = indent + '{} = te.compute([{}], lambda {}: {}, tag="{}", name="{}")\n'.format(
-        final_out_name, 
-        ', '.join(final_out_shape), 
-        ', '.join(fused_axis[-1]), 
+        final_out_name,
+        ', '.join(final_out_shape),
+        ', '.join(fused_axis[-1]),
         final_out_expr,
         final_out_name,
         final_out_name

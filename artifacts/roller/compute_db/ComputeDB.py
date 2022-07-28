@@ -1,18 +1,19 @@
 import inspect
 import json
-from arch import *
-from utils import *
 import tvm
 from tvm import te
 import os
-from config import *
+
+from roller.arch import *
+from roller.utils import *
+from roller.config import *
 
 '''
 expr_db.json is a json file that contains map from expr to db json file path.
 
 the db json file contains compute perf profiling result.
 
-the schema of the content of the file 
+the schema of the content of the file
 should be look like:
 {
     "max_compute_perf" : zzz,
@@ -32,7 +33,7 @@ should be look like:
 '''
 
 class ComputeDB():
-    def __init__(self, expr, arch, compute_loop_times = 10000, fused_redu_size = 1, test_metrics = False, debug_mode = False, tiling_configs = tuple()): 
+    def __init__(self, expr, arch, compute_loop_times = 10000, fused_redu_size = 1, test_metrics = False, debug_mode = False, tiling_configs = tuple()):
         self.expr = expr
         self.arch = arch
         self.compute_loop_times = compute_loop_times
@@ -60,7 +61,7 @@ class ComputeDB():
             db_file = self.expr_db[key]
             with open (db_file, 'r') as f:
                 self.db = json.loads(f.read())
-            
+
     def ComputePerf(self, rprog):
 
         reg_rtile = rprog.GetTile(1)
@@ -69,7 +70,7 @@ class ComputeDB():
         for d in reg_sdim:
             reg_area *= d
         reg_area = str(reg_area)
-        warp_size = 32   
+        warp_size = 32
         key = "(" + reg_area + ", " + str(warp_size) + ")"
         if key not in self.db:
             print("key not in db: ", key)
@@ -86,8 +87,8 @@ class ComputeDB():
                 print("key not in db: ", key)
                 return -1
             latency = self.db[key]
-        
-        perf = warp_size / latency     
+
+        perf = warp_size / latency
         return perf
 
     def MaxComputePerf(self):
@@ -128,11 +129,11 @@ class ComputeDB():
                         in_arr.append(n)
                         output.append(in_arr)
                 return output
-            
+
             reg_enum = [[]]
             for _ in range(self.spatial_dim):
                 reg_enum = full_permutation(reg_enum, ini_reg_list)
-            
+
             shape_enum = []
             for reg in reg_enum:
                 redu = [1 for _ in range(self.reduce_dim)]
@@ -216,7 +217,7 @@ class ComputeDB():
 
             func = tvm.build(schedule,schedule_args,target='c',target_host='c')
             return func.get_source()
-        
+
         def finish_kernel(input_tensor_list, output_tensor_list, fused_redu_size, src, warp_size, kernel_repeat_time, grid_size = 1):
             '''
             Given cpu c code and register tile, shared memory tile, generate full cuda test code.
@@ -234,7 +235,7 @@ class ComputeDB():
             -------
             str: CUDA test code.
             '''
-            
+
             input_size_list = get_tensor_size_list(input_tensor_list)
             output_size_list = get_tensor_size_list(output_tensor_list)
             output_tensor_name = output_tensor_list[0].op.name
@@ -243,7 +244,7 @@ class ComputeDB():
             if len(output_size_list) != 1:
                 print('more output data. function finish_kernel should be modified.')
                 exit(0)
-            
+
             # allocate
             allocate_str = ''
             if self.ispad:
@@ -255,7 +256,7 @@ class ComputeDB():
                     allocate_str += '  float {}[{}];\n'.format(self.input_tensor_name_list[i],input_size_list[i])
             # TODO: Q: how to deal with larger than 1 output tensor?
             allocate_str += '  float {}_global[{}];\n'.format(output_tensor_name,output_size_list[0])
-            
+
             # initialization
             def c_kernel_extract(src_c, output_tensor_name):
                 compute_name = output_tensor_name + '_global'
@@ -285,7 +286,7 @@ class ComputeDB():
                 return initial_str,compute_str
 
             initial_str, compute_str = c_kernel_extract(src, output_tensor_name)
-            
+
             # compute loop
             compute_kernel_args_list = []
             compute_kernel_call_args_list = []
@@ -293,21 +294,21 @@ class ComputeDB():
                 for i in range(len(self.input_tensor_name_list)):
                     if self.input_ispad[i]:
                         name = self.input_tensor_name_list[i]
-                        compute_kernel_args_list.append('float* __restrict__ {}_global'.format(name)) 
+                        compute_kernel_args_list.append('float* __restrict__ {}_global'.format(name))
                         compute_kernel_call_args_list.append('{}_global'.format(name))
                 # for name in self.input_tensor_name_list:
                 #     if self.input_ispad[i]:
-                #         compute_kernel_args_list.append('float* __restrict__ {}_global'.format(name)) 
+                #         compute_kernel_args_list.append('float* __restrict__ {}_global'.format(name))
                 #         compute_kernel_call_args_list.append(name)
             else:
                 for name in self.input_tensor_name_list:
-                    compute_kernel_args_list.append('float* __restrict__ {}'.format(name)) 
+                    compute_kernel_args_list.append('float* __restrict__ {}'.format(name))
                     compute_kernel_call_args_list.append(name)
-            compute_kernel_args_list.append('float* __restrict__ {}_global'.format(output_tensor_name)) 
+            compute_kernel_args_list.append('float* __restrict__ {}_global'.format(output_tensor_name))
             compute_kernel_call_args_list.append((output_tensor_name+ '_global'))
             compute_kernel_args = ', '.join(compute_kernel_args_list)
             compute_kernel_call_args = ', '.join(compute_kernel_call_args_list)
-            
+
             compute_loop_str = '  for (int compute_loop = 0; compute_loop < {}; ++compute_loop) {{\n' \
                 '    compute_kernel({});\n' \
                 '    __syncthreads();\n' \
@@ -339,7 +340,7 @@ class ComputeDB():
                 '{}\n' \
                 '{}\n' \
                 '}}\n'.format(compute_kernel_str,allocate_str,initial_str,compute_loop_str,wb_str)
-            
+
             # full code
             full_test_code = '#include <cuda_runtime.h>\n' \
                 '#include <stdio.h>\n' \
@@ -384,7 +385,7 @@ class ComputeDB():
             fused_redu_size_list = self.fused_redu_size_list
             reg_limit = self.reg_limit
             grid_size_list = self.grid_size_list
-        else: 
+        else:
             key_shape_enum, warp_size_list, fused_redu_size_list, reg_limit, grid_size_list = enum_tiling_configs(self)
         if self.isfuse:
             shape_enum = fusedshape_to_realshape(self,key_shape_enum)
@@ -411,7 +412,7 @@ class ComputeDB():
                 if self.ispad and (not self.input_ispad[i]): continue
                 reg_size += input_t_size[i]
             reg_size += output_t_size[0]
-            if reg_size > reg_limit: 
+            if reg_size > reg_limit:
                 print('idx = {} reg size = {} shape = {} out of max {}'.format(idx, reg_size, shape, reg_limit))
                 if not self.debug_mode:
                     continue
@@ -436,7 +437,7 @@ class ComputeDB():
                             full_src = finish_kernel(input_tensor_list,real_output_tensor_list,fused_redu,kernel_src,warp_size,1,grid_size)
                         else:
                             full_src = finish_kernel(input_tensor_list,real_output_tensor_list,fused_redu,kernel_src,warp_size,20,grid_size)
-                        
+
                         file_name = '{}_{}'.format(self.expr_name,idx)
                         with open('{}.cu'.format(file_name),'w') as f:
                             f.write(full_src)
@@ -461,7 +462,7 @@ class ComputeDB():
                             os.system('rm _tmp_{}'.format(file_name))
                             os.system('rm {}'.format(file_name))
                             os.system('rm {}.cu'.format(file_name))
-                            
+
                             real_spatial_key = key_shape_enum[shape_idx][:self.spatial_dim]
                             time_dict_key = str(tuple(real_spatial_key + [fused_redu, warp_size]))
                             time_dict[time_dict_key] = kernel_time / self.compute_loop_times
@@ -476,7 +477,7 @@ class ComputeDB():
                         #     if not self.test_metrics:
                         #         with open('compute_db/{}.json'.format(self.expr_name),'w') as f:
                         #             json.dump(time_dict, f)
-                            
+
                         #     if self.debug_mode and (not self.test_metrics):
                         #         import pandas as pd
                         #         df = pd.DataFrame(time_output_list)
@@ -487,16 +488,16 @@ class ComputeDB():
         if not self.test_metrics:
             with open('compute_db/{}.json'.format(self.expr_name),'w') as f:
                 json.dump(time_dict, f)
-        
+
         if self.debug_mode and (not self.test_metrics):
             import pandas as pd
             df = pd.DataFrame(time_output_list)
             df.to_csv('compute_db/{}.csv'.format(self.expr_name))
-        
+
         return 'compute_db/{}.json'.format(self.expr_name), time_dict
 
     def proc_expr(self):
-        # ad-hoc here: 
+        # ad-hoc here:
         # 1. There must be 'a, b, c = shape' in expr.
         # 2. Use the first output tensor without 'unpad' for codegen and other operation (only need compute part here, no need to care about writeback.)
         # TODO: fix this question for elw expr.
@@ -521,7 +522,7 @@ class ComputeDB():
         def get_tensor_opname(tensor_list):
             name = []
             for t in tensor_list:
-                # assert type(t) != 
+                # assert type(t) !=
                 name.append(t.op.name)
             return name
 
@@ -529,7 +530,7 @@ class ComputeDB():
         out = self.expr(test_shape)
         self.input_tensor_name_list = get_tensor_opname(out[0])
         self.output_tensor_name_list = get_tensor_opname(out[1])
-        # need to know the index of 
+        # need to know the index of
         # pad: for input size(key of compute db)
         # output without unpad: for compile
         self.ispad = False
@@ -540,8 +541,8 @@ class ComputeDB():
                 input_ispad.append(True)
             else:
                 input_ispad.append(False)
-        if self.ispad: 
-            # input tensor is pad or not (boolean list) 
+        if self.ispad:
+            # input tensor is pad or not (boolean list)
             self.input_ispad = input_ispad
             # output first pad tensor
             for i in range(len(self.output_tensor_name_list)):
@@ -550,7 +551,7 @@ class ComputeDB():
                     break
             # name
             saxis, raxis = get_axis_names(out[1][self.output_pad_index])
-        else: 
+        else:
             assert len(self.output_tensor_name_list) == 1
             saxis, raxis = get_axis_names(out[1][0])
         # TODO question: with input pad tensor, the c code can be compiled or not?

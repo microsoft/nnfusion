@@ -1,10 +1,10 @@
-from config import *
-from cost_model import *
+from roller.utils import *
+from roller.compute_db import *
+from roller.config import *
+from roller.cost_model import *
 from .PolicyBase import *
 import math
 import numpy
-from utils import *
-from compute_db import *
 
 
 def lcm(x, y):
@@ -38,7 +38,7 @@ class ConstructionPolicyPlainRTV2(PolicyBase):
         self.op = op
         self.arch = arch
         self.tile_tensor = tile_tensor
-        self.num_level = arch.num_level        
+        self.num_level = arch.num_level
 
         self.smem_tiling = smem_tiling
         self.reg_tiling = reg_tiling
@@ -85,7 +85,7 @@ class ConstructionPolicyPlainRTV2(PolicyBase):
             # base_dims = base_sdims if not is_reduction else base_rdims
             base_axis = base_saxis if not is_reduction else base_raxis
             full_dim = full_sdim if not is_reduction else full_rdim
-          
+
             for i in range(len(base_axis)):
                 new_d_candidate = ()
                 a = base_axis[i]
@@ -127,8 +127,8 @@ class ConstructionPolicyPlainRTV2(PolicyBase):
                         aligned_axis_size.append(min(new_d_candidate))
 
             return aligned_axis_size
-            
-        aligned_saxis_size = get_aligned_size(False) 
+
+        aligned_saxis_size = get_aligned_size(False)
         aligned_raxis_size = get_aligned_size(True)
         return aligned_saxis_size + aligned_raxis_size
 
@@ -154,7 +154,7 @@ class ConstructionPolicyPlainRTV2(PolicyBase):
         if key in self.visited:
             return
         self.visited.add(key)
-       
+
         rtile = rprog.GetTile(mem_level)
         if init:
             aligned_sizes = self.GetNextAlignedSteps(rprog, mem_level, True)
@@ -165,9 +165,9 @@ class ConstructionPolicyPlainRTV2(PolicyBase):
             rprog.UpdateTile(rtile, mem_level)
         aligned_sizes = self.GetNextAlignedSteps(rprog, mem_level, False)
         shape = rtile.Dimensions()
-   
+
         for d in range(len(self.op.Dimensions()) - 1, -1, -1):
-            new_rprog = rprog.copy()      
+            new_rprog = rprog.copy()
             new_shape = shape.copy()
             new_shape[d] = aligned_sizes[d]
             new_rtile = rTile(rtile.expr, new_shape, self.op.SAxis(), self.op.RAxis(), self.op.GetTvmOutTensor())
@@ -182,7 +182,7 @@ class ConstructionPolicyPlainRTV2(PolicyBase):
                 new_rprog.AddTile(mem_level - 1, rTile(new_rtile.expr, new_rtile.Dimensions(), self.op.SAxis(), self.op.RAxis(), self.op.GetTvmOutTensor()))
                 self.EnlargeTile(new_rprog, mem_level - 1, True)
                 new_rprog.DeleteTile(mem_level - 1)
-            
+
             else:
                 self.EnlargeTile(new_rprog, mem_level, False)
 
@@ -241,7 +241,7 @@ class ConstructionPolicyPlainRTV2(PolicyBase):
         self.in_results = set()
         self.TOPK = topk
         th = 0
-        round = 0 
+        round = 0
         while th <= 1 and len(self.all_results) < topk:
             self.emit_raw_configs(th)
             round += 1
@@ -254,10 +254,10 @@ class ConstructionPolicyPlainRTV2(PolicyBase):
             for result in self.top_results:
                 self.all_results.append(result)
             th += 0.2
-        
+
         return self.all_results[:self.TOPK]
-    
+
     def emit_config(self, topk, min_parallism=80):
         return self.emit_config_without_trails(topk)
-        
-                
+
+

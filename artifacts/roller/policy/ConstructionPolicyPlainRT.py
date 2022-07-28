@@ -1,5 +1,5 @@
-from config import *
-from cost_model import *
+from roller.config import *
+from roller.cost_model import *
 from .PolicyBase import *
 import math
 import numpy
@@ -111,7 +111,7 @@ class ConstructionPolicyPlainRT(PolicyBase):
         self.saxis, self.raxis = get_axis_names(outputs[0])
         self.tile_dim = len(self.saxis)
         self.step_dim = len(self.raxis)
-        
+
         self.raw_rprogs = []
         self.all_results = []
         self.in_results = set()
@@ -313,7 +313,7 @@ class ConstructionPolicyPlainRT(PolicyBase):
 
         self.visited = set()
         self.EnlargeTile(uniProg, uniProg, steps, mem_level)
-        
+
         #for schedule in self.top_results:
         #    schedule = self.expand_reduce_axis(schedule, "k", 0)
 
@@ -328,7 +328,7 @@ class ConstructionPolicyPlainRT(PolicyBase):
             grid_size = rprog.GetParallelism(0)
             if grid_size >= self.arch.compute_max_core[0]:
                 return rprog
-            
+
             # otherwise, shrink dimentions based on data reuse
             #print("try shrink small config: {}".format(schedule.dump_to_string()))
             # r_scores = DataReuseScore(self.op, rprog, 0)
@@ -344,9 +344,9 @@ class ConstructionPolicyPlainRT(PolicyBase):
                     tile_sdim[d] = math.ceil(tile_sdim[d] / 2)
                     tile_rdim = tile.RDimensions()
                     new_tile = rTile(tile.expr, tile_sdim + tile_rdim, self.op.SAxis(), self.op.RAxis(), self.op.GetTvmOutTensor())
-                    rprog.UpdateTile(new_tile, l)             
+                    rprog.UpdateTile(new_tile, l)
             # print("config after shrinking: {}".format(rprog.Dump()))
-    
+
 
     def emit_config_without_trails(self, topk):
         # directly compute the theoretical performance for each raw configs and pick the optimal k configs
@@ -371,7 +371,7 @@ class ConstructionPolicyPlainRT(PolicyBase):
                         self.in_results.add(key)
                         self.all_results.append(result)
             th += 0.1
-        
+
         # handling small configs
         if self.shrink_tiny:
             for config in self.all_results:
@@ -382,7 +382,7 @@ class ConstructionPolicyPlainRT(PolicyBase):
         for schedule in self.all_results[:self.TOPK]:
             # print('init schedule:', schedule.dump_to_string())
             new_sche = RewriteSche_BankSize(schedule,self.arch.smem_bank_size)
-            # print('updated schedule:', schedule.dump_to_string()) 
+            # print('updated schedule:', schedule.dump_to_string())
             output_results.append(new_sche)
 
         return output_results

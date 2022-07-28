@@ -1,5 +1,5 @@
-from config import *
-from cost_model import *
+from roller.config import *
+from roller.cost_model import *
 from .PolicyBase import *
 import math
 
@@ -115,7 +115,7 @@ class ConstructionPolicyV0(PolicyBase):
         self.saxis_names = saxis_names
         self.raxis_names = raxis_names
         self.small_op_sets = [[] for _ in range(self.num_level)]
-        
+
         # active block per sm database
         self.activeblock_db = ActiveBlockDB()
         activeblock_filename = 'policy/activeblock_matmul.csv'
@@ -140,13 +140,13 @@ class ConstructionPolicyV0(PolicyBase):
         glbmem_lookup_filename = 'policy/glbmem_small_lookup.csv'
         with open(glbmem_lookup_filename, 'r') as fin:
             glbmem_lookup_str = fin.readlines()
-            fin.close()  
+            fin.close()
         for config_str in glbmem_lookup_str:
             if config_str.find('warp') != -1: continue
             config_list = config_str.split(',')
             throughput = float(config_list[-1])
             self.small_glbmem_db.insert(config_list[0], config_list[1], throughput)
-        
+
         # computation database
         self.compute_db = ComputeDB()
         compute_filename = 'policy/basicbuildingblk_compute_mm_v2.csv'
@@ -158,7 +158,7 @@ class ConstructionPolicyV0(PolicyBase):
             config_list = config_str.split(',')
             throughput = float(config_list[-1])
             self.compute_db.insert(config_list[0], config_list[1], config_list[2], throughput)
-        
+
         if data_type == "float":
             self.size_of_type = 4
         self.raw_configs = []
@@ -167,7 +167,7 @@ class ConstructionPolicyV0(PolicyBase):
         # Run BFS and return all configs that satisfy memory limit
         # stride_spatial: the strides of enumerating configurations
         # stride_reduce: the reduction step sizes for all schedules
-        
+
         dim_size = len(self.op.dims[tile_tensor])
         candidates = [] # list of Schedule()
 
@@ -218,7 +218,7 @@ class ConstructionPolicyV0(PolicyBase):
 
             memory_throughput = self.arch.memory_bw(mem_level)# / self.arch.mem_max_core[0]
             memory_latency = memory_workload / memory_throughput
-            
+
             #print(schedule.dump_to_string())
             #print(compute_workload, memory_workload)
             #print(compute_latency, memory_latency)
@@ -374,6 +374,6 @@ class ConstructionPolicyV0(PolicyBase):
         def sort_key(a):
             return a[0]
         perf_config.sort(key=sort_key)
-            
+
         return [x for (_, x) in perf_config[:topk]]
 

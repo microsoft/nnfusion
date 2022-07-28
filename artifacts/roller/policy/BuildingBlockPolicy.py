@@ -1,5 +1,5 @@
-from config import *
-from cost_model import *
+from roller.config import *
+from roller.cost_model import *
 from .PolicyBase import *
 
 def eligible(op, arch, schedule, mem_level, tile_tensor = "output"):
@@ -116,7 +116,7 @@ class BuildingBlockPolicy(PolicyBase):
         self.cost_model = WarpBasedCostModel(op, arch)
         self.saxis_names = saxis_names
         self.raxis_names = raxis_names
-        
+
         # active block per sm database
         self.activeblock_db = ActiveBlockDB()
         activeblock_filename = 'policy/activeblock_matmul.csv'
@@ -141,13 +141,13 @@ class BuildingBlockPolicy(PolicyBase):
         glbmem_lookup_filename = 'policy/glbmem_small_lookup.csv'
         with open(glbmem_lookup_filename, 'r') as fin:
             glbmem_lookup_str = fin.readlines()
-            fin.close()  
+            fin.close()
         for config_str in glbmem_lookup_str:
             if config_str.find('warp') != -1: continue
             config_list = config_str.split(',')
             throughput = float(config_list[-1])
             self.small_glbmem_db.insert(config_list[0], config_list[1], throughput)
-        
+
         # computation database
         self.compute_db = ComputeDB()
         compute_filename = 'policy/basicbuildingblk_compute_mm_v2.csv'
@@ -159,7 +159,7 @@ class BuildingBlockPolicy(PolicyBase):
             config_list = config_str.split(',')
             throughput = float(config_list[-1])
             self.compute_db.insert(config_list[0], config_list[1], config_list[2], throughput)
-        
+
         self.raw_configs = []
 
 
@@ -175,7 +175,7 @@ class BuildingBlockPolicy(PolicyBase):
         out_shape = self.op.dims["output"]
         r_len = self.op.reduction_axis_len()
 
-        # TODO: for each op, emit eligible configs   
+        # TODO: for each op, emit eligible configs
         for (reg_tile, smem_tile, reduction_size) in self.activeblock_db.set_store:
             reg_tile = list(reg_tile)
             smem_tile = list(smem_tile)
@@ -186,7 +186,7 @@ class BuildingBlockPolicy(PolicyBase):
                 continue
             if smem_tile[0] >= out_shape[0] * 2 or smem_tile[1] >= out_shape[1] * 2:
                 continue
-        
+
             config_sche = Schedule(dim_size=2, spatial_axis=self.saxis_names, reduce_axis=self.raxis_names)
             config_sche.add_tile(mem_level=2, dim=[1,1], reduction_dict={'k':1})
             config_sche.add_tile(mem_level=1, dim=reg_tile, reduction_dict={'k':1})
@@ -196,7 +196,7 @@ class BuildingBlockPolicy(PolicyBase):
             if wh_key in config_wh:
                 continue
             config_wh.add(wh_key)
-            
+
             try:
                 config_sche.compute_peak_performance = self.cost_model.get_compute_peak_performance(config_sche, self.compute_db)
                 config_sche.glbmem_bandwidth = self.cost_model.get_glbmem_bandwidth(config_sche, self.small_glbmem_db)
@@ -217,7 +217,7 @@ class BuildingBlockPolicy(PolicyBase):
                 #k_reduction_size = [twopower_k] + reduction_size
                 #config_sche.active_blocks_per_sm = self.activeblock_db.lookup(reg_tile, smem_tile, k_reduction_size)
                 self.raw_configs.append(config_sche)
-                    
+
         print("total {} raw configs".format(len(self.raw_configs)))
         return self.raw_configs
 
@@ -235,6 +235,6 @@ class BuildingBlockPolicy(PolicyBase):
         def sort_key(a):
             return a[0]
         perf_config.sort(key=sort_key)
-            
+
         return [x for (_, x) in perf_config[:topk]]
 

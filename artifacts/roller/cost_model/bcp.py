@@ -1,4 +1,4 @@
-from config import *
+from roller.config import *
 
 def Area(tile):
     ret = 1
@@ -86,7 +86,7 @@ def Bank_Conflict_Penalty(schedule, tiling):
     dim_size = len(sub_op.dims[tiling.tile_tensor])
     warp_size = 32
     addrs = Address_Iterates(smem_tile, reg_tile, warp_size)
-    
+
     # For each tensor, estimate bank conflict by calculating the addresses of first loaded element in a warp
     ret = {}
     bank_size = 32

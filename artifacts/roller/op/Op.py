@@ -1,9 +1,10 @@
 import tvm
 from tvm import te
-from utils import *
+from roller.utils import *
 import math
-from config import *
-from test_config import *
+from roller.config import *
+from roller.test_config import *
+from copy import deepcopy
 
 
 class Op:
@@ -12,15 +13,17 @@ class Op:
         self.shape = shape
         self.use_tc = use_tc
         self.ori_in = []
-        self.pad_in = [] 
+        self.pad_in = []
         self.outs = []
         self.unpad_outs = []
-        self.expr_out = self.expr(self.shape, dataType=data_type, for_rtile=False)
-        self.input_tensors = self.expr_out[0]
-        self.output_tensors =self.expr_out[1]
+        # self.expr_out = self.expr(self.shape, dataType=data_type, for_rtile=False)
+        # self.input_tensors = self.expr_out[0]
+        # self.output_tensors =self.expr_out[1]
+        self.input_tensors = deepcopy(expr.input_tensors)
+        self.output_tensors = [deepcopy(expr.output(0))]
         self.fused_shape = []
         self.data_type = data_type
-        
+
         for it in self.input_tensors:
             if '_pad' in it.name:
                 self.pad_in.append(it)
@@ -39,22 +42,23 @@ class Op:
         else:
             self.sche = tvm.te.create_schedule(self.output_tensors[0].op)
 
-        if len(self.expr_out) == 3:
-            self.fused_shape_map = self.expr_out[2]
-            for a in self.saxis:
-                fs = self.fused_shape_map[a]
-                dim = 1
-                for d in fs:
-                    dim *= self.shape[d]
-                self.fused_shape.append(dim)
-            for a in self.raxis:
-                fs = self.fused_shape_map[a]
-                dim = 1
-                for d in fs:
-                    dim *= self.shape[d]
-                self.fused_shape.append(dim)
+        # todo
+        # if len(self.expr_out) == 3:
+        #     self.fused_shape_map = self.expr_out[2]
+        #     for a in self.saxis:
+        #         fs = self.fused_shape_map[a]
+        #         dim = 1
+        #         for d in fs:
+        #             dim *= self.shape[d]
+        #         self.fused_shape.append(dim)
+        #     for a in self.raxis:
+        #         fs = self.fused_shape_map[a]
+        #         dim = 1
+        #         for d in fs:
+        #             dim *= self.shape[d]
+        #         self.fused_shape.append(dim)
 
-    
+
         self.spatial_dim = len(self.saxis)
         self._axis_id = {}
         aid = 0
@@ -103,7 +107,7 @@ class Op:
         return tensor_dim
 
     def ComputeWorkload(self, rtile):
-        wk = 1 
+        wk = 1
         for d in rtile.GetOutputDataTiles()[0]:
             wk *= d
         op_rdim = self.RDimensions()
@@ -114,7 +118,7 @@ class Op:
             wk *= aligned_r
         tensor_type_size = self.OutputTypeSize()
         return wk * tensor_type_size / 2
-        
+
     def MemWorkload(self, rtile, tile_tensor="output"): #todo
         op_rdim = self.RDimensions()
         tile_sdim = rtile.SDimensions()
@@ -138,7 +142,7 @@ class Op:
 
         for i in range(len(input_data_tiles)):
             shape = input_data_tiles[i]
-            padding = storage_padding[i] 
+            padding = storage_padding[i]
             area = 1
             for d in range(len(shape)):
                 area *= shape[d] + padding[d]
@@ -151,7 +155,7 @@ class Op:
                 area *= d
             ret[1].append(int(area * tensor_type_size[1][i]))
         return ret
-    
+
     def MemFootprint(self, rtile, tile_tensor="output"):
         input_data_tiles = rtile.GetInputDataTiles()
         tensor_type_size = self.TensorTypeSize()
@@ -159,18 +163,18 @@ class Op:
         inputs_size = [] #inputs
         for i in range(len(input_data_tiles)):
             shape = input_data_tiles[i]
-            padding = storage_padding[i] 
+            padding = storage_padding[i]
             area = 1
             assert len(shape) == len(padding)
             for d in range(len(shape)):
                 area *= shape[d] + padding[d]
             inputs_size.append(area * tensor_type_size[0][i])
-        
+
         ret = 0
         for t in inputs_size:
             ret += t
         return ret
-    
+
     def Dimensions(self):
         return self.fused_shape if len(self.fused_shape) > 0 else self.shape
     def SAxis(self):
@@ -187,7 +191,7 @@ class Op:
         for rn in self.RDimensions():
             ret *= rn
         return ret
-    
+
     def RegUsage(self, rtile, tile_tensor="output"):
         # reduction axis of reg rtile is 1, which should be defined in rtile
         in_datatile = rtile.GetInputDataTiles()
@@ -218,13 +222,13 @@ class Op:
                 grid_i = int((output_tensor_shape[i] + (output_data_tile[i] - 1)) // output_data_tile[i])
                 grid_size *= grid_i
             return grid_size
-    
+
     def GetInputTensors(self, tvm_codegen=False):
         if tvm_codegen and len(self.ori_in) > 0:
             return self.ori_in
         else:
             return self.pad_in if len(self.pad_in) > 0 else self.input_tensors
-    
+
     def GetOutputTensors(self):
         return self.unpad_outs if self.unpad_outs else self.output_tensors
 
@@ -244,8 +248,8 @@ class Op:
             ys.append(y)
         for i in range(len(xs) - 1):
             dy = ys[i + 1] - ys[i]
-            dx = xs[i + 1] - xs[i]  
-            s = dy/dx 
+            dx = xs[i + 1] - xs[i]
+            s = dy/dx
             slopes.append(s)
         #print("avg_s=", sum_s/len(slopes))
         # print(min(slopes), sum(slopes)/len(slopes))

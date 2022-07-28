@@ -102,7 +102,7 @@ class CodeGeneratorR:
         self.blck_grid = [blck_dict["blockIdx.x"], blck_dict["blockIdx.y"], blck_dict["blockIdx.z"]]
         self.thrd_grid = [thrd_dict["threadIdx.x"], thrd_dict["threadIdx.y"], thrd_dict["threadIdx.z"]]
         # print("blck_grid: ", self.blck_grid, "thrd_grid: ", self.thrd_grid)
-    
+
     def adjust_format(self, out):
         for axis in self.sche[out].op.axis:
             name = axis.var.name
@@ -149,8 +149,8 @@ class CodeGeneratorR:
         # print("Input: ", input_tensors)
         # print("Output: ", output_tensors)
         for out in output_tensors:
-            #print('reduce:', self.sche[out].op.reduce_axis)
-            #print('space:', self.sche[out].op.axis)
+            # print('reduce:', self.sche[out].op.reduce_axis)
+            # print('space:', self.sche[out].op.axis)
             self.adjust_format(out)
             # TVM only allows binding reduce axis if it's the only one
             if self.binding["reduce"][1] is not None:
@@ -162,7 +162,7 @@ class CodeGeneratorR:
             space_iters = list(set(all_iters) - set(reduce_iters))
             self.calc_grid(reduce_iters, space_iters)
             # print("Target: {}\nSpace Iters: {}\nReduce Iters: {}\n".format(out, space_iters, reduce_iters))
-            
+
             smem_tensor = []
             reg_tensor = []
             reg_tile = None
@@ -171,13 +171,13 @@ class CodeGeneratorR:
                 for input_tensor in input_tensors:
                     shared_tensor = self.sche.cache_read(input_tensor, "shared", [out])
                     smem_tensor.append(shared_tensor)
-            
+
             if self.need_reg_tiling:
                 for shared_tensor in smem_tensor:
                     local_tensor = self.sche.cache_read(shared_tensor, "local", [out])
                     reg_tensor.append(local_tensor)
                 reg_tile = self.sche.cache_write(out, "local")
-            
+
             blck_axis = []
             vthd_axis = []
             thrd_axis = []
@@ -307,7 +307,7 @@ class CodeGeneratorR:
             space_iters = list(set(all_iters) - set(reduce_iters))
             self.calc_grid(reduce_iters, space_iters)
             # print("Target: {}\nSpace Iters: {}\nReduce Iters: {}\n".format(out, space_iters, reduce_iters))
-            
+
             smem_tensor = []
             reg_tensor = []
             reg_tile = self.sche.cache_write(out, "local")
@@ -317,7 +317,7 @@ class CodeGeneratorR:
                     self.sche[input_tensor].compute_inline()
                     shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
                     smem_tensor.append(shared_tensor)
-                
+
                 for shared_tensor in smem_tensor:
                     local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
                     reg_tensor.append(local_tensor)
@@ -446,7 +446,7 @@ class CodeGeneratorR:
             # space_iters = list(set(all_iters) - set(reduce_iters))
             # self.calc_grid(reduce_iters, space_iters, False)
             # print("Target: {}\nSpace Iters: {}\nReduce Iters: {}\n".format(out, space_iters, reduce_iters))
-            
+
             smem_tensor = []
             reg_tensor = []
             reg_tile = None
@@ -461,7 +461,7 @@ class CodeGeneratorR:
                     local_tensor = self.sche_simu.cache_read(shared_tensor, "local", [out])
                     reg_tensor.append(local_tensor)
                 reg_tile = self.sche_simu.cache_write(out, "local")
-            
+
             blck_axis = []
             # vthd_axis = []
             thrd_axis = []
@@ -542,7 +542,7 @@ class CodeGeneratorR:
         output_num = 0
         output_tensors = []
         write_tensor = None
- 
+
         for item in self.sche_simu.stage_map.items():
             if isinstance(item[0], tvm.te.tensor.ComputeOp):
                 output_num = item[0].num_outputs
@@ -553,8 +553,8 @@ class CodeGeneratorR:
                     elif item[0].name == write_stage:
                         write_tensor = item[0].output(i)
         i=0
-        smem_tensor = []      
-        reg_tensor = []   
+        smem_tensor = []
+        reg_tensor = []
         for out in output_tensors:
             #print('reduce:', self.sche_simu[out].op.reduce_axis)
             #print('space:', self.sche_simu[out].op.axis)
@@ -568,7 +568,7 @@ class CodeGeneratorR:
             # space_iters = list(set(all_iters) - set(reduce_iters))
             # self.calc_grid(reduce_iters, space_iters, False)
             # print("Target: {}\nSpace Iters: {}\nReduce Iters: {}\n".format(out, space_iters, reduce_iters))
-            
+
             smem_tensor = []
             reg_tensor = []
             reg_tile = None
@@ -578,14 +578,14 @@ class CodeGeneratorR:
                     self.sche_simu[input_tensor].compute_inline()
                     shared_tensor = self.sche_simu.cache_read(input_tensor, "shared", [reg_tile])
                     smem_tensor.append(shared_tensor)
-            
+
             if self.need_reg_tiling:
                 for shared_tensor in smem_tensor:
                     local_tensor = self.sche_simu.cache_read(shared_tensor, "local", [reg_tile])
                     reg_tensor.append(local_tensor)
                 reg_tile = self.sche_simu.cache_write(out, "local")
 
-            
+
             blck_axis = []
             # vthd_axis = []
             thrd_axis = []
@@ -676,6 +676,6 @@ class CodeGeneratorR:
                         factor = factor * num_ele
                         offset = math.ceil(int(inner_most)/num_ele) * num_ele
                         res.append((j, factor, int(offset)))
-        return res 
+        return res
 
-''' 
+'''

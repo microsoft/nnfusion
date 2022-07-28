@@ -1,5 +1,5 @@
-from config import *
-from cost_model import *
+from roller.config import *
+from roller.cost_model import *
 from .PolicyBase import *
 import math
 import numpy
@@ -136,7 +136,7 @@ class ConstructionPolicyV1(PolicyBase):
         self.saxis_names = saxis_names
         self.raxis_names = raxis_names
         self.small_op_sets = [[] for _ in range(self.num_level)]
-        
+
         # active block per sm database
         self.activeblock_db = ActiveBlockDB()
         activeblock_filename = 'policy/activeblock_matmul.csv'
@@ -161,13 +161,13 @@ class ConstructionPolicyV1(PolicyBase):
         glbmem_lookup_filename = 'policy/glbmem_small_lookup.csv'
         with open(glbmem_lookup_filename, 'r') as fin:
             glbmem_lookup_str = fin.readlines()
-            fin.close()  
+            fin.close()
         for config_str in glbmem_lookup_str:
             if config_str.find('warp') != -1: continue
             config_list = config_str.split(',')
             throughput = float(config_list[-1])
             self.small_glbmem_db.insert(config_list[0], config_list[1], throughput)
-        
+
         # computation database
         self.compute_db = ComputeDB()
         compute_filename = 'policy/basicbuildingblk_compute_mm_v2.csv'
@@ -179,7 +179,7 @@ class ConstructionPolicyV1(PolicyBase):
             config_list = config_str.split(',')
             throughput = float(config_list[-1])
             self.compute_db.insert(config_list[0], config_list[1], config_list[2], throughput)
-        
+
         if data_type == "float":
             self.size_of_type = 4
         self.raw_configs = []
@@ -221,7 +221,7 @@ class ConstructionPolicyV1(PolicyBase):
             rstep = {raxis : 1 for raxis in self.raxis_names}
             # hardcode for now
             rstep[self.raxis_names[-1]] = min(self.op.reduction_axis_len(), self.arch.transaction_size[0] // self.size_of_type)
-        
+
         # scan through all steps, remove the ones with too much padding
         steps = [[] for _ in range(dim)]
         for d in range(dim):
@@ -238,7 +238,7 @@ class ConstructionPolicyV1(PolicyBase):
         """
         reg_size = Prod(schedule.get_tile(self.arch.num_level - 1)[0])
         tile_dim, rdict = schedule.get_tile(mem_level)
-        
+
         max_warp = min(32, 512 // reg_size)
         compute_workload = self.op.compute_workload(tile_dim, rdict)
         compute_throughput = self.compute_db.lookup(64,8,8) * self.arch.compute_max_core[0]
@@ -253,7 +253,7 @@ class ConstructionPolicyV1(PolicyBase):
         memory_throughput = self.arch.memory_bw(mem_level)# / self.arch.mem_max_core[0]
         memory_latency = memory_workload / memory_throughput
         return compute_latency > memory_latency
-        
+
 
     def IsPeakComputeTile(self, schedule, mem_level):
         reg_tile, _ = schedule.get_tile(1)
@@ -373,7 +373,7 @@ class ConstructionPolicyV1(PolicyBase):
 
         self.visited = set()
         self.DFS_tile(uni_schedule, base_tile, steps, mem_level)
-        
+
         for schedule in self.top_results:
             schedule = self.expand_reduce_axis(schedule, "k", 0)
 
@@ -415,7 +415,7 @@ class ConstructionPolicyV1(PolicyBase):
             else:
                 th += 0.01
             self.emit_raw_configs(th)
-        
+
         # handling small op
         if self.ConstructionLog[log_small_op_key] and not self.tolerate_small_tile:
             print("is small op")
@@ -433,6 +433,6 @@ class ConstructionPolicyV1(PolicyBase):
         def sort_key(a):
             return a[0]
         perf_config.sort(key=sort_key)
-        
+
         return [x for (_, x) in perf_config[:topk]]
 

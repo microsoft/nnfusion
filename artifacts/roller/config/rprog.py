@@ -1,6 +1,6 @@
 import math
 import tvm
-from utils import *
+from roller.utils import *
 
 def num_tiles(large_shape, small_shape):
     ret = 1
@@ -39,9 +39,9 @@ class rProg:
 
     def GetTile(self, mem_level):
         return self.rTiles[mem_level]
-    
+
     def UpdateTile(self, new_rtile, mem_level):
-        assert mem_level in self.rTiles  
+        assert mem_level in self.rTiles
         self.rTiles[mem_level] = new_rtile
 
     def GetAxisConfig(self, axis_name):
@@ -72,10 +72,10 @@ class rProg:
     def GetTVMSchedule(self):
         assert isinstance(self.sche, tvm.te.Schedule)
         return self.sche
-    
+
     def Expression(self):
         return self.expr
-    
+
     def Dimensions(self):
         return self.full_shape
 

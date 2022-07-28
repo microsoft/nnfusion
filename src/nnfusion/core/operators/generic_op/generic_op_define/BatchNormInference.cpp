@@ -14,7 +14,7 @@ REGISTER_OP(BatchNormInference)
         auto output_shape_0 = curr->get_output_shape(0);
 
         NNFUSION_CHECK(output_shape_0 == input_shape_2);
-        NNFUSION_CHECK(output_shape_0.size() == 4);
+        // NNFUSION_CHECK(output_shape_0.size() == 4);
         NNFUSION_CHECK(input_shape_0 == input_shape_1);
         NNFUSION_CHECK(input_shape_3 == input_shape_4);
         NNFUSION_CHECK(input_shape_0 == input_shape_3);
@@ -24,9 +24,12 @@ REGISTER_OP(BatchNormInference)
         auto op = static_pointer_cast<nnfusion::op::BatchNormInference>(curr->get_op_ptr());
         auto epsilon = std::to_string(op->get_eps_value());
 
+        auto layout = op::create_conv_layout_from_dims(output_shape_0.size(), true);
+
         auto expression =
-            "@output0@[N, C, H, W] = @input1@[C] + @input0@[C] * (@input2@[N, C, H, W] - "
+            "@output0@@layout@ = @input1@[C] + @input0@[C] * (@input2@@layout@ - "
             "@input3@[C]) / (" +
             epsilon + " + @input4@[C]).call(`sqrt`);";
-        return expression;
+
+        return op::create_code_from_template(expression, {{"layout", vector_to_string(layout)}});
     });

@@ -6,6 +6,7 @@ file(GLOB native_custom_ops native/*.cpp)
 
 set(SRC
     native/custom_test_op.cpp
+    native/grid_sample_op.cpp
     custom_op.cpp
     ${native_custom_ops}
 )

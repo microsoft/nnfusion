@@ -78,10 +78,10 @@ namespace nnfusion
                     {
                         conv_data_format = "NCHW";
                     }
-                    // else if (data_shape.size() == 5)
-                    // {
-                    //     conv_data_format = "NCDHW";
-                    // }
+                    else if (data_shape.size() == 5)
+                    {
+                        conv_data_format = "NCDHW";
+                    }
                     else
                     {
                         NNFUSION_CHECK_FAIL() << "Convolution with dimensions of "

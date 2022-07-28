@@ -81,6 +81,8 @@ add_library(onnx_import STATIC
         op/gru.hpp
         op/gru.cpp
         # ${ops_source}
+        op/grid_sample.hpp
+        op/grid_sample.cpp
         util/broadcasting.cpp
         util/graph_convert.cpp
         util/graph_convert.hpp

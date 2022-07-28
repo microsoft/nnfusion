@@ -31,51 +31,65 @@ REGISTER_OP(Convolution)
     */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto ir_template =
-            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
+            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ @boundary_cond@; )";
 
         auto _op = static_pointer_cast<nnfusion::op::Convolution>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
-        const auto& dilation_h = _op->get_window_dilation_strides()[0];
-        const auto& dilation_w = _op->get_window_dilation_strides()[1];
-        const auto& stride_h = _op->get_window_movement_strides()[0];
-        const auto& stride_w = _op->get_window_movement_strides()[1];
-        const auto& is_nchw = _op->get_data_format() == "NCHW";
-        const auto& padding_below = _op->get_padding_below();
-        const auto& padding_above = _op->get_padding_above();
-        const auto& padding_h = _op->get_padding_below()[0];
-        const auto& padding_w = _op->get_padding_below()[1];
-        const auto& kernel_size_h =
-            is_nchw ? curr->get_input_shape(1)[2] : curr->get_input_shape(1)[0];
-        const auto& kernel_size_w =
-            is_nchw ? curr->get_input_shape(1)[3] : curr->get_input_shape(1)[1];
         const auto& in_shape = curr->get_input_shape(0);
         const auto& out_shape = curr->get_output_shape(0);
+        bool is_conv3d = in_shape.size() == 5;
+
+        const auto& dilations = _op->get_window_dilation_strides();
+        const auto& strides = _op->get_window_movement_strides();
+        const auto& is_nchw = _op->get_data_format() == "NCHW" || _op->get_data_format() == "NCDHW";
+        const auto& padding_below = _op->get_padding_below();
+        const auto& padding_above = _op->get_padding_above();
         const std::string data_format = is_nchw ? "nchw" : "nhwc";
-        NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
-        NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
-        NNFUSION_CHECK(padding_below == padding_above)
-            << "Asymetric padding is not supported by now.";
+        NNFUSION_CHECK(dilations[0] == 1) << "Not support other dilation yet.";
+        NNFUSION_CHECK(dilations[1] == 1) << "Not support other dilation yet.";
+        NNFUSION_CHECK(padding_below == padding_above) << "Asymetric padding is not supported by now.";
+
         nnfusion::op::OpConfig::any config;
-        std::string HO = "-@pad_0@ + KH + HO * " + to_string(stride_h);
-        std::string WO = "-@pad_1@ + KW + WO * " + to_string(stride_w);
-        std::string shape_template =
-            is_nchw ? "[N, C, " + HO + ", " + WO + "]" : "[N, " + HO + ", " + WO + ", C]";
-        config["input1_layout"] = is_nchw ? "[F, C, KH, KW]" : "[KH, KW, C, F]";
-        config["output0_layout"] = is_nchw ? "[N, F, HO, WO]" : "[N, HO, WO, F]";
-        config["height"] = is_nchw ? out_shape[2] : out_shape[1];
-        config["width"] = is_nchw ? out_shape[3] : out_shape[2];
-        config["pad_0"] = to_string(padding_h);
-        config["pad_1"] = to_string(padding_w);
+        for (int p_id = 0; p_id < padding_below.size(); p_id++)
+            config["pad_" + to_string(p_id)] = to_string(padding_below[p_id]);
+
+        std::vector<std::string> d_mask;
+        std::vector<std::string> d_layout;
+        std::vector<std::string> k_layout;
+        d_layout = is_conv3d ? std::vector<std::string>{"DO", "HO", "WO"} : std::vector<std::string>{"HO", "WO"};
+        k_layout = is_conv3d ? std::vector<std::string>{"KD", "KH", "KW"} : std::vector<std::string>{"KH", "KW"};
+        for (int d_id = 0; d_id < out_shape.size() - 2; d_id++)
+        {
+            d_mask.push_back("-@pad_" + to_string(d_id) + "@ + " + k_layout[d_id] + " + " + d_layout[d_id] + " * " + to_string(strides[d_id]));
+        }
+
+        std::string d_shape_expr = join<std::vector<std::string>>(d_mask, ", ");
+        std::string shape_template = is_nchw ? ("[N, C, " + d_shape_expr + "]") : ("[N, " + d_shape_expr + ", C]");
         config["input0_layout"] = op::create_code_from_template(shape_template, config);
 
+        std::string k_shape_expr = join<std::vector<std::string>>(k_layout, ", ");
+        config["input1_layout"] = is_nchw ? ("[F, C, " + k_shape_expr + "]") : ("[" + k_shape_expr + ", C, F]");
+        std::string o_shape_expr = join<std::vector<std::string>>(d_layout, ", ");
+        config["output0_layout"] = is_nchw ? ("[N, F, " + o_shape_expr + "]") : ("[N, " + o_shape_expr + ", F]");
+
+        std::vector<std::string> b_conds;
+        for (int d_id = 0; d_id < d_layout.size(); d_id++)
+            b_conds.push_back(d_layout[d_id] + " in " + to_string(is_nchw ? out_shape[d_id + 2] : out_shape[d_id + 1]));
+        config["boundary_cond"] = "where " + join<std::vector<std::string>>(b_conds, ", ");
+
         std::string pad_cond;
-        if (padding_h || padding_w)
+        bool need_pad = false;
+        for (int p_id = 0; p_id < padding_below.size(); p_id++)
+            need_pad |= padding_below[p_id];
+        if (need_pad)
         {
-            config["in_height"] = is_nchw ? in_shape[2] : in_shape[1];
-            config["in_width"] = is_nchw ? in_shape[3] : in_shape[2];
-            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @in_height@, " + WO +
-                                " >= 0, " + WO +
-                                " < @in_width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
+            std::vector<std::string> p_conds;
+            for (int d_id = 0; d_id < d_mask.size(); d_id++)
+            {
+                p_conds.push_back(d_mask[d_id] + " >= 0");
+                p_conds.push_back(d_mask[d_id] + " < " + to_string(is_nchw ? in_shape[d_id + 2] : in_shape[d_id + 1]));
+            }
+            auto pad_template = ".when([" + join<std::vector<std::string>>(p_conds, ", ") + "], const(0.0).cast(@input0@@input0_layout@.dtype()))";
             pad_cond = op::create_code_from_template(pad_template, config);
         }
         config["pad_cond"] = pad_cond;

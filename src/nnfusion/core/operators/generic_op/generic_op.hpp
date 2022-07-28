@@ -269,6 +269,8 @@ namespace nnfusion
             return shape_def;
         }
 
+        std::vector<std::string> create_conv_layout_from_dims(int ndims, bool is_nchw);
+
         inline void create_inputs_definition_from_tensor(
             std::shared_ptr<nnfusion::descriptor::Tensor> tensor,
             std::string input_name,

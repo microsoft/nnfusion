@@ -42,7 +42,7 @@ namespace nnfusion
                             "output_shape", std::vector<int64_t>(x_shape.size(), 0));
                     conv_trans_attrs["output_padding"] =
                         node.get_attribute_value<std::vector<int64_t>>(
-                            "output_padding", std::vector<int64_t>((w_shape.size() - 2) * 2, 0));
+                            "output_padding", std::vector<int64_t>(w_shape.size() - 2, 0));
                     return conv_trans_attrs;
                 }
 
@@ -79,6 +79,8 @@ namespace nnfusion
                     op_config["padding_below"] =
                         CoordinateDiff(conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2,
                                        conv_attrs["pads"].end());
+                    op_config["output_padding"] = Coordinate(conv_trans_attrs["output_padding"].begin(), 
+                                                             conv_trans_attrs["output_padding"].end());
 
                     auto node_name = node_proto.output(0);
                     auto conv_trans_op = std::make_shared<op::GenericOp>(

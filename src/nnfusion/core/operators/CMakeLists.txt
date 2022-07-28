@@ -14,6 +14,7 @@ set(SRC
     util/tensor_op.cpp
     util/validation_util.cpp
     generic_op/op_registration.cpp
+    generic_op/generic_op.cpp
     op_define/abs.cpp
     op_define/acos.cpp
     op_define/add.cpp

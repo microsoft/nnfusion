@@ -103,8 +103,9 @@ class ConstructionPolicyPlainRT(PolicyBase):
         self.arch = arch
         self.tile_tensor = tile_tensor
         self.num_level = arch.num_level
-        expr_out = self.op.expr(self.op.Dimensions())
-        outputs = expr_out[1]
+        # expr_out = self.op.expr(self.op.Dimensions())
+        # outputs = expr_out[1]
+        outputs = [self.op.expr.output(i) for i in range(self.op.expr.num_outputs)]
         self.th_cap = padding_threshold_cap
         self.shrink_tiny = shrink_tiny
 

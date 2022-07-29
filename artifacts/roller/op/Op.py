@@ -19,7 +19,7 @@ class Op:
         # self.expr_out = self.expr(self.shape, dataType=data_type, for_rtile=False)
         # self.input_tensors = self.expr_out[0]
         # self.output_tensors =self.expr_out[1]
-        self.input_tensors = deepcopy(expr.input_tensors)
+        self.input_tensors = list(expr.input_tensors)
         self.output_tensors = [deepcopy(expr.output(0))]
         self.fused_shape = []
         self.data_type = data_type

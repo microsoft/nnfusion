@@ -23,6 +23,8 @@ def extract_producer_load(expr):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.LT):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.expr.Div):
+        return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.FloatImm):
         return []
     else:
@@ -34,6 +36,10 @@ def eval_index_len(index_expr, name2val):
         return name2val[index_expr.name]
     elif isinstance(index_expr, tvm.tir.Add):
         return eval_index_len(index_expr.a, name2val) + eval_index_len(index_expr.b, name2val) - 1
+    elif isinstance(index_expr, tvm.tir.expr.Mul):
+        return (eval_index_len(index_expr.a, name2val) - 1) * (eval_index_len(index_expr.b, name2val) - 1) + 1
+    elif isinstance(index_expr, tvm.tir.expr.IntImm):
+        return index_expr.value + 1
     else:
         print(type(index_expr))
         assert(False)

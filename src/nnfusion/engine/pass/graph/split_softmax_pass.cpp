@@ -34,7 +34,6 @@ bool SplitSoftmaxPass::run_on_graph(std::shared_ptr<Graph>& graph)
         auto node1 = graph->add_node_and_edge(op1, {input_node, node0});
         auto node2 = graph->add_node_and_edge(op2, {node1});
         auto node3 = graph->add_node_and_edge(op3, {node1, node2});
-        std::cout << node->get_out_edges().size() << std::endl;
         for (auto& edge : node->get_out_edges())
         {
             if (edge->is_control_edge())
@@ -44,9 +43,5 @@ bool SplitSoftmaxPass::run_on_graph(std::shared_ptr<Graph>& graph)
         }
         graph->remove_node(node);
     }
-    for (auto node : graph->get_ordered_ops()) {
-
-    }
-    std::cout << "SPLIT DONE\n";
     return true;
 }

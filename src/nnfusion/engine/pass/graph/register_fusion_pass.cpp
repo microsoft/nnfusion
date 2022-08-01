@@ -17,6 +17,9 @@ using namespace nnfusion::kernels;
 
 DEFINE_string(ftune_output_file, "", "the output json file path");
 DEFINE_string(ftune_input_file, "", "the input json file path");
+DEFINE_string(ffusion_skiplist,
+    "",
+    "List of op types that skips in fusion");
 
 namespace
 {
@@ -45,6 +48,16 @@ namespace
         std::unordered_set<shared_ptr<GNode>> nodes;
     };
     const std::unordered_set<std::string> inlined_ops = {"Broadcast", "Reshape", "Slice", "BatchNormInference"};
+    std::unordered_set<std::string> skip_ops = {};
+    void parse_skip_ops() {
+        stringstream ss(FLAGS_ffusion_skiplist);
+        while (ss.good())
+        {
+            string substr;
+            getline(ss, substr, ',');
+            skip_ops.insert(substr);
+        }
+    }
 }
 
 class RegisterFusionOptimizer {
@@ -94,6 +107,7 @@ public:
         for (auto& node : m_graph->get_ordered_ops()) {
             if (node->get_op_ptr()->is_tensor_op()) continue;
             auto str = nnfusion::op::get_translation_v2(node);
+            if (skip_ops.count(node->get_op_type())) str += "## @: skip";
             auto edge = nlohmann::json().array();
             for (auto &e : node->get_in_edges()) {
                 edge.push_back({e->get_src()->get_id(), e->get_src_output()});
@@ -165,6 +179,7 @@ private:
                 fusible &= !tnode->visited_;
                 fusible &= tnode->inlined_;
                 fusible &= node->get_output_shape(0) == output_shape;
+                fusible &= !(skip_ops.count(node->get_op_type()) || skip_ops.count(top_node->node_->get_op_type()));
             }
 
             // add to group
@@ -315,6 +330,7 @@ bool RegisterFusionPass::run_on_graph(std::shared_ptr<Graph>& graph)
     if (FLAGS_ftune_output_file == "")
         return true;
     NNFUSION_LOG(INFO) << "RegisterFusionPass Start";
+    parse_skip_ops();
     auto optimizer = RegisterFusionOptimizer(graph);
     if (!optimizer.Optimize()) return false;
     auto applier = ApplyFusionResult(graph);

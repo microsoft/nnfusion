@@ -8,6 +8,7 @@ from tvm import te
 import numpy as np
 import math
 import copy
+from roller.utils import get_normalized_reduce_axis
 from .tc_intrin import (
     init_intrin_strides,
     intrin_wmma_load_matrix,
@@ -56,10 +57,10 @@ class CodeGeneratorR:
         if sche == None:
             sche = self.sche
         num = 1
-        print(self.tiling)
         for axis in sche[stage].op.axis:
             num = num * self.tiling[axis.var.name][1 if vthread else 0]
         self.thread_per_block = num
+        # print('[debug] thread per block {}'.format(self.thread_per_block))
 
     def cooperative_fetch(self, shared, sch):
         axes = sch[shared].op.axis
@@ -110,7 +111,7 @@ class CodeGeneratorR:
                 vthrd = self.tiling[name][1]
                 thrd = self.tiling[name][0]
                 self.tiling[name] = [vthrd, thrd, 1]
-        #print("Config:", self.tiling)
+        print("[debug] adjusted tiling:", self.tiling)
 
     # [Parameters]
     #   schedule: the original TVM schedule of an op
@@ -126,7 +127,7 @@ class CodeGeneratorR:
         # self.bank_number = bank_number
         self.binding = {"space": ["blockIdx.x", "vthread", "threadIdx.x"], "reduce": [None, None]}
         self.get_codegen_dict(rprog)
-        print(self.tiling)
+        print('[debug] code gen tiling: {}'.format(self.tiling))
         self.need_smem_tiling = smem_bool
         self.need_reg_tiling = reg_bool
         self.sche = schedule
@@ -158,7 +159,7 @@ class CodeGeneratorR:
 
             self.update_thread_per_block(out)
             all_iters = self.sche[out].all_iter_vars
-            reduce_iters = out.op.reduce_axis
+            reduce_iters = get_normalized_reduce_axis(out.op)
             space_iters = list(set(all_iters) - set(reduce_iters))
             self.calc_grid(reduce_iters, space_iters)
             # print("Target: {}\nSpace Iters: {}\nReduce Iters: {}\n".format(out, space_iters, reduce_iters))
@@ -221,11 +222,10 @@ class CodeGeneratorR:
                 space_axis = []
                 for axis in self.sche[reg_tile].op.axis:
                     space_axis.append(axis)
-                for axis in self.sche[reg_tile].op.reduce_axis:
+                for axis in get_normalized_reduce_axis(self.sche[reg_tile].op):
                     res = self.split_axis(reg_tile, axis)
                     reduce_axis = reduce_axis + res
                 axis_order = reduce_axis + space_axis
-                # print('axis_order', axis_order)
                 # print("[Split reduction axis]\n", axis_order)
                 self.sche[reg_tile].reorder(*axis_order)
                 space_fused = self.sche[reg_tile].fuse(*space_axis)
@@ -252,6 +252,8 @@ class CodeGeneratorR:
                 for st in smem_tensor:
                     self.sche[st].compute_at(self.sche[out], reduce_axis[0])
                     self.cooperative_fetch(st, self.sche)
+
+            # print(tvm.lower(self.sche, input_tensors + output_tensors, simple_mode=True))
 
         for info in align_info:
             idx, factor, offset = info

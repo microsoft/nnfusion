@@ -17,6 +17,8 @@ def extract_producer_load(expr):
         return [expr]
     elif isinstance(expr, tvm.tir.Mul):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.Add):
+        return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.LT):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.expr.Div):
@@ -24,18 +26,18 @@ def extract_producer_load(expr):
     elif isinstance(expr, tvm.tir.FloatImm):
         return []
     else:
-        print(type(expr))
+        print('type: {}, content: {}'.format(type(expr), expr))
         assert(False)
 
 def eval_index_len(index_expr, name2val):
     if isinstance(index_expr, tvm.tir.Var):
-        return name2val[index_expr.name]
+        return name2val[index_expr.name] - 1
     elif isinstance(index_expr, tvm.tir.Add):
-        return eval_index_len(index_expr.a, name2val) + eval_index_len(index_expr.b, name2val) - 1
+        return eval_index_len(index_expr.a, name2val) + eval_index_len(index_expr.b, name2val)
     elif isinstance(index_expr, tvm.tir.expr.Mul):
-        return (eval_index_len(index_expr.a, name2val) - 1) * (eval_index_len(index_expr.b, name2val) - 1) + 1
+        return eval_index_len(index_expr.a, name2val) * eval_index_len(index_expr.b, name2val)
     elif isinstance(index_expr, tvm.tir.expr.IntImm):
-        return index_expr.value + 1
+        return index_expr.value
     else:
         print(type(index_expr))
         assert(False)
@@ -50,7 +52,7 @@ def build_tensors(op, shape):
         indices = load_expr.indices
         dims = [0] * len(indices)
         for i in range(len(indices)):
-            dims[i] = eval_index_len(indices[i], name2val)
+            dims[i] = eval_index_len(indices[i], name2val) + 1
         return dims
 
     if isinstance(compute_expr, tvm.tir.Reduce):
@@ -77,7 +79,10 @@ def build_tensors(op, shape):
             else:
                 in_tensors[producer_name] = dims
         in_tensors = list(in_tensors.items())
+    elif isinstance(compute_expr, tvm.tir.expr.ProducerLoad):
+        in_tensors = [(compute_expr.producer.name, calc_tensor_dim(compute_expr))]
     else:
+        print('type: {}, content: {}'.format(type(compute_expr), compute_expr))
         assert(False)
 
     out_tensors = [(op.output(0).name, shape[:len(op.axis)])]
@@ -120,7 +125,10 @@ def get_normalized_reduce_axis(op):
         for arg in compute_expr.args:
             load_exprs = load_exprs + extract_producer_load(arg)
         process_load_exprs(load_exprs)
+    elif isinstance(compute_expr, tvm.tir.expr.ProducerLoad):
+        process_load_exprs([compute_expr])
     else:
+        print('type: {}, content: {}'.format(type(compute_expr), compute_expr))
         assert(False)
 
     # print('[debug] not naive access: {}'.format(not_naive_access))

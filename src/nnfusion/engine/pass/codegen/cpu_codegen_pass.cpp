@@ -373,7 +373,7 @@ void CpuCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx,
     // if (device_type() == CUDA_GPU || device_type() == ROCM_GPU)
     //     lu_header << header::cuda->get_code();
     lu_header << "extern \"C\" int get_device_type();\n";
-    lu_header << "extern \"C\" int64_t get_workspace_size();\n";
+    lu_header << "extern \"C\" size_t get_workspace_size();\n";
     lu_header << "extern \"C\" int kernel_entry(";
     std::string params = get_kernel_entry_paras(tu);
     lu_header << params;

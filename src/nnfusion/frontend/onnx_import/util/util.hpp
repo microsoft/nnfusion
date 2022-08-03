@@ -143,11 +143,11 @@ namespace nnfusion
                 }
 
                 template <>
-                inline std::vector<half_float::half> get_data(const onnx::TensorProto& tensor){
-
+                inline std::vector<half_float::half> get_data(const onnx::TensorProto& tensor)
+                {
                     if (tensor.has_raw_data())
                     {
-                        return  __get_raw_data<half_float::half>(tensor.raw_data());
+                        return __get_raw_data<half_float::half>(tensor.raw_data());
                     }
                 }
 

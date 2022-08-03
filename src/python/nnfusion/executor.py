@@ -233,7 +233,7 @@ class Executor(object):
         get_workspace_size = getattr(self.libnnf, 'get_workspace_size', None)
         if get_workspace_size is None:
             return None
-        get_workspace_size.restype = ctypes.c_int64
+        get_workspace_size.restype = ctypes.c_size_t
         n_byte = get_workspace_size()
         if not n_byte:
             return None

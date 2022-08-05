@@ -83,24 +83,24 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             unordered_set<std::shared_ptr<descriptor::Tensor>> newlist(alloc_temp);
             // todo: this hack is to eliminate d2d copy caused by extern result memory
             bool skip = false;
-            if (FLAGS_fextern_result_memory && gnode)
-            {
-                bool all_users_are_result = true;
-                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
-                {
-                    auto dst = gnode->get_out_edges()[i]->get_dst();
+            // if (FLAGS_fextern_result_memory && gnode)
+            // {
+            //     bool all_users_are_result = true;
+            //     for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
+            //     {
+            //         auto dst = gnode->get_out_edges()[i]->get_dst();
 
-                    if (dst && !dst->get_op_ptr()->is_output())
-                    {
-                        all_users_are_result = false;
-                        break;
-                    }
-                }
-                if (all_users_are_result)
-                {
-                    skip = true;
-                }
-            }
+            //         if (dst && !dst->get_op_ptr()->is_output())
+            //         {
+            //             all_users_are_result = false;
+            //             break;
+            //         }
+            //     }
+            //     if (all_users_are_result)
+            //     {
+            //         skip = true;
+            //     }
+            // }
             // The output of output nodes refers to the input, so there is NO need
             // to allocate memory space for output of output nodes.
             if (!skip && (!gnode || !gnode->get_op_ptr()->is_output() ||

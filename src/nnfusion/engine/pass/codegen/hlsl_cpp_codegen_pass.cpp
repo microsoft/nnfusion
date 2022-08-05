@@ -69,6 +69,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         else
             lu_init_begin << "\nvoid hlsl_init()\n{\n";
 
+        lu_init_begin << "dxModuleSetCompat(\"cs_6_2\");\n";
         if (FLAGS_fhlsl_descriptor_heap)
         {
             lu_init_begin << "dxInit(1);\n";
@@ -332,7 +333,7 @@ void HLSLCPPCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> 
     lu_header << "using namespace half_float;\n";
 
     lu_header << "extern \"C\" RUNTIME_API int get_device_type();\n";
-    lu_header << "extern \"C\" RUNTIME_API int64_t get_workspace_size();\n";
+    lu_header << "extern \"C\" RUNTIME_API size_t get_workspace_size();\n";
     lu_header << "extern \"C\" RUNTIME_API int kernel_entry";
     if (FLAGS_fhost_entry)
         lu_header << "_host";

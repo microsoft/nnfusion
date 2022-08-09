@@ -1,4 +1,5 @@
 import tvm
+import tvm.tir as tir
 
 def build_name2val(op, shape):
     axis = op.axis
@@ -19,11 +20,31 @@ def extract_producer_load(expr):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.Add):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.Sub):
+        return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.LT):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.expr.Div):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.expr.And):
+        return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.expr.LE):
+        return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.expr.FloorMod):
+        return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.Call):
+        ret = []
+        for arg in expr.args:
+            # print('[debug] arg = {}'.format(arg))
+            ret = ret + extract_producer_load(arg)
+        return ret
     elif isinstance(expr, tvm.tir.FloatImm):
+        return []
+    elif isinstance(expr, tvm.tir.IntImm):
+        return []
+    elif isinstance(expr, tvm.tir.StringImm):
+        return []
+    elif isinstance(expr, tvm.tir.expr.Var):
         return []
     else:
         print('type: {}, content: {}'.format(type(expr), expr))
@@ -34,12 +55,19 @@ def eval_index_len(index_expr, name2val):
         return name2val[index_expr.name] - 1
     elif isinstance(index_expr, tvm.tir.Add):
         return eval_index_len(index_expr.a, name2val) + eval_index_len(index_expr.b, name2val)
+    elif isinstance(index_expr, tvm.tir.Sub):
+        assert(isinstance(index_expr.b, tvm.tir.IntImm))
+        return eval_index_len(index_expr.a, name2val)
     elif isinstance(index_expr, tvm.tir.expr.Mul):
         return eval_index_len(index_expr.a, name2val) * eval_index_len(index_expr.b, name2val)
+    elif isinstance(index_expr, tvm.tir.expr.Div):
+        return eval_index_len(index_expr.a, name2val) // eval_index_len(index_expr.b, name2val)
+    elif isinstance(index_expr, tvm.tir.expr.FloorMod):
+        return eval_index_len(index_expr.a, name2val) % eval_index_len(index_expr.b, name2val)
     elif isinstance(index_expr, tvm.tir.expr.IntImm):
         return index_expr.value
     else:
-        print(type(index_expr))
+        print('type: {}, content: {}'.format(type(index_expr), index_expr))
         assert(False)
 
 def build_tensors(op, shape):
@@ -67,6 +95,66 @@ def build_tensors(op, shape):
 
         in_tensors = list(in_tensors.items())
     elif isinstance(compute_expr, tvm.tir.Call):
+        # TODO: trick here
+        if compute_expr.op.name == 'tir.if_then_else':
+            constraints = {}
+
+            cur_name2val = {}
+            for item in op.axis:
+                cur_name2val[item.var.name] = item.dom.extent.value
+            for item in op.reduce_axis:
+                cur_name2val[item.var.name] = item.dom.extent.value
+
+            def extract_constraints(cur_expr):
+                if isinstance(cur_expr, tvm.tir.expr.And):
+                    return extract_constraints(cur_expr.a) + extract_constraints(cur_expr.b)
+                elif isinstance(cur_expr, tvm.tir.expr.LT):
+                    if isinstance(cur_expr.a, tvm.tir.Var):
+                        assert(isinstance(cur_expr.b, tvm.tir.expr.IntImm))
+                        return [(cur_expr.a.name, 'high', cur_expr.b.value)]
+                elif isinstance(cur_expr, tvm.tir.expr.GE):
+                    if isinstance(cur_expr.a, tvm.tir.Var):
+                        assert(isinstance(cur_expr.b, tvm.tir.expr.IntImm))
+                        return [(cur_expr.a.name, 'low', cur_expr.b.value)]
+                elif isinstance(cur_expr, tvm.tir.expr.LE):
+                    if isinstance(cur_expr.b, tvm.tir.Var):
+                        assert(isinstance(cur_expr.a, tvm.tir.expr.IntImm))
+                        return [(cur_expr.b.name, 'low', cur_expr.a.value)]
+                else:
+                    print('[debug] extract constraints: {}'.format(cur_expr))
+                    return []
+
+            info = extract_constraints(compute_expr.args[0])
+
+            for record in info:
+                name, kind, val = record
+
+                assert(name in cur_name2val)
+
+                if kind == 'low':
+                    if name in constraints:
+                        prev_low, prev_high = constraints[name]
+                        constraints[name] = (max(val, prev_low), prev_high)
+                    else:
+                        constraints[name] = (val, cur_name2val[name])
+                else:
+                    assert(kind == 'high')
+                    if name in constraints:
+                        prev_low, prev_high = constraints[name]
+                        constraints[name] = (prev_low, min(val, prev_high))
+                    else:
+                        constraints[name] = (0, val)
+
+            # print(constraints)
+            # print(cur_name2val)
+
+            for key, val in constraints.items():
+                low, high = val
+                assert(low < high)
+                assert(key in name2val)
+                prev_val = name2val[key]
+                name2val[key] = prev_val - (cur_name2val[key] - (high - low))
+
         load_exprs = []
         for arg in compute_expr.args:
             load_exprs = load_exprs + extract_producer_load(arg)
@@ -81,6 +169,17 @@ def build_tensors(op, shape):
         in_tensors = list(in_tensors.items())
     elif isinstance(compute_expr, tvm.tir.expr.ProducerLoad):
         in_tensors = [(compute_expr.producer.name, calc_tensor_dim(compute_expr))]
+    elif isinstance(compute_expr, tvm.tir.expr.Add) or isinstance(compute_expr, tvm.tir.expr.Div):
+        load_exprs = extract_producer_load(compute_expr.a) + extract_producer_load(compute_expr.b)
+        in_tensors = {}
+        for load_expr in load_exprs:
+            producer_name = load_expr.producer.name
+            dims = calc_tensor_dim(load_expr)
+            if producer_name in in_tensors:
+                assert(dims == in_tensors[producer_name])
+            else:
+                in_tensors[producer_name] = dims
+        in_tensors = list(in_tensors.items())
     else:
         print('type: {}, content: {}'.format(type(compute_expr), compute_expr))
         assert(False)
@@ -96,6 +195,10 @@ def extract_iter_names(index_expr):
         return extract_iter_names(index_expr.a) + extract_iter_names(index_expr.b)
     elif isinstance(index_expr, tvm.tir.expr.Mul):
         return extract_iter_names(index_expr.a) + extract_iter_names(index_expr.b)
+    elif isinstance(index_expr, tvm.tir.expr.Div):
+        return extract_iter_names(index_expr.a) + extract_iter_names(index_expr.b)
+    elif isinstance(index_expr, tvm.tir.expr.FloorMod):
+        return extract_iter_names(index_expr.a) + extract_iter_names(index_expr.b)
     elif isinstance(index_expr, tvm.tir.expr.IntImm):
         return []
     else:
@@ -103,6 +206,8 @@ def extract_iter_names(index_expr):
         assert(False)
 
 def get_normalized_reduce_axis(op):
+    if len(op.reduce_axis) == 0:
+        return op.reduce_axis
     lhs, rhs = [], []
 
     assert(len(op.body) == 1)
@@ -140,3 +245,29 @@ def get_normalized_reduce_axis(op):
             lhs.append(axis)
 
     return lhs + rhs
+
+
+def classify_tvm_op_tensors(op):
+    in_tensors, out_tensors = [], []
+
+    out_name = op.output(0).name
+
+    def dfs(tvm_op):
+        if isinstance(tvm_op, tvm.te.tensor.PlaceholderOp):
+            in_tensors.append(tvm_op.output(0))
+        elif isinstance(tvm_op, tvm.te.tensor.ComputeOp):
+            for tensor in tvm_op.input_tensors:
+                dfs(tensor.op)
+
+            for idx in range(tvm_op.num_outputs):
+                tensor = tvm_op.output(idx)
+                if tensor.name == out_name or tensor.name + '_unpad' == out_name:
+                    out_tensors.append(tensor)
+                else:
+                    in_tensors.append(tensor)
+        else:
+            print('type: {}, content: {}'.format(type(tvm_op), tvm_op))
+            assert(False)
+
+    dfs(op)
+    return in_tensors, out_tensors

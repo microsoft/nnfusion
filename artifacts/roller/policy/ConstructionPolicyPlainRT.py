@@ -103,9 +103,10 @@ class ConstructionPolicyPlainRT(PolicyBase):
         self.arch = arch
         self.tile_tensor = tile_tensor
         self.num_level = arch.num_level
-        # expr_out = self.op.expr(self.op.Dimensions())
-        # outputs = expr_out[1]
-        outputs = [self.op.expr.output(i) for i in range(self.op.expr.num_outputs)]
+        if '_unpad' in self.op.expr.output(0).name:
+            outputs = [self.op.expr.input_tensors[0], self.op.expr.output(0)]
+        else:
+            outputs = [self.op.expr.output(0)]
         self.th_cap = padding_threshold_cap
         self.shrink_tiny = shrink_tiny
 
@@ -127,8 +128,8 @@ class ConstructionPolicyPlainRT(PolicyBase):
         output_subtensors = rtile.GetOutputDataTiles()
         subtensors = input_subtensors + output_subtensors
 
-        full_input_tensors = self.op.input_tensors
-        full_output_tensors = self.op.output_tensors
+        full_input_tensors = self.op.GetInputTensors()
+        full_output_tensors = self.op.GetOutputTensors()
         full_tensors = full_input_tensors + full_output_tensors
 
         for subtensor_shape, full_tensor in zip(subtensors, full_tensors):
@@ -233,7 +234,7 @@ class ConstructionPolicyPlainRT(PolicyBase):
             return
 
         def one_level_down(rprog, this_level):
-            # print("going down {}".format(schedule.dump_to_string()))
+            # print('one level down {}'.format(rprog.Dump()))
             base_rtile = rprog.GetTile(this_level)
             steps, base_rtile = self.GetAlignedSteps(base_rtile, this_level - 1)
             # valid = True

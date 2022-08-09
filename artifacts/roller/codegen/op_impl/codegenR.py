@@ -60,7 +60,7 @@ class CodeGeneratorR:
         for axis in sche[stage].op.axis:
             num = num * self.tiling[axis.var.name][1 if vthread else 0]
         self.thread_per_block = num
-        # print('[debug] thread per block {}'.format(self.thread_per_block))
+        print('[debug] thread per block {}'.format(self.thread_per_block))
 
     def cooperative_fetch(self, shared, sch):
         axes = sch[shared].op.axis
@@ -70,7 +70,7 @@ class CodeGeneratorR:
         #ii, ii_n = sch[shared].split(ii, factor=2)
         sch[shared].vectorize(ii_n)
         sch[shared].reorder(oo, ii, ii_n)
-        sch[shared].unroll(oo)
+        # sch[shared].unroll(oo)
         # sch[shared].unroll(ii_n)
         sch[shared].bind(ii, te.thread_axis("threadIdx.x"))
 
@@ -239,6 +239,8 @@ class CodeGeneratorR:
                     self.sche[out].bind(reduce_axis[1], bind_idx)
                     self.sche[out].set_store_predicate(bind_idx.var.equal(0))
 
+            # print(tvm.lower(self.sche, input_tensors + output_tensors, simple_mode=True))
+
             # print("[Cooperative fetching]")
             if reg_tile is not None:
                 for rt in reg_tensor:
@@ -283,7 +285,7 @@ class CodeGeneratorR:
     # [Return]
     #   new_s: an optimized TVM schedule
 
-    def rewrite_schedule_fuse(self, schedule, rprog, smem_bool, reg_bool, input_tensors, output_tensors, write_tensor, target_stage="conv2d_nchw_implicit_gemm", write_stage="output", align_info = [], bank_size = 4):
+    def rewrite_schedule_fuse(self, schedule, rprog, smem_bool, reg_bool, input_tensors, output_tensors, write_tensor, target_stage="conv2d_nchw_implicit_gemm", write_stage="output", align_info = [], bank_size = 4, ori_in = None):
         # self.storage_align_on = st_align
         self.bank_size = bank_size
         # self.bank_number = bank_number
@@ -294,6 +296,8 @@ class CodeGeneratorR:
         self.need_reg_tiling = reg_bool
         self.sche = schedule
         # align_info = self.get_align_info_fuse(schedule, rprog, smem_bool, reg_bool, target_stage, st_align, bank_size, bank_number)
+
+        # print(tvm.lower(self.sche, ori_in + output_tensors, simple_mode=True))
 
         for out in output_tensors:
             #print('reduce:', self.sche[out].op.reduce_axis)
@@ -313,16 +317,22 @@ class CodeGeneratorR:
             smem_tensor = []
             reg_tensor = []
             reg_tile = self.sche.cache_write(out, "local")
+
+            # print(tvm.lower(self.sche, ori_in + output_tensors, simple_mode=True))
             # print("[Add cache stage]")
+            # print(self.need_smem_tiling, input_tensors)
             if self.need_smem_tiling:
                 for input_tensor in input_tensors:
                     self.sche[input_tensor].compute_inline()
+                    # print(input_tensor)
                     shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
                     smem_tensor.append(shared_tensor)
 
                 for shared_tensor in smem_tensor:
                     local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
                     reg_tensor.append(local_tensor)
+
+            # print(tvm.lower(self.sche, ori_in + output_tensors, simple_mode=True))
 
             blck_axis = []
             vthd_axis = []
@@ -360,6 +370,8 @@ class CodeGeneratorR:
             if self.binding["space"][2] is not None:
                 self.sche[out].bind(thrd_fused, te.thread_axis(self.binding["space"][2]))
 
+            # print(tvm.lower(self.sche, ori_in + output_tensors, simple_mode=True))
+
             reduce_axis = []
             if reg_tile is not None:
                 self.sche[reg_tile].compute_at(self.sche[out], thrd_fused)
@@ -382,6 +394,8 @@ class CodeGeneratorR:
                     self.sche[out].bind(reduce_axis[1], bind_idx)
                     self.sche[out].set_store_predicate(bind_idx.var.equal(0))
 
+            # print(tvm.lower(self.sche, ori_in + output_tensors, simple_mode=True))
+
             # print("[Cooperative fetching]")
             if reg_tile is not None:
                 for rt in reg_tensor:
@@ -395,6 +409,9 @@ class CodeGeneratorR:
                 for st in smem_tensor:
                     self.sche[st].compute_at(self.sche[out], reduce_axis[0])
                     self.cooperative_fetch(st, self.sche)
+
+            # print(tvm.lower(self.sche, ori_in + output_tensors, simple_mode=True))
+
         for info in align_info:
             idx, factor, offset = info
             st = smem_tensor[idx]

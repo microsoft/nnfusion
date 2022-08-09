@@ -4,7 +4,7 @@ from roller.utils import *
 import math
 from roller.config import *
 from roller.test_config import *
-from copy import deepcopy
+from roller.utils import classify_tvm_op_tensors
 
 
 class Op:
@@ -16,11 +16,7 @@ class Op:
         self.pad_in = []
         self.outs = []
         self.unpad_outs = []
-        # self.expr_out = self.expr(self.shape, dataType=data_type, for_rtile=False)
-        # self.input_tensors = self.expr_out[0]
-        # self.output_tensors =self.expr_out[1]
-        self.input_tensors = list(expr.input_tensors)
-        self.output_tensors = [deepcopy(expr.output(0))]
+        self.input_tensors, self.output_tensors = classify_tvm_op_tensors(self.expr)
         self.fused_shape = []
         self.data_type = data_type
 
@@ -35,6 +31,7 @@ class Op:
                 self.unpad_outs.append(ot)
             else:
                 self.outs.append(ot)
+
         # todo: what if multi-output op?
         self.saxis, self.raxis = get_axis_names(self.output_tensors[0])
         if len(self.unpad_outs) > 0:
@@ -239,6 +236,7 @@ class Op:
         ys = []
         for x in xs:
             shape = [int(x * d) if int(x * d) > 0 else 1 for d in self.Dimensions()]
+            # print(shape)
             rtile = rTile(self.expr, shape, self.SAxis(), self.RAxis(), self.GetTvmOutTensor())
             compute = 1
             for d in shape:

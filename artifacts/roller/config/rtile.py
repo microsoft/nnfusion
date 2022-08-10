@@ -16,24 +16,37 @@ class rTile:
         self.outs = []
         self.unpad_outs = []
 
-        if len(expr.input_tensors) == 1 and '_unpad' in expr.output(0).name:
+        # print(shape)
+        if '_unpad' in expr.output(0).name:
 
-            # print(shape)
-            # todo: refine implementations, specially design for conv now
+            idx = -1
+            for i, tensor in enumerate(expr.input_tensors):
+                if tensor.name + '_unpad' == expr.output(0).name:
+                    idx = i
+                    break
+            assert(idx >= 0)
 
-            space_dim_num, reduce_dim_num = len(expr.axis), len(expr.reduce_axis)
-            self.output_tensors = [(expr.output(0).name, shape[:space_dim_num]), (expr.output(0).name[:-6], shape[:space_dim_num])]
-            assert(len(expr.input_tensors) == 1)
-            pad_in, _ = build_tensors(expr.input_tensors[0].op, shape)
+            # TODO: refine implementations, specially design for conv now
 
-            raw_in = []
-            for tensor in expr.input_tensors[0].op.input_tensors:
-                for item in pad_in:
-                    if tensor.name == item[0]:
-                        cur_shape = item[1]
-                cur_in, _ = build_tensors(tensor.op, cur_shape)
-                raw_in = raw_in + cur_in
-            self.input_tensors = pad_in + raw_in
+            # implicit gemm
+            if len(shape) == 3:
+                self.input_tensors, self.output_tensors = build_tensors(expr.input_tensors[idx].op, shape)
+
+            # depthwise conv schedule fuse
+            else:
+                space_dim_num, reduce_dim_num = len(expr.axis), len(expr.reduce_axis)
+                self.output_tensors = [(expr.output(0).name, shape[:space_dim_num]), (expr.output(0).name[:-6], shape[:space_dim_num])]
+                assert(len(expr.input_tensors) == 1)
+                pad_in, _ = build_tensors(expr.input_tensors[idx].op, shape)
+
+                raw_in = []
+                for tensor in expr.input_tensors[idx].op.input_tensors:
+                    for item in pad_in:
+                        if tensor.name == item[0]:
+                            cur_shape = item[1]
+                    cur_in, _ = build_tensors(tensor.op, cur_shape)
+                    raw_in = raw_in + cur_in
+                self.input_tensors = pad_in + raw_in
         else:
             self.input_tensors, self.output_tensors = build_tensors(expr, shape)
 

@@ -25,8 +25,11 @@ def extract_shape_info(op):
              ] + [item.dom.extent.value for item in op.reduce_axis]
 
     if '_unpad' in out_tensor.name:
-        assert(len(op.input_tensors) == 1)
-        return extractor(op.input_tensors[0].op)
+        for tensor in op.input_tensors:
+            if tensor.name + '_unpad' == out_tensor.name:
+                return extractor(tensor.op)
+        assert(False)
+        return None
     else:
         return extractor(op)
 

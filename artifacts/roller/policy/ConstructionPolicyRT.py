@@ -127,9 +127,10 @@ class ConstructionPolicyRT(PolicyBase):
         self.arch = arch
         self.tile_tensor = tile_tensor
         self.num_level = arch.num_level
-        # expr_out = self.op.expr(self.op.Dimensions())
-        # outputs = expr_out[1]
-        outputs = [deepcopy(op.expr.output(0))]
+        if '_unpad' in self.op.expr.output(0).name:
+            outputs = [self.op.expr.input_tensors[0], self.op.expr.output(0)]
+        else:
+            outputs = [self.op.expr.output(0)]
         self.th_cap = padding_threshold_cap
         self.shrink_tiny = shrink_tiny
 
@@ -227,6 +228,7 @@ class ConstructionPolicyRT(PolicyBase):
                 padded_dim = math.ceil(full_dim[d] / s) * s
                 if padded_dim <= full_dim[d] * (1 + self.padding_threshold):
                     steps[-1].append(s)
+        # print(steps_arch, dim, sdim, mem_level, self.raxis)
         for d in range(sdim, dim):
             steps.append(steps_arch[d])
         for step in steps:

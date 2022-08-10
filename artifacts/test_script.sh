@@ -88,7 +88,7 @@ CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("temp0[K, N] = input0[N, K] + 1
 
 echo "Finish Fusion\n"
 
-# Implicit GEMM
+# Depthwise Conv Schedule Fused
 # 1. Depthwise Conv S2D1P2 128 84 42 42 5 5
 # 2. Depthwise Conv S1D1P2 128 42 83 83 5 5
 # 3. Depthwise Conv S1D1P2 128 336 21 21 5 5
@@ -160,7 +160,63 @@ CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _P
                 depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
               ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})' antares
 
-echo "Finish Implicit GEMM\n"
+echo "Finish Depthwise Conv Schedule Fused\n"
+
+# Conv Implicit GEMM Fused
+# 1. conv S1D1P1 128 128 128 28 28 3 3
+# 2. conv S2D1P0 128 128 128 57 57 3 3
+# 3. conv S1D1P0 128 168 168 42 42 1 1
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 128, 128, 28, 28, 3, 3, 1, 1, 1, 1; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO *
+_WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA] where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 128, 128, 57, 57, 3, 3, 2, 2, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO *
+_WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA] where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 168, 168, 42, 42, 1, 1, 1, 1, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO *
+_WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA] where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}})' antares
+
+echo "Finish Conv Implicit GEMM Fused\n"
+
+# Conv Implicit GEMM Fused
+# 1. conv S1D1P1 128 128 128 28 28 3 3
+# 2. conv S2D1P0 128 128 128 57 57 3 3
+# 3. conv S1D1P0 128 168 168 42 42 1 1
+
+COMPUTE_V1='- _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 128, 128, 28, 28, 3, 3, 1, 1, 1, 1; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO *
+_WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA] + bias[F] where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}, "bias": {"dtype": "float32", "shape": [_F]}})' antares
 
 # TODO
 

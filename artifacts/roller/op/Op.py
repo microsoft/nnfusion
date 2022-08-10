@@ -17,6 +17,7 @@ class Op:
         self.outs = []
         self.unpad_outs = []
         self.input_tensors, self.output_tensors = classify_tvm_op_tensors(self.expr)
+        print(self.input_tensors, self.output_tensors)
         self.fused_shape = []
         self.data_type = data_type
 
@@ -39,6 +40,11 @@ class Op:
         else:
             self.sche = tvm.te.create_schedule(self.output_tensors[0].op)
 
+        if len(expr.input_tensors) == 1 and '_unpad' in expr.output(0).name:
+            cur_op = expr.input_tensors[0].op
+            self.fused_shape = [item.dom.extent.value for item in cur_op.axis] + [item.dom.extent.value for item in cur_op.reduce_axis]
+            # print(cur_op)
+            # print(self.fused_shape)
         # TODO
         # if len(self.expr_out) == 3:
         #     self.fused_shape_map = self.expr_out[2]

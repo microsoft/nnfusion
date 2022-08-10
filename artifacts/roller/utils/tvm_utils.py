@@ -112,14 +112,20 @@ def build_tensors(op, shape):
                     if isinstance(cur_expr.a, tvm.tir.Var):
                         assert(isinstance(cur_expr.b, tvm.tir.expr.IntImm))
                         return [(cur_expr.a.name, 'high', cur_expr.b.value)]
+                    else:
+                        return []
                 elif isinstance(cur_expr, tvm.tir.expr.GE):
                     if isinstance(cur_expr.a, tvm.tir.Var):
                         assert(isinstance(cur_expr.b, tvm.tir.expr.IntImm))
                         return [(cur_expr.a.name, 'low', cur_expr.b.value)]
+                    else:
+                        return []
                 elif isinstance(cur_expr, tvm.tir.expr.LE):
                     if isinstance(cur_expr.b, tvm.tir.Var):
                         assert(isinstance(cur_expr.a, tvm.tir.expr.IntImm))
                         return [(cur_expr.b.name, 'low', cur_expr.a.value)]
+                    else:
+                        return []
                 else:
                     print('[debug] extract constraints: {}'.format(cur_expr))
                     return []

@@ -27,6 +27,8 @@ CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[ON, OC] = input0[ON % 
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, M] = 1.0 / (1.0 + (-input0[N, M]).call(`exp`))", { "input0": {"dtype": "float32", "shape": [1024, 512]} })' antares
 
+echo "Finish Elementwise\n"
+
 # MatMul
 # 1. matmul 4096 x 4096 x 4096
 # 2. matmul 65536 x 30522 x 1024
@@ -41,6 +43,8 @@ CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, M] +=! input0[N, K]
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[B, N, M] +=! input0[B, N, K] * input1[B, K, M]", input_dict={"input0": {"dtype": "float32", "shape": [3, 1024, 512]}, "input1": {"dtype": "float32", "shape": [3, 512, 512]}})' antares
 
+echo "Finish MatMul\n"
+
 # Pool
 # 1. maxpool
 # 2. avgpool
@@ -49,15 +53,19 @@ CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, C, HO, WO] >=! inpu
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[NC, HO, WO] +=! input0[NC, HO * 3 + KH, WO * 3 + KW] / 9.0 where HO in 85, WO in 85, KW in 3, KH in 3", input_dict={"input0": {"dtype": "float32", "shape": [1024, 255, 255]}})' antares
 
+echo "Finish Pool\n"
+
 # Reduce
 # 1. ReduceSum
 # 2. ReduceMin
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] +=! input0[N, C]", input_dict={"input0": {"dtype": "float32", "shape": [32, 1024]}})' antares
 
-CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] <=! input0[N, C]", input_dict={"input0": {"dtype": "float32", "shape": [32, 1024]}})' antares
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] +=! input0[N, C]", input_dict={"input0": {"dtype": "float32", "shape": [32, 1024]}})' antares
 
-# Convolution
+echo "Finish Reduce\n"
+
+# Direct Conv
 # 1. S1D1P0
 # 2. S2D1P0
 # 3. S1D1P0
@@ -67,15 +75,92 @@ CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F, HO, WO] +=! inpu
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F, HO, WO] +=! input0[N, C, HO * 2 + KH, WO * 2 + KW] * input1[F, C, KH, KW] where HO in 165, WO in 165", { "input0": {"dtype": "float32", "shape": [128, 3, 332, 332]}, "input1": {"dtype": "float32", "shape": [96, 3, 3, 3]}})' antares
 
-CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _CI, _H, _W, _CO, _KH, _KW, _SH, _SW, _PH, _PW = 16, 64, 32, 32, 256, 3, 3, 1, 1, 0, 0; _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; einstein_v2(f"output0[N, F, HO, WO] +=! input0[N, C, HO * {_SH} + KH - {_PH}, WO * {_SW} + KW - {_PW}].when([HO * {_SH} + KH - {_PH} >= 0, HO * {_SH} + KH - {_PH} < {_H}, WO * {_SW} + KW - {_PW} >= 0, WO * {_SW} + KW - {_PW} < {_W}], 0.0) * input1[F, C, KH, KW] where HO in {_HO}, WO in
-{_WO}", { "input0": {"dtype": "float32", "shape": [_N, _CI, _H, _W]}, "input1": {"dtype": "float32", "shape": [_CO, _CI, _KH, _KW]}})' antares
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _CI, _H, _W, _CO, _KH, _KW, _SH, _SW, _PH, _PW = 16, 64, 32, 32, 256, 3, 3, 1, 1, 0, 0; _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; einstein_v2(f"output0[N, F, HO, WO] +=! input0[N, C, HO * {_SH} + KH - {_PH}, WO * {_SW} + KW - {_PW}].when([HO * {_SH} + KH - {_PH} >= 0, HO * {_SH} + KH - {_PH} < {_H}, WO * {_SW} + KW - {_PW} >= 0, WO * {_SW} + KW - {_PW} < {_W}], 0.0) * input1[F, C, KH, KW] where HO in {_HO}, WO in {_WO}", { "input0": {"dtype": "float32", "shape": [_N, _CI, _H, _W]}, "input1": {"dtype": "float32", "shape": [_CO, _CI, _KH, _KW]}})' antares
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, C, HO, WO] +=! input0[N, C, HO + KH, WO + KW] * input1[KH, KW, C, 0] where HO in 30, WO in 30", input_dict={"input0": {"dtype": "float32", "shape": [32, 16, 32, 32]}, "input1": {"dtype": "float32", "shape": [3, 3, 16, 1]}})' antares
+
+echo "Finish Direct Conv\n"
 
 # Fusion
 # 1. addmatmul head fusion
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("temp0[K, N] = input0[N, K] + 100; output0[N, M] +=! temp0[K, N] * input1[K, M] where K in 10", { "input0": {"dtype": "float32", "shape": [1024, 512]}, "input1": {"dtype": "float32", "shape": [512, 512]}})' antares
+
+echo "Finish Fusion\n"
+
+# Implicit GEMM
+# 1. Depthwise Conv S2D1P2 128 84 42 42 5 5
+# 2. Depthwise Conv S1D1P2 128 42 83 83 5 5
+# 3. Depthwise Conv S1D1P2 128 336 21 21 5 5
+# 4. Depthwise Conv S2D1P2 128 42 83 83 5 5
+# 5. Depthwise Conv S2D1P3 128 84 42 42 7 7
+# 6. Depthwise Conv S1D1P1 128 672 11 11 3 3
+# 7. Depthwise Conv S1D1P3 128 42 83 83 7 7
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 84, 83, 83, 5, 5, 2, 2, 2, 2; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 42, 83, 83, 5, 5, 1, 1, 2, 2; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 336, 21, 21, 5, 5, 1, 1, 2, 2; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 42, 165, 165, 5, 5, 2, 2, 2, 2; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+              data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                                                              kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+              depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+              depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+            ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 84, 83, 83, 5, 5, 2, 2, 3, 3; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 672, 11, 11, 3, 3, 1, 1, 1, 1; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 42, 83, 83, 7, 7, 1, 1, 3, 3; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})' antares
+
+echo "Finish Implicit GEMM\n"
 
 # TODO
 

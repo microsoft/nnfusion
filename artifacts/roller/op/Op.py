@@ -39,7 +39,7 @@ class Op:
         else:
             self.sche = tvm.te.create_schedule(self.output_tensors[0].op)
 
-        # todo
+        # TODO
         # if len(self.expr_out) == 3:
         #     self.fused_shape_map = self.expr_out[2]
         #     for a in self.saxis:

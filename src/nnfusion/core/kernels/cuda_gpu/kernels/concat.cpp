@@ -38,19 +38,19 @@ namespace nnfusion
                             break;
                     }
 
-                    if (is_memcpy)
-                    {
-                        size_t offset = 0;
-                        size_t data_type_size = ctx->outputs[0]->get_element_type().size();
-                        for (size_t idx = 0; idx < ctx->inputs.size(); idx++)
-                        {
-                            if (!ctx->annotations)
-                                ctx->annotations = std::make_shared<Annotations>();
-                            // ctx->annotations->add_in_place_oi_pair(oi_pair(0, idx, false, offset));
-                            auto& input_shape = ctx->inputs[idx]->get_shape();
-                            offset += shape_size(input_shape) * data_type_size;
-                        }
-                    }
+                    // if (is_memcpy)
+                    // {
+                    //     size_t offset = 0;
+                    //     size_t data_type_size = ctx->outputs[0]->get_element_type().size();
+                    //     for (size_t idx = 0; idx < ctx->inputs.size(); idx++)
+                    //     {
+                    //         if (!ctx->annotations)
+                    //             ctx->annotations = std::make_shared<Annotations>();
+                    //         ctx->annotations->add_in_place_oi_pair(oi_pair(0, idx, false, offset));
+                    //         auto& input_shape = ctx->inputs[idx]->get_shape();
+                    //         offset += shape_size(input_shape) * data_type_size;
+                    //     }
+                    // }
 
                     input_num = ctx->inputs.size();
                     split_input_size =
@@ -361,20 +361,20 @@ namespace nnfusion
                             break;
                     }
 
-                    if (is_memcpy)
-                    {
-                        size_t offset = 0;
-                        size_t data_type_size = ctx->outputs[0]->get_element_type().size();
-                        for (size_t idx = 0; idx < ctx->inputs.size(); idx++)
-                        {
-                            if (!ctx->annotations)
-                                ctx->annotations = std::make_shared<Annotations>();
-                            // heheda: observe some bug in lstm
-                            // ctx->annotations->add_in_place_oi_pair(oi_pair(0, idx, false, offset));
-                            auto& input_shape = ctx->inputs[idx]->get_shape();
-                            offset += shape_size(input_shape) * data_type_size;
-                        }
-                    }
+                    // if (is_memcpy)
+                    // {
+                    //     size_t offset = 0;
+                    //     size_t data_type_size = ctx->outputs[0]->get_element_type().size();
+                    //     for (size_t idx = 0; idx < ctx->inputs.size(); idx++)
+                    //     {
+                    //         if (!ctx->annotations)
+                    //             ctx->annotations = std::make_shared<Annotations>();
+                    //         // heheda: observe some bug in lstm
+                    //         // ctx->annotations->add_in_place_oi_pair(oi_pair(0, idx, false, offset));
+                    //         auto& input_shape = ctx->inputs[idx]->get_shape();
+                    //         offset += shape_size(input_shape) * data_type_size;
+                    //     }
+                    // }
 
                     input_num = ctx->inputs.size();
                     inputs_strides = std::vector<uint32_t>(input_num, 1);
@@ -428,22 +428,24 @@ namespace nnfusion
                     writer << "if(tid < " << nthreads << ")\n";
                     writer.block_begin();
                     {
-                        writer << "uint32_t block_id = tid / " << output_stride << ";\n";
-                        writer << "uint32_t block_idx = tid % " << output_stride << ";\n";
-                        writer << "uint32_t output_idx = block_id * " << output_stride
-                               << " + block_idx;\n";
-                        //writer << "out[output_idx] = 1;\n";
+                        writer << "uint32_t idx_bias = 0;\n";
                         for (size_t i = 0; i < input_num; i++)
                         {
+                            writer.block_begin();
+                            writer << "uint32_t block_id = tid / " << inputs_strides[i] << ";\n";
+                            writer << "uint32_t block_idx = tid % " << inputs_strides[i] << ";\n";
+                            writer << "uint32_t output_idx = block_id * " << output_stride
+                                << " + block_idx + idx_bias;\n";
                             writer << "if(block_idx < inputs_strides[" << i << "])\n";
                             writer.block_begin();
                             {
                                 writer << "output0[output_idx] = input" << i
-                                       << "[block_id * inputs_strides[" << i << "] + block_idx];\n";
+                                       << "[block_id * " << inputs_strides[i] << " + block_idx];\n";
                                 // writer << "return;\n";
                             }
                             writer.block_end();
-                            writer << "output_idx += inputs_strides[" << i << "];\n";
+                            writer << "idx_bias += " << inputs_strides[i] << ";\n";
+                            writer.block_end();
                         }
                     }
                     writer.block_end();

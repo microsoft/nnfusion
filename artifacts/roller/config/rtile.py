@@ -50,7 +50,7 @@ class rTile:
         else:
             self.input_tensors, self.output_tensors = build_tensors(expr, shape)
 
-        # print(self.input_tensors, self.output_tensors)
+        print(self.input_tensors, self.output_tensors)
 
         for it in self.input_tensors:
             if '_pad' in it[0]:

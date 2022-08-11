@@ -30,6 +30,10 @@ def extract_producer_load(expr):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.expr.LE):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.expr.NE):
+        return extract_producer_load(expr.a) + extract_producer_load(expr.b)
+    elif isinstance(expr, tvm.tir.expr.EQ):
+        return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.expr.FloorMod):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.Call):
@@ -46,6 +50,8 @@ def extract_producer_load(expr):
         return []
     elif isinstance(expr, tvm.tir.expr.Var):
         return []
+    elif isinstance(expr, tvm.tir.expr.Cast):
+        return extract_producer_load(expr.value)
     else:
         print('type: {}, content: {}'.format(type(expr), expr))
         assert(False)
@@ -82,6 +88,17 @@ def build_tensors(op, shape):
         for i in range(len(indices)):
             dims[i] = eval_index_len(indices[i], name2val) + 1
         return dims
+
+    def process_load_exprs(load_exprs):
+        in_tensors = {}
+        for load_expr in load_exprs:
+            producer_name = load_expr.producer.name
+            dims = calc_tensor_dim(load_expr)
+            if producer_name in in_tensors:
+                assert(dims == in_tensors[producer_name])
+            else:
+                in_tensors[producer_name] = dims
+        return list(in_tensors.items())
 
     if isinstance(compute_expr, tvm.tir.Reduce):
         in_tensors = {}
@@ -151,14 +168,12 @@ def build_tensors(op, shape):
                     else:
                         constraints[name] = (0, val)
 
-            # print(constraints)
-            # print(cur_name2val)
-
             for key, val in constraints.items():
                 low, high = val
                 assert(low < high)
                 assert(key in name2val)
                 prev_val = name2val[key]
+                print(prev_val, cur_name2val, low, high)
                 name2val[key] = prev_val - (cur_name2val[key] - (high - low))
 
         load_exprs = []
@@ -186,6 +201,9 @@ def build_tensors(op, shape):
             else:
                 in_tensors[producer_name] = dims
         in_tensors = list(in_tensors.items())
+    elif isinstance(compute_expr, tvm.tir.expr.Cast):
+        load_exprs = extract_producer_load(compute_expr.value)
+        in_tensors = process_load_exprs(load_exprs)
     else:
         print('type: {}, content: {}'.format(type(compute_expr), compute_expr))
         assert(False)

@@ -217,7 +217,6 @@ namespace nnfusion
                     int idx = 0;
                     for (const auto& input_proto : loop_body_graph_proto.input())
                     {
-                        std::cout << "f1 " << input_proto.name() << std::endl;
                         node_inputs[input_proto.name()] = idx++;
                         if (idx == 1)
                             node_inputs[input_proto.name()] = -1;
@@ -225,7 +224,6 @@ namespace nnfusion
                     for (size_t i = 0; i < node_proto.input_size(); i++)
                     {
                         node_inputs[node_proto.input(i)] = i;
-                        std::cout << "f0 " << node_proto.input(i) << std::endl;
                     }
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     // we need to know which graph output maps to which Loop op output

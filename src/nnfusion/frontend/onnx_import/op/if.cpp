@@ -324,21 +324,9 @@ namespace nnfusion
                             {
                                 int idx = node_inputs.size();
                                 node_inputs[item] = idx;
-                                if (find_node_from_graph(m_graph, item) == nullptr)
-                                {
-                                    NNFUSION_CHECK(all_ng_nodes.count(item));
-                                    auto node = all_ng_nodes.at(item)[0];
-                                    NNFUSION_CHECK(node.gnode->get_op_type() == "Parameter" ||
-                                                   node.gnode->get_op_type() == "Constant");
-                                    auto new_node = m_graph->add_node_and_edge(
-                                        node.gnode->get_op_ptr(), graph::GNodeVector({}));
-                                    input_indexes.push_back(GNodeIndex{new_node, 0});
-                                }
-                                else
-                                {
-                                    auto gnode = find_node_from_graph(m_graph, item);
-                                    input_indexes.push_back(GNodeIndex{gnode, 0});
-                                }
+                                auto indexed_node = all_ng_nodes.at(item)[0];
+                                input_indexes.push_back(GNodeIndex{indexed_node.gnode, 0});
+
                             }
                             NNFUSION_CHECK(node_inputs.count(node->get_name()));
                             node->Set<int>("subgraph_input_map",

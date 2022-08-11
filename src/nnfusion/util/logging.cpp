@@ -62,7 +62,7 @@ LogHelper::LogHelper(int level,
     case INFO: m_stream << "[INFO] "; break;
     case NNFUSION_WARNING: m_stream << "[WARNING] "; break;
     case ERROR: m_stream << "[ERROR] "; break;
-    case NNFUSION_FATAL: m_stream << "[FATAL] "; break;
+    case NNFUSION_FATAL: m_stream << "[FATAL] "; exit(1);
     }
 
     time_t tt = chrono::system_clock::to_time_t(chrono::system_clock::now());

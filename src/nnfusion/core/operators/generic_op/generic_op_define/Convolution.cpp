@@ -39,6 +39,7 @@ REGISTER_OP(Convolution)
         const auto& dilation_w = _op->get_window_dilation_strides()[1];
         const auto& stride_h = _op->get_window_movement_strides()[0];
         const auto& stride_w = _op->get_window_movement_strides()[1];
+        NNFUSION_CHECK(_op->get_data_format() == "NCHW" || _op->get_data_format() == "NHWC");
         const auto& is_nchw = _op->get_data_format() == "NCHW";
         const auto& padding_below = _op->get_padding_below();
         const auto& padding_above = _op->get_padding_above();

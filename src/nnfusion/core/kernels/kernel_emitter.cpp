@@ -460,6 +460,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         auto conv = std::dynamic_pointer_cast<op::Convolution>(ctx->gnode->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(conv);
         std::stringstream str;
+        str << "Layout{" << conv->get_data_format() << "}";
         str << conv->get_window_movement_strides();
         str << conv->get_window_dilation_strides();
         str << conv->get_padding_below();

@@ -121,6 +121,7 @@ namespace nnfusion
             }
             /// \return The data format.
             const std::string& get_data_format() const { return m_data_format; }
+            void set_data_format(const std::string& format) { m_data_format = format;}
             void set_activation(const std::string& act)
             {
                 NNFUSION_CHECK(act == "" || act == "relu");

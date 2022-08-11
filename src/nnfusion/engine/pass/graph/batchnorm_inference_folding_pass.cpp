@@ -485,6 +485,7 @@ private:
 
             std::vector<double> conv_bias_tmp = ExtractConstantData(conv_bias_const_ptr, dtype);
             auto conv_output_shape = conv_node->get_output_shape(0);
+            NNFUSION_CHECK(conv_node_op_ptr->get_data_format() == "NCHW" || conv_node_op_ptr->get_data_format() == "NHWC");
             bool is_nhwc = (conv_node_op_ptr->get_data_format() == "NHWC");
             if (is_nhwc)
             {
@@ -793,16 +794,16 @@ private:
 
             // BiasAdd: broadcast -> add
             auto conv_output_shape = conv_node->get_output_shape(0);
-            bool is_nhwc = (conv_node_op_ptr->get_data_format() == "NHWC");
+            std::string data_format = conv_node_op_ptr->get_data_format();
             nnfusion::AxisSet broadcast_axes;
-            if (is_nhwc)
+            if (data_format == "NHWC")
             {
                 for (size_t i = 0; i < conv_output_shape.size() - 1; i++)
                 {
                     broadcast_axes.insert(i);
                 }
             }
-            else
+            else if (data_format == "NCHW")
             {
                 for (size_t i = 0; i < conv_output_shape.size(); i++)
                 {
@@ -811,6 +812,14 @@ private:
                         broadcast_axes.insert(i);
                     }
                 }
+            }
+            else if (data_format == "NCHW2CNHW" || data_format == "CNHW") {
+                for (size_t i = 1; i < conv_output_shape.size(); i++)
+                {
+                    broadcast_axes.insert(i);
+                }
+            } else {
+                NNFUSION_LOG(NNFUSION_FATAL) << "data format " << data_format << " is not supported";
             }
 
             auto new_conv_bias_gnode = m_graph->add_node_and_edge(new_conv_bias_op_ptr, GNodeIndexVector());            

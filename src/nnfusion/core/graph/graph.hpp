@@ -116,6 +116,7 @@ namespace nnfusion
 
             void set_outputs(const GNodeVector& outputs);
             void set_outputs(const GNodeIndexVector& outputs);
+            void set_output(const GNodeIndex& output, size_t i);
             void set_default_outputs();
             const size_t get_output_size();
             /// Return the op that generates output i

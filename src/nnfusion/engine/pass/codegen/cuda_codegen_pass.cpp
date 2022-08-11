@@ -370,7 +370,6 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 }
             }
             int pos_right = call_str.find(">>>(");
-            NNFUSION_LOG(INFO) << "call_str" << call_str;
             if (pos_right >= 0)
             {
 #ifdef __USING_HOST_CALL_FORMAT___
@@ -1226,7 +1225,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
             lu_main << "if(bin_file.fail())\n";
             lu_main.block_begin();
             {
-                lu_main << "printf(\"Load \%s failed.\\n\", f_name);\n";
+                lu_main << "printf(\"Load \%s failed.\\n\", f_name.c_str());\n";
                 lu_main << "exit(1);\n";
             }
             lu_main.block_end();

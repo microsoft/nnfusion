@@ -86,13 +86,13 @@ namespace nnfusion
             void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override;
 
             double get_eps_value() const { return m_epsilon; }
-        private:
             static constexpr size_t INPUT_GAMMA = 0;
             static constexpr size_t INPUT_BETA = 1;
             static constexpr size_t INPUT_DATA = 2;
             static constexpr size_t INPUT_MEAN = 3;
             static constexpr size_t INPUT_VARIANCE = 4;
 
+        private:
             double m_epsilon;
         };
 

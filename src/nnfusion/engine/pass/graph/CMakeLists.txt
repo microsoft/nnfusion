@@ -31,6 +31,7 @@ set(SRC
     ir_based_fusion_pass.cpp
     subgraph_fusion_pass.cpp
     dump_op.cpp
+    conv_layout_pass.cpp
 
 )
 

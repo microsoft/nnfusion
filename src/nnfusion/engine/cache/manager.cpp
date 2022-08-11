@@ -97,8 +97,12 @@ CREATE TABLE IF NOT EXISTS KernelCache(
     if (CodegenOpList.size() == 0)
     {
         CodegenOpList.insert({
+            "Dot",
+            "BatchMatMul",
+            "Convolution",
+            "AvgPool",
+            "MaxPool",
             "Matched_Pattern(Convolution-Add-Relu)",
-            "Convolution"
         });
     }
 }

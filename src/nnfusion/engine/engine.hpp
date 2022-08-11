@@ -89,11 +89,15 @@ namespace nnfusion
 
             for (auto& pass : *this)
             {
+                int demangle_status;
+                NNFUSION_LOG(INFO) << "Pass " << abi::__cxa_demangle(typeid(*(pass.get())).name(), 0, 0, &demangle_status) << " starts";
                 status = pass->run_on_graph(graph);
                 if (!status) {
                     int demangle_status;
                     NNFUSION_LOG(ERROR) << "Pass " << abi::__cxa_demangle(typeid(*(pass.get())).name(), 0, 0, &demangle_status) << " failed";
                     break;
+                } else {
+                    NNFUSION_LOG(INFO) << "Pass " << abi::__cxa_demangle(typeid(*(pass.get())).name(), 0, 0, &demangle_status) << " ends";
                 }
             }
             return status;
@@ -109,6 +113,7 @@ namespace nnfusion
 
     protected:
         InterpreterPassManager::Pointer m_passes;
+        GraphPassManager::Pointer t_passes;
         GraphPassManager::Pointer g_passes;
         GraphVisitor::Pointer g_visitor;
     };

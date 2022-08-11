@@ -30,6 +30,7 @@
 #include "nnfusion/engine/pass/graph/subgraph_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/superscaler_dataparallelism_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
+#include "nnfusion/engine/pass/graph/conv_layout_pass.hpp"
 
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
@@ -47,6 +48,7 @@ using namespace nnfusion::pass;
 CudaEngine::CudaEngine()
     : Engine()
 {
+    t_passes->push_back(make_shared<ConvLayoutPass>());
     g_passes->push_back(make_shared<ControlFlowPass>());
     g_passes->push_back(make_shared<CSEPass>());
     // g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());

@@ -101,7 +101,7 @@ std::shared_ptr<GNode> Graph::add_node_and_edge(const std::shared_ptr<nnfusion::
 void Graph::add_gnode_and_edge(const std::shared_ptr<GNode> gnode,
                                const GNodeIndexVector& input_gnodes)
 {
-    NNFUSION_CHECK(gnode == nullptr) << "GNode can't be nullptr.";
+    NNFUSION_CHECK(gnode != nullptr) << "GNode can't be nullptr.";
 
     add_node(gnode);
 
@@ -110,6 +110,7 @@ void Graph::add_gnode_and_edge(const std::shared_ptr<GNode> gnode,
         add_edge(input_gnodes[i].gnode, input_gnodes[i].index, gnode, i);
     }
     gnode->get_op_ptr()->revalidate_and_infer_types(gnode->shared_from_this());
+    gnode->get_op_ptr()->infer_shared_memory(gnode->shared_from_this());
 }
 
 void Graph::remove_node(std::shared_ptr<GNode> node)
@@ -261,7 +262,7 @@ const std::shared_ptr<nnfusion::graph::Edge>
         auto source_type = source->get_output_element_type(x);
         auto dest_type = dest->get_input_element_type(y);
         NNFUSION_CHECK(source_type == dest_type)
-            << "Fail to add edge, the soutce element type (" << source_type
+            << "Fail to add edge, the source element type (" << source_type
             << " ) does not match the dest element type (" << dest_type << ").";
 
         auto source_shape = source->get_output_partial_shape(x);
@@ -373,6 +374,12 @@ void Graph::set_outputs(const GNodeVector& outputs)
     m_output_nodes.clear();
     for (auto node : outputs)
         m_output_nodes.push_back(GNodeIndex{node});
+}
+
+void Graph::set_output(const GNodeIndex& output, size_t i)
+{
+    NNFUSION_CHECK(i < m_output_nodes.size());
+    m_output_nodes[i] = output;
 }
 
 GNodeVector Graph::get_outputs()

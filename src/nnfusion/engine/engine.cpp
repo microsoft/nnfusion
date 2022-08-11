@@ -25,6 +25,7 @@ using namespace nnfusion;
 Engine::Engine()
 {
     m_passes = make_shared<InterpreterPassManager>();
+    t_passes = make_shared<GraphPassManager>();
     g_passes = make_shared<GraphPassManager>();
     g_visitor = make_shared<GraphVisitor>();
 }
@@ -34,11 +35,17 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
     if (context == nullptr)
         context = make_shared<EngineContext>();
 
+    NNFUSION_LOG(INFO) << "Tranverse Passes count:" << (t_passes != nullptr ? t_passes->size() : 0);
     NNFUSION_LOG(INFO) << "Graph Passes count:" << (g_passes != nullptr ? g_passes->size() : 0);
     NNFUSION_LOG(INFO) << "Interpreter Passes count:"
                        << (m_passes != nullptr ? m_passes->size() : 0);
 
     bool result = true;
+    if (t_passes != nullptr)
+        result = t_passes->run_on_graph(graph, context);
+
+    NNFUSION_CHECK(result) << "Engine failed after finished tranverse passes.";
+
     if (g_passes != nullptr)
         result = g_passes->run_on_graph(graph, context);
 
@@ -63,6 +70,7 @@ nnfusion::TranslationUnit::Pointer Engine::convert_graph_to_program(graph::Graph
 {
     // this function has the same logic with Engine::run_on_graph,
     // except that it will not do codegen and will return translation unit object.
+    // hack for control flow proj: this function does not run t_passes
     auto context = make_shared<EngineContext>();
     bool result = true;
     if (g_passes != nullptr)

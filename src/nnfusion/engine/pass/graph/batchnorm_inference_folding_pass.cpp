@@ -819,7 +819,7 @@ private:
                     broadcast_axes.insert(i);
                 }
             } else {
-                NNFUSION_LOG(NNFUSION_FATAL) << "data format " << data_format << " is not supported";
+                NNFUSION_CHECK_FAIL() << "data format " << data_format << " is not supported";
             }
 
             auto new_conv_bias_gnode = m_graph->add_node_and_edge(new_conv_bias_op_ptr, GNodeIndexVector());            

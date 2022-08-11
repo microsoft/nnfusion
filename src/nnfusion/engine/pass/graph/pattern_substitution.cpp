@@ -399,10 +399,7 @@ private:
     }
 
     std::string generate_pattern_name() {
-        if (m_pattern.size() == 0) {
-            NNFUSION_LOG(NNFUSION_FATAL) << "Empty pattern";
-            exit(1);
-        }
+        NNFUSION_CHECK(m_pattern.size() > 0) << "Empty pattern";
         std::string name;
         for (auto p: m_pattern) name += p + "-";
         name.pop_back();

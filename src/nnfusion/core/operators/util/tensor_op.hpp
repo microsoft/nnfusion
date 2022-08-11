@@ -39,6 +39,8 @@ namespace nnfusion
                      const nnfusion::Shape& shape);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
+            nnfusion::Shape get_shape() const { return m_shape; }
+            void set_shape(nnfusion::Shape shape) { m_shape = shape; }
 
             bool is_tensor_op() const override { return true; }
         protected:

@@ -75,7 +75,10 @@ class Op:
         return tensor_type_size
 
     def InputTypeSize(self):
-        return self.TensorTypeSize()[0][0]
+        if not self.TensorTypeSize()[0]:
+            return self.TensorTypeSize()[1][0]
+        else:
+            return self.TensorTypeSize()[0][0]
 
     def OutputTypeSize(self):
         return self.TensorTypeSize()[1][0]
@@ -123,8 +126,6 @@ class Op:
         storage_padding = rtile.GetStoragePadding()
 
         ret = [[], []] #inputs, outputs
-
-        print(merge_dim, input_data_tiles, output_data_tiles)
 
         for i in range(len(input_data_tiles)):
             shape = input_data_tiles[i]
@@ -229,8 +230,11 @@ class Op:
             compute = 1
             for d in shape:
                 compute *= d
-            print(rtile.Dump())
             io = sum(self.MemWorkload(rtile)[0])
+            assert(io >= 0)
+            # Guardian when no input tensors
+            if io == 0:
+                io = compute
             y = compute / io
             ys.append(y)
         for i in range(len(xs) - 1):

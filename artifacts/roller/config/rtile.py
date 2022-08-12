@@ -16,7 +16,6 @@ class rTile:
         self.outs = []
         self.unpad_outs = []
 
-        # print(shape)
         if '_unpad' in expr.output(0).name:
 
             idx = -1
@@ -50,7 +49,7 @@ class rTile:
         else:
             self.input_tensors, self.output_tensors = build_tensors(expr, shape)
 
-        print(self.input_tensors, self.output_tensors)
+        # print('[debug] rtile info: 'self.input_tensors, self.output_tensors)
 
         for it in self.input_tensors:
             if '_pad' in it[0]:

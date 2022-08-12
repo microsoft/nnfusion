@@ -10,6 +10,8 @@
 # 9. sigmoid
 # 10. divnonan
 # 11. logical bool operation
+# 12. cast + range
+# 13. cast + tanh + range
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, C, H, W] = input0[N, H, W, C]", input_dict={"input0": {"dtype": "float32", "shape": [32, 229, 229, 3]}})' antares
 
@@ -32,6 +34,10 @@ CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, M] = 1.0 / (1.0 + (
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] = (input0[N] / input1[N]).when([input1[N] != 0], 0.0)", input_dict={"input0": {"dtype": "float32", "shape": [32 * 1024]}, "input1": {"dtype": "float32", "shape": [32 * 1024]}})' antares
 
 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, M] = input0[N, M] & ~input1[N, M]", { "input0": {"dtype": "int8", "shape": [1024, 512]}, "input1": {"dtype": "int8", "shape": [1024, 512]} })' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] = N.cast(`float32`) where N in 1024", {})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] = N.cast(`float32`).call(`tanh`) where N in 1024", {})' antares
 
 echo "Finish Elementwise\n"
 

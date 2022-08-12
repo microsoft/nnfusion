@@ -44,6 +44,9 @@ namespace nnfusion
                     std::tie(x_gnode, y_gnode) =
                         graph::numpy_broadcast(std::make_pair(x_gnode, y_gnode), m_graph);
 
+                    std::tie(x_gnode, cond_gnode) =
+                        graph::numpy_broadcast(std::make_pair(x_gnode, cond_gnode), m_graph);
+
                     auto node_name = node_proto.output(0);
                     nnfusion::op::OpConfig::any op_config;
 

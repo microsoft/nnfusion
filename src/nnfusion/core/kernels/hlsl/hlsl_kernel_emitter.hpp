@@ -69,7 +69,6 @@ namespace nnfusion
 
                         kernel_info =
                             nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
-
                         NNFUSION_CHECK(!kernel_info.empty());
                         process_antares_kernel_info();
                     }

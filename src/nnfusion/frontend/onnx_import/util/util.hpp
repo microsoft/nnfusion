@@ -62,36 +62,6 @@ namespace nnfusion
                 }
 
                 template <>
-                inline std::vector<double> get_data(const onnx::TensorProto& tensor)
-                {
-                    if (tensor.has_raw_data())
-                    {
-                        return __get_raw_data<double>(tensor.raw_data());
-                    }
-                    switch (tensor.data_type())
-                    {
-                    case onnx::TensorProto_DataType_DOUBLE:
-                        return __get_data<double>(tensor.double_data());
-                    case onnx::TensorProto_DataType_FLOAT:
-                    case onnx::TensorProto_DataType_FLOAT16:
-                        return __get_data<double>(tensor.float_data());
-                    case onnx::TensorProto_DataType_INT32:
-                        return __get_data<double>(tensor.int32_data());
-                    case onnx::TensorProto_DataType_INT64:
-                        return __get_data<double>(tensor.int64_data());
-                    case onnx::TensorProto_DataType_UINT64:
-                        return __get_data<double>(tensor.uint64_data());
-                    default:
-                        NNFUSION_CHECK_FAIL()
-                            << "invalid data type: "
-                            << onnx::TensorProto_DataType_Name(
-                                   static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
-                        break;
-                    }
-                    return std::vector<double>();
-                }
-
-                template <>
                 inline std::vector<float> get_data(const onnx::TensorProto& tensor)
                 {
                     if (tensor.has_raw_data())
@@ -200,9 +170,29 @@ namespace nnfusion
                 template <>
                 inline std::vector<int32_t> get_data(const onnx::TensorProto& tensor)
                 {
-                    if (tensor.has_raw_data())
+                    if (tensor.data_type() == onnx::TensorProto_DataType_BOOL)
                     {
-                        return __get_raw_data<int32_t>(tensor.raw_data());
+                        // onnx store bool in byte
+                        std::vector<int32_t> res;
+                        if (tensor.has_raw_data())
+                        {
+                            res = __get_raw_data<int32_t>(tensor.raw_data());
+                        }
+                        else
+                        {
+                            res = __get_data<int32_t>(tensor.int32_data());
+                        }
+                        NNFUSION_CHECK(res.size() > 0);
+                        nnfusion::Shape shape{std::begin(tensor.dims()), std::end(tensor.dims())};
+                        size_t num_element = shape_size(shape);
+                        char* raw_p = reinterpret_cast<char*>(res.data());
+                        std::vector<int32_t> ret;
+                        ret.reserve(num_element);
+                        for (size_t i = 0; i < num_element; i++)
+                        {
+                            ret.push_back(raw_p[i]);
+                        }
+                        return ret;
                     }
                     if (tensor.data_type() == onnx::TensorProto_DataType_INT32)
                     {

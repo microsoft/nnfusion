@@ -17,25 +17,26 @@ st_align = False
 keep_tiny = False
 use_tc = False
 
+
 def extract_shape_info(op):
     out_tensor = op.output(0)
 
     def extractor(op):
         return [item.dom.extent.value for item in op.axis
-             ] + [item.dom.extent.value for item in op.reduce_axis]
+                ] + [item.dom.extent.value for item in op.reduce_axis]
 
     if '_unpad' in out_tensor.name:
         for tensor in op.input_tensors:
             if tensor.name + '_unpad' == out_tensor.name:
                 return extractor(tensor.op)
-        assert(False)
+        assert (False)
         return None
     else:
         return extractor(op)
 
 
 def get_config_space(op, device_name):
-    assert(op.num_outputs == 1)
+    assert (op.num_outputs == 1)
 
     print('[debug] devname =', device_name)
     print('[debug] op info = ', op)
@@ -56,13 +57,14 @@ def get_config_space(op, device_name):
 
     print('[debug] is IODependent: {}'.format(is_IODependent))
 
-
     if is_IODependent:
         policy = ConstructionPolicyRT(roller_op, roller_arch, smem_tiling,
-                                      reg_tiling, st_align, padding_threshold_cap, not keep_tiny)
+                                      reg_tiling, st_align,
+                                      padding_threshold_cap, not keep_tiny)
     else:
         policy = ConstructionPolicyPlainRT(roller_op, roller_arch, smem_tiling,
-                                           reg_tiling, st_align, padding_threshold_cap)
+                                           reg_tiling, st_align,
+                                           padding_threshold_cap)
 
     rprogs = policy.emit_config_without_trails(10)
     candidates = []
@@ -70,11 +72,13 @@ def get_config_space(op, device_name):
         if fuse or schedule_fuse:
             # TODO: write_stage
 
-            assert(len(roller_op.output_tensors) == 2)
+            assert (len(roller_op.output_tensors) == 2)
             if '_unpad' in roller_op.output_tensors[0].name:
-                out_tensor, write_tensor = roller_op.output_tensors[1], roller_op.output_tensors[0]
+                out_tensor, write_tensor = roller_op.output_tensors[
+                    1], roller_op.output_tensors[0]
             else:
-                out_tensor, write_tensor = roller_op.output_tensors[0], roller_op.output_tensors[1]
+                out_tensor, write_tensor = roller_op.output_tensors[
+                    0], roller_op.output_tensors[1]
 
             align_info = policy.get_align_info_fuse(
                 rprog,
@@ -100,7 +104,7 @@ def apply_config(op, sched, config):
     print('[debug] config =', rprog.Dump())
 
     if use_tc:
-        assert(op.num_outputs == 1)
+        assert (op.num_outputs == 1)
         return schedule_tensorcore(sched, rprog, op.output(0))
 
     cgen = CodeGeneratorR()
@@ -114,15 +118,17 @@ def apply_config(op, sched, config):
                 ori_in.append(tensor)
 
         if '_unpad' in roller_op.output_tensors[0].name:
-            out_tensor, write_tensor = roller_op.output_tensors[1], roller_op.output_tensors[0]
+            out_tensor, write_tensor = roller_op.output_tensors[
+                1], roller_op.output_tensors[0]
         else:
-            out_tensor, write_tensor = roller_op.output_tensors[0], roller_op.output_tensors[1]
-
+            out_tensor, write_tensor = roller_op.output_tensors[
+                0], roller_op.output_tensors[1]
 
         cgen.rewrite_schedule_fuse(sched,
                                    rprog,
                                    smem_tiling,
-                                   reg_tiling, pad_in, [out_tensor],
+                                   reg_tiling,
+                                   pad_in, [out_tensor],
                                    write_tensor,
                                    target_stage=out_tensor.name,
                                    write_stage=write_tensor.name,

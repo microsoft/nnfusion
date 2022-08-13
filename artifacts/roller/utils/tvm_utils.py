@@ -86,7 +86,10 @@ def build_tensors(op, shape):
         indices = load_expr.indices
         dims = [0] * len(indices)
         for i in range(len(indices)):
-            dims[i] = eval_index_len(indices[i], name2val) + 1
+            if isinstance(indices[i], tvm.tir.expr.IntImm):
+                dims[i] = 1
+            else:
+                dims[i] = eval_index_len(indices[i], name2val) + 1
         return dims
 
     def process_load_exprs(load_exprs):

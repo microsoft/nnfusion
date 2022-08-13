@@ -16,6 +16,7 @@ class Op:
         self.pad_in = []
         self.outs = []
         self.unpad_outs = []
+
         self.input_tensors, self.output_tensors = classify_tvm_op_tensors(self.expr)
         self.fused_shape = []
         self.data_type = data_type
@@ -164,12 +165,22 @@ class Op:
 
     def Dimensions(self):
         return self.fused_shape if len(self.fused_shape) > 0 else self.shape
+
+    def Size(self):
+        ret = 1
+        for dim in self.SDimensions():
+            ret = ret * dim
+        return ret
+
     def SAxis(self):
         return self.saxis
+
     def RAxis(self):
         return self.raxis
+
     def SDimensions(self):
         return self.Dimensions()[:len(self.saxis)]
+
     def RDimensions(self):
         return self.Dimensions()[len(self.saxis):]
 

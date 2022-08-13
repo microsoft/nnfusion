@@ -1,6 +1,7 @@
 from roller.config import *
 from roller.cost_model import *
 from .PolicyBase import *
+import copy
 import math
 import numpy
 
@@ -122,20 +123,26 @@ class ConstructionPolicyPlainRT(PolicyBase):
         self.ConstructionLog[log_regular_tile_found_key] = False
         self.border_rprogs = [[] for _ in range(self.num_level)]
 
+        self.rtile_helper = rTile(op.expr, op.shape, self.op.SAxis(), self.op.RAxis(), self.op.GetTvmOutTensor())
+
 
     def AlignedToMemory(self, rtile, mem_level):
         input_subtensors = rtile.GetInputDataTiles()
         output_subtensors = rtile.GetOutputDataTiles()
         subtensors = input_subtensors + output_subtensors
 
-        full_input_tensors = self.op.GetInputTensors()
-        full_output_tensors = self.op.GetOutputTensors()
+        # full_input_tensors = self.op.GetInputTensors()
+        # full_output_tensors = self.op.GetOutputTensors()
+        full_input_tensors = self.rtile_helper.GetInputDataTiles()
+        full_output_tensors = self.rtile_helper.GetOutputDataTiles()
         full_tensors = full_input_tensors + full_output_tensors
+
+        # print('[debug] AlignedToMemory: ', subtensors, full_tensors)
 
         for subtensor_shape, full_tensor in zip(subtensors, full_tensors):
             st_aligned = False
-            #st_dim = subtensors[tensor_name]
-            full_dim = full_tensor.shape
+            # st_dim = subtensors[tensor_name]
+            full_dim = full_tensor
             if subtensor_shape[-1] >= full_dim[-1]:
                 st_aligned = True
             base_transaction_size = self.arch.transaction_size[mem_level] // self.op.InputTypeSize()
@@ -203,9 +210,16 @@ class ConstructionPolicyPlainRT(PolicyBase):
                     steps[-1].append(s)
         for d in range(sdim, dim):
             steps.append(steps_arch[d])
-        for step in steps:
-            if len(step) == 0:
-                return steps, None
+
+        # corner case for scalar output
+        if len(full_sdim) == 1 and full_sdim[0] == 1:
+            for idx in range(len(steps)):
+                if len(steps[idx]) == 0:
+                    steps[idx] = [1]
+        else:
+            for step in steps:
+                if len(step) == 0:
+                    return steps, None
         new_base_dim = [steps[d][0] for d in range(len(steps))]
         new_base_rtile = rTile(self.op.expr, new_base_dim, self.op.SAxis(), self.op.RAxis(), self.op.GetTvmOutTensor())
         return steps, new_base_rtile
@@ -218,6 +232,10 @@ class ConstructionPolicyPlainRT(PolicyBase):
             block_size = rprog.GetParallelism(1)
             if self.op.use_tc:
                 block_size *= 32
+            # print('[debug] AlignedToCU: ', block_size, self.arch.warp_size, rprog.op.Size())
+            # special case for small sized computation
+            if rprog.op.Size() < self.arch.warp_size:
+                return True
             return block_size % self.arch.warp_size == 0
         # scale out
         if mem_level == -1:
@@ -227,6 +245,7 @@ class ConstructionPolicyPlainRT(PolicyBase):
 
     def EnlargeTile(self, last_rprog, rprog, steps, mem_level):
         key = rprog.Dump()
+        # print('[debug] EnlargeTile Info: ', key)
         if key in self.visited:
             return
         self.visited.add(key)
@@ -236,7 +255,9 @@ class ConstructionPolicyPlainRT(PolicyBase):
         def one_level_down(rprog, this_level):
             # print('one level down {}'.format(rprog.Dump()))
             base_rtile = rprog.GetTile(this_level)
+            # print('one level down ', base_rtile.Dump())
             steps, base_rtile = self.GetAlignedSteps(base_rtile, this_level - 1)
+            # print('one level down ', steps, base_rtile)
             # valid = True
             # for step in steps:
             #     if len(step) == 0:
@@ -267,10 +288,11 @@ class ConstructionPolicyPlainRT(PolicyBase):
         reg_size = rprog.GetTile(1).Size()
         rtile = rprog.GetTile(mem_level)
 
-        if aligned_to_cu and (reg_size >= 2):
+        # print('[debug] EnlargeTile: ', aligned_to_cu, reg_size, self.AlignedToMemory(rtile, mem_level), self.op.Size())
+        if aligned_to_cu and ((reg_size >= 2) or self.op.Size() == 1):
             if mem_level == 0:
                 if self.AlignedToMemory(rtile, mem_level):
-                    self.top_results.append(rprog)
+                    self.top_results.append(rprog.copy())
                     if len(self.top_results) == self.TOPK:
                         return
             else:
@@ -332,7 +354,7 @@ class ConstructionPolicyPlainRT(PolicyBase):
                 return rprog
 
             # otherwise, shrink dimentions based on data reuse
-            #print("try shrink small config: {}".format(schedule.dump_to_string()))
+            # print("try shrink small config: {}".format(schedule.dump_to_string()))
             # r_scores = DataReuseScore(self.op, rprog, 0)
             r_scores = self.DataReuseScore(rprog, 0)[:sdim]
             reversed_score_np = numpy.array([-s for s in r_scores])

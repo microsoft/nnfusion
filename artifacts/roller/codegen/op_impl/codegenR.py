@@ -126,6 +126,7 @@ class CodeGeneratorR:
         self.bank_size = bank_size
         # self.bank_number = bank_number
         self.binding = {"space": ["blockIdx.x", "vthread", "threadIdx.x"], "reduce": [None, None]}
+        print('[debug] input rprog: ', rprog.Dump())
         self.get_codegen_dict(rprog)
         print('[debug] code gen tiling: {}'.format(self.tiling))
         self.need_smem_tiling = smem_bool

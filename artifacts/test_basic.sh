@@ -12,6 +12,7 @@
 # 11. logical bool operation
 # 12. cast + range
 # 13. cast + tanh + range
+# 14. scalar compute
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, C, H, W] = input0[N, H, W, C]", input_dict={"input0": {"dtype": "float32", "shape": [32, 229, 229, 3]}})' antares
 
@@ -39,7 +40,14 @@ CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] = N.cast(`float32`)
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] = N.cast(`float32`).call(`tanh`) where N in 1024", {})' antares
 
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[] = input0[] + input1[]", input_dict={"input0": {"dtype": "float32", "shape": []}, "input1": {"dtype": "float32", "shape": []}})' antares
+
 echo "Finish Elementwise\n"
+
+# Data Movement
+# 1. slice
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F] = input0[N, F, 2]", input_dict={"input0": {"dtype": "float32", "shape": [1, 16, 32]}})' antares
 
 # MatMul
 # 1. matmul 4096 x 4096 x 4096
@@ -70,10 +78,13 @@ echo "Finish Pool\n"
 # Reduce
 # 1. ReduceSum
 # 2. ReduceMin
+# 3. single reduction
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] +=! input0[N, C]", input_dict={"input0": {"dtype": "float32", "shape": [32, 1024]}})' antares
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N] +=! input0[N, C]", input_dict={"input0": {"dtype": "float32", "shape": [32, 1024]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[] +=! input0[N] * input1[N]", input_dict={"input0": {"dtype": "float32", "shape": [1024]}, "input1": {"dtype": "float32", "shape": [1024]}})' antares
 
 echo "Finish Reduce\n"
 
@@ -99,3 +110,10 @@ echo "Finish Direct Conv\n"
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("temp0[K, N] = input0[N, K] + 100; output0[N, M] +=! temp0[K, N] * input1[K, M] where K in 10", { "input0": {"dtype": "float32", "shape": [1024, 512]}, "input1": {"dtype": "float32", "shape": [512, 512]}})' antares
 
 echo "Finish Fusion\n"
+
+# Other Utilities
+# 1. small sized elementwise
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F] = input0[N, F]", input_dict={"input0": {"dtype": "float32", "shape": [1, 16]}})' antares
+
+echo "Finish Other Utilities\n"

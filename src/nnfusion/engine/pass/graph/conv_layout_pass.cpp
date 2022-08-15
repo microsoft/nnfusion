@@ -5,6 +5,9 @@
 #include <unordered_set>
 #include "nnfusion/core/kernels/cuda_gpu/cuda_common_ops.hpp"
 #include "nnfusion/core/graph/util/numpy_transpose.hpp"
+#include "nnfusion/core/operators/op_define/if.hpp"
+#include "nnfusion/core/operators/op_define/loop.hpp"
+#include "nnfusion/core/operators/op_define/recursion.hpp"
 // #include "nnfusion/core/operators/op_define/convolution.hpp"
 
 DEFINE_bool(fconv_cnhw, false, "Use CNHW layout");
@@ -12,14 +15,15 @@ DEFINE_bool(fconv_cnhw, false, "Use CNHW layout");
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 
-void update_output(std::shared_ptr<GNode> gnode, bool to_cnhw, std::map<std::pair<std::string, size_t>, bool>& global_dict) {
-    NNFUSION_LOG(INFO) << "to_cnhw: " << gnode->get_op_type() << " " << to_cnhw;
+void update_output(std::shared_ptr<GNode> gnode, std::vector<bool> to_cnhw, std::map<std::pair<std::string, size_t>, bool>& global_dict) {
+    NNFUSION_LOG(INFO) << "to_cnhw: " << *gnode << " " << gnode->get_unique_name() << " " << to_cnhw[0];
     for (int i = 0; i < gnode->get_output_size(); i++) {
-        global_dict[std::make_pair(gnode->get_unique_name(), i)] = to_cnhw;
+        global_dict[std::make_pair(gnode->get_unique_name(), i)] = to_cnhw[i];
     }
-    if (to_cnhw) {
-        auto outputs = gnode->get_outputs();
-        for (int i = 0; i < gnode->get_output_size(); i++) {
+    auto outputs = gnode->get_outputs();
+    std::vector<Shape> output_shapes;
+    for (int i = 0; i < gnode->get_output_size(); i++) {
+        if (to_cnhw[i]) {
             auto dtype = outputs[i]->get_element_type();
             auto shape = outputs[i]->get_shape();
             if (shape.size() != 4) {
@@ -35,11 +39,22 @@ void update_output(std::shared_ptr<GNode> gnode, bool to_cnhw, std::map<std::pai
                 dst_gnode->set_input(dst_id, std::make_shared<Input>(dtype, PartialShape(shape)));
             }
         }
+        output_shapes.push_back(gnode->get_output_shape(i));
     }
+
     if (gnode->get_op_type() != "Convolution" && gnode->get_op_type() != "BatchNormInference") { // cannot pass the validation of these ops, skip it to avoid validation fail
         gnode->get_op_ptr()->revalidate_and_infer_types(gnode);
         gnode->get_op_ptr()->infer_shared_memory(gnode);
+        for (int i = 0; i < gnode->get_output_size(); i++) {
+            NNFUSION_CHECK(gnode->get_output_shape(i) == output_shapes[i]) << "output " << i << " " << output_shapes[i] << " " << gnode->get_output_shape(i);
+        }
     }
+    NNFUSION_LOG(INFO) << "after to_cnhw: " << *gnode << " " << gnode->get_unique_name() << " " << to_cnhw[0];
+}
+
+void update_output(std::shared_ptr<GNode> gnode, bool to_cnhw, std::map<std::pair<std::string, size_t>, bool>& global_dict) {
+    NNFUSION_CHECK(gnode->get_output_size() == 1);
+    update_output(gnode, std::vector<bool>{to_cnhw}, global_dict);
 }
 
 void transpose_const_op(std::shared_ptr<op::Constant> op) {
@@ -49,15 +64,28 @@ void transpose_const_op(std::shared_ptr<op::Constant> op) {
     op->set_shape(shape);
 }
 
-void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, bool keep_output) {
+// is_cnhw: The x^th output of node y is in cnhw layout
+void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::map<std::pair<std::string, size_t>, bool>& is_cnhw, bool out_most_graph) {
     NNFUSION_LOG(INFO) << "nodes in graph";
     for (auto& gnode: graph->get_ordered_ops()) {
         std::cout << *gnode << std::endl;
     }
-    std::map<std::pair<std::string, size_t>, bool> is_cnhw; // The x^th output of node y is in cnhw layout
+    
     for (auto& gnode: graph->get_ordered_ops()) {
         std::cout << gnode->get_name() << " " << gnode->get_unique_name() << " " << gnode->get_op_type() << std::endl;
         std::string op_type = gnode->get_op_type();
+        if (op_type == "Parameter" && !out_most_graph) {
+            NNFUSION_CHECK(is_cnhw.find(make_pair(gnode->get_unique_name(), 0)) != is_cnhw.end());
+            if (is_cnhw[std::make_pair(gnode->get_unique_name(), 0)]) {
+                auto param_op = dynamic_pointer_cast<op::Parameter>(gnode->get_op_ptr());
+                auto shape = param_op->get_shape();
+                swap(shape[0], shape[1]);
+                param_op->set_shape(shape);
+            }
+            update_output(gnode, is_cnhw[std::make_pair(gnode->get_unique_name(), 0)], is_cnhw);
+            continue;
+        }
+    
         bool have_4d_input_tensor = false;
         for (auto& input: gnode->get_inputs()) {
             if (input->get_shape().size() == 4)
@@ -84,12 +112,57 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, bool keep_outp
                 if (input_is_cnhw[i] != input_is_cnhw[i-1])
                     all_same = false;
             }
+            int op_use_cnhw = input_is_cnhw[0];
             if (!all_same) {
-                NNFUSION_CHECK_FAIL() << "not implemented: " << gnode;
+                for (int i = 0; i < input_is_cnhw.size(); i++) {
+                    NNFUSION_CHECK(gnode->get_input_shape(i).size() == 4) << "only consider 4d tensor now";
+                    std::string input_op_type = gnode->get_in_edge(i)->get_src()->get_op_type();
+                    if (input_op_type != "Constant" && input_op_type != "BatchNormInference" && input_op_type != "Broadcast") {
+                        if (op_use_cnhw == -1) {
+                            op_use_cnhw = input_is_cnhw[i];
+                        } else if (op_use_cnhw != input_is_cnhw[i]) {
+                            NNFUSION_CHECK_FAIL() << *(gnode->get_in_edge(i)->get_src());
+                        }
+                    }
+                }
+                NNFUSION_LOG(INFO) << "use_cnhw " << *gnode << op_use_cnhw;
+                if (op_use_cnhw == -1) op_use_cnhw = 0; // assign nchw layout if all inputs are constant
+                if (op_use_cnhw) {
+                    for (int i = 0; i < input_is_cnhw.size(); i++) {
+                        if (gnode->get_in_edge(i)->get_src()->is_constant()) {
+                            auto const_node = gnode->get_in_edge(i)->get_src();
+                            auto const_op = std::dynamic_pointer_cast<op::Constant>(const_node->get_op_ptr());
+                            transpose_const_op(const_op);
+                            update_output(const_node, true, is_cnhw);
+                        } else if (gnode->get_in_edge(i)->get_src()->get_op_type() == "BatchNormInference") {
+                            auto bn_node = gnode->get_in_edge(i)->get_src();
+                            update_output(bn_node, true, is_cnhw);
+                        } else if (gnode->get_in_edge(i)->get_src()->get_op_type() == "Broadcast") {
+                            auto bcast_node = gnode->get_in_edge(i)->get_src();
+                            auto bcast_op = std::dynamic_pointer_cast<op::Broadcast>(bcast_node->get_op_ptr());
+                            Shape shape = bcast_op->get_broadcast_shape();
+                            NNFUSION_CHECK(shape.size() == 4);
+                            swap(shape[0], shape[1]);
+                            AxisSet axis = bcast_op->get_broadcast_axes();
+                            bool bcast_d0 = (axis.find(0) != axis.end());
+                            bool bcast_d1 = (axis.find(1) != axis.end());
+                            axis.erase(0);
+                            axis.erase(1);
+                            if (bcast_d0) { axis.insert(1); }
+                            if (bcast_d1) { axis.insert(0); }
+                            bcast_op->set_broadcast_axes(axis);
+                            bcast_op->set_broadcast_shape(shape);
+                            NNFUSION_LOG(INFO) << "axisset: " << bcast_op->get_broadcast_axes() << " shape: " << bcast_op->get_broadcast_shape() << " node: " << *bcast_node;
+                            update_output(bcast_node, true, is_cnhw);
+                            NNFUSION_LOG(INFO) << "bcast inner outer: " << bcast_op->is_inner_broadcast() << " " << bcast_op->is_outer_broadcast();
+                        }
+                    }
+                }
             }
-            bool to_cnhw = input_is_cnhw[0];
-            update_output(gnode, to_cnhw, is_cnhw);
-        } else if (op_type == "Constant" || op_type == "Parameter") {
+            update_output(gnode, op_use_cnhw, is_cnhw);
+        } else if (op_type == "Constant") {
+            update_output(gnode, false, is_cnhw);
+        } else if (op_type == "Parameter") {
             update_output(gnode, false, is_cnhw);
         } else if (op_type == "Convolution") {
             auto conv_op = static_pointer_cast<op::Convolution>(gnode->get_op_ptr());
@@ -152,11 +225,57 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, bool keep_outp
                 gnode->construct_from_op_ptr(new_reshape_op);
                 update_output(gnode, false, is_cnhw );
             }
+        } else if (op_type == "If") {
+            auto op = std::dynamic_pointer_cast<op::If>(gnode->get_op_ptr());
+            auto is_cnhw_then_branch = is_cnhw;
+            auto then_graph = op->get_then_branch_graph();
+            NNFUSION_LOG(INFO) << "nodes in then graph";
+            for (auto& subgraph_gnode: then_graph->get_ordered_ops()) {
+                std::cout << *subgraph_gnode << std::endl;
+                if (std::dynamic_pointer_cast<op::Parameter>(subgraph_gnode->get_op_ptr()) != nullptr) {
+                    auto in_edge = gnode->get_in_edge(subgraph_gnode->Get<int>("subgraph_input_map"));
+                    bool param_is_cnhw = is_cnhw_then_branch[std::make_pair(in_edge->get_src()->get_unique_name(), (size_t) in_edge->get_src_output())];
+                    std::cout << "subgraph_param: " << *subgraph_gnode << " " << "unique name: " << subgraph_gnode->get_unique_name() << " is cnhw: " << param_is_cnhw;
+                    is_cnhw_then_branch[std::make_pair(subgraph_gnode->get_unique_name(), 0)] = param_is_cnhw;
+                }
+            }
+            update_graph(then_graph, is_cnhw_then_branch, false);
+
+            auto is_cnhw_else_branch = is_cnhw;
+            auto else_graph = op->get_else_branch_graph();
+            NNFUSION_LOG(INFO) << "nodes in else graph";
+            for (auto& subgraph_gnode: else_graph->get_ordered_ops()) {
+                std::cout << *subgraph_gnode << std::endl;
+                if (std::dynamic_pointer_cast<op::Parameter>(subgraph_gnode->get_op_ptr()) != nullptr) {
+                    auto in_edge = gnode->get_in_edge(subgraph_gnode->Get<int>("subgraph_input_map"));
+                    bool param_is_cnhw = is_cnhw_else_branch[std::make_pair(in_edge->get_src()->get_unique_name(), (size_t) in_edge->get_src_output())];
+                    is_cnhw_else_branch[std::make_pair(subgraph_gnode->get_unique_name(), 0)] = param_is_cnhw;
+                }
+            }
+            update_graph(else_graph, is_cnhw_else_branch, false);
+            // TODO: merge two is_cnhw
+            auto then_output = then_graph->get_indexed_outputs();
+            auto else_output = else_graph->get_indexed_outputs();
+            std::vector<bool> output_is_cnhw;
+            for (int i = 0; i < then_output.size(); i++) {
+                bool then_cnhw = is_cnhw_then_branch[make_pair(then_output[i].gnode->get_unique_name(), (size_t) then_output[i].index)];
+                bool else_cnhw = is_cnhw_else_branch[make_pair(else_output[i].gnode->get_unique_name(), (size_t) else_output[i].index)];
+                NNFUSION_CHECK(then_cnhw == else_cnhw) << "not implemented";
+                output_is_cnhw.push_back(then_cnhw);
+                if (then_cnhw) {
+                    auto out_shape = op->get_output_shape(i);
+                    swap(out_shape[0], out_shape[1]);
+                    op->set_output_shape(i, out_shape);
+                }
+            }
+            NNFUSION_LOG(INFO) << "if op: output_is_cnhw";
+            for (auto x: output_is_cnhw) { std::cout << x << " "; } std::cout << std::endl;
+            update_output(gnode, output_is_cnhw, is_cnhw);
         } else {
             NNFUSION_CHECK_FAIL() << "layout change of op " << *gnode << " is not yet supported";
         }
     }
-    if (keep_output) {
+    if (out_most_graph) {
         auto indexed_outputs = graph->get_indexed_outputs();
         for (int i = 0; i < indexed_outputs.size(); i++) {
             auto& gnode_idx = indexed_outputs[i];
@@ -169,8 +288,6 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, bool keep_outp
                 graph->set_output(out_gnode_idx, i);
             }
         }
-    } else {
-        NNFUSION_CHECK_FAIL() << "not implemented!";
     }
     NNFUSION_LOG(INFO) << "after conv layout pass:";
     for (auto& gnode: graph->get_ordered_ops()) {
@@ -182,6 +299,7 @@ bool ConvLayoutPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph
 {
     if (!FLAGS_fconv_cnhw)
         return true;
-    update_graph(graph, true);
+    std::map<std::pair<std::string, size_t>, bool> is_cnhw;
+    update_graph(graph, is_cnhw, true);
     return true;
 }

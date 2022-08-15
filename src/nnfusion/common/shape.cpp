@@ -24,3 +24,10 @@ std::ostream& nnfusion::operator<<(std::ostream& s, const Shape& shape)
     s << "}";
     return s;
 }
+
+bool nnfusion::operator == (const Shape& a, const Shape& b) {
+    if (a.size() != b.size()) return false;
+    for (int i = 0; i < a.size(); i++)
+        if (a[i] != b[i]) return false;
+    return true;
+}

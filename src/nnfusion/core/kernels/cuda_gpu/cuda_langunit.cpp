@@ -173,6 +173,37 @@ __global__ void printTensor(float* data, int n) {
     fflush(stdout); \
     printf("\n"); \
 }
+
+__global__ void printTensorChar(char* data, int n) {
+    for (int i = 0; i < min(n, 10); i++) printf("%d ", (int) data[i]);
+    if (n > 10) printf("... %d", (int) data[n-1]);
+}
+
+#define DEBUG_TENSOR_CHAR(tensor, size) { \
+    printf("%s: ", #tensor); \
+    printTensorChar<<<1, 1>>>(tensor, size); \
+    CUDA_SAFE_CALL(cudaDeviceSynchronize()); \
+    fflush(stdout); \
+    printf("\n"); \
+}
+
+__global__ void printTensor3D(float* data, int n, int c, int stride) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < c; j++) {
+            printf("%f ", data[(j * n + i) * stride]);
+        }
+        printf("\n");
+    }
+    // if (n > 10) printf("... %f", data[n-1]);
+}
+
+#define DEBUG_TENSOR1(tensor, n, c, stride) { \
+    printf("%s: ", #tensor); \
+    printTensor3D<<<1, 1>>>(tensor, n, c, stride); \
+    CUDA_SAFE_CALL(cudaDeviceSynchronize()); \
+    fflush(stdout); \
+    printf("\n"); \
+}
 )"
 );
 

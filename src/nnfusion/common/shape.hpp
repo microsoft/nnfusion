@@ -113,4 +113,5 @@ namespace nnfusion
     }
 
     std::ostream& operator<<(std::ostream& s, const Shape& shape);
+    bool operator == (const Shape& a, const Shape& b);
 }

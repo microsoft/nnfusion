@@ -55,6 +55,9 @@ namespace nnfusion
                 m_output_map = std::move(map);
             }
 
+            Shape get_output_shape(int i) { return m_output_shapes[i].to_shape(); }
+            void set_output_shape(int i, const Shape& shape) { m_output_shapes[i] = PartialShape(shape); }
+
         protected:
             std::shared_ptr<nnfusion::graph::Graph> m_then_branch_graph;
             std::shared_ptr<nnfusion::graph::Graph> m_else_branch_graph;

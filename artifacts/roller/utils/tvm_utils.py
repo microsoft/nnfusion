@@ -87,6 +87,7 @@ def build_tensors(op, shape):
         dims = [0] * len(indices)
         for i in range(len(indices)):
             if isinstance(indices[i], tvm.tir.expr.IntImm):
+                # corner case: slice
                 dims[i] = 1
             else:
                 dims[i] = eval_index_len(indices[i], name2val) + 1
@@ -192,7 +193,19 @@ def build_tensors(op, shape):
                 in_tensors[producer_name] = dims
         in_tensors = list(in_tensors.items())
     elif isinstance(compute_expr, tvm.tir.expr.ProducerLoad):
-        in_tensors = [(compute_expr.producer.name, calc_tensor_dim(compute_expr))]
+        is_gather = False
+        for index in compute_expr.indices:
+            if isinstance(index, tvm.tir.expr.ProducerLoad):
+                is_gather = True
+                break
+
+        if is_gather:
+            in_tensors = [(compute_expr.producer.name, shape)]
+            for index in compute_expr.indices:
+                if isinstance(index, tvm.tir.expr.ProducerLoad):
+                    in_tensors.append((index.producer.name, calc_tensor_dim(index)))
+        else:
+            in_tensors = [(compute_expr.producer.name, calc_tensor_dim(compute_expr))]
     elif isinstance(compute_expr, tvm.tir.expr.Add) or isinstance(compute_expr, tvm.tir.expr.Div):
         load_exprs = extract_producer_load(compute_expr.a) + extract_producer_load(compute_expr.b)
         in_tensors = {}
@@ -208,7 +221,7 @@ def build_tensors(op, shape):
         load_exprs = extract_producer_load(compute_expr.value)
         in_tensors = process_load_exprs(load_exprs)
     else:
-        print('type: {}, content: {}'.format(type(compute_expr), compute_expr))
+        print('WARNING: type: {}, content: {}'.format(type(compute_expr), compute_expr))
         assert(False)
 
     out_tensors = [(op.output(0).name, shape[:len(op.axis)])]

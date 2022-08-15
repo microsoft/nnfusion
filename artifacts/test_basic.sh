@@ -46,8 +46,16 @@ echo "Finish Elementwise\n"
 
 # Data Movement
 # 1. slice
+# 2. take
+# 3. gather
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F] = input0[N, F, 2]", input_dict={"input0": {"dtype": "float32", "shape": [1, 16, 32]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[F, C] = input0[input1[F], C]", input_dict={"input0": {"dtype": "float32", "shape": [30528, 1024]}, "input1": {"dtype": "int32", "shape": [3072]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F] = input0[input1[N, F]]", input_dict={"input0": {"dtype": "float32", "shape": [65536]}, "input1": {"dtype": "int32", "shape": [4, 64]}})' antares
+
+echo "Finish Data Movement\n"
 
 # MatMul
 # 1. matmul 4096 x 4096 x 4096

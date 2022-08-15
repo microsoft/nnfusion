@@ -148,7 +148,7 @@ def build_tensors(op, shape):
                     else:
                         return []
                 else:
-                    print('[debug] extract constraints: {}'.format(cur_expr))
+                    # print('[debug] extract constraints: {}'.format(cur_expr))
                     return []
 
             info = extract_constraints(compute_expr.args[0])
@@ -177,7 +177,7 @@ def build_tensors(op, shape):
                 assert(low < high)
                 assert(key in name2val)
                 prev_val = name2val[key]
-                print(prev_val, cur_name2val, low, high)
+                # print(prev_val, cur_name2val, low, high)
                 name2val[key] = prev_val - (cur_name2val[key] - (high - low))
 
         load_exprs = []

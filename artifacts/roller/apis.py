@@ -51,13 +51,15 @@ def get_config_space(op, device_name):
         schedule_fuse = True
 
     is_IODependent = roller_op.IODependent()
-    if not is_IODependent and len(roller_op.RAxis()) == 0:
+
+    # if not is_IODependent and len(roller_op.RAxis()) == 0:
+    if len(roller_op.RAxis()) == 0:
         global smem_tiling, reg_tiling
         smem_tiling, reg_tiling = False, False
 
     print('[debug] is IODependent: {}'.format(is_IODependent))
 
-    if is_IODependent:
+    if is_IODependent and len(roller_op.RAxis()) > 0:
         policy = ConstructionPolicyRT(roller_op, roller_arch, smem_tiling,
                                       reg_tiling, st_align,
                                       padding_threshold_cap, not keep_tiny)

@@ -121,7 +121,10 @@ echo "Finish Fusion\n"
 
 # Other Utilities
 # 1. small sized elementwise
+# 2. onehot
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F] = input0[N, F]", input_dict={"input0": {"dtype": "float32", "shape": [1, 16]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F] = const(1.0).when([input0[N] == F], const(0.0)) where F in 128", input_dict={"input0": {"dtype": "int32", "shape": [4]}})' antares
 
 echo "Finish Other Utilities\n"

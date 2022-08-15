@@ -69,23 +69,23 @@ std::string cuda::ControlFlowEmitter::get_launch_bound(nnfusion::ir::Instruction
 }
 
 size_t cuda::ControlFlowEmitter::get_kernel_shared_memory(std::shared_ptr<KernelEmitter> kernel) {
-    size_t shared_memory_size = 0;
     if (dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
     {
         auto ptr = dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel);
-        shared_memory_size = max(m_shared_memory_size, ptr->get_shared_memory_size());
+        return ptr->get_shared_memory_size();
     }
     else if (dynamic_pointer_cast<BlockCudaEmitter>(kernel) != nullptr)
     {
         auto ptr = dynamic_pointer_cast<BlockCudaEmitter>(kernel);
-        shared_memory_size = max(m_shared_memory_size, ptr->get_shared_memory_size());
+        return ptr->get_shared_memory_size();
     }
     else if (dynamic_pointer_cast<ControlFlowEmitter>(kernel) != nullptr)
     {
         auto ptr = dynamic_pointer_cast<ControlFlowEmitter>(kernel);
-        shared_memory_size = max(m_shared_memory_size, ptr->m_shared_memory_size);
+        return ptr->m_shared_memory_size;
     }
-    return shared_memory_size;
+    NNFUSION_LOG(NNFUSION_WARNING) << "unrecognized kernel emiter type";
+    return 0;
 }
 
 size_t cuda::ControlFlowEmitter::get_subgraph_shared_memory(const ir::Program& program)

@@ -13,9 +13,13 @@ def build_name2val(op, shape):
 
     return ret
 
-def extract_producer_load(expr):
+def extract_producer_load(expr, is_recursive=False):
     if isinstance(expr, tvm.tir.ProducerLoad):
-        return [expr]
+        ret = [expr]
+        if is_recursive:
+            for index in expr.indices:
+                ret = ret + extract_producer_load(index)
+        return ret
     elif isinstance(expr, tvm.tir.Mul):
         return extract_producer_load(expr.a) + extract_producer_load(expr.b)
     elif isinstance(expr, tvm.tir.Add):
@@ -177,20 +181,39 @@ def build_tensors(op, shape):
                 assert(low < high)
                 assert(key in name2val)
                 prev_val = name2val[key]
-                # print(prev_val, cur_name2val, low, high)
                 name2val[key] = prev_val - (cur_name2val[key] - (high - low))
 
-        load_exprs = []
-        for arg in compute_expr.args:
-            load_exprs = load_exprs + extract_producer_load(arg)
-        in_tensors = {}
-        for load_expr in load_exprs:
-            producer_name = load_expr.producer.name
-            dims = calc_tensor_dim(load_expr)
-            if producer_name in in_tensors:
-                assert(dims == in_tensors[producer_name])
-            else:
-                in_tensors[producer_name] = dims
+        # scatter
+        if compute_expr.op.name == 'tir.call_pure_extern' and compute_expr.args[0].value == '__builtin_set':
+            load_exprs = extract_producer_load(compute_expr.args[1], is_recursive=True) + extract_producer_load(compute_expr.args[2])
+            # print(load_exprs)
+            in_tensors = {}
+            for load_expr in load_exprs:
+                if '___' + load_expr.producer.name == op.output(0).name:
+                    in_tensors[load_expr.producer.name] = shape[:len(op.axis)]
+                else:
+                    producer_name, dims = load_expr.producer.name, calc_tensor_dim(load_expr)
+                    if producer_name in in_tensors:
+                        # trick here
+                        for i0 in range(len(dims)):
+                            if dims[i0] == 1:
+                                in_tensors[producer_name][i0] += 1
+                                break
+                    else:
+                        in_tensors[producer_name] = dims
+        else:
+            load_exprs = []
+            for arg in compute_expr.args:
+                load_exprs = load_exprs + extract_producer_load(arg)
+            in_tensors = {}
+            for load_expr in load_exprs:
+                producer_name = load_expr.producer.name
+                dims = calc_tensor_dim(load_expr)
+                if producer_name in in_tensors:
+                    assert(dims == in_tensors[producer_name])
+                else:
+                    in_tensors[producer_name] = dims
+
         in_tensors = list(in_tensors.items())
     elif isinstance(compute_expr, tvm.tir.expr.ProducerLoad):
         is_gather = False

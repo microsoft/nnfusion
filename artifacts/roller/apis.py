@@ -8,7 +8,7 @@ import tvm
 smem_tiling = True
 reg_tiling = True
 
-padding_threshold_cap = 1.0
+padding_threshold_cap = 4.0
 
 fuse = False
 schedule_fuse = False
@@ -22,8 +22,9 @@ def extract_shape_info(op):
     out_tensor = op.output(0)
 
     def extractor(op):
-        return [item.dom.extent.value for item in op.axis
-                ] + [item.dom.extent.value for item in op.reduce_axis]
+        # return [item.dom.extent.value for item in op.axis
+        #         ] + [item.dom.extent.value for item in op.reduce_axis]
+        return [_.value for _ in op.output(0).shape] + [item.dom.extent.value for item in op.reduce_axis]
 
     if '_unpad' in out_tensor.name:
         for tensor in op.input_tensors:

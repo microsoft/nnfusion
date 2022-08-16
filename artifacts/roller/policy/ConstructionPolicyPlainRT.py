@@ -379,15 +379,15 @@ class ConstructionPolicyPlainRT(PolicyBase):
         th = 0
 
         while th <= self.th_cap and len(self.all_results) < topk:
-            print("threshold {}".format(th))
+            # print("threshold {}".format(th))
             self.emit_raw_configs(th)
             # take border cases if no IO intensity satisfied configs
             if len(self.top_results) == 0:
                 self.top_results = self.border_rprogs[0][:self.TOPK]
             if len(self.top_results) == 0:
-                print("failed to find results with padding threshold {}".format(th))
+                print("failed to find results with padding threshold {:.1f}".format(th))
             else:
-                print("found {} results in first round with threshold {}".format(len(self.top_results), th))
+                print("found {} results in first round with threshold {:.1f}".format(len(self.top_results), th))
                 # add current results to all
                 for result in self.top_results:
                     key = result.Dump()

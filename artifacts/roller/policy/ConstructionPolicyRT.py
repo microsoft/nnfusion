@@ -448,9 +448,9 @@ class ConstructionPolicyRT(PolicyBase):
             if len(self.top_results) == 0:
                 self.top_results = self.border_rprogs[0][:self.TOPK]
             if len(self.top_results) == 0:
-                print("failed to find results with padding threshold {}".format(th))
+                print("failed to find results with padding threshold {:.1f}".format(th))
             else:
-                print("found {} results with threshold {}".format(len(self.top_results), th))
+                print("found {} results with threshold {:.1f}".format(len(self.top_results), th))
                 # add current results to all
                 for result in self.top_results:
                     key = result.Dump()

@@ -53,7 +53,6 @@ def get_config_space(op, device_name):
 
     is_IODependent = roller_op.IODependent()
 
-    # if not is_IODependent and len(roller_op.RAxis()) == 0:
     if len(roller_op.RAxis()) == 0:
         global smem_tiling, reg_tiling
         smem_tiling, reg_tiling = False, False

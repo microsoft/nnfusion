@@ -181,12 +181,12 @@ def build_tensors(op, shape):
                 assert(low < high)
                 assert(key in name2val)
                 prev_val = name2val[key]
-                name2val[key] = prev_val - (cur_name2val[key] - (high - low))
+                # Guardian to cope with concat
+                name2val[key] = max(prev_val - (cur_name2val[key] - (high - low)), 1)
 
         # scatter
         if compute_expr.op.name == 'tir.call_pure_extern' and compute_expr.args[0].value == '__builtin_set':
             load_exprs = extract_producer_load(compute_expr.args[1], is_recursive=True) + extract_producer_load(compute_expr.args[2])
-            # print(load_exprs)
             in_tensors = {}
             for load_expr in load_exprs:
                 if '___' + load_expr.producer.name == op.output(0).name:

@@ -51,6 +51,7 @@ echo "Finish Elementwise\n"
 # 4. scatter4d
 # 5. broadcast
 # 6. broadcastall
+# 7. concat
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F] = input0[N, F, 2]", input_dict={"input0": {"dtype": "float32", "shape": [1, 16, 32]}})' antares
 
@@ -63,6 +64,8 @@ BACKEND=c-cuda COMPUTE_V1='- _B, _M = 2, 8; einstein_v2("data[indices[B, 0], ind
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F, HO, WO] = input0[N] where F in 32, HO in 2, WO in 2", input_dict={"input0": {"dtype": "float32", "shape": [16]}})' antares
 
 CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F, HO, WO] = input0[0] where N in 8, F in 32, HO in 2, WO in 2", input_dict={"input0": {"dtype": "float32", "shape": [1]}})' antares
+
+CHECK=1 BACKEND=c-cuda COMPUTE_V1='- einstein_v2("output0[N, F] = input0[N, F].when([F < 128], input1[N, F - 128]) where F in 256", input_dict={"input0": {"dtype": "float32", "shape": [4, 128]}, "input1": {"dtype": "float32", "shape": [4, 128]}})' antares
 
 echo "Finish Data Movement\n"
 

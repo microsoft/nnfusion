@@ -2,7 +2,7 @@ from roller.op import Op
 from roller.policy import *
 from roller.arch import dispatch_arch
 from roller.codegen.op_impl.codegenR import CodeGeneratorR
-from roller.utils import schedule_tensorcore
+from roller.utils import schedule_tensorcore, extract_shape_info
 import tvm
 
 smem_tiling = True
@@ -18,133 +18,117 @@ keep_tiny = False
 use_tc = False
 
 
-def extract_shape_info(op):
-    out_tensor = op.output(0)
-
-    def extractor(op):
-        # return [item.dom.extent.value for item in op.axis
-        #         ] + [item.dom.extent.value for item in op.reduce_axis]
-        return [_.value for _ in op.output(0).shape] + [item.dom.extent.value for item in op.reduce_axis]
-
-    if '_unpad' in out_tensor.name:
-        for tensor in op.input_tensors:
-            if tensor.name + '_unpad' == out_tensor.name:
-                return extractor(tensor.op)
-        assert (False)
-        return None
-    else:
-        return extractor(op)
-
-
 def get_config_space(op, device_name):
-    assert (op.num_outputs == 1)
+  assert (op.num_outputs == 1)
 
-    print('[debug] devname =', device_name)
-    print('[debug] op info = ', op)
+  print('[debug] devname =', device_name)
+  print('[debug] op info = ', op)
 
-    # todo
-    shape = extract_shape_info(op)
-    roller_op = Op(op, shape, op.output(0).dtype, use_tc)
-    roller_arch = dispatch_arch(device_name)
+  # TODO: align shape
+  shape = extract_shape_info(op)
+  roller_op = Op(op, shape, op.output(0).dtype, use_tc)
+  roller_arch = dispatch_arch(device_name)
 
-    if len(roller_op.output_tensors) > 1:
-        global schedule_fuse
-        schedule_fuse = True
+  if len(roller_op.output_tensors) > 1:
+    global schedule_fuse
+    schedule_fuse = True
 
-    is_IODependent = roller_op.IODependent()
+  is_IODependent = roller_op.IODependent()
 
-    if len(roller_op.RAxis()) == 0:
-        global smem_tiling, reg_tiling
-        smem_tiling, reg_tiling = False, False
+  if len(roller_op.RAxis()) == 0:
+    global smem_tiling, reg_tiling
+    smem_tiling, reg_tiling = False, False
 
-    print('[debug] is IODependent: {}'.format(is_IODependent))
+  print('[debug] is IODependent: {}'.format(is_IODependent))
 
-    if is_IODependent and len(roller_op.RAxis()) > 0:
-        policy = ConstructionPolicyRT(roller_op, roller_arch, smem_tiling,
-                                      reg_tiling, st_align,
-                                      padding_threshold_cap, not keep_tiny)
+  if is_IODependent and len(roller_op.RAxis()) > 0:
+    policy = ConstructionPolicyRT(roller_op, roller_arch, smem_tiling,
+                                  reg_tiling, st_align, padding_threshold_cap,
+                                  not keep_tiny)
+  else:
+    policy = ConstructionPolicyPlainRT(roller_op, roller_arch, smem_tiling,
+                                       reg_tiling, st_align,
+                                       padding_threshold_cap)
+
+  rprogs = policy.emit_config_without_trails(10)
+  candidates = []
+  for rprog in rprogs:
+    if fuse or schedule_fuse:
+      assert len(roller_op.output_tensors) == 2
+
+      if '_unpad' in roller_op.output_tensors[0].name:
+        out_tensor, write_tensor = roller_op.output_tensors[
+            1], roller_op.output_tensors[0]
+      else:
+        out_tensor, write_tensor = roller_op.output_tensors[
+            0], roller_op.output_tensors[1]
+
+      align_info = policy.get_align_info_fuse(
+          rprog,
+          roller_arch,
+          smem_tiling,
+          reg_tiling,
+          target_stage=out_tensor.name,
+          write_stage=write_tensor.name,
+          st_align=st_align)
     else:
-        policy = ConstructionPolicyPlainRT(roller_op, roller_arch, smem_tiling,
-                                           reg_tiling, st_align,
-                                           padding_threshold_cap)
-
-    rprogs = policy.emit_config_without_trails(10)
-    candidates = []
-    for rprog in rprogs:
-        if fuse or schedule_fuse:
-            # TODO: write_stage
-
-            assert (len(roller_op.output_tensors) == 2)
-            if '_unpad' in roller_op.output_tensors[0].name:
-                out_tensor, write_tensor = roller_op.output_tensors[
-                    1], roller_op.output_tensors[0]
-            else:
-                out_tensor, write_tensor = roller_op.output_tensors[
-                    0], roller_op.output_tensors[1]
-
-            align_info = policy.get_align_info_fuse(
-                rprog,
-                roller_arch,
-                smem_tiling,
-                reg_tiling,
-                target_stage=out_tensor.name,
-                write_stage=write_tensor.name,
-                st_align=st_align)
-        else:
-            align_info = policy.get_align_info(rprog,
-                                               roller_arch,
-                                               smem_tiling,
-                                               reg_tiling,
-                                               target_stage=op.output(0).name,
-                                               st_align=st_align)
-        candidates.append((rprog, align_info, roller_arch, roller_op))
-    return candidates
+      align_info = policy.get_align_info(
+          rprog,
+          roller_arch,
+          smem_tiling,
+          reg_tiling,
+          target_stage=op.output(0).name,
+          st_align=st_align)
+    candidates.append((rprog, align_info, roller_arch, roller_op))
+  return candidates
 
 
 def apply_config(op, sched, config):
-    rprog, align_info, roller_arch, roller_op = config
-    print('[debug] config =', rprog.Dump())
+  rprog, align_info, roller_arch, roller_op = config
+  print('[debug] config =', rprog.Dump())
 
-    if use_tc:
-        assert (op.num_outputs == 1)
-        return schedule_tensorcore(sched, rprog, op.output(0))
+  if use_tc:
+    assert (op.num_outputs == 1)
+    return schedule_tensorcore(sched, rprog, op.output(0))
 
-    cgen = CodeGeneratorR()
-    if fuse or schedule_fuse:
-        ori_in, pad_in = [], []
+  cgen = CodeGeneratorR()
+  if fuse or schedule_fuse:
+    ori_in, pad_in = [], []
 
-        for tensor in roller_op.input_tensors:
-            if '_pad' in tensor.name:
-                pad_in.append(tensor)
-            else:
-                ori_in.append(tensor)
+    for tensor in roller_op.input_tensors:
+      if '_pad' in tensor.name:
+        pad_in.append(tensor)
+      else:
+        ori_in.append(tensor)
 
-        if '_unpad' in roller_op.output_tensors[0].name:
-            out_tensor, write_tensor = roller_op.output_tensors[
-                1], roller_op.output_tensors[0]
-        else:
-            out_tensor, write_tensor = roller_op.output_tensors[
-                0], roller_op.output_tensors[1]
-
-        cgen.rewrite_schedule_fuse(sched,
-                                   rprog,
-                                   smem_tiling,
-                                   reg_tiling,
-                                   pad_in, [out_tensor],
-                                   write_tensor,
-                                   target_stage=out_tensor.name,
-                                   write_stage=write_tensor.name,
-                                   align_info=align_info,
-                                   bank_size=roller_arch.smem_bank_size,
-                                   ori_in=ori_in)
-
+    if '_unpad' in roller_op.output_tensors[0].name:
+      out_tensor, write_tensor = roller_op.output_tensors[
+          1], roller_op.output_tensors[0]
     else:
-        cgen.rewrite_schedule(sched,
-                              rprog,
-                              smem_tiling,
-                              reg_tiling,
-                              target_stage=op.output(0).name,
-                              align_info=align_info,
-                              bank_size=roller_arch.smem_bank_size)
+      out_tensor, write_tensor = roller_op.output_tensors[
+          0], roller_op.output_tensors[1]
 
-    return sched
+    cgen.rewrite_schedule_fuse(
+        sched,
+        rprog,
+        smem_tiling,
+        reg_tiling,
+        pad_in, [out_tensor],
+        write_tensor,
+        target_stage=out_tensor.name,
+        write_stage=write_tensor.name,
+        align_info=align_info,
+        bank_size=roller_arch.smem_bank_size,
+        ori_in=ori_in)
+
+  else:
+    cgen.rewrite_schedule(
+        sched,
+        rprog,
+        smem_tiling,
+        reg_tiling,
+        target_stage=op.output(0).name,
+        align_info=align_info,
+        bank_size=roller_arch.smem_bank_size)
+
+  return sched

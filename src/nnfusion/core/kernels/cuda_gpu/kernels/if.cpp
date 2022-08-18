@@ -43,16 +43,58 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map());
     m_pool_offset = else_branch_pool_offset;
     m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map());
+    // Hardcoded fusion rule: fuse all kernels with shm_size=0
+    m_then_kernel_groups.clear();
+    for (int i = 0; i < m_then_branch_instructions->size(); i++) {
+        size_t shm_size = get_kernel_shared_memory((*m_then_branch_instructions).at(i)->getKernel());
+        if (shm_size > 0) {
+            if (m_then_kernel_groups[m_then_kernel_groups.size() - 1].size() == 0) {
+                m_then_kernel_groups[m_then_kernel_groups.size() - 1].push_back(i);
+            } else {
+                m_then_kernel_groups.push_back(std::vector<int>({i}));
+            }
+            m_then_kernel_groups.push_back(std::vector<int>());
+        } else {
+            if (i == 0) {
+                m_then_kernel_groups.push_back(std::vector<int>());
+            }
+            m_then_kernel_groups[m_then_kernel_groups.size() - 1].push_back(i);
+        }
+    }
+    if (m_then_kernel_groups[m_then_kernel_groups.size() - 1].size() == 0)
+        m_then_kernel_groups.pop_back();
+    m_else_kernel_groups.clear();
+    for (int i = 0; i < m_else_branch_instructions->size(); i++) {
+        size_t shm_size = get_kernel_shared_memory((*m_else_branch_instructions).at(i)->getKernel());
+        if (shm_size > 0) {
+            if (m_else_kernel_groups[m_else_kernel_groups.size() - 1].size() == 0) {
+                m_else_kernel_groups[m_else_kernel_groups.size() - 1].push_back(i);
+            } else {
+                m_else_kernel_groups.push_back(std::vector<int>({i}));
+            }
+            m_else_kernel_groups.push_back(std::vector<int>());
+        } else {
+            if (i == 0) {
+                m_else_kernel_groups.push_back(std::vector<int>());
+            }
+            m_else_kernel_groups[m_else_kernel_groups.size() - 1].push_back(i);
+        }
+    }
+    if (m_else_kernel_groups[m_else_kernel_groups.size() - 1].size() == 0)
+        m_else_kernel_groups.pop_back();
 }
 
-void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, bool else_branch = false)
+void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, bool else_branch, int start_id, int end_id)
 {
     auto instructions = m_then_branch_instructions;
     if (else_branch)
         instructions = m_else_branch_instructions;
     auto& lu = *_lu;
-    for (auto ins : *instructions)
+    printf("start_id %d end_id %d ins_size %d\n", start_id, end_id, (int) instructions->size());
+    if (end_id == -1) end_id = instructions->size();
+    for (int i = start_id; i < end_id; i++)
     {
+        auto ins = instructions->at(i);
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         lu << get_launch_bound(ins);
         std::vector<string> params;
@@ -64,12 +106,12 @@ void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, bool else_branch
             for (auto tensor : kernel->m_context->tensors)
                 params.push_back(m_param_map[tensor]);
         lu << kernel->emit_block_kernel_call(params)->get_code();
-        if (ins != instructions->back())
+        if (i != end_id - 1)
             lu << "Barrier();\n";
     }
 }
 
-LanguageUnit_p cuda::If::generate_branch_seperate_kernel(const std::string& outer_control, std::shared_ptr<descriptor::Tensor> cond_tensor, std::shared_ptr<ir::Instruction> ins) {
+LanguageUnit_p cuda::If::generate_branch_seperate_function(const std::string& outer_control, std::shared_ptr<descriptor::Tensor> cond_tensor, std::shared_ptr<ir::Instruction> ins) {
     auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
     std::string func_name = kernel->get_function_name() + "_branch_wrapper";
     LanguageUnit_p _lu(new LanguageUnit(func_name));
@@ -119,6 +161,41 @@ LanguageUnit_p cuda::If::generate_branch_seperate_kernel(const std::string& oute
     return _lu;
 }
 
+LanguageUnit_p cuda::If::generate_branch_fused_function(const std::string& outer_control, bool else_branch, int start_id, int end_id) {
+    std::string func_name = get_function_name() + "_branch_wrapper_" + (else_branch ? "else_" : "then_") + std::to_string(start_id) + "_to_" + std::to_string(end_id);
+    LanguageUnit_p _lu(new LanguageUnit(func_name));
+    auto& lu = *_lu;
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+
+    // set_launch_config();
+    emit_function_body();
+    lu << "__global__ void " << func_name << "(" << join(params, ", ") << ")";
+    lu.block_begin();
+    lu << outer_control;
+    {
+        lu.block_begin();
+        generate_branch_fused_kernel(_lu, else_branch, start_id, end_id);
+        lu.block_end();
+    }
+    lu.block_end();
+    return _lu;
+}
+
 void cuda::If::emit_kernel_wrapper(std::shared_ptr<ir::Instruction> ins, LanguageUnit &lu) {
     auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
     std::string wrapper_func_name = kernel->get_function_name() + "_branch_wrapper";
@@ -135,18 +212,40 @@ void cuda::If::emit_kernel_wrapper(std::shared_ptr<ir::Instruction> ins, Languag
     << block_dim.x << ", " << block_dim.y << ", " << block_dim.z << ")>>>(" << join(params, ", ") << ");\n";
 }
 
+void cuda::If::emit_branch_wrapper(bool else_branch, int start_id, int end_id, LanguageUnit &lu) {
+    std::string func_name = get_function_name() + "_branch_wrapper_" + (else_branch ? "else_" : "then_") + std::to_string(start_id) + "_to_" + std::to_string(end_id);
+    cuda::dim3 grid_dim = dim3(1, 1, 1);
+    cuda::dim3 block_dim = dim3(1, 1, 1);
+    std::vector<string> params;
+    params.push_back("input0");
+    // TODO: more params
+    lu << func_name;
+    lu << "<<<dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), dim3("
+    << block_dim.x << ", " << block_dim.y << ", " << block_dim.z << ")>>>(" << join(params, ", ") << ");\n";
+}
+
 LanguageUnit_p cuda::If::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     if (FLAGS_fif_launch_then_else) {
         auto& lu = *_lu;
         lu << "// then branch\n";
-        for (auto ins : *m_then_branch_instructions) {
-            emit_kernel_wrapper(ins, lu);
+        for (auto group: m_then_kernel_groups) {
+            if (group.size() == 1) {
+                auto ins = m_then_branch_instructions->at(group[0]);
+                emit_kernel_wrapper(ins, lu);
+            } else {
+                emit_branch_wrapper(false, group[0], group[group.size() - 1], lu);
+            }
         }
         lu << "// else branch\n";
-        for (auto ins : *m_else_branch_instructions) {
-            emit_kernel_wrapper(ins, lu);
+        for (auto group: m_else_kernel_groups) {
+            if (group.size() == 1) {
+                auto ins = m_else_branch_instructions->at(group[0]);
+                emit_kernel_wrapper(ins, lu);
+            } else {
+                emit_branch_wrapper(true, group[0], group[group.size() - 1], lu);
+            }
         }
     } else {
         auto& lu = *_lu;
@@ -185,31 +284,54 @@ LanguageUnit_p cuda::If::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
-    for (auto ins : *m_then_branch_instructions)
-    {
-        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        auto body = kernel->get_or_emit_source();
-        auto block_kernel = kernel->emit_block_kernel();
-        block_kernel->require(body->dep_unit);
-        if (FLAGS_fif_launch_then_else) {
-            auto ins_kernel = generate_branch_seperate_kernel("if (*input0) ", m_context->inputs[0], ins);
-            ins_kernel->require(block_kernel);
-            _lu->require(ins_kernel);
-        } else {
+    if (FLAGS_fif_launch_then_else) {
+        for (auto group: m_then_kernel_groups) {
+            if (group.size() == 1) {
+                auto ins = m_then_branch_instructions->at(group[0]);
+                auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+                auto body = kernel->get_or_emit_source();
+                auto block_kernel = kernel->emit_block_kernel();
+                block_kernel->require(body->dep_unit);
+                _lu->require(block_kernel);
+                auto ins_kernel = generate_branch_seperate_function("if (*input0) ", m_context->inputs[0], ins);
+                ins_kernel->require(block_kernel);
+                _lu->require(ins_kernel);        
+            } else {
+                auto group_kernel = generate_branch_fused_function("if (*input0)", false, group[0], group[group.size() - 1]);
+                _lu->require(group_kernel);
+            }
+        }
+        for (auto group: m_else_kernel_groups) {
+            if (group.size() == 1) {
+                auto ins = m_else_branch_instructions->at(group[0]);
+                auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+                auto body = kernel->get_or_emit_source();
+                auto block_kernel = kernel->emit_block_kernel();
+                block_kernel->require(body->dep_unit);
+                _lu->require(block_kernel);
+                auto ins_kernel = generate_branch_seperate_function("if (*input0) ", m_context->inputs[0], ins);
+                ins_kernel->require(block_kernel);
+                _lu->require(ins_kernel);        
+            } else {
+                auto group_kernel = generate_branch_fused_function("if (*input0)", true, group[0], group[group.size() - 1]);
+                _lu->require(group_kernel);
+            }
+        }
+    } else {
+        for (auto ins : *m_then_branch_instructions)
+        {
+            auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+            auto body = kernel->get_or_emit_source();
+            auto block_kernel = kernel->emit_block_kernel();
+            block_kernel->require(body->dep_unit);
             _lu->require(block_kernel);
         }
-    }
-    for (auto ins : *m_else_branch_instructions)
-    {
-        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
-        auto body = kernel->get_or_emit_source();
-        auto block_kernel = kernel->emit_block_kernel();
-        block_kernel->require(body->dep_unit);
-        if (FLAGS_fif_launch_then_else) {
-            auto ins_kernel = generate_branch_seperate_kernel("if (!(*input0)) ", m_context->inputs[0], ins);
-            ins_kernel->require(block_kernel);
-            _lu->require(ins_kernel);
-        } else {
+        for (auto ins : *m_else_branch_instructions)
+        {
+            auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
+            auto body = kernel->get_or_emit_source();
+            auto block_kernel = kernel->emit_block_kernel();
+            block_kernel->require(body->dep_unit);
             _lu->require(block_kernel);
         }
     }

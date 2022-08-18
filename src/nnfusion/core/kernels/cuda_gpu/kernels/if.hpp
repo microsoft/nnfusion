@@ -22,11 +22,15 @@ namespace nnfusion
                 void set_launch_config() override;
 
             private:
-                void generate_branch_fused_kernel(LanguageUnit_p, bool);
-                LanguageUnit_p generate_branch_seperate_kernel(const std::string& outer_control, std::shared_ptr<descriptor::Tensor>, std::shared_ptr<ir::Instruction> instruction);
+                void generate_branch_fused_kernel(LanguageUnit_p _lu, bool else_branch = false, int start_id = 0, int end_id = -1);
+                LanguageUnit_p generate_branch_fused_function(const std::string& outer_control, bool else_branch = false, int start_id = 0, int end_id = -1);
+                LanguageUnit_p generate_branch_seperate_function(const std::string& outer_control, std::shared_ptr<descriptor::Tensor>, std::shared_ptr<ir::Instruction> instruction);
                 void emit_kernel_wrapper(std::shared_ptr<ir::Instruction> ins, LanguageUnit &lu);
+                void emit_branch_wrapper(bool else_branch, int start_id, int end_id, LanguageUnit &lu);
                 TranslationUnit::Pointer m_then_branch_tu, m_else_branch_tu;
                 ir::BasicBlock::Pointer m_then_branch_instructions, m_else_branch_instructions;
+                std::vector<std::vector<int>> m_then_kernel_groups;
+                std::vector<std::vector<int>> m_else_kernel_groups;
             };
         } // namespace cuda
     }     // namespace kernels

@@ -196,7 +196,14 @@ namespace nnfusion
                     }
                     if (tensor.data_type() == onnx::TensorProto_DataType_INT32)
                     {
-                        return __get_data<int32_t>(tensor.int32_data());
+                        if (tensor.has_raw_data())
+                        {
+                            return __get_raw_data<int32_t>(tensor.raw_data());
+                        }
+                        else
+                        {
+                            return __get_data<int32_t>(tensor.int32_data());
+                        }
                     }
                     NNFUSION_CHECK_FAIL() << "invalid data type: "
                                           << onnx::TensorProto_DataType_Name(

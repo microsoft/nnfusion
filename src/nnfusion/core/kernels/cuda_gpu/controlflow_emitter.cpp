@@ -99,6 +99,14 @@ size_t cuda::ControlFlowEmitter::get_subgraph_shared_memory(const ir::Program& p
     return m_shared_memory_size;
 }
 
+size_t cuda::ControlFlowEmitter::get_inst_max_shared_memory(nnfusion::ir::BasicBlock::Pointer bb, int start_id, int end_id) {
+    if (end_id == -1) end_id = bb->size();
+    size_t mx = 0;
+    for (int i = start_id; i < end_id; i++)
+        mx = max(mx, get_kernel_shared_memory(bb->at(i)->getKernel()));
+    return mx;
+}
+
 LanguageUnit_p cuda::ControlFlowEmitter::emit_device_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_body"));

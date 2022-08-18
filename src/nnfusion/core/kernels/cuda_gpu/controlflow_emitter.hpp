@@ -36,6 +36,7 @@ namespace nnfusion
                 std::string get_launch_bound(nnfusion::ir::Instruction::Pointer ins);
                 size_t get_kernel_shared_memory(std::shared_ptr<KernelEmitter> kernel);
                 size_t get_subgraph_shared_memory(const ir::Program& program);
+                size_t get_inst_max_shared_memory(nnfusion::ir::BasicBlock::Pointer bb, int start_id = 0, int end_id = -1);
                 size_t m_shared_memory_size = 0;
                 bool is_emitting_block_kernel = false;
                 descriptor::Tensor::Pointer m_workspace;

@@ -62,6 +62,9 @@ namespace nnfusion
         return ss.str();
     }
 
+    // find the first match of ``pattern'' in ``src'' and replace the substring to ``to''
+    std::string replace_one(std::string src, std::string pattern, std::string to);
+
     template <typename T>
     std::string vector_to_string(const T& v, const std::string& sep = ", ")
     {

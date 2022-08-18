@@ -371,6 +371,15 @@ void nnfusion::aligned_free(void* p)
 
 namespace nnfusion
 {
+    std::string replace_one(std::string src, std::string pattern, std::string to) {
+        size_t start_pos = src.find(pattern);
+        if (start_pos != std::string::npos) {
+            src.replace(start_pos, pattern.length(), to);
+            return src;
+        } else {
+            return src;
+        }
+    }
     template <>
     float parse_string<float>(const std::string& s)
     {

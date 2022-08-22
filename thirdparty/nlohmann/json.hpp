@@ -18387,7 +18387,7 @@ Format](http://rfc7159.net/rfc7159)
 
     @throw type_error.309 if called on JSON values other than objects; example:
     `"cannot use insert() with string"`
-    @throw invalid_iterator.202 if iterator @a first or @a last does does not
+    @throw invalid_iterator.202 if iterator @a first or @a last does not
     point to an object; example: `"iterators first and last must point to
     objects"`
     @throw invalid_iterator.210 if @a first and @a last do not belong to the
@@ -18482,7 +18482,7 @@ Format](http://rfc7159.net/rfc7159)
 
     @throw type_error.312 if called on JSON values other than objects; example:
     `"cannot use update() with string"`
-    @throw invalid_iterator.202 if iterator @a first or @a last does does not
+    @throw invalid_iterator.202 if iterator @a first or @a last does not
     point to an object; example: `"iterators first and last must point to
     objects"`
     @throw invalid_iterator.210 if @a first and @a last do not belong to the

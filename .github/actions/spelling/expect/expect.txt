@@ -104,8 +104,6 @@ AUTORADIOBUTTON
 autoscrolling
 Autowrap
 AVerify
-AVI
-AVX
 awch
 azuredevopspodcast
 azzle
@@ -149,7 +147,6 @@ BKCOLOR
 BKGND
 Bksp
 blog
-Blt
 BLUESCROLL
 bmp
 BODGY
@@ -218,14 +215,11 @@ CCRT
 cctype
 CDATA
 cdd
-cdecl
-CDeclaration
 CEdit
 CELLSIZE
 cend
 cerr
 cfae
-Cfg
 cfie
 cfiex
 cfte
@@ -246,8 +240,7 @@ Childitem
 chk
 chrono
 CHT
-Cic
-cjk
+cic
 ckuehl
 cla
 Clcompile
@@ -265,7 +258,6 @@ closetest
 cloudconsole
 cls
 CLSCTX
-clsid
 CLUSTERMAP
 cmath
 cmatrix
@@ -419,29 +411,11 @@ csproj
 Csr
 csrmsg
 CSRSS
-csrutil
-css
-cstdarg
-cstddef
-cstdio
-cstdlib
-cstr
-cstring
-cstyle
-csv
-CSwitch
-CTerminal
-CText
-ctime
 ctl
 ctlseqs
 Ctlv
-ctor
-CTRLEVENT
-CTRLKEYSHORTCUTS
-Ctx
-Ctxt
 ctype
+ctxs
 CUF
 cupxy
 curated
@@ -509,7 +483,6 @@ DDESHARE
 DDevice
 DEADCHAR
 dealloc
-Debian
 debolden
 debugtype
 DECAC
@@ -521,8 +494,6 @@ DECCKM
 DECCOLM
 DECCRA
 DECDHL
-decdld
-DECDLD
 DECDWL
 DECEKBD
 DECID
@@ -563,9 +534,6 @@ DECSTBM
 DECSTR
 DECSWL
 DECTCEM
-Dedupe
-deduplicate
-deduplicated
 DEFAPP
 DEFAULTBACKGROUND
 DEFAULTFOREGROUND
@@ -611,9 +579,6 @@ dhandler
 dialogbox
 diffing
 DINLINE
-directio
-DIRECTX
-Dirs
 DISABLEDELAYEDEXPANSION
 DISABLENOSCROLL
 DISPLAYATTRIBUTE
@@ -659,7 +624,6 @@ dsm
 dst
 DSwap
 DTest
-dtor
 DTTERM
 DUMMYUNIONNAME
 DUNICODE
@@ -718,15 +682,12 @@ ENUMLOGFONT
 ENUMLOGFONTEX
 enumranges
 envvar
-eol
 EPres
-EQU
 ERASEBKGND
 errno
 errorlevel
 ETB
 etcoreapp
-ETW
 ETX
 EUDC
 EVENTID
@@ -756,7 +717,6 @@ FACENODE
 FACESIZE
 failfast
 FAILIFTHERE
-fallthrough
 FARPROC
 fastlink
 fcb
@@ -789,7 +749,7 @@ FILEW
 FILLATTR
 FILLCONSOLEOUTPUT
 FILTERONPASTE
-finalizer
+findall
 FINDCASE
 FINDDLG
 FINDDOWN
@@ -859,6 +819,7 @@ GAUSSIAN
 gci
 gcx
 gcy
+GDI
 gdi
 gdip
 gdirenderer
@@ -934,10 +895,8 @@ GMEM
 GNUC
 Goldmine
 gonce
-Google
 goutput
-GPUs
-grayscale
+Greader
 GREENSCROLL
 Grehan
 grep
@@ -974,6 +933,7 @@ hbr
 hbrush
 HCmd
 hdc
+hdiv
 hdr
 HDROP
 hdrstop
@@ -998,6 +958,7 @@ HISTORYSIZE
 hittest
 HIWORD
 HKCU
+HKEY
 hkey
 hkl
 HKLM
@@ -1005,9 +966,9 @@ hlocal
 hlsl
 HMENU
 hmod
-hmodule
 hmon
 HMONITOR
+hmul
 horiz
 HORZ
 hostable
@@ -1021,12 +982,12 @@ HPR
 HPROPSHEETPAGE
 HProvider
 HREDRAW
-hresult
 HRSRC
 hscroll
 hsl
 hstr
 hstring
+hsub
 hsv
 HTBOTTOMLEFT
 HTBOTTOMRIGHT
@@ -1045,8 +1006,6 @@ HTTOPRIGHT
 hungapp
 HVP
 hwheel
-hwnd
-HWNDPARENT
 hxx
 IAccessibility
 IAction
@@ -1057,7 +1016,6 @@ ICache
 icacls
 iccex
 icch
-IChar
 ico
 IComponent
 ICONERROR
@@ -1100,14 +1058,12 @@ IGNOREEND
 IGNORELANGUAGE
 IHigh
 IHosted
-iid
 IInitialize
 IInput
 IInspectable
 IInteract
 IInteractivity
 IIo
-IList
 imagemagick
 Imatch
 ime
@@ -1143,7 +1099,6 @@ intellisense
 INTERACTIVITYBASE
 INTERCEPTCOPYPASTE
 INTERNALNAME
-interop
 interoperability
 inthread
 intptr
@@ -1180,6 +1135,7 @@ ISwap
 iswdigit
 iswspace
 ISystem
+It'd
 iterm
 itermcolors
 ITerminal
@@ -1191,7 +1147,6 @@ IUI
 IUia
 IUnknown
 ivalid
-IValue
 IVector
 IWait
 iwch
@@ -1219,10 +1174,12 @@ kayla
 Kazu
 kazum
 kbd
+KConfig
 kcub
 kcud
 kcuf
 kcuu
+keepdim
 kernelbase
 kernelbasestaging
 KEYBDINPUT
@@ -1291,10 +1248,12 @@ LLVM
 llx
 LMENU
 LMNOP
+LNK
 lnk
 lnkd
 lnkfile
 LNM
+LNOp
 LOADONCALL
 loadu
 LOBYTE
@@ -1408,6 +1367,7 @@ Mbxy
 mdmerge
 MDs
 MEASUREITEM
+mega
 megamix
 memallocator
 memcmp
@@ -1437,7 +1397,6 @@ minkernel
 MINMAXINFO
 minwin
 minwindef
-Mip
 mkdir
 MMBB
 mmcc
@@ -1490,7 +1449,7 @@ msysgit
 MTSM
 mui
 Mul
-multiline
+mul
 munged
 munges
 murmurhash
@@ -1640,7 +1599,6 @@ numpad
 NUMSCROLL
 nupkg
 nuspec
-NVIDIA
 NVR
 OACR
 oauth
@@ -1845,20 +1803,17 @@ ppsi
 ppsl
 ppsp
 ppsz
-ppv
 ppwch
 PQRST
 pragma
 prc
 prealigned
 prebuilt
-precomp
 prect
 prefast
 prefilled
 prefs
 preinstalled
-PRELOAD
 PREMULTIPLIED
 prepopulated
 presorted
@@ -1873,6 +1828,7 @@ prioritization
 processenv
 processhost
 PROCESSINFOCLASS
+PROCS
 procs
 Progman
 proj
@@ -1945,7 +1901,6 @@ RAII
 RALT
 rasterbar
 rasterfont
-rasterization
 rawinput
 RAWPATH
 raytracers
@@ -1974,10 +1929,9 @@ readback
 READCONSOLE
 READCONSOLEOUTPUT
 READCONSOLEOUTPUTSTRING
-Readline
+readlines
 readme
 READMODE
-readonly
 READWRITE
 realloc
 reamapping
@@ -1986,9 +1940,9 @@ redef
 redefinable
 Redir
 redirector
-redist
 redistributable
 REDSCROLL
+reducel
 refactor
 refactoring
 REFCLSID
@@ -2128,7 +2082,6 @@ securityappcontainer
 segfault
 SELCHANGE
 SELECTALL
-selectany
 SELECTEDFONT
 SELECTSTRING
 Selfhosters
@@ -2173,6 +2126,7 @@ Setwindow
 SETWINDOWINFO
 sfi
 SFINAE
+sfinae
 SFUI
 sgr
 SHANDLE
@@ -2185,7 +2139,6 @@ SHFILEINFO
 SHGFI
 SHGFP
 SHIFTJIS
-Shl
 shlguid
 shlobj
 shlwapi
@@ -2276,7 +2229,6 @@ stoi
 stol
 stoul
 stoutapot
-Stri
 strikethrough
 stringstream
 STRINGTABLE
@@ -2305,7 +2257,6 @@ suiteless
 svg
 swapchain
 swapchainpanel
-swappable
 SWMR
 SWP
 swprintf
@@ -2411,8 +2362,8 @@ timelines
 titlebar
 TITLEISLINKNAME
 TJson
+tkey
 TLambda
-TLEN
 Tlgdata
 TMAE
 TMPF
@@ -2429,6 +2380,8 @@ TOOLINFO
 Toolset
 tooltip
 TOPDOWNDIB
+topkconf
+topkop
 TOPLEFT
 toplevel
 TOPRIGHT
@@ -2459,7 +2412,6 @@ truetype
 trx
 tsattrs
 tsf
-TStr
 TSTRFORMAT
 TSub
 TTBITMAP
@@ -2506,14 +2458,12 @@ UIELEMENTENABLEDONLY
 uint
 uintptr
 ulcch
-ulong
 umd
 Unadvise
 unattend
 uncomment
 UNCPRIORITY
 undef
-Unescape
 unexpand
 Unfocus
 unhighlighting
@@ -2527,7 +2477,6 @@ uninitialize
 uninstall
 unintense
 Uniscribe
-unittest
 unittesting
 universaltest
 unk
@@ -2604,6 +2553,7 @@ VERTBAR
 VFT
 vga
 vgaoem
+vgpr
 viewkind
 viewports
 Virt
@@ -2693,6 +2643,7 @@ wfdopen
 WFill
 wfopen
 wfstream
+wgp
 WHelper
 whitelisting
 WIDTHSCROLL
@@ -2750,9 +2701,6 @@ winioctl
 winmd
 winmeta
 winmgr
-winmm
-winnt
-Winperf
 WInplace
 winres
 winrt
@@ -2837,7 +2785,6 @@ xact
 xaml
 Xamlmeta
 xargs
-xaz
 xbf
 xbutton
 XBUTTONDBLCLK
@@ -2882,7 +2829,6 @@ XVIRTUALSCREEN
 XWalk
 Xzn
 yact
-YAML
 YCast
 YCENTER
 YCount
@@ -2896,5 +2842,6 @@ YVIRTUALSCREEN
 YWalk
 ZCmd
 ZCtrl
+zhu
 zsh
 zxcvbnm

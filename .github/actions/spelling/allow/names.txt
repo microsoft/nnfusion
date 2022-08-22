@@ -51,6 +51,8 @@ miniksa
 niksa
 nvaccess
 nvda
+NVIDIA
+nvidia
 oising
 oldnewthing
 opengl

@@ -4,7 +4,7 @@ from math import ceil
 import sys
 import os
 import numpy as np
-from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_antares_type_str, read_file, replace_tempalte_args
+from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_antares_type_str, read_file, replace_template_args
 
 
 class TopK(OperatorBase):
@@ -99,7 +99,7 @@ class TopK(OperatorBase):
     def attach_directx_hlsl_kernel(self):
         topkconf = self.TopKConfig(self)
         in_block_kernel = read_file("hlsl/topk/topk.hlsl")
-        self.in_block_kernel = replace_tempalte_args(in_block_kernel, topkconf)
+        self.in_block_kernel = replace_template_args(in_block_kernel, topkconf)
 
         self["hlsl_kernel"] = "\n".join([self.in_block_kernel])
         self["launch_config"] = [[topkconf.__greater_blocks__, 1, 1], [topkconf.__threads__, 1, 1]]

@@ -168,13 +168,13 @@ def read_file(file_name):
         lines = f.readlines()
         return "".join(lines)
 
-def list_tempalte_args(content_str):
+def list_template_args(content_str):
     # match and list all variables begin with "__" and end with "__"
     res = re.findall(r"__\w+__", content_str)
     return set(res)
 
-def replace_tempalte_args(content_str, parameters):
-    tkeys = list_tempalte_args(content_str)
+def replace_template_args(content_str, parameters):
+    tkeys = list_template_args(content_str)
     for tkey in list(tkeys):
         content_str = content_str.replace(tkey, parameters[tkey])
     return content_str

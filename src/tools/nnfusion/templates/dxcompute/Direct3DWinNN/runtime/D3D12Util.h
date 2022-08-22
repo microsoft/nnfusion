@@ -1034,7 +1034,7 @@ namespace antares {
 #ifdef _GAMING_XBOX_SCARLETT
         static std::vector<std::wstring> getXboxFlags(const std::string& text, std::string mode = "cu")
         {
-            // Currently dxcompiler for xbox cann't work properly for some shaders thus hanging GPU.
+            // Currently dxcompiler for xbox can't work properly for some shaders thus hanging GPU.
             // Before compiler team's fix, two additional flags are added to explicitly prohibit generating these shaders.
             // 1. -D__XBOX_PER_THREAD_SCRATCH_SIZE_LIMIT_IN_BYTES=0, disable scratch usage
             // 2. -D__XBOX_MAX_VGPR_COUNT=[VGPR_COUNT], limit VGPR as below:

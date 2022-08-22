@@ -40,7 +40,7 @@ class TopK(OperatorBase):
             self.__block_max_element__ = self.get_block_max_element(self.input_dtype_0)
             # Maximum elements for one sequence in one block
             self.__block_max_seq_element__ = self.__block_max_element__ // 2
-            # Stride between two elements in orginal 
+            # Stride between two elements in original 
             self.__axis_stride__ = 1 
             for r in range(self.axis+1, len(self.input_shape_0)):
                 self.__axis_stride__ *= self.input_shape_0[r]

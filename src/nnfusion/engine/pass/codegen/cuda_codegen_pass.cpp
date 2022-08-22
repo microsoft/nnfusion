@@ -279,7 +279,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             FunctionUnit_p fu = kernel->get_or_emit_source(true);
             string body_str = fu->body_unit->get_code();
             string func_name = fu->name_unit->get_code();
-            // conv kernels in the the stream shares the same workspace_ptr
+            // conv kernels in the stream shares the same workspace_ptr
             if (gnode->get_op_type() == "Convolution" && async_info.execution_stream)
             {
                 std::string s_workspace =

@@ -91,8 +91,13 @@ def eval_index_len(index_expr, name2val):
   if isinstance(index_expr, tvm.tir.Var):
     return name2val[index_expr.name] - 1
   elif isinstance(index_expr, tvm.tir.Add):
-    return eval_index_len(index_expr.a, name2val) + eval_index_len(
-        index_expr.b, name2val)
+    if isinstance(index_expr.a, tvm.tir.expr.IntImm):
+      return eval_index_len(index_expr.b, name2val)
+    elif isinstance(index_expr.b, tvm.tir.expr.IntImm):
+      return eval_index_len(index_expr.a, name2val)
+    else:
+      return eval_index_len(index_expr.a, name2val) + eval_index_len(
+          index_expr.b, name2val)
   elif isinstance(index_expr, tvm.tir.Sub):
     assert (isinstance(index_expr.b, tvm.tir.IntImm))
     return eval_index_len(index_expr.a, name2val)
@@ -267,7 +272,9 @@ def build_tensors(op, shape):
     else:
       in_tensors = [(compute_expr.producer.name, calc_tensor_dim(compute_expr))]
   elif isinstance(compute_expr, tvm.tir.expr.Add) or isinstance(
-      compute_expr, tvm.tir.expr.Div):
+      compute_expr, tvm.tir.expr.Div) or isinstance(
+          compute_expr, tvm.tir.expr.Sub) or isinstance(compute_expr,
+                                                        tvm.tir.expr.Mul):
     load_exprs = extract_producer_load(compute_expr.a) + extract_producer_load(
         compute_expr.b)
     in_tensors = {}

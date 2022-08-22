@@ -264,6 +264,8 @@ class CodeGeneratorR:
           self.sche[out].set_store_predicate(bind_idx.var.equal(0))
 
       # print(tvm.lower(self.sche, input_tensors + output_tensors, simple_mode=True))
+      # func = tvm.build(self.sche, input_tensors + output_tensors, 'cuda')
+      # print(func.import_modules[0].get_source())
 
       # print("[Cooperative fetching]")
       if reg_tile is not None:
@@ -280,6 +282,8 @@ class CodeGeneratorR:
           self.cooperative_fetch(st, self.sche)
 
       # print(tvm.lower(self.sche, input_tensors + output_tensors, simple_mode=True))
+      # func = tvm.build(self.sche, input_tensors + output_tensors, 'cuda')
+      # print(func.imported_modules[0].get_source())
 
     for info in align_info:
       idx, factor, offset = info

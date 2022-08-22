@@ -14,6 +14,8 @@
 #define _USE_GPU_TIMER_
 #define _USE_DXC_
 
+#define ANTARES_EXPORTS
+
 #include "D3D12Util.h"
 #include "D3D12APIWrapper.h"
 
@@ -233,12 +235,47 @@ int dxFinalize() {
     return 0;
 }
 
+static std::unordered_map<size_t, std::vector<void*>> unused_buffers;
+static std::unordered_map<void*, size_t> buffer_slots;
+
+inline size_t compute_slotsize(size_t &value) {
+    static const int tab64[64] = {
+        63,  0, 58,  1, 59, 47, 53,  2,
+        60, 39, 48, 27, 54, 33, 42,  3,
+        61, 51, 37, 40, 49, 18, 28, 20,
+        55, 30, 34, 11, 43, 14, 22,  4,
+        62, 57, 46, 52, 38, 26, 32, 41,
+        50, 36, 17, 19, 29, 10, 13, 21,
+        56, 45, 25, 31, 35, 16,  9, 12,
+        44, 24, 15,  8, 23,  7,  6,  5 };
+
+    value -= 1;
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    value |= value >> 32;
+
+    size_t slot_id = tab64[((uint64_t)((value - (value >> 1)) * 0x07EDD5E59A4E28C2LLU)) >> 58];
+    value += 1;
+    return slot_id;
+}
+
 void* dxMemAlloc(size_t bytes)
 {
     DEBUG_PRINT(__func__);
 
     if (dxInit(0) != 0)
         return nullptr;
+
+    auto slot_id = compute_slotsize(bytes);
+    auto& slot = unused_buffers[slot_id];
+    if (slot.size()) {
+        void* buff = slot.back();
+        slot.pop_back();
+        return buff;
+    }
 
     auto buff = new dx_buffer_t();
     buff->size = bytes;
@@ -248,17 +285,23 @@ void* dxMemAlloc(size_t bytes)
 
     void* virtualPtr = VirtualAlloc(nullptr, bytes, MEM_RESERVE, PAGE_NOACCESS);
     assert(virtualPtr != nullptr);
+    buffer_slots[virtualPtr] = slot_id;
 
     memBlocks[virtualPtr] = buff;
     return virtualPtr;
 }
 
-int dxMemFree(void* vPtr)
+int dxMemFree(void* virtualPtr)
 {
     DEBUG_PRINT(__func__);
 
-    VirtualFree(vPtr, 0, MEM_RELEASE);
-    memBlocks.erase(vPtr);
+    auto it = buffer_slots.find(virtualPtr);
+    assert(it != buffer_slots.end());
+    unused_buffers[it->second].push_back(virtualPtr);
+    return 0;
+
+    VirtualFree(virtualPtr, 0, MEM_RELEASE);
+    memBlocks.erase(virtualPtr);
     return 0;
 }
 

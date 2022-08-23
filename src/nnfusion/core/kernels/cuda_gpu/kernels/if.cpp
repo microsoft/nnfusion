@@ -362,7 +362,7 @@ LanguageUnit_p cuda::If::emit_dependency()
                     auto body = kernel->get_or_emit_source();
                     auto block_kernel = kernel->emit_block_kernel();
                     block_kernel->require(body->dep_unit);
-                    _lu->require(block_kernel);
+                    group_kernel->require(block_kernel);
                 }
                 _lu->require(group_kernel);
             }

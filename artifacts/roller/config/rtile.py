@@ -3,6 +3,7 @@ from tvm import te
 from roller.utils import *
 import inspect
 from copy import deepcopy
+import json
 
 
 class rTile:
@@ -170,7 +171,7 @@ class rTile:
   def Dump(self):
     spatial_shape = self.shape[:len(self.saxis)]
     reduce_shape = self.shape[len(self.saxis):]
-    return '[tile: {}; step: {}]'.format(spatial_shape, reduce_shape)
+    return json.dumps({'tile': spatial_shape, 'step': reduce_shape})
 
   def Dimensions(self):
     return self.shape

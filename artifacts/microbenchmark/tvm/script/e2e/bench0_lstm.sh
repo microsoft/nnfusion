@@ -1,1 +1,0 @@
-python3 $1/matmul_tuning.py 128 256 256 $2

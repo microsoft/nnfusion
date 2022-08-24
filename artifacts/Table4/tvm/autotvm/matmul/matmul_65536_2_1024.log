@@ -1,1 +1,0 @@
-{"input": ["rocm -keys=rocm,gpu -max_num_threads=256 -mcpu=gfx906 -mtriple=amdgcn-amd-amdhsa-hcc -thread_warp_size=64", "dense.rocm", [["TENSOR", [65536, 2], "float32"], ["TENSOR", [2, 1024], "float32"]], {}], "config": {"index": 0, "code_hash": null, "entity": []}, "result": [[0.15969453425], 0, 3.1308035850524902, 1638608022.6387887], "version": 0.2, "tvm_version": "0.9.dev0"}

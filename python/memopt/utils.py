@@ -75,6 +75,8 @@ extern "C" float profile({}) {{
 """
 #include <cuda_runtime.h>
 #include <math.h>
+#include <cuda_fp16.h>
+#include <mma.h>
 """
         self.host_code = header + self.code + "\n" + host_funcs
         return self.host_code

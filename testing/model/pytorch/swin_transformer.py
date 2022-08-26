@@ -4,6 +4,13 @@ import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 
+def cyclic_shift(x, displacement):
+    #Roll not supported in onnx
+    #return torch.roll(x, shifts=(displacement, displacement), dims=(1, 2))
+    x = torch.cat((x[:,-displacement:,:,:], x[:,:-displacement,:,:]), dim=1)
+    x = torch.cat((x[:,:,-displacement:,:], x[:,:,:-displacement,:]), dim=2)
+    return x
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -230,7 +237,7 @@ class SwinTransformerBlock(nn.Module):
 
         # cyclic shift
         if self.shift_size > 0:
-            shifted_x = torch.roll(x, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
+            shifted_x = cyclic_shift(x, -self.shift_size)
         else:
             shifted_x = x
 
@@ -247,7 +254,7 @@ class SwinTransformerBlock(nn.Module):
 
         # reverse cyclic shift
         if self.shift_size > 0:
-            x = torch.roll(shifted_x, shifts=(self.shift_size, self.shift_size), dims=(1, 2))
+            x = cyclic_shift(shifted_x, self.shift_size)
         else:
             x = shifted_x
         x = x.view(B, H * W, C)
@@ -301,14 +308,16 @@ class PatchMerging(nn.Module):
         assert L == H * W, "input feature has wrong size"
         assert H % 2 == 0 and W % 2 == 0, f"x size ({H}*{W}) are not even."
 
-        x = x.view(B, H, W, C)
-
-        x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
-        x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
-        x2 = x[:, 0::2, 1::2, :]  # B H/2 W/2 C
-        x3 = x[:, 1::2, 1::2, :]  # B H/2 W/2 C
-        x = torch.cat([x0, x1, x2, x3], -1)  # B H/2 W/2 4*C
-        x = x.view(B, -1, 4 * C)  # B H/2*W/2 4*C
+        x = x.view(B, H, W, C).permute(0, 3, 1, 2)
+        x = nn.functional.unfold(x, kernel_size=2, stride=2, padding=0)
+        x = x.view(B, -1, H//2, W//2).permute(0, 2, 3, 1).view(B, -1, 4 * C)
+        # x = x.view(B, H, W, C)
+        # x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
+        # x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
+        # x2 = x[:, 0::2, 1::2, :]  # B H/2 W/2 C
+        # x3 = x[:, 1::2, 1::2, :]  # B H/2 W/2 C
+        # x = torch.cat([x0, x1, x2, x3], -1)  # B H/2 W/2 4*C
+        # x = x.view(B, -1, 4 * C)  # B H/2*W/2 4*C
 
         x = self.norm(x)
         x = self.reduction(x)
@@ -551,8 +560,7 @@ class SwinTransformer(nn.Module):
             x = layer(x)
 
         x = self.norm(x)  # B L C
-        x = self.avgpool(x.transpose(1, 2))  # B C 1
-        x = torch.flatten(x, 1)
+        x = x.mean(1)
         return x
 
     def forward(self, x):

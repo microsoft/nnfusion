@@ -25,7 +25,7 @@ def squeezenet(batch_size):
     input = torch.randn(batch_size, 3, 224, 224)
     return model, (input, )
 
-def swin_transormer(batch_size):
+def swin_transformer(batch_size):
     from .swin_transformer import SwinTransformer
     model = SwinTransformer()
     input = torch.randn(batch_size, 3, 224, 224)
@@ -122,4 +122,10 @@ def mobilevit(batch_size):
     from .mobilevit import mobilevit_s
     model = mobilevit_s()
     input = torch.randn(batch_size, 3, 256, 256)
+    return model, (input, )
+
+def NeRF(batch_size):
+    from .mlp import MLP
+    model = MLP(batch_size=1920*1080, in_dim=64, out_dim=3, hidden_dim=64, n_layers=7)
+    input = torch.randn(1920*1080, 64)
     return model, (input, )

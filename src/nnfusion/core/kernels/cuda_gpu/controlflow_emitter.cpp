@@ -84,7 +84,6 @@ size_t cuda::ControlFlowEmitter::get_kernel_shared_memory(std::shared_ptr<Kernel
         auto ptr = dynamic_pointer_cast<ControlFlowEmitter>(kernel);
         return ptr->m_shared_memory_size;
     }
-    NNFUSION_LOG(NNFUSION_WARNING) << "unrecognized kernel emiter type";
     return 0;
 }
 

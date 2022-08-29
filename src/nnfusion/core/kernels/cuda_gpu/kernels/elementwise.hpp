@@ -36,12 +36,12 @@ namespace nnfusion
                     LanguageUnit& lu = *lu_;
 
                     //std::string op = CudaOpMap<T>::op;
-                    auto iter = CudaElementOpMap.find(m_context->gnode->get_op_type());
+                    auto iter = CudaElementOpMap.find(m_context->op->get_op_type());
                     NNFUSION_CHECK(iter != CudaElementOpMap.end())
-                        << "unable find op type: " << m_context->gnode->get_op_type();
+                        << "unable find op type: " << m_context->op->get_op_type();
                     std::string op = iter->second.op;
 
-                    if (m_context->gnode->get_op_type() == "Convert")
+                    if (m_context->op->get_op_type() == "Convert")
                     {
                         lu.require(declaration::cuda_convert_template);
                         lu.require(header::cublas);
@@ -52,7 +52,7 @@ namespace nnfusion
                             get_math_kernel(op, iter->second.math_kernel, data_types);
                         NNFUSION_CHECK_NOT_NULLPTR(math_kernel);
                         lu.require(math_kernel);
-                        if (m_context->gnode->get_op_type() == "Gelu")
+                        if (m_context->op->get_op_type() == "Gelu")
                         {
                             math_kernel->require(declaration::math_Gelu);
                             math_kernel->require(header::cublas);

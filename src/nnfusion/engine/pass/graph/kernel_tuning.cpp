@@ -289,7 +289,7 @@ void KernelTuning::submit_tuning_batch_asyc(
         {
             auto status = std::make_shared<TuningStatus>(gnode);
             status->ir = ir;
-            auto response = send_tuning_request(ir, 0);
+            auto response = send_tuning_request(ir, FLAGS_fkernel_tuning_steps);
             extract_tunning_status_from_kernel(response, status);
 
             if (status->status == "" || status->status.empty())

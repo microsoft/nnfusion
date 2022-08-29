@@ -1342,7 +1342,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
                     lu_main << "if (out - ref > 1e-3 || ref - out > 1e-3)\n";
                     lu_main.block_begin();
                     {
-                        lu_main << "printf(\"" << tensor.get_name() << ": wa at \%d: \%f \%f\\n\", i, out, ref);\n";
+                        lu_main << "printf(\"" << tensor.get_name() << ": wa at \%d: out \%f ref \%f\\n\", i, out, ref);\n";
                         lu_main << "return 1;\n";
                     }
                     lu_main.block_end();

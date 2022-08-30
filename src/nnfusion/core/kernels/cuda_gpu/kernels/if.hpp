@@ -22,15 +22,18 @@ namespace nnfusion
                 void set_launch_config() override;
 
             private:
-                void generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::Pointer instructions, int start_id = 0, int end_id = -1);
-                LanguageUnit_p generate_branch_fused_function(const std::string& outer_control, bool else_branch = false, int start_id = 0, int end_id = -1);
+                void generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::Pointer instructions, int max_grid_dim, int start_id = 0, int end_id = -1);
+                LanguageUnit_p generate_branch_fused_function(int then_start_id, int then_end_id, int else_start_id, int else_end_id);
                 LanguageUnit_p generate_branch_seperate_function(const std::string& outer_control, std::shared_ptr<descriptor::Tensor>, std::shared_ptr<ir::Instruction> instruction);
+                std::string get_wrapper_func_name(int then_start_id, int then_end_id, int else_start_id, int else_end_id);
+                int get_max_grid_dim(int then_start_id, int then_end_id, int else_start_id, int else_end_id);
                 void emit_kernel_wrapper(std::shared_ptr<ir::Instruction> ins, LanguageUnit &lu);
-                void emit_branch_wrapper(bool else_branch, int start_id, int end_id, LanguageUnit &lu, bool emit_all_args);
+                void emit_branch_wrapper(int then_start_id, int then_end_id, int else_start_id, int else_end_id, LanguageUnit &lu, bool emit_all_args);
+                bool is_dense_op_group(ir::BasicBlock::Pointer instructions, std::vector<int> inst_id);
                 TranslationUnit::Pointer m_then_branch_tu, m_else_branch_tu;
                 ir::BasicBlock::Pointer m_then_branch_instructions, m_else_branch_instructions;
-                std::vector<std::vector<int>> m_then_kernel_groups;
-                std::vector<std::vector<int>> m_else_kernel_groups;
+                std::vector<std::pair<std::vector<int>, std::vector<int>>> m_kernel_groups;
+                std::string m_outer_control_then, m_outer_control_else;
             };
         } // namespace cuda
     }     // namespace kernels

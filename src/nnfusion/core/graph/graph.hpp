@@ -71,7 +71,7 @@ namespace nnfusion
             // not yet been re-used). *this owns the returned instance.
             // REQUIRES: 0 <= id < get_max_node_id().
 
-            GNodeVector get_nodes();
+            GNodeVector get_nodes() const;
             GNodeVector get_ordered_ops();
             GNodeVector get_bfs_ordered_ops();
 

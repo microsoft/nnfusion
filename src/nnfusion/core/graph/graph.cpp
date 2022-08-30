@@ -171,7 +171,7 @@ void Graph::replace_node(std::shared_ptr<GNode> old_node,
     remove_node(old_node);
 }
 
-GNodeVector Graph::get_nodes()
+GNodeVector Graph::get_nodes() const
 {
     GNodeVector valid_nodes;
     for (auto node : m_nodes)
@@ -220,6 +220,7 @@ GNodeVector Graph::get_bfs_ordered_ops()
             nullptr,
             NodeComparatorName());
         m_bfs_ordered_ops_is_valid = true;
+        NNFUSION_CHECK(m_bfs_ordered_ops.size() == m_nodes.size());
     }
     return m_bfs_ordered_ops;
 }

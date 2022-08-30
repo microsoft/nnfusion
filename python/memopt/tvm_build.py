@@ -52,6 +52,7 @@ def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_
     passes = [
         (0, modify_output_pass),
         (0, modify_input_pass),
+        (1, check_memory_access_pass),
         (4, get_kernel_info_pass),
     ]
     disabled_pass = ["tir.StorageRewrite"] if sm_inputs else []

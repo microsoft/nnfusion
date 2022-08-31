@@ -388,7 +388,7 @@ std::ostream& nnfusion::graph::operator<<(std::ostream& s, const GNode& gnode) {
     }
     s << "} out {";
     for (auto edge: gnode.get_out_edges()) {
-        s << edge->get_src()->get_name();
+        s << edge->get_dst()->get_name();
         s << ", ";
     }
     s << "}";

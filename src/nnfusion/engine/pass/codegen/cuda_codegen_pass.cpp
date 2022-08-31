@@ -325,14 +325,27 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             // todo: this hack is to eliminate d2d copy caused by extern result memory
             if (FLAGS_fextern_result_memory && gnode)
             {
+                size_t non_control_edge = 0;
+                std::shared_ptr<nnfusion::graph::Edge> out_edge;
                 for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
                 {
-                    auto out_tensor =
-                        kernel->m_context->outputs[gnode->get_out_edges()[i]->get_src_output()];
-                    if (gnode->get_out_edges()[i]->get_dst()->get_op_ptr()->is_output() &&
+                    if (!gnode->get_out_edges()[i]->is_control_edge())
+                    {
+                        non_control_edge++;
+                        out_edge = gnode->get_out_edges()[i];
+                        if (non_control_edge > 1)
+                            break;
+                    }
+                }
+
+                // inplace the result tensor into kernel only if there is one out edge
+                if (non_control_edge == 1)
+                {
+                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
+                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
                         !is_ref_tensor(ins, out_tensor))
                     {
-                        std::shared_ptr<GNode> output = gnode->get_out_edges()[i]->get_dst();
+                        std::shared_ptr<GNode> output = out_edge->get_dst();
                         std::string in_name = output->get_input_tensor(0).get_name();
                         std::string out_name = output->get_output_tensor(0).get_name();
                         int pos = call_str.find(", " + in_name);

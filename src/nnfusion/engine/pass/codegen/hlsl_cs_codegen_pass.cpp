@@ -240,7 +240,7 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 std::make_shared<LanguageUnit>(fu->call_unit->get_symbol(), call_str);
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
-            auto mem_ref = codegen_mem_ref(kernel);
+            auto mem_ref = codegen_mem_ref(ins);
             if (mem_ref != nullptr)
                 lup_func_calls->unit_vec.push_back(mem_ref);
             lup_func_calls->unit_vec.push_back(kernel_func_call);

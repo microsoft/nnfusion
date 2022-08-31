@@ -92,7 +92,10 @@ namespace nnfusion
             virtual NNFusion_DeviceType device_type() { return NNFusion_DeviceType::UNKNOWN; }
             virtual std::pair<LanguageUnit_p, LanguageUnit_p>
                 get_customized_mem_imp(nnfusion::ir::Instruction::Pointer ins);
-            LanguageUnit_p codegen_mem_ref(KernelEmitter::Pointer kernel);
+            LanguageUnit_p codegen_mem_ref(nnfusion::ir::Instruction::Pointer ins);
+            // check if an output tensor of ins is ref_tensor, that needs to assign address at runtime
+            bool is_ref_tensor(nnfusion::ir::Instruction::Pointer ins,
+                               shared_ptr<nnfusion::descriptor::Tensor> out);
             LanguageUnit_p codegen_device_type();
             LanguageUnit_p codegen_workspace_size(std::shared_ptr<TranslationUnit> tu);
             CodeGenerator::Pointer projgen;

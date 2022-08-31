@@ -327,13 +327,17 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
                 {
-                    if (gnode->get_out_edges()[i]->get_dst()->get_op_ptr()->is_output())
+                    auto out_tensor =
+                        kernel->m_context->outputs[gnode->get_out_edges()[i]->get_src_output()];
+                    if (gnode->get_out_edges()[i]->get_dst()->get_op_ptr()->is_output() &&
+                        !is_ref_tensor(ins, out_tensor))
                     {
                         std::shared_ptr<GNode> output = gnode->get_out_edges()[i]->get_dst();
                         std::string in_name = output->get_input_tensor(0).get_name();
                         std::string out_name = output->get_output_tensor(0).get_name();
                         int pos = call_str.find(", " + in_name);
                         call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        (*output)["is_eliminative"] = true;
                     }
                 }
             }
@@ -716,9 +720,9 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         }
     }
 
-    auto mem_ref = codegen_mem_ref(kernel);
+    auto mem_ref = codegen_mem_ref(ins);
     if (mem_ref != nullptr)
-        lu << codegen_mem_ref(kernel)->get_code();
+        lu << codegen_mem_ref(ins)->get_code();
 
     if (ins->name() == "Memcpy")
     {
@@ -757,15 +761,16 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     }
     else
     {
-        if (ins->getKernel()->is_eliminative())
+        if (ins->getKernel()->is_eliminative() ||
+            (*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
         {
             lu << "// eliminated: " << func_call;
         }
-        // todo: this hack is to eliminate d2d copy caused by extern result memory
-        else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
-        {
-            lu << "// eliminated: " << func_call;
-        }
+        // // todo: this hack is to eliminate d2d copy caused by extern result memory
+        // else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
+        // {
+        //     lu << "// eliminated: " << func_call;
+        // }
 
         else
         {

@@ -3,7 +3,6 @@ from tvm import te
 from roller.utils import *
 import math
 from roller.config import *
-from roller.test_config import *
 from roller.utils import classify_tvm_op_tensors
 
 

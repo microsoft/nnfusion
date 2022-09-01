@@ -284,21 +284,23 @@ class CodeGeneratorR:
 
     return self.sche
 
-  # [Parameters]
-  #   schedule: the original TVM schedule of an op
-  #   tile_dict: a dictionary holding split factors of each axis,
-  #              e.g., {"i": [8, 16, 1], "j": [8, 16, 1], "k": [32]}.
-  #              For spacial axes, the format is "axis_name": [thread_tile_size, thread_num, 1].
-  #              For reduce axes, the format is "axis_name": [step_size].
-  #   bind_dict: a dictionary indicating which GPU index an axis should be bound to.
-  #              Since we'll fuse spatial and reduction axes respectively, it's sufficient
-  #              to just provide binding information for spatial and reduction axes,
-  #              e.g., {"space": ["blockIdx.x", "threadIdx.y", None], "reduce": [None, "threadIdx.x"]}.
-  #   smem_bool: True if we need tiling at shared memory
-  #   reg_bool: True if we need tiling at register files
-  #
-  # [Return]
-  #   new_s: an optimized TVM schedule
+  """
+  [Parameters]
+    schedule: the original TVM schedule of an op
+    tile_dict: a dictionary holding split factors of each axis,
+               e.g., {"i": [8, 16, 1], "j": [8, 16, 1], "k": [32]}.
+               For spacial axes, the format is "axis_name": [thread_tile_size, thread_num, 1].
+               For reduce axes, the format is "axis_name": [step_size].
+    bind_dict: a dictionary indicating which GPU index an axis should be bound to.
+               Since we'll fuse spatial and reduction axes respectively, it's sufficient
+               to just provide binding information for spatial and reduction axes,
+               e.g., {"space": ["blockIdx.x", "threadIdx.y", None], "reduce": [None, "threadIdx.x"]}.
+    smem_bool: True if we need tiling at shared memory
+    reg_bool: True if we need tiling at register files
+
+  [Return]
+    new_s: an optimized TVM schedule
+  """
 
   def rewrite_schedule_fuse(self,
                             schedule,

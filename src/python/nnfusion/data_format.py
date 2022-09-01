@@ -84,7 +84,7 @@ class HLSLTensor(object):
         element_size = pytorch_tensor.element_size()
         self.size = num_element * element_size
         self.pointer = self.antares_lib.dxMemAlloc(self.size)    
-        self.antares_lib.dxMemcpyHtoDAsync(self.pointer, ctypes.cast(pytorch_tensor.storage().data_ptr(), ctypes.c_void_p), self.size, None)
+        self.antares_lib.dxMemcpyHtoDAsync(self.pointer, ctypes.cast(pytorch_tensor.data_ptr(), ctypes.c_void_p), self.size, None)
         self.antares_lib.dxStreamSynchronize(None)
         
 
@@ -98,7 +98,7 @@ class HLSLTensor(object):
 
     def to_pytorch_tensor(self):
         res = torch.empty(self.shape, dtype=dtypes.str2type[self.dtype].torch_type)        
-        self.antares_lib.dxMemcpyDtoHAsync(ctypes.cast(res.storage().data_ptr(), ctypes.c_void_p), self.pointer, self.size, None)       
+        self.antares_lib.dxMemcpyDtoHAsync(ctypes.cast(res.data_ptr(), ctypes.c_void_p), self.pointer, self.size, None)       
         self.antares_lib.dxStreamSynchronize(None)
         return res
         
@@ -115,7 +115,7 @@ def cast_pytorch_tensor(pytorch_tensor):
         raise Exception(
             "Cannot cast incontiguous tensor, please use tensor.detach().clone().contiguous() before casting."
         )
-    tensor_addr = pytorch_tensor.storage().data_ptr()
+    tensor_addr = pytorch_tensor.data_ptr()
     shape = pytorch_tensor.shape
     dtype = str(pytorch_tensor.dtype).split(".")[-1]
     pointer_type = ctypes.POINTER(dtypes.str2type[dtype].c_type)

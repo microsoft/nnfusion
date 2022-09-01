@@ -42,17 +42,14 @@ def get_config_space(op, device_name):
   print('[debug] is IODependent: {}'.format(is_IODependent))
 
   if is_IODependent and len(roller_op.RAxis()) > 0:
-    policy = ConstructionPolicyRT(roller_op, roller_arch,
-                                  setting['smem_tiling'], setting['reg_tiling'],
-                                  setting['st_align'],
-                                  setting['padding_threshold_cap'],
-                                  not setting['keep_tiny'])
+    policy = PolicyRT(roller_op, roller_arch, setting['smem_tiling'],
+                      setting['reg_tiling'], setting['st_align'],
+                      setting['padding_threshold_cap'],
+                      not setting['keep_tiny'])
   else:
-    policy = ConstructionPolicyPlainRT(roller_op, roller_arch,
-                                       setting['smem_tiling'],
-                                       setting['reg_tiling'],
-                                       setting['st_align'],
-                                       setting['padding_threshold_cap'])
+    policy = PolicyPlainRT(roller_op, roller_arch, setting['smem_tiling'],
+                           setting['reg_tiling'], setting['st_align'],
+                           setting['padding_threshold_cap'])
 
   rprogs = policy.emit_config_without_trails(10)
   candidates = []
@@ -88,17 +85,14 @@ def apply_config(op, sched, config, device_name):
   rprog = build_rprog4str(rprog_str, roller_op, roller_arch)
 
   if is_IODependent and len(roller_op.RAxis()) > 0:
-    policy = ConstructionPolicyRT(roller_op, roller_arch,
-                                  setting['smem_tiling'], setting['reg_tiling'],
-                                  setting['st_align'],
-                                  setting['padding_threshold_cap'],
-                                  not setting['keep_tiny'])
+    policy = PolicyRT(roller_op, roller_arch, setting['smem_tiling'],
+                      setting['reg_tiling'], setting['st_align'],
+                      setting['padding_threshold_cap'],
+                      not setting['keep_tiny'])
   else:
-    policy = ConstructionPolicyPlainRT(roller_op, roller_arch,
-                                       setting['smem_tiling'],
-                                       setting['reg_tiling'],
-                                       setting['st_align'],
-                                       setting['padding_threshold_cap'])
+    policy = PolicyPlainRT(roller_op, roller_arch, setting['smem_tiling'],
+                           setting['reg_tiling'], setting['st_align'],
+                           setting['padding_threshold_cap'])
 
   if setting['fuse'] or setting['schedule_fuse']:
     assert len(roller_op.output_tensors) == 2

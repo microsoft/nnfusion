@@ -1,4 +1,4 @@
-# Installatio
+# Installation
 
 ```
 python setup.py install

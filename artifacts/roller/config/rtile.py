@@ -4,6 +4,7 @@ from roller.utils import *
 import inspect
 from copy import deepcopy
 import json
+import re
 
 
 class rTile:

@@ -2,13 +2,14 @@
     codegen implementation for rprog
 """
 
+from roller.utils import get_normalized_reduce_axis
+
 from os import close
 import tvm
 from tvm import te
 import numpy as np
 import math
 import copy
-from roller.utils import get_normalized_reduce_axis
 
 
 class CodeGeneratorR:

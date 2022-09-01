@@ -1,7 +1,6 @@
-from roller.op import Op
+from roller import Op, CodeGeneratorR
 from roller.policy import *
 from roller.arch import dispatch_arch
-from roller.codegen import CodeGeneratorR
 from roller.utils import schedule_tensorcore, extract_shape_info
 from roller.config import rTile, rProg
 import tvm

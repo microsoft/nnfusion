@@ -39,9 +39,9 @@ str2type = {
     "uint8":
     TypeObject._make(["uint8", ctypes.c_uint8, torch.uint8, numpy.uint8]),
     "uint16":
-    TypeObject._make(["uint8", ctypes.c_uint16, None, numpy.uint16]),
+    TypeObject._make(["uint16", ctypes.c_uint16, None, numpy.uint16]),
     "uint32":
-    TypeObject._make(["uint8", ctypes.c_uint32, None, numpy.uint32]),
+    TypeObject._make(["uint32", ctypes.c_uint32, None, numpy.uint32]),
     "uint64":
-    TypeObject._make(["uint8", ctypes.c_uint64, None, numpy.uint64]),
+    TypeObject._make(["uint64", ctypes.c_uint64, None, numpy.uint64]),
 }

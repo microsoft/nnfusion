@@ -325,15 +325,32 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             // todo: this hack is to eliminate d2d copy caused by extern result memory
             if (FLAGS_fextern_result_memory && gnode)
             {
+                size_t non_control_edge = 0;
+                std::shared_ptr<nnfusion::graph::Edge> out_edge;
                 for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
                 {
-                    if (gnode->get_out_edges()[i]->get_dst()->get_op_ptr()->is_output())
+                    if (!gnode->get_out_edges()[i]->is_control_edge())
                     {
-                        std::shared_ptr<GNode> output = gnode->get_out_edges()[i]->get_dst();
+                        non_control_edge++;
+                        out_edge = gnode->get_out_edges()[i];
+                        if (non_control_edge > 1)
+                            break;
+                    }
+                }
+
+                // inplace the result tensor into kernel only if there is one out edge
+                if (non_control_edge == 1)
+                {
+                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
+                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
+                        !is_ref_tensor(ins, out_tensor))
+                    {
+                        std::shared_ptr<GNode> output = out_edge->get_dst();
                         std::string in_name = output->get_input_tensor(0).get_name();
                         std::string out_name = output->get_output_tensor(0).get_name();
                         int pos = call_str.find(", " + in_name);
                         call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        (*output)["is_eliminative"] = true;
                     }
                 }
             }
@@ -716,9 +733,9 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         }
     }
 
-    auto mem_ref = codegen_mem_ref(kernel);
+    auto mem_ref = codegen_mem_ref(ins);
     if (mem_ref != nullptr)
-        lu << codegen_mem_ref(kernel)->get_code();
+        lu << codegen_mem_ref(ins)->get_code();
 
     if (ins->name() == "Memcpy")
     {
@@ -757,15 +774,16 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     }
     else
     {
-        if (ins->getKernel()->is_eliminative())
+        if (ins->getKernel()->is_eliminative() ||
+            (*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
         {
             lu << "// eliminated: " << func_call;
         }
-        // todo: this hack is to eliminate d2d copy caused by extern result memory
-        else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
-        {
-            lu << "// eliminated: " << func_call;
-        }
+        // // todo: this hack is to eliminate d2d copy caused by extern result memory
+        // else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
+        // {
+        //     lu << "// eliminated: " << func_call;
+        // }
 
         else
         {
@@ -1116,7 +1134,7 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
 
         lu_header << header::cuda_fp16->get_code();
     lu_header << "extern \"C\" int get_device_type();\n";
-    lu_header << "extern \"C\" int64_t get_workspace_size();\n";
+    lu_header << "extern \"C\" size_t get_workspace_size();\n";
     lu_header << "extern \"C\" int kernel_entry";
     if (FLAGS_fhost_entry)
         lu_header << "_host";
@@ -1371,7 +1389,7 @@ cmake_minimum_required(VERSION 3.5)
 
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
-SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75" CACHE STRING "target architecture")
+SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86" CACHE STRING "target architecture")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)

@@ -264,7 +264,9 @@ namespace nnfusion
             std::vector<std::string> shape_def;
             for (int d = 0; d < shape.size(); d++)
             {
-                shape_def.push_back(shape[d] == 0 ? "1" : ("N" + to_string(d)));
+                // Tensor with shape [0] is treated as scalar value and convert its shape to [1]
+                shape_def.push_back((shape.size() == 1 && shape[d] == 0) ? "1"
+                                                                         : ("N" + to_string(d)));
             }
             return shape_def;
         }

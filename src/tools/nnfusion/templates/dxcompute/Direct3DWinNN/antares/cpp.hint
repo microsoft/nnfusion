@@ -1,0 +1,2 @@
+#define ANTARES_API __declspec(dllexport)
+#define ANTARES_API __declspec(dllimport)

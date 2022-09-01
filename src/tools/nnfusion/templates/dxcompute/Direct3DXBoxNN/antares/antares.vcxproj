@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Gaming.Xbox.Scarlett.x64">
       <Configuration>Debug</Configuration>
@@ -26,19 +26,27 @@
       <Platform>Gaming.Xbox.XboxOne.x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D3D12APIWrapper.h" />
+    <ClInclude Include="D3D12Util.h" />
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="D3D12APIWrapper.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <RootNamespace>nnf_xbox_example</RootNamespace>
-    <ProjectGuid>{5054f7a7-e4b3-4aec-af86-9beb27fcaaac}</ProjectGuid>
+    <RootNamespace>antares</RootNamespace>
+    <ProjectGuid>{38f33782-704d-424c-8eac-249afa785995}</ProjectGuid>
     <DefaultLanguage>en-US</DefaultLanguage>
     <Keyword>Win32Proj</Keyword>
     <!-- - - - -->
-    <MinimumVisualStudioVersion>16.0</MinimumVisualStudioVersion>
+    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
     <TargetRuntime>Native</TargetRuntime>
     <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Xbox.XboxOne.x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -47,7 +55,7 @@
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Xbox.Scarlett.x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -56,7 +64,7 @@
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Xbox.XboxOne.x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -65,7 +73,7 @@
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Xbox.Scarlett.x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -74,7 +82,7 @@
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Xbox.XboxOne.x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
@@ -82,7 +90,7 @@
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Xbox.Scarlett.x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
@@ -126,8 +134,6 @@
     <IncludePath>$(Console_SdkIncludeRoot)</IncludePath>
     <ExecutablePath>$(Console_SdkRoot)bin;$(Console_SdkToolPath);$(ExecutablePath)</ExecutablePath>
     <LinkIncremental>false</LinkIncremental>
-    <GameOSFilePath>
-    </GameOSFilePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Xbox.XboxOne.x64'">
     <ReferencePath>$(Console_SdkLibPath);$(Console_SdkWindowsMetadataPath)</ReferencePath>
@@ -144,8 +150,6 @@
     <IncludePath>$(Console_SdkIncludeRoot)</IncludePath>
     <ExecutablePath>$(Console_SdkRoot)bin;$(Console_SdkToolPath);$(ExecutablePath)</ExecutablePath>
     <LinkIncremental>false</LinkIncremental>
-    <GameOSFilePath>
-    </GameOSFilePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Xbox.XboxOne.x64'">
     <ReferencePath>$(Console_SdkLibPath);$(Console_SdkWindowsMetadataPath)</ReferencePath>
@@ -162,10 +166,27 @@
     <IncludePath>$(Console_SdkIncludeRoot)</IncludePath>
     <ExecutablePath>$(Console_SdkRoot)bin;$(Console_SdkToolPath);$(ExecutablePath)</ExecutablePath>
     <LinkIncremental>true</LinkIncremental>
-    <GameOSFilePath>
-    </GameOSFilePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Xbox.XboxOne.x64'">
+    <Link>
+      <AdditionalDependencies>$(Console_Libs);%(XboxExtensionsDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <Optimization>MaxSpeed</Optimization>
+      <PreprocessorDefinitions>NDEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level4</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Xbox.Scarlett.x64'">
     <Link>
       <AdditionalDependencies>$(Console_Libs);%(XboxExtensionsDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -177,40 +198,15 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>MaxSpeed</Optimization>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;ANTARES_EXPORTS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\runtime;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Xbox.Scarlett.x64'">
-    <Link>
-      <AdditionalDependencies>$(Console_Libs);antares.lib;%(XboxExtensionsDependencies);%(AdditionalDependencies)</AdditionalDependencies>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Link>
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <Optimization>MaxSpeed</Optimization>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <WarningLevel>Level4</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\runtime;..\antares;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy .\para_info.json "$(TargetDir)"
-IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
-IF EXIST .\HLSL  xcopy /i /y /e .\HLSL "$(TargetDir)\HLSL"
-IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Xbox.XboxOne.x64'">
@@ -222,46 +218,56 @@ IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>MaxSpeed</Optimization>
-      <PreprocessorDefinitions>NDEBUG;PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;PROFILE;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\runtime;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Xbox.Scarlett.x64'">
     <Link>
-      <AdditionalDependencies>$(Console_Libs);antares.lib;%(XboxExtensionsDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(Console_Libs);%(XboxExtensionsDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>MaxSpeed</Optimization>
-      <PreprocessorDefinitions>NDEBUG;PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;PROFILE;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\runtime;..\antares;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy .\para_info.json "$(TargetDir)"
-IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
-IF EXIST .\HLSL  xcopy /i /y /e .\HLSL "$(TargetDir)\HLSL"
-IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Xbox.XboxOne.x64'">
+    <Link>
+      <AdditionalDependencies>$(Console_Libs);%(XboxExtensionsDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <ClCompile>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <MinimalRebuild>false</MinimalRebuild>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Xbox.Scarlett.x64'">
     <Link>
       <AdditionalDependencies>$(Console_Libs);%(XboxExtensionsDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
@@ -273,59 +279,14 @@ IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
       <MinimalRebuild>false</MinimalRebuild>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;ANTARES_EXPORTS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\runtime;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Xbox.Scarlett.x64'">
-    <Link>
-      <AdditionalDependencies>$(Console_Libs);antares.lib;%(XboxExtensionsDependencies);%(AdditionalDependencies)</AdditionalDependencies>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Link>
-    <ClCompile>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <MinimalRebuild>false</MinimalRebuild>
-      <WarningLevel>Level4</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\runtime;..\antares;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy .\para_info.json "$(TargetDir)"
-IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
-IF EXIST .\HLSL  xcopy /i /y /e .\HLSL "$(TargetDir)\HLSL"
-IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <Content Include="HLSL\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Constant\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="para_info.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\runtime\runtime.vcxproj">
-      <Project>{76e5c805-8662-4a30-af0a-21518feeed41}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Main.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -4,8 +4,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.31025.109
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nnf_xbox_example", "nnf_xbox_example\nnf_xbox_example.vcxproj", "{5054F7A7-E4B3-4AEC-AF86-9BEB27FCAAAC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{38F33782-704D-424C-8EAC-249AFA785995} = {38F33782-704D-424C-8EAC-249AFA785995}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "runtime", "runtime\runtime.vcxproj", "{76E5C805-8662-4A30-AF0A-21518FEEED41}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nnfusion_rt", "runtime\runtime.vcxproj", "{76E5C805-8662-4A30-AF0A-21518FEEED41}"
+	ProjectSection(ProjectDependencies) = postProject
+		{38F33782-704D-424C-8EAC-249AFA785995} = {38F33782-704D-424C-8EAC-249AFA785995}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "antares", "antares\antares.vcxproj", "{38F33782-704D-424C-8EAC-249AFA785995}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +55,18 @@ Global
 		{76E5C805-8662-4A30-AF0A-21518FEEED41}.Release|Gaming.Xbox.Scarlett.x64.Build.0 = Release|Gaming.Xbox.Scarlett.x64
 		{76E5C805-8662-4A30-AF0A-21518FEEED41}.Release|Gaming.Xbox.XboxOne.x64.ActiveCfg = Release|Gaming.Xbox.XboxOne.x64
 		{76E5C805-8662-4A30-AF0A-21518FEEED41}.Release|Gaming.Xbox.XboxOne.x64.Build.0 = Release|Gaming.Xbox.XboxOne.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Debug|Gaming.Xbox.Scarlett.x64.ActiveCfg = Debug|Gaming.Xbox.Scarlett.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Debug|Gaming.Xbox.Scarlett.x64.Build.0 = Debug|Gaming.Xbox.Scarlett.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Debug|Gaming.Xbox.XboxOne.x64.ActiveCfg = Debug|Gaming.Xbox.XboxOne.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Debug|Gaming.Xbox.XboxOne.x64.Build.0 = Debug|Gaming.Xbox.XboxOne.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Profile|Gaming.Xbox.Scarlett.x64.ActiveCfg = Profile|Gaming.Xbox.Scarlett.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Profile|Gaming.Xbox.Scarlett.x64.Build.0 = Profile|Gaming.Xbox.Scarlett.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Profile|Gaming.Xbox.XboxOne.x64.ActiveCfg = Profile|Gaming.Xbox.XboxOne.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Profile|Gaming.Xbox.XboxOne.x64.Build.0 = Profile|Gaming.Xbox.XboxOne.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Release|Gaming.Xbox.Scarlett.x64.ActiveCfg = Release|Gaming.Xbox.Scarlett.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Release|Gaming.Xbox.Scarlett.x64.Build.0 = Release|Gaming.Xbox.Scarlett.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Release|Gaming.Xbox.XboxOne.x64.ActiveCfg = Release|Gaming.Xbox.XboxOne.x64
+		{38F33782-704D-424C-8EAC-249AFA785995}.Release|Gaming.Xbox.XboxOne.x64.Build.0 = Release|Gaming.Xbox.XboxOne.x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

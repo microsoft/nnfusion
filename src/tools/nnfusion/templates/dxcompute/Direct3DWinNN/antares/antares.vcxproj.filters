@@ -18,12 +18,15 @@
     <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="runtime.h">
+    <ClInclude Include="D3D12APIWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="runtime.cpp">
+    <ClCompile Include="D3D12APIWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

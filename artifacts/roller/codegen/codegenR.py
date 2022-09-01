@@ -9,20 +9,6 @@ import numpy as np
 import math
 import copy
 from roller.utils import get_normalized_reduce_axis
-from .tc_intrin import (
-    init_intrin_strides,
-    intrin_wmma_load_matrix,
-    intrin_wmma_store_matrix,
-    intrin_wmma_gemm,
-)
-"""
-from tvm.topi.cuda.tensor_intrin import (
-    intrin_wmma_load_matrix_A,
-    intrin_wmma_load_matrix_W,
-    intrin_wmma_store_matrix,
-    intrin_wmma_gemm,
-)
-"""
 
 
 class CodeGeneratorR:

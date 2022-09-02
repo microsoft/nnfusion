@@ -2,28 +2,6 @@ import tvm
 from tvm import te
 import numpy as np
 
-def reverse_topo_order(sch):
-    ready = set()
-    dependency_count = {}
-
-    result = []
-    for op, stage in sch.stage_map.items():
-        if stage.is_output:
-            ready.add(op)
-        for t in op.input_tensors:
-            if t not in dependency_count:
-                dependency_count[t] = 0
-            dependency_count[t] += 1
-    while len(ready) > 0:
-        op = ready.pop()
-        result.append(op)
-        for t in op.input_tensors:
-            dependency_count[t] -= 1
-            assert(dependency_count[t] >= 0)
-            if dependency_count[t] == 0:
-                ready.add(sch[t].op)
-    return result
-
 class CodeGenerator:
     def __init__(self):
         self.storage_align_on = False
@@ -68,15 +46,29 @@ class CodeGenerator:
     def rewrite_schedule(self, schedule, tile_dict, shared_inputs=[]):
         self.tiling = tile_dict.copy()
         self.sche = schedule
-        reduce_op = None
         self.shared_inputs = shared_inputs
-        for op in self.sche.stage_map:
-            if isinstance(op, tvm.te.ComputeOp) and len(op.reduce_axis) > 0:
-                reduce_op = op
-                break
-        if reduce_op:
+
+        self.reduce_op = None
+        self.output_op = None
+        self.elementwise_ops = []
+        for op, stage in self.sche.stage_map.items():
+            if isinstance(op, tvm.te.ComputeOp):
+                if stage.is_output:
+                    assert self.output_op is None
+                    self.output_op = op
+                else:
+                    stage.compute_inline()
+                if len(op.reduce_axis) > 0:
+                    assert self.reduce_op is None
+                    self.reduce_op = op
+                else:
+                    self.elementwise_ops.append(op)
+        assert self.output_op is not None
+        if self.reduce_op is not None:
+            if "use_tc" in self.tiling and self.tiling["use_tc"] is True:
+                return self.rewrite_schedule_tc()
             has_inter_thread_reduce = False
-            for ax in reduce_op.reduce_axis:
+            for ax in self.reduce_op.reduce_axis:
                 if self.tiling[str(ax.var.name)][1] > 1:
                     has_inter_thread_reduce = True
                     break
@@ -88,22 +80,8 @@ class CodeGenerator:
             return self.rewrite_schedule_no_reduce()
 
     def rewrite_schedule_no_reduce(self):
-        out = None
-        reduce_ops = []
-        elementwise_op = []
-        for op, stage in self.sche.stage_map.items():
-            if isinstance(op, tvm.te.ComputeOp):
-                if stage.is_output:
-                    out = op.output(0)
-                else:
-                    stage.compute_inline()
-                if len(op.reduce_axis) > 0:
-                    reduce_ops.append(op)
-                else:
-                    elementwise_op.append(op)
-
-        assert(len(reduce_ops) == 0)
-
+        assert(self.reduce_op is None)
+        out = self.output_op
         self.thread_per_block = 1
         for axis in self.sche[out].op.axis:
             name = axis.var.name
@@ -134,7 +112,7 @@ class CodeGenerator:
         self.sche[out].bind(thrd_fused, te.thread_axis("threadIdx.x"))
 
         cache_plan = {}
-        for op in elementwise_op:
+        for op in self.elementwise_ops:
             for tensor in op.input_tensors:
                 cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
                     and len(op.output(0).shape) > len(tensor.shape) \
@@ -155,23 +133,8 @@ class CodeGenerator:
         return self.sche
 
     def recursive_schedule_up(self):
-        out = None
-        reduce_ops = []
-        elementwise_op = []
-        for op, stage in self.sche.stage_map.items():
-            if isinstance(op, tvm.te.ComputeOp):
-                if stage.is_output:
-                    out = op
-                else:
-                    stage.compute_inline()
-                if len(op.reduce_axis) > 0:
-                    reduce_ops.append(op)
-                else:
-                    elementwise_op.append(op)
-
-        assert(len(reduce_ops) == 1)
-        reduce_op = reduce_ops[0]
-        # order = reverse_topo_order(self.sche)
+        assert(self.reduce_op is not None)
+        out = self.output_op
 
         self.thread_per_block = 1
         for axis in self.sche[out].op.axis:
@@ -182,7 +145,7 @@ class CodeGenerator:
                 self.tiling[name] = [vthrd, thrd, 1]
             self.thread_per_block *= self.tiling[name][1]
 
-        reg_tile = self.sche.cache_write(reduce_op.output(0), "local")
+        reg_tile = self.sche.cache_write(self.reduce_op.output(0), "local")
 
         blck_axis = []
         vthd_axis = []
@@ -234,7 +197,7 @@ class CodeGenerator:
             for ax in reduce_inner_axis:
                 self.sche[reg_tile].unroll(ax)
 
-        for input_tensor in reduce_op.input_tensors:
+        for input_tensor in self.reduce_op.input_tensors:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
             # local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
             # self.sche[local_tensor].compute_at(self.sche[reg_tile], space_fused)
@@ -245,7 +208,7 @@ class CodeGenerator:
             self.cooperative_fetch(shared_tensor, self.sche)
 
         cache_plan = {}
-        for op in elementwise_op:
+        for op in self.elementwise_ops:
             for tensor in op.input_tensors:
                 cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
                     and len(op.output(0).shape) > len(tensor.shape) \
@@ -262,7 +225,7 @@ class CodeGenerator:
             self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
             self.cooperative_fetch(tensor_shared, self.sche)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
-            consumers = list(filter(lambda x: x.output(0) not in reduce_op.input_tensors, consumers))
+            consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
             if len(consumers) == 0:continue
             tensor_local = self.sche.cache_read(tensor_shared, "local", consumers)
             self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
@@ -270,23 +233,9 @@ class CodeGenerator:
         return self.sche
 
     def rewrite_schedule_inter_thread(self):
-        out = None
-        reduce_ops = []
-        elementwise_op = []
-        for op, stage in self.sche.stage_map.items():
-            if isinstance(op, tvm.te.ComputeOp):
-                if stage.is_output:
-                    out = op
-                else:
-                    stage.compute_inline()
-                if len(op.reduce_axis) > 0:
-                    reduce_ops.append(op)
-                else:
-                    elementwise_op.append(op)
-
-        assert(len(reduce_ops) == 1)
-        reduce_op = reduce_ops[0]
-        reg_tile = reduce_op.output(0)
+        assert(self.reduce_op is not None)
+        out = self.output_op
+        reg_tile = self.reduce_op.output(0)
 
         self.thread_per_block = [1, 1]
         for axis in self.sche[out].op.axis:
@@ -321,7 +270,7 @@ class CodeGenerator:
         thrd_fused = self.sche[out].fuse(*thrd_axis)
         self.sche[out].bind(blck_fused, te.thread_axis("blockIdx.x"))
         self.sche[out].bind(thrd_fused, te.thread_axis("threadIdx.y"))
-        if out is not reduce_op:
+        if out is not self.reduce_op:
             self.sche[reg_tile].compute_at(self.sche[out], thrd_fused)
 
         reduce_outer_axis, reduce_inner_axis, reduce_inter_threads = [], [], []
@@ -346,7 +295,7 @@ class CodeGenerator:
         fused_reduce_inter_threads = self.sche[reg_tile].fuse(*reduce_inter_threads)
         self.sche[reg_tile].bind(fused_reduce_inter_threads, te.thread_axis("threadIdx.x"))
 
-        for input_tensor in reduce_op.input_tensors:
+        for input_tensor in self.reduce_op.input_tensors:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
             if input_tensor.name in self.shared_inputs:
                 self.sche[shared_tensor].compute_at(self.sche[out], thrd_fused)
@@ -355,7 +304,7 @@ class CodeGenerator:
             self.cooperative_fetch_2d(shared_tensor, self.sche)
 
         cache_plan = {}
-        for op in elementwise_op:
+        for op in self.elementwise_ops:
             for tensor in op.input_tensors:
                 cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
                     and len(op.output(0).shape) > len(tensor.shape) \
@@ -372,7 +321,7 @@ class CodeGenerator:
             self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
             self.cooperative_fetch_2d(tensor_shared, self.sche)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
-            consumers = list(filter(lambda x: x.output(0) not in reduce_op.input_tensors, consumers))
+            consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
             if len(consumers) == 0:continue
             tensor_local = self.sche.cache_read(tensor_shared, "local", consumers)
             self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)

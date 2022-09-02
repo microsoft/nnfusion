@@ -139,8 +139,9 @@ def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=True)
     for config in configs:
         try:
             cpresult = compose_global_kernel(output_nodes, config, "cuda", name=kernel_name)
-        except Exception:
-            traceback.print_exc(file=sys.stdout)
+        except Exception as e:
+            print("Exception : ", e)
+            # traceback.print_exc(file=sys.stdout)
             continue
         cpresult.append_host_call()
         cpresult.set_io_desc(input_desc, output_desc)

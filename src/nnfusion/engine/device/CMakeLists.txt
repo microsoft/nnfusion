@@ -8,6 +8,7 @@ set(SRC
     hlsl.cpp
     rocm.cpp
     cpu.cpp
+    multi_cuda.cpp
     reversed_dfs_visitor.cpp
     degree_based_visitor.cpp
 )

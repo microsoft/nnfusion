@@ -20,8 +20,11 @@
 #include "nnfusion/engine/device/graphcore.hpp"
 #include "nnfusion/engine/device/hlsl.hpp"
 #include "nnfusion/engine/device/rocm.hpp"
+#include "nnfusion/engine/device/multi_cuda.hpp"
 
 using namespace std;
+
+DEFINE_bool(multi_shape, false, "Enable multiple input shape mode for ONNX.");
 
 DEFINE_string(format,
               "tensorflow",
@@ -115,6 +118,7 @@ int main(int argc, char** argv)
     // try
     // {
     shared_ptr<nnfusion::graph::Graph> graph = nullptr;
+    std::vector<shared_ptr<nnfusion::graph::Graph>> vec_graph;
     if (format == "tensorflow")
     {
         // load tensorflow model as graph
@@ -134,12 +138,22 @@ int main(int argc, char** argv)
 #if ONNX_FRONTEND
     else if (format == "onnx")
     {
-        std::unordered_map<std::string, size_t> dim_params;
-        if (params != "##UNSET##")
+        if(FLAGS_multi_shape)
         {
-            dim_params = nnfusion::frontend::build_onnx_params_from_string(params);
+            auto vec_dim_params = nnfusion::frontend::build_multi_onnx_params_from_string(params);
+            for(auto& dim_params: vec_dim_params)
+            {
+                vec_graph.push_back(nnfusion::frontend::load_onnx_model(model, dim_params));
+            }
         }
-        graph = nnfusion::frontend::load_onnx_model(model, dim_params);
+        else{
+            std::unordered_map<std::string, size_t> dim_params;
+            if (params != "##UNSET##")
+            {
+                dim_params = nnfusion::frontend::build_onnx_params_from_string(params);
+            }
+            graph = nnfusion::frontend::load_onnx_model(model, dim_params);
+        }
     }
 #endif
     else
@@ -148,7 +162,7 @@ int main(int argc, char** argv)
                                              "' in NNFusion");
     }
 
-    if (!backend.empty())
+    if (!backend.empty() && graph!=nullptr)
     {
         if (!FLAGS_fdefault_device.empty())
         {
@@ -183,6 +197,22 @@ int main(int argc, char** argv)
         else
         {
             throw nnfusion::errors::InvalidArgument("Default device cannot be empty.");
+        }
+    }
+
+    // Merged graph needs to be:
+    // 1. same graph structure;
+    // 2. different shape;
+    // 3. constant memory must has same layout
+    if(!backend.empty() && FLAGS_multi_shape && !vec_graph.empty())
+    {
+        NNFUSION_LOG(INFO) << "Graph count: " << vec_graph.size() << "\n";
+        nnfusion::engine::MultiCudaEngine multi_cuda_engine;
+        switch (get_device_type(FLAGS_fdefault_device))
+        {
+            case CUDA_GPU:
+                multi_cuda_engine.run_on_graphs(vec_graph);
+                break;
         }
     }
     return 0;

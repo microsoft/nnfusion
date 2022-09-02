@@ -26,5 +26,6 @@ namespace nnfusion
 
         std::unordered_map<std::string, size_t> build_onnx_params_from_string(const std::string&);
 
+        std::vector<std::unordered_map<std::string, size_t>> build_multi_onnx_params_from_string(const std::string& ss);
     } // namespace frontend
 } // namespace nnfusion

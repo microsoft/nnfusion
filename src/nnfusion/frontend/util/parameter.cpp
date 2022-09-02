@@ -108,5 +108,30 @@ namespace nnfusion
             }
             return ret;
         }
+
+        // nnfusion test.onnx -f onnx -p “{seq:1500;past_seq:0}, {seq:1;past_seq:2048}"
+        // nnfusion test.onnx -f onnx -p “{seq:1500;past_seq:0}, {seq:1;past_seq:1500-2048}"
+        std::vector<std::unordered_map<std::string, size_t>> build_multi_onnx_params_from_string(const std::string& ss)
+        {
+            std::vector<std::unordered_map<std::string, size_t>> ret;
+            auto left = ss.find('{');
+            auto right = ss.find('}', left);
+            while(left < right && left != std::string::npos && right != std::string::npos)
+            {
+                auto subss = ss.substr(left+1, right-left-1);
+                std::unordered_map<std::string, size_t> subret;
+                for (auto s : split_string(subss, ";"))
+                {
+                    auto dim_info = split_string(s, ":");
+                    NNFUSION_CHECK(dim_info.size() == 2) << "illegal dim info " << s;
+                    subret.emplace(dim_info[0], std::stoull(dim_info[1]));
+                }
+                ret.push_back(subret);
+
+                left = ss.find('{', right);
+                right = ss.find('}', left);
+            }
+            return ret;
+        }
     } // namespace frontend
 } // namespace nnfusion

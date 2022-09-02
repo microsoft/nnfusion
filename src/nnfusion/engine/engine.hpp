@@ -26,6 +26,7 @@ namespace nnfusion
     public:
         using Pointer = shared_ptr<EngineContext>;
         graph::Graph::Pointer m_legacy_graph;
+        ir::Program::Pointer m_legacy_program;
         std::unordered_set<std::shared_ptr<graph::GNode>> blacklist;
     };
 

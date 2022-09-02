@@ -41,6 +41,9 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
     if (g_passes != nullptr)
         result = g_passes->run_on_graph(graph, context);
 
+    if(context != nullptr)
+        context->m_legacy_program = p;
+
     NNFUSION_CHECK(result) << "Engine failed after finished graph passes.";
 
     ir::Program::Pointer p = nullptr;
@@ -48,6 +51,9 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
         p = g_visitor->run_on_graph(graph, context);
     else
         return result;
+    
+    if(context != nullptr)
+        context->m_legacy_program = p;
 
     NNFUSION_CHECK(p != nullptr) << "Engine failed after finished graph visitor.";
 

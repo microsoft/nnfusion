@@ -28,6 +28,8 @@ namespace nnfusion
         graph::Graph::Pointer m_legacy_graph;
         ir::Program::Pointer m_legacy_program;
         std::unordered_set<std::shared_ptr<graph::GNode>> blacklist;
+        shared_ptr<TranslationUnit> m_legacy_tu;
+        shared_ptr<InterpreterContext> m_legacy_ctx;
     };
 
     class GraphVisitor
@@ -71,6 +73,12 @@ namespace nnfusion
                 status = pass->run(ctx, _tu);
                 if (!status)
                     break;
+            }
+
+            if (context != nullptr)
+            {
+                context->m_legacy_ctx = ctx;
+                context->m_legacy_tu = _tu;
             }
             return status;
         }

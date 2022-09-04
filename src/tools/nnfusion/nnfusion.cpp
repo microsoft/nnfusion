@@ -17,26 +17,21 @@
 
 #include "nnfusion/engine/device/cpu.hpp"
 #include "nnfusion/engine/device/cuda.hpp"
+#include "nnfusion/engine/device/cuda_multi.hpp"
 #include "nnfusion/engine/device/graphcore.hpp"
 #include "nnfusion/engine/device/hlsl.hpp"
 #include "nnfusion/engine/device/rocm.hpp"
-#include "nnfusion/engine/device/multi_cuda.hpp"
 
 using namespace std;
 
-DEFINE_bool(multi_shape, false, "Enable multiple input shape mode for ONNX.");
-
+DECLARE_bool(fmulti_shape);
 DEFINE_string(format,
               "tensorflow",
               "-f, Model file format (tensorflow(default) or torchscript, onnx)");
 
 DECLARE_string(fdefault_device);
 
-DEFINE_string(params,
-              "##UNSET##",
-              "-p, Model input shape and type, fot torchscript, it's full shape like "
-              "\"1,1:float;2,3,4,5:double\", for onnx, it's dynamic dim like "
-              "\"dim1_name:4;dim2_name:128\"");
+DECLARE_string(params);
 
 void display_help()
 {
@@ -138,15 +133,16 @@ int main(int argc, char** argv)
 #if ONNX_FRONTEND
     else if (format == "onnx")
     {
-        if(FLAGS_multi_shape)
+        if (FLAGS_fmulti_shape)
         {
             auto vec_dim_params = nnfusion::frontend::build_multi_onnx_params_from_string(params);
-            for(auto& dim_params: vec_dim_params)
+            for (auto& dim_params : vec_dim_params)
             {
                 vec_graph.push_back(nnfusion::frontend::load_onnx_model(model, dim_params));
             }
         }
-        else{
+        else
+        {
             std::unordered_map<std::string, size_t> dim_params;
             if (params != "##UNSET##")
             {
@@ -162,7 +158,7 @@ int main(int argc, char** argv)
                                              "' in NNFusion");
     }
 
-    if (!backend.empty() && graph!=nullptr)
+    if (!backend.empty() && graph != nullptr)
     {
         if (!FLAGS_fdefault_device.empty())
         {
@@ -175,15 +171,11 @@ int main(int argc, char** argv)
 
             switch (get_device_type(FLAGS_fdefault_device))
             {
-            case CUDA_GPU:
-                cuda_engine.run_on_graph(graph);
-                break;
+            case CUDA_GPU: cuda_engine.run_on_graph(graph); break;
             // case CUDA_GPU:
             //     runtime->codegen(graph);
             //     break;
-            case ROCM_GPU:
-                rocm_engine.run_on_graph(graph);
-                break;
+            case ROCM_GPU: rocm_engine.run_on_graph(graph); break;
             // case ROCM_GPU: runtime->codegen(graph); break;
             // case GENERIC_CPU: runtime->codegen(graph); break;
             case GENERIC_CPU: cpu_engine.run_on_graph(graph); break;
@@ -204,15 +196,15 @@ int main(int argc, char** argv)
     // 1. same graph structure;
     // 2. different shape;
     // 3. constant memory must has same layout
-    if(!backend.empty() && FLAGS_multi_shape && !vec_graph.empty())
+    // ./build/src/tools/nnfusion/nnfusion  ./test/models/onnx/abs.onnx -f onnx -multi_shape=true -p "{seq:1500;past_seq:0}, {seq:1;past_seq:2048}"
+    if (!backend.empty() && FLAGS_fmulti_shape && !vec_graph.empty())
     {
         NNFUSION_LOG(INFO) << "Graph count: " << vec_graph.size() << "\n";
-        nnfusion::engine::MultiCudaEngine multi_cuda_engine;
+        //nnfusion::engine::MultiCudaEngine multi_cuda_engine;
+        nnfusion::engine::CudaMultiEngine cuda_multi_engine;
         switch (get_device_type(FLAGS_fdefault_device))
         {
-            case CUDA_GPU:
-                multi_cuda_engine.run_on_graphs(vec_graph);
-                break;
+        case CUDA_GPU: cuda_multi_engine.run_on_graphs(vec_graph); break;
         }
     }
     return 0;

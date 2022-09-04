@@ -4,11 +4,11 @@
 
 set(SRC
     cuda.cpp
+    cuda_multi.cpp
     graphcore.cpp
     hlsl.cpp
     rocm.cpp
     cpu.cpp
-    multi_cuda.cpp
     reversed_dfs_visitor.cpp
     degree_based_visitor.cpp
 )

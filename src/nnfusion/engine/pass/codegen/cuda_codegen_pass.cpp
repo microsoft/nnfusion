@@ -35,6 +35,7 @@ DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
 DECLARE_bool(ffunction_codegen);
+DECLARE_bool(fmulti_shape);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -472,8 +473,8 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
             {
                 auto kernel_reg = KernelRegistry::Global()->FindKernelRegistration(
                     "AnyOP", device_type(), element::f32);
-                NNFUSION_CHECK(kernel_reg != nullptr) << "AnyOp Kernel not found, op="
-                                                      << ins->getGNode()->get_op_type();
+                NNFUSION_CHECK(kernel_reg != nullptr)
+                    << "AnyOp Kernel not found, op=" << ins->getGNode()->get_op_type();
                 shared_ptr<KernelContext> ctx(new KernelContext(ins->getGNode()));
                 auto kernel = kernel_reg->m_factory(ctx);
                 kernel->get_or_emit_source();
@@ -507,7 +508,8 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
         sort(pairs.begin(),
              pairs.end(),
              [](std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& a,
-                std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& b) {
+                std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>& b)
+             {
                  int pos_a = a.first.find("async_");
                  int pos_b = b.first.find("async_");
                  if (pos_a >= 0 && pos_b >= 0)

@@ -104,6 +104,7 @@ namespace nnfusion
             CodegenMainBlockUnit_p lup_init, lup_exec, lup_exit;
             CodegenMainBlockUnit_p lup_exec_py;
             bool codegen();
+            bool codegen_with_preprocess(bool clean = true, std::string ns = "");
             void change_codegen_folder(const std::string& codegen_folder)
             {
                 m_codegen_folder = codegen_folder;
@@ -122,5 +123,5 @@ namespace nnfusion
             std::string m_kernel_suffix;
             std::unordered_set<std::string> files_include_shared;
         };
-    }
-}
+    } // namespace codegen
+} // namespace nnfusion

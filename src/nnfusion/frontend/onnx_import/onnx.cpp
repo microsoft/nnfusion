@@ -24,6 +24,12 @@
 #include "onnx.hpp"
 #include "util/graph_convert.hpp"
 
+DEFINE_string(params,
+              "##UNSET##",
+              "-p, Model input shape and type, fot torchscript, it's full shape like "
+              "\"1,1:float;2,3,4,5:double\", for onnx, it's dynamic dim like "
+              "\"dim1_name:4;dim2_name:128\"");
+
 namespace nnfusion
 {
     namespace frontend

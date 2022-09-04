@@ -27,8 +27,6 @@ bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
     projgen->codegen();
     NNFUSION_CHECK(after_projgen());
     NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " done.";
-    exit(0);
-
     return true;
 }
 

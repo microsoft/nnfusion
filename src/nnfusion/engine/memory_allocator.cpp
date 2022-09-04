@@ -5,6 +5,7 @@
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(ffunction_codegen);
+DECLARE_bool(fmulti_shape);
 
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)
     : m_size{size}
@@ -291,7 +292,7 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
     if (m_max_allocated > 0)
     {
         lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
-        if (!FLAGS_ffunction_codegen)
+        if (!FLAGS_ffunction_codegen && !FLAGS_fmulti_shape)
         {
             lu << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << this->get_name() << "_memory_pool,"
                << m_max_allocated << "));\n";

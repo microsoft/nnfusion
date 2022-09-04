@@ -1,8 +1,8 @@
 from memopt.graph import Edge, OutputNode, find_topo_sort
 from memopt.fusion import DefaultPolicy
-from memopt.utils import CompileResult, compile_and_load_parallel, compose_global_kernel
+from memopt.utils import CompileResult, compile_and_load_parallel
 from memopt.reference import get_subgraph_reference_outputs
-from memopt import get_log_level
+from memopt import get_log_level, CodeGenerator
 import numpy as np
 import hashlib
 import traceback
@@ -130,6 +130,7 @@ def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=True)
         return result
 
     policy = DefaultPolicy(output_nodes, arch)
+    cgen = CodeGenerator()
     if any([node.get_tag("skip") for node in policy.ordered_nodes]):
         return None
     configs = policy.emit_config(topk)
@@ -138,7 +139,7 @@ def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=True)
     compile_results = []
     for config in configs:
         try:
-            cpresult = compose_global_kernel(output_nodes, config, "cuda", name=kernel_name)
+            cpresult = cgen.compile(output_nodes, config, "cuda", name=kernel_name)
         except Exception as e:
             print("Exception : ", e)
             # traceback.print_exc(file=sys.stdout)

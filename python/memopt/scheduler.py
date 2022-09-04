@@ -2,7 +2,7 @@ import tvm
 from tvm import te
 import numpy as np
 
-class CodeGenerator:
+class Scheduler:
     def __init__(self):
         self.storage_align_on = False
 

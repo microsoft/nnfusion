@@ -1,5 +1,5 @@
 from memopt.reference import get_ref_tensor
-from memopt.schedule_rewrite import CodeGenerator
+from memopt.scheduler import Scheduler
 from memopt.utils import CompileResult
 import memopt
 import tvm

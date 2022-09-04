@@ -14,8 +14,9 @@ def test_policy(ir, input_dict, name="test", check=False):
     configs = policy.emit_config(10)
 
     compile_results = []
+    cgen = memopt.CodeGenerator()
     for config in configs:
-        cpresult = memopt.utils.compose_global_kernel(output_nodes, config, "cuda", name="Fused")
+        cpresult = cgen.compile(output_nodes, config, "cuda", name="Fused")
         cpresult.append_host_call()
         compile_results.append(cpresult)
     memopt.utils.compile_and_load_parallel(compile_results)

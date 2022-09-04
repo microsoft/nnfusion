@@ -24,9 +24,11 @@ class Scheduler:
         sch[shared].unroll(oo)
         sch[shared].bind(ii, te.thread_axis("threadIdx.x"))
 
-    def cooperative_fetch_2d(self, shared, sch):
+    def cooperative_fetch_2d(self, shared, sch, strides=None):
         assert len(self.thread_per_block) == 2
         axes = sch[shared].op.axis
+        if strides is not None:
+            sch[shared].storage_align(axes[-2], strides - 1, strides)
         fused = sch[shared].fuse(*axes)
         oo, _temp = sch[shared].split(fused, factor=self.thread_per_block[0] * self.thread_per_block[1])
         inner_y, inner_x = sch[shared].split(_temp, factor=self.thread_per_block[0])
@@ -202,7 +204,7 @@ class Scheduler:
             # local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
             # self.sche[local_tensor].compute_at(self.sche[reg_tile], space_fused)
             if input_tensor.name in self.shared_inputs:
-                self.sche[shared_tensor].compute_at(self.sche[out], thrd_fused)
+                self.sche[shared_tensor].compute_at(self.sche[out], blck_fused)
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
             self.cooperative_fetch(shared_tensor, self.sche)
@@ -298,7 +300,7 @@ class Scheduler:
         for input_tensor in self.reduce_op.input_tensors:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
             if input_tensor.name in self.shared_inputs:
-                self.sche[shared_tensor].compute_at(self.sche[out], thrd_fused)
+                self.sche[shared_tensor].compute_at(self.sche[out], blck_fused)
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
             self.cooperative_fetch_2d(shared_tensor, self.sche)
@@ -328,3 +330,145 @@ class Scheduler:
 
         return self.sche
 
+    def rewrite_schedule_tc(self):
+        assert(self.reduce_op is not None)
+        out = self.output_op
+
+        assert (len(self.reduce_op.input_tensors) == 2)
+        A, B = self.reduce_op.input_tensors
+        C = self.reduce_op.output(0)
+        AS = self.sche.cache_read(A, "shared", [C])
+        BS = self.sche.cache_read(B, "shared", [C])
+        AF = self.sche.cache_read(AS, "wmma.matrix_a", [C])
+        BF = self.sche.cache_read(BS, "wmma.matrix_b", [C])
+        CF = self.sche.cache_write(C, "wmma.accumulator")
+        CS = self.sche.cache_read(CF, "shared", [C])
+
+        ax_M = C.op.axis[-2].var.name
+        ax_N = C.op.axis[-1].var.name
+        ax_K = C.op.reduce_axis[-1].var.name
+
+        wmma_m, wmma_n, wmma_k = self.tiling[ax_M][-1], self.tiling[ax_N][-1], self.tiling[ax_K][-1]
+        assert (wmma_m, wmma_n, wmma_k) in [(16, 16, 16), (8, 32, 16), (32, 8, 16)]
+
+        offset = 8
+        AF_stride = [wmma_k, 1]
+        AS_stride = [self.tiling[ax_K][0] + offset, 1]
+        BF_stride = [self.tiling[ax_N][1], 1]
+        BS_stride = [self.tiling[ax_N][0] + offset, 1]
+        CF_stride = [self.tiling[ax_N][1], 1]
+        CS_stride = [self.tiling[ax_N][0] + offset, 1]
+        if A.name in self.shared_inputs:
+            AS_stride[0] = int(C.op.reduce_axis[-1].dom.extent)
+
+        self.thread_per_block = [32, 1]
+        for axis in self.sche[out].op.axis:
+            tile = self.tiling[axis.var.name]
+            assert tile[0] % tile[1] == 0
+            self.thread_per_block[1] *= (tile[0] // tile[1])
+
+        # schedule for output stage
+        blck_axis = []
+        thrd_axis = []
+        for axis in self.sche[out].op.axis:
+            bx, tx = self.sche[out].split(axis, factor=self.tiling[axis.var.name][0])
+            blck_axis.append(bx)
+            thrd_axis.append(tx)
+        axis_order = blck_axis + thrd_axis
+        self.sche[out].reorder(*axis_order)
+        blck_fused = self.sche[out].fuse(*blck_axis)
+        thrd_fused = self.sche[out].fuse(*thrd_axis)
+        _t, tx = self.sche[out].split(thrd_fused, factor=self.thread_per_block[0])
+        _t, ty = self.sche[out].split(_t, factor=self.thread_per_block[1])
+
+        self.sche[out].bind(ty, te.thread_axis("threadIdx.y"))
+        self.sche[out].bind(tx, te.thread_axis("threadIdx.x"))
+        self.sche[out].bind(blck_fused, te.thread_axis("blockIdx.x"))
+
+        # schedule for block
+        self.sche[CS].compute_at(self.sche[out], blck_fused)
+        mc, nc = CS.op.axis
+        self.sche[CS].storage_align(mc, CS_stride[0] - 1, CS_stride[0])
+        mm, mmii = self.sche[CS].split(mc, factor=self.tiling[ax_M][1])
+        nn, nnii = self.sche[CS].split(nc, factor=self.tiling[ax_N][1])
+        mmii, mmi = self.sche[CS].split(mmii, factor=wmma_m)
+        nnii, nni = self.sche[CS].split(nnii, factor=wmma_n)
+        self.sche[CS].reorder(mm, nn, mmii, nnii, mmi, nni)
+        warp_fused = self.sche[CS].fuse(mm, nn)
+        self.sche[CS].bind(warp_fused, te.thread_axis("threadIdx.y"))
+
+        # Schedule for wmma computation
+        self.sche[CF].compute_at(self.sche[CS], warp_fused)
+        warp_i, _ii = self.sche[CF].split(CF.op.axis[0], factor=wmma_m)
+        warp_j, _jj = self.sche[CF].split(CF.op.axis[1], factor=wmma_n)
+        ko, _k = self.sche[CF].split(CF.op.reduce_axis[0], factor=self.tiling[ax_K][0])
+        ki, _k = self.sche[CF].split(_k, factor=wmma_k)
+        self.sche[CF].reorder(ko, ki, warp_i, warp_j, _ii, _jj, _k)
+
+        # Schedule for  wmma_matrix_a load
+        self.sche[AF].compute_at(self.sche[CF], ki)
+        m, m_ii = self.sche[AF].split(AF.op.axis[0], factor=wmma_m)
+        i, i_jj = self.sche[AF].split(AF.op.axis[1], factor=wmma_k)
+        self.sche[AF].reorder(m, i, m_ii, i_jj)
+
+        # Schedule for  wmma_matrix_b load
+        self.sche[BF].compute_at(self.sche[CF], ki)
+        i, i_ii = self.sche[BF].split(BF.op.axis[0], factor=wmma_k)
+        n, n_ii = self.sche[BF].split(BF.op.axis[1], factor=wmma_n)
+        self.sche[BF].reorder(i, n, i_ii, n_ii)
+
+        # schedule shared
+        if A.name in self.shared_inputs:
+            self.sche[AS].compute_at(self.sche[out], blck_fused)
+        else:
+            self.sche[AS].compute_at(self.sche[CF], ko)
+        if B.name in self.shared_inputs:
+            self.sche[BS].compute_at(self.sche[out], blck_fused)
+        else:
+            self.sche[BS].compute_at(self.sche[CF], ko)
+        self.cooperative_fetch_2d(AS, self.sche, AS_stride[0])
+        self.cooperative_fetch_2d(BS, self.sche, BS_stride[0])
+
+        shape = (wmma_m, wmma_n, wmma_k)
+        AL_gemm = te.placeholder((wmma_m, wmma_k), name="AL_gemm", dtype=A.dtype)
+        BL_gemm = te.placeholder((wmma_k, wmma_n), name="BL_gemm", dtype=B.dtype)
+        k_gemm = te.reduce_axis((0, wmma_k), name="k_gemm")
+        CL_compute = te.compute(
+            (wmma_m, wmma_n),
+            lambda ii, jj: te.sum(
+                AL_gemm[ii, k_gemm].astype(C.dtype) * BL_gemm[k_gemm, jj].astype(C.dtype),
+                axis=k_gemm,
+            ),
+            name="CL_compute",
+        )
+
+        from tvm.topi.cuda.tensor_intrin import (
+            intrin_wmma_load_matrix_A,
+            intrin_wmma_load_matrix_W,
+            intrin_wmma_store_matrix,
+            intrin_wmma_gemm,
+        )
+
+        self.sche[AF].tensorize(
+            m_ii,
+            intrin_wmma_load_matrix_A(
+                AF_stride, AS_stride, shape, "row_major", (wmma_m, wmma_k), (wmma_m, wmma_k), A.dtype
+            ),
+        )
+        self.sche[BF].tensorize(
+            i_ii,
+            intrin_wmma_load_matrix_W(
+                BF_stride, BS_stride, shape, "row_major", (wmma_k, wmma_n), (wmma_k, wmma_n), B.dtype
+            ),
+        )
+        self.sche[CF].tensorize(
+            _ii, intrin_wmma_gemm(AL_gemm, BL_gemm, CL_compute, AF_stride, BF_stride, CF_stride, shape)
+        )
+        self.sche[CS].tensorize(
+            mmi,
+            intrin_wmma_store_matrix(
+                CS_stride, CF_stride, shape, C.dtype, (wmma_m, wmma_n), (wmma_m, wmma_n)
+            ),
+        )
+
+        return self.sche

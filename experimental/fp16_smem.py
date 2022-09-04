@@ -151,7 +151,7 @@ def refernce(M, K, N, device=0, seed=0):
     torch.cuda.manual_seed(seed)
     A = get_ref_tensor([M, K], device, "half")
     B = get_ref_tensor([K, N], device, "half")
-    C = torch.matmul(A, B)
+    C = torch.relu(torch.matmul(A, B))
     return C.cpu().numpy()
 
 if __name__ == "__main__":

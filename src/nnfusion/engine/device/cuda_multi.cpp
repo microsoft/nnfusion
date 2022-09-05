@@ -152,7 +152,6 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
         LanguageUnit global_device_type;
         LanguageUnit global_workspace_size;
         global_init << "extern \"C\" void cuda_init()\n{\n";
-        global_free << "extern \"C\" void cuda_free()\n{\n";
         graph_cnt = 0;
         size_t workspace_size = 0;
         for (auto graph_cnt = 0; graph_cnt < graphs.size(); graph_cnt++)
@@ -164,7 +163,6 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 {
                     global_init << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << graph_name
                                 << "::" << pool.first << "_memory_pool," << pool.second << "));\n";
-                    global_free << graph_name << "::cuda_free();\n";
                     workspace_size += pool.second;
                 }
                 else
@@ -177,7 +175,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
             }
         }
         global_init << "}\n";
-        global_free << "}\n";
+        global_free << "extern \"C\" void cuda_free() {graph_0::cuda_free();}\n";
         global_device_type << "int get_device_type() { return 0; }\n";
         global_workspace_size << "size_t get_workspace_size() { return " << workspace_size
                               << "; }\n";

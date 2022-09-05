@@ -139,6 +139,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
             arg_vars = get_kernel_entry_args(context->m_legacy_tu, false);
             codegen_folder = proj_gens.back()->get_codegen_folder();
             write_to = proj_gens.back()->lup_exec->write_to;
+            cmcpp.invoke_after_projgen();
         }
 
         graph_cnt++;
@@ -171,8 +172,8 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                                 << "graph_0::" << pool.first << "_memory_pool;"
                                 << "\n";
                 }
-                global_init << graph_name << "::cuda_init();\n";
             }
+            global_init << graph_name << "::cuda_init();\n";
         }
         global_init << "}\n";
         global_free << "extern \"C\" void cuda_free() {graph_0::cuda_free();}\n";

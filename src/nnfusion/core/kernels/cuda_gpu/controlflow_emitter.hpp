@@ -28,9 +28,10 @@ namespace nnfusion
                 void allocate_shared_memory(LanguageUnit_p _lu);
                 void allocate_shared_memory(LanguageUnit_p _lu, size_t shared_memory_size);
 
-                ir::BasicBlock::Pointer create_param_map(
+                virtual ir::BasicBlock::Pointer create_param_map(
                     const ir::Program& program,
-                    const std::unordered_map<std::string, int>& subgraph_output_map);
+                    const std::unordered_map<std::string, int>& subgraph_output_map,
+                    bool call_on_cuda);
 
                 std::string get_workspace_tensor(nnfusion::descriptor::Tensor::Pointer tensor);
                 std::string get_launch_bound(nnfusion::ir::Instruction::Pointer ins);

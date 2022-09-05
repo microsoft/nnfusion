@@ -32,7 +32,7 @@ set(SRC
     subgraph_fusion_pass.cpp
     dump_op.cpp
     conv_layout_pass.cpp
-
+    subgraph_op_move.cpp
 )
 
 add_library(nnfusion_engine_pass_graph STATIC ${SRC})

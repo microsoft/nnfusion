@@ -2235,3 +2235,10 @@ __device__ void Barrier() {
     g.sync();
 }
 )");
+
+LU_DEFINE(declaration::inc_iter,
+          R"(
+__global__ void inc_iter(int64_t* i) {
+    i[0] = i[0] + 1;
+}
+)");

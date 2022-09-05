@@ -22,9 +22,9 @@ using namespace nnfusion::cache;
 
 const size_t BlockFusionWavefrontOptimizer::DEFAULT_GROUP_ID = -1;
 size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
-size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 160;
+size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 1024;
 const size_t BlockFusionWavefrontOptimizer::RESOURCE_CAPACITY =
-    4 * 80; // volta max parallelism: 4 * #SM
+    4096; // volta max parallelism: 4 * #SM
 
 BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Graph> g,
                                                              std::string _device_type,
@@ -60,7 +60,23 @@ bool BlockFusionWavefrontOptimizer::Optimize()
     {
         std::shared_ptr<std::vector<std::shared_ptr<FusionGroup>>> fuse_groups =
             ExtractFusionGroups();
+        NNFUSION_LOG(INFO) << "fused groups";
+        for (auto fuse_group: *fuse_groups) {
+            std::cout << "-------------------------\n";
+            std::cout << "merge: " << fuse_group->merge;
+            for (size_t node_id: fuse_group->nodes) {
+                std::cout << *(m_nodes[node_id]->node) << "\n";
+            }
+        }
+
         SplitGroup(fuse_groups);
+        NNFUSION_LOG(INFO) << "split groups";
+        for (auto fuse_group: *fuse_groups) {
+            std::cout << "-------------------------\n";
+            for (size_t node_id: fuse_group->nodes) {
+                std::cout << *(m_nodes[node_id]->node) << "\n";
+            }
+        }
         if (m_fusion_level == 2)
         {
             // Todo: General fine grained schedule policy to be implemented

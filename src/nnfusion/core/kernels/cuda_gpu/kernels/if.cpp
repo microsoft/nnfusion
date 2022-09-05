@@ -43,9 +43,9 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_shared_memory_size = max(get_subgraph_shared_memory(m_then_branch_tu->program),
                                get_subgraph_shared_memory(m_else_branch_tu->program));
     m_pool_offset = then_branch_pool_offset;
-    m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map());
+    m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
     m_pool_offset = else_branch_pool_offset;
-    m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map());
+    m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
     // Hardcoded fusion rule: fuse all kernels with shm_size=0
     std::vector<std::vector<int>> then_kernel_groups;
     std::vector<std::vector<int>> else_kernel_groups;
@@ -476,6 +476,9 @@ void cuda::If::set_launch_config()
     auto cfg1 = get_subgraph_launch_config(m_else_branch_instructions);
     m_blockDim = maxdim3(cfg0.first, cfg1.first);
     m_gridDim = maxdim3(cfg0.second, cfg1.second);
+    NNFUSION_CHECK(m_gridDim.y == 1);
+    NNFUSION_CHECK(m_gridDim.z == 1);
+    m_gridDim.x = min(m_gridDim.x, FLAGS_ffused_max_grid);
 }
 
 LanguageUnit_p cuda::If::emit_dependency()

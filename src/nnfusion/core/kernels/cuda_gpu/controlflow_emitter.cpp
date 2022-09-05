@@ -4,6 +4,8 @@
 using namespace nnfusion;
 using namespace kernels;
 
+DECLARE_bool(floop_in_c);
+
 std::pair<cuda::dim3, cuda::dim3>
     cuda::ControlFlowEmitter::get_subgraph_launch_config(ir::BasicBlock::Pointer instructions)
 {
@@ -137,7 +139,7 @@ void cuda::ControlFlowEmitter::allocate_shared_memory(LanguageUnit_p _lu) {
 }
 
 ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
-    const ir::Program& program, const std::unordered_map<std::string, int>& subgraph_output_map)
+    const ir::Program& program, const std::unordered_map<std::string, int>& subgraph_output_map, bool call_on_cuda)
 {
     ir::BasicBlock::Pointer result = std::make_shared<ir::BasicBlock>();
     ir::BasicBlock all_instructions;
@@ -155,10 +157,16 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             auto mapping = (*ins->getGNode())["subgraph_input_map"];
             NNFUSION_CHECK(mapping.is_valid());
             auto index = mapping.as<int>();
-            if (index == -1)
-                m_param_map[ins->get_outputs()[0]] = "&i"; // only defined for loop
+            if (index == -1) {
+                if (FLAGS_floop_in_c) {
+                    m_param_map[ins->get_outputs()[0]] = "i_dev"; // only defined for loop
+                } else {
+                    m_param_map[ins->get_outputs()[0]] = "&i"; // only defined for loop
+                }
+            }
             else
                 m_param_map[ins->get_outputs()[0]] = "input" + std::to_string(index);
+            continue;
         }
         else if (kernel == nullptr || type == "Result")
             continue;
@@ -167,6 +175,7 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
                  !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)))
         {
             m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]];
+            continue;
         }
         else if (type == "Reshape" &&
                  !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)) &&
@@ -174,14 +183,24 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
                       ->get_is_layout_change())
         {
             m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]];
+            continue;
         }
         else if (type == "GatherV2" &&
                  !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)))
         {
+            auto index_edge = ins->getGNode()->get_in_edge(1);
+            auto index_gnode = index_edge->get_src();
             auto stride = ins->get_outputs()[0]->size(/*in_byte*/ false);
-            m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+*(" +
-                                                 m_param_map[ins->get_inputs()[1]] + ")*" +
-                                                 std::to_string(stride);
+            if (shape_size(index_gnode->get_output_shape(index_edge->get_src_output())) == 1 && index_gnode->get_op_type() == "Constant") {
+                auto const_gnode = std::dynamic_pointer_cast<op::Constant>(index_gnode->get_op_ptr());
+                m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+(" + element::Type::extract_value(const_gnode->get_type(), const_gnode->get_data_ptr()) + ")*" + std::to_string(stride);
+                continue;
+            } else if (call_on_cuda) {
+                m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+*(" +
+                                                    m_param_map[ins->get_inputs()[1]] + ")*" +
+                                                    std::to_string(stride);
+                continue;
+            }
         }
         else if (dynamic_pointer_cast<CudaEmitter>(kernel) == nullptr)
         {
@@ -194,44 +213,41 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             std::cout << ins->getGNode()->get_op_type() << "\n";
             NNFUSION_CHECK_FAIL();
         }
-        else
+        for (const auto& tensor : ins->get_inputs())
         {
-            for (const auto& tensor : ins->get_inputs())
-            {
-                if (m_param_map.count(tensor))
-                    continue;
-                else
-                    m_param_map[tensor] = get_workspace_tensor(tensor);
-            }
-            if (ins->getKernel()->m_context->annotations != nullptr)
-            {
-                for (auto pair : ins->getKernel()->m_context->annotations->get_in_place_oi_pairs())
-                {
-                    auto output = ins->get_outputs()[pair.output];
-                    auto input = ins->get_inputs()[pair.input];
-                    if (pair.force_inplace)
-                    {
-                        m_param_map[output] = m_param_map[input];
-                    }
-                }
-            }
-            for (const auto& tensor : ins->get_outputs())
-            {
-                if (m_param_map.count(tensor))
-                    continue;
-                else if (subgraph_output_map.count(tensor->get_name(false)))
-                {
-                    auto output_index = subgraph_output_map.at(tensor->get_name(false));
-                    m_param_map[tensor] = "output" + std::to_string(output_index);
-                }
-                else
-                    m_param_map[tensor] = get_workspace_tensor(tensor);
-            }
-            if (std::dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
-                for (auto tensor : kernel->m_context->tensors)
-                    m_param_map[tensor] = get_workspace_tensor(tensor);
-            result->push_back(ins);
+            if (m_param_map.count(tensor))
+                continue;
+            else
+                m_param_map[tensor] = get_workspace_tensor(tensor);
         }
+        if (ins->getKernel()->m_context->annotations != nullptr)
+        {
+            for (auto pair : ins->getKernel()->m_context->annotations->get_in_place_oi_pairs())
+            {
+                auto output = ins->get_outputs()[pair.output];
+                auto input = ins->get_inputs()[pair.input];
+                if (pair.force_inplace)
+                {
+                    m_param_map[output] = m_param_map[input];
+                }
+            }
+        }
+        for (const auto& tensor : ins->get_outputs())
+        {
+            if (m_param_map.count(tensor))
+                continue;
+            else if (subgraph_output_map.count(tensor->get_name(false)))
+            {
+                auto output_index = subgraph_output_map.at(tensor->get_name(false));
+                m_param_map[tensor] = "output" + std::to_string(output_index);
+            }
+            else
+                m_param_map[tensor] = get_workspace_tensor(tensor);
+        }
+        if (std::dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
+            for (auto tensor : kernel->m_context->tensors)
+                m_param_map[tensor] = get_workspace_tensor(tensor);
+        result->push_back(ins);
     }
     return result;
 }

@@ -73,7 +73,7 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     m_block_func_name = move(FuncForward::m_block_func_name);
     NNFUSION_CHECK(!m_block_func_name.empty());
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
-    m_body_instructions = create_param_map(m_loop_body_tu->program, op->get_output_map());
+    m_body_instructions = create_param_map(m_loop_body_tu->program, op->get_output_map(), true);
 }
 
 void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)

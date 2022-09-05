@@ -4,55 +4,6 @@ from memopt.utils import CompileResult
 from .tunner import tune
 from memopt import get_log_level
 
-# def run(ordered_nodes, arch):
-#     group = {} # map node to fused group
-#     dep_count = {node : 0 for node in ordered_nodes}
-#     for node in ordered_nodes:
-#         for edge in node.outputs:
-#             if edge.dst_node in dep_count:
-#                 dep_count[edge.dst_node] += 1
-#     ready_nodes = list(filter(lambda node:dep_count[node] == 0, dep_count))
-
-#     # cur_node = ordered_nodes[0]
-#     for node in ordered_nodes:
-#         assert node in ready_nodes
-#         if node.is_output():
-#             continue
-#         for edge in node.outputs:
-#             if edge.dst_node in dep_count:
-#                 dep_count[edge.dst_node] -= 1
-#                 if dep_count[edge.dst_node] == 0:
-#                     ready_nodes.append(edge.dst_node)
-
-#         if node not in group:
-#             new_group_id = len(set(group.values()))
-#             group[node] = new_group_id
-#         group_id = group[node]
-#         cur_group = list(filter(lambda n: group[n] == group_id, group))
-
-#         ready_output = [set() for _ in node._output_args]
-#         unready_output = [set() for _ in node._output_args]
-#         for edge in node.outputs:
-#             if edge.dst_node in ready_nodes and not edge.dst_node.is_output():
-#                 ready_output[edge.src_id].add(edge.dst_node)
-#             else:
-#                 unready_output[edge.src_id].add(edge.dst_node)
-
-#         for rd, urd in zip(ready_output, unready_output):
-#             if len(urd) > 0:
-#                 continue
-#             else:
-#                 new_group = cur_group.copy()
-#                 new_group.extend(rd)
-#                 print(new_group)
-#                 result = tune(new_group, arch, check=True)
-#                 if result[0] is not None:
-#                     for n in new_group:
-#                         group[n] = group_id
-#                 print(group)
-#     print(group)
-#     return group
-
 class FusionGroup():
     def __init__(self, node_list: List[Node], group_id: int, cpresult: CompileResult, gain: float) -> None:
         self.nodes = node_list
@@ -60,11 +11,14 @@ class FusionGroup():
         self.cpresult = cpresult
         self.gain = gain
 
-def _get_nodes_dependency(nodes, processed):
-    # nodes : target nodes in infer dependency
-    # processed : already done nodes
-    # returns dependency for input nodes (not in processed, not placeholder),
-    #          will include input nodes themself.
+def _get_nodes_dependency(nodes: List[Node], processed: List[Node]) -> List[Node]:
+    """
+        returns dependency for input nodes (not in processed, not placeholder),
+        will include input nodes themself.
+    Args:
+        nodes: target nodes to infer dependency
+        processed : already done nodes
+    """
     queue = list(nodes)
     deps = set()
     while len(queue) > 0:
@@ -178,7 +132,7 @@ class Engine:
                 print("Cannot generate code for", top_node)
         return FusionGroup(cur_group, cur_group_id, cp_result, cur_latency_gain)
 
-    def compute_gain(self, group, cp_result):
+    def compute_gain(self, group: List[Node], cp_result: CompileResult) -> float:
         for node in group:
             if node.get_tag("latency") is None:
                 if node.get_tag("memcpy"):

@@ -230,7 +230,7 @@ if __name__ == "__main__":
             te.placeholder((K, N), dtype='float16', name="input1"),
             te.placeholder((K, N), dtype='float16', name="input2"),
             te.placeholder((M, N), dtype='float16', name="output0")]
-    cp = CompileResult(None, codefull, [32, 2, 2], [16200, 1, 1], "Fused", args)
+    cp = CompileResult(None, code, [32, 2, 2], [16200, 1, 1], "Fused", args)
     cp.append_host_call()
     cp.compile_and_load()
     print(cp.profile())

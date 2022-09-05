@@ -3,7 +3,7 @@ The entry of Antares-TVM bridge
 """
 import importlib
 from collections import OrderedDict
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import numpy as np
 from tvm import te, tir
@@ -158,13 +158,13 @@ def _assign_multiple_outputs(outputs: List[te.Tensor]):
                                   name='proxy_outputs')
     return assigned_outputs
 
-def translate_to_tvm(expr, input_dict, extra_outputs=[]):
+def translate_to_tvm(expr: str, input_dict, extra_outputs=[]) -> Tuple[List[te.Tensor], List[te.Tensor]]:
     OUTPUT_TEMP.clear()
     INPUT_TEMP.clear()
     einstein_v2(expr, input_dict, extra_outputs)
     return INPUT_TEMP, OUTPUT_TEMP
 
-def translate_ir_to_tvm(antares_ir):
+def translate_ir_to_tvm(antares_ir: str) -> Tuple[List[te.Tensor], List[te.Tensor]]:
     antares_ir = antares_ir.strip()
     assert antares_ir.startswith(
         '- '

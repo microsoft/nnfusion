@@ -139,10 +139,9 @@ def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=True)
     compile_results = []
     for config in configs:
         try:
-            cpresult = cgen.compile(output_nodes, config, "cuda", name=kernel_name)
+            cpresult = cgen.compile(output_nodes, config, "cuda", kernel_name=kernel_name)
         except Exception as e:
-            print("Exception : ", e)
-            # traceback.print_exc(file=sys.stdout)
+            traceback.print_exc(file=sys.stdout)
             continue
         cpresult.append_host_call()
         cpresult.set_io_desc(input_desc, output_desc)

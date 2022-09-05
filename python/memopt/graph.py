@@ -1,33 +1,34 @@
+from typing import List, Union, Tuple, Any, Dict
 import tvm
 import lang
 import numpy as np
 from tvm import arith
 
 class Edge:
-    def __init__(self, src_node, dst_node, src_id, dst_id):
+    def __init__(self, src_node: 'Node', dst_node: 'Node', src_id: int, dst_id: int):
         self._src_node = src_node
         self._dst_node = dst_node
         self._src_id = src_id
         self._dst_id = dst_id
 
     @property
-    def src_node(self):
+    def src_node(self) -> 'Node':
         return self._src_node
 
     @property
-    def dst_node(self):
+    def dst_node(self) -> 'Node':
         return self._dst_node
 
     @property
-    def src_id(self):
+    def src_id(self) -> int:
         return self._src_id
 
     @property
-    def dst_id(self):
+    def dst_id(self) -> int:
         return self._dst_id
 
 class Node:
-    def __init__(self, inputs, name):
+    def __init__(self, inputs: List[Union[Tuple['Node', int], 'Node', None]], name: str):
         self.name = name
         self._out_edges = []
         self._in_edges = []
@@ -48,39 +49,36 @@ class Node:
             self._in_edges.append(edge)
             src_node._out_edges.append(edge)
 
-    def emit_config(self):
-        raise NotImplementedError
-
     @property
-    def inputs(self):
+    def inputs(self) -> List[Edge]:
         return self._in_edges
 
     @property
-    def outputs(self):
+    def outputs(self) -> List[Edge]:
         return self._out_edges
 
-    def set_inputs(self, i, edge):
+    def set_inputs(self, i: int, edge: Edge):
         assert i < len(self._in_edges)
         self._in_edges[i] = edge
 
-    def set_outputs(self, i, edge):
+    def set_outputs(self, i: int, edge: Edge):
         assert i < len(self._out_edges)
         self._out_edges[i] = edge
 
-    def get_shape(self, id=0):
+    def get_shape(self, id: int = 0) -> List[int]:
         return self._shapes[id]
 
-    def set_shape(self, shape, id=0, overwrite=False):
+    def set_shape(self, shape: List[int], id=0, overwrite=False) -> None:
         if len(self._shapes) <= id:
             self._shapes.extend([None for _ in range(id - len(self._shapes) + 1)])
         elif self._shapes[id] is not None and not overwrite:
             assert self._shapes[id] == list(map(int, shape)), (self._shapes, list(map(int, shape)))
         self._shapes[id] = list(map(int, shape))
 
-    def get_dtype(self, id=0):
+    def get_dtype(self, id=0) -> tvm.DataType:
         return self._dtypes[id]
 
-    def set_dtype(self, dtype: tvm.DataType, id=0):
+    def set_dtype(self, dtype: tvm.DataType, id=0) -> None:
         assert isinstance(dtype, tvm.DataType), type(dtype)
         if len(self._dtypes) <= id:
             self._dtypes.extend([None for _ in range(id - len(self._dtypes) + 1)])
@@ -94,15 +92,15 @@ class Node:
     def is_output(self):
         return False
 
-    def add_tag(self, k, v=True):
+    def add_tag(self, k: str, v: Any = True) -> None:
         self._tag[k] = v
 
-    def get_tag(self, k):
+    def get_tag(self, k: str) -> Any:
         if k not in self._tag:
             return None
         return self._tag[k]
 
-    def num_outputs(self):
+    def num_outputs(self) -> int:
         if len(self.outputs) == 0:
             return 0
         return max([e.src_id for e in self.outputs]) + 1
@@ -129,32 +127,8 @@ class OutputNode(Node):
     def is_output(self):
         return True
 
-class MatMulNode(Node):
-    def __init__(self, inputs, n, m ,k):
-        super().__init__(inputs, "MatMul")
-        from op import MatmulOp
-        from .tvm_ops import tvm_matmul
-        self.op = MatmulOp(m, k, n)
-        self.args = tvm_matmul(n, m, k)
-
-class ConvNode(Node):
-    def __init__(self, inputs, n, c, h, w, f, k, s=1, d=1, p="SAME"):
-        super().__init__(inputs, "Conv")
-        from op import ConvOp
-        from .tvm_ops import tvm_conv
-        self.op = ConvOp(n, c, f, k, s, h, w, d, p)
-        self.args = tvm_conv(n, c, h, w, f, k, s, d, p)
-
-class DepthwiseConvNode(Node):
-    def __init__(self, inputs, n, c, h, w, k, s=1, d=1, p="SAME", m=1):
-        super().__init__(inputs, "Conv")
-        from op import DepthwiseConvOp
-        from .tvm_ops import tvm_depthwise_conv
-        self.op = DepthwiseConvOp(n, c, k, s, h, w, d, p, m)
-        self.args = tvm_depthwise_conv(n, c, h, w, k, s, d, p, m)
-
 class IRNode(Node):
-    def __init__(self, inputs, antares_ir, name="Compute"):
+    def __init__(self, inputs, antares_ir: str, name="Compute") -> None:
         super().__init__(inputs, name)
         self.ir = antares_ir
         self._input_args, self._output_args = lang.translate_ir_to_tvm(self.ir)
@@ -181,7 +155,7 @@ class IRNode(Node):
         self._extract_axis()
         self._sche = self.create_schedule()
 
-    def infer_dependency(self, shape, rstep={}):
+    def infer_dependency(self, shape, rstep={}) -> Dict[int, List[int]]:
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
         result = {}
@@ -192,7 +166,7 @@ class IRNode(Node):
             result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
         return result
 
-    def infer_smem_usage(self, shape, rstep):
+    def infer_smem_usage(self, shape, rstep) -> int:
         result = 0
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
@@ -217,7 +191,7 @@ class IRNode(Node):
             result += np.prod(shapes[tensor.name]) * int(tvm.DataType(tensor.dtype).bits // 8)
         return result
 
-    def block_infer(self, tile_map, block_expr, block_idx):
+    def block_infer(self, tile_map, block_expr, block_idx) -> Dict[int, tvm.tir.PrimExpr]:
         space_expr = []
         grid_size = 1
         for ax_len, tile_len in zip(reversed(self.get_shape()), reversed(tile_map[self])):
@@ -264,7 +238,7 @@ class IRNode(Node):
             assert(str(axis.var.name) not in self.raxis), axis.var.name
             self.saxis[str(axis.var.name)] = int(axis.dom.extent)
 
-    def create_schedule(self):
+    def create_schedule(self) -> tvm.te.Schedule:
         args = self._output_args
         return tvm.te.create_schedule([x.op for x in args])
 
@@ -276,14 +250,14 @@ class IRNode(Node):
         self._output_args = list(args)
         self.args = self._input_args + self._output_args
 
-    def clone(self, inputs):
+    def clone(self, inputs) -> 'IRNode':
         new_node = IRNode(inputs, self.ir, self.name)
         for k, v in self._tag.items():
             new_node.add_tag(k, v)
         return new_node
 
 
-def topo_order(list_of_nodes):
+def topo_order(list_of_nodes) -> List[Node]:
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}
     ready = list(filter(lambda node : input_ready_count[node] == 0, list_of_nodes))
     output_list = []
@@ -302,7 +276,7 @@ def topo_order(list_of_nodes):
     assert(len(list_of_nodes) == len(output_list))
     return output_list
 
-def find_topo_sort_priority(output_node_list):
+def find_topo_sort_priority(output_node_list) -> List[Node]:
     import sys
     sys.setrecursionlimit(10000)
     def topo_sort_get_layer(node, topo_layer):
@@ -330,7 +304,7 @@ def find_topo_sort_priority(output_node_list):
         topo_sort_dfs(node, visited, topo_order)
     return topo_order
 
-def find_topo_sort(output_node_list):
+def find_topo_sort(output_node_list) -> List[Node]:
     def topo_sort_dfs(node, visited, topo_order):
         if node in visited:
             return

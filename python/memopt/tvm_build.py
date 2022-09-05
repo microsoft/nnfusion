@@ -4,6 +4,7 @@ from .scope import get_scope
 import regex as re
 import tvm
 import numpy as np
+from typing import List
 
 _tvm_default_name = "default_function_kernel0"
 _type_map = {"float32" : "float", "float16" : "half", "int64" : "int64_t", "int32" : "int"}
@@ -43,11 +44,13 @@ def _lower_C_simple(expr : tvm.tir.PrimExpr) -> str:
     else:
         raise NotImplementedError(expr)
 
-def get_block_reorder_code(block_reoder_expr : tvm.tir.PrimExpr) -> str:
+def get_block_reorder_code(block_reoder_expr: tvm.tir.PrimExpr) -> str:
     return "  int __bid = blockIdx.x;\n  const dim3 blockIdx({}, 0, 0);\n"\
         .format(_lower_C_simple(block_reoder_expr))
 
-def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_name, global_kernel=True, block_reorder=None, flatten_block=True):
+def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.target.Target,
+              sm_outputs=[], sm_inputs=[], name=_tvm_default_name,
+              global_kernel=True, block_reorder=None, flatten_block=True) -> str:
     scope = get_scope()
     passes = [
         (0, modify_output_pass),
@@ -95,5 +98,5 @@ def tvm_build(sch, args, target, sm_outputs=[], sm_inputs=[], name=_tvm_default_
             for dtype, var, size in re.findall(pattern, src):
                 src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
                 offset += int(size) * _type_bytes[dtype]
-            scope.total_interal_shared_memory = offset
+            scope.total_internal_shared_memory = offset
     return src

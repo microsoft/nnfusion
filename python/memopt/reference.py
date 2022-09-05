@@ -1,17 +1,18 @@
-from .graph import find_topo_sort, topo_order
-from tvm import te
+from .graph import find_topo_sort
+
+from typing import List
 import tvm
 import numpy as np
 import torch
 
-def get_ref_tensor(shape:list, device:str, dtype:str):
+def get_ref_tensor(shape:list, device:str, dtype:str) -> torch.Tensor:
     dtype = torch.__getattribute__(str(dtype))
     if dtype.is_floating_point:
         return torch.empty(*shape, device=device, dtype=dtype).uniform_(0.1, 1.0)
     else:
         return torch.ones(*shape, device=device, dtype=dtype)
 
-def get_subgraph_reference_outputs(output_nodes, device="cuda:0", seed=0):
+def get_subgraph_reference_outputs(output_nodes, device="cuda:0", seed=0) -> List[np.ndarray]:
     topo_order = find_topo_sort(output_nodes)
     torch.cuda.set_device(device)
     torch.random.manual_seed(seed)

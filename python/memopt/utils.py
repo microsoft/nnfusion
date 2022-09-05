@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 
 class CompileResult:
-    def __init__(self, config, code, block_size, grid_size, name, args) -> None:
+    def __init__(self, config, code, block_size, grid_size, name, args):
         self.config = config
         self.code = code
         self.block_size = block_size
@@ -25,7 +25,7 @@ class CompileResult:
         self.input_desc = input_desc
         self.output_desc = output_desc
 
-    def append_host_call(self):
+    def append_host_call(self) -> str:
         num_params = len(self.args)
         args = ["args" + str(i) for i in range(num_params)]
         call_args = ", ".join(args)
@@ -75,7 +75,7 @@ extern "C" float profile({}) {{
         self.host_code = header + self.code + "\n" + host_funcs
         return self.host_code
 
-    def compile_and_load(self):
+    def compile_and_load(self) -> ctypes.CDLL:
         assert self.host_code
         src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
         lib_name = src.name.replace(".cu", ".so")
@@ -94,7 +94,7 @@ extern "C" float profile({}) {{
         subprocess.run(["rm", lib_name], check=True)
         return self.lib
 
-    def profile(self, device="cuda:0"):
+    def profile(self, device="cuda:0") -> float:
         assert self.lib
         import torch
         torch.cuda.set_device(device)

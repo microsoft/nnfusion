@@ -1,12 +1,14 @@
-import functools
 from arch.Arch import Arch
-from memopt.graph import OutputNode, find_topo_sort
-import numpy as np
+from memopt.graph import Node, find_topo_sort
 from memopt.bestfit import BestFit
 from .utils import TileInfo
+
+import functools
+import numpy as np
 from queue import PriorityQueue
 import math
 import tvm
+from typing import List
 
 def get_all_factors(n: int):
     n0 = int(np.ceil(np.sqrt(n)))
@@ -52,7 +54,7 @@ def get_block_size(n):
         return factor_ordered[0]
 
 class DefaultPolicy:
-    def __init__(self, output_nodes, arch:Arch) -> None:
+    def __init__(self, output_nodes: List[Node], arch:Arch) -> None:
         self.arch = arch
         self.ordered_nodes = list(filter(
             lambda n: not n.is_placeholder() and not n.is_output(),
@@ -62,8 +64,7 @@ class DefaultPolicy:
 
         # print("subgraph has {} output".format(len(self.output_nodes)))
 
-
-    def emit_config(self, topk):
+    def emit_config(self, topk: int):
         base_tile = self.get_base_tile()
         if base_tile is None:
             return []
@@ -398,7 +399,7 @@ class DefaultPolicy:
         result = {}
         while len(queue) > 0:
             node = queue.pop(0)
-            if isinstance(node, OutputNode):
+            if node.is_output():
                 block_idx_map[node.inputs[0].src_node] = block_idx_map[node]
                 queue.append(node.inputs[0].src_node)
                 continue

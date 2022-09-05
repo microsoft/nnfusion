@@ -4,7 +4,7 @@ class Block():
         self.end = end
         self.is_free = is_free
 
-    def size(self):
+    def size(self) -> int:
         return self.end - self.start
 
     def merge(self, other):
@@ -16,11 +16,13 @@ class Block():
         return "<Block offset={} size={}>".format(self.start, self.size())
 
 class BestFit():
-    def __init__(self):
+    def __init__(self, align=32):
         self.limit = 0
         self.list = []
+        self.align = align
 
-    def malloc(self, size):
+    def malloc(self, size) -> Block:
+        size = (size + self.align - 1) // self.align * self.align
         found = None
         for block in self.list:
             if block.is_free and block.size() >= size:
@@ -45,7 +47,7 @@ class BestFit():
             self.limit += size
             return block
 
-    def free(self, block):
+    def free(self, block: Block) -> None:
         assert(not block.is_free)
         idx = self.list.index(block)
         self.list[idx] = Block(block.start, block.end, True)

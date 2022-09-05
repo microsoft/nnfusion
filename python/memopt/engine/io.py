@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import List
 from memopt.graph import OutputNode, IRNode, Node
 from .engine import FusionGroup
 import json
@@ -33,8 +33,6 @@ def load_model(fname: str) -> List[Node]:
             node = IRNode(input_list, ir, get_node_name(node_id, op_type))
             for option in options:
                 node.add_tag(option)
-            if op_type == "Softmax":
-                node.add_tag("skip")
         node_map[node_id] = node
         ordered_nodes.append(node)
     return ordered_nodes
@@ -71,3 +69,5 @@ def save_results(fusion_groups: List[FusionGroup], fname: str):
     with open(fname, "w") as f:
         json.dump(obj, f, indent=2)
     return None
+
+__all__ = ['load_model', 'save_results']

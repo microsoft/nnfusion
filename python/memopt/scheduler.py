@@ -1,10 +1,11 @@
 import tvm
 from tvm import te
 import numpy as np
+from typing import Dict, List, Any
 
 class Scheduler:
     def __init__(self):
-        self.storage_align_on = False
+        pass
 
     def split_axis(self, op, axis):
         ret = []
@@ -45,7 +46,7 @@ class Scheduler:
     #              For reduce axes, the format is "axis_name": [step_size, thread_num].
     # [Return]
     #   new_s: an optimized TVM schedule
-    def rewrite_schedule(self, schedule, tile_dict, shared_inputs=[]):
+    def rewrite_schedule(self, schedule: te.Schedule, tile_dict: Dict[str, Any], shared_inputs: List[str] = []):
         self.tiling = tile_dict.copy()
         self.sche = schedule
         self.shared_inputs = shared_inputs

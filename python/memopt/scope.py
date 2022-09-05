@@ -9,7 +9,7 @@ class Scope(Dict):
         self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
         self.shared_mem_outputs = []
         self.shared_mem_inputs = []
-        self.total_interal_shared_memory = 0
+        self.total_internal_shared_memory = 0
         self.exteral_shared_memroy_size = {}
         self._build_analyzer()
         self._get_grid_block_size()

@@ -1,7 +1,6 @@
 from memopt.graph import IRNode, OutputNode
 from memopt.debug import debug
-from memopt.fusion import DefaultPolicy
-from memopt.schedule_rewrite import CodeGenerator
+from memopt.scheduler import Scheduler
 from arch import *
 from memopt.reference import get_subgraph_reference_outputs
 import memopt
@@ -32,9 +31,9 @@ def run_single():
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     A = IRNode([None for _ in input_dict], expr)
     sch, args = A.create_schedule(), A.args
-    sch = CodeGenerator().rewrite_schedule(sch, tile, [])
+    sch = Scheduler().rewrite_schedule(sch, tile, [])
     output_nodes = [OutputNode(A)]
-    cpresult = memopt.utils.compose_global_kernel(output_nodes, {A : tile}, "cuda", name="Fused")
+    cpresult = memopt.CodeGenerator().compile(output_nodes, {A : tile}, "cuda", kernel_name="Fused")
     cpresult.append_host_call()
     cpresult.compile_and_load()
     # print(cpresult.profile())
@@ -47,18 +46,19 @@ def run_single():
 
 def run_two():
     target = tvm.target.cuda(arch="sm_70")
-    n, m, k = 4096, 64, 64
+    n, m, k = 1920 * 1080, 64, 64
     ir, input_dict = get_matmul_expr(n, m, k)
     tile = {"use_tc" : True, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]}
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     A = IRNode([None for _ in input_dict], expr)
     B = IRNode([A, None], expr)
     output_nodes = [OutputNode(B)]
-    cpresult = memopt.utils.compose_global_kernel(output_nodes, {A : tile, B : tile}, "cuda", name="Fused")
+    cpresult = memopt.CodeGenerator().compile(output_nodes, {A : tile, B : tile}, "cuda", kernel_name="Fused")
     cpresult.append_host_call()
     cpresult.compile_and_load()
     print(cpresult.code)
     out = cpresult.get_example_outputs()
+    print(cpresult.profile())
     ref_out = get_subgraph_reference_outputs(output_nodes)
     for a, b in zip(out, ref_out):
         diff = np.max(np.abs(a-b))

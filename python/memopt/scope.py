@@ -1,9 +1,9 @@
-from typing import Dict
 import tvm
-
-_current_scope = None
+import threading
+from typing import Dict
 
 class Scope(Dict):
+    _thread_local = threading.local()
     def __init__(self, schedule):
         self.schedule = schedule
         self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
@@ -37,13 +37,13 @@ class Scope(Dict):
         self.grid_size = [grid_block_size[x] for x in ["blockIdx.x", "blockIdx.y", "blockIdx.z"]]
 
     def __enter__(self):
-        global _current_scope
-        _current_scope = self
+        assert not hasattr(Scope._thread_local, "scope"), "Scope should be entered only once"
+        Scope._thread_local.scope = self
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        global _current_scope
-        _current_scope = None
+        del Scope._thread_local.scope
 
 def get_scope() -> Scope:
-    return _current_scope
+    assert hasattr(Scope._thread_local, "scope"), "No scope has been entered"
+    return Scope._thread_local.scope

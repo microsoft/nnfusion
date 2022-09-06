@@ -56,7 +56,6 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
         (0, modify_output_pass),
         (0, modify_input_pass),
         (1, check_memory_access_pass),
-        (4, get_kernel_info_pass),
     ]
     disabled_pass = ["tir.StorageRewrite"] if sm_inputs else []
     assert(isinstance(sm_outputs, (tuple, list)))

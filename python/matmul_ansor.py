@@ -80,7 +80,6 @@ passes = [
     # (0, memopt.debug_pass),
     (0, memopt.modify_input_pass),
     (0, memopt.modify_output_pass),
-    (4, memopt.get_kernel_info_pass),
 ]
 with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}), \
     memopt.Scope(sch) as scope:

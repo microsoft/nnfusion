@@ -184,9 +184,16 @@ namespace nnfusion
             }
 
             Shape get_kernel_shape(const Node& node,
-                                   const std::shared_ptr<graph::GNode> input_gnode)
+                                   const std::shared_ptr<graph::GNode> input_gnode) {
+                NNFUSION_CHECK(input_gnode->get_output_size() == 1);
+                return get_kernel_shape(node, input_gnode, 0);
+            }
+
+            Shape get_kernel_shape(const Node& node,
+                                   const std::shared_ptr<graph::GNode> input_gnode,
+                                   int index)
             {
-                std::size_t input_spacial_dims = input_gnode->get_shape().size() - 2;
+                std::size_t input_spacial_dims = input_gnode->get_output_shape(index).size() - 2;
                 return node.get_attribute_value<std::vector<std::size_t>>(
                     "kernel_shape", std::vector<std::size_t>(input_spacial_dims, 1UL));
             }
@@ -198,12 +205,24 @@ namespace nnfusion
 
             Strides get_strides(const Node& node, const std::shared_ptr<graph::GNode> input_gnode)
             {
-                return get_strides(node, get_kernel_shape(node, input_gnode));
+                NNFUSION_CHECK(input_gnode->get_output_size() == 1);
+                return get_strides(node, input_gnode, 0);
+            }
+
+            Strides get_strides(const Node& node, const std::shared_ptr<graph::GNode> input_gnode, int index)
+            {
+                return get_strides(node, get_kernel_shape(node, input_gnode, index));
             }
 
             Strides get_dilations(const Node& node, const std::shared_ptr<graph::GNode> input_gnode)
             {
-                return get_strides_helper(node, "dilations", get_kernel_shape(node, input_gnode));
+                NNFUSION_CHECK(input_gnode->get_output_size() == 1);
+                return get_dilations(node, input_gnode, 0);
+            }
+
+            Strides get_dilations(const Node& node, const std::shared_ptr<graph::GNode> input_gnode, int index)
+            {
+                return get_strides_helper(node, "dilations", get_kernel_shape(node, input_gnode, index));
             }
 
             std::pair<CoordinateDiff, CoordinateDiff> get_pads(const Node& node,

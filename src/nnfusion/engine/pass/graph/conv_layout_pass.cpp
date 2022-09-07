@@ -104,7 +104,7 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::map<std::
             NNFUSION_CHECK(is_cnhw.find(tensor_pair) != is_cnhw.end());
             input_is_cnhw.push_back(is_cnhw[tensor_pair]);
         }
-        std::set<std::string> keep_data_format_ops = {"AvgPool"};
+        std::set<std::string> keep_data_format_ops = {"AvgPool", "MaxPool"};
         if (nnfusion::kernels::cuda::CudaElementOpMap.find(op_type) != nnfusion::kernels::cuda::CudaElementOpMap.end() ||
             keep_data_format_ops.find(op_type) != keep_data_format_ops.end()) {
             bool all_same = true;
@@ -120,15 +120,17 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::map<std::
                     if (input_op_type != "Constant" && input_op_type != "BatchNormInference" && input_op_type != "Broadcast") {
                         if (op_use_cnhw == -1) {
                             op_use_cnhw = input_is_cnhw[i];
-                        } else if (op_use_cnhw != input_is_cnhw[i]) {
-                            NNFUSION_CHECK_FAIL() << *(gnode->get_in_edge(i)->get_src());
+                        } else {
+                            // use cnhw if any input is cnhw
+                            op_use_cnhw |= input_is_cnhw[i];
                         }
                     }
                 }
                 NNFUSION_LOG(INFO) << "use_cnhw " << *gnode << op_use_cnhw;
-                if (op_use_cnhw == -1) op_use_cnhw = 0; // assign nchw layout if all inputs are constant
+                if (op_use_cnhw == -1) op_use_cnhw = 0; // assign nchw layout if all input layouts are undefined
                 if (op_use_cnhw) {
                     for (int i = 0; i < input_is_cnhw.size(); i++) {
+                        if (input_is_cnhw[i] == op_use_cnhw) continue;
                         if (gnode->get_in_edge(i)->get_src()->is_constant()) {
                             auto const_node = gnode->get_in_edge(i)->get_src();
                             auto const_op = std::dynamic_pointer_cast<op::Constant>(const_node->get_op_ptr());
@@ -225,6 +227,13 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::map<std::
                 gnode->construct_from_op_ptr(new_reshape_op);
                 update_output(gnode, false, is_cnhw );
             }
+        } else if (op_type == "Sum") {
+            auto op = std::dynamic_pointer_cast<op::Sum>(gnode->get_op_ptr());
+            AxisSet axis = op->get_reduction_axes();
+            bool reduce_d0 = (axis.find(0) != axis.end());
+            bool reduce_d1 = (axis.find(1) != axis.end());
+            if (reduce_d0 != reduce_d1) NNFUSION_CHECK_FAIL() << "not implemented";
+            update_output(gnode, input_is_cnhw[0], is_cnhw);
         } else if (op_type == "If") {
             auto op = std::dynamic_pointer_cast<op::If>(gnode->get_op_ptr());
             auto is_cnhw_then_branch = is_cnhw;

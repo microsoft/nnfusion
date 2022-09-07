@@ -40,26 +40,28 @@ namespace nnfusion
                                     const NodeMap& all_ng_nodes,
                                     std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                    auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
+                    auto input_gnode_index = GetInputIndex(all_ng_nodes, node_proto, 0);
+                    auto input_gnode = input_gnode_index.gnode;
+                    int input_index = input_gnode_index.index;
                     Node node(node_proto);
 
                     // Parse ONNX op attributes
                     Shape kernel_shape;
                     if (node_proto.op_type().find("Global") != std::string::npos)
                     {
-                        kernel_shape = input_gnode->get_shape();
+                        kernel_shape = input_gnode->get_output_shape(input_index);
                         // Remove N and C dimensions and leave only spatial dims.
                         kernel_shape.erase(std::begin(kernel_shape),
                                            std::next(std::begin(kernel_shape), 2));
                     }
                     else
                     {
-                        kernel_shape = get_kernel_shape(node, input_gnode);
+                        kernel_shape = get_kernel_shape(node, input_gnode, input_index);
                     }
 
-                    auto strides = get_strides(node, input_gnode);
-                    auto dilations = get_dilations(node, input_gnode);
-                    auto paddings = get_pads(node, input_gnode);
+                    auto strides = get_strides(node, input_gnode, input_index);
+                    auto dilations = get_dilations(node, input_gnode, input_index);
+                    auto paddings = get_pads(node, input_gnode, input_index);
 
                     bool count_include_pad =
                         node.get_attribute_value<int64_t>("count_include_pad", 0);
@@ -86,7 +88,7 @@ namespace nnfusion
                     }
 
                     pool_op->set_name(node_proto.output(0));
-                    auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode});
+                    auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode_index});
 
                     NamedNodeVector ret{{node_proto.output(0), pool_gnode}};
                     return ret;

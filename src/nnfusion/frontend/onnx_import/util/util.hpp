@@ -315,6 +315,10 @@ namespace nnfusion
             Shape get_kernel_shape(const Node& node,
                                    const std::shared_ptr<graph::GNode> input_gnode);
 
+            Shape get_kernel_shape(const Node& node,
+                                   const std::shared_ptr<graph::GNode> input_gnode,
+                                   int index);
+
             /// \brief  Get number of pixels to stride operation by in each direction.
             ///
             /// \param node The Node ptr representing Conv or Pool operation.
@@ -328,6 +332,7 @@ namespace nnfusion
             /// \param input_gnode The input gnode
             /// \return The kernel Shape object representing its dimensions (height, width, depth).
             Strides get_strides(const Node& node, const std::shared_ptr<graph::GNode> input_gnode);
+            Strides get_strides(const Node& node, const std::shared_ptr<graph::GNode> input_gnode, int index);
 
             /// \brief Get number of pixels for filter dilation in each direction.
             ///
@@ -337,6 +342,9 @@ namespace nnfusion
             ///         (height, width, depth).
             Strides get_dilations(const Node& node,
                                   const std::shared_ptr<graph::GNode> input_gnode);
+            Strides get_dilations(const Node& node,
+                                  const std::shared_ptr<graph::GNode> input_gnode,
+                                  int index);
 
             /// \brief Get padding values for the operation described by an ONNX node.
             /// \details If `auto_pad` attribute is specified as SAME_UPPER or SAME_LOWER, or VALID
@@ -363,9 +371,16 @@ namespace nnfusion
             ///         pixels to pad in respective dimensions (height, width, depth).
 
             inline std::pair<CoordinateDiff, CoordinateDiff>
+                get_pads(const Node& node, const std::shared_ptr<graph::GNode> input_gnode, int index)
+            {
+                return get_pads(node, get_kernel_shape(node, input_gnode, index));
+            }
+
+            inline std::pair<CoordinateDiff, CoordinateDiff>
                 get_pads(const Node& node, const std::shared_ptr<graph::GNode> input_gnode)
             {
-                return get_pads(node, get_kernel_shape(node, input_gnode));
+                NNFUSION_CHECK(input_gnode->get_output_size() == 1);
+                return get_pads(node, input_gnode, 0);
             }
 
             CoordinateDiff get_auto_pads(const Shape& kernel_shape, const std::string& auto_pad);

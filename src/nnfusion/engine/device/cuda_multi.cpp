@@ -110,7 +110,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
 {
     std::vector<CodeGenerator::Pointer> proj_gens;
     std::unordered_map<std::string, size_t> pool_size;
-    std::string arg_list, arg_vars, codegen_folder, write_to;
+    std::string arg_list, arg_vars, codegen_folder, write_to, header_write_to;
     int graph_cnt = 0;
     for (auto& graph : graphs)
     {
@@ -139,89 +139,113 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
             arg_vars = get_kernel_entry_args(context->m_legacy_tu, false);
             codegen_folder = proj_gens.back()->get_codegen_folder();
             write_to = proj_gens.back()->lup_exec->write_to;
+            header_write_to =
+                proj_gens.back()->lup_codegen->local_symbol["codegen_header"]->write_to;
+        }
+
+        if (graph_cnt + 1 == graphs.size())
+        {
+            remove_extern_c(codegen_folder + write_to);
+
+            {
+                LanguageUnit global_init;
+                LanguageUnit global_free;
+                LanguageUnit global_device_type;
+                LanguageUnit global_workspace_size;
+                global_init << "extern \"C\" void cuda_init()\n{\n";
+                graph_cnt = 0;
+                size_t workspace_size = 0;
+                for (auto graph_cnt = 0; graph_cnt < graphs.size(); graph_cnt++)
+                {
+                    std::string graph_name = "graph_" + to_string(graph_cnt);
+                    for (auto pool : pool_size)
+                    {
+                        if (graph_cnt == 0)
+                        {
+                            global_init << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << graph_name
+                                        << "::" << pool.first << "_memory_pool," << pool.second
+                                        << "));\n";
+                            workspace_size += pool.second;
+                        }
+                        else
+                        {
+                            global_init << graph_name << "::" << pool.first << "_memory_pool = "
+                                        << "graph_0::" << pool.first << "_memory_pool;"
+                                        << "\n";
+                        }
+                    }
+                    global_init << graph_name << "::cuda_init();\n";
+                }
+                global_init << "}\n";
+                global_free << "extern \"C\" void cuda_free() {graph_0::cuda_free();}\n";
+                global_device_type << "int get_device_type() { return 0; }\n";
+                global_workspace_size << "size_t get_workspace_size() { return " << workspace_size
+                                      << "; }\n";
+
+                global_init.write_to = global_free.write_to = global_device_type.write_to =
+                    global_workspace_size.write_to = write_to;
+                global_init.pwd = global_free.pwd = global_device_type.pwd =
+                    global_workspace_size.pwd = codegen_folder;
+                global_init.execute();
+                global_free.execute();
+                global_device_type.execute();
+                global_workspace_size.execute();
+            }
+
+            {
+                LanguageUnit global_sym_methods;
+                LanguageUnit global_sym_defs;
+                LanguageUnit global_entry;
+                global_entry.pwd = codegen_folder;
+                global_entry.write_to = write_to;
+                auto vec_dim_params =
+                    nnfusion::frontend::build_multi_onnx_params_from_string(FLAGS_params);
+                global_entry << "extern \"C\" int kernel_entry(";
+                global_entry << arg_list;
+                global_entry << ")\n{\n";
+                graph_cnt = 0;
+                auto first_params = vec_dim_params[0];
+                 for (auto param : first_params)
+                {
+                    global_sym_defs << "extern \"C\" void set_" << param.first << "(int);\n"
+                                    << "extern \"C\" int get_" << param.first << "();\n";
+                    global_sym_methods << "int " << param.first << ";\n"
+                                       << "extern \"C\" void set_" << param.first << "(int s) { "
+                                       << param.first << " = s; }\n"
+                                       << "extern \"C\" int get_" << param.first << "() { return "
+                                       << param.first << "; }\n";
+                }
+                for (auto dim_params : vec_dim_params)
+                {
+                    std::string condition = "";
+                    for (auto param : dim_params)
+                    {
+                        if (!condition.empty())
+                            condition += " && ";
+                         condition += "get_" + param.first + "() == " + to_string(param.second);
+                    }
+                    global_entry << "if(" << condition << ")\n{\n";
+                    global_entry << "graph_" << graph_cnt << "::kernel_entry(" + arg_vars + ");\n";
+                    global_entry << "}\n";
+                    graph_cnt++;
+                }
+                global_entry << "return 0;\n}\n";
+                global_entry.execute();
+
+                global_entry << "\n" << global_sym_methods.get_code();
+                global_entry.execute();
+
+                global_sym_defs.write_to = header_write_to;
+                global_sym_defs.pwd = codegen_folder;
+                global_sym_defs.execute();
+            }
             cmcpp.invoke_after_projgen();
+            break;
         }
 
         graph_cnt++;
     }
 
-    remove_extern_c(codegen_folder + write_to);
-
-    {
-        LanguageUnit global_init;
-        LanguageUnit global_free;
-        LanguageUnit global_device_type;
-        LanguageUnit global_workspace_size;
-        global_init << "extern \"C\" void cuda_init()\n{\n";
-        graph_cnt = 0;
-        size_t workspace_size = 0;
-        for (auto graph_cnt = 0; graph_cnt < graphs.size(); graph_cnt++)
-        {
-            std::string graph_name = "graph_" + to_string(graph_cnt);
-            for (auto pool : pool_size)
-            {
-                if (graph_cnt == 0)
-                {
-                    global_init << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << graph_name
-                                << "::" << pool.first << "_memory_pool," << pool.second << "));\n";
-                    workspace_size += pool.second;
-                }
-                else
-                {
-                    global_init << graph_name << "::" << pool.first << "_memory_pool = "
-                                << "graph_0::" << pool.first << "_memory_pool;"
-                                << "\n";
-                }
-            }
-            global_init << graph_name << "::cuda_init();\n";
-        }
-        global_init << "}\n";
-        global_free << "extern \"C\" void cuda_free() {graph_0::cuda_free();}\n";
-        global_device_type << "int get_device_type() { return 0; }\n";
-        global_workspace_size << "size_t get_workspace_size() { return " << workspace_size
-                              << "; }\n";
-
-        global_init.write_to = global_free.write_to = global_device_type.write_to =
-            global_workspace_size.write_to = write_to;
-        global_init.pwd = global_free.pwd = global_device_type.pwd = global_workspace_size.pwd =
-            codegen_folder;
-        global_init.execute();
-        global_free.execute();
-        global_device_type.execute();
-        global_workspace_size.execute();
-    }
-
-    {
-        LanguageUnit global_entry;
-        global_entry.pwd = codegen_folder;
-        global_entry.write_to = write_to;
-        auto vec_dim_params = nnfusion::frontend::build_multi_onnx_params_from_string(FLAGS_params);
-        global_entry << "extern \"C\" int kernel_entry(";
-        global_entry << arg_list;
-        global_entry << ")\n{\n";
-        graph_cnt = 0;
-        auto first_params = vec_dim_params[0];
-        for (auto param : first_params)
-        {
-            global_entry << "int " << param.first << " = 0;\n";
-        }
-        for (auto dim_params : vec_dim_params)
-        {
-            std::string condition = "";
-            for (auto param : dim_params)
-            {
-                if (!condition.empty())
-                    condition += " && ";
-                condition += param.first + " == " + to_string(param.second);
-            }
-            global_entry << "if(" << condition << ")\n{\n";
-            global_entry << "graph_" << graph_cnt << "::kernel_entry(" + arg_vars + ");\n";
-            global_entry << "}\n";
-            graph_cnt++;
-        }
-        global_entry << "return 0;\n}\n";
-        global_entry.execute();
-    }
     return true;
 }
 

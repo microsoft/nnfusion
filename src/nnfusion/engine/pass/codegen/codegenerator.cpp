@@ -278,7 +278,7 @@ bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
         if (lu->symbol.find("header::") > lu->symbol.length() &&
             lu->symbol.find("macro::") > lu->symbol.length() &&
             lu->symbol.find("declaration::typedef") > lu->symbol.length() &&
-            lu->write_to == "nnfusion_rt" + m_kernel_suffix)
+            (lu->write_to == "nnfusion_rt" + m_kernel_suffix || lu->write_to == "runtime.cpp"))
         {
             if (dynamic_pointer_cast<CodegenMainBlockUnit>(lu) != nullptr)
             {
@@ -327,11 +327,11 @@ bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
     {
         if (clean)
             clear_file(lu->pwd, lu->write_to);
-        else if (lu->write_to != "nnfusion_rt" + m_kernel_suffix)
+        else if (lu->write_to != "nnfusion_rt" + m_kernel_suffix && lu->write_to != "runtime.cpp" && lu->pwd.find("HLSL") > lu->pwd.length())
             continue;
         if (!ns.empty())
             add_namespace(lu);
-        std::string search_name = lu->symbol + "_" + lu->pwd + "_" + lu->write_to;
+        std::string search_name = lu->symbol + "_" + lu->pwd + "_" + lu->write_to + (ns == "" ? "" : "_"+ns);
         if (executed.find(search_name) == executed.end())
         {
             lu->execute();
@@ -499,7 +499,6 @@ bool CodeGenerator::codegen()
     {
         clear_file(lu->pwd, lu->write_to);
         std::string search_name = lu->symbol + "_" + lu->pwd + "_" + lu->write_to;
-        NNFUSION_LOG(INFO) << search_name << "\t";
         if (executed.find(search_name) == executed.end())
         {
             lu->execute();

@@ -211,7 +211,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                 fname = "compressed_src_" + std::to_string(hashcode);
                             }
 
-                            std::string file = "file://HLSL/" + fname + m_kernel_suffix;
+                            auto end = m_kernel_folder.find_last_of('/');
+                            auto last_end = m_kernel_folder.find_last_of('/', end - 1);
+                            auto folder_name = m_kernel_folder.substr(last_end + 1, end - last_end);
+                            std::string file = "file://" + folder_name + fname + m_kernel_suffix;
 
                             std::string load_str =
                                 module_name + " = dxModuleLoad(\"" + file + "\");\n";
@@ -875,4 +878,17 @@ LanguageUnit_p HLSLCPPCodegenPass::get_h2dcopy(std::shared_ptr<TranslationUnit> 
 LanguageUnit_p HLSLCPPCodegenPass::get_sync()
 {
     return std::make_shared<LanguageUnit>("device_sync", "dxStreamSynchronize(0);\n");
+}
+
+bool HLSLMultiCodegenPassPre::run(std::shared_ptr<InterpreterContext> ctx,
+                                  std::shared_ptr<TranslationUnit> tu)
+{
+    initialize(ctx, tu);
+    NNFUSION_CHECK(collect_mem(ctx, tu));
+    NNFUSION_CHECK(collect_stream(ctx, tu));
+    NNFUSION_CHECK(collect_funcs(ctx, tu));
+    // projgen->codegen();
+    // NNFUSION_CHECK(modify_codegen());
+    NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " done.";
+    return true;
 }

@@ -202,9 +202,11 @@ int main(int argc, char** argv)
         NNFUSION_LOG(INFO) << "Graph count: " << vec_graph.size() << "\n";
         //nnfusion::engine::MultiCudaEngine multi_cuda_engine;
         nnfusion::engine::CudaMultiEngine cuda_multi_engine;
+        nnfusion::engine::HLSLMultiEngine hlsl_multi_engine;
         switch (get_device_type(FLAGS_fdefault_device))
         {
         case CUDA_GPU: cuda_multi_engine.run_on_graphs(vec_graph); break;
+        case HLSL: hlsl_multi_engine.run_on_graphs(vec_graph); break;
         }
     }
     return 0;

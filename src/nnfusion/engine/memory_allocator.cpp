@@ -471,7 +471,7 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
     auto& lu = *_lu;
     if (m_max_allocated > 0)
     {
-        if (!FLAGS_ffunction_codegen)
+        if (!FLAGS_ffunction_codegen && !FLAGS_fmulti_shape)
             lu << this->get_name() << "_memory_pool = dxMemAlloc(" << m_max_allocated << ");\n";
         for (auto tensor : m_allocated_tensors)
         {

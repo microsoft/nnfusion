@@ -62,7 +62,6 @@ void BaseCodegenPass::separate_func_defs_files(int file_number, const string& ke
 {
     if (kernel_folder != m_kernel_folder)
         change_kernel_folder(kernel_folder);
-
     if (file_number <= 0)
     {
         for (auto it : kernel_func_defs)

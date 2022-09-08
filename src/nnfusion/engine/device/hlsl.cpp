@@ -381,8 +381,8 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 auto first_params = vec_dim_params[0];
                 for (auto param : first_params)
                 {
-                    global_sym_defs << "extern \"C\" void set_" << param.first << "(int);\n"
-                                    << "extern \"C\" int get_" << param.first << "();\n";
+                    global_sym_defs << "extern \"C\" RUNTIME_API void set_" << param.first << "(int);\n"
+                                    << "extern \"C\" RUNTIME_API int get_" << param.first << "();\n";
                     global_sym_methods << "int " << param.first << ";\n"
                                        << "extern \"C\" void set_" << param.first << "(int s) { "
                                        << param.first << " = s; }\n"

@@ -270,7 +270,7 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                                     EngineContext::Pointer pass_context)
 {
     std::vector<CodeGenerator::Pointer> proj_gens;
-    std::unordered_map<std::string, size_t> pool_size;
+    std::vector<std::unordered_map<std::string, size_t>> vec_pool_size(graphs.size());
     std::string arg_list, arg_vars, codegen_folder, write_to, header_write_to;
     int graph_cnt = 0;
     for (auto& graph : graphs)
@@ -292,10 +292,7 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
         auto& allocator_list = context->m_legacy_tu->memory_allocator_factory->get_allocator_list();
         for (auto alloc : allocator_list)
         {
-            if (pool_size.find(alloc.second->get_name()) != pool_size.end())
-                pool_size[alloc.second->get_name()] = 0;
-            pool_size[alloc.second->get_name()] =
-                max(alloc.second->max_allocated(), pool_size[alloc.second->get_name()]);
+            vec_pool_size[graph_cnt][alloc.second->get_name()] = alloc.second->max_allocated();
         }
 
         if (graph_cnt == 0)
@@ -318,12 +315,13 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 LanguageUnit global_device_type;
                 LanguageUnit global_workspace_size;
                 global_init << "extern \"C\" void hlsl_init()\n";
+                global_free << "extern \"C\" void hlsl_free() { \n";
                 size_t workspace_size = 0;
                 global_init.block_begin();
                 for (graph_cnt = 0; graph_cnt < graphs.size(); graph_cnt++)
                 {
                     std::string graph_name = "graph_" + to_string(graph_cnt);
-                    for (auto pool : pool_size)
+                    for (auto pool : vec_pool_size[graph_cnt])
                     {
                         if (graph_cnt == 0)
                         {
@@ -333,16 +331,26 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                         }
                         else
                         {
-                            global_init << graph_name << "::" << pool.first << "_memory_pool = "
+                            if(pool.first.find("persist") < pool.first.length())
+                            {
+                                global_init << graph_name << "::" << pool.first << "_memory_pool = "
                                         << "graph_0::" << pool.first << "_memory_pool;"
                                         << "\n";
+                            }
+                            else 
+                            {
+                                global_init << graph_name << "::" << pool.first
+                                        << "_memory_pool = dxMemAlloc(" << pool.second << ");\n";
+                                workspace_size += pool.second;
+                                global_free << "\tdxMemFree(" << graph_name << "::" << pool.first << ");\n";
+                            }
                         }
                     }
                     global_init << graph_name << "::hlsl_init();\n";
                 }
                 global_init.block_end();
                 global_init << "\n";
-                global_free << "extern \"C\" void hlsl_free() { graph_0::hlsl_free(); }\n\n";
+                global_free << "\tgraph_0::hlsl_free();\n}\n\n";
                 global_device_type << "int get_device_type() { return 3; }\n\n";
                 global_workspace_size << "size_t get_workspace_size() { return " << workspace_size
                                       << "; }\n\n";

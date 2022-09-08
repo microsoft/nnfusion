@@ -124,6 +124,38 @@ void Reshape::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
             m_is_layout_change = true;
         }
     }
+
+    auto in_shape = input_shape.to_shape();
+    if (in_shape.get_sym_shape())
+    {
+        auto out_sym_shape = std::make_shared<SymShape>();
+        auto j = 0;
+        for (auto i = 0; i < m_output_shape.size(); i++)
+        {
+            if (m_output_shape[i] == in_shape[m_input_order[j]])
+            {
+                out_sym_shape->push_back(in_shape.get_sym_shape()->at(m_input_order[j]));
+                j++;
+            }
+            else if (in_shape[m_input_order[j]] == 1)
+            {
+                j++;
+                continue;
+            }
+            else if (m_output_shape[i] == 1)
+            {
+                out_sym_shape->push_back(1);
+            }
+            else
+            {
+                NNFUSION_CHECK(false)
+                    << "Non-transpose symbolic reshape error: input=" << input_shape
+                    << ", output=" << m_output_shape;
+            }
+        }
+        m_output_shape.set_sym_shape(out_sym_shape);
+    }
+
     gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), m_output_shape);
 }
 

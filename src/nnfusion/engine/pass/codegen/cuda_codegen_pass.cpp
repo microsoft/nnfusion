@@ -151,6 +151,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     {
         auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
         lu_exec_init << "// kernel_entry_init\n";
+        lu_exec_init << codegen_global_symbols(tu)->get_code();
         // emit memset
         for (const auto& allocator : allocator_list)
         {

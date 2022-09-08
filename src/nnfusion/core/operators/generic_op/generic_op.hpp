@@ -14,7 +14,7 @@
     static nnfusion::op::OpConfig __register_op_##op_x = nnfusion::op::build_op_config(#op_x)
 #define GENERIC_OP_LOGGING()                                                                       \
     NNFUSION_LOG(DEBUG) << "[GENERIC_OP_LOGGING] " << __FILE__ << ": " << __PRETTY_FUNCTION__;
-
+DECLARE_bool(fsymbolic);
 namespace nnfusion
 {
     namespace op
@@ -311,7 +311,17 @@ namespace nnfusion
             auto shape = tensor->get_shape();
             if (shape.size() == 0)
                 shape = {1};
-            config[alias_name + "_shape"] = vector_to_string(shape);
+            std::string str;
+            if (FLAGS_fsymbolic && shape.get_sym_shape() && shape.get_sym_shape()->is_dynamic())
+            {
+                str = vector_to_string(*shape.get_sym_shape());
+            }
+            else
+            {
+                str = vector_to_string(shape);
+            }
+            config[alias_name + "_shape"] = str;
+            //config[alias_name + "_shape"] = vector_to_string(shape.get_sym_shape()->is_dynamic() ? (*shape.get_sym_shape()) : shape);
         }
 
         class GenericOp : public Op
@@ -340,6 +350,10 @@ namespace nnfusion
 
                 localOpConfig.check_constrait();
             }
+            GenericOp(const std::string& name, const std::string& opname)
+                : Op(opname)
+            {
+            }
 
             virtual nnfusion::json serialize() { return localOpConfig.getRoot(); }
             virtual void deserialize(const nnfusion::json& _json)
@@ -349,8 +363,19 @@ namespace nnfusion
 
             virtual void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override
             {
+                NNFUSION_LOG(INFO) << "======: Infershape with IR: " << gnode->get_name() << " "
+                                   << gnode->get_op_type();
+                bool has_symbolic_shape = false;
+                // for (auto input : gnode->get_inputs())
+                // {
+                //     if (input->get_shape().is_dynamic())
+                //     {
+                //         has_symbolic_shape = true;
+                //         break;
+                //     }
+                // }
                 localOpConfig.check_constrait();
-                if (localOpConfig.f_infershape != nullptr &&
+                if (!has_symbolic_shape && localOpConfig.f_infershape != nullptr &&
                     localOpConfig.f_infershape !=
                         nnfusion::op::infershape::unimplemented_and_not_used)
                     localOpConfig.f_infershape(gnode);
@@ -370,6 +395,7 @@ namespace nnfusion
                     // Infershape with Antares IR (only for Opv2)
                     nnfusion::kernels::AntaresKEImp ke;
                     auto result = ke.autogen(get_translation(gnode));
+                    NNFUSION_LOG(INFO) << "==========DEBUG:" << get_translation(gnode);
                     if (result.first == "")
                         throw std::runtime_error("No infershape or Antares IR found for op type: " +
                                                  gnode->get_op_type());

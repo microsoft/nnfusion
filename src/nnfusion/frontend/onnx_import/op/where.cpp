@@ -24,6 +24,10 @@
 #include "nnfusion/core/graph/util/numpy_transpose.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
+DEFINE_bool(ffold_where,
+            false,
+            "A hack implementation to fold where op in attention model where seq = 1");
+
 namespace nnfusion
 {
     namespace frontend
@@ -40,6 +44,11 @@ namespace nnfusion
                     auto cond_gnode = input_indices[0];
                     auto x_gnode = input_indices[1];
                     auto y_gnode = input_indices[2];
+                    if (FLAGS_ffold_where && x_gnode.gnode->get_op_type() == "Reshape" &&
+                        y_gnode.gnode->get_op_type() == "Constant")
+                    {
+                        return {{node_proto.output(0), x_gnode}};
+                    }
 
                     std::tie(x_gnode, y_gnode) =
                         graph::numpy_broadcast(std::make_pair(x_gnode, y_gnode), m_graph);

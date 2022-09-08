@@ -8,6 +8,7 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 DECLARE_string(fhlsl_codegen_type);
+DECLARE_bool(fsymbolic);
 
 LanguageUnit_p hlsl::HLSLKernelEmitter::emit_dependency()
 {
@@ -28,6 +29,46 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_body()
     return _lu;
 }
 
+void hlsl::AntaresHLSLKernelEmitter::find_launch_config(
+    const std::string& str, std::map<std::string, std::string>& symbol_expr, std::string& blockNum)
+{
+    // find dynamic blocks for symbolic inputs
+    if (symbol_expr.size() > 0)
+    {
+        std::vector<std::string> sym_args;
+        for (auto& p : symbol_expr)
+        {
+            sym_args.push_back(p.second);
+        }
+
+        int pos = str.find("// [thread_extent] $$ = ");
+        int block_base =
+            (pos >= 0) ? std::atoi(str.data() + pos + sizeof("// [thread_extent] $$ = ") - 1) : 1;
+        if (block_base == -1)
+            block_base = 1;
+
+        blockNum = std::to_string(block_base);
+        int arg_idx = 0;
+        int check_value = block_base;
+        while (true)
+        {
+            std::string target = "// [thread_extent] $" + std::to_string(arg_idx) + " = ";
+            pos = str.find(target);
+            if (pos == std::string::npos)
+                break;
+            int value = std::atoi(str.data() + pos + target.size());
+            std::string value_str(str.data() + pos + target.size());
+            if (value > 0)
+            {
+                NNFUSION_CHECK(arg_idx < sym_args.size());
+                blockNum = blockNum + " * ceil(float(" + sym_args[arg_idx] + ") / " +
+                           std::to_string(value) + ")";
+            }
+            arg_idx++;
+        }
+    }
+}
+
 LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
@@ -38,7 +79,9 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
         std::string kernel_name = get_function_name() + "_kernel_names";
         std::string kernel_names_args = "std::string " + kernel_name + "[] = { ";
         std::string args_name = get_function_name() + "_args";
+        std::string block_name = get_function_name() + "_num_blocks";
         std::string args = "void** " + args_name + "[] = { ";
+        std::string blocks = "int " + block_name + "[] = { ";
         std::string module_args;
         for (size_t i = 0; i < kernel_info.size(); i++)
         {
@@ -68,16 +111,67 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
                     module_args += ", ";
                 }
             }
+            std::string num_block = std::to_string(-1);
+            if (FLAGS_fsymbolic)
+            {
+                // parse symbolic args
+                std::map<std::string, std::string> symbol_expr;
+                NNFUSION_CHECK(kernel_info.size() == 1)
+                    << "Symbolic kenrel currently only support single kernel!";
+                for (size_t i = 0; i < m_context->inputs.size(); i++)
+                {
+                    auto shape = m_context->inputs[i]->get_shape();
+                    if (shape.is_dynamic())
+                    {
+                        for (auto dim : *(shape.get_sym_shape()))
+                        {
+                            if (dim.is_dynamic())
+                            {
+                                symbol_expr[dim.expr_to_symbol(dim.sym())] = dim.sym();
+                            }
+                        }
+                    }
+                }
+                for (size_t i = 0; i < m_context->outputs.size(); i++)
+                {
+                    auto shape = m_context->outputs[i]->get_shape();
+                    if (shape.is_dynamic())
+                    {
+                        for (auto dim : *(shape.get_sym_shape()))
+                        {
+                            if (dim.is_dynamic())
+                            {
+                                symbol_expr[dim.expr_to_symbol(dim.sym())] = dim.sym();
+                            }
+                        }
+                    }
+                }
+
+                // the key is sortted by std::map
+                for (auto& p : symbol_expr)
+                {
+                    module_args = module_args + ", (void*)(long)(" + p.second + ")";
+                }
+                // TODO: for multiple kernel, use corrsponding code instead of full antares code
+                find_launch_config(antares_code, symbol_expr, num_block);
+            }
             module_args += " };\n";
+            blocks += num_block;
+            if (i != kernel_info.size() - 1)
+            {
+                blocks += ", ";
+            }
         }
         kernel_names_args += " };\n";
         args += " };\n";
+        blocks += " };\n";
 
         lu << kernel_names_args;
         lu << module_args;
         lu << args;
+        lu << blocks;
         lu << "dxModuleLaunchAsync(" << get_function_name() << "_module, " << kernel_name << ", "
-           << args_name << ", "
+           << args_name << ", " << block_name << ", "
            << "std::size(" << args_name << "));\n";
     }
     else if (FLAGS_fhlsl_codegen_type == "csharp")

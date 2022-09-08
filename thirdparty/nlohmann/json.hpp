@@ -174,7 +174,7 @@ Exceptions have ids 1xx.
 name / id                      | example message | description
 ------------------------------ | --------------- | -------------------------
 json.exception.parse_error.101 | parse error at 2: unexpected end of input; expected string literal | This error indicates a syntax error while deserializing a JSON text. The error message describes that an unexpected token (character) was encountered, and the member @a byte indicates the error position.
-json.exception.parse_error.102 | parse error at 14: missing or wrong low surrogate | JSON uses the `\uxxxx` format to describe Unicode characters. Code points above above 0xFFFF are split into two `\uxxxx` entries ("surrogate pairs"). This error indicates that the surrogate pair is incomplete or contains an invalid code point.
+json.exception.parse_error.102 | parse error at 14: missing or wrong low surrogate | JSON uses the `\uxxxx` format to describe Unicode characters. Code points above 0xFFFF are split into two `\uxxxx` entries ("surrogate pairs"). This error indicates that the surrogate pair is incomplete or contains an invalid code point.
 json.exception.parse_error.103 | parse error: code points above 0x10FFFF are invalid | Unicode supports code points up to 0x10FFFF. Code points above 0x10FFFF are invalid.
 json.exception.parse_error.104 | parse error: JSON patch must be an array of objects | [RFC 6902](https://tools.ietf.org/html/rfc6902) requires a JSON Patch document to be a JSON document that represents an array of objects.
 json.exception.parse_error.105 | parse error: operation must have string member 'op' | An operation of a JSON Patch document must contain exactly one "op" member, whose value indicates the operation to perform. Its value must be one of "add", "remove", "replace", "move", "copy", or "test"; other values are errors.
@@ -1338,7 +1338,7 @@ value with the default value for a given type
             number_integer,  ///< number value (signed integer)
             number_unsigned, ///< number value (unsigned integer)
             number_float,    ///< number value (floating-point)
-            discarded        ///< discarded by the the parser callback function
+            discarded        ///< discarded by the parser callback function
         };
 
         /*!
@@ -18387,7 +18387,7 @@ Format](http://rfc7159.net/rfc7159)
 
     @throw type_error.309 if called on JSON values other than objects; example:
     `"cannot use insert() with string"`
-    @throw invalid_iterator.202 if iterator @a first or @a last does does not
+    @throw invalid_iterator.202 if iterator @a first or @a last does not
     point to an object; example: `"iterators first and last must point to
     objects"`
     @throw invalid_iterator.210 if @a first and @a last do not belong to the
@@ -18474,7 +18474,7 @@ Format](http://rfc7159.net/rfc7159)
         /*!
     @brief updates a JSON object from another object, overwriting existing keys
 
-    Inserts all values from from range `[first, last)` and overwrites existing
+    Inserts all values from range `[first, last)` and overwrites existing
     keys.
 
     @param[in] first begin of the range of elements to insert
@@ -18482,7 +18482,7 @@ Format](http://rfc7159.net/rfc7159)
 
     @throw type_error.312 if called on JSON values other than objects; example:
     `"cannot use update() with string"`
-    @throw invalid_iterator.202 if iterator @a first or @a last does does not
+    @throw invalid_iterator.202 if iterator @a first or @a last does not
     point to an object; example: `"iterators first and last must point to
     objects"`
     @throw invalid_iterator.210 if @a first and @a last do not belong to the
@@ -20379,7 +20379,7 @@ Format](http://rfc7159.net/rfc7159)
 
     Uses a JSON pointer to retrieve a reference to the respective JSON value.
     No bound checking is performed. The function does not change the JSON
-    value; no `null` values are created. In particular, the the special value
+    value; no `null` values are created. In particular, the special value
     `-` yields an exception.
 
     @param[in] ptr  JSON pointer to the desired element

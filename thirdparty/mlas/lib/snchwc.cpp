@@ -153,7 +153,7 @@ Return Value:
 --*/
 {
     //
-    // Extract and skip over the the batch and channel counts.
+    // Extract and skip over the batch and channel counts.
     //
 
     WorkBlock->BatchCount = size_t(InputShape[0]);

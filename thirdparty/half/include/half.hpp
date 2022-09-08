@@ -2286,7 +2286,7 @@ namespace half_float
 	{
 		/// Half literal.
 		/// While this returns a properly rounded half-precision value, half literals can unfortunately not be constant 
-		/// expressions due to rather involved conversions. So don't expect this to be a literal literal without involving 
+		/// expressions due to rather involved conversions. So don't expect this to be a literal without involving 
 		/// conversion operations at runtime. It is a convenience feature, not a performance optimization.
 		/// \param value literal value
 		/// \return half with of given value (possibly rounded)

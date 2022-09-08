@@ -4,7 +4,7 @@ from math import ceil
 import sys
 import os
 import numpy as np
-from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_antares_type_str, read_file, replace_tempalte_args
+from __operator__ import OperatorBase, OperatorTestBase, get_type_info, get_antares_type_str, read_file, replace_template_args
 
 
 class TopK(OperatorBase):
@@ -40,7 +40,7 @@ class TopK(OperatorBase):
             self.__block_max_element__ = self.get_block_max_element(self.input_dtype_0)
             # Maximum elements for one sequence in one block
             self.__block_max_seq_element__ = self.__block_max_element__ // 2
-            # Stride between two elements in orginal 
+            # Stride between two elements in original 
             self.__axis_stride__ = 1 
             for r in range(self.axis+1, len(self.input_shape_0)):
                 self.__axis_stride__ *= self.input_shape_0[r]
@@ -99,7 +99,7 @@ class TopK(OperatorBase):
     def attach_directx_hlsl_kernel(self):
         topkconf = self.TopKConfig(self)
         in_block_kernel = read_file("hlsl/topk/topk.hlsl")
-        self.in_block_kernel = replace_tempalte_args(in_block_kernel, topkconf)
+        self.in_block_kernel = replace_template_args(in_block_kernel, topkconf)
 
         self["hlsl_kernel"] = "\n".join([self.in_block_kernel])
         self["launch_config"] = [[topkconf.__greater_blocks__, 1, 1], [topkconf.__threads__, 1, 1]]

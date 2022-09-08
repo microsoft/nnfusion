@@ -13,7 +13,7 @@ mask. For example:
 [MASK] ##mon ' s head`
 
 The new technique is called Whole Word Masking. In this case, we always mask
-*all* of the the tokens corresponding to a word at once. The overall masking
+*all* of the tokens corresponding to a word at once. The overall masking
 rate remains the same.
 
 `Whole Word Masked Input: the man [MASK] up , put his basket on [MASK] [MASK]

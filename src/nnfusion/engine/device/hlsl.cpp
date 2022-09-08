@@ -342,7 +342,7 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                                 global_init << graph_name << "::" << pool.first
                                         << "_memory_pool = dxMemAlloc(" << pool.second << ");\n";
                                 workspace_size += pool.second;
-                                global_free << "\tdxMemFree(" << graph_name << "::" << pool.first << ");\n";
+                                global_free << "\tdxMemFree(" << graph_name << "::" << pool.first << "_memory_pool);\n";
                             }
                         }
                     }

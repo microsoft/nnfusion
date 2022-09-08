@@ -59,7 +59,7 @@ class CodeGeneratorR:
     #ii, ii_n = sch[shared].split(ii, factor=2)
     sch[shared].vectorize(ii_n)
     sch[shared].reorder(oo, ii, ii_n)
-    # sch[shared].unroll(oo)
+    sch[shared].unroll(oo)
     # sch[shared].unroll(ii_n)
     sch[shared].bind(ii, te.thread_axis('threadIdx.x'))
 

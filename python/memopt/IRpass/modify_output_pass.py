@@ -10,8 +10,6 @@ def modify_output_pass(f, mod, ctx):
 
     def process(op):
         nonlocal buffer_map
-        lhs_name = op.buffer.name
-        lhs_shape = op.buffer.shape
         indices = op.indices
         if op.buffer in target_buffer:
             new_indices = [tvm.tir.stmt_functor.substitute(expr, blockIdx_var_map) for expr in indices]
@@ -20,9 +18,14 @@ def modify_output_pass(f, mod, ctx):
             assert op.buffer not in buffer_map
             assert all([bound.min_value == 0 for bound in indices_bound])
             assert all([bound.max_value < 1e9 for bound in indices_bound])
-            num_bytes = np.prod(shape) * (int(tvm.DataType(op.buffer.dtype).bits) // 8)
+            if op.buffer.name in get_scope().strides:
+                strides = get_scope().strides[op.buffer.name]
+                num_bytes = shape[0] * strides[0] * (int(tvm.DataType(op.buffer.dtype).bits) // 8)
+            else:
+                strides = op.buffer.strides
+                num_bytes = np.prod(shape) * (int(tvm.DataType(op.buffer.dtype).bits) // 8)
             get_scope().exteral_shared_memroy_size[target_buffer[op.buffer]] = num_bytes
-            buffer = tvm.tir.decl_buffer(shape, op.buffer.dtype, op.buffer.name, op.buffer.data, op.buffer.strides,
+            buffer = tvm.tir.decl_buffer(shape, op.buffer.dtype, op.buffer.name, op.buffer.data, strides,
                 op.buffer.elem_offset, op.buffer.scope, op.buffer.data_alignment, op.buffer.offset_factor)
             buffer_map[op.buffer] = buffer
             op = tvm.tir.BufferStore(buffer, op.value, new_indices, op.span)

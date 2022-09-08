@@ -84,17 +84,22 @@ class CodeGenerator():
             config = configs[op]
             shared_inputs_idx = [edge.dst_id for edge in filter(
                 lambda edge : not edge.src_node.is_placeholder(), op.inputs)]
-            shared_outputs_idx = [edge.src_id + len(op.inputs) for edge in filter(
-                lambda edge : not edge.dst_node.is_output(), op.outputs)]
-            shared_outputs_idx = list(set(shared_outputs_idx)) # may have multiple consumers
+            shared_outputs_idx = list({edge.src_id + len(op.inputs) for edge in filter(
+                lambda edge : not edge.dst_node.is_output(), op.outputs)}) # use set, may have multiple consumers
             shared_inputs = [op.args[idx].name for idx in shared_inputs_idx]
 
             sch = Scheduler().rewrite_schedule(op.create_schedule(), config, shared_inputs=shared_inputs)
             with Scope(sch) as scope:
-                # generate kernel code for each node
-                func_name = "_".join([self.kernel_name, str(len(statements)), op.name])
+                # Some inputs which will be used later cannot be overwritten by other internal shared memory,
+                # so we must put these tensor in reuse_disabled_inputs.
+                # Inputs that will be freed after this kernel can be overwritten and reused in this kernel.
+                reuse_disabled_inputs = [op.args[idx].name for idx in filter(
+                    lambda idx: not self._can_free(op.inputs[idx].src_node, op.inputs[idx].src_id), shared_inputs_idx)]
+                # generate the kernel code for this node
+                func_name = "_".join([self.kernel_name, str(len(statements)), op.name]) # unique globally
                 kernel_code = tvm_build(sch, op.args, target, shared_outputs_idx, shared_inputs, name=func_name, global_kernel=False,
-                    block_reorder=config["block_reorder"] if "block_reorder" in config else None)
+                    block_reorder=config["block_reorder"] if "block_reorder" in config else None,
+                    strides=config["strides"] if "strides" in config else {}, reuse_disabled_inputs=reuse_disabled_inputs)
                 kernel_codes.append(kernel_code)
                 if self.block_size is None:
                     self.block_size, self.grid_size = scope.block_size, scope.grid_size
@@ -104,8 +109,8 @@ class CodeGenerator():
                 # make memory plan
                 internal_shared_mem = self.allocator.malloc(scope.total_internal_shared_memory)
                 for idx in shared_inputs_idx:
-                    src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
-                    if self._can_free(src_node, src_id):
+                    if op.args[idx].name not in reuse_disabled_inputs:
+                        src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
                         self.allocator.free(block_map[(src_node, src_id)])
                 self.allocator.free(internal_shared_mem)
                 for idx in shared_outputs_idx:

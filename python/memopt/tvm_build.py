@@ -50,22 +50,21 @@ def get_block_reorder_code(block_reoder_expr: tvm.tir.PrimExpr) -> str:
 
 def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.target.Target,
               sm_outputs=[], sm_inputs=[], name=_tvm_default_name,
-              global_kernel=True, block_reorder=None, flatten_block=True) -> str:
+              global_kernel=True, block_reorder=None, strides={}, flatten_block=True, reuse_disabled_inputs=[]) -> str:
     scope = get_scope()
     passes = [
         (0, modify_output_pass),
         (0, modify_input_pass),
         (1, check_memory_access_pass),
     ]
-    disabled_pass = ["tir.StorageRewrite"] if sm_inputs else []
     assert(isinstance(sm_outputs, (tuple, list)))
     assert(isinstance(sm_inputs, (tuple, list)))
     func_args = ", ".join(["{}* __restrict__ {}".format(_type_map[var.dtype], get_valid_name(var)) for var in args])
-    with tvm.transform.PassContext(
-        config={"tir.add_lower_pass": passes}, disabled_pass=disabled_pass):
+    with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
         scope.shared_mem_outputs = sm_outputs
         scope.shared_mem_inputs = sm_inputs
-
+        scope.reuse_disabled_inputs = reuse_disabled_inputs
+        scope.strides = strides
         old_entry = tvm.get_global_func("tvm_callback_cuda_compile")
         tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
         mod = tvm.build(sch, args, target=target)

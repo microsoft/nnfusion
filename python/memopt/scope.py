@@ -6,11 +6,22 @@ class Scope(Dict):
     _thread_local = threading.local()
     def __init__(self, schedule):
         self.schedule = schedule
-        self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
-        self.shared_mem_outputs = []
+        # --------------------------------provided args before compile -----------------------------------------
+        # shared input argument names e.g. ["input0", "input2"]
         self.shared_mem_inputs = []
+        # shared output argument INDEX e.g. [3]
+        self.shared_mem_outputs = []
+        # subset of shared mem outputs e.g. ["input0"]
+        self.reuse_disabled_inputs = []
+        # strides info e.g. {"output0" : [72, 1]}
+        self.strides = {}
+        # --------------------------------return after compile -----------------------------------------
+        # indicates extra workspace allocated for the kernel
         self.total_internal_shared_memory = 0
+        # indicates output tensor allocation, format {x : bytes for x in self.shared_mem_outputs}
         self.exteral_shared_memroy_size = {}
+
+        self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
         self._build_analyzer()
         self._get_grid_block_size()
 
@@ -45,5 +56,18 @@ class Scope(Dict):
         del Scope._thread_local.scope
 
 def get_scope() -> Scope:
-    assert hasattr(Scope._thread_local, "scope"), "No scope has been entered"
+    if not hasattr(Scope._thread_local, "scope"):
+        return None
     return Scope._thread_local.scope
+
+@tvm._ffi.register_func("memopt.is_independent_alloc")
+def get_independent_alloc(tensor_name):
+    if get_scope() is None:
+        return False
+    return tensor_name in  [x + ".shared" for x in get_scope().shared_mem_inputs]
+
+@tvm._ffi.register_func("memopt.is_reuse_disabled")
+def get_noreuse_alloc(tensor_name):
+    if get_scope() is None:
+        return False
+    return tensor_name in [x + ".shared" for x in get_scope().reuse_disabled_inputs]

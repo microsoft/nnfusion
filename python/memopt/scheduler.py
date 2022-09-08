@@ -360,7 +360,7 @@ class Scheduler:
         CF_stride = [self.tiling[ax_N][1], 1]
         CS_stride = [self.tiling[ax_N][0] + offset, 1]
         if A.name in self.shared_inputs:
-            AS_stride[0] = int(C.op.reduce_axis[-1].dom.extent)
+            AS_stride[0] = int(C.op.reduce_axis[-1].dom.extent) + offset
 
         self.thread_per_block = [32, 1]
         for axis in self.sche[out].op.axis:

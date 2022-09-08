@@ -6,6 +6,7 @@ from memopt.reference import get_subgraph_reference_outputs
 import memopt
 import tvm
 import numpy as np
+from memopt.fusion import Config
 
 def get_matmul_expr(n, k, m):
     ir = "output0[N, M] +=! input0[N, K] * input1[K, M]"
@@ -27,10 +28,13 @@ def run_single():
     target = tvm.target.cuda(arch="sm_70")
     n, m, k = 1920 * 1080, 64, 64
     ir, input_dict = get_matmul_suffix_expr(n, m, k)
-    tile = {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]}
+    tile = {
+        "use_tc" : True, "strides" : {"output0" : [72, 1]},
+        "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]}
+    tile = Config().from_dict(tile)
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     A = IRNode([None for _ in input_dict], expr)
-    sch, args = A.create_schedule(), A.args
+    sch = A.create_schedule()
     sch = Scheduler().rewrite_schedule(sch, tile, [])
     output_nodes = [OutputNode(A)]
     cpresult = memopt.CodeGenerator().compile(output_nodes, {A : tile}, "cuda", kernel_name="Fused")
@@ -46,9 +50,10 @@ def run_single():
 
 def run_two():
     target = tvm.target.cuda(arch="sm_70")
-    n, m, k = 1920 * 1080, 64, 64
-    ir, input_dict = get_matmul_suffix_expr(n, m, k)
-    tile = {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]}
+    n, m, k = 4096, 64, 64
+    ir, input_dict = get_matmul_expr(n, k, m)
+    tile = {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]}
+    tile = Config().from_dict(tile)
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     A = IRNode([None for _ in input_dict], expr)
     B = IRNode([A, None], expr)
@@ -59,11 +64,11 @@ def run_two():
     out = cpresult.get_example_outputs()
     print(cpresult.profile(2))
     print(out)
-    # ref_out = get_subgraph_reference_outputs(output_nodes)
-    # # print(out, ref_out)
-    # for a, b in zip(out, ref_out):
-    #     diff = np.max(np.abs(a-b))
-    #     print("value diff:", diff)
+    ref_out = get_subgraph_reference_outputs(output_nodes)
+    # print(out, ref_out)
+    for a, b in zip(out, ref_out):
+        diff = np.max(np.abs(a-b))
+        print("value diff:", diff)
 
 def run_all():
     target = tvm.target.cuda(arch="sm_70")
@@ -80,17 +85,18 @@ def run_all():
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     L6 = IRNode([L5, None], expr)
     output_nodes = [OutputNode(L6)]
-    cpresult = memopt.CodeGenerator().compile(output_nodes,
-        {
-            L0 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]},
-            L1 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]},
-            L2 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]},
-            L3 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]},
-            L4 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]},
-            L5 : {"use_tc" : True, "N" : [128, 64, 16], "M" : [64, 32, 16], "K" : [64, 16]},
-            L6 : {"use_tc" : False, "N" : [128, 1], "M" : [1, 3], "K" : [64, 1]},
-        },
-        target, kernel_name="Fused")
+    configs = {
+        L0 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L1 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L2 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L3 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L4 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L5 : {"use_tc" : True, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L6 : {"block": [128, 3], "thread": [128, 1], "rstep": [64]},
+    }
+    for node in configs:
+        configs[node] = Config().from_dict(configs[node])
+    cpresult = memopt.CodeGenerator().compile(output_nodes, configs, target, kernel_name="Fused")
     cpresult.append_host_call()
     cpresult.compile_and_load()
     print(cpresult.code)

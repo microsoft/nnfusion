@@ -2,13 +2,14 @@ from arch.Arch import Arch
 from memopt.graph import Node, find_topo_sort
 from memopt.bestfit import BestFit
 from .utils import TileInfo
+from .config import Config
 
 import functools
 import numpy as np
 from queue import PriorityQueue
 import math
 import tvm
-from typing import List
+from typing import List, Dict
 
 def get_all_factors(n: int):
     n0 = int(np.ceil(np.sqrt(n)))
@@ -83,7 +84,7 @@ class DefaultPolicy:
             # handle cases where block is not ordinal (e.g. transpose)
             block_orders = self._assign_block_order(tile)
             for node, block_order in block_orders.items():
-                codegen_dicts[node]["block_reorder"] = block_order
+                codegen_dicts[node].block_order = block_order
             results.append(codegen_dicts)
             if len(results) >= topk:
                 break
@@ -365,7 +366,7 @@ class DefaultPolicy:
         return True
 
 
-    def assign_block_size(self, output_tile, rstep_map):
+    def assign_block_size(self, output_tile, rstep_map) -> Dict[Node, Config]:
         tile_map = self.get_tile_map(output_tile)
         _, tile_map = self._compute_memory_footprint(tile_map)
         node_space_sizes = [int(np.prod(tile_map[node])) for node in self.ordered_nodes]
@@ -456,10 +457,11 @@ class DefaultPolicy:
                 assert target_ax
                 reduce_thread[target_ax] *= factor
 
-        block_tile = [int(np.ceil(tile[i] / cur_threads[i])) for i in range(ndim)]
-        codegen_dict = {ax : [cur_threads[i], block_tile[i]] for i, ax in enumerate(node.saxis)}
-        for ax in node.raxis:
-            codegen_dict[ax] = [rstep_map[ax] // reduce_thread[ax], reduce_thread[ax]]
+        codegen_dict = Config()
+        codegen_dict.block = [tile[i] for i in range(ndim)]
+        codegen_dict.thread = [cur_threads[i] for i in range(ndim)]
+        codegen_dict.rstep = [rstep_map[ax] for ax in node.raxis]
+        codegen_dict.reduce_thread = [reduce_thread[ax] for ax in node.raxis]
         # if len(rstep_map) > 0 and np.prod(block_tile) * np.prod(list(rstep_map.values())) < 1000:
         #     codegen_dict["unroll"] = True
         # # assign virtual threads

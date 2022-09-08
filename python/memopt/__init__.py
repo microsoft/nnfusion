@@ -4,6 +4,7 @@ from .scope import get_scope, Scope
 from .scheduler import Scheduler
 from . import utils
 from .code_generator import CodeGenerator
+from .fusion import Config, DefaultPolicy
 
 _verbose = 1
 def set_log_level(verbose):

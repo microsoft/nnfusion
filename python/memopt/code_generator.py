@@ -98,8 +98,7 @@ class CodeGenerator():
                 # generate the kernel code for this node
                 func_name = "_".join([self.kernel_name, str(len(statements)), op.name]) # unique globally
                 kernel_code = tvm_build(sch, op.args, target, shared_outputs_idx, shared_inputs, name=func_name, global_kernel=False,
-                    block_reorder=config["block_reorder"] if "block_reorder" in config else None,
-                    strides=config["strides"] if "strides" in config else {}, reuse_disabled_inputs=reuse_disabled_inputs)
+                    block_reorder=config.block_order, strides=config.output_strides, reuse_disabled_inputs=reuse_disabled_inputs)
                 kernel_codes.append(kernel_code)
                 if self.block_size is None:
                     self.block_size, self.grid_size = scope.block_size, scope.grid_size

@@ -328,7 +328,11 @@ bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
     {
         if (clean)
             clear_file(lu->pwd, lu->write_to);
-        else if (lu->write_to != "nnfusion_rt" + m_kernel_suffix && lu->write_to != "runtime.cpp" && lu->pwd.find("HLSL") > lu->pwd.length())
+        else if (lu->write_to != "nnfusion_rt" + m_kernel_suffix && 
+            lu->write_to != "runtime.cpp" && 
+            lu->pwd.find("HLSL") > lu->pwd.length() &&
+            lu->symbol == "dxModuleLaunchAsync" 
+            )
             continue;
         if (!ns.empty())
             add_namespace(lu);

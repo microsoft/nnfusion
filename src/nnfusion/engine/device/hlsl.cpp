@@ -212,7 +212,7 @@ static std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu, b
         auto tv = tu->arg[i];
         string type = tv->get_element_type().c_type_string();
         stringstream ss;
-        ss << type << "* " << tv->get_name();
+        ss << "void* " << tv->get_name();
         if (is_host)
         {
             ss << "_host";
@@ -227,9 +227,9 @@ static std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu, b
         string type = tv->get_element_type().c_type_string();
         stringstream ss;
         if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
-            ss << type << "* " << tv->get_name();
+            ss << "void* " << tv->get_name();
         else
-            ss << type << "** " << tv->get_name();
+            ss << "void** " << tv->get_name();
         if (is_host)
         {
             ss << "_host";

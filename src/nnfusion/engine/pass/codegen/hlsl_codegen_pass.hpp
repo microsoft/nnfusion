@@ -49,5 +49,6 @@ namespace nnfusion
                 exit(1);
             };
         };
-    }
-}
+
+    } // namespace codegen
+} // namespace nnfusion

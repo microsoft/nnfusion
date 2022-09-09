@@ -17,23 +17,21 @@
 
 #include "nnfusion/engine/device/cpu.hpp"
 #include "nnfusion/engine/device/cuda.hpp"
+#include "nnfusion/engine/device/cuda_multi.hpp"
 #include "nnfusion/engine/device/graphcore.hpp"
 #include "nnfusion/engine/device/hlsl.hpp"
 #include "nnfusion/engine/device/rocm.hpp"
 
 using namespace std;
 
+DECLARE_bool(fmulti_shape);
 DEFINE_string(format,
               "tensorflow",
               "-f, Model file format (tensorflow(default) or torchscript, onnx)");
 
 DECLARE_string(fdefault_device);
 
-DEFINE_string(params,
-              "##UNSET##",
-              "-p, Model input shape and type, fot torchscript, it's full shape like "
-              "\"1,1:float;2,3,4,5:double\", for onnx, it's dynamic dim like "
-              "\"dim1_name:4;dim2_name:128\"");
+DECLARE_string(params);
 
 void display_help()
 {
@@ -115,6 +113,7 @@ int main(int argc, char** argv)
     // try
     // {
     shared_ptr<nnfusion::graph::Graph> graph = nullptr;
+    std::vector<shared_ptr<nnfusion::graph::Graph>> vec_graph;
     if (format == "tensorflow")
     {
         // load tensorflow model as graph
@@ -134,12 +133,23 @@ int main(int argc, char** argv)
 #if ONNX_FRONTEND
     else if (format == "onnx")
     {
-        std::unordered_map<std::string, SymDim> dim_params;
-        if (params != "##UNSET##")
+        if (FLAGS_fmulti_shape)
         {
-            dim_params = nnfusion::frontend::build_onnx_params_from_string(params);
+            auto vec_dim_params = nnfusion::frontend::build_multi_onnx_params_from_string(params);
+            for (auto& dim_params : vec_dim_params)
+            {
+                vec_graph.push_back(nnfusion::frontend::load_onnx_model(model, dim_params));
+            }
         }
-        graph = nnfusion::frontend::load_onnx_model(model, dim_params);
+        else
+        {
+            std::unordered_map<std::string, SymDim> dim_params;
+            if (params != "##UNSET##")
+            {
+                dim_params = nnfusion::frontend::build_onnx_params_from_string(params);
+            }
+            graph = nnfusion::frontend::load_onnx_model(model, dim_params);
+        }
     }
 #endif
     else
@@ -148,7 +158,7 @@ int main(int argc, char** argv)
                                              "' in NNFusion");
     }
 
-    if (!backend.empty())
+    if (!backend.empty() && graph != nullptr)
     {
         if (!FLAGS_fdefault_device.empty())
         {
@@ -161,15 +171,11 @@ int main(int argc, char** argv)
 
             switch (get_device_type(FLAGS_fdefault_device))
             {
-            case CUDA_GPU:
-                cuda_engine.run_on_graph(graph);
-                break;
+            case CUDA_GPU: cuda_engine.run_on_graph(graph); break;
             // case CUDA_GPU:
             //     runtime->codegen(graph);
             //     break;
-            case ROCM_GPU:
-                rocm_engine.run_on_graph(graph);
-                break;
+            case ROCM_GPU: rocm_engine.run_on_graph(graph); break;
             // case ROCM_GPU: runtime->codegen(graph); break;
             // case GENERIC_CPU: runtime->codegen(graph); break;
             case GENERIC_CPU: cpu_engine.run_on_graph(graph); break;
@@ -183,6 +189,24 @@ int main(int argc, char** argv)
         else
         {
             throw nnfusion::errors::InvalidArgument("Default device cannot be empty.");
+        }
+    }
+
+    // Merged graph needs to be:
+    // 1. same graph structure;
+    // 2. different shape;
+    // 3. constant memory must has same layout
+    // ./build/src/tools/nnfusion/nnfusion  ./test/models/onnx/abs.onnx -f onnx -multi_shape=true -p "{seq:1500;past_seq:0}, {seq:1;past_seq:2048}"
+    if (!backend.empty() && FLAGS_fmulti_shape && !vec_graph.empty())
+    {
+        NNFUSION_LOG(INFO) << "Graph count: " << vec_graph.size() << "\n";
+        //nnfusion::engine::MultiCudaEngine multi_cuda_engine;
+        nnfusion::engine::CudaMultiEngine cuda_multi_engine;
+        nnfusion::engine::HLSLMultiEngine hlsl_multi_engine;
+        switch (get_device_type(FLAGS_fdefault_device))
+        {
+        case CUDA_GPU: cuda_multi_engine.run_on_graphs(vec_graph); break;
+        case HLSL: hlsl_multi_engine.run_on_graphs(vec_graph); break;
         }
     }
     return 0;

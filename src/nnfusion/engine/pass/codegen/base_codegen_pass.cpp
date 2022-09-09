@@ -27,8 +27,6 @@ bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
     projgen->codegen();
     NNFUSION_CHECK(after_projgen());
     NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " done.";
-    exit(0);
-
     return true;
 }
 
@@ -64,7 +62,6 @@ void BaseCodegenPass::separate_func_defs_files(int file_number, const string& ke
 {
     if (kernel_folder != m_kernel_folder)
         change_kernel_folder(kernel_folder);
-
     if (file_number <= 0)
     {
         for (auto it : kernel_func_defs)

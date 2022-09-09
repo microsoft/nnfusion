@@ -4,22 +4,16 @@
 // This a new interface for Engine
 
 #pragma once
-#include "nnfusion/engine/engine.hpp"
+#include "cuda.hpp"
 
 namespace nnfusion
 {
     namespace engine
     {
-        class HLSLEngine : public Engine
+        class CudaMultiEngine : public CudaEngine
         {
         public:
-            HLSLEngine();
-        };
-
-        class HLSLMultiEngine : public HLSLEngine
-        {
-        public:
-            HLSLMultiEngine();
+            CudaMultiEngine();
             bool run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                                EngineContext::Pointer context = nullptr);
 

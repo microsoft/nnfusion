@@ -25,7 +25,7 @@ namespace nnfusion
     {
         class CodeWriter;
     }
-}
+} // namespace nnfusion
 
 class nnfusion::codegen::CodeWriter
 {
@@ -79,6 +79,8 @@ public:
         indent--;
         *this << "}\n";
     }
+
+    void set_stringstream(std::string new_s) { m_ss = std::stringstream(new_s); }
 
 private:
     std::stringstream m_ss;

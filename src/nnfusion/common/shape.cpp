@@ -15,6 +15,7 @@
 //*****************************************************************************
 
 #include "nnfusion/common/shape.hpp"
+#include "nnfusion/common/symbolic_shape.hpp"
 #include "nnfusion/common/util.hpp"
 
 std::ostream& nnfusion::operator<<(std::ostream& s, const Shape& shape)
@@ -22,5 +23,14 @@ std::ostream& nnfusion::operator<<(std::ostream& s, const Shape& shape)
     s << "Shape{";
     s << nnfusion::join(shape);
     s << "}";
+    if (shape.is_dynamic())
+    {
+        s << " SymShape: [" << (*shape.get_sym_shape()) << "]";
+    }
     return s;
+}
+
+bool Shape::is_dynamic() const
+{
+    return (sym_shape && sym_shape->is_dynamic());
 }

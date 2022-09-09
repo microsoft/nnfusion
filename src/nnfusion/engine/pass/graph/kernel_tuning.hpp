@@ -6,7 +6,7 @@
 #include "graph_pass_base.hpp"
 #include "nnfusion/common/common.hpp"
 #include "nnfusion/engine/op.hpp"
-
+DECLARE_bool(fsymbolic);
 namespace nnfusion
 {
     namespace pass
@@ -21,6 +21,10 @@ namespace nnfusion
                     , progress_step(0)
                     , best_perf(-1.0)
                 {
+                    if (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>())
+                    {
+                        op_type = op_type + "*";
+                    }
                 }
                 std::string op_type;
                 std::string op_name;

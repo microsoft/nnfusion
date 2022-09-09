@@ -86,6 +86,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     {
         std::string params = get_kernel_entry_paras(tu);
         lu_exec_begin << "\nint kernel_entry(" << params << ")\n{\n";
+        lu_exec_begin << codegen_global_symbols(tu)->get_code();
     }
 
     auto& lu_exec_end = *(projgen->lup_exec->end);

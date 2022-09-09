@@ -56,14 +56,20 @@ namespace nnfusion
 
     namespace op
     {
+        class GenericOp;
+        class OpConfig;
         class Op : public std::enable_shared_from_this<Op>
         {
         public:
             virtual ~Op();
-            void revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
-            {
-                validate_and_infer_types(gnode);
-            }
+            void revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode);
+            // {
+            //     //validate_and_infer_types(gnode);
+            //     //nnfusion::op::OpConfig::any myConfig;
+            //     auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
+            //         gnode->get_name(), gnode->get_op_type(), nnfusion::op::OpConfig::any());
+            //     generic_op->validate_and_infer_types(gnode);
+            // }
             // Called after transition
             void delayed_validate_and_infer_types(std::shared_ptr<graph::GNode> gnode);
 

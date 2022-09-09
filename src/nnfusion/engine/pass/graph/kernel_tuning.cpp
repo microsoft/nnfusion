@@ -26,6 +26,7 @@ DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
 DECLARE_string(fdefault_device);
+DECLARE_bool(fsymbolic);
 
 std::string send_tuning_request(std::string& ir, int64_t step)
 {
@@ -362,9 +363,12 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
 
             std::size_t file_id = std::hash<std::string>{}(ir);
             auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+            bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
 
             std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
             cmd += get_antares_device_type(n_device_type, FLAGS_ftuning_platform);
+            if (symbolic)
+                cmd += " TVM=0";
             cmd += " COMPUTE_V1='";
             cmd += ir;
             cmd += ("' antares save " + file_name);
@@ -435,7 +439,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
         tuning_kernels_sync(nodes, tuned_kernels);
     }
     dump_perf(FLAGS_fantares_perf_file, tuned_kernels, ir2cnt);
-    if (FLAGS_fdefault_device == "CUDA")
+    if (FLAGS_fdefault_device == "CUDA" && !FLAGS_fsymbolic)
     {
         insert_to_kernel_cache(nodes);
     }

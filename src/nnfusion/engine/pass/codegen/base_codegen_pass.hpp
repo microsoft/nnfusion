@@ -61,6 +61,7 @@ namespace nnfusion
                 m_kernel_suffix = kernel_suffix;
                 projgen->change_kernel_suffix(kernel_suffix);
             }
+            LanguageUnit_p codegen_global_symbols(std::shared_ptr<TranslationUnit> tu);
             const std::string& get_kernel_suffix() const { return m_kernel_suffix; }
             const std::string& get_kernel_folder() const { return m_kernel_folder; }
             void separate_func_defs_files(int file_number, const std::string& kernel_folder);

@@ -227,7 +227,7 @@ namespace nnfusion
             }
 
             GraphConvert::GraphConvert(const onnx::ModelProto& model_proto,
-                                       const std::unordered_map<std::string, size_t>& dim_params,
+                                       const std::unordered_map<std::string, SymDim>& dim_params,
                                        const string& model_dir)
                 : onnx_model_proto{&model_proto}
                 , onnx_graph_proto(&(model_proto.graph()))
@@ -536,7 +536,8 @@ namespace nnfusion
                 for (int i = 0; i < ret.size(); i++)
                 {
                     NNFUSION_LOG(INFO) << "node " << node_proto.name() << ", output " << ret[i].name
-                                       << ", shape " << ret[i].gnode_index.get_shape();
+                                       << ", shape " << ret[i].gnode_index.get_shape()
+                                       << ret[i].gnode_index.get_shape().is_dynamic();
                 }
                 return std::move(ret);
             }

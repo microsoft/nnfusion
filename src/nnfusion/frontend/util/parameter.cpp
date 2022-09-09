@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 
+#include "nnfusion/common/util.hpp"
 #include "parameter.hpp"
 
 namespace nnfusion
@@ -97,14 +98,31 @@ namespace nnfusion
             return params;
         }
 
-        std::unordered_map<std::string, size_t> build_onnx_params_from_string(const std::string& ss)
+        std::unordered_map<std::string, SymDim> build_onnx_params_from_string(const std::string& ss)
         {
-            std::unordered_map<std::string, size_t> ret;
+            std::unordered_map<std::string, SymDim> ret;
             for (auto s : split_string(ss, ";"))
             {
                 auto dim_info = split_string(s, ":");
                 NNFUSION_CHECK(dim_info.size() == 2) << "illegal dim info " << s;
-                ret.emplace(dim_info[0], std::stoull(dim_info[1]));
+                auto values = split_string(dim_info[1], "-");
+                if (values.size() == 1)
+                {
+                    ret.emplace(dim_info[0], SymDim(std::stoull(dim_info[1])));
+                }
+                else if (values.size() == 2)
+                {
+                    if (values[1].size() > 0)
+                    {
+                        auto min = values[0].size() > 0 ? std::stoull(values[0]) : 0;
+                        auto max = std::stoull(values[1]);
+                        ret.emplace(dim_info[0], SymDim(dim_info[0], min, max));
+                    }
+                    else
+                    {
+                        ret.emplace(dim_info[0], SymDim(dim_info[0]));
+                    }
+                }
             }
             return ret;
         }

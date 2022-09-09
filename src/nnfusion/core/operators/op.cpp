@@ -22,12 +22,14 @@
 #include <typeinfo>
 
 #include "nnfusion/core/graph/gnode.hpp"
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "op.hpp"
-
 using namespace std;
 using namespace nnfusion::op;
 
 atomic<size_t> Op::m_next_instance_id(0);
+
+DEFINE_bool(fsymbolic, false, "support symbolic shape");
 
 Op::Op(const std::string& op_type)
     : m_op_type(op_type)
@@ -47,6 +49,51 @@ void Op::constructor_validate_and_infer_types(std::shared_ptr<graph::GNode> gnod
     {
         validate_and_infer_types(gnode);
     }
+}
+
+void Op::revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
+{
+    //validate_and_infer_types(gnode);
+    if (FLAGS_fsymbolic)
+    {
+        bool has_symbolic_shape = false;
+        for (auto input : gnode->get_inputs())
+        {
+            if (input->get_shape().is_dynamic())
+            {
+                has_symbolic_shape = true;
+                NNFUSION_LOG(INFO)
+                    << gnode->get_op_type()
+                    << " Get Symbolic Input: " << (*input->get_shape().get_sym_shape());
+            }
+        }
+        if (has_symbolic_shape)
+        {
+            const std::unordered_set<std::string> symbolic_infer_ops({"GatherV2",
+                                                                      "Add",
+                                                                      "Subtract",
+                                                                      "Concat",
+                                                                      "Divide",
+                                                                      "Exp",
+                                                                      "Reshape",
+                                                                      "Convert",
+                                                                      "Broadcast",
+                                                                      "BatchMatMul",
+                                                                      "Select",
+                                                                      "Result",
+                                                                      "Softmax",
+                                                                      "Max",
+                                                                      "Sum"});
+            if (symbolic_infer_ops.find(gnode->get_op_type()) == symbolic_infer_ops.end())
+            {
+                NNFUSION_CHECK(false) << "Unsupported op for symbolic input: "
+                                      << gnode->get_op_type();
+            }
+            (*gnode)["symbolic"] = true;
+        }
+    }
+
+    validate_and_infer_types(gnode);
 }
 
 void Op::delayed_validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)

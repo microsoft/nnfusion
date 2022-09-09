@@ -1,41 +1,27 @@
-//  Copyright (c) Microsoft Corporation.
-//  Licensed under the MIT License.
+//*****************************************************************************
+// Copyright 2017-2020 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//*****************************************************************************
 
 #pragma once
 
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#include "nnfusion/common/symbolic_shape.hpp"
-#include "nnfusion/core/graph/graph.hpp"
-namespace nnfusion
-{
-    namespace frontend
-    {
-        struct ParamInfo
-        {
-            nnfusion::Shape shape;
-            nnfusion::element::Type type;
-            ParamInfo(const nnfusion::Shape&, nnfusion::element::Type);
-            ParamInfo(const nnfusion::Shape&, const std::string&);
-            ParamInfo(const std::string&);
-        };
-
-        std::vector<ParamInfo> build_torchscript_params_from_string(const std::string&);
-
-        std::unordered_map<std::string, SymDim> build_onnx_params_from_string(const std::string&);
-
-        std::vector<std::unordered_map<std::string, size_t>> build_multi_onnx_params_from_string(const std::string& ss);
-    } // namespace frontend
-} // namespace nnfusion
-
-
-#include <stddef.h>
 #include <limits>
-#include "nnfusion/util/util.hpp"
+#include <stddef.h>
 #include "nnfusion/common/shape.hpp"
+#include "nnfusion/util/util.hpp"
 using namespace nnfusion;
+
 namespace nnfusion
 {
     namespace
@@ -54,16 +40,28 @@ namespace nnfusion
             return result;
         }
     } // namespace
+
     /// \brief Class representing a dimension, which may be symbolic or dynamic (undetermined until runtime),
     ///        in a shape.
     class SymDim
     {
     public:
         /// \brief Construct a static dimension.
-        SymDim(size_t dimension): m_sym(""), m_min(0), m_max(dimension) {}
+        SymDim(size_t dimension)
+            : m_sym("")
+            , m_min(0)
+            , m_max(dimension)
+        {
+        }
+
         /// \brief Construct a sybolic dimension.
-        SymDim(std::string dimension, size_t min, size_t max): m_sym(dimension), m_min(min), m_max(max) {}
-        SymDim(std::string dimension) 
+        SymDim(std::string dimension, size_t min, size_t max)
+            : m_sym(dimension)
+            , m_min(min)
+            , m_max(max)
+        {
+        }
+        SymDim(std::string dimension)
         {
             if (dimension.find(":") == std::string::npos)
             {
@@ -74,8 +72,8 @@ namespace nnfusion
             else
             {
                 auto dim_info = split_string(dimension, ":");
-                NNFUSION_CHECK((dim_info.size() > 1 && dim_info.size() < 4))
-                    << "illegal dim info " << dimension;
+                NNFUSION_CHECK((dim_info.size() > 1 && dim_info.size() < 4)) << "illegal dim info "
+                                                                             << dimension;
                 if (dim_info.size() == 2)
                 {
                     m_sym = dim_info[0];
@@ -90,6 +88,7 @@ namespace nnfusion
                 }
             }
         }
+
         SymDim() {}
         bool is_dynamic() const { return m_sym.size() > 0; }
         bool is_static() const { return !is_dynamic(); }
@@ -117,6 +116,7 @@ namespace nnfusion
             }
             return replaced ? "s" + expr : expr;
         }
+
         std::string to_string() const
         {
             if (is_static())
@@ -147,46 +147,56 @@ namespace nnfusion
                     return m_sym;
             }
         }
+
         /// \brief Addition operator for Dimension.
         SymDim operator+(const SymDim& dim) const
         {
             if (is_static() && dim.is_static())
                 return SymDim(m_max + dim.max());
             else if (is_static() && dim.is_dynamic())
-                return SymDim(dim.sym() + "+" + std::to_string(m_max), m_max + dim.min(), m_max + dim.max());
+                return SymDim(
+                    dim.sym() + "+" + std::to_string(m_max), m_max + dim.min(), m_max + dim.max());
             else if (is_dynamic() && dim.is_static())
-                return SymDim(m_sym + "+" + std::to_string(dim.max()), m_min + dim.max(), m_max + dim.max());
+                return SymDim(
+                    m_sym + "+" + std::to_string(dim.max()), m_min + dim.max(), m_max + dim.max());
             else
                 return SymDim(m_sym + "+" + dim.sym(), m_min + dim.min(), m_max + dim.max());
         }
-        size_t safesub(const size_t a, const size_t b) const
-        {
-            return (a > b) ? a - b : 0;
-        }
+
+        size_t safesub(const size_t a, const size_t b) const { return (a > b) ? a - b : 0; }
         /// \brief Subtraction operator for Dimension.
         SymDim operator-(const SymDim& dim) const
         {
             if (is_static() && dim.is_static())
                 return SymDim(m_max - dim.max());
             else if (is_static() && dim.is_dynamic())
-                return SymDim(std::to_string(m_max) + "-" + dim.sym() , safesub(m_max, dim.max()) , safesub(m_max, dim.min()));
+                return SymDim(std::to_string(m_max) + "-" + dim.sym(),
+                              safesub(m_max, dim.max()),
+                              safesub(m_max, dim.min()));
             else if (is_dynamic() && dim.is_static())
-                return SymDim(m_sym + "-" + std::to_string(dim.max()), safesub(m_min, dim.max()), safesub(m_max, dim.max()));
+                return SymDim(m_sym + "-" + std::to_string(dim.max()),
+                              safesub(m_min, dim.max()),
+                              safesub(m_max, dim.max()));
             else
-                return SymDim(m_sym + "-" + dim.sym(), safesub(m_min, dim.max()), safesub(m_max, dim.min()));
+                return SymDim(
+                    m_sym + "-" + dim.sym(), safesub(m_min, dim.max()), safesub(m_max, dim.min()));
         }
+
         /// \brief Multiplication operator for Dimension.
         SymDim operator*(const SymDim& dim) const
         {
             if (is_static() && dim.is_static())
                 return SymDim(m_max * dim.max());
             else if (is_static() && dim.is_dynamic())
-                return SymDim(std::to_string(m_max) + "*" + dim.sym(), m_max * dim.min(), m_max * dim.max());
+                return SymDim(
+                    std::to_string(m_max) + "*" + dim.sym(), m_max * dim.min(), m_max * dim.max());
             else if (is_dynamic() && dim.is_static())
-                return SymDim(m_sym + "*" + std::to_string(dim.max()), m_min * dim.max(), m_max * dim.max());
+                return SymDim(
+                    m_sym + "*" + std::to_string(dim.max()), m_min * dim.max(), m_max * dim.max());
             else
                 return SymDim(m_sym + "*" + dim.sym(), m_min * dim.min(), m_max * dim.max());
         }
+
         /// \brief Add-into operator for Dimension.
         SymDim& operator+=(const SymDim& dim) { return (*this = *this + dim); }
         /// \brief Multiply-into operator for Dimension.
@@ -199,8 +209,10 @@ namespace nnfusion
         size_t m_min;
         size_t m_max;
     };
+
     /// \brief Insert a human-readable representation of a dimension into an output stream.
     std::ostream& operator<<(std::ostream& str, const SymDim& dimension);
+
     /// \brief Symbolic Shape for a tensor.
     class SymShape : public std::vector<SymDim>
     {
@@ -209,10 +221,12 @@ namespace nnfusion
             : std::vector<SymDim>(dims)
         {
         }
+
         SymShape(const std::vector<SymDim>& dims)
             : std::vector<SymDim>(dims)
         {
         }
+
         SymShape(const Shape& axis_lengths)
         {
             for (auto d : axis_lengths)
@@ -220,10 +234,8 @@ namespace nnfusion
                 this->push_back(SymDim(d));
             }
         }
-        SymShape(const SymShape& shape)
-        {
-            (*this) = shape;
-        }
+
+        SymShape(const SymShape& shape) { (*this) = shape; }
         Shape to_static() const
         {
             Shape ret;
@@ -233,15 +245,18 @@ namespace nnfusion
             }
             return ret;
         }
+
         explicit SymShape(size_t n, size_t initial_value = 0)
             : std::vector<SymDim>(n, SymDim(initial_value))
         {
         }
+
         template <class InputIterator>
         SymShape(InputIterator first, InputIterator last)
             : std::vector<SymDim>(first, last)
         {
         }
+
         SymShape() {}
         SymShape& operator=(const SymShape& v)
         {
@@ -253,13 +268,17 @@ namespace nnfusion
             static_cast<std::vector<SymDim>*>(this)->operator=(v);
             return *this;
         }
-        bool is_static() const {
+
+        bool is_static() const
+        {
             for (auto dim : *this)
                 if (dim.is_dynamic())
                     return false;
             return true;
         }
+
         bool is_dynamic() const { return !is_static(); }
     };
+
     std::ostream& operator<<(std::ostream& s, const SymShape& shape);
 }

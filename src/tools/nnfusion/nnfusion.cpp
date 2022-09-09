@@ -143,7 +143,7 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::unordered_map<std::string, size_t> dim_params;
+            std::unordered_map<std::string, SymDim> dim_params;
             if (params != "##UNSET##")
             {
                 dim_params = nnfusion::frontend::build_onnx_params_from_string(params);

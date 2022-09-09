@@ -60,6 +60,20 @@ std::string nnfusion::tmpnam(int* status)
     return tmp_dir;
 }
 
+std::string nnfusion::replace_sub_str(std::string str, std::string src, std::string dst)
+{
+    int cur_pos = 0;
+    while (true)
+    {
+        int pos = str.find(src, cur_pos);
+        if (pos == std::string::npos || cur_pos == std::string::npos)
+            break;
+        cur_pos = pos + src.size();
+        str = str.substr(0, pos) + dst + str.substr(cur_pos);
+    }
+    return std::move(str);
+};
+
 // std::string nnfusion::to_cplusplus_sourcecode_literal(bool val)
 // {
 //     return val ? "true" : "false";

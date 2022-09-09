@@ -71,6 +71,9 @@ namespace nnfusion
         return os.str();
     }
 
+    // Replace the all the sub str "src" in "str" to "dst"
+    std::string replace_sub_str(std::string str, std::string src, std::string dst);
+
     //     size_t hash_combine(const std::vector<size_t>& list);
     //     void dump(std::ostream& out, const void*, size_t);
 

@@ -376,3 +376,33 @@ LanguageUnit_p BaseCodegenPass::codegen_workspace_size(std::shared_ptr<Translati
     *lu_workspace << "}\n";
     return lu_workspace;
 }
+
+LanguageUnit_p BaseCodegenPass::codegen_global_symbols(std::shared_ptr<TranslationUnit> tu)
+{
+    auto lu_symbols = make_shared<LanguageUnit>("global_symbols");
+    std::unordered_map<std::string, int> symbol_value;
+    for (size_t i = 0; i < tu->arg.size(); i++)
+    {
+        auto& shape = (*tu->arg[i]).get_shape();
+        if (shape.is_dynamic())
+        {
+            for (auto dim : *(shape.get_sym_shape()))
+            {
+                if (dim.is_dynamic())
+                {
+                    symbol_value[dim.sym()] = dim.max();
+                }
+            }
+        }
+    }
+    for (auto pair : symbol_value)
+    {
+        *lu_symbols << "int64_t " << pair.first;
+        if (pair.second < std::numeric_limits<size_t>::max())
+        {
+            *lu_symbols << " = " << pair.second;
+        }
+        *lu_symbols << ";\n";
+    }
+    return lu_symbols;
+}

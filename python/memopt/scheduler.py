@@ -28,7 +28,7 @@ class Scheduler:
     #   shared_inputs: inputs that are already in the shared memory, which is used for fusion case.
     # [Return]
     #   new_s: an optimized TVM schedule
-    def rewrite_schedule(self, schedule: te.Schedule, config: Config, shared_inputs: List[str] = []):
+    def rewrite_schedule(self, schedule: te.Schedule, config: Config, shared_inputs: List[te.Tensor] = []):
         self.config = config
         self.sche = schedule
         self.shared_inputs = shared_inputs
@@ -92,7 +92,7 @@ class Scheduler:
                 cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
                     and len(op.output(0).shape) > len(tensor.shape) \
                     and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-                if tensor.name in self.shared_inputs:
+                if tensor in self.shared_inputs:
                     cache = True
                 if cache:
                     if tensor not in cache_plan:
@@ -153,7 +153,7 @@ class Scheduler:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
             # local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
             # self.sche[local_tensor].compute_at(self.sche[reg_tile], space_fused)
-            if input_tensor.name in self.shared_inputs:
+            if input_tensor in self.shared_inputs:
                 self.sche[shared_tensor].compute_at(self.sche[out], blck_fused)
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
@@ -165,7 +165,7 @@ class Scheduler:
                 cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
                     and len(op.output(0).shape) > len(tensor.shape) \
                     and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-                if tensor.name in self.shared_inputs:
+                if tensor in self.shared_inputs:
                     cache = True
                 if cache:
                     if tensor not in cache_plan:
@@ -223,7 +223,7 @@ class Scheduler:
 
         for input_tensor in self.reduce_op.input_tensors:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
-            if input_tensor.name in self.shared_inputs:
+            if input_tensor in self.shared_inputs:
                 self.sche[shared_tensor].compute_at(self.sche[out], blck_fused)
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
@@ -235,7 +235,7 @@ class Scheduler:
                 cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
                     and len(op.output(0).shape) > len(tensor.shape) \
                     and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-                if tensor.name in self.shared_inputs:
+                if tensor in self.shared_inputs:
                     cache = True
                 if cache:
                     if tensor not in cache_plan:
@@ -279,7 +279,7 @@ class Scheduler:
         CF_stride = [self.config.warp[-1], 1]
         CS_stride = [self.config.block[-1] + offset, 1]
 
-        if A.name in self.shared_inputs:
+        if A in self.shared_inputs:
             AS_stride[0] = int(C.op.reduce_axis[-1].dom.extent) + offset
 
         self.thread_per_block = [32, 1, 1]
@@ -338,11 +338,11 @@ class Scheduler:
         self.sche[BF].reorder(i, n, i_ii, n_ii)
 
         # schedule shared
-        if A.name in self.shared_inputs:
+        if A in self.shared_inputs:
             self.sche[AS].compute_at(self.sche[out], blck_fused)
         else:
             self.sche[AS].compute_at(self.sche[CF], ko)
-        if B.name in self.shared_inputs:
+        if B in self.shared_inputs:
             self.sche[BS].compute_at(self.sche[out], blck_fused)
         else:
             self.sche[BS].compute_at(self.sche[CF], ko)

@@ -1,25 +1,25 @@
 import tvm
 import threading
-from typing import Dict
+from typing import Dict, List
 
 class Scope(Dict):
     _thread_local = threading.local()
     def __init__(self, schedule):
         self.schedule = schedule
         # --------------------------------provided args before compile -----------------------------------------
-        # shared input argument names e.g. ["input0", "input2"]
-        self.shared_mem_inputs = []
+        # shared input argument
+        self.shared_mem_inputs: List[tvm.te.Tensor] = []
         # shared output argument INDEX e.g. [3]
-        self.shared_mem_outputs = []
-        # subset of shared mem outputs e.g. ["input0"]
-        self.reuse_disabled_inputs = []
+        self.shared_mem_outputs: List[int] = []
+        # subset of shared mem outputs
+        self.reuse_disabled_inputs: List[tvm.te.Tensor] = []
         # strides info e.g. {"output0" : [72, 1]}
         self.strides = {}
         # --------------------------------return after compile -----------------------------------------
         # indicates extra workspace allocated for the kernel
         self.total_internal_shared_memory = 0
         # indicates output tensor allocation, format {x : bytes for x in self.shared_mem_outputs}
-        self.exteral_shared_memroy_size = {}
+        self.exteral_shared_memroy_size: Dict[int, int] = {}
 
         self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
         self._build_analyzer()
@@ -61,13 +61,13 @@ def get_scope() -> Scope:
     return Scope._thread_local.scope
 
 @tvm._ffi.register_func("memopt.is_independent_alloc")
-def get_independent_alloc(tensor_name):
+def is_independent_alloc(tensor_name):
     if get_scope() is None:
         return False
-    return tensor_name in  [x + ".shared" for x in get_scope().shared_mem_inputs]
+    return tensor_name in  [x.name + ".shared" for x in get_scope().shared_mem_inputs]
 
 @tvm._ffi.register_func("memopt.is_reuse_disabled")
-def get_noreuse_alloc(tensor_name):
+def is_reuse_disabled(tensor_name):
     if get_scope() is None:
         return False
-    return tensor_name in [x + ".shared" for x in get_scope().reuse_disabled_inputs]
+    return tensor_name in [x.name + ".shared" for x in get_scope().reuse_disabled_inputs]

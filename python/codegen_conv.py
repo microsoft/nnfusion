@@ -12,7 +12,7 @@ codegen_dict = Config().from_dict({"block" : [1, 16, 8, 4], "thread": [1, 16, 4,
 
 args = tvm_conv(1, ic, n, n, oc, k, s, 1)
 sch = te.create_schedule(args[-1].op)
-sch = Scheduler().rewrite_schedule(sch, codegen_dict, shared_inputs=[])
+sch = Scheduler().rewrite_schedule(sch, codegen_dict, shared_inputs=[args[0]])
 
 with memopt.Scope(sch) as scope:
     kernel_code = tvm_build(sch, args, target, [], [], name="MyPointWiseConv", global_kernel=True)

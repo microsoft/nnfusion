@@ -49,7 +49,7 @@ def get_block_reorder_code(block_reoder_expr: tvm.tir.PrimExpr) -> str:
         .format(_lower_C_simple(block_reoder_expr))
 
 def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.target.Target,
-              sm_outputs=[], sm_inputs=[], name=_tvm_default_name,
+              sm_outputs: List[int] = [], sm_inputs: List[tvm.te.Tensor] = [], name: str = _tvm_default_name,
               global_kernel=True, block_reorder=None, strides={}, flatten_block=True, reuse_disabled_inputs=[]) -> str:
     scope = get_scope()
     passes = [
@@ -87,9 +87,9 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
             func_args += ", char* shared"
         src = prefix + name + "({}) ".format(func_args) + src[index:]
         # removing shared memory allocation
-        for var in scope.shared_mem_inputs:
-            s_var = var+"_shared"
-            src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(s_var), r"\1* {} = {};".format(s_var, var), src, 1)
+        for tensor in scope.shared_mem_inputs:
+            shared_var_name = tensor.name + "_shared"
+            src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(shared_var_name), r"\1* {} = {};".format(shared_var_name, tensor.name), src, 1)
         if not global_kernel:
             pattern = r"__shared__ (\w+) (\w+)\[(\d+)\];"
             offset = 0

@@ -1,11 +1,13 @@
-from .graph import find_topo_sort
+from .graph import find_topo_sort, Node
 from .bestfit import BestFit
 from .tvm_build import tvm_build, _type_map
 from .utils import CompileResult
 from . import Scheduler, Scope
+from .fusion import Config
 
 import numpy as np
 import io
+from typing import List
 
 class CodeGenerator():
     def __init__(self) -> None:
@@ -66,7 +68,7 @@ class CodeGenerator():
                 return False
         return True
 
-    def compile(self, output_nodes, configs, target, kernel_name) -> CompileResult:
+    def compile(self, output_nodes: List[Node], configs: Config, target: str, kernel_name: str) -> CompileResult:
         self.kernel_name = kernel_name
         self.topo_order = find_topo_sort(output_nodes) # List[Node]
         global_args_name_map = self._get_tensor_name_map() # {Tensor : "input0"}
@@ -86,14 +88,14 @@ class CodeGenerator():
                 lambda edge : not edge.src_node.is_placeholder(), op.inputs)]
             shared_outputs_idx = list({edge.src_id + len(op.inputs) for edge in filter(
                 lambda edge : not edge.dst_node.is_output(), op.outputs)}) # use set, may have multiple consumers
-            shared_inputs = [op.args[idx].name for idx in shared_inputs_idx]
+            shared_inputs = [op.args[idx] for idx in shared_inputs_idx]
 
             sch = Scheduler().rewrite_schedule(op.create_schedule(), config, shared_inputs=shared_inputs)
             with Scope(sch) as scope:
                 # Some inputs which will be used later cannot be overwritten by other internal shared memory,
                 # so we must put these tensor in reuse_disabled_inputs.
                 # Inputs that will be freed after this kernel can be overwritten and reused in this kernel.
-                reuse_disabled_inputs = [op.args[idx].name for idx in filter(
+                reuse_disabled_inputs = [op.args[idx] for idx in filter(
                     lambda idx: not self._can_free(op.inputs[idx].src_node, op.inputs[idx].src_id), shared_inputs_idx)]
                 # generate the kernel code for this node
                 func_name = "_".join([self.kernel_name, str(len(statements)), op.name]) # unique globally
@@ -108,7 +110,7 @@ class CodeGenerator():
                 # make memory plan
                 internal_shared_mem = self.allocator.malloc(scope.total_internal_shared_memory)
                 for idx in shared_inputs_idx:
-                    if op.args[idx].name not in reuse_disabled_inputs:
+                    if op.args[idx] not in reuse_disabled_inputs:
                         src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
                         self.allocator.free(block_map[(src_node, src_id)])
                 self.allocator.free(internal_shared_mem)

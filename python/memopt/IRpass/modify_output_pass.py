@@ -18,8 +18,8 @@ def modify_output_pass(f, mod, ctx):
             assert op.buffer not in buffer_map
             assert all([bound.min_value == 0 for bound in indices_bound])
             assert all([bound.max_value < 1e9 for bound in indices_bound])
-            if op.buffer.name in get_scope().strides:
-                strides = get_scope().strides[op.buffer.name]
+            if target_buffer[op.buffer] in get_scope().strides:
+                strides = get_scope().strides[target_buffer[op.buffer]]
                 num_bytes = shape[0] * strides[0] * (int(tvm.DataType(op.buffer.dtype).bits) // 8)
             else:
                 strides = op.buffer.strides

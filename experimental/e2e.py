@@ -86,11 +86,11 @@ def run_all():
     L6 = IRNode([L5, None], expr)
     output_nodes = [OutputNode(L6)]
     configs = {
-        L0 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L1 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L2 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L3 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L4 : {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L0 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L1 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L2 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L3 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L4 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
         L5 : {"use_tc" : True, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
         L6 : {"block": [128, 3], "thread": [128, 1], "rstep": [64]},
     }

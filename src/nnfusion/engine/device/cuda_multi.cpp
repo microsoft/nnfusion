@@ -222,7 +222,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     {
                         if (!condition.empty())
                             condition += " && ";
-                         condition += "get_" + param.first + "() == " + to_string(param.second);
+                         condition += "get_" + param.first + "() == " + param.second.sym();
                     }
                     global_entry << "if(" << condition << ")\n{\n";
                     global_entry << "graph_" << graph_cnt << "::kernel_entry(" + arg_vars + ");\n";

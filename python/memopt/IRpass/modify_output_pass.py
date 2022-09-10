@@ -19,7 +19,7 @@ def modify_output_pass(f, mod, ctx):
             assert all([bound.min_value == 0 for bound in indices_bound])
             assert all([bound.max_value < 1e9 for bound in indices_bound])
             if target_buffer[op.buffer] in get_scope().strides:
-                strides = get_scope().strides[target_buffer[op.buffer]]
+                strides = get_scope().strides[target_buffer[op.buffer]].compute_strides_from_shape(shape)
                 num_bytes = shape[0] * strides[0] * (int(tvm.DataType(op.buffer.dtype).bits) // 8)
             else:
                 strides = op.buffer.strides

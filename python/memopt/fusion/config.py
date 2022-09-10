@@ -1,6 +1,34 @@
 from typing import Dict, List
 import numpy as np
 
+class Stride:
+    def __init__(self, stride: int = 1, ax: int = -1) -> None:
+        # which axis to put stride on
+        self._ax = ax
+        # the stride size of the axis
+        self._stride = stride
+
+    @property
+    def ax(self) -> int:
+        return self._ax
+
+    @property
+    def stride(self) -> int:
+        return self._stride
+
+    def compute_strides_from_shape(self, shape: List[int]) -> List[int]:
+        ndim = len(shape)
+        strides = [1 for _ in shape]
+        for i in range(ndim - 2, -1, -1):
+            if i == self.ax:
+                strides[i] = self.stride
+            else:
+                strides[i] = strides[i + 1] * shape[i + 1]
+        return strides
+
+    def is_valid(self) -> bool:
+        return self.ax >= 0
+
 class Config:
     def __init__(self) -> None:
         self.use_tc = False

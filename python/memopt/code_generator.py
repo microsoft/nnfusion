@@ -7,7 +7,7 @@ from .fusion import Config
 
 import numpy as np
 import io
-from typing import List
+from typing import List, Dict
 
 class CodeGenerator():
     def __init__(self) -> None:
@@ -68,7 +68,7 @@ class CodeGenerator():
                 return False
         return True
 
-    def compile(self, output_nodes: List[Node], configs: Config, target: str, kernel_name: str) -> CompileResult:
+    def compile(self, output_nodes: List[Node], configs: Dict[Node, Config], target: str, kernel_name: str) -> CompileResult:
         self.kernel_name = kernel_name
         self.topo_order = find_topo_sort(output_nodes) # List[Node]
         global_args_name_map = self._get_tensor_name_map() # {Tensor : "input0"}
@@ -77,6 +77,7 @@ class CodeGenerator():
         self.block_size, self.grid_size = None, None
         self.done_ops = set()
         block_map = {} # {(Node, output_id) : Block}
+        strides_map = {} # {(Node, output_id) : Block}
         statements, kernel_codes = [], []
 
         for op in self.topo_order:
@@ -89,8 +90,12 @@ class CodeGenerator():
             shared_outputs_idx = list({edge.src_id + len(op.inputs) for edge in filter(
                 lambda edge : not edge.dst_node.is_output(), op.outputs)}) # use set, may have multiple consumers
             shared_inputs = [op.args[idx] for idx in shared_inputs_idx]
+            shared_inputs_strides = {}
+            for idx in shared_inputs_idx:
+                if (op.inputs[idx].src_node, op.inputs[idx].src_id) in strides_map:
+                    shared_inputs_strides[op.args[idx]] = strides_map[(op.inputs[idx].src_node, op.inputs[idx].src_id)]
 
-            sch = Scheduler().rewrite_schedule(op.create_schedule(), config, shared_inputs=shared_inputs)
+            sch = Scheduler().rewrite_schedule(op.create_schedule(), config, shared_inputs=shared_inputs, shared_inputs_strides=shared_inputs_strides)
             with Scope(sch) as scope:
                 # Some inputs which will be used later cannot be overwritten by other internal shared memory,
                 # so we must put these tensor in reuse_disabled_inputs.
@@ -101,6 +106,8 @@ class CodeGenerator():
                 func_name = "_".join([self.kernel_name, str(len(statements)), op.name]) # unique globally
                 kernel_code = tvm_build(sch, op.args, target, shared_outputs_idx, shared_inputs, name=func_name, global_kernel=False,
                     block_reorder=config.block_order, strides=config.output_strides, reuse_disabled_inputs=reuse_disabled_inputs)
+                for idx in config.output_strides:
+                    strides_map[(op, idx-len(op.inputs))] = config.output_strides[idx]
                 kernel_codes.append(kernel_code)
                 if self.block_size is None:
                     self.block_size, self.grid_size = scope.block_size, scope.grid_size

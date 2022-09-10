@@ -6,7 +6,7 @@ from memopt.reference import get_subgraph_reference_outputs
 import memopt
 import tvm
 import numpy as np
-from memopt.fusion import Config
+from memopt.fusion import Config, Stride
 
 def get_matmul_expr(n, k, m):
     ir = "output0[N, M] +=! input0[N, K] * input1[K, M]"
@@ -73,7 +73,7 @@ def run_two():
 def run_all():
     target = tvm.target.cuda(arch="sm_70")
     n, m, k = 1920 * 1080, 64, 64
-    ir, input_dict = get_matmul_suffix_expr(n, k, m)
+    ir, input_dict = get_matmul_expr(n, k, m)
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     L0 = IRNode([None, None], expr)
     L1 = IRNode([L0, None], expr)
@@ -86,12 +86,12 @@ def run_all():
     L6 = IRNode([L5, None], expr)
     output_nodes = [OutputNode(L6)]
     configs = {
-        L0 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L1 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L2 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L3 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L4 : {"use_tc" : True, "strides" : {2 : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
-        L5 : {"use_tc" : True, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L0 : {"use_tc" : True, "strides" : {2 : Stride(72, 0)}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L1 : {"use_tc" : True, "strides" : {2 : Stride(72, 0)}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L2 : {"use_tc" : True, "strides" : {2 : Stride(72, 0)}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L3 : {"use_tc" : True, "strides" : {2 : Stride(72, 0)}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L4 : {"use_tc" : True, "strides" : {2 : Stride(72, 0)}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
+        L5 : {"use_tc" : True, "strides" : {2 : Stride(72, 0)}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]},
         L6 : {"block": [128, 3], "thread": [128, 1], "rstep": [64]},
     }
     for node in configs:
@@ -101,10 +101,10 @@ def run_all():
     cpresult.compile_and_load()
     print(cpresult.code)
     out = cpresult.get_example_outputs()
-    print(cpresult.profile(2))
+    print(cpresult.profile())
     print(out)
     # ref_out = get_subgraph_reference_outputs(output_nodes)
-    # # print(out, ref_out)
+    # print(out, ref_out)
     # for a, b in zip(out, ref_out):
     #     diff = np.max(np.abs(a-b))
     #     print("value diff:", diff)

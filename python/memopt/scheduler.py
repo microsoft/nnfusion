@@ -3,17 +3,18 @@ from .fusion import Config
 import tvm
 from tvm import te
 import numpy as np
-from typing import List
+from typing import List, Dict
+from .fusion.config import Stride
 
 class Scheduler:
     def __init__(self):
         pass
 
-    def cooperative_fetch(self, shared, sch, strides=None):
+    def cooperative_fetch(self, shared, sch, strides: Stride = Stride()):
         assert self.thread_per_block[2] == 1
         axes = sch[shared].op.axis
-        if strides is not None:
-            sch[shared].storage_align(axes[-2], strides - 1, strides)
+        if strides.is_valid():
+            sch[shared].storage_align(axes[strides.ax], strides.stride - 1, strides.stride)
         fused = sch[shared].fuse(*axes)
         _t, tx = sch[shared].split(fused, factor=self.thread_per_block[0])
         oo, ty = sch[shared].split(_t, factor=self.thread_per_block[1])
@@ -28,10 +29,13 @@ class Scheduler:
     #   shared_inputs: inputs that are already in the shared memory, which is used for fusion case.
     # [Return]
     #   new_s: an optimized TVM schedule
-    def rewrite_schedule(self, schedule: te.Schedule, config: Config, shared_inputs: List[te.Tensor] = []):
+    def rewrite_schedule(self, schedule: te.Schedule, config: Config, shared_inputs: List[te.Tensor] = [],
+        shared_inputs_strides: Dict[te.Tensor, Stride] = {}):
         self.config = config
         self.sche = schedule
         self.shared_inputs = shared_inputs
+        self.shared_inputs_strides = {tensor: [] for tensor in shared_inputs}
+        self.shared_inputs_strides.update(shared_inputs_strides)
 
         self.reduce_op = None
         self.output_op = None
@@ -155,9 +159,11 @@ class Scheduler:
             # self.sche[local_tensor].compute_at(self.sche[reg_tile], space_fused)
             if input_tensor in self.shared_inputs:
                 self.sche[shared_tensor].compute_at(self.sche[out], blck_fused)
+                strides = self.shared_inputs_strides[input_tensor]
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
-            self.cooperative_fetch(shared_tensor, self.sche)
+                strides = Stride()
+            self.cooperative_fetch(shared_tensor, self.sche, strides)
 
         cache_plan = {}
         for op in self.elementwise_ops:
@@ -346,8 +352,8 @@ class Scheduler:
             self.sche[BS].compute_at(self.sche[out], blck_fused)
         else:
             self.sche[BS].compute_at(self.sche[CF], ko)
-        self.cooperative_fetch(AS, self.sche, AS_stride[0])
-        self.cooperative_fetch(BS, self.sche, BS_stride[0])
+        self.cooperative_fetch(AS, self.sche, Stride(AS_stride[0], 0))
+        self.cooperative_fetch(BS, self.sche, Stride(BS_stride[0], 0))
 
         shape = (wmma_m, wmma_n, wmma_k)
         AL_gemm = te.placeholder((wmma_m, wmma_k), name="AL_gemm", dtype=A.dtype)

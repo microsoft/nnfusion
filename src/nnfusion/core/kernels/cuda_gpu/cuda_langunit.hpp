@@ -24,6 +24,7 @@ namespace nnfusion
         namespace macro
         {
             LU_DECLARE(HALF_MAX);
+            LU_DECLARE(HALF_OPERATIONS);
             LU_DECLARE(CUDA_SAFE_CALL_NO_THROW);
             LU_DECLARE(CUDA_SAFE_CALL);
             LU_DECLARE(CUDNN_SAFE_CALL_NO_THROW);

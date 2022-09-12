@@ -240,6 +240,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
     if (!FLAGS_fcodegen_pybind)
         projgen->lup_codegen->require(macro::HALF_MAX);
+    projgen->lup_codegen->require(macro::HALF_OPERATIONS);
     projgen->lup_codegen->require(codegen_device_type());
     projgen->lup_codegen->require(codegen_workspace_size(tu));
     return;

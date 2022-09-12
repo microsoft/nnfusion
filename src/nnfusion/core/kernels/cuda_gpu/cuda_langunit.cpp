@@ -27,6 +27,33 @@ inline __device__ half min(half x, half y) { return x < y ? x : y; }
 #endif
 )");
 
+LU_DEFINE(macro::HALF_OPERATIONS,
+          R"(
+#define CUDA_UNSUPPORTED_HALF_MATH_BINARY(HALF_MATH_NAME, FP32_MATH_NAME) \
+inline __device__ half HALF_MATH_NAME(half x, half y) {                   \
+  float tmp_x = __half2float(x);                                          \
+  float tmp_y = __half2float(y);                                          \
+  float result = FP32_MATH_NAME(tmp_x, tmp_y);                            \
+  return __float2half(result);                                            \
+}
+
+#define CUDA_UNSUPPORTED_HALF_MATH_UNARY(HALF_MATH_NAME, FP32_MATH_NAME) \
+inline __device__ half HALF_MATH_NAME(half x) {                          \
+  float tmp_x = __half2float(x);                                         \
+  float result = FP32_MATH_NAME(tmp_x);                                  \
+  return __float2half(result);                                           \
+}
+
+CUDA_UNSUPPORTED_HALF_MATH_BINARY(hpow, powf)
+CUDA_UNSUPPORTED_HALF_MATH_UNARY(htanh, tanhf)
+CUDA_UNSUPPORTED_HALF_MATH_UNARY(htan, tanf)
+CUDA_UNSUPPORTED_HALF_MATH_UNARY(hatan, atanf)
+CUDA_UNSUPPORTED_HALF_MATH_UNARY(herf, erf)
+
+#undef CUDA_UNSUPPORTED_HALF_MATH_BINARY
+#undef CUDA_UNSUPPORTED_HALF_MATH_UNARY
+)");
+
 LU_DEFINE(
     macro::CUDA_SAFE_CALL_NO_THROW,
     R"(#define CUDA_SAFE_CALL_NO_THROW(x)                                                                 \
@@ -224,7 +251,7 @@ LU_DEFINE(
         v = __ldg(in + i);
     }
     return v;
-} 
+}
 __device__ __forceinline__ float  load(const float*  __restrict__ in, int i=0, bool b=true)
 {
     float v = 0.0f;
@@ -883,7 +910,7 @@ struct KeyValuePairSum {
 
 template <typename T, int TPB>
 __device__ inline void LayerNorm(
-    const cub::KeyValuePair<T, T>& thread_data, const int ld, const int offset, const T* beta, 
+    const cub::KeyValuePair<T, T>& thread_data, const int ld, const int offset, const T* beta,
     const T* gamma, const T epsilon, T* output) {
   // Assuming thread_data is already divided by ld
 
@@ -1259,7 +1286,7 @@ void ComputeSoftmaxWithMask1D(cudaStream_t stream, const int all_sequence_length
     const int blockSize = 1024;
     MaskedSoftmaxKernel<T, blockSize>
         <<<grid, blockSize, 0, stream>>>(all_sequence_length, sequence_length, mask_index, mask_start, input, output);
-  } 
+  }
 }
 
 template <typename T>
@@ -1291,7 +1318,7 @@ void ComputeSoftmaxWithMask2D(cudaStream_t stream, const int all_sequence_length
     const int blockSize = 1024;
     SoftmaxWithMask2DSmallKernel<T, blockSize>
         <<<grid, blockSize, 0, stream>>>(all_sequence_length, sequence_length, attention_mask, input, output, is_unidirectional, scalar);
-  } 
+  }
 }
 
 template <typename T>
@@ -1673,7 +1700,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward) 
+// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward)
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.
@@ -1908,7 +1935,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward) 
+// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward)
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.

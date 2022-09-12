@@ -65,7 +65,7 @@ class DefaultPolicy:
 
         # print("subgraph has {} output".format(len(self.output_nodes)))
 
-    def emit_config(self, topk: int):
+    def emit_config(self, topk: int) -> List[Dict[Node, Config]]:
         base_tile = self.get_base_tile()
         if base_tile is None:
             return []

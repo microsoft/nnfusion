@@ -1,6 +1,9 @@
 from .reference import get_ref_tensor
 from .tvm_build import _type_map
+from .fusion import Config
+from .header import cuda_fp16_header, cuda_default_header
 
+from typing import List
 from concurrent.futures import ThreadPoolExecutor
 import tvm
 import ctypes
@@ -9,7 +12,7 @@ import subprocess
 import tempfile
 
 class CompileResult:
-    def __init__(self, config, code, block_size, grid_size, name, args):
+    def __init__(self, config: Config, code: str, block_size: List[int], grid_size: List[int], name: str, args: List[tvm.te.Tensor]):
         self.config = config
         self.code = code
         self.block_size = block_size
@@ -20,6 +23,7 @@ class CompileResult:
         self.lib = None
         self.latency = None
         self.origin = self
+        self.use_fp16 = any([x.dtype == 'float16' for x in self.args])
 
     def set_io_desc(self, input_desc, output_desc):
         self.input_desc = input_desc
@@ -65,13 +69,9 @@ extern "C" float profile({}) {{
     return ms / repeats;
 }}
 """.format(def_args, call_str, call_str)
-        header = \
-"""
-#include <cuda_runtime.h>
-#include <math.h>
-#include <cuda_fp16.h>
-#include <mma.h>
-"""
+        header = cuda_default_header
+        if self.use_fp16:
+            header += cuda_fp16_header
         self.host_code = header + self.code + "\n" + host_funcs
         return self.host_code
 

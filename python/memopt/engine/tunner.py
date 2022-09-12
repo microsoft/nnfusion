@@ -28,6 +28,8 @@ def get_max_diff(tensor_list_a, tensor_list_b):
         diff = np.abs(a-b)
         diff = diff / np.abs(b).clip(1) # handle large floating numbers
         diff = np.max(diff)
+        if a.dtype == np.float16:
+            diff /= 1000.0
         total_diff.append(diff)
     total_diff = max(total_diff)
     return total_diff

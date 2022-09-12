@@ -14,7 +14,7 @@ def tofp16model(in_file_name, out_file_name):
     trans_model = float16_converter.convert_float_to_float16(onnx_model,keep_io_types=True)
     save_model(trans_model, out_file_name)
 
-def torch2onnx(prefix, model, inputs):
+def torch2onnx(prefix, model, inputs, fp16):
     outputs = model(*inputs)
     if not isinstance(outputs, (tuple, list)):
         outputs = (outputs, )
@@ -29,7 +29,8 @@ def torch2onnx(prefix, model, inputs):
         training=False,
         do_constant_folding=False,
         opset_version=11)
-    # tofp16model( osp.join(prefix, "model.onnx"),  osp.join(prefix, "model_fp16.onnx"))
+    if fp16:
+        tofp16model( osp.join(prefix, "model.onnx"),  osp.join(prefix, "model.onnx"))
     feed_dict = dict(zip(input_names, inputs))
     np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
 
@@ -54,6 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("model", type=str)
     parser.add_argument("--bs", type=int, default=1)
     parser.add_argument("--prefix", type=str, default="temp")
+    parser.add_argument("--fp16", action="store_true", default=False)
     parser.add_argument("--run_torch", action="store_true", default=False)
     args = parser.parse_args()
     assert (args.model in globals()), "Model {} not found.".format(args.model)
@@ -65,4 +67,4 @@ if __name__ == "__main__":
         run_torch(model, inputs)
     else:
         os.makedirs(args.prefix, exist_ok=True)
-        torch2onnx(args.prefix, model, inputs)
+        torch2onnx(args.prefix, model, inputs, args.fp16)

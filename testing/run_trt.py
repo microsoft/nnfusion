@@ -5,7 +5,7 @@ import time
 import argparse
 import torch
 
-def run_trt(prefix):
+def run_trt(prefix, use_fp16=False):
     logger = trt.Logger(trt.Logger.ERROR)
     builder = trt.Builder(logger)
     network = builder.create_network(1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
@@ -18,6 +18,8 @@ def run_trt(prefix):
         raise RuntimeError()
     config = builder.create_builder_config()
     config.set_flag(trt.BuilderFlag.STRICT_TYPES)
+    if use_fp16:
+        config.set_flag(trt.BuilderFlag.FP16)
     engine = builder.build_engine(network, config)
     print("Built engine successfully.")
 
@@ -50,6 +52,7 @@ def run_trt(prefix):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix', type=str, default="temp")
+    parser.add_argument("--fp16", action="store_true", default=False)
     args = parser.parse_args()
     torch.random.manual_seed(0)
-    run_trt(args.prefix)
+    run_trt(args.prefix, args.fp16)

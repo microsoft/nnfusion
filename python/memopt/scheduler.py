@@ -34,7 +34,7 @@ class Scheduler:
         self.config = config
         self.sche = schedule
         self.shared_inputs = shared_inputs
-        self.shared_inputs_strides = {tensor: [] for tensor in shared_inputs}
+        self.shared_inputs_strides = {tensor: Stride() for tensor in shared_inputs}
         self.shared_inputs_strides.update(shared_inputs_strides)
 
         self.reduce_op = None

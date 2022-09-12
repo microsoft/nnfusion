@@ -348,8 +348,8 @@ LanguageUnit_p cuda::Dot::emit_function_body()
         lu << "const half alpha = 1.0f;\nconst half beta = 0.f;\n";
 
         lu << "CUBLAS_SAFE_CALL(cublasHgemm(cublas_handle,"
-           << " CUBLAS_OP_N,"
-           << " CUBLAS_OP_N,"
+           << (trans_B ? " CUBLAS_OP_T," : " CUBLAS_OP_N,")
+           << (trans_A ? " CUBLAS_OP_T," : " CUBLAS_OP_N,")
            << " " << n << ","
            << " " << m << ","
            << " " << k << ","

@@ -207,83 +207,83 @@ LanguageUnit_p cuda::Dot::emit_function_body()
     else if (dtype == element::f16)
     {
         // case 1: Scalar * Tensor
-        // if (arg0_shape.empty() || arg1_shape.empty())
-        // {
-        //     auto& second = (arg0_shape.empty() ? arg1_shape : arg0_shape);
-        //     size_t count = nnfusion::shape_size(second);
+         if (arg0_shape.empty() || arg1_shape.empty())
+         {
+             auto& second = (arg0_shape.empty() ? arg1_shape : arg0_shape);
+             size_t count = nnfusion::shape_size(second);
 
-        //     string firstarg = (arg0_shape.empty() ? "input1" : "input0");
-        //     string secondarg = (arg0_shape.empty() ? "input0" : "input1");
+             string firstarg = (arg0_shape.empty() ? "input1" : "input0");
+             string secondarg = (arg0_shape.empty() ? "input0" : "input1");
 
-        //     lu << "cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_DEVICE);\n";
+             lu << "cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_DEVICE);\n";
 
-        //     lu << "CUDA_SAFE_CALL(cudaMemcpy(outupt0, " << firstarg << ", " << count << ", cudaMemcpyDeviceToDevice));\n";     // copy `firstarg` to `output0`
-        //     lu << "CUBLAS_SAFE_CALL(nnfusionHalfScale(" << secondarg << ", output0, " << count << "));\n";
-        // }
+             lu << "CUDA_SAFE_CALL(cudaMemcpy(outupt0, " << firstarg << ", " << count << ", cudaMemcpyDeviceToDevice));\n";     // copy `firstarg` to `output0`
+             lu << "CUBLAS_SAFE_CALL(nnfusionHalfScale(" << secondarg << ", output0, " << count << "));\n";
+         }
         // // case 2: 1d Dot
-        // else if ((arg0_shape.size() == arg1_shape.size()) && (arg0_shape.size() == reduction_axes))
-        // {
-        //     for (int i = 0; i < arg0_shape.size(); i++)
-        //     {
-        //         if (arg0_shape[i] != arg1_shape[i])
-        //         {
-        //             std::vector<std::string> arg_vec{"arg0", "arg1"};
-        //             std::vector<nnfusion::Shape> shape_vec{arg0_shape, arg1_shape};
+         else if ((arg0_shape.size() == arg1_shape.size()) && (arg0_shape.size() == reduction_axes))
+         {
+             for (int i = 0; i < arg0_shape.size(); i++)
+             {
+                 if (arg0_shape[i] != arg1_shape[i])
+                 {
+                     std::vector<std::string> arg_vec{"arg0", "arg1"};
+                     std::vector<nnfusion::Shape> shape_vec{arg0_shape, arg1_shape};
 
-        //             NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
-        //                                 << nnfusion::join(shape_vec) << " respectively, at Node "
-        //                                 << m_context->gnode->get_name()
-        //                                 << ", do not match for dot op";
-        //         }
-        //     }
+                     NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
+                                         << nnfusion::join(shape_vec) << " respectively, at Node "
+                                         << m_context->gnode->get_name()
+                                         << ", do not match for dot op";
+                 }
+             }
 
-        //     size_t count = nnfusion::shape_size(arg0_shape);
-        //     lu << "cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_DEVICE);\n";
+             size_t count = nnfusion::shape_size(arg0_shape);
+             lu << "cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_DEVICE);\n";
 
-        //     lu << "CUBLAS_SAFE_CALL(cublasSdot(cublas_handle, " << count
-        //     << ", static_cast<const float*>(input0), 1, static_cast<const float*>(input1), 1, "
-        //         "static_cast<float*>(output0)));\n";
-        // }
+             lu << "CUBLAS_SAFE_CALL(cublasSdot(cublas_handle, " << count
+             << ", static_cast<const float*>(input0), 1, static_cast<const float*>(input1), 1, "
+                 "static_cast<float*>(output0)));\n";
+         }
         // // matrix * vector
-        // else if ((arg0_shape.size() == 2) && (arg1_shape.size() == 1) && (reduction_axes == 1))
-        // {
-        //     lu << "const float alpha = 1.0;\n const float beta = 0;\n";
-        //     lu << "CUBLAS_SAFE_CALL(cublasSgemv(cublas_handle, ";
-        //     if (trans_A)
-        //         lu << "CUBLAS_OP_N, " << arg0_shape[0] << ", " << arg0_shape[1] << ", ";
-        //     else
-        //         lu << "CUBLAS_OP_T, " << arg0_shape[1] << ", " << arg0_shape[0] << ", ";
-        //     lu << " &alpha,"
-        //     << " static_cast<const float*>(input0)," << arg0_shape[1] << ", "
-        //     << " static_cast<const float*>(input1),"
-        //     << " 1,"
-        //     << " &beta,"
-        //     << " static_cast<float*>(output0),"
-        //     << " 1));\n";
-        // }
-        // else if ((arg0_shape.size() == 2) && (arg1_shape.size() == 2) && (reduction_axes == 1) &&
-        //         (trans_A || trans_B))
-        // {
-        //     int m = trans_B ? arg1_shape[0] : arg1_shape[1];
-        //     int n = trans_A ? arg0_shape[1] : arg0_shape[0];
-        //     int k = trans_A ? arg0_shape[0] : arg0_shape[1];
+         else if ((arg0_shape.size() == 2) && (arg1_shape.size() == 1) && (reduction_axes == 1))
+         {
+             lu << "const float alpha = 1.0f;\n const float beta = 0.f;\n";
+             lu << "CUBLAS_SAFE_CALL(cublasSgemv(cublas_handle, ";
+             if (trans_A)
+                 lu << "CUBLAS_OP_N, " << arg0_shape[0] << ", " << arg0_shape[1] << ", ";
+             else
+                 lu << "CUBLAS_OP_T, " << arg0_shape[1] << ", " << arg0_shape[0] << ", ";
+             lu << " &alpha,"
+             << " static_cast<const float*>(input0)," << arg0_shape[1] << ", "
+             << " static_cast<const float*>(input1),"
+             << " 1,"
+             << " &beta,"
+             << " static_cast<float*>(output0),"
+             << " 1));\n";
+         }
+         else if ((arg0_shape.size() == 2) && (arg1_shape.size() == 2) && (reduction_axes == 1) &&
+                 (trans_A || trans_B))
+         {
+             int m = trans_B ? arg1_shape[0] : arg1_shape[1];
+             int n = trans_A ? arg0_shape[1] : arg0_shape[0];
+             int k = trans_A ? arg0_shape[0] : arg0_shape[1];
 
-        //     lu << "const half alpha = 1.0;\nconst half beta = 0;\n";
+             lu << "const half alpha = 1.0f;\nconst half beta = 0.f;\n";
 
-        //     lu << "CUBLAS_SAFE_CALL(cublasHgemm(cublas_handle,"
-        //     << (trans_B ? " CUBLAS_OP_T," : " CUBLAS_OP_N,")
-        //     << (trans_A ? " CUBLAS_OP_T," : " CUBLAS_OP_N,") << " " << m << ","
-        //     << " " << n << ","
-        //     << " " << k << ","
-        //     << " &alpha,"
-        //     << " static_cast<const half*>(input1),"
-        //     << " " << arg1_shape[1] << ","
-        //     << " static_cast<const half*>(input0),"
-        //     << " " << arg0_shape[1] << ","
-        //     << " &beta,"
-        //     << " static_cast<half*>(output0),"
-        //     << " " << m << "));\n";
-        // } else {
+             lu << "CUBLAS_SAFE_CALL(cublasHgemm(cublas_handle,"
+             << (trans_B ? " CUBLAS_OP_T," : " CUBLAS_OP_N,")
+             << (trans_A ? " CUBLAS_OP_T," : " CUBLAS_OP_N,") << " " << m << ","
+             << " " << n << ","
+             << " " << k << ","
+             << " &alpha,"
+             << " static_cast<const half*>(input1),"
+             << " " << arg1_shape[1] << ","
+             << " static_cast<const half*>(input0),"
+             << " " << arg0_shape[1] << ","
+             << " &beta,"
+             << " static_cast<half*>(output0),"
+             << " " << m << "));\n";
+         } else {
         size_t axes_for_m_count = arg0_shape.size() - reduction_axes;
         size_t axes_for_n_count = arg1_shape.size() - reduction_axes;
         size_t axes_for_k_count = reduction_axes;
@@ -361,7 +361,7 @@ LanguageUnit_p cuda::Dot::emit_function_body()
            << " &beta,"
            << " static_cast<half*>(output0),"
            << " " << n << "));\n";
-        // }
+         }
     }
     else
     {

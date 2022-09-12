@@ -42,6 +42,7 @@ namespace nnfusion
                     , generic_op(
                           static_pointer_cast<nnfusion::op::GenericOp>(ctx->gnode->get_op_ptr()))
                 {
+                    dtype = nnfusion::element::Type(ctx->outputs[0]->get_element_type());
                     GENERIC_OP_LOGGING();
                 }
 
@@ -94,6 +95,15 @@ namespace nnfusion
 
                     float alpha = 1.0f, beta = 0.0f;
                     auto code = nnfusion::op::create_code_from_template(
+                        dtype == nnfusion::element::f16 ? R"(
+                        static const half alpha = @alpha@F, beta = @beta@F;
+                        // if (!@hCublas@)
+                        //     CUBLAS_SAFE_CALL(@api_create@(&@hCublas@));
+                        CUBLAS_SAFE_CALL(@api_exec@(
+                            @hCublas@, @transA@, @transB@, @m@, @n@, @k@,
+                            &alpha, input1, @lda@, @stride_a@, input0, @ldb@, @stride_b@,
+                            &beta, output0, @ldc@, @stride_c@, @batch@));
+                    )"  :
                         R"(
                         static const float alpha = @alpha@F, beta = @beta@F;
                         // if (!@hCublas@)
@@ -106,7 +116,7 @@ namespace nnfusion
                         {
                             {"hCublas", "cublas_handle"},
                             {"api_create", "cublasCreate"},
-                            {"api_exec", "cublasSgemmStridedBatched"},
+                            {"api_exec", dtype == nnfusion::element::f16 ? "cublasHgemmStridedBatched" : "cublasSgemmStridedBatched"},
                             {"transA", transB ? "CUBLAS_OP_T" : "CUBLAS_OP_N"},
                             {"transB", transA ? "CUBLAS_OP_T" : "CUBLAS_OP_N"},
                             {"alpha", alpha},
@@ -181,6 +191,9 @@ namespace nnfusion
                     return _lu;
                 }
                 bool require_cublas_handle() override { return true; }
+            private:
+                // Fields for codegen
+                element::Type dtype;
             };
         } // namespace cuda
     }     // namespace kernels

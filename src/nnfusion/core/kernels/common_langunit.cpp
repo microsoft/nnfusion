@@ -31,9 +31,17 @@ LU_DEFINE(header::torch_extension, "#include <torch/extension.h>\n");
 LU_DEFINE(macro::NNFUSION_DEBUG, "#define NNFUSION_DEBUG\n");
 LU_DEFINE(macro::MIN, "#define MIN(a,b) ((a)>(b)?(b):(a))\n");
 
-// Declaration
 LU_DEFINE(declaration::typedef_int,
-          "\ntypedef signed char int8_t;\ntypedef signed short int16_t;\ntypedef signed int "
-          "int32_t;\ntypedef signed long int int64_t;\ntypedef unsigned char uint8_t;\ntypedef "
-          "unsigned short uint16_t;\ntypedef unsigned int uint32_t;\ntypedef unsigned long int "
-          "uint64_t;\n");
+          R"(
+typedef signed char int8_t;
+typedef signed short int16_t;
+typedef signed int int32_t;
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long int uint64_t;
+// typedef signed long int int64_t;
+typedef long long _ll;
+#define int64_t _ll
+#define __int8_t_defined
+)");

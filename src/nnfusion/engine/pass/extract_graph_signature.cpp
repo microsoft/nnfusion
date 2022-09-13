@@ -163,6 +163,15 @@ bool ExtractGraphSignature::extract_args(std::shared_ptr<InterpreterContext> ctx
                 para_info[type][frontend_name]["name"] = tv->get_name();
                 para_info[type][frontend_name]["id"] = ss.str();
                 para_info[type][frontend_name]["shape"] = tv->get_shape();
+                auto& ps = tv->get_partial_shape();
+                if(ps.is_dynamic())
+                {
+                    para_info[type][frontend_name]["symbolic_shape"] = json();
+                    auto& dynshape = ps.sym_shape;
+                    for(auto sym : *dynshape)
+                        para_info[type][frontend_name]["symbolic_shape"].push_back(sym.sym());
+                }
+                // exit(0);
             }
         }
     }
@@ -220,6 +229,15 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
         para_info["output"][frontend_name]["name"] = tv->get_name();
         para_info["output"][frontend_name]["id"] = ss.str();
         para_info["output"][frontend_name]["shape"] = tv->get_shape();
+
+        auto& ps = tv->get_partial_shape();
+        if(ps.is_dynamic())
+        {
+            para_info["output"][frontend_name]["symbolic_shape"] = json();
+            auto& dynshape = ps.sym_shape;
+            for(auto sym : *dynshape)
+                para_info["output"][frontend_name]["symbolic_shape"].push_back(sym.sym());
+        }
     }
     return true;
 }

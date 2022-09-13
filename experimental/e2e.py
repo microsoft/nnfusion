@@ -29,15 +29,15 @@ def run_single():
     n, m, k = 1920 * 1080, 64, 64
     ir, input_dict = get_matmul_suffix_expr(n, m, k)
     tile = {
-        "use_tc" : True, "strides" : {"output0" : [72, 1]},
+        "use_tc" : True, "strides" : {2 : Stride(72, 0)},
         "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]}
-    tile = Config().from_dict(tile)
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     A = IRNode([None for _ in input_dict], expr)
+    tile = Config().from_dict(tile).complete_config(A, 0, 1)
     sch = A.create_schedule()
     sch = Scheduler().rewrite_schedule(sch, tile, [])
     output_nodes = [OutputNode(A)]
-    cpresult = memopt.CodeGenerator().compile(output_nodes, {A : tile}, "cuda", kernel_name="Fused")
+    cpresult = memopt.CodeGenerator().compile(output_nodes, {A : tile}, target, kernel_name="Fused")
     cpresult.append_host_call()
     cpresult.compile_and_load()
     print(cpresult.profile(2))
@@ -52,11 +52,11 @@ def run_two():
     target = tvm.target.cuda(arch="sm_70")
     n, m, k = 4096, 64, 64
     ir, input_dict = get_matmul_expr(n, k, m)
-    tile = {"use_tc" : True, "strides" : {"output0" : [72, 1]}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]}
-    tile = Config().from_dict(tile)
+    tile = {"use_tc" : True, "strides" : {2 : Stride(72, 0)}, "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]}
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     A = IRNode([None for _ in input_dict], expr)
     B = IRNode([A, None], expr)
+    tile = Config().from_dict(tile).complete_config(A, 0, 1)
     output_nodes = [OutputNode(B)]
     cpresult = memopt.CodeGenerator().compile(output_nodes, {A : tile, B : tile}, target, kernel_name="Fused")
     cpresult.append_host_call()
@@ -95,7 +95,7 @@ def run_all():
         L6 : {"block": [128, 3], "thread": [128, 1], "rstep": [64]},
     }
     for node in configs:
-        configs[node] = Config().from_dict(configs[node])
+        configs[node] = Config().from_dict(configs[node]).complete_config(node, 0, 1)
     cpresult = memopt.CodeGenerator().compile(output_nodes, configs, target, kernel_name="Fused")
     cpresult.append_host_call()
     cpresult.compile_and_load()
@@ -110,4 +110,4 @@ def run_all():
     #     print("value diff:", diff)
 
 if __name__ == "__main__":
-    run_all()
+    run_two()

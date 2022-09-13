@@ -166,6 +166,17 @@ class IRNode(Node):
             result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
         return result
 
+    def infer_dependency_reduce_inputs(self, shape, rstep={}):
+        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
+        shapes = self.ana.infer(shape, rstep)
+        result = {}
+        for op in self._sche.stage_map:
+            if not isinstance(op, tvm.te.ComputeOp):continue
+            if len(op.reduce_axis) > 0:
+                for tensor in op.input_tensors:
+                    result[tensor.name] = shapes[tensor.name]
+        return result
+
     def infer_smem_usage(self, shape, rstep) -> int:
         result = 0
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}

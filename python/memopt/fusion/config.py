@@ -1,5 +1,13 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 import numpy as np
+
+class TensorCoreExtraConfig:
+    def __init__(self, AS_shape, BS_shape, AF_shape, BF_shape, tc_axis) -> None:
+        self.AS_shape = AS_shape
+        self.BS_shape = BS_shape
+        self.AF_shape = AF_shape
+        self.BF_shape = BF_shape
+        self.tc_axis = tc_axis
 
 class Stride:
     def __init__(self, stride: int = 1, ax: int = -1) -> None:
@@ -38,6 +46,7 @@ class Config:
         # special axes for tensorCore
         self.warp = []
         self.wmma = []
+        self.tc_extra_conf: Optional[TensorCoreExtraConfig] = None
         # reduce axes tiling info
         self.rstep = []
         self.reduce_thread = []
@@ -116,3 +125,30 @@ class Config:
 
     def __repr__(self) -> str:
         return str(self.to_dict())
+
+    def complete_config(self, node, C_ax_m: int, C_ax_n: int):
+        if not self.use_tc:
+            return self
+        wmma_m, wmma_n, wmma_k = self.wmma
+        CL_shape = [1 for _ in node.saxis]
+        CL_shape[C_ax_m] = wmma_m
+        CL_shape[C_ax_n] = wmma_n
+
+        shapes = node.infer_dependency_reduce_inputs(CL_shape, {x : 1 for x in node.raxis})
+        A_deps, B_deps = shapes.values()
+        A_ax_m = A_deps.index(wmma_m)
+        B_ax_n = B_deps.index(wmma_n)
+        shapes = node.infer_dependency_reduce_inputs([1 for _ in node.saxis], {x : wmma_k for x in node.raxis})
+        A_deps, B_deps = shapes.values()
+        A_ax_k = A_deps.index(wmma_k)
+        B_ax_k = B_deps.index(wmma_k)
+        tc_axis = [A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n]
+
+        shapes = node.infer_dependency_reduce_inputs(self.block, {x : self.rstep[0] for x in node.raxis})
+        AS_shape, BS_shape = shapes.values()
+
+        shapes = node.infer_dependency_reduce_inputs(self.warp, {x : wmma_k for x in node.raxis})
+        AF_shape, BF_shape = shapes.values()
+
+        self.tc_extra_conf = TensorCoreExtraConfig(AS_shape, BS_shape, AF_shape, BF_shape, tc_axis)
+        return self

@@ -19,7 +19,7 @@ class Scheduler:
         _t, tx = sch[shared].split(fused, factor=self.thread_per_block[0])
         oo, ty = sch[shared].split(_t, factor=self.thread_per_block[1])
         sch[shared].reorder(oo, ty, tx)
-        sch[shared].unroll(oo)
+        # sch[shared].unroll(oo)
         sch[shared].bind(tx, te.thread_axis("threadIdx.x"))
         sch[shared].bind(ty, te.thread_axis("threadIdx.y"))
 
@@ -276,17 +276,35 @@ class Scheduler:
 
         wmma_m, wmma_n, wmma_k = self.config.wmma
         assert (wmma_m, wmma_n, wmma_k) in [(16, 16, 16), (8, 32, 16), (32, 8, 16)]
-
+        A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n = self.config.tc_extra_conf.tc_axis
+        A_ndim, B_ndim, C_ndim = len(A.shape), len(B.shape), len(C.shape)
         offset = 8
-        AF_stride = [wmma_k, 1]
-        AS_stride = [self.config.rstep[0] + offset, 1]
-        BF_stride = [self.config.warp[-1], 1]
-        BS_stride = [self.config.block[-1] + offset, 1]
-        CF_stride = [self.config.warp[-1], 1]
-        CS_stride = [self.config.block[-1] + offset, 1]
+        AL_shape = [1 for _ in range(A_ndim)]
+        AL_shape[A_ax_m] = wmma_m
+        AL_shape[A_ax_k] = wmma_k
+        BL_shape = [1 for _ in range(B_ndim)]
+        BL_shape[B_ax_k] = wmma_k
+        BL_shape[B_ax_n] = wmma_n
+        CL_shape = [1 for _ in range(C_ndim)]
+        CL_shape[C_ax_m] = wmma_m
+        CL_shape[C_ax_n] = wmma_n
+        C_high_ax = min(C_ax_m, C_ax_n)
+        CSstrideDef = Stride(int(np.prod(self.config.block[C_high_ax+1:])) + offset, C_high_ax)
+        CS_stride = CSstrideDef.compute_strides_from_shape(self.config.block)
+        A_high_ax = min(A_ax_m, A_ax_k)
+        ASstrideDef = Stride(int(np.prod(self.config.tc_extra_conf.AS_shape[A_high_ax+1:])) + offset, A_high_ax)
+        B_high_ax = min(B_ax_n, B_ax_k)
+        BSstrideDef = Stride(int(np.prod(self.config.tc_extra_conf.BS_shape[B_high_ax+1:])) + offset, B_high_ax)
+        AS_stride = ASstrideDef.compute_strides_from_shape(self.config.tc_extra_conf.AS_shape)
+        BS_stride = BSstrideDef.compute_strides_from_shape(self.config.tc_extra_conf.BS_shape)
+        AF_stride = [te.var() for _ in range(A_ndim)]
+        BF_stride = [te.var() for _ in range(B_ndim)]
+        CF_stride = [te.var() for _ in range(C_ndim)]
 
-        if A in self.shared_inputs:
-            AS_stride[0] = int(C.op.reduce_axis[-1].dom.extent) + offset
+        print(AF_stride, AS_stride, BF_stride, BS_stride, CF_stride, CS_stride)
+
+        # if A in self.shared_inputs:
+        #     AS_stride[0] = int(C.op.reduce_axis[-1].dom.extent) + offset
 
         self.thread_per_block = [32, 1, 1]
         for blk, warp in zip(self.config.block, self.config.warp):
@@ -313,35 +331,51 @@ class Scheduler:
 
         # schedule for block
         self.sche[CS].compute_at(self.sche[out], blck_fused)
-        mc, nc = CS.op.axis
-        self.sche[CS].storage_align(mc, CS_stride[0] - 1, CS_stride[0])
-        mm, mmii = self.sche[CS].split(mc, factor=self.config.warp[0])
-        nn, nnii = self.sche[CS].split(nc, factor=self.config.warp[1])
-        mmii, mmi = self.sche[CS].split(mmii, factor=wmma_m)
-        nnii, nni = self.sche[CS].split(nnii, factor=wmma_n)
-        self.sche[CS].reorder(mm, nn, mmii, nnii, mmi, nni)
-        warp_fused = self.sche[CS].fuse(mm, nn)
+        self.sche[CS].storage_align(CS.op.axis[CSstrideDef.ax], CSstrideDef.stride - 1, CSstrideDef.stride)
+        warp_axis = []
+        CS_outer_axis = []
+        CS_inner_axis = []
+        for i, ax in enumerate(CS.op.axis):
+            wt, _t = self.sche[CS].split(ax, factor=self.config.warp[i])
+            ot, it = self.sche[CS].split(_t, factor=CL_shape[i])
+            warp_axis.append(wt)
+            CS_outer_axis.append(ot)
+            CS_inner_axis.append(it)
+        self.sche[CS].reorder(*warp_axis, *CS_outer_axis, *CS_inner_axis)
+        warp_fused = self.sche[CS].fuse(*warp_axis)
         self.sche[CS].bind(warp_fused, te.thread_axis("threadIdx.y"))
 
         # Schedule for wmma computation
         self.sche[CF].compute_at(self.sche[CS], warp_fused)
-        warp_i, _ii = self.sche[CF].split(CF.op.axis[0], factor=wmma_m)
-        warp_j, _jj = self.sche[CF].split(CF.op.axis[1], factor=wmma_n)
+        CF_outer_axis = []
+        CF_inner_axis = []
+        for i, ax in enumerate(CF.op.axis):
+            ot, it = self.sche[CF].split(ax, factor=CL_shape[i])
+            CF_outer_axis.append(ot)
+            CF_inner_axis.append(it)
         ko, _k = self.sche[CF].split(CF.op.reduce_axis[0], factor=self.config.rstep[0])
         ki, _k = self.sche[CF].split(_k, factor=wmma_k)
-        self.sche[CF].reorder(ko, ki, warp_i, warp_j, _ii, _jj, _k)
+        self.sche[CF].reorder(ko, ki, *CF_outer_axis, *CF_inner_axis, _k)
 
         # Schedule for  wmma_matrix_a load
         self.sche[AF].compute_at(self.sche[CF], ki)
-        m, m_ii = self.sche[AF].split(AF.op.axis[0], factor=wmma_m)
-        i, i_jj = self.sche[AF].split(AF.op.axis[1], factor=wmma_k)
-        self.sche[AF].reorder(m, i, m_ii, i_jj)
+        AF_outer_axis = []
+        AF_inner_axis = []
+        for i, ax in enumerate(AF.op.axis):
+            ot, it = self.sche[AF].split(ax, factor=AL_shape[i])
+            AF_outer_axis.append(ot)
+            AF_inner_axis.append(it)
+        self.sche[AF].reorder(*AF_outer_axis, *AF_inner_axis)
 
         # Schedule for  wmma_matrix_b load
         self.sche[BF].compute_at(self.sche[CF], ki)
-        i, i_ii = self.sche[BF].split(BF.op.axis[0], factor=wmma_k)
-        n, n_ii = self.sche[BF].split(BF.op.axis[1], factor=wmma_n)
-        self.sche[BF].reorder(i, n, i_ii, n_ii)
+        BF_outer_axis = []
+        BF_inner_axis = []
+        for i, ax in enumerate(BF.op.axis):
+            ot, it = self.sche[BF].split(ax, factor=BL_shape[i])
+            BF_outer_axis.append(ot)
+            BF_inner_axis.append(it)
+        self.sche[BF].reorder(*BF_outer_axis, *BF_inner_axis)
 
         # schedule shared
         if A in self.shared_inputs:
@@ -352,48 +386,53 @@ class Scheduler:
             self.sche[BS].compute_at(self.sche[out], blck_fused)
         else:
             self.sche[BS].compute_at(self.sche[CF], ko)
-        self.cooperative_fetch(AS, self.sche, Stride(AS_stride[0], 0))
-        self.cooperative_fetch(BS, self.sche, Stride(BS_stride[0], 0))
+        self.cooperative_fetch(AS, self.sche, ASstrideDef)
+        self.cooperative_fetch(BS, self.sche, BSstrideDef)
 
         shape = (wmma_m, wmma_n, wmma_k)
-        AL_gemm = te.placeholder((wmma_m, wmma_k), name="AL_gemm", dtype=A.dtype)
-        BL_gemm = te.placeholder((wmma_k, wmma_n), name="BL_gemm", dtype=B.dtype)
+        AL_gemm = te.placeholder(AL_shape, name="AL_gemm", dtype=A.dtype)
+        BL_gemm = te.placeholder(BL_shape, name="BL_gemm", dtype=B.dtype)
         k_gemm = te.reduce_axis((0, wmma_k), name="k_gemm")
-        CL_compute = te.compute(
-            (wmma_m, wmma_n),
-            lambda ii, jj: te.sum(
-                AL_gemm[ii, k_gemm].astype(C.dtype) * BL_gemm[k_gemm, jj].astype(C.dtype),
+        def CLfcompute(*args):
+            A_slice = [0 for _ in range(A_ndim)]
+            A_slice[A_ax_k] = k_gemm
+            A_slice[A_ax_m] = args[C_ax_m]
+            B_slice = [0 for _ in range(B_ndim)]
+            B_slice[B_ax_k] = k_gemm
+            B_slice[B_ax_n] = args[C_ax_n]
+            return  te.sum(
+                AL_gemm.__getitem__(tuple(A_slice)).astype(C.dtype) * BL_gemm.__getitem__(tuple(B_slice)).astype(C.dtype),
                 axis=k_gemm,
-            ),
-            name="CL_compute",
-        )
+            )
+        CL_compute = te.compute(CL_shape, CLfcompute, name="CL_compute",)
 
-        from tvm.topi.cuda.tensor_intrin import (
+        from .tc_intrin import (
             intrin_wmma_load_matrix_A,
             intrin_wmma_load_matrix_W,
             intrin_wmma_store_matrix,
             intrin_wmma_gemm,
         )
-
+        AF_layout = "row_major" if A_ax_m < A_ax_k else "col_major"
         self.sche[AF].tensorize(
-            m_ii,
+            AF_inner_axis[0],
             intrin_wmma_load_matrix_A(
-                AF_stride, AS_stride, shape, "row_major", (wmma_m, wmma_k), (wmma_m, wmma_k), A.dtype
+                AF_stride, AS_stride, shape, AF_layout, AL_shape, AL_shape, A.dtype
             ),
         )
+        BF_layout = "row_major" if B_ax_k < B_ax_n else "col_major"
         self.sche[BF].tensorize(
-            i_ii,
+            BF_inner_axis[0],
             intrin_wmma_load_matrix_W(
-                BF_stride, BS_stride, shape, "row_major", (wmma_k, wmma_n), (wmma_k, wmma_n), B.dtype
+                BF_stride, BS_stride, shape, BF_layout, BL_shape, BL_shape, B.dtype
             ),
         )
         self.sche[CF].tensorize(
-            _ii, intrin_wmma_gemm(AL_gemm, BL_gemm, CL_compute, AF_stride, BF_stride, CF_stride, shape)
+            CF_inner_axis[0], intrin_wmma_gemm(AL_gemm, BL_gemm, CL_compute, AF_stride, BF_stride, CF_stride, shape)
         )
         self.sche[CS].tensorize(
-            mmi,
+            CS_inner_axis[0],
             intrin_wmma_store_matrix(
-                CS_stride, CF_stride, shape, C.dtype, (wmma_m, wmma_n), (wmma_m, wmma_n)
+                CS_stride, CF_stride, shape, C.dtype, CL_shape, CL_shape
             ),
         )
 

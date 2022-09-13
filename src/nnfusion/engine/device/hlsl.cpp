@@ -408,6 +408,25 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     global_entry << "}\n";
                     graph_cnt++;
                 }
+                for(auto tv: context->m_legacy_tu->out)
+                {
+                    if(tv->get_shape().is_dynamic())
+                    {
+                        auto& dynshape = tv->get_shape().sym_shape;
+                        int dim = 0;
+                        for(auto sym : *dynshape)
+                        {
+                            if(sym.is_dynamic())
+                            {
+                                auto dim_name = tv->get_name() + "_dim_" + to_string(dim);
+                                global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name << "();\n";
+                                global_sym_methods
+                                       << "extern \"C\" int64_t get_" << dim_name << "() { return "
+                                       << sym.sym() << "; }\n";
+                            }
+                        }
+                    }
+                }
                 global_entry << "return 0;\n";
                 global_entry.block_end();
                 global_entry << "\n" << global_sym_methods.get_code();

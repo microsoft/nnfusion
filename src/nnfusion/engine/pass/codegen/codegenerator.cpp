@@ -34,8 +34,8 @@ void LanguageUnitwithVec::execute(bool append)
         {
             if (!this->pwd.empty() && lu->pwd.empty())
                 lu->pwd = this->pwd;
-            NNFUSION_CHECK(this->pwd == lu->pwd)
-                << "Conflict pwd: " << this->pwd << " vs " << lu->pwd;
+            NNFUSION_CHECK(this->pwd == lu->pwd) << "Conflict pwd: " << this->pwd << " vs "
+                                                 << lu->pwd;
 
             if (!this->write_to.empty() && lu->write_to.empty())
                 lu->write_to = this->write_to;
@@ -87,8 +87,8 @@ void CodegenMainBlockUnit::execute(bool append)
         {
             if (!this->pwd.empty() && lu->pwd.empty())
                 lu->pwd = this->pwd;
-            NNFUSION_CHECK(this->pwd == lu->pwd)
-                << "Conflict pwd: " << this->pwd << " vs " << lu->pwd;
+            NNFUSION_CHECK(this->pwd == lu->pwd) << "Conflict pwd: " << this->pwd << " vs "
+                                                 << lu->pwd;
 
             if (!this->write_to.empty() && lu->write_to.empty())
                 lu->write_to = this->write_to;
@@ -149,10 +149,8 @@ bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
     std::unordered_map<LanguageUnit_p, std::vector<LanguageUnit_p>> required_by;
     std::unordered_map<LanguageUnit_p, int> ind;
 
-    auto comparef = [](const LanguageUnit_p& a, const LanguageUnit_p& b)
-    {
-        auto prior = [](LanguageUnit_p lup)
-        {
+    auto comparef = [](const LanguageUnit_p& a, const LanguageUnit_p& b) {
+        auto prior = [](LanguageUnit_p lup) {
             if (lup->symbol.find("header::") != string::npos)
                 return 0;
             if (lup->symbol.find("macro::") != string::npos)
@@ -206,8 +204,7 @@ bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
     }
 
     std::unordered_set<std::string> codegen_files;
-    auto clear_file = [&](const std::string& pwd, const std::string& write_to)
-    {
+    auto clear_file = [&](const std::string& pwd, const std::string& write_to) {
         int pos = pwd.find("/");
         while (pos != std::string::npos)
         {
@@ -273,8 +270,7 @@ bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
         }
     };
 
-    auto add_namespace = [&](LanguageUnit_p& lu)
-    {
+    auto add_namespace = [&](LanguageUnit_p& lu) {
         if (lu->symbol.find("header::") > lu->symbol.length() &&
             lu->symbol.find("dxModuleLaunchAsync") > lu->symbol.length() &&
             lu->symbol.find("macro::") > lu->symbol.length() &&
@@ -328,15 +324,15 @@ bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
     {
         if (clean)
             clear_file(lu->pwd, lu->write_to);
-        else if (lu->write_to != "nnfusion_rt" + m_kernel_suffix && 
-            lu->write_to != "runtime.cpp" && 
-            lu->pwd.find("HLSL") > lu->pwd.length())
+        else if (lu->write_to != "nnfusion_rt" + m_kernel_suffix && lu->write_to != "runtime.cpp" &&
+                 lu->pwd.find("HLSL") > lu->pwd.length())
             continue;
-        if(!clean && lu->symbol == "declaration::dxModuleLaunchAsync")
+        if (!clean && lu->symbol == "declaration::dxModuleLaunchAsync")
             continue;
         if (!ns.empty())
             add_namespace(lu);
-        std::string search_name = lu->symbol + "_" + lu->pwd + "_" + lu->write_to + (ns == "" ? "" : "_"+ns);
+        std::string search_name =
+            lu->symbol + "_" + lu->pwd + "_" + lu->write_to + (ns == "" ? "" : "_" + ns);
         if (executed.find(search_name) == executed.end())
         {
             lu->execute();
@@ -374,10 +370,8 @@ bool CodeGenerator::codegen()
     std::unordered_map<LanguageUnit_p, std::vector<LanguageUnit_p>> required_by;
     std::unordered_map<LanguageUnit_p, int> ind;
 
-    auto comparef = [](const LanguageUnit_p& a, const LanguageUnit_p& b)
-    {
-        auto prior = [](LanguageUnit_p lup)
-        {
+    auto comparef = [](const LanguageUnit_p& a, const LanguageUnit_p& b) {
+        auto prior = [](LanguageUnit_p lup) {
             if (lup->symbol.find("header::") != string::npos)
                 return 0;
             if (lup->symbol.find("macro::") != string::npos)
@@ -431,8 +425,7 @@ bool CodeGenerator::codegen()
     }
 
     std::unordered_set<std::string> codegen_files;
-    auto clear_file = [&](const std::string& pwd, const std::string& write_to)
-    {
+    auto clear_file = [&](const std::string& pwd, const std::string& write_to) {
         int pos = pwd.find("/");
         while (pos != std::string::npos)
         {
@@ -536,8 +529,7 @@ void CodeGenerator::pass_exec_info()
     queue.push(lup_codegen);
     std::unordered_map<LanguageUnit_p, LanguageUnit_p> receiver_giver;
 
-    auto pass = [&](LanguageUnit_p giver, LanguageUnit_p receiver)
-    {
+    auto pass = [&](LanguageUnit_p giver, LanguageUnit_p receiver) {
         // NNFUSION_LOG(INFO) << "==================";
         // NNFUSION_LOG(INFO) << giver->symbol << "\t" << giver->pwd << "\t" << giver->write_to;
         // NNFUSION_LOG(INFO) << receiver->symbol << "\t" << receiver->pwd << "\t" << receiver->write_to;
@@ -576,8 +568,7 @@ void CodeGenerator::pass_exec_info()
         // NNFUSION_LOG(INFO) << receiver->symbol << "\t" << receiver->pwd << "\t" << receiver->write_to;
     };
 
-    auto pass_to_sub = [&](LanguageUnitwithVec_p start)
-    {
+    auto pass_to_sub = [&](LanguageUnitwithVec_p start) {
         std::queue<LanguageUnitwithVec_p> lu_with_vec;
         std::vector<LanguageUnitwithVec_p> all_lu_with_vec;
         std::queue<LanguageUnit_p> non_vec_sub_lu;

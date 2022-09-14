@@ -28,9 +28,10 @@ DECLARE_string(fproduct_name);
 DECLARE_string(fdefault_device);
 DECLARE_bool(fsymbolic);
 
-std::string send_tuning_request(std::string& ir, int64_t step)
+std::string KernelTuning::send_tuning_request(std::string& ir, int64_t step, bool symbolic)
 {
-    CurlRequest req(FLAGS_fantares_codegen_server);
+    auto server = symbolic ? m_dynamic_tuning_server : m_static_tuning_server;
+    CurlRequest req(server);
     req.add_custom_header(("COMPUTE_V1: " + ir).c_str());
     req.add_custom_header(("STEP: " + std::to_string(step)).c_str());
 
@@ -285,19 +286,20 @@ void KernelTuning::submit_tuning_batch_asyc(
         NNFUSION_CHECK(n_device_type != UNKNOWN);
 
         auto ir = nnfusion::op::get_translation(gnode);
+        bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
         NNFUSION_LOG(INFO) << gnode->get_op_type() << " " << gnode->get_name() << ", ir: " << ir;
         if (!ir.empty())
         {
             auto status = std::make_shared<TuningStatus>(gnode);
             status->ir = ir;
-            auto response = send_tuning_request(ir, 0);
+            auto response = send_tuning_request(ir, 0, symbolic);
             extract_tunning_status_from_kernel(response, status);
 
             if (status->status == "" || status->status.empty())
             {
                 // submit a new tuning task
                 NNFUSION_LOG(INFO) << gnode->get_op_type() << ", ir: " << ir;
-                auto response = send_tuning_request(ir, FLAGS_fkernel_tuning_steps);
+                auto response = send_tuning_request(ir, FLAGS_fkernel_tuning_steps, symbolic);
                 status->status = "submitted";
             }
             status->status == "completed" ? tuned_kernels.push_back(status)
@@ -432,6 +434,14 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 
     if (FLAGS_fantares_codegen_server.size() > 0)
     {
+        // Note: currently we asume IP:PORT as the static server and IP:PORT+1 as the symbolic server
+        m_static_tuning_server = FLAGS_fantares_codegen_server;
+
+        auto items = split_string(m_static_tuning_server, ":");
+        NNFUSION_CHECK(items.size() == 2) << "Wrong server format: " << m_static_tuning_server;
+        auto port = atoi(items[1].c_str());
+        m_dynamic_tuning_server = items[0] + ":" + std::to_string(port + 1);
+
         submit_tuning_batch_asyc(nodes, tuned_kernels, tuning_kernels);
     }
     else

@@ -205,7 +205,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 global_entry << ")\n{\n";
                 graph_cnt = 0;
                 auto first_params = vec_dim_params[0];
-                 for (auto param : first_params)
+                for (auto param : first_params)
                 {
                     global_sym_defs << "extern \"C\" void set_" << param.first << "(int);\n"
                                     << "extern \"C\" int get_" << param.first << "();\n";
@@ -222,7 +222,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     {
                         if (!condition.empty())
                             condition += " && ";
-                         condition += "get_" + param.first + "() == " + param.second.sym();
+                        condition += "get_" + param.first + "() == " + param.second.sym();
                     }
                     global_entry << "if(" << condition << ")\n{\n";
                     global_entry << "graph_" << graph_cnt << "::kernel_entry(" + arg_vars + ");\n";

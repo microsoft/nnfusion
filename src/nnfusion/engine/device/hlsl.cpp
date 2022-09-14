@@ -331,18 +331,20 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                         }
                         else
                         {
-                            if(pool.first.find("persist") < pool.first.length())
+                            if (pool.first.find("persist") < pool.first.length())
                             {
                                 global_init << graph_name << "::" << pool.first << "_memory_pool = "
-                                        << "graph_0::" << pool.first << "_memory_pool;"
-                                        << "\n";
+                                            << "graph_0::" << pool.first << "_memory_pool;"
+                                            << "\n";
                             }
-                            else 
+                            else
                             {
                                 global_init << graph_name << "::" << pool.first
-                                        << "_memory_pool = dxMemAlloc(" << pool.second << ");\n";
+                                            << "_memory_pool = dxMemAlloc(" << pool.second
+                                            << ");\n";
                                 workspace_size += pool.second;
-                                global_free << "\tdxMemFree(" << graph_name << "::" << pool.first << "_memory_pool);\n";
+                                global_free << "\tdxMemFree(" << graph_name << "::" << pool.first
+                                            << "_memory_pool);\n";
                             }
                         }
                     }
@@ -381,8 +383,9 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 auto first_params = vec_dim_params[0];
                 for (auto param : first_params)
                 {
-                    global_sym_defs << "extern \"C\" RUNTIME_API void set_" << param.first << "(int);\n"
-                                    << "extern \"C\" RUNTIME_API int get_" << param.first << "();\n";
+                    global_sym_defs
+                        << "extern \"C\" RUNTIME_API void set_" << param.first << "(int);\n"
+                        << "extern \"C\" RUNTIME_API int get_" << param.first << "();\n";
                     global_sym_methods << "int " << param.first << ";\n"
                                        << "extern \"C\" void set_" << param.first << "(int s) { "
                                        << param.first << " = s; }\n"

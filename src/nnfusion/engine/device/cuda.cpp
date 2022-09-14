@@ -32,6 +32,7 @@
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
 #include "nnfusion/engine/pass/graph/conv_layout_pass.hpp"
 #include "nnfusion/engine/pass/graph/subgraph_op_move.hpp"
+#include "nnfusion/engine/pass/graph/to_cpu_pass.hpp"
 
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
@@ -74,6 +75,7 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<IRBasedFusionPass>());
 
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
+    g_passes->push_back(make_shared<ToCPUPass>());
 
     // Kernel selection
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());

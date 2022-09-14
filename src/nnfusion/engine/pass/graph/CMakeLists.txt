@@ -33,6 +33,7 @@ set(SRC
     dump_op.cpp
     conv_layout_pass.cpp
     subgraph_op_move.cpp
+    to_cpu_pass.cpp
 )
 
 add_library(nnfusion_engine_pass_graph STATIC ${SRC})

@@ -115,6 +115,7 @@ void SubGraphOpMovePass::move_out(GNodeVector to_move, std::shared_ptr<GNode> if
 
 bool SubGraphOpMovePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
+    if (!FLAGS_fif_move_out) return true;
     for (auto& gnode: graph->get_ordered_ops()) {
         if (gnode->get_op_type() == "If") {
             auto if_op = dynamic_pointer_cast<op::If>(gnode->get_op_ptr());
@@ -122,6 +123,5 @@ bool SubGraphOpMovePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
             find_and_move_small_op_out(graph, if_op->get_else_branch_graph(), gnode);
         }
     }
-    // TODO: check no redundency
     return true;
 }

@@ -381,12 +381,12 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 auto first_params = vec_dim_params[0];
                 for (auto param : first_params)
                 {
-                    global_sym_defs << "extern \"C\" RUNTIME_API void set_" << param.first << "(int);\n"
-                                    << "extern \"C\" RUNTIME_API int get_" << param.first << "();\n";
-                    global_sym_methods << "int " << param.first << ";\n"
-                                       << "extern \"C\" void set_" << param.first << "(int s) { "
+                    global_sym_defs << "extern \"C\" RUNTIME_API void set_" << param.first << "(int64_t);\n"
+                                    << "extern \"C\" RUNTIME_API int64_t get_" << param.first << "();\n";
+                    global_sym_methods << "int64_t " << param.first << ";\n"
+                                       << "extern \"C\" void set_" << param.first << "(int64_t s) { "
                                        << param.first << " = s; }\n"
-                                       << "extern \"C\" int get_" << param.first << "() { return "
+                                       << "extern \"C\" int64_t get_" << param.first << "() { return "
                                        << param.first << "; }\n";
                 }
                 for (auto dim_params : vec_dim_params)
@@ -396,13 +396,36 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     {
                         if (!condition.empty())
                             condition += " && ";
-                        condition += "get_" + param.first + "() == " + param.second.sym();
+                        if(param.second.min() == 0)
+                            condition += "get_" + param.first + "() == " + to_string(param.second.max());
+                        else
+                            condition += "get_" + param.first + "() >=" + to_string(param.second.min()) 
+                                + " && " + " get_" + param.first + "() <=" + to_string(param.second.max());
                     }
                     global_entry << "if(" << condition << ")\n{\n";
                     global_entry << "\tgraph_" << graph_cnt
                                  << "::kernel_entry(" + arg_vars + ");\n";
                     global_entry << "}\n";
                     graph_cnt++;
+                }
+                for(auto tv: context->m_legacy_tu->out)
+                {
+                    if(tv->get_shape().is_dynamic())
+                    {
+                        auto& dynshape = tv->get_shape().sym_shape;
+                        int dim = 0;
+                        for(auto sym : *dynshape)
+                        {
+                            if(sym.is_dynamic())
+                            {
+                                auto dim_name = tv->get_name() + "_dim_" + to_string(dim);
+                                global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name << "();\n";
+                                global_sym_methods
+                                       << "extern \"C\" int64_t get_" << dim_name << "() { return "
+                                       << sym.sym() << "; }\n";
+                            }
+                        }
+                    }
                 }
                 global_entry << "return 0;\n";
                 global_entry.block_end();

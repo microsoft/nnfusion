@@ -922,7 +922,7 @@ KernelEmitter::Pointer
     KernelEmitter::Pointer kernel = nullptr;
     if (!gnode->is_parameter())
         NNFUSION_CHECK((*gnode)["Kernel_Selection_Result"].is_valid())
-            << "Kernel should be selected before this pass:" << gnode->get_op_type();
+            << "Kernel should be selected before this pass:" << *gnode;
     if ((*gnode)["Kernel_Selection_Result"].is_valid())
     {
         auto emitted_kernel = (*gnode)["Kernel_Selection_Result"]

@@ -86,6 +86,11 @@ void assign_stage(std::shared_ptr<nnfusion::graph::Graph>& graph, std::set<std::
         NNFUSION_CHECK(my_stage % 2 == is_small);
         gnode->Set<int>(stage_cpu_tag, (int) my_stage);
     }
+    for (auto gnode: graph->get_nodes()) {
+        if (!gnode->hasAttribute(stage_cpu_tag)) {
+            gnode->Set<int>(stage_cpu_tag, (int) 0);
+        }
+    }
 }
 
 void const_propogate(std::shared_ptr<nnfusion::graph::Graph>& graph, std::set<std::shared_ptr<GNode>> small_ops) {
@@ -96,11 +101,26 @@ void const_propogate(std::shared_ptr<nnfusion::graph::Graph>& graph, std::set<st
             auto min_stage = INT_MAX;
             for (auto out_edge: gnode->get_out_edges()) {
                 auto out_gnode = out_edge->get_dst();
-                if (out_gnode->hasAttribute(stage_cpu_tag)) {
-                    min_stage = min(min_stage, out_gnode->Get<int>(stage_cpu_tag));
-                }
+                min_stage = min(min_stage, out_gnode->Get<int>(stage_cpu_tag));
             }
             gnode->Set<int>(stage_cpu_tag, (int) min_stage);
+        }
+    }
+}
+
+void add_copy_node(std::shared_ptr<nnfusion::graph::Graph>& graph) {
+    for (auto gnode: graph->get_ordered_ops()) {
+        for (auto out_edge: gnode->get_out_edges()) {
+            auto out_node = out_edge->get_dst();
+            bool src_on_cpu = gnode->Get<int>(stage_cpu_tag) & 1;
+            bool dst_on_cpu = out_node->Get<int>(stage_cpu_tag) & 1;
+            if (src_on_cpu != dst_on_cpu) {
+                std::shared_ptr<op::Op> op = src_on_cpu ? dynamic_pointer_cast<op::Op>(std::make_shared<op::H2D>()) : dynamic_pointer_cast<op::Op>(std::make_shared<op::D2H>());
+                auto copy_node = graph->add_node_and_edge(op, {GNodeIndex(gnode, out_edge->get_src_output())}, 1);
+                copy_node->get_op_ptr()->revalidate_and_infer_types(copy_node);
+                graph->add_edge(copy_node, 0, out_node, out_edge->get_dst_input());
+                graph->remove_edge(out_edge);
+            }
         }
     }
 }
@@ -110,5 +130,6 @@ bool ToCPUPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) {
     auto small_ops = get_small_ops(graph);
     assign_stage(graph, small_ops);
     const_propogate(graph, small_ops);
+    add_copy_node(graph);
     return true;
 }

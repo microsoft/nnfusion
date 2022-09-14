@@ -209,7 +209,7 @@ int main(int argc, char** argv)
         nnfusion::engine::HLSLMultiEngine hlsl_multi_engine;
         switch (get_device_type(FLAGS_fdefault_device))
         {
-        case CUDA_GPU: cuda_multi_engine.run_on_graphs(vec_graph); break;
+        // /*Disable due to not well maintained*/ case CUDA_GPU: cuda_multi_engine.run_on_graphs(vec_graph); break;
         case HLSL: hlsl_multi_engine.run_on_graphs(vec_graph); break;
         }
     }

@@ -17,7 +17,6 @@
 
 #include "nnfusion/engine/device/cpu.hpp"
 #include "nnfusion/engine/device/cuda.hpp"
-#include "nnfusion/engine/device/cuda_multi.hpp"
 #include "nnfusion/engine/device/graphcore.hpp"
 #include "nnfusion/engine/device/hlsl.hpp"
 #include "nnfusion/engine/device/rocm.hpp"
@@ -200,8 +199,7 @@ int main(int argc, char** argv)
     if (!backend.empty() && FLAGS_fmulti_shape && !vec_graph.empty())
     {
         NNFUSION_LOG(INFO) << "Graph count: " << vec_graph.size() << "\n";
-        //nnfusion::engine::MultiCudaEngine multi_cuda_engine;
-        nnfusion::engine::CudaMultiEngine cuda_multi_engine;
+        //nnfusion::engine::CudaMultiEngine cuda_multi_engine;
         nnfusion::engine::HLSLMultiEngine hlsl_multi_engine;
         switch (get_device_type(FLAGS_fdefault_device))
         {

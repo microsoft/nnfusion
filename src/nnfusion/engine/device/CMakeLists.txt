@@ -4,7 +4,6 @@
 
 set(SRC
     cuda.cpp
-    cuda_multi.cpp
     graphcore.cpp
     hlsl.cpp
     rocm.cpp

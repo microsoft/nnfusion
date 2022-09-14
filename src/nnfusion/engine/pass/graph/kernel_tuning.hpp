@@ -52,9 +52,13 @@ namespace nnfusion
                                         std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels);
                 bool insert_to_kernel_cache(
                     const std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes);
+                std::string
+                    send_tuning_request(std::string& ir, int64_t step, bool symbolic = false);
 
             private:
                 std::unordered_set<std::string> BlockList;
+                std::string m_static_tuning_server;
+                std::string m_dynamic_tuning_server;
             };
         }
     }

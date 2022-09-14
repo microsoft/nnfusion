@@ -170,11 +170,15 @@ int main(int argc, char** argv)
 
             switch (get_device_type(FLAGS_fdefault_device))
             {
-            case CUDA_GPU: cuda_engine.run_on_graph(graph); break;
+            case CUDA_GPU:
+                cuda_engine.run_on_graph(graph);
+                break;
             // case CUDA_GPU:
             //     runtime->codegen(graph);
             //     break;
-            case ROCM_GPU: rocm_engine.run_on_graph(graph); break;
+            case ROCM_GPU:
+                rocm_engine.run_on_graph(graph);
+                break;
             // case ROCM_GPU: runtime->codegen(graph); break;
             // case GENERIC_CPU: runtime->codegen(graph); break;
             case GENERIC_CPU: cpu_engine.run_on_graph(graph); break;

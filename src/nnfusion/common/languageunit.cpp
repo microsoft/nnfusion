@@ -231,8 +231,7 @@ bool LanguageUnit::copy_all()
 
 void LanguageUnit::divide_code()
 {
-    auto remove_comment = [&](const std::string& code)
-    {
+    auto remove_comment = [&](const std::string& code) {
         std::string res;
         bool s_cmt = false;
         bool m_cmt = false;
@@ -258,8 +257,7 @@ void LanguageUnit::divide_code()
         return res;
     };
 
-    auto process_header_and_macro = [&](const std::string& code)
-    {
+    auto process_header_and_macro = [&](const std::string& code) {
         std::string res;
         bool add_def_macro = false;
         bool add_if_macro = false;
@@ -359,8 +357,7 @@ void LanguageUnit::divide_code()
         return res;
     };
 
-    auto collect_functions_and_variables = [&](const std::string& code)
-    {
+    auto collect_functions_and_variables = [&](const std::string& code) {
         std::string cand;
         std::vector<std::string> blocks;
         bool add_block = false;
@@ -434,8 +431,7 @@ void LanguageUnit::divide_code()
         return std::make_pair(functions, variables);
     };
 
-    auto process_functions = [&](std::vector<std::string>& functions)
-    {
+    auto process_functions = [&](std::vector<std::string>& functions) {
         for (auto f : functions)
         {
             std::string sig;
@@ -470,8 +466,7 @@ void LanguageUnit::divide_code()
         }
     };
 
-    auto process_variables = [&](std::vector<std::string>& variables)
-    {
+    auto process_variables = [&](std::vector<std::string>& variables) {
         for (auto v : variables)
         {
             if (v.find("extern ") != string::npos)

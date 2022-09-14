@@ -252,7 +252,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     global_entry << "}\n";
                     graph_cnt++;
                 }
-                auto outs = tu[0]->out;
+                auto outs = tu.back()->out;
                 for(int i=0;i<outs.size();i++)
                 {
                     auto out = outs[i];

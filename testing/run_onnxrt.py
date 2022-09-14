@@ -7,7 +7,7 @@ import argparse
 
 def ref_output(onnx_model_path, device):
     onnx_model = onnx.load(onnx_model_path)
-    onnx.checker.check_model(onnx_model)
+    # onnx.checker.check_model(onnx_model)
     onnx_model = onnx.shape_inference.infer_shapes(onnx_model)
     sess_options = ort.SessionOptions()
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL

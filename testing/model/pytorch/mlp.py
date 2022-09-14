@@ -8,7 +8,8 @@ class MLP(nn.Module):
         for i in range(n_layers):
             out_features = out_dim if i == n_layers - 1 else hidden_dim
             layers.append(nn.Linear(in_features=dim, out_features=out_features, bias=False))
-            layers.append(nn.ReLU(inplace=True))
+            if i != n_layers - 1:
+                layers.append(nn.ReLU(inplace=True))
 
         self.model = nn.Sequential(*layers)
 

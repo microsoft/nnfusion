@@ -62,6 +62,8 @@ def get_scope() -> Scope:
 
 @tvm._ffi.register_func("memopt.is_independent_alloc")
 def is_independent_alloc(tensor_name):
+    if tensor_name.endswith(".wmma.accumulator.shared") and len(get_scope().exteral_shared_memroy_size) > 0:
+        return True
     if get_scope() is None:
         return False
     return tensor_name in  [x.name + ".shared" for x in get_scope().shared_mem_inputs]

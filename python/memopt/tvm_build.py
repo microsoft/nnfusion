@@ -87,6 +87,10 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
             func_args += ", char* shared"
         src = prefix + name + "({}) ".format(func_args) + src[index:]
         # removing shared memory allocation
+        # check wmma accumulator shared
+        if len(sm_outputs) > 0:
+            reuse_output_name = get_valid_name(args[sm_outputs[0]])
+            src = re.sub(r"__shared__ (\w+) (\w+wmma_accumulator_shared)\[\d+\];", r"\1* \2 = {};".format(reuse_output_name), src, 1)
         for tensor in scope.shared_mem_inputs:
             shared_var_name = tensor.name + "_shared"
             src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(shared_var_name), r"\1* {} = {};".format(shared_var_name, tensor.name), src, 1)

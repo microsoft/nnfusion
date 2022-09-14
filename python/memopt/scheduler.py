@@ -292,19 +292,23 @@ class Scheduler:
         CSstrideDef = Stride(int(np.prod(self.config.block[C_high_ax+1:])) + offset, C_high_ax)
         CS_stride = CSstrideDef.compute_strides_from_shape(self.config.block)
         A_high_ax = min(A_ax_m, A_ax_k)
-        ASstrideDef = Stride(int(np.prod(self.config.tc_extra_conf.AS_shape[A_high_ax+1:])) + offset, A_high_ax)
+        AS_shape = self.config.tc_extra_conf.AS_shape
+        if A in self.shared_inputs:
+            AS_shape[A_ax_k] = int(C.op.reduce_axis[0].dom.extent)
+        ASstrideDef = Stride(int(np.prod(AS_shape[A_high_ax+1:])) + offset, A_high_ax)
         B_high_ax = min(B_ax_n, B_ax_k)
-        BSstrideDef = Stride(int(np.prod(self.config.tc_extra_conf.BS_shape[B_high_ax+1:])) + offset, B_high_ax)
-        AS_stride = ASstrideDef.compute_strides_from_shape(self.config.tc_extra_conf.AS_shape)
-        BS_stride = BSstrideDef.compute_strides_from_shape(self.config.tc_extra_conf.BS_shape)
+        BS_shape = self.config.tc_extra_conf.BS_shape
+        if B in self.shared_inputs:
+            BS_shape[B_ax_k] = int(C.op.reduce_axis[0].dom.extent)
+        BSstrideDef = Stride(int(np.prod(BS_shape[B_high_ax+1:])) + offset, B_high_ax)
+        AS_stride = ASstrideDef.compute_strides_from_shape(AS_shape)
+        BS_stride = BSstrideDef.compute_strides_from_shape(BS_shape)
         AF_stride = [te.var() for _ in range(A_ndim)]
         BF_stride = [te.var() for _ in range(B_ndim)]
         CF_stride = [te.var() for _ in range(C_ndim)]
 
-        print(AF_stride, AS_stride, BF_stride, BS_stride, CF_stride, CS_stride)
-
-        # if A in self.shared_inputs:
-        #     AS_stride[0] = int(C.op.reduce_axis[-1].dom.extent) + offset
+        if A in self.shared_inputs:
+            self.config.tc_extra_conf.AS_shape[A_ax_k] = int(C.op.reduce_axis[-1].dom.extent) + offset
 
         self.thread_per_block = [32, 1, 1]
         for blk, warp in zip(self.config.block, self.config.warp):

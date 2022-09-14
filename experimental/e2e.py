@@ -16,8 +16,8 @@ def get_matmul_expr(n, k, m):
     }
     return ir, input_dict
 
-def get_matmul_suffix_expr(n, k, m):
-    ir = "mediate[N, M] +=! input0[N, K] * input1[K, M]; output0[N, M] = mediate[N, M] * const(2.0).cast(mediate[N, M].dtype())"
+def get_matmul_relu_expr(n, k, m):
+    ir = "mediate[N, M] +=! input0[N, K] * input1[K, M]; output0[N, M] = mediate[N, M].call(`max`, [const(0).cast(mediate[N, M].dtype())]);"
     input_dict = {
         "input0": {"dtype": "float16", "shape": [n, k]},
         "input1": {"dtype": "float16", "shape": [k, m]}
@@ -27,7 +27,7 @@ def get_matmul_suffix_expr(n, k, m):
 def run_single():
     target = tvm.target.cuda(arch="sm_70")
     n, m, k = 1920 * 1080, 64, 64
-    ir, input_dict = get_matmul_suffix_expr(n, m, k)
+    ir, input_dict = get_matmul_relu_expr(n, m, k)
     tile = {
         "use_tc" : True, "strides" : {2 : Stride(72, 0)},
         "block" : [128, 64], "warp": [64, 32], "wmma": [16, 16, 16], "rstep" : [64]}
@@ -73,7 +73,7 @@ def run_two():
 def run_all():
     target = tvm.target.cuda(arch="sm_70")
     n, m, k = 1920 * 1080, 64, 64
-    ir, input_dict = get_matmul_expr(n, k, m)
+    ir, input_dict = get_matmul_relu_expr(n, k, m)
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     L0 = IRNode([None, None], expr)
     L1 = IRNode([L0, None], expr)
@@ -110,4 +110,4 @@ def run_all():
     #     print("value diff:", diff)
 
 if __name__ == "__main__":
-    run_two()
+    run_all()

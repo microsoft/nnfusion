@@ -272,6 +272,7 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
     std::vector<CodeGenerator::Pointer> proj_gens;
     std::vector<std::unordered_map<std::string, size_t>> vec_pool_size(graphs.size());
     std::string arg_list, arg_vars, codegen_folder, write_to, header_write_to;
+    std::vector<TranslationUnit::Pointer> tu;
     int graph_cnt = 0;
     for (auto& graph : graphs)
     {
@@ -288,6 +289,8 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
         cmcpp.run(context->m_legacy_ctx, context->m_legacy_tu);
         proj_gens.push_back(cmcpp.get_projgen());
         proj_gens.back()->codegen_with_preprocess(graph_cnt == 0, graph_name);
+
+        tu.push_back(context->m_legacy_tu);
 
         auto& allocator_list = context->m_legacy_tu->memory_allocator_factory->get_allocator_list();
         for (auto alloc : allocator_list)
@@ -408,23 +411,46 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     global_entry << "}\n";
                     graph_cnt++;
                 }
-                for(auto tv: context->m_legacy_tu->out)
+
+                auto outs = tu[0]->out;
+                for(int i=0;i<outs.size();i++)
                 {
-                    if(tv->get_shape().is_dynamic())
+                    auto out = outs[i];
+                    for(int j=0;j<out->get_shape().size();j++)
                     {
-                        auto& dynshape = tv->get_shape().sym_shape;
-                        int dim = 0;
-                        for(auto sym : *dynshape)
+                        auto dim_name = out->get_name() + "_dim_" + to_string(j);
+                        global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name << "();\n";
+                        global_sym_methods << "extern \"C\" int64_t get_" << dim_name << "()\n{\n";
+
+                        for(int k=0;k<vec_dim_params.size();k++)
                         {
-                            if(sym.is_dynamic())
+                            std::string condition = "";
+                            auto&dim_params = vec_dim_params[k];
+                            for(auto param : dim_params)
                             {
-                                auto dim_name = tv->get_name() + "_dim_" + to_string(dim);
-                                global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name << "();\n";
-                                global_sym_methods
-                                       << "extern \"C\" int64_t get_" << dim_name << "() { return "
-                                       << sym.sym() << "; }\n";
+                                if (!condition.empty())
+                                    condition += " && ";
+                                if(param.second.min() == 0)
+                                    condition += param.first + " == " + to_string(param.second.max());
+                                else 
+                                    condition += param.first + " >= " + to_string(param.second.min()) 
+                                        + " && " + param.first + " <= " + to_string(param.second.max());
                             }
+                            std::string val;
+                            auto sym_shape = tu[k]->out[i]->get_shape().sym_shape;
+                            if(sym_shape != nullptr)
+                            {
+                                auto sym = (*sym_shape)[j];
+                                val = sym.is_dynamic() ? sym.sym() : to_string(sym.max());
+                            }
+                            else
+                            {
+                                val = to_string(tu[k]->out[i]->get_shape()[j]);
+                            }
+                            global_sym_methods << "\tif(" << condition << ") { return " << val << ";}\n";
                         }
+
+                        global_sym_methods << "\treturn 0;\n}\n";
                     }
                 }
                 global_entry << "return 0;\n";

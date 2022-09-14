@@ -5,6 +5,7 @@
 #include <iomanip>
 
 DEFINE_string(fpara_json_file, "./para_info.json", "Kenel entry parameter info json file.");
+DECLARE_bool(fmulti_shape);
 
 using namespace nnfusion::pass;
 
@@ -230,13 +231,16 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
         para_info["output"][frontend_name]["name"] = tv->get_name();
         para_info["output"][frontend_name]["id"] = ss.str();
         para_info["output"][frontend_name]["shape"] = tv->get_shape();
-        para_info["output"][frontend_name]["symbolic_shape"] = json();
-        auto& tv_shape = tv->get_shape();
-        int dim = 0;
-        for(auto sym : tv_shape)
+        if(FLAGS_fmulti_shape)
         {
-								para_info["output"][frontend_name]["symbolic_shape"].push_back(tv->get_name() + "_dim_" + to_string(dim));
+            para_info["output"][frontend_name]["symbolic_shape"] = json();
+            auto& tv_shape = tv->get_shape();
+            int dim = 0;
+            for(auto sym : tv_shape)
+            {
+                para_info["output"][frontend_name]["symbolic_shape"].push_back(tv->get_name() + "_dim_" + to_string(dim));
                 dim++;
+            }
         }
     }
     return true;

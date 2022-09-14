@@ -104,6 +104,7 @@ CudaEngine::CudaEngine()
 }
 
 CudaMultiEngine::CudaMultiEngine()
+    : CudaEngine()
 {
     this->erase_all_codegen();
 }
@@ -114,6 +115,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
     std::vector<CodeGenerator::Pointer> proj_gens;
     std::vector<std::unordered_map<std::string, size_t>> vec_pool_size(graphs.size());
     std::string arg_list, arg_vars, codegen_folder, write_to, header_write_to;
+    std::vector<TranslationUnit::Pointer> tu;
     int graph_cnt = 0;
     for (auto& graph : graphs)
     {
@@ -123,8 +125,11 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
         auto context = make_shared<EngineContext>();
         this->run_on_graph(graph, context);
         CudaMultiCodegenPassPre cmcpp;
+        cmcpp.run(context->m_legacy_ctx, context->m_legacy_tu);
         proj_gens.push_back(cmcpp.get_projgen());
         proj_gens.back()->codegen_with_preprocess(graph_cnt == 0, graph_name);
+
+        tu.push_back(context->m_legacy_tu);
 
         auto& allocator_list = context->m_legacy_tu->memory_allocator_factory->get_allocator_list();
         for (auto alloc : allocator_list)
@@ -137,7 +142,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
             arg_list = get_kernel_entry_paras(context->m_legacy_tu, false);
             arg_vars = get_kernel_entry_args(context->m_legacy_tu, false);
             codegen_folder = proj_gens.back()->get_codegen_folder();
-            write_to = proj_gens.back()->lup_codegen->write_to;
+            write_to = proj_gens.back()->lup_exec->write_to;
             header_write_to =
                 proj_gens.back()->lup_codegen->local_symbol["codegen_header"]->write_to;
         }
@@ -181,7 +186,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                                     << graph_name << "::" << pool.first << "_memory_pool," 
                                     << pool.second << "));\n";
                                 workspace_size += pool.second;
-                                global_free << "\tCUDA_SAFE_CALL(cudaMalloc(" << graph_name << "::" << pool.first << "_memory_pool));\n";
+                                global_free << "\tCUDA_SAFE_CALL(cudaFree(" << graph_name << "::" << pool.first << "_memory_pool));\n";
                             }
                         }
                     }
@@ -220,8 +225,8 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 auto first_params = vec_dim_params[0];
                 for (auto param : first_params)
                 {
-                    global_sym_defs << "extern \"C\" RUNTIME_API void set_" << param.first << "(int64_t);\n"
-                                    << "extern \"C\" RUNTIME_API int64_t get_" << param.first << "();\n";
+                    global_sym_defs << "extern \"C\" void set_" << param.first << "(int64_t);\n"
+                                    << "extern \"C\" int64_t get_" << param.first << "();\n";
                     global_sym_methods << "int64_t " << param.first << ";\n"
                                        << "extern \"C\" void set_" << param.first << "(int64_t s) { "
                                        << param.first << " = s; }\n"
@@ -247,25 +252,48 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     global_entry << "}\n";
                     graph_cnt++;
                 }
-                for(auto tv: context->m_legacy_tu->out)
+                auto outs = tu[0]->out;
+                for(int i=0;i<outs.size();i++)
                 {
-                    if(tv->get_shape().is_dynamic())
+                    auto out = outs[i];
+                    for(int j=0;j<out->get_shape().size();j++)
                     {
-                        auto& dynshape = tv->get_shape().sym_shape;
-                        int dim = 0;
-                        for(auto sym : *dynshape)
+                        auto dim_name = out->get_name() + "_dim_" + to_string(j);
+                        global_sym_defs << "extern \"C\" int64_t get_" << dim_name << "();\n";
+                        global_sym_methods << "extern \"C\" int64_t get_" << dim_name << "()\n{\n";
+
+                        for(int k=0;k<vec_dim_params.size();k++)
                         {
-                            if(sym.is_dynamic())
+                            std::string condition = "";
+                            auto&dim_params = vec_dim_params[k];
+                            for(auto param : dim_params)
                             {
-                                auto dim_name = tv->get_name() + "_dim_" + to_string(dim);
-                                global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name << "();\n";
-                                global_sym_methods
-                                       << "extern \"C\" int64_t get_" << dim_name << "() { return "
-                                       << sym.sym() << "; }\n";
+                                if (!condition.empty())
+                                    condition += " && ";
+                                if(param.second.min() == 0)
+                                    condition += param.first + " == " + to_string(param.second.max());
+                                else 
+                                    condition += param.first + " >= " + to_string(param.second.min()) 
+                                        + " && " + param.first + " <= " + to_string(param.second.max());
                             }
+                            std::string val;
+                            auto sym_shape = tu[k]->out[i]->get_shape().sym_shape;
+                            if(sym_shape != nullptr)
+                            {
+                                auto sym = (*sym_shape)[j];
+                                val = sym.is_dynamic() ? sym.sym() : to_string(sym.max());
+                            }
+                            else
+                            {
+                                val = to_string(tu[k]->out[i]->get_shape()[j]);
+                            }
+                            global_sym_methods << "\tif(" << condition << ") { return " << val << ";}\n";
                         }
+
+                        global_sym_methods << "\treturn 0;\n}\n";
                     }
                 }
+
                 global_entry << "return 0;\n";
                 global_entry.block_end();
                 global_entry << "\n" << global_sym_methods.get_code();

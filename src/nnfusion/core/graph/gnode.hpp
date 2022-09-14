@@ -169,6 +169,9 @@ namespace nnfusion
 
             void set_implementation(std::string impl) { m_implementation = impl; };
             std::string get_implementation() { return m_implementation; };
+
+            bool is_on_gpu() const { return m_on_gpu; }
+            void set_on_gpu(bool on_gpu) { m_on_gpu = on_gpu; }
         protected:
             int64_t m_id; // m_id is for graph, the index in graph m_nodes
             size_t m_instance_id;
@@ -185,6 +188,7 @@ namespace nnfusion
 
             std::vector<std::shared_ptr<Input>> m_inputs;
             std::vector<std::shared_ptr<Output>> m_outputs;
+            bool m_on_gpu;
         };
         std::ostream& operator<<(std::ostream& s, const GNode& gnode);
 

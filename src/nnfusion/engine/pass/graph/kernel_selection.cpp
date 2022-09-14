@@ -6,6 +6,7 @@
 #include <utility>
 #include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
+#include "nnfusion/core/kernels/cuda_gpu/cpu_op_emitter.hpp"
 #include "nnfusion/core/kernels/hlsl/hlsl_kernel_emitter.hpp"
 
 using namespace nnfusion;
@@ -420,4 +421,17 @@ bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
     }
 
     return true;
+}
+
+bool CPUOpSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) {
+    for (auto node: graph->get_nodes()) {
+        if (!node->is_on_gpu()) {
+            NNFUSION_CHECK(!(*node)["Kernel_Selection_Result"].is_valid());
+            auto emitter = std::make_shared<cuda::CPUOpEmitter>(std::make_shared<KernelContext>(node));
+            (*node)["Kernel_Selection_Result"] = make_pair(UNKNOWN, std::dynamic_pointer_cast<KernelEmitter>(emitter));
+        }
+
+    }
+    return true;
+
 }

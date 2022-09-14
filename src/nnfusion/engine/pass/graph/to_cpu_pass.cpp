@@ -118,6 +118,7 @@ void add_copy_node(std::shared_ptr<nnfusion::graph::Graph>& graph) {
                 std::shared_ptr<op::Op> op = src_on_cpu ? dynamic_pointer_cast<op::Op>(std::make_shared<op::H2D>()) : dynamic_pointer_cast<op::Op>(std::make_shared<op::D2H>());
                 auto copy_node = graph->add_node_and_edge(op, {GNodeIndex(gnode, out_edge->get_src_output())}, 1);
                 copy_node->get_op_ptr()->revalidate_and_infer_types(copy_node);
+                copy_node->Set<int>(stage_cpu_tag, (int) gnode->Get<int>(stage_cpu_tag));
                 graph->add_edge(copy_node, 0, out_node, out_edge->get_dst_input());
                 graph->remove_edge(out_edge);
             }
@@ -131,5 +132,12 @@ bool ToCPUPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) {
     assign_stage(graph, small_ops);
     const_propogate(graph, small_ops);
     add_copy_node(graph);
+    for (auto gnode: graph->get_ordered_ops()) {
+        if (gnode->Get<int>(stage_cpu_tag) & 1) {
+            gnode->set_on_gpu(false);
+        } else {
+            gnode->set_on_gpu(true);
+        }
+    }
     return true;
 }

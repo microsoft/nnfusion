@@ -22,6 +22,7 @@ GNode::GNode()
     : m_id(Graph::freeGnodeId)
     , m_instance_id(m_next_instance_id.fetch_add(1))
     , m_unique_name("graph_node_" + to_string(m_instance_id))
+    , m_on_gpu(true)
 {
 }
 
@@ -384,11 +385,13 @@ std::ostream& nnfusion::graph::operator<<(std::ostream& s, const GNode& gnode) {
     s << gnode.get_name() << "(" <<  gnode.get_op_type() << ") in {";
     for (auto edge: gnode.get_in_edges()) {
         s << edge->get_src()->get_name();
+        s << " " << edge->get_src()->get_output_shape(edge->get_src_output());
         s << ", ";
     }
     s << "} out {";
     for (auto edge: gnode.get_out_edges()) {
         s << edge->get_dst()->get_name();
+        s << " " << edge->get_dst()->get_input_shape(edge->get_dst_input());
         s << ", ";
     }
     s << "}";

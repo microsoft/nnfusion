@@ -82,6 +82,7 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<KernelFusionPass>());
     g_passes->push_back(make_shared<KernelTuning>());
     g_passes->push_back(make_shared<DumpOp>());
+    g_passes->push_back(make_shared<CPUOpSelector>());
     g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
     g_passes->push_back(make_shared<FetchBasedSelector>());
     g_passes->push_back(make_shared<DefaultKernelSelector>());

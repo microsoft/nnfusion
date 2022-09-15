@@ -45,7 +45,7 @@ namespace nnfusion
                                     NNFusion_DeviceType devtype);
             };
 
-            class CPUOpSelector: public GraphPassBase
+            class CPUOpSelector: public DefaultKernelSelector
             {
             public:
                 bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) override;

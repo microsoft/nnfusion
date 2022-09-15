@@ -424,11 +424,19 @@ bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
 }
 
 bool CPUOpSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) {
+    std::set<std::string> no_cpu_op = {"Constant", "d2h", "h2d"};
     for (auto node: graph->get_nodes()) {
-        if (!node->is_on_gpu()) {
+        if (!node->is_on_gpu() && no_cpu_op.find(node->get_op_type()) == no_cpu_op.end()) {
             NNFUSION_CHECK(!(*node)["Kernel_Selection_Result"].is_valid());
-            auto emitter = std::make_shared<cuda::CPUOpEmitter>(std::make_shared<KernelContext>(node));
-            (*node)["Kernel_Selection_Result"] = make_pair(UNKNOWN, std::dynamic_pointer_cast<KernelEmitter>(emitter));
+            auto n_device_type = SINGLE_CPU;
+            auto ans = pick_first(node, n_device_type);
+            if (ans.second == nullptr) {
+                NNFUSION_LOG(NNFUSION_WARNING) << "no cpu emitter for " << *node;
+                ans.second = std::make_shared<cuda::CPUOpEmitter>(std::make_shared<KernelContext>(node));
+            }
+            NNFUSION_CHECK(ans.second != nullptr);
+            // auto emitter = std::make_shared<cuda::CPUOpEmitter>(std::make_shared<KernelContext>(node));
+            (*node)["Kernel_Selection_Result"] = make_pair(SINGLE_CPU, ans.second);
         }
 
     }

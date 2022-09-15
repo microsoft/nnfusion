@@ -15,10 +15,12 @@ set(SRC
 
 file(GLOB wild_cuda_kernels kernels/*.cpp)
 file(GLOB wild_rocm_kernels kernels/rocm/*.cpp)
+file(GLOB wild_cuda_cpu_kernels kernels/cpu_op/*.cpp)
 
 set(KERNELS
     ${wild_cuda_kernels}
     ${wild_rocm_kernels}
+    ${wild_cuda_cpu_kernels}
 )
 
 add_library(kernels_cuda STATIC ${SRC} ${KERNELS})

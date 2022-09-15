@@ -84,6 +84,10 @@ NNFusion_DeviceType KernelEmitter::get_device_type()
     {
         return NNFusion_DeviceType::GraphCore;
     }
+    else if (m_kernel_type == "single_cpu")
+    {
+        return NNFusion_DeviceType::SINGLE_CPU;
+    }
     return NNFusion_DeviceType::UNKNOWN;
 }
 

@@ -3,7 +3,7 @@
 using namespace nnfusion;
 using namespace kernels;
 
-cuda::CPUOpEmitter::CPUOpEmitter(std::shared_ptr<KernelContext> ctx) : KernelEmitter(ctx) {}
+cuda::CPUOpEmitter::CPUOpEmitter(std::shared_ptr<KernelContext> ctx) : KernelEmitter(ctx, "single_cpu") {}
 
 LanguageUnit_p cuda::CPUOpEmitter::emit_function_call() {
     auto gnode = m_context->gnode;

@@ -8,8 +8,8 @@ from roller.utils import classify_tvm_op_tensors
 
 class Op:
 
-  def __init__(self, expr, shape, data_type, use_tc=False) -> None:
-    self.expr = expr
+  def __init__(self, tvm_op, shape, data_type, use_tc=False) -> None:
+    self.tvm_op = tvm_op
     self.shape = shape
     self.use_tc = use_tc
     self.ori_in = []
@@ -17,7 +17,8 @@ class Op:
     self.outs = []
     self.unpad_outs = []
 
-    self.input_tensors, self.output_tensors = classify_tvm_op_tensors(self.expr)
+    self.input_tensors, self.output_tensors = classify_tvm_op_tensors(
+        self.tvm_op)
     self.fused_shape = []
     self.data_type = data_type
 
@@ -40,8 +41,8 @@ class Op:
     else:
       self.sche = tvm.te.create_schedule(self.output_tensors[0].op)
 
-    if len(expr.input_tensors) == 1 and '_unpad' in expr.output(0).name:
-      cur_op = expr.input_tensors[0].op
+    if len(tvm_op.input_tensors) == 1 and '_unpad' in tvm_op.output(0).name:
+      cur_op = tvm_op.input_tensors[0].op
       self.fused_shape = [item.dom.extent.value for item in cur_op.axis] + [
           item.dom.extent.value for item in cur_op.reduce_axis
       ]
@@ -120,7 +121,7 @@ class Op:
       aligned_op_rdim.append(aligned_r)
 
     merge_dim = tile_sdim + aligned_op_rdim
-    tmp_rtile = rTile(self.expr, merge_dim, self.SAxis(), self.RAxis(),
+    tmp_rtile = rTile(self.tvm_op, merge_dim, self.SAxis(), self.RAxis(),
                       self.GetTvmOutTensor())
 
     input_data_tiles = tmp_rtile.GetInputDataTiles()
@@ -241,7 +242,7 @@ class Op:
     ys = []
     for x in xs:
       shape = [int(x * d) if int(x * d) > 0 else 1 for d in self.Dimensions()]
-      rtile = rTile(self.expr, shape, self.SAxis(), self.RAxis(),
+      rtile = rTile(self.tvm_op, shape, self.SAxis(), self.RAxis(),
                     self.GetTvmOutTensor())
       compute = 1
       for d in shape:

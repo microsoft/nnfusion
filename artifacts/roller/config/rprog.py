@@ -19,7 +19,7 @@ class rProg:
 
     self.op = op
     self.full_shape = self.op.Dimensions()
-    self.expr = self.op.expr
+    self.tvm_op = self.op.tvm_op
     self.sche = self.op.sche
     self.saxis = self.op.SAxis()
     self.raxis = self.op.RAxis()
@@ -76,7 +76,7 @@ class rProg:
     return self.sche
 
   def Expression(self):
-    return self.expr
+    return self.tvm_op
 
   def Dimensions(self):
     return self.full_shape

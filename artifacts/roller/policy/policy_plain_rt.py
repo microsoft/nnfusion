@@ -117,10 +117,10 @@ class PolicyPlainRT(PolicyBase):
     self.arch = arch
     self.tile_tensor = tile_tensor
     self.num_level = arch.num_level
-    if '_unpad' in self.op.expr.output(0).name:
-      outputs = [self.op.expr.input_tensors[0], self.op.expr.output(0)]
+    if '_unpad' in self.op.tvm_op.output(0).name:
+      outputs = [self.op.tvm_op.input_tensors[0], self.op.tvm_op.output(0)]
     else:
-      outputs = [self.op.expr.output(0)]
+      outputs = [self.op.tvm_op.output(0)]
     self.th_cap = padding_threshold_cap
     self.shrink_tiny = shrink_tiny
 
@@ -136,7 +136,7 @@ class PolicyPlainRT(PolicyBase):
     self.ConstructionLog[log_regular_tile_found_key] = False
     self.border_rprogs = [[] for _ in range(self.num_level)]
 
-    self.rtile_helper = rTile(op.expr, op.shape, self.op.SAxis(),
+    self.rtile_helper = rTile(op.tvm_op, op.shape, self.op.SAxis(),
                               self.op.RAxis(), self.op.GetTvmOutTensor())
 
   def AlignedToMemory(self, rtile, mem_level):
@@ -237,7 +237,7 @@ class PolicyPlainRT(PolicyBase):
         if len(step) == 0:
           return steps, None
     new_base_dim = [steps[d][0] for d in range(len(steps))]
-    new_base_rtile = rTile(self.op.expr, new_base_dim, self.op.SAxis(),
+    new_base_rtile = rTile(self.op.tvm_op, new_base_dim, self.op.SAxis(),
                            self.op.RAxis(), self.op.GetTvmOutTensor())
     return steps, new_base_rtile
 
@@ -327,8 +327,8 @@ class PolicyPlainRT(PolicyBase):
       new_shape = shape.copy()
       old_step = steps[d - 1].pop(0)
       new_shape[d - 1] = steps[d - 1][0]
-      new_rtile = rTile(rprog.expr, new_shape, self.op.SAxis(), self.op.RAxis(),
-                        self.op.GetTvmOutTensor())
+      new_rtile = rTile(rprog.tvm_op, new_shape, self.op.SAxis(),
+                        self.op.RAxis(), self.op.GetTvmOutTensor())
       new_rprog.AddTile(mem_level, new_rtile)
 
       self.EnlargeTile(rprog, new_rprog, steps, mem_level)
@@ -340,7 +340,7 @@ class PolicyPlainRT(PolicyBase):
         """
     # initialize uni tiles
     mem_level = self.num_level - 1
-    uniTile = rTile(self.op.expr,
+    uniTile = rTile(self.op.tvm_op,
                     [1 for _ in range(self.tile_dim + self.step_dim)],
                     self.op.SAxis(), self.op.RAxis(), self.op.GetTvmOutTensor())
     uniProg = rProg(self.arch.num_level, self.op)
@@ -383,7 +383,7 @@ class PolicyPlainRT(PolicyBase):
           tile_sdim = tile.SDimensions()
           tile_sdim[d] = math.ceil(tile_sdim[d] / 2)
           tile_rdim = tile.RDimensions()
-          new_tile = rTile(tile.expr, tile_sdim + tile_rdim, self.op.SAxis(),
+          new_tile = rTile(tile.tvm_op, tile_sdim + tile_rdim, self.op.SAxis(),
                            self.op.RAxis(), self.op.GetTvmOutTensor())
           rprog.UpdateTile(new_tile, l)
       # print("config after shrinking: {}".format(rprog.Dump()))

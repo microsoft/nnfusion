@@ -9,8 +9,8 @@ import re
 
 class rTile:
 
-  def __init__(self, expr, shape, saxis, raxis, tvm_out_tensor):
-    self.expr = expr
+  def __init__(self, tvm_op, shape, saxis, raxis, tvm_out_tensor):
+    self.tvm_op = tvm_op
     self.shape = shape
     # todo: what if multi-output tensors?
     self.tvm_out_tensor = tvm_out_tensor
@@ -19,11 +19,11 @@ class rTile:
     self.outs = []
     self.unpad_outs = []
 
-    if '_unpad' in expr.output(0).name:
+    if '_unpad' in tvm_op.output(0).name:
 
       idx = -1
-      for i, tensor in enumerate(expr.input_tensors):
-        if tensor.name + '_unpad' == expr.output(0).name:
+      for i, tensor in enumerate(tvm_op.input_tensors):
+        if tensor.name + '_unpad' == tvm_op.output(0).name:
           idx = i
           break
       assert (idx >= 0)
@@ -33,19 +33,20 @@ class rTile:
       # implicit gemm
       if len(shape) == 3:
         self.input_tensors, self.output_tensors = build_tensors(
-            expr.input_tensors[idx].op, shape)
+            tvm_op.input_tensors[idx].op, shape)
 
       # depthwise conv schedule fuse
       else:
-        space_dim_num, reduce_dim_num = len(expr.axis), len(expr.reduce_axis)
-        self.output_tensors = [(expr.output(0).name, shape[:space_dim_num]),
-                               (expr.output(0).name[:-6], shape[:space_dim_num])
-                              ]
-        assert (len(expr.input_tensors) == 1)
-        pad_in, _ = build_tensors(expr.input_tensors[idx].op, shape)
+        space_dim_num, reduce_dim_num = len(tvm_op.axis), len(
+            tvm_op.reduce_axis)
+        self.output_tensors = [(tvm_op.output(0).name, shape[:space_dim_num]),
+                               (tvm_op.output(0).name[:-6],
+                                shape[:space_dim_num])]
+        assert (len(tvm_op.input_tensors) == 1)
+        pad_in, _ = build_tensors(tvm_op.input_tensors[idx].op, shape)
 
         raw_in = []
-        for tensor in expr.input_tensors[idx].op.input_tensors:
+        for tensor in tvm_op.input_tensors[idx].op.input_tensors:
           for item in pad_in:
             if tensor.name == item[0]:
               cur_shape = item[1]
@@ -53,7 +54,7 @@ class rTile:
           raw_in = raw_in + cur_in
         self.input_tensors = pad_in + raw_in
     else:
-      self.input_tensors, self.output_tensors = build_tensors(expr, shape)
+      self.input_tensors, self.output_tensors = build_tensors(tvm_op, shape)
       # print(shape, self.input_tensors)
 
     # print('[debug] rtile info: ', shape, self.input_tensors, self.output_tensors)
@@ -212,7 +213,7 @@ class rTile:
     return self.storage_padding
 
   def copy(self):
-    newTile = rTile(self.expr, self.shape, self.saxis, self.raxis,
+    newTile = rTile(self.tvm_op, self.shape, self.saxis, self.raxis,
                     self.tvm_out_tensor)
     newTile.storage_padding = self.storage_padding.copy()
     return newTile

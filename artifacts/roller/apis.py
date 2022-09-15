@@ -6,6 +6,11 @@ from roller.config import rTile, rProg
 import tvm
 import json
 
+__all__ = [
+    'get_config_space',
+    'apply_config',
+]
+
 
 def get_config_space(op, device_name):
   assert op.num_outputs == 1, 'ERROR: input op\'s output num is {}, expected 1'.format(
@@ -66,7 +71,7 @@ def build_rprog4str(rprog_str, roller_op, roller_arch):
     mem_level, rtile_json = item
     rtile_dict = json.loads(rtile_json)
     shape = rtile_dict['tile'] + rtile_dict['step']
-    cur_rtile = rTile(roller_op.expr, shape, roller_op.SAxis(),
+    cur_rtile = rTile(roller_op.tvm_op, shape, roller_op.SAxis(),
                       roller_op.RAxis(), roller_op.GetTvmOutTensor())
     rprog.AddTile(int(mem_level), cur_rtile)
 

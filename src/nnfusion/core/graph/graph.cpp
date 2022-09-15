@@ -191,7 +191,7 @@ GNodeVector Graph::get_ordered_ops()
                get_outputs(),
                nullptr,
                [&](std::shared_ptr<GNode> node) { nodes.push_back(node); },
-               nullptr);
+               NodeComparatorID());
 
     return nodes;
 }

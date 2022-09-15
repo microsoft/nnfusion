@@ -127,7 +127,13 @@ void add_copy_node(std::shared_ptr<nnfusion::graph::Graph>& graph) {
 }
 
 bool ToCPUPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) {
-    if (!FLAGS_fenable_cpu) return true;
+    if (!FLAGS_fenable_cpu) {
+        for (auto gnode: graph->get_nodes()) {
+            gnode->set_on_gpu(true);
+            gnode->Set<int>(stage_cpu_tag, 0);
+        }
+        return true;
+    }
     auto small_ops = get_small_ops(graph);
     assign_stage(graph, small_ops);
     const_propogate(graph, small_ops);

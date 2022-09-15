@@ -26,6 +26,17 @@ namespace nnfusion
                         op_type = op_type + "*";
                     }
                 }
+                TuningStatus(std::string op, std::string name, bool symbolic = false)
+                    : op_type(op)
+                    , op_name(name)
+                    , progress_step(0)
+                    , best_perf(-1.0)
+                {
+                    if (symbolic)
+                    {
+                        op_type = op_type + "*";
+                    }
+                }
                 std::string op_type;
                 std::string op_name;
                 std::string status;

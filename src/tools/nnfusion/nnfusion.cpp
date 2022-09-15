@@ -14,6 +14,7 @@
 #include "nnfusion/frontend/tensorflow_import/tensorflow.hpp"
 #include "nnfusion/frontend/torchscript_import/torchscript.hpp"
 #include "nnfusion/frontend/util/parameter.hpp"
+#include "nnfusion/core/operators/op.hpp"
 
 #include "nnfusion/engine/device/cpu.hpp"
 #include "nnfusion/engine/device/cuda.hpp"
@@ -137,6 +138,9 @@ int main(int argc, char** argv)
             auto vec_dim_params = nnfusion::frontend::build_multi_onnx_params_from_string(params);
             for (auto& dim_params : vec_dim_params)
             {
+                GNode::reset_next_instance_id();
+                op::Op::reset_next_instance_id();
+                descriptor::Tensor::reset_next_instance_id();
                 vec_graph.push_back(nnfusion::frontend::load_onnx_model(model, dim_params));
             }
         }

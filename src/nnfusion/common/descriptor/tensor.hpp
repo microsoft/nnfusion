@@ -118,6 +118,7 @@ namespace nnfusion
             const std::string& get_unique_name() const { return m_unique_name; }
             using Pointer = std::shared_ptr<Tensor>;
 
+            static void reset_next_instance_id();
         protected:
             nnfusion::element::Type m_element_type;
 

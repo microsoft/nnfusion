@@ -24,6 +24,11 @@ using namespace std;
 
 atomic<size_t> nnfusion::descriptor::Tensor::m_next_instance_id(0);
 
+void nnfusion::descriptor::Tensor::reset_next_instance_id()
+{
+    m_next_instance_id = 0;
+}
+
 nnfusion::descriptor::Tensor::Tensor(const nnfusion::element::Type& element_type,
                                      const nnfusion::PartialShape& pshape,
                                      const std::string& name,

@@ -170,6 +170,8 @@ namespace nnfusion
 
             void set_implementation(std::string impl) { m_implementation = impl; };
             std::string get_implementation() { return m_implementation; };
+
+            static void reset_next_instance_id();
         protected:
             int64_t m_id; // m_id is for graph, the index in graph m_nodes
             size_t m_instance_id;

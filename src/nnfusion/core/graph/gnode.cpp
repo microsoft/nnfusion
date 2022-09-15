@@ -18,6 +18,11 @@ using namespace nnfusion::op;
 
 atomic<size_t> GNode::m_next_instance_id(0);
 
+void GNode::reset_next_instance_id()
+{
+    m_next_instance_id = 0;
+}
+
 GNode::GNode()
     : m_id(Graph::freeGnodeId)
     , m_instance_id(m_next_instance_id.fetch_add(1))

@@ -134,6 +134,7 @@ namespace nnfusion
                 m_shared_memory = shared_memory;
             }
 
+            static void reset_next_instance_id();
         protected:
             Op(const std::string& op_type);
 

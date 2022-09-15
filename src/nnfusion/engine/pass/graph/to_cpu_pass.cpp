@@ -106,6 +106,16 @@ void const_propogate(std::shared_ptr<nnfusion::graph::Graph>& graph, std::set<st
             gnode->Set<int>(stage_cpu_tag, (int) min_stage);
         }
     }
+    for (auto gnode: ordered_ops) {
+        if (gnode->get_op_type() == "Result") {
+            auto max_stage = 0;
+            for (auto in_edge: gnode->get_in_edges()) {
+                auto in_gnode = in_edge->get_src();
+                max_stage = max(max_stage, in_gnode->Get<int>(stage_cpu_tag));
+            }
+            gnode->Set<int>(stage_cpu_tag, (int) ceil_div(max_stage, 2) * 2);
+        }
+    }
 }
 
 void add_copy_node(std::shared_ptr<nnfusion::graph::Graph>& graph) {

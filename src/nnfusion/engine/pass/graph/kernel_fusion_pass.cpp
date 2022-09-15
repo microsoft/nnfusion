@@ -90,10 +90,6 @@ public:
         int fusion_level = FLAGS_fkernel_fusion_level;
         if (fusion_level > 0)
         {
-            NNFUSION_LOG(INFO) << "before ele fuse";
-            for (auto gnode: m_graph->get_nodes()) {
-                std::cout << *gnode << " " << gnode->Get<int>("stage_cpu") << " " << gnode->is_on_gpu() << std::endl;
-            }
             std::shared_ptr<std::vector<std::shared_ptr<FuseGroup>>> fuse_groups =
                 ExtractFusionGroups();
 
@@ -109,10 +105,6 @@ public:
                 }
 
                 FuseElementGroupOnGraph(fuse_groups);
-                NNFUSION_LOG(INFO) << "after ele fuse";
-                for (auto gnode: m_graph->get_nodes()) {
-                    std::cout << *gnode << " " << gnode->Get<int>("stage_cpu") << " " << gnode->is_on_gpu() << std::endl;
-                }
                 return true;
             }
         }

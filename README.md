@@ -1,8 +1,5 @@
 ## Requirements
-TVM version '0.9.dev0'
-
-commit 55cfc4ad2df0120411b6b5ae2a2f28d8b467a25a
-
+TVM https://github.com/nox-410/tvm/tree/memfusion
 NNFUSION https://github.com/nox-410/nnfusion/tree/smem_fuse
 
 python==3.7

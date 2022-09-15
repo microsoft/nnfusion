@@ -15,7 +15,7 @@ namespace nnfusion
         namespace cuda_cpu
         {
             template <class T>
-            class Reduce : public cuda::CPUOpEmitter
+            class Reduce : public CPUOpEmitter
             {
             public:
                 Reduce(shared_ptr<KernelContext> ctx)
@@ -528,7 +528,7 @@ if (thread_idx == 0) output0[block_idx] = val;
                     if (cuda::CudaOpMap<T>::math_kernel != nullptr)
                     {
                         auto math_kernel =
-                            cuda::get_math_kernel(reduce_op,
+                            cuda_cpu::get_math_kernel(reduce_op,
                                             cuda::CudaOpMap<T>::math_kernel,
                                             vector<string>{input_type, input_type, output_type});
                         NNFUSION_CHECK_NOT_NULLPTR(math_kernel);
@@ -553,11 +553,11 @@ if (thread_idx == 0) output0[block_idx] = val;
             };
 
             template <class T>
-            class ReduceMemcpy : public cuda::CPUOpEmitter
+            class ReduceMemcpy : public CPUOpEmitter
             {
             public:
                 ReduceMemcpy(shared_ptr<KernelContext> ctx)
-                    : cuda::CPUOpEmitter(ctx)
+                    : CPUOpEmitter(ctx)
                 {
                     if (auto reduce =
                             dynamic_pointer_cast<nnfusion::op::Reduce>(ctx->gnode->get_op_ptr()))

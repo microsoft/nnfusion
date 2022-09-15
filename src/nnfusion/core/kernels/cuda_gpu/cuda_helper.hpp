@@ -74,5 +74,13 @@ namespace nnfusion
                                        NVShape& simplified_shape,
                                        NVShape& simplified_reduce_axis);
         }
+
+        namespace cuda_cpu
+        {
+            shared_ptr<LanguageUnit> get_math_kernel(const std::string& name,
+                                                     const std::string& math_kernel,
+                                                     const std::vector<std::string>& data_types);
+
+        }
     }
 }

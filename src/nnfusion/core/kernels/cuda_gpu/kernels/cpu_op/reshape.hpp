@@ -11,7 +11,7 @@ namespace nnfusion
     {
         namespace cuda_cpu
         {
-            class Reshape : public cuda::CPUOpEmitter
+            class Reshape : public CPUOpEmitter
             {
             public:
                 Reshape(shared_ptr<KernelContext> ctx);
@@ -71,7 +71,7 @@ namespace nnfusion
                 NVShape trans_strides;
             };
 
-            class ReshapeMemcpy : public cuda::CPUOpEmitter
+            class ReshapeMemcpy : public CPUOpEmitter
             {
             public:
                 ReshapeMemcpy(shared_ptr<KernelContext> ctx);

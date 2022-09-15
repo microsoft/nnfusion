@@ -13,11 +13,11 @@ namespace nnfusion
         namespace cuda_cpu
         {
             template <class T>
-            class ElementWise : public cuda::CPUOpEmitter
+            class ElementWise : public CPUOpEmitter
             {
             public:
                 ElementWise(shared_ptr<KernelContext> ctx)
-                    : cuda::CPUOpEmitter(ctx)
+                    : CPUOpEmitter(ctx)
                 {
                     NNFUSION_CHECK(ctx->outputs.size() == 1)
                         << "Multi-output elementwise ops are not currently supported.";
@@ -35,8 +35,8 @@ namespace nnfusion
                     LanguageUnit& lu = *lu_;
 
                     //std::string op = CudaOpMap<T>::op;
-                    auto iter = cuda::CudaElementOpMap.find(m_context->op->get_op_type());
-                    NNFUSION_CHECK(iter != cuda::CudaElementOpMap.end())
+                    auto iter = CudaCPUElementOpMap.find(m_context->op->get_op_type());
+                    NNFUSION_CHECK(iter != CudaCPUElementOpMap.end())
                         << "unable find op type: " << m_context->op->get_op_type();
                     std::string op = iter->second.op;
 
@@ -48,7 +48,7 @@ namespace nnfusion
                     else if (iter->second.math_kernel != "")
                     {
                         auto math_kernel =
-                            cuda::get_math_kernel(op, iter->second.math_kernel, data_types);
+                            cuda_cpu::get_math_kernel(op, iter->second.math_kernel, data_types);
                         NNFUSION_CHECK_NOT_NULLPTR(math_kernel);
                         lu.require(math_kernel);
                         if (m_context->op->get_op_type() == "Gelu")
@@ -65,12 +65,8 @@ namespace nnfusion
                         << "At least one input and one output tesnor for elementwise-op.";
 
                     {
-                        std::string tid =
-                            "blockIdx.x * todo + threadIdx.x";
-                        // if (grids == 1)
-                        //     tid = "threadIdx.x";
-                        // if (bound)
-                        //     lu << "if (" << tid << " >= " << bound << ") return;";
+                        lu << "for (int tid = 0; tid < " << nthreads << "; tid++)";
+                        lu.block_begin();
 
                         {
                             std::string invoke_func = op;
@@ -79,13 +75,14 @@ namespace nnfusion
                                 invoke_func +=
                                     "<" + data_types.at(0) + ", " + data_types.at(1) + ">";
                             }
-                            lu << "output0[" << tid << "] = " << invoke_func << "(";
+                            lu << "output0[tid] = " << invoke_func << "(";
                             for (size_t i = 0; i < num_inputs - 1; i++)
                             {
-                                lu << "input" << i << "[" << tid << "], ";
+                                lu << "input" << i << "[tid], ";
                             }
-                            lu << "input" << num_inputs - 1 << "[" << tid << "]);\n";
+                            lu << "input" << num_inputs - 1 << "[tid]);\n";
                         }
+                        lu.block_end();
                     }
                     return lu_;
                 }
@@ -102,15 +99,15 @@ namespace nnfusion
                 std::pair<std::string, shared_ptr<LanguageUnit>> get_op_kernel()
                 {
                     //std::string op = CudaOpMap<T>::op;
-                    auto iter = cuda::CudaElementOpMap.find(m_context->gnode->get_op_type());
-                    NNFUSION_CHECK(iter != cuda::CudaElementOpMap.end())
+                    auto iter = CudaCPUElementOpMap.find(m_context->gnode->get_op_type());
+                    NNFUSION_CHECK(iter != CudaCPUElementOpMap.end())
                         << "unable find op type: " << m_context->gnode->get_op_type();
                     std::string op = iter->second.op;
                     shared_ptr<LanguageUnit> kernel = nullptr;
 
                     if (iter->second.math_kernel != "")
                     {
-                        kernel = cuda::get_math_kernel(op, iter->second.math_kernel, data_types);
+                        kernel = cuda_cpu::get_math_kernel(op, iter->second.math_kernel, data_types);
                         NNFUSION_CHECK_NOT_NULLPTR(kernel);
                     }
                     return std::make_pair(op, kernel);

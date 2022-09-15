@@ -11,7 +11,7 @@ namespace nnfusion
     {
         namespace cuda_cpu
         {
-            class ElementWiseFused : public cuda::CPUOpEmitter
+            class ElementWiseFused : public CPUOpEmitter
             {
             public:
                 ElementWiseFused(shared_ptr<KernelContext> ctx);

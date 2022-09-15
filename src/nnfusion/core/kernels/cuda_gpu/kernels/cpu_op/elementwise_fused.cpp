@@ -19,8 +19,8 @@ ElementWiseFused::ElementWiseFused(shared_ptr<KernelContext> ctx)
 
 std::pair<std::string, shared_ptr<LanguageUnit>> get_op_kernel_cpu(shared_ptr<graph::OpContext> ctx)
 {
-    auto iter = cuda::CudaElementOpMap.find(ctx->op->get_op_type());
-    NNFUSION_CHECK(iter != cuda::CudaElementOpMap.end()) << "unable find op type: "
+    auto iter = CudaCPUElementOpMap.find(ctx->op->get_op_type());
+    NNFUSION_CHECK(iter != CudaCPUElementOpMap.end()) << "unable find op type: "
                                                    << ctx->op->get_op_type();
     std::string op = iter->second.op;
     shared_ptr<LanguageUnit> kernel = nullptr;
@@ -33,7 +33,7 @@ std::pair<std::string, shared_ptr<LanguageUnit>> get_op_kernel_cpu(shared_ptr<gr
             data_types.push_back(arg->get_element_type().c_type_string());
         }
         data_types.push_back(ctx->outputs[0]->get_element_type().c_type_string());
-        kernel = cuda::get_math_kernel(op, iter->second.math_kernel, data_types);
+        kernel = cuda_cpu::get_math_kernel(op, iter->second.math_kernel, data_types);
         NNFUSION_CHECK_NOT_NULLPTR(kernel);
     }
     return std::make_pair(op, kernel);
@@ -69,28 +69,8 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
     int grids = 1, blocks = 1, bound = 1;
     uint32_t num_ele =
         static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-    if (grids * blocks != num_ele)
-    {
-        lu << "for (int tid = blockIdx.x * " << blocks << " + threadIdx.x; tid < " << num_ele
-           << "; tid += " << grids * blocks << ")";
-        lu.block_begin();
-    }
-    else
-    {
-        if (grids == 1)
-        {
-            lu << "int tid = threadIdx.x;\n";
-        }
-        else
-        {
-            lu << "int tid = blockIdx.x * " << std::to_string(blocks) << " + threadIdx.x;\n";
-        }
-        if (bound)
-        {
-            lu << "if (tid >= " << bound << ") return;\n";
-        }
-    }
-
+    lu << "for (int tid = 0; tid < " << num_ele << "; tid ++)";
+    lu.block_begin();
     for (auto op_ctx : m_gnode->get_op_contexts())
     {
         auto& out_tw = op_ctx->outputs[0];
@@ -130,7 +110,7 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
         }
         else
         {
-            if (cuda::CudaElementOpMap.find(op_ctx->op->get_op_type()) == cuda::CudaElementOpMap.end())
+            if (CudaCPUElementOpMap.find(op_ctx->op->get_op_type()) == CudaCPUElementOpMap.end())
             {
                 NNFUSION_CHECK_FAIL() << "Illegal element-wise kernel: "
                                       << op_ctx->op->get_op_type();

@@ -3,9 +3,9 @@
 using namespace nnfusion;
 using namespace kernels;
 
-cuda::CPUOpEmitter::CPUOpEmitter(std::shared_ptr<KernelContext> ctx) : KernelEmitter(ctx, "single_cpu") {}
+cuda_cpu::CPUOpEmitter::CPUOpEmitter(std::shared_ptr<KernelContext> ctx) : KernelEmitter(ctx, "single_cpu") {}
 
-LanguageUnit_p cuda::CPUOpEmitter::emit_function_call() {
+LanguageUnit_p cuda_cpu::CPUOpEmitter::emit_function_call() {
     auto gnode = m_context->gnode;
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
     auto& lu = *_lu;
@@ -17,14 +17,14 @@ LanguageUnit_p cuda::CPUOpEmitter::emit_function_call() {
     return _lu;
 }
 
-LanguageUnit_p cuda::CPUOpEmitter::emit_function_body() {
+LanguageUnit_p cuda_cpu::CPUOpEmitter::emit_function_body() {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_body"));
     auto& lu = *_lu;
     lu << "// todo: " << m_context->op->get_unique_name();
     return _lu;
 }
 
-LanguageUnit_p cuda::CPUOpEmitter::emit_dependency() {
+LanguageUnit_p cuda_cpu::CPUOpEmitter::emit_dependency() {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     auto& lu = *_lu;
     lu << "// todo: dep";

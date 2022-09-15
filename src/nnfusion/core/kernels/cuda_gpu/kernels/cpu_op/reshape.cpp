@@ -7,7 +7,7 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 cuda_cpu::Reshape::Reshape(shared_ptr<KernelContext> ctx)
-    : cuda::CPUOpEmitter(ctx)
+    : CPUOpEmitter(ctx)
 {
     NNFUSION_CHECK(ctx->outputs[0]->size(false) > 0) << "Invalid output shape for Reshape.";
     reshape = static_pointer_cast<nnfusion::op::Reshape>(ctx->gnode->get_op_ptr());

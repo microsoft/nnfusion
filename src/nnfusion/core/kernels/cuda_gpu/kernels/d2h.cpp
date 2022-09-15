@@ -18,7 +18,8 @@ namespace nnfusion
                 LanguageUnit_p emit_function_body() override {
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
                     auto& lu = *_lu;
-                    lu << "CUDA_SAFE_CALL(cudaMemcpyAsync(output0, input0, " << m_type.size() * shape_size(m_shape) << ", cudaMemcpyDeviceToDevice)); // fake h2d \n";
+                    lu << "CUDA_SAFE_CALL(cudaMemcpyAsync(output0, input0, " << m_type.size() * shape_size(m_shape) << ", cudaMemcpyDeviceToHost));\n";
+                    lu << "CUDA_SAFE_CALL(cudaDeviceSynchronize());\n";
                     return _lu;
                 }
 

@@ -432,10 +432,9 @@ bool CPUOpSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
             auto ans = pick_first(node, n_device_type);
             if (ans.second == nullptr) {
                 NNFUSION_LOG(NNFUSION_WARNING) << "no cpu emitter for " << *node;
-                ans.second = std::make_shared<cuda::CPUOpEmitter>(std::make_shared<KernelContext>(node));
+                ans.second = std::make_shared<cuda_cpu::CPUOpEmitter>(std::make_shared<KernelContext>(node));
             }
             NNFUSION_CHECK(ans.second != nullptr);
-            // auto emitter = std::make_shared<cuda::CPUOpEmitter>(std::make_shared<KernelContext>(node));
             (*node)["Kernel_Selection_Result"] = make_pair(SINGLE_CPU, ans.second);
         }
 

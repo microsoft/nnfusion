@@ -297,3 +297,38 @@ void cuda::get_reduce_strides(NVShape input_shape,
     reduce_strides = nnfusion::row_major_strides(reduce_shape);
     non_reduce_strides = nnfusion::row_major_strides(non_reduce_shape);
 }
+
+LanguageUnit_p cuda_cpu::get_math_kernel(const std::string& name,
+                                     const std::string& math_kernel,
+                                     const std::vector<std::string>& data_types)
+{
+    NNFUSION_CHECK(std::count(name.begin(), name.end(), '-') == 0);
+    std::string mangled_name = "declaration::function_def_inline_" + name;
+    // TODO: handle data_types containing underline, like long_long
+    // Output type should be ignore
+    for (size_t i = 0; i < data_types.size() - 1; i++)
+    {
+        mangled_name += "-" + data_types[i];
+    }
+    shared_ptr<LanguageUnit> cw(new LanguageUnit(mangled_name));
+    auto& writer = *cw;
+    if (math_kernel.size())
+    {
+        auto num_inputs = data_types.size() - 1;
+        writer << "__forceinline__ " << data_types[num_inputs] << " " << name << "(";
+        for (size_t i = 0; i < num_inputs - 1; i++)
+        {
+            writer << data_types[i] << " x" << i << ", ";
+        }
+        writer << data_types[num_inputs - 1] << " x" << num_inputs - 1;
+        writer << ")\n";
+        writer << "{\n";
+        writer.indent++;
+        {
+            writer << "return " + math_kernel << ";\n";
+        }
+        writer.indent--;
+        writer << "}\n";
+    }
+    return cw;
+}

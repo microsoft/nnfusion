@@ -10,11 +10,11 @@ namespace nnfusion
     {
         namespace cuda_cpu
         {
-            class Broadcast : public cuda::CPUOpEmitter
+            class Broadcast : public CPUOpEmitter
             {
             public:
                 Broadcast(shared_ptr<KernelContext> ctx)
-                    : cuda::CPUOpEmitter(ctx)
+                    : CPUOpEmitter(ctx)
                 {
                     auto _op =
                         static_pointer_cast<nnfusion::op::Broadcast>(ctx->gnode->get_op_ptr());

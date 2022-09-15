@@ -11,7 +11,7 @@ namespace nnfusion
     {
         namespace cuda_cpu
         {
-            class Slice : public cuda::CPUOpEmitter
+            class Slice : public CPUOpEmitter
             {
             public:
                 Slice(shared_ptr<KernelContext> ctx);

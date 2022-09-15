@@ -116,8 +116,8 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
             {
                 // parse symbolic args
                 std::map<std::string, std::string> symbol_expr;
-                NNFUSION_CHECK(kernel_info.size() == 1)
-                    << "Symbolic kenrel currently only support single kernel!";
+                // NNFUSION_CHECK(kernel_info.size() == 1)
+                //     << "Symbolic kenrel currently only support single kernel!";
                 for (size_t i = 0; i < m_context->inputs.size(); i++)
                 {
                     auto shape = m_context->inputs[i]->get_shape();

@@ -273,14 +273,14 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
 {
     uint32_t num_ele =
         static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-    const int max_block_size = 128;
+    const int max_block_size = 256;
     for (int i = max_block_size; i >= 64; i >>= 1)
     {
         if (num_ele % i == 0)
         {
             grids = num_ele / i, blocks = i, bound = 0;
-            if (grids > max_block_size)
-                grids = max_block_size;
+            // if (grids > max_block_size)
+            //     grids = max_block_size;
             return;
         }
     }

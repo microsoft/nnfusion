@@ -173,8 +173,7 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
             lu << in_args[pair.first] << "[tid];\n";
         }
     }
-    if (grids * blocks != num_ele)
-        lu.block_end();
+    lu.block_end();
 
     return lu_;
 }

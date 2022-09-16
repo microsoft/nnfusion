@@ -32,8 +32,10 @@ Engine::Engine()
 
 bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer context)
 {
-    if (context == nullptr)
+    if (context == nullptr) {
         context = make_shared<EngineContext>();
+        NNFUSION_CHECK(context->is_outmost_graph);
+    }
 
     NNFUSION_LOG(INFO) << "Tranverse Passes count:" << (t_passes != nullptr ? t_passes->size() : 0);
     NNFUSION_LOG(INFO) << "Graph Passes count:" << (g_passes != nullptr ? g_passes->size() : 0);
@@ -66,12 +68,13 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
     return result;
 }
 
-nnfusion::TranslationUnit::Pointer Engine::convert_graph_to_program(graph::Graph::Pointer graph)
+nnfusion::TranslationUnit::Pointer Engine::convert_graph_to_program(graph::Graph::Pointer graph, bool is_outmost_graph)
 {
     // this function has the same logic with Engine::run_on_graph,
     // except that it will not do codegen and will return translation unit object.
     // hack for control flow proj: this function does not run t_passes
     auto context = make_shared<EngineContext>();
+    context->is_outmost_graph = is_outmost_graph;
     bool result = true;
     if (g_passes != nullptr)
         result = g_passes->run_on_graph(graph, context);

@@ -1,6 +1,7 @@
 #include "to_cpu_pass.hpp"
 #include "nnfusion/core/operators/op_define/if.hpp"
 #include <queue>
+#include "nnfusion/engine/engine.hpp"
 
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
@@ -137,7 +138,10 @@ void add_copy_node(std::shared_ptr<nnfusion::graph::Graph>& graph) {
 }
 
 bool ToCPUPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) {
-    if (!FLAGS_fenable_cpu) {
+    auto ctx = get_context();
+    bool is_outmost_graph = ctx != nullptr && ctx->is_outmost_graph;
+    // to_cpu is not fully supported in inner graph yet
+    if (!FLAGS_fenable_cpu || !is_outmost_graph) {
         for (auto gnode: graph->get_nodes()) {
             gnode->set_on_gpu(true);
             gnode->Set<int>(stage_cpu_tag, 0);

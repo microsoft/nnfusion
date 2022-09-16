@@ -7,6 +7,7 @@
 
 namespace nnfusion
 {
+    class EngineContext;
     namespace pass
     {
         namespace graph
@@ -23,6 +24,10 @@ namespace nnfusion
                 {
                     return true;
                 }
+                void set_context(std::shared_ptr<EngineContext> context) { m_context = context; }
+                std::shared_ptr<EngineContext> get_context() { return m_context; }
+            private:
+                std::shared_ptr<EngineContext> m_context;
             };
         }
     }

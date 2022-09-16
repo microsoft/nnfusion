@@ -52,7 +52,7 @@ bool ControlFlowPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
             auto op = static_pointer_cast<Loop>(gnode->get_op_ptr());
             NNFUSION_CHECK_NOT_NULLPTR(op);
             auto loop_body = op->get_loop_body_graph();
-            auto loop_body_tu = CudaEngine().convert_graph_to_program(loop_body);
+            auto loop_body_tu = CudaEngine().convert_graph_to_program(loop_body, false);
             op->set_loop_body_tu(loop_body_tu);
             extract_constant_nodes(graph, gnode, loop_body_tu->program);
         }
@@ -62,8 +62,8 @@ bool ControlFlowPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
             NNFUSION_CHECK_NOT_NULLPTR(op);
             auto then_branch = op->get_then_branch_graph();
             auto else_branch = op->get_else_branch_graph();
-            auto then_branch_tu = CudaEngine().convert_graph_to_program(then_branch);
-            auto else_branch_tu = CudaEngine().convert_graph_to_program(else_branch);
+            auto then_branch_tu = CudaEngine().convert_graph_to_program(then_branch, false);
+            auto else_branch_tu = CudaEngine().convert_graph_to_program(else_branch, false);
             op->set_then_branch_tu(then_branch_tu);
             op->set_else_branch_tu(else_branch_tu);
             extract_constant_nodes(graph, gnode, then_branch_tu->program);
@@ -74,7 +74,7 @@ bool ControlFlowPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
             auto op = static_pointer_cast<Recursion>(gnode->get_op_ptr());
             NNFUSION_CHECK_NOT_NULLPTR(op);
             auto body = op->get_body_graph();
-            auto body_tu = CudaEngine().convert_graph_to_program(body);
+            auto body_tu = CudaEngine().convert_graph_to_program(body, false);
             op->set_body_tu(body_tu);
         }
     }

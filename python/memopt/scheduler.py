@@ -19,7 +19,7 @@ class Scheduler:
         _t, tx = sch[shared].split(fused, factor=self.thread_per_block[0])
         oo, ty = sch[shared].split(_t, factor=self.thread_per_block[1])
         sch[shared].reorder(oo, ty, tx)
-        # sch[shared].unroll(oo)
+        sch[shared].unroll(oo)
         sch[shared].bind(tx, te.thread_axis("threadIdx.x"))
         sch[shared].bind(ty, te.thread_axis("threadIdx.y"))
 

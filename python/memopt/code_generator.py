@@ -71,6 +71,10 @@ class CodeGenerator():
     def compile(self, output_nodes: List[Node], configs: Dict[Node, Config], target: str, kernel_name: str) -> CompileResult:
         self.kernel_name = kernel_name
         self.topo_order = find_topo_sort(output_nodes) # List[Node]
+        self.target = target
+        compute_nodes = list(filter(lambda node: not(node.is_output() or node.is_placeholder()), self.topo_order))
+        if len(compute_nodes) == 1:
+            return self._compile_single_node(compute_nodes[0], configs[compute_nodes[0]])
         global_args_name_map = self._get_tensor_name_map() # {Tensor : "input0"}
 
         self.allocator = BestFit()
@@ -104,7 +108,7 @@ class CodeGenerator():
                     lambda idx: not self._can_free(op.inputs[idx].src_node, op.inputs[idx].src_id), shared_inputs_idx)]
                 # generate the kernel code for this node
                 func_name = "_".join([self.kernel_name, str(len(statements)), op.name]) # unique globally
-                kernel_code = tvm_build(sch, op.args, target, shared_outputs_idx, shared_inputs, name=func_name, global_kernel=False,
+                kernel_code = tvm_build(sch, op.args, self.target, shared_outputs_idx, shared_inputs, name=func_name, global_kernel=False,
                     block_reorder=config.block_order, strides=config.output_strides, reuse_disabled_inputs=reuse_disabled_inputs)
                 for idx in config.output_strides:
                     strides_map[(op, idx-len(op.inputs))] = config.output_strides[idx]
@@ -147,3 +151,10 @@ class CodeGenerator():
         global_args = [global_args_name_rmap[x] for x in global_args_names]
 
         return CompileResult(configs, code, self.block_size, self.grid_size, self.kernel_name, global_args)
+
+    def _compile_single_node(self, node: Node, config: Config):
+        sch = Scheduler().rewrite_schedule(node.create_schedule(), config)
+        with Scope(sch) as scope:
+            code = tvm_build(sch, node.args, self.target, name=self.kernel_name, global_kernel=True, flatten_block=False)
+            self.block_size, self.grid_size = scope.block_size, scope.grid_size
+        return CompileResult({node: config}, code, self.block_size, self.grid_size, self.kernel_name, node.args)

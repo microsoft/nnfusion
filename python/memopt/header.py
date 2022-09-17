@@ -42,4 +42,12 @@ CUDA_UNSUPPORTED_HALF_MATH_UNARY(herf, erf)
 
 #undef CUDA_UNSUPPORTED_HALF_MATH_BINARY
 #undef CUDA_UNSUPPORTED_HALF_MATH_UNARY
+
+// Pack two half values.
+inline __device__ __host__ unsigned
+__pack_half2(const half x, const half y) {
+  unsigned v0 = *((unsigned short *)&x);
+  unsigned v1 = *((unsigned short *)&y);
+  return (v1 << 16) | v0;
+}
 """

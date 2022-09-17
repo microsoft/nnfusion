@@ -10,15 +10,17 @@ class Scheduler:
     def __init__(self):
         pass
 
-    def cooperative_fetch(self, shared, sch, strides: Stride = Stride()):
+    def cooperative_fetch(self, shared, sch, strides: Stride = Stride(), vec: int = 1):
         assert self.thread_per_block[2] == 1
         axes = sch[shared].op.axis
         if strides.is_valid():
             sch[shared].storage_align(axes[strides.ax], strides.stride - 1, strides.stride)
         fused = sch[shared].fuse(*axes)
+        fused, tv = sch[shared].split(fused, factor=vec)
         _t, tx = sch[shared].split(fused, factor=self.thread_per_block[0])
         oo, ty = sch[shared].split(_t, factor=self.thread_per_block[1])
         sch[shared].reorder(oo, ty, tx)
+        sch[shared].vectorize(tv)
         sch[shared].unroll(oo)
         sch[shared].bind(tx, te.thread_axis("threadIdx.x"))
         sch[shared].bind(ty, te.thread_axis("threadIdx.y"))
@@ -326,8 +328,10 @@ class Scheduler:
         self.sche[out].reorder(*axis_order)
         blck_fused = self.sche[out].fuse(*blck_axis)
         thrd_fused = self.sche[out].fuse(*thrd_axis)
+        thrd_fused, tv = self.sche[out].split(thrd_fused, factor=8)
         _t, tx = self.sche[out].split(thrd_fused, factor=self.thread_per_block[0])
         _t, ty = self.sche[out].split(_t, factor=self.thread_per_block[1])
+        self.sche[out].vectorize(tv)
 
         self.sche[out].bind(ty, te.thread_axis("threadIdx.y"))
         self.sche[out].bind(tx, te.thread_axis("threadIdx.x"))
@@ -390,8 +394,8 @@ class Scheduler:
             self.sche[BS].compute_at(self.sche[out], blck_fused)
         else:
             self.sche[BS].compute_at(self.sche[CF], ko)
-        self.cooperative_fetch(AS, self.sche, ASstrideDef)
-        self.cooperative_fetch(BS, self.sche, BSstrideDef)
+        self.cooperative_fetch(AS, self.sche, ASstrideDef, 8)
+        self.cooperative_fetch(BS, self.sche, BSstrideDef, 8)
 
         shape = (wmma_m, wmma_n, wmma_k)
         AL_gemm = te.placeholder(AL_shape, name="AL_gemm", dtype=A.dtype)

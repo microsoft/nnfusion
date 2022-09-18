@@ -76,6 +76,24 @@ bool include_dynamic_shape(std::string expr)
         }
         cur = right;
     }
+    if (expr.find("alter(") != std::string::npos)
+    {
+        return true;
+    }
+
+    auto where = 0;
+    auto end = 0;
+    if ((where = expr.find("where")) != std::string::npos)
+    {
+        if ((end = expr.find("\"", where)) != std::string::npos)
+        {
+            auto where_list = expr.substr(where + 6, end - where - 6);
+            if (where_list.find(":") != std::string::npos)
+            {
+                return true;
+            }
+        }
+    }
     return false;
 }
 

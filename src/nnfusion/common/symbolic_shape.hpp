@@ -201,6 +201,7 @@ namespace nnfusion
         SymDim& operator+=(const SymDim& dim) { return (*this = *this + dim); }
         /// \brief Multiply-into operator for Dimension.
         SymDim& operator*=(const SymDim& dim) { return (*this = *this * dim); }
+        bool operator<(const SymDim &other) const { return this->m_sym < other.sym(); }  
     private:
         // the symbol name of this dim
         std::string m_sym;

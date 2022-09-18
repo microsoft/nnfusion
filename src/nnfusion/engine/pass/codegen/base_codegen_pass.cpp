@@ -397,12 +397,13 @@ LanguageUnit_p BaseCodegenPass::codegen_global_symbols(std::shared_ptr<Translati
     }
     for (auto pair : symbol_value)
     {
-        *lu_symbols << "int64_t " << pair.first;
-        if (pair.second < std::numeric_limits<size_t>::max())
-        {
-            *lu_symbols << " = " << pair.second;
-        }
-        *lu_symbols << ";\n";
+        //*lu_symbols << "int64_t " << pair.first;
+        *lu_symbols << "int64_t " << pair.first << " = get_" << pair.first << "();\n";
+        // if (pair.second < std::numeric_limits<size_t>::max())
+        // {
+        //     *lu_symbols << " = " << pair.second;
+        // }
+        // *lu_symbols << ";\n";
     }
     return lu_symbols;
 }

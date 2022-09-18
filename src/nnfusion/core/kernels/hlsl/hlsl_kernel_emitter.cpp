@@ -146,6 +146,10 @@ LanguageUnit_p hlsl::AntaresHLSLKernelEmitter::emit_function_call()
                         }
                     }
                 }
+                for (auto& dim : m_context->gnode->get_symbols())
+                {
+                    symbol_expr[dim.expr_to_symbol(dim.sym())] = dim.sym();
+                }
 
                 // the key is sortted by std::map
                 for (auto& p : symbol_expr)

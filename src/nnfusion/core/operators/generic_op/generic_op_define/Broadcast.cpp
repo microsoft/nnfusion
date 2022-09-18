@@ -42,7 +42,7 @@ REGISTER_OP(Broadcast)
 
         auto op = static_pointer_cast<nnfusion::op::Broadcast>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
-        auto input_shape = curr->get_output_shape(0);
+        auto input_shape = curr->get_input_shape(0);
         auto output_shape = curr->get_output_shape(0);
         auto output_layout = op::create_layout_from_dims(output_shape);
         auto broadcast_dims = op->get_broadcast_axes();
@@ -54,8 +54,14 @@ REGISTER_OP(Broadcast)
                 input_layout.push_back(output_layout[d]);
             else
             {
+                auto out_dim = to_string(output_shape[d]);
+                if (output_shape.get_sym_shape() && output_shape.get_sym_shape()->at(d).is_dynamic())
+                {
+                    auto& dim = output_shape.get_sym_shape()->at(d);
+                    out_dim = dim.expr_to_symbol(dim.sym()) + ":" + std::to_string(dim.max());
+                }
                 broadcast_code = broadcast_code + (broadcast_code.empty() ? "" : ", ") +
-                                 output_layout[d] + " in " + to_string(output_shape[d]);
+                                 output_layout[d] + " in " + out_dim;
             }
         }
 

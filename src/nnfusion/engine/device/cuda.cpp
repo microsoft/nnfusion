@@ -247,7 +247,7 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                                 + " && " + " get_" + param.first + "() <=" + to_string(param.second.max());
                     }
                     global_entry << "if(" << condition << ")\n{\n";
-                    global_entry << "\tgraph_" << graph_cnt
+                    global_entry << "\t return graph_" << graph_cnt
                                  << "::kernel_entry(" + arg_vars + ");\n";
                     global_entry << "}\n";
                     graph_cnt++;
@@ -290,11 +290,53 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                             global_sym_methods << "\tif(" << condition << ") { return " << val << ";}\n";
                         }
 
-                        global_sym_methods << "\treturn 0;\n}\n";
+                        global_sym_methods << "\treturn -1;\n}\n";
                     }
                 }
 
-                global_entry << "return 0;\n";
+                auto args = tu.back()->arg;
+                for(int i=0;i<args.size();i++)
+                {
+                    auto arg = args[i];
+                    for(int j=0;j<arg->get_shape().size();j++)
+                    {
+                        auto dim_name = arg->get_name() + "_dim_" + to_string(j);
+                        global_sym_defs << "extern \"C\" int64_t get_" << dim_name << "();\n";
+                        global_sym_methods << "extern \"C\" int64_t get_" << dim_name << "()\n{\n";
+
+                        for(int k=0;k<vec_dim_params.size();k++)
+                        {
+                            std::string condition = "";
+                            auto&dim_params = vec_dim_params[k];
+                            for(auto param : dim_params)
+                            {
+                                if (!condition.empty())
+                                    condition += " && ";
+                                if(param.second.min() == 0)
+                                    condition += param.first + " == " + to_string(param.second.max());
+                                else 
+                                    condition += param.first + " >= " + to_string(param.second.min()) 
+                                        + " && " + param.first + " <= " + to_string(param.second.max());
+                            }
+                            std::string val;
+                            auto sym_shape = tu[k]->arg[i]->get_shape().sym_shape;
+                            if(sym_shape != nullptr)
+                            {
+                                auto sym = (*sym_shape)[j];
+                                val = sym.is_dynamic() ? sym.sym() : to_string(sym.max());
+                            }
+                            else
+                            {
+                                val = to_string(tu[k]->arg[i]->get_shape()[j]);
+                            }
+                            global_sym_methods << "\tif(" << condition << ") { return " << val << ";}\n";
+                        }
+
+                        global_sym_methods << "\treturn -1;\n}\n";
+                    }
+                }
+
+                global_entry << "return -1;\n";
                 global_entry.block_end();
                 global_entry << "\n" << global_sym_methods.get_code();
                 global_entry.execute();

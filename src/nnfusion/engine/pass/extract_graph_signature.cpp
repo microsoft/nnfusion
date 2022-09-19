@@ -164,15 +164,17 @@ bool ExtractGraphSignature::extract_args(std::shared_ptr<InterpreterContext> ctx
                 para_info[type][frontend_name]["name"] = tv->get_name();
                 para_info[type][frontend_name]["id"] = ss.str();
                 para_info[type][frontend_name]["shape"] = tv->get_shape();
-                if(tv->get_shape().is_dynamic())
+
+                if(FLAGS_fmulti_shape)
                 {
-                    para_info[type][frontend_name]["symbolic_shape"] = json();
-                    auto& dynshape = tv->get_shape().sym_shape;
-                    for(auto sym : *dynshape)
-                        if(sym.is_dynamic())
-                            para_info[type][frontend_name]["symbolic_shape"].push_back(sym.sym());
-                        else
-                            para_info[type][frontend_name]["symbolic_shape"].push_back(sym.max());
+                  para_info[type][frontend_name]["symbolic_shape"] = json();
+                  auto& tv_shape = tv->get_shape();
+                  int dim = 0;
+                  for(auto sym : tv_shape)
+                  {
+                    para_info[type][frontend_name]["symbolic_shape"].push_back(tv->get_name() + "_dim_" + to_string(dim));
+                    dim++;
+                  }
                 }
             }
         }

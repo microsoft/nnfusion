@@ -28,17 +28,19 @@ using namespace std;
 using namespace nnfusion::op;
 
 atomic<size_t> Op::m_next_instance_id(0);
+atomic<size_t> Op::m_next_constant_id(0);
 
 DEFINE_bool(fsymbolic, false, "support symbolic shape");
 
 void Op::reset_next_instance_id()
 {
     m_next_instance_id = 0;
+    m_next_constant_id = 0;
 }
 
 Op::Op(const std::string& op_type)
     : m_op_type(op_type)
-    , m_instance_id(m_next_instance_id.fetch_add(1))
+    , m_instance_id(op_type=="Constant"?m_next_constant_id.fetch_add(1):m_next_instance_id.fetch_add(1))
     , m_unique_name(get_op_type() + "_" + to_string(m_instance_id))
 {
 }

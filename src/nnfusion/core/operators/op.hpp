@@ -152,6 +152,7 @@ namespace nnfusion
             std::string m_name;
             const std::string m_unique_name;
             static std::atomic<size_t> m_next_instance_id;
+            static std::atomic<size_t> m_next_constant_id;
             std::vector<size_t> m_shared_memory; // for reduce fusion
             nlohmann::json m_config;
 

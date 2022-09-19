@@ -62,6 +62,26 @@ namespace nnfusion
                 }
 
                 template <>
+                inline std::vector<char> get_data(const onnx::TensorProto& tensor)
+                {
+                    if (tensor.has_raw_data())
+                    {
+                        return __get_raw_data<char>(tensor.raw_data());
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_BOOL)
+                    {
+
+                        return __get_data<char>(tensor.int32_data());
+                    }
+                    NNFUSION_CHECK_FAIL()
+                        << "invalid data type: "
+                        << onnx::TensorProto_DataType_Name(
+                               static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
+                    return std::vector<char>();
+                }
+
+                template <>
                 inline std::vector<float> get_data(const onnx::TensorProto& tensor)
                 {
                     if (tensor.has_raw_data())

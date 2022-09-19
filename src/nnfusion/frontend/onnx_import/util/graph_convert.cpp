@@ -337,6 +337,7 @@ namespace nnfusion
                 }
 
                 m_graph = std::make_shared<nnfusion::graph::Graph>();
+                m_graph->set_dim_params(m_dim_params);
 
                 NNFUSION_CHECK(onnx_graph_proto->sparse_initializer_size() == 0)
                     << "sparse_initializer not supported";

@@ -90,6 +90,24 @@ namespace nnfusion
             size_t arg2_size = arg2_in_shape.size();
             size_t axis = std::max(arg1_size, arg2_size) - 1;
 
+            bool symbolic_broadcast = false;
+            std::shared_ptr<SymShape> final_sym_shape;
+            std::shared_ptr<SymShape> arg1_sym_shape;
+            std::shared_ptr<SymShape> arg2_sym_shape;
+            if (arg1_in_shape.is_dynamic() || arg2_in_shape.is_dynamic())
+            {
+                symbolic_broadcast = true;
+                final_sym_shape = std::make_shared<SymShape>();
+                arg1_sym_shape = arg1_in_shape.get_sym_shape()
+                                     ? arg1_in_shape.get_sym_shape()
+                                     : std::make_shared<SymShape>(arg1_in_shape);
+                NNFUSION_CHECK(arg1_in_shape.size() == arg1_in_shape.size());
+                arg2_sym_shape = arg2_in_shape.get_sym_shape()
+                                     ? arg2_in_shape.get_sym_shape()
+                                     : std::make_shared<SymShape>(arg2_in_shape);
+                NNFUSION_CHECK(arg2_in_shape.size() == arg2_in_shape.size());
+            }
+
             // per numpy definition of broadcast:
             // start with trailing dimensions and work forward
             // two dimensions are compatible:
@@ -99,11 +117,21 @@ namespace nnfusion
             {
                 size_t arg1_dim = arg1_size ? arg1_in_shape[arg1_size - 1] : 1;
                 size_t arg2_dim = arg2_size ? arg2_in_shape[arg2_size - 1] : 1;
-
+                SymDim arg1_sdim, arg2_sdim;
+                if (symbolic_broadcast)
+                {
+                    arg1_sdim = arg1_size ? arg1_sym_shape->at(arg1_size - 1) : SymDim(1);
+                    arg2_sdim = arg2_size ? arg2_sym_shape->at(arg2_size - 1) : SymDim(1);
+                }
+            
                 if (arg1_dim == arg2_dim)
                 {
                     // add dimension to broadcast shape + arg1/arg2 reshape
                     plan.m_final_shape.insert(plan.m_final_shape.begin(), arg1_dim);
+                    if (symbolic_broadcast)
+                    {
+                        final_sym_shape->insert(final_sym_shape->begin(), arg1_sdim); 
+                    }
                     plan.m_arg1_shape_after_possible_reshaping.insert(
                         plan.m_arg1_shape_after_possible_reshaping.begin(), arg1_dim);
                     plan.m_arg2_shape_after_possible_reshaping.insert(
@@ -113,6 +141,10 @@ namespace nnfusion
                 {
                     // add arg1 dimension to broadcast shape and arg1 reshape
                     plan.m_final_shape.insert(plan.m_final_shape.begin(), arg1_dim);
+                    if (symbolic_broadcast)
+                    {
+                        final_sym_shape->insert(final_sym_shape->begin(), arg1_sdim); 
+                    }
                     plan.m_arg1_shape_after_possible_reshaping.insert(
                         plan.m_arg1_shape_after_possible_reshaping.begin(), arg1_dim);
                     // add current axis to arg2 broadcast axes
@@ -122,6 +154,10 @@ namespace nnfusion
                 {
                     // add arg2 dimension to broadcast shape and arg2 reshape
                     plan.m_final_shape.insert(plan.m_final_shape.begin(), arg2_dim);
+                    if (symbolic_broadcast)
+                    {
+                        final_sym_shape->insert(final_sym_shape->begin(), arg2_sdim); 
+                    }
                     plan.m_arg2_shape_after_possible_reshaping.insert(
                         plan.m_arg2_shape_after_possible_reshaping.begin(), arg2_dim);
                     // add current axis to arg1 broadcast axes
@@ -146,6 +182,11 @@ namespace nnfusion
                 {
                     --axis;
                 }
+            }
+
+            if (final_sym_shape && final_sym_shape->is_dynamic())
+            {
+                plan.m_final_shape.set_sym_shape(final_sym_shape);
             }
 
             return plan;
@@ -280,7 +321,7 @@ namespace nnfusion
                                              plan.m_arg2_broadcast_axes,
                                              plan.m_final_shape,
                                              graph);
-
+ 
             return {arg1_out, arg2_out};
         }
 

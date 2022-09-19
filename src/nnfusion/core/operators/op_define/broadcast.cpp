@@ -66,7 +66,7 @@ void Broadcast::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
         << ", broadcast axes: " << m_broadcast_axes << ").";
 
     auto in_shape = gnode->get_input_shape(0);
-    if (in_shape.get_sym_shape())
+    if (in_shape.get_sym_shape() && !m_shape.get_sym_shape())
     {
         auto out_sym_shape = std::make_shared<SymShape>(m_shape);
         for (auto i = 0, j = 0; i < out_sym_shape->size(); i++)

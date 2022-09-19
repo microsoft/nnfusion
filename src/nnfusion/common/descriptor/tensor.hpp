@@ -147,6 +147,7 @@ namespace nnfusion
             int m_device_id;
             size_t m_instance_id;
             static std::atomic<size_t> m_next_instance_id;
+            static std::atomic<size_t> m_next_constant_id;
             const std::string m_unique_name;
         };
 

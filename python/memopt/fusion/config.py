@@ -126,23 +126,12 @@ class Config:
     def __repr__(self) -> str:
         return str(self.to_dict())
 
-    def complete_config(self, node, C_ax_m: int, C_ax_n: int):
+    def complete_config(self, node):
         if not self.use_tc:
             return self
-        wmma_m, wmma_n, wmma_k = self.wmma
-        CL_shape = [1 for _ in node.saxis]
-        CL_shape[C_ax_m] = wmma_m
-        CL_shape[C_ax_n] = wmma_n
+        _, _, wmma_k = self.wmma
 
-        shapes = node.infer_dependency_reduce_inputs(CL_shape, {x : 1 for x in node.raxis})
-        A_deps, B_deps = shapes.values()
-        A_ax_m = A_deps.index(wmma_m)
-        B_ax_n = B_deps.index(wmma_n)
-        shapes = node.infer_dependency_reduce_inputs([1 for _ in node.saxis], {x : wmma_k for x in node.raxis})
-        A_deps, B_deps = shapes.values()
-        A_ax_k = A_deps.index(wmma_k)
-        B_ax_k = B_deps.index(wmma_k)
-        tc_axis = [A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n]
+        tc_axis = node.infer_tensorcore_axis()
 
         shapes = node.infer_dependency_reduce_inputs(self.block, {x : self.rstep[0] for x in node.raxis})
         AS_shape, BS_shape = shapes.values()

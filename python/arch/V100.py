@@ -34,5 +34,5 @@ class V100(Arch):
 
         # for active block estimation
         self.max_active_blocks = 32
-        self.max_smem_usage = 96 * 1024 - 1
+        self.max_smem_usage = 96 * 1024
         self.max_threads_per_sm = 2048

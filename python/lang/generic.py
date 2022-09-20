@@ -1,7 +1,6 @@
 """
 The entry of Antares-TVM bridge
 """
-import importlib
 from collections import OrderedDict
 from typing import Optional, List, Tuple
 
@@ -111,52 +110,6 @@ def output(shape,  # pylint:disable=too-many-arguments
     if final_output:
         OUTPUT_TEMP.append(result)
     return result
-
-
-def do_native_scheduling(sch: te.Schedule, backend: str, plan='default_v2', plan_args=None):
-    """
-    Scheduler entry
-    """
-    def _select_plan(plan_name):
-        if plan_name.find('.') < 0:
-            plan_name = 'standard.' + plan_name
-        schedule_lib = importlib.import_module(
-            'backends.%s.schedule.%s' % (backend, plan_name), __loader__.name)
-        sch_args = plan_args if plan_args is not None else list()
-        return schedule_lib.schedule(sch, *sch_args)
-
-    if plan is None:
-        raise Exception(f'No available plan configured for backend: {backend}')
-    return _select_plan(plan)
-
-
-def _assign_multiple_outputs(outputs: List[te.Tensor]):
-    outputs_shape = [np.asarray(list(o_.shape), dtype=np.int32) for o_ in outputs]
-    shared_shape = outputs_shape[np.argsort([s_.size for s_ in outputs_shape])[0]]
-
-    def _alignment(dst_shape, src_shape, src_args):
-        dst_shape = np.asarray(list(dst_shape), dtype=np.int32)
-        dst_args = list()
-        src_index = 0
-        for dst_ in dst_shape:
-            if dst_ == 1:
-                dst_args.append(0)
-                continue
-            dst_args.append(src_args[src_index])
-            src_index += 1
-        return tuple(dst_args)
-
-    def _shared_assignment(*args):
-        assert len(args) == shared_shape.size
-        out_selects = list()
-        for out_tensor in outputs:
-            out_args = _alignment(out_tensor.shape, shared_shape, args)
-            out_selects.append(out_tensor[out_args])
-        return out_selects
-
-    assigned_outputs = te.compute(tuple(shared_shape.tolist()), _shared_assignment,
-                                  name='proxy_outputs')
-    return assigned_outputs
 
 def translate_to_tvm(expr: str, input_dict, extra_outputs=[]) -> Tuple[List[te.Tensor], List[te.Tensor]]:
     OUTPUT_TEMP.clear()

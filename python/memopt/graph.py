@@ -1,4 +1,5 @@
 from typing import List, Union, Tuple, Any, Dict
+import functools
 import tvm
 import lang
 import numpy as np
@@ -201,6 +202,72 @@ class IRNode(Node):
                     continue
             result += np.prod(shapes[tensor.name]) * int(tvm.DataType(tensor.dtype).bits // 8)
         return result
+
+    def infer_smem_usage_TensorCore(self, shape, rstep) -> Tuple[int, int]:
+        # returns internal memory usage and output memory usage (if dump to shared)
+        assert self.get_tag("tensorCoreConfig")
+        shapes = self.infer_dependency_reduce_inputs(shape, rstep)
+        AS_shape, BS_shape = shapes.values()
+        CS_shape = shape
+        A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n = self.infer_tensorcore_axis()
+        # applying strides
+        offset = 8
+        A_high_ax = min(A_ax_m, A_ax_k)
+        B_high_ax = min(B_ax_n, B_ax_k)
+        C_high_ax = min(C_ax_m, C_ax_n)
+        AS_elem, BS_elem, CS_elem = np.prod(AS_shape), np.prod(BS_shape), np.prod(CS_shape)
+        AS_elem = AS_elem / np.prod(AS_shape[A_high_ax+1:]) * (np.prod(AS_shape[A_high_ax+1:]) + offset)
+        BS_elem = BS_elem / np.prod(BS_shape[B_high_ax+1:]) * (np.prod(BS_shape[B_high_ax+1:]) + offset)
+        CS_elem = CS_elem / np.prod(CS_shape[C_high_ax+1:]) * (np.prod(CS_shape[C_high_ax+1:]) + offset)
+        # running the same as infer_smem_usage
+        result = 0
+        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
+        shapes = self.ana.infer(shape, rstep)
+        for op in self._sche.stage_map:
+            if not isinstance(op, tvm.te.ComputeOp):continue
+            for i, tensor in enumerate(op.input_tensors):
+                cache = isinstance(self._sche[tensor].op, tvm.te.PlaceholderOp) \
+                    and len(op.output(0).shape) > len(tensor.shape) \
+                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
+                if len(op.reduce_axis) > 0:
+                    cache = True
+                if tensor.name.startswith("input"):
+                    input_id = [arg.name for arg in self._input_args].index(tensor.name)
+                    assert(input_id >= 0)
+                    src_node = self.inputs[input_id].src_node
+                    if not src_node.is_placeholder():
+                        cache = False
+                if cache:
+                    num_elem = np.prod(shapes[tensor.name])
+                    if len(op.reduce_axis) > 0:
+                        assert i < 2
+                        if i == 0:
+                            num_elem = AS_elem
+                        else:
+                            num_elem = BS_elem
+                    result += num_elem * int(tvm.DataType(tensor.dtype).bits // 8)
+        return result, CS_elem
+
+    @functools.lru_cache()
+    def infer_tensorcore_axis(self) -> Tuple[int]:
+        # axis is fixed for one expression, so only inference and cached
+        assert self.get_tag("tensorCoreConfig")
+        C_ax_m, C_ax_n = self.get_tag("tensorCoreConfig")
+        wmma_m, wmma_n, wmma_k = [16, 16, 16] # just for testing, any number is ok
+        CL_shape = [1 for _ in self.saxis]
+        CL_shape[C_ax_m] = wmma_m
+        CL_shape[C_ax_n] = wmma_n
+
+        shapes = self.infer_dependency_reduce_inputs(CL_shape, {x : 1 for x in self.raxis})
+        A_deps, B_deps = shapes.values()
+        A_ax_m = A_deps.index(wmma_m)
+        B_ax_n = B_deps.index(wmma_n)
+        shapes = self.infer_dependency_reduce_inputs([1 for _ in self.saxis], {x : wmma_k for x in self.raxis})
+        A_deps, B_deps = shapes.values()
+        A_ax_k = A_deps.index(wmma_k)
+        B_ax_k = B_deps.index(wmma_k)
+        tc_axis = (A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n)
+        return tc_axis
 
     def block_infer(self, tile_map, block_expr, block_idx) -> Dict[int, tvm.tir.PrimExpr]:
         space_expr = []

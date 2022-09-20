@@ -414,6 +414,7 @@ namespace nnfusion
                         auto input_op = std::make_shared<op::Parameter>(
                             input_value_info.get_element_type(), input_value_info.get_shape());
                         input_op->set_name(input_proto.name());
+                        input_op->set_sym_shape(input_value_info.get_sym_shape());
                         input_gnode = m_graph->add_node_and_edge(input_op, graph::GNodeVector({}));
                         m_node_map[input_proto.name()] = {GNodeIndex{input_gnode}};
                         if (m_output_names.find(input_gnode->get_name()) != m_output_names.end())

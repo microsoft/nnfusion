@@ -167,12 +167,22 @@ bool ExtractGraphSignature::extract_args(std::shared_ptr<InterpreterContext> ctx
 
                 if(FLAGS_fmulti_shape)
                 {
-                  para_info[type][frontend_name]["symbolic_shape"] = json();
+                  bool update_shape = true;
+                  if(!para_info[type][frontend_name].contains("symbolic_shape"))
+                  {
+                    para_info[type][frontend_name]["symbolic_shape"] = json();
+                    update_shape = false;
+                  }
                   auto& tv_shape = tv->get_shape();
+                  auto tv_sym_shape = parameter_op->get_sym_shape();
                   int dim = 0;
                   for(auto sym : tv_shape)
                   {
-                    para_info[type][frontend_name]["symbolic_shape"].push_back(tv->get_name() + "_dim_" + to_string(dim));
+                    if(!update_shape)
+                      para_info[type][frontend_name]["symbolic_shape"].push_back(tv_shape[dim]);
+                    else
+                      if(tv_sym_shape != nullptr && (*tv_sym_shape)[dim].get_name() != "")
+                        para_info[type][frontend_name]["symbolic_shape"][dim] = (*tv_sym_shape)[dim].get_name();
                     dim++;
                   }
                 }
@@ -233,7 +243,7 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
         para_info["output"][frontend_name]["name"] = tv->get_name();
         para_info["output"][frontend_name]["id"] = ss.str();
         para_info["output"][frontend_name]["shape"] = tv->get_shape();
-        if(FLAGS_fmulti_shape)
+        if(FLAGS_fmulti_shape && !para_info["output"][frontend_name].contains("symbolic_shape"))
         {
             para_info["output"][frontend_name]["symbolic_shape"] = json();
             auto& tv_shape = tv->get_shape();
@@ -251,6 +261,12 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
 bool ExtractGraphSignature::run(std::shared_ptr<InterpreterContext> ctx,
                                 std::shared_ptr<TranslationUnit> tu)
 {
+    std::ifstream in_json(FLAGS_fpara_json_file, std::ios::in);
+    if(in_json.good())
+    {
+      para_info = json::parse(in_json);
+      in_json.close();
+    }
     auto graph = tu->m_graph;
     tu->memory_pool_size = graph->get_temporary_pool_size();
     NNFUSION_CHECK(extract_result(tu, graph));

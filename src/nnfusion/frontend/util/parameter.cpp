@@ -109,6 +109,7 @@ namespace nnfusion
                 if (values.size() == 1)
                 {
                     ret.emplace(dim_info[0], SymDim(std::stoull(dim_info[1])));
+                    ret[dim_info[0]].set_name(dim_info[0]);
                 }
                 else if (values.size() == 2)
                 {

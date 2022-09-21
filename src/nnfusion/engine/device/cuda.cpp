@@ -157,44 +157,24 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 LanguageUnit global_device_type;
                 LanguageUnit global_workspace_size;
                 global_init << "extern \"C\" void cuda_init()\n";
-                global_free << "extern \"C\" void cuda_free() { \n";
+                global_free << "extern \"C\" void cuda_free()\n";
                 size_t workspace_size = 0;
                 global_init.block_begin();
+                global_free.block_begin();
                 for (graph_cnt = 0; graph_cnt < graphs.size(); graph_cnt++)
                 {
                     std::string graph_name = "graph_" + to_string(graph_cnt);
                     for (auto pool : vec_pool_size[graph_cnt])
                     {
-                        if (graph_cnt == 0)
-                        {
-                            global_init << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << graph_name
-                                        << "::" << pool.first << "_memory_pool," << pool.second
-                                        << "));\n";
-                            workspace_size += pool.second;
-                        }
-                        else
-                        {
-                            if(pool.first.find("persist") < pool.first.length())
-                            {
-                                global_init << graph_name << "::" << pool.first << "_memory_pool = "
-                                        << "graph_0::" << pool.first << "_memory_pool;"
-                                        << "\n";
-                            }
-                            else 
-                            {
-                                global_init << "CUDA_SAFE_CALL(cudaMalloc((void**)&" 
-                                    << graph_name << "::" << pool.first << "_memory_pool," 
-                                    << pool.second << "));\n";
-                                workspace_size += pool.second;
-                                global_free << "\tCUDA_SAFE_CALL(cudaFree(" << graph_name << "::" << pool.first << "_memory_pool));\n";
-                            }
-                        }
+                        workspace_size += pool.second;
                     }
                     global_init << graph_name << "::cuda_init();\n";
+                    global_free << graph_name << "::cuda_free();\n";
                 }
                 global_init.block_end();
                 global_init << "\n";
-                global_free << "\tgraph_0::cuda_free();\n}\n\n";
+                global_free.block_end();
+                global_free << "\n";
                 global_device_type << "int get_device_type() { return 0; }\n\n";
                 global_workspace_size << "size_t get_workspace_size() { return " << workspace_size
                                       << "; }\n\n";

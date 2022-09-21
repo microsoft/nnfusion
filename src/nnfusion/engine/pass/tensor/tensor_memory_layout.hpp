@@ -38,6 +38,8 @@ namespace nnfusion
         private:
             size_t m_alignment;
             bool m_disable_memory_sharing;
+            static std::unordered_map<std::string, std::shared_ptr<descriptor::Tensor>> m_shared_const_tensor;
+            static bool m_is_first_graph;
         };
     }
 }

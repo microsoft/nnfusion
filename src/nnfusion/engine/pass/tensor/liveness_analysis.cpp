@@ -74,7 +74,6 @@ bool TensorLivenessAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
                     auto tensor = outputs[i];
                     tensor->set_persistent();
                     set_tensor_group(tensor, to_string(stream_id));
-                    tensor->set_group("output");
                 }
                 auto& inputs = ins->get_inputs();
                 for (size_t i = 0; i < inputs.size(); i++)
@@ -82,7 +81,6 @@ bool TensorLivenessAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
                     auto tensor = inputs[i];
                     tensor->set_persistent();
                     set_tensor_group(tensor, to_string(stream_id));
-                    tensor->set_group("output");
                 }
             }
             else if (gnode && gnode->is_constant())

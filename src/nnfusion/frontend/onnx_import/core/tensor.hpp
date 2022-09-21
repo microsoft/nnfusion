@@ -68,7 +68,7 @@ namespace nnfusion
                     switch (m_tensor_proto->data_type())
                     {
                     case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
-                        return element::boolean;
+                        return element::i32;
                     case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
                         return element::f32;
                     case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:

@@ -5,7 +5,6 @@
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(ffunction_codegen);
-DECLARE_bool(fmulti_shape);
 
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)
     : m_size{size}
@@ -82,6 +81,15 @@ void nnfusion::MemoryAllocator::allocate(shared_ptr<descriptor::Tensor> tensor)
     if (record_trace)
     {
         this->record("[allocate]", tensor);
+    }
+}
+
+void nnfusion::MemoryAllocator::register_tensor(shared_ptr<descriptor::Tensor> tensor)
+{
+    m_allocated_tensors.push_back(tensor);
+    if (record_trace)
+    {
+        this->record("[register]", tensor);
     }
 }
 
@@ -292,7 +300,7 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
     if (m_max_allocated > 0)
     {
         lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
-        if (!FLAGS_ffunction_codegen && !FLAGS_fmulti_shape)
+        if (!FLAGS_ffunction_codegen)
         {
             lu << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << this->get_name() << "_memory_pool,"
                << m_max_allocated << "));\n";
@@ -302,6 +310,13 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
 
         for (auto tensor : m_allocated_tensors)
         {
+            if (tensor->get_shared_tensor())
+            {
+                // this tensor can be shared with the grpah_0's tensor
+                lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
+                   << "*)(graph_0::" << tensor->get_shared_tensor()->get_name() << ");\n";
+                continue;
+            }
             if (tensor->get_pool_offset() == SIZE_MAX)
             {
                 NNFUSION_LOG(NNFUSION_WARNING)
@@ -471,10 +486,16 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
     auto& lu = *_lu;
     if (m_max_allocated > 0)
     {
-        if (!FLAGS_ffunction_codegen && !FLAGS_fmulti_shape)
+        if (!FLAGS_ffunction_codegen)
             lu << this->get_name() << "_memory_pool = dxMemAlloc(" << m_max_allocated << ");\n";
         for (auto tensor : m_allocated_tensors)
         {
+            if (tensor->get_shared_tensor())
+            {
+                // this tensor can be shared with the grpah_0's tensor
+                lu << tensor->get_name() << " = graph_0::" << tensor->get_shared_tensor()->get_name() << ";\n";
+                continue;
+            }
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
             if (tensor->get_pool_offset() == SIZE_MAX)
             {

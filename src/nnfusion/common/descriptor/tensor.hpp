@@ -116,6 +116,11 @@ namespace nnfusion
             int get_device_id() const { return m_device_id; }
             std::string get_device_name() const;
             const std::string& get_unique_name() const { return m_unique_name; }
+            void share_with_tensor(std::shared_ptr<Tensor> tensor) { m_share_buffer_tensor = tensor; }
+            std::shared_ptr<Tensor> get_shared_tensor() const { return m_share_buffer_tensor; }
+            void set_global_consistent_name(std::string name) { m_global_consistent_name = name; }
+            std::string get_global_consistent_name() const { return m_global_consistent_name; }
+
             using Pointer = std::shared_ptr<Tensor>;
 
             static void reset_next_instance_id();
@@ -149,6 +154,9 @@ namespace nnfusion
             static std::atomic<size_t> m_next_instance_id;
             static std::atomic<size_t> m_next_constant_id;
             const std::string m_unique_name;
+            // below feilds are used for sharing buffer across graphs
+            std::shared_ptr<Tensor> m_share_buffer_tensor;
+            std::string m_global_consistent_name;
         };
 
         std::ostream& operator<<(std::ostream&, const nnfusion::descriptor::Tensor&);

@@ -142,6 +142,7 @@ int main(int argc, char** argv)
                 op::Op::reset_next_instance_id();
                 descriptor::Tensor::reset_next_instance_id();
                 vec_graph.push_back(nnfusion::frontend::load_onnx_model(model, dim_params));
+                op::Op::increase_graph_id();
             }
         }
         else

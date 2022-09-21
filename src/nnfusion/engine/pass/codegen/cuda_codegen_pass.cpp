@@ -464,6 +464,11 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
 
             if (gnode && gnode->is_parameter())
                 continue;
+
+            // this tensor will be shared buffer with other one, skip init here.
+            if (gnode && gnode->is_constant() && (*gnode)["shared_tensor"].is_valid_as<bool>())
+                continue;
+
             // if (kernel && kernel->is_eliminative())
             //     continue;
             if (kernel && kernel->get_or_emit_source())

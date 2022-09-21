@@ -178,7 +178,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    if (!kernel->is_eliminative())
+                    if (!(kernel->is_eliminative() || (*gnode)["is_eliminative"].is_valid_as<bool>()))
                     {
                         LanguageUnit_p kernel_func_def;
                         if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
@@ -261,10 +261,43 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             NNFUSION_CHECK_NOT_NULLPTR(async_info.execution_stream);
             std::string stream_name = async_info.execution_stream->get_name();
             std::string call_str = fu->call_unit->get_code();
+            // todo: this hack is to eliminate d2d copy caused by extern result memory
+            if (FLAGS_fextern_result_memory && gnode)
+            {
+                size_t non_control_edge = 0;
+                std::shared_ptr<nnfusion::graph::Edge> out_edge;
+                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
+                {
+                    if (!gnode->get_out_edges()[i]->is_control_edge())
+                    {
+                        non_control_edge++;
+                        out_edge = gnode->get_out_edges()[i];
+                        if (non_control_edge > 1)
+                            break;
+                    }
+                }
+
+                // inplace the result tensor into kernel only if there is one out edge
+                if (non_control_edge == 1)
+                {
+                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
+                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
+                        !is_ref_tensor(ins, out_tensor))
+                    {
+                        std::shared_ptr<GNode> output = out_edge->get_dst();
+                        std::string in_name = output->get_input_tensor(0).get_name();
+                        std::string out_name = output->get_output_tensor(0).get_name();
+                        int pos = call_str.find(", " + in_name);
+                        call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        (*output)["is_eliminative"] = true;
+                    }
+                }
+            }
+
             if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
             {
                 call_str = func_name + call_str;
-                if (kernel && kernel->is_eliminative())
+                if ((kernel && kernel->is_eliminative()) || (*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "// " + call_str;
                 }
@@ -280,7 +313,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                     call_str = call_str.replace(s_pos + 20, e_pos - s_pos - 20, module_name);
                 }
 
-                if (kernel && kernel->is_eliminative())
+                if ((kernel && kernel->is_eliminative()) || (*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "/*\n" + call_str + "*/\n";
                 }

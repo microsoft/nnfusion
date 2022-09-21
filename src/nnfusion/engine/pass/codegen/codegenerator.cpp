@@ -285,21 +285,6 @@ bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
                 *new_lu << clu->begin->get_code();
                 clu->begin->set_stringstream(new_lu->get_code());
 
-                bool has_init_func = true;
-                while (has_init_func && !clean)
-                {
-                    has_init_func = false;
-                    for (auto v = clu->unit_vec.begin(); v != clu->unit_vec.end(); v++)
-                    {
-                        if ((*v)->symbol.find("init:") == 0)
-                        {
-                            clu->unit_vec.erase(v);
-                            has_init_func = true;
-                            break;
-                        }
-                    }
-                }
-
                 auto new_ru = std::make_shared<LanguageUnit>();
                 *new_ru << clu->end->get_code();
                 *new_ru << "} //namespace " << ns << "\n";

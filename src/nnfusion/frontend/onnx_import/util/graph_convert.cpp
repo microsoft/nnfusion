@@ -375,6 +375,7 @@ namespace nnfusion
                                 Shape(std::begin(tensor.dims()), std::end(tensor.dims())),
                                 Tensor{tensor});
                             tensor_op->set_name(tensor.name());
+                            tensor_op->set_global_consistent_name(tensor.name());
                             auto tensor_gnode =
                                 m_graph->add_node_and_edge(tensor_op, graph::GNodeVector({}));
                             m_node_map[tensor.name()] = {GNodeIndex{tensor_gnode}};

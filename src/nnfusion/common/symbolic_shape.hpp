@@ -89,6 +89,9 @@ namespace nnfusion
             }
         }
 
+        std::string get_name() { if(m_name.length()==0) return sym(); return m_name; }
+        void set_name(std::string name) { m_name = name; }
+
         SymDim() {}
         bool is_dynamic() const { return m_sym.size() > 0; }
         bool is_static() const { return !is_dynamic(); }
@@ -209,6 +212,7 @@ namespace nnfusion
         // otherwise, the m_max is use to represent the numeric value of this dim.
         size_t m_min;
         size_t m_max;
+        std::string m_name;
     };
 
     /// \brief Insert a human-readable representation of a dimension into an output stream.

@@ -250,7 +250,7 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
             int dim = 0;
             for(auto sym : tv_shape)
             {
-                para_info["output"][frontend_name]["symbolic_shape"].push_back(tv->get_name() + "_dim_" + to_string(dim));
+                para_info["output"][frontend_name]["symbolic_shape"].push_back("output_" + to_string(i) + "_dim_" + to_string(dim));
                 dim++;
             }
         }

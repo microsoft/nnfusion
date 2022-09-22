@@ -399,7 +399,7 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     auto out = outs[i];
                     for(int j=0;j<out->get_shape().size();j++)
                     {
-                        auto dim_name = out->get_name() + "_dim_" + to_string(j);
+                        auto dim_name = "output_" + to_string(i) + "_dim_" + to_string(j);
                         global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name << "();\n";
                         global_sym_methods << "extern \"C\" int64_t get_" << dim_name << "()\n{\n";
 

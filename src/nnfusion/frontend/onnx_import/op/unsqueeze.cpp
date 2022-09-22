@@ -37,7 +37,11 @@ namespace nnfusion
                     auto data = GetInputIndex(all_ng_nodes, node_proto, 0);
                     auto input_shape = data.get_shape();
                     Node node(node_proto);
-                    auto axes = node.get_attribute_value<std::vector<int64_t>>("axes");
+                    std::vector<int64_t> axes;
+                    if(node.has_attribute("axes"))
+                      axes = node.get_attribute_value<std::vector<int64_t>>("axes");
+                    else
+                      axes.push_back(-1);
                     ///\todo: check duplicate axes between neg and pos axes
                     for (auto& axis : axes)
                     {

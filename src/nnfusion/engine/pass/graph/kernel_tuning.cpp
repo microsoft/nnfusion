@@ -388,7 +388,7 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
             bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
 
             std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
-            cmd += get_antares_device_type(n_device_type, FLAGS_ftuning_platform);
+            cmd += FLAGS_ftuning_platform;
             if (symbolic)
                 cmd += " TVM=0";
             cmd += " COMPUTE_V1='";

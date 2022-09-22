@@ -58,8 +58,9 @@ namespace nnfusion
                     return it;
                 }
 
-                NNFUSION_LOG(INFO) << "[" << depth << ":" << arg_idx
-                                   << "] Working for node: " << gnode->get_name();
+                NNFUSION_LOG(INFO)
+                    << "[" << depth << ":" << arg_idx << "] Working for node: " << gnode->get_name()
+                    << ": " << gnode->get_op_type();
                 static std::map<std::shared_ptr<GNode>, std::vector<std::vector<char>>> dict;
                 auto it = dict.find(gnode);
                 if (it != dict.end())
@@ -99,7 +100,7 @@ namespace nnfusion
                 runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
                 if (FLAGS_fuse_cpuprofiler)
                 {
-                    runtime = nnfusion::profiler::CPUDefaultRuntime::Runtime();
+                    runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
                         gnode->get_op_type(), GENERIC_CPU, element::f32);
                 }
@@ -124,6 +125,7 @@ namespace nnfusion
 
                 bool const_infer_success = false;
                 shared_ptr<KernelContext> ctx(new KernelContext(gnode));
+                NNFUSION_LOG(INFO) << "[" << depth << "] Evaluate node: " << gnode->get_name() << ": " << gnode->get_op_type();
                 for (auto& kernel_reg : kernel_regs)
                 {
                     auto kernel = kernel_reg->m_factory(ctx);

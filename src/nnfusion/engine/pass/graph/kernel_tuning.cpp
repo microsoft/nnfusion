@@ -542,11 +542,18 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     std::vector<std::shared_ptr<GNode>> nodes;
     std::tie(nodes, tuned_kernels) = get_tuning_candidates(graph, BlockList, ir2cnt);
 
-    const std::string dump_file = "./antares_irs.txt";
+    std::string param_str;
+    auto dim_infos = graph->get_dim_params();
+    for (auto pair : dim_infos)
+    {
+        param_str += ("_" + pair.first + pair.second.debug_string());
+    }
+
+    const std::string dump_file = "./antares_irs" + param_str + ".txt";
     if (FLAGS_fdump_and_tune_irs == 1)
     {
         dump_tuning_irs(dump_file, nodes, ir2cnt);
-        exit(0);
+        //exit(0);
     }
 
     if (FLAGS_fdump_and_tune_irs == 2)

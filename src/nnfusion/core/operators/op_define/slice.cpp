@@ -101,6 +101,7 @@ void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
         {
             NNFUSION_CHECK(sym_shape->at(i).max() == size_t(result_dims[i]));
         }
+        (*gnode)["symbolic"] = true;
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), m_out_shape);
         return;
     }

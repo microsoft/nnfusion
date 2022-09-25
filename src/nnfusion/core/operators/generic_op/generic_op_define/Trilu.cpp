@@ -13,28 +13,24 @@ REGISTER_OP(Trilu)
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto input_shape_0 = curr->get_input_shape(0);
         assert(input_shape_0.size() >= 2);
-        int k = 0;
+        std::string k_str = "";
         if(curr->get_input_size() == 2)
-        {
-          auto ng_op = curr->get_in_edge(1)->get_src();
-          auto k_v = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())->get_vector<int64_t>();
-          assert(!k_v.empty());
-          k = k_v[0];
-        }
-        // auto k_op = static_pointer_cast<nnfusion::op::Constant>();
+          k_str = "+ input1[]";
         auto op = static_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
         auto& cfg = op->localOpConfig.getRoot();
-        bool upper = cfg["upper"].is_null()?true:bool(cfg["upper"]);
+        bool upper = cfg["upper"].is_null()?true:int64_t(cfg["upper"])!=0;
         auto input_layout = op::create_layout_from_dims(input_shape_0);
         auto dim_a = input_layout[input_layout.size() - 2];
         auto dim_b = input_layout[input_layout.size() - 1];
 
-        std::string condition = upper?dim_b+">=" +dim_a+"+"+to_string(k):dim_a+">=" +dim_b+"+"+to_string(k);
+        std::string condition = upper?dim_b+">="+dim_a+k_str:dim_a+k_str+">="+dim_b;
 
         auto expression = op::create_code_from_template(
-            "@output0@@input_layout@ = @input0@@input_layout@.when(@condition@, 0)", {
+            "@output0@[@input_layout@] = @input0@[@input_layout@].when(@condition@, const(0).cast(`int64`))", {
             {"input_layout", join(input_layout)},
             {"condition", condition}
             });
+        NNFUSION_LOG(INFO) << expression;
+        NNFUSION_LOG(INFO) << curr->get_input_element_type(0);
         return expression;
     });

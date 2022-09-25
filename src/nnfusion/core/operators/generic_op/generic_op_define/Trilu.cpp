@@ -23,14 +23,18 @@ REGISTER_OP(Trilu)
         auto dim_a = input_layout[input_layout.size() - 2];
         auto dim_b = input_layout[input_layout.size() - 1];
 
+        std::string dtype;
+        bool ret =
+            element::Type::nnfusion_element_type_to_dtype_string(curr->get_element_type(), dtype);
+        NNFUSION_CHECK(ret);
+
         std::string condition = upper?dim_b+">="+dim_a+k_str:dim_a+k_str+">="+dim_b;
 
         auto expression = op::create_code_from_template(
-            "@output0@[@input_layout@] = @input0@[@input_layout@].when(@condition@, const(0).cast(`int64`))", {
+            "@output0@[@input_layout@] = @input0@[@input_layout@].when(@condition@, const(0).cast(`@dtype@`))", {
             {"input_layout", join(input_layout)},
-            {"condition", condition}
+            {"condition", condition},
+            {"dtype", dtype}
             });
-        NNFUSION_LOG(INFO) << expression;
-        NNFUSION_LOG(INFO) << curr->get_input_element_type(0);
         return expression;
     });

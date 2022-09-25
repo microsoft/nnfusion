@@ -11,7 +11,7 @@ REGISTER_OP(Resize)
     .constrait([](const nnfusion::op::OpConfig::any& config) -> bool {
         // Currently support Nearst and Linear mode
         // in Linear mode, the size of output can be specified by sizes value
-        if (config["method"] != "NEAREST" && config["method"] != "LINEAR")
+        if (config["method"] != "NEAREST" && config["method"] != "nearest" && config["method"] != "LINEAR")
         {
             return false;
         }
@@ -29,7 +29,8 @@ REGISTER_OP(Resize)
         auto mode = generic_op->localOpConfig.getRoot()["method"];
         auto no_scale = generic_op->localOpConfig.getRoot()["no_scale"];
 
-        if (mode == "NEAREST")
+        // nearest + asymmetric + floor
+        if (mode == "NEAREST" || mode == "nearest")
         {
             auto ng_op = gnode->get_in_edge(1)->get_src();
             NNFUSION_CHECK(2 == gnode->get_input_size());
@@ -40,6 +41,7 @@ REGISTER_OP(Resize)
             NNFUSION_CHECK(input_shape.size() == scales.size());
 
             nnfusion::Shape output_shape(scales.size());
+            // This is coordinate_transformation_mode with "asymmetric"
             for (int i = 0; i < scales.size(); i++)
                 output_shape[i] = input_shape[i] * scales[i];
             gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
@@ -82,7 +84,8 @@ REGISTER_OP(Resize)
         auto mode = generic_op->localOpConfig.getRoot()["method"];
         auto no_scale = generic_op->localOpConfig.getRoot()["no_scale"];
 
-        if (mode == "NEAREST")
+        // nearest + asymmetric + floor
+        if (mode == "NEAREST" || mode == "nearest")
         {
             auto expression_template =
                 R"( @output0@@output0_layout@ = @input0@@input0_layout@ where @cond@; )";
@@ -91,7 +94,7 @@ REGISTER_OP(Resize)
 
             auto ng_op = gnode->get_in_edge(1)->get_src();
             NNFUSION_CHECK(ng_op->is_constant())
-                << "We only accept the Tile input \"scales\" as Constant.";
+                << "We only accept the Resize input \"scales\" as Constant.";
             auto scales = std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
                               ->get_vector<float>();
 

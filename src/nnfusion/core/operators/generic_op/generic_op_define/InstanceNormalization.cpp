@@ -23,21 +23,37 @@ REGISTER_OP(InstanceNormalization)
         auto input_shape_2 = curr->get_input_shape(2);
         auto output_shape_0 = curr->get_output_shape(0);
 
-        NNFUSION_CHECK(input_shape_0.size() == 3);
+        int ins_size = 0;
+        string I = "";
+        if(input_shape_0.size() == 3)
+        {
+          ins_size = input_shape_0[2];
+          I = "I";
+        }
+        else
+          if(input_shape_0.size() == 4)
+          {
+            ins_size = input_shape_0[2] * input_shape_0[3];
+            I = "I,J";
+          }
+          else 
+            assert(false);
         NNFUSION_CHECK(input_shape_1.size() == 1);
         NNFUSION_CHECK(input_shape_2.size() == 1);
-        NNFUSION_CHECK(output_shape_0.size() == 3);
+        NNFUSION_CHECK(output_shape_0.size() == input_shape_0.size());
 
         auto op = static_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
         auto& cfg = op->localOpConfig.getRoot();
         float epsilon = cfg["epsilon"].is_null()?1e-5:float(cfg["epsilon"]);
 
         auto expression = op::create_code_from_template(
-            "avg[N,C] +=! @input0@[N,C,I] / @dims@;"
-            "var[N,C] +=! (@input0@[N,C,I] - avg[N,C]).call(`pow`, 2) / @dims@;"
-            "@output0@[N, C, I] = @input2@[C] + @input1@[C] * (@input0@[N, C, I] - "
-            "avg[N,C]) / (@epsilon@ + var[N,C]).call(`sqrt`);",
-            {{"dims", to_string(input_shape_0[2] * 1.0)},
-            {"epsilon",to_string(epsilon)}});
+            "mediate0[N,C] +=! @input0@[N,C,@I@] / @dims@;"
+            "mediate1[N,C] +=! (@input0@[N,C,@I@] - mediate0[N,C]).call(`pow`, 2) / @dims@;"
+            "@output0@[N, C, @I@] = @input2@[C] + @input1@[C] * (@input0@[N, C, @I@] - "
+            "mediate0[N,C]) / (@epsilon@ + mediate1[N,C]).call(`sqrt`);",
+            {{"dims", to_string(ins_size * 1.0)},
+            {"epsilon",to_string(epsilon)},
+            {"I", I}
+            });
         return expression;
     });

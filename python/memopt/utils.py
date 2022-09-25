@@ -56,6 +56,7 @@ extern "C" float profile({}) {{
     {};
     if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
     if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
+    if (cudaGetLastError() != cudaSuccess) return -1;
     cudaEventElapsedTime(&ms, start, stop);
     int repeats = int(ceil(100.0 / ms));
     cudaEventRecord(start, 0);
@@ -63,6 +64,7 @@ extern "C" float profile({}) {{
         {};
     if (cudaEventRecord(stop, 0) != cudaSuccess) return -1;
     if (cudaEventSynchronize(stop) != cudaSuccess) return -1;
+    if (cudaGetLastError() != cudaSuccess) return -1;
     cudaEventElapsedTime(&ms, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);

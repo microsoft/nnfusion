@@ -1,5 +1,5 @@
 from memopt.graph import Edge, OutputNode, find_topo_sort
-from memopt.fusion import DefaultPolicy
+from memopt.fusion import DefaultPolicy, TCPolicy
 from memopt.utils import CompileResult, compile_and_load_parallel
 from memopt.reference import get_subgraph_reference_outputs
 from memopt import get_log_level, CodeGenerator
@@ -131,7 +131,12 @@ def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=True)
         result.origin = cached
         return result
 
-    policy = DefaultPolicy(output_nodes, arch)
+    policy_cls = DefaultPolicy
+    for node in nodes:
+        if node.get_tag("tensorCoreConfig"):
+            policy_cls = TCPolicy
+            break
+    policy = policy_cls(output_nodes, arch)
     cgen = CodeGenerator()
     if any([node.get_tag("skip") for node in policy.ordered_nodes]):
         return None

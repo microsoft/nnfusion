@@ -12,9 +12,9 @@ class TensorCoreExtraConfig:
 class Stride:
     def __init__(self, stride: int = 1, ax: int = -1) -> None:
         # which axis to put stride on
-        self._ax = ax
+        self._ax = int(ax)
         # the stride size of the axis
-        self._stride = stride
+        self._stride = int(stride)
 
     @property
     def ax(self) -> int:
@@ -31,11 +31,45 @@ class Stride:
             if i == self.ax:
                 strides[i] = self.stride
             else:
-                strides[i] = strides[i + 1] * shape[i + 1]
+                strides[i] = int(strides[i + 1] * shape[i + 1])
         return strides
+
+    def compute_elements_from_shape(self, shape: List[int]) -> int:
+        original_shape = np.prod(shape)
+        if not self.is_valid():
+            strided_elem = original_shape
+        else:
+            assert self.ax < len(shape)
+            strided_elem = np.prod(shape[0:self.ax+1]) * self.stride
+            assert strided_elem >= original_shape
+        return int(strided_elem)
 
     def is_valid(self) -> bool:
         return self.ax >= 0
+
+    def __repr__(self) -> str:
+        return f"<Stride, {self._ax}, {self._stride}>"
+
+class TileDict:
+    def __init__(self, output_tile) -> None:
+        self.output_tile = output_tile
+        self.tile_map = {}
+        self.rstep_map = {}
+        self.stride_map = {}
+        self.footprint = -1
+        self.smem_cost = -1
+        self.block_per_SM = -1
+        self.num_wave = -1
+        self.valid = True
+
+    def get_tile(self, node) -> List[int]:
+        return self.tile_map[node]
+
+    def get_rstep(self, node) -> Dict[str, int]:
+        return self.rstep_map[node]
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.output_tile))
 
 class Config:
     def __init__(self) -> None:
@@ -79,7 +113,12 @@ class Config:
         if self.use_tc:
             dic["use_tc"] = True
         if self.output_strides:
-            dic["strides"] = self.output_strides
+            dic["strides"] = {}
+            for k, stride in self.output_strides.items():
+                if stride.is_valid():
+                    dic["strides"][k] = stride
+            if len(dic["strides"]) == 0:
+                del dic["strides"]
         if np.prod(self._step) > 1:
             dic["step"] = self._step
         if self._raxis_order != []:

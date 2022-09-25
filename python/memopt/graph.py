@@ -4,6 +4,7 @@ import tvm
 import lang
 import numpy as np
 from tvm import arith
+from memopt.fusion.config import Stride
 
 class Edge:
     def __init__(self, src_node: 'Node', dst_node: 'Node', src_id: int, dst_id: int):
@@ -167,7 +168,7 @@ class IRNode(Node):
             result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
         return result
 
-    def infer_dependency_reduce_inputs(self, shape, rstep={}):
+    def infer_dependency_reduce_inputs(self, shape, rstep={}) -> Dict[str, List[int]]:
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
         result = {}
@@ -203,8 +204,7 @@ class IRNode(Node):
             result += np.prod(shapes[tensor.name]) * int(tvm.DataType(tensor.dtype).bits // 8)
         return result
 
-    def infer_smem_usage_TensorCore(self, shape, rstep) -> Tuple[int, int]:
-        # returns internal memory usage and output memory usage (if dump to shared)
+    def infer_strides_TensorCore(self, shape, rstep={}) -> Tuple[Stride, Stride, Stride]:
         assert self.get_tag("tensorCoreConfig")
         shapes = self.infer_dependency_reduce_inputs(shape, rstep)
         AS_shape, BS_shape = shapes.values()
@@ -215,10 +215,22 @@ class IRNode(Node):
         A_high_ax = min(A_ax_m, A_ax_k)
         B_high_ax = min(B_ax_n, B_ax_k)
         C_high_ax = min(C_ax_m, C_ax_n)
-        AS_elem, BS_elem, CS_elem = np.prod(AS_shape), np.prod(BS_shape), np.prod(CS_shape)
-        AS_elem = AS_elem / np.prod(AS_shape[A_high_ax+1:]) * (np.prod(AS_shape[A_high_ax+1:]) + offset)
-        BS_elem = BS_elem / np.prod(BS_shape[B_high_ax+1:]) * (np.prod(BS_shape[B_high_ax+1:]) + offset)
-        CS_elem = CS_elem / np.prod(CS_shape[C_high_ax+1:]) * (np.prod(CS_shape[C_high_ax+1:]) + offset)
+        A_stride = Stride(stride=np.prod(AS_shape[A_high_ax+1:]) + offset, ax=A_high_ax)
+        B_stride = Stride(stride=np.prod(BS_shape[B_high_ax+1:]) + offset, ax=B_high_ax)
+        C_stride = Stride(stride=np.prod(CS_shape[C_high_ax+1:]) + offset, ax=C_high_ax)
+        return A_stride, B_stride, C_stride
+
+    def infer_smem_usage_TensorCore(self, shape, rstep) -> int:
+        # returns internal memory usage and output memory usage (if dump to shared)
+        assert self.get_tag("tensorCoreConfig")
+        shapes = self.infer_dependency_reduce_inputs(shape, rstep)
+        AS_shape, BS_shape = shapes.values()
+        A_stride, B_stride, C_stride = self.infer_strides_TensorCore(shape, rstep)
+        AS_elem = A_stride.compute_elements_from_shape(AS_shape)
+        BS_elem = B_stride.compute_elements_from_shape(BS_shape)
+        # TODO: consider TVM's allocation of CS_elem?
+        # CS_elem = C_stride.compute_elements_from_shape(shape)
+
         # running the same as infer_smem_usage
         result = 0
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
@@ -246,7 +258,7 @@ class IRNode(Node):
                         else:
                             num_elem = BS_elem
                     result += num_elem * int(tvm.DataType(tensor.dtype).bits // 8)
-        return result, CS_elem
+        return result
 
     @functools.lru_cache()
     def infer_tensorcore_axis(self) -> Tuple[int]:

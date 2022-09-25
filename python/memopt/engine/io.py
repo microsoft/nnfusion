@@ -32,7 +32,14 @@ def load_model(fname: str) -> List[Node]:
         else:
             node = IRNode(input_list, ir, get_node_name(node_id, op_type))
             for option in options:
-                node.add_tag(option)
+                index = option.find("=")
+                if index > 0:
+                    key = option[0:index]
+                    value = eval(option[index+1:])
+                else:
+                    key = option
+                    value = True
+                node.add_tag(key, value)
         node_map[node_id] = node
         ordered_nodes.append(node)
     return ordered_nodes

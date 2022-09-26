@@ -24,6 +24,7 @@ set(SRC
     coordinate.cpp
     coordinate_diff.cpp
     device_type.cpp
+    sha256.cpp
 )
 
 add_library(nnfusion_common STATIC ${SRC})

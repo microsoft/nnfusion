@@ -143,9 +143,9 @@ namespace nnfusion
             else
             {
                 if (m_min > 0)
-                    return m_sym + ":" + std::to_string(m_min) + ":" + std::to_string(m_max);
+                    return m_sym + "_" + std::to_string(m_min) + "_" + std::to_string(m_max);
                 else if (m_max < std::numeric_limits<size_t>::max())
-                    return m_sym + ":" + std::to_string(m_max);
+                    return m_sym + "_" + std::to_string(m_max);
                 else
                     return m_sym;
             }

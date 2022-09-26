@@ -107,6 +107,16 @@ void Op::revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
     }
 
     validate_and_infer_types(gnode);
+    if (FLAGS_fsymbolic)
+    {
+        for (auto output : gnode->get_outputs())
+        {
+            if (output->get_shape().is_dynamic())
+            {
+                (*gnode)["symbolic"] = true;
+            }
+        }
+    }
 }
 
 void Op::delayed_validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)

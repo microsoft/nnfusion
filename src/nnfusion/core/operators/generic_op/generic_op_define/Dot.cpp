@@ -77,6 +77,10 @@ REGISTER_OP(Dot)
         op_config["input0_layout"] = nnfusion::vector_to_string(input0_layout);
         op_config["input1_layout"] = nnfusion::vector_to_string(input1_layout);
         op_config["output0_layout"] = nnfusion::vector_to_string(output0_layout);
+        auto ir = op::create_code_from_template(ir_template, op_config);
+        if (curr->get_output_element_type(0) == nnfusion::element::f16) {
+            ir += "## @: tensorCoreConfig=(" + to_string(output0_layout.size() - 2) + ", " + to_string(output0_layout.size() - 1) + ")";
+        }
 
-        return op::create_code_from_template(ir_template, op_config);
+        return ir;
     });

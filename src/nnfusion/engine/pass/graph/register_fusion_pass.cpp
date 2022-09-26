@@ -47,7 +47,7 @@ namespace
         FuseGroup() {}
         std::unordered_set<shared_ptr<GNode>> nodes;
     };
-    const std::unordered_set<std::string> inlined_ops = {"Broadcast", "Reshape", "Slice", "BatchNormInference"};
+    const std::unordered_set<std::string> inlined_ops = {"Broadcast", "Reshape", "Slice", "BatchNormInference", "Convert"};
     std::unordered_set<std::string> skip_ops = {};
     void parse_skip_ops() {
         stringstream ss(FLAGS_ffusion_skiplist);
@@ -107,7 +107,12 @@ public:
         for (auto& node : m_graph->get_ordered_ops()) {
             if (node->get_op_ptr()->is_tensor_op()) continue;
             auto str = nnfusion::op::get_translation_v2(node);
-            if (skip_ops.count(node->get_op_type())) str += "## @: skip";
+            if (skip_ops.count(node->get_op_type())) {
+                if (str.find("## @:") != string::npos)
+                    str += "|skip";
+                else
+                    str += "## @: skip";
+            }
             auto edge = nlohmann::json().array();
             for (auto &e : node->get_in_edges()) {
                 edge.push_back({e->get_src()->get_id(), e->get_src_output()});

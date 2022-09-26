@@ -15,6 +15,7 @@ LU_DEFINE(header::superscaler, "#include \"superscaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
 LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>\n");
+LU_DEFINE(header::cuda_mma, "#include <mma.h>\n");
 LU_DEFINE(header::cub, "#include <cub/cub.cuh>\n");
 LU_DEFINE(header::math_constants, "#include <math_constants.h>\n");
 
@@ -52,6 +53,13 @@ CUDA_UNSUPPORTED_HALF_MATH_UNARY(herf, erf)
 
 #undef CUDA_UNSUPPORTED_HALF_MATH_BINARY
 #undef CUDA_UNSUPPORTED_HALF_MATH_UNARY
+
+inline __device__ __host__ unsigned
+__pack_half2(const half x, const half y) {
+  unsigned v0 = *((unsigned short *)&x);
+  unsigned v1 = *((unsigned short *)&y);
+  return (v1 << 16) | v0;
+}
 )");
 
 LU_DEFINE(

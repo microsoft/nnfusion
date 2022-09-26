@@ -1125,9 +1125,10 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
     if (device_type() == CUDA_GPU || device_type() == ROCM_GPU)
         lu_header << header::cuda->get_code();
     // TODO only include this if half is used
-    if (device_type() == CUDA_GPU)
-
+    if (device_type() == CUDA_GPU) {
         lu_header << header::cuda_fp16->get_code();
+        lu_header << header::cuda_mma->get_code();
+    }
     lu_header << "extern \"C\" int get_device_type();\n";
     lu_header << "extern \"C\" int64_t get_workspace_size();\n";
     lu_header << "extern \"C\" int kernel_entry";
@@ -1384,7 +1385,7 @@ cmake_minimum_required(VERSION 3.5)
 
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
-SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75" CACHE STRING "target architecture")
+SET(CUDA_ARCH "-gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75" CACHE STRING "target architecture")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)

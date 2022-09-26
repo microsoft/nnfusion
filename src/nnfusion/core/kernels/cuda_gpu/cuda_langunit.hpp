@@ -17,6 +17,7 @@ namespace nnfusion
             LU_DECLARE(cupti);
             LU_DECLARE(cuda_prof_api);
             LU_DECLARE(cuda_fp16);
+            LU_DECLARE(cuda_mma);
             LU_DECLARE(cub);
             LU_DECLARE(math_constants);
         } // namespace header

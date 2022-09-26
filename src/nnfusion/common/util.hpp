@@ -30,6 +30,7 @@
 #include "nnfusion/common/shape.hpp"
 #include "nnfusion/core/graph/gnode_vector.hpp"
 #include "type/element_type.hpp"
+#include "sha256.hpp"
 
 namespace nnfusion
 {

@@ -10,6 +10,7 @@
 #include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/kernels/hlsl/hlsl_kernel_emitter.hpp"
 #include "nnfusion/util/curl_request.hpp"
+#include "nnfusion/common/util.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::graph;
@@ -383,8 +384,8 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
                 int sys_ret = system(cmd_create_folder.c_str());
             }
 
-            std::size_t file_id = std::hash<std::string>{}(ir);
-            auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+            std::string file_id = sha256(ir);
+            auto file_name = cache_folder + "/" + file_id + ".c";
             bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
 
             std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
@@ -470,8 +471,8 @@ void load_irs_and_tune_kernels_sync(std::string filename,
             int sys_ret = system(cmd_create_folder.c_str());
         }
 
-        std::size_t file_id = std::hash<std::string>{}(ir);
-        auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+        std::string file_id = sha256(ir);
+        auto file_name = cache_folder + "/" + file_id + ".c";
 
         std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
         cmd += FLAGS_ftuning_platform;

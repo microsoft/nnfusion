@@ -3,6 +3,7 @@
 
 #include "antares_ke_imp.hpp"
 #include "nnfusion/util/curl_request.hpp"
+#include "nnfusion/common/util.hpp"
 #define ANTARES_FORMAT_CHECK(cond)                                                                 \
     NNFUSION_CHECK(cond) << "Cannot parse antares response, make sure antare server >= v0.2"
 
@@ -110,9 +111,9 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
     // fetch from local cache folder
     if (FLAGS_fantares_codegen_server.size() == 0)
     {
-        std::size_t file_id = std::hash<std::string>{}(expr);
+        std::string file_id = sha256(expr);
         std::string cache_folder = "./kernel_cache";
-        auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+        auto file_name = cache_folder + "/" + file_id + ".c";
         NNFUSION_LOG(INFO) << "fetch kernel from: " << file_name;
         std::ifstream ifs(file_name);
         std::string code((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));

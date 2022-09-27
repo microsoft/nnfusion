@@ -36,6 +36,7 @@ namespace nnfusion
             private:
                 std::string m_block_func_name;
                 void generate_subgraph_code(LanguageUnit_p);
+                std::string inline_kernel(std::shared_ptr<nnfusion::ir::Instruction> ins);
                 size_t m_workspace_size;
                 TranslationUnit::Pointer m_loop_body_tu;
                 ir::BasicBlock::Pointer m_body_instructions;

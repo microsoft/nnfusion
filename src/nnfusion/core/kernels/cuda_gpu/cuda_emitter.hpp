@@ -35,9 +35,12 @@ namespace nnfusion
                 }
                 int x, y, z;
             };
+            
+            class Recursion;
 
             class CudaEmitter : public KernelEmitter
             {
+                friend class cuda::Recursion;
             public:
                 CudaEmitter(shared_ptr<KernelContext> ctx)
                     : KernelEmitter(ctx, "cuda")

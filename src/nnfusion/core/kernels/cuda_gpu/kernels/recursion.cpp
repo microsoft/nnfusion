@@ -10,6 +10,8 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
+DEFINE_bool(frecursive_stack, false, "recursive with manual stack");
+
 cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
     : CudaEmitter(ctx)
 {
@@ -83,6 +85,30 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     m_body_instructions = create_param_map(m_loop_body_tu->program, op->get_output_map(), true);
 }
 
+std::string cuda::Recursion::inline_kernel(std::shared_ptr<ir::Instruction> ins) {
+    auto cuda_kernel = dynamic_pointer_cast<CudaEmitter>(ins->getKernel());
+    std::string code = cuda_kernel->emit_device_function_body()->get_code();
+    code = replace_all(code, "input", "IN_PUT_");
+    code = replace_all(code, "output", "OUT_PUT_");
+    auto inputs = ins->get_inputs();
+    for (int i = 0; i < inputs.size(); i++) {
+        stringstream ss_from;
+        ss_from << "IN_PUT_" << i;
+        std::string from = ss_from.str();
+        NNFUSION_LOG(INFO) << "replace " << from << " to " << m_param_map[inputs[i]];
+        code = replace_all(code, from, "(" + m_param_map[inputs[i]] + ")");
+    }
+    auto outputs = ins->get_outputs();
+    for (int i = 0; i < outputs.size(); i++) {
+        stringstream ss_from;
+        ss_from << "OUT_PUT_" << i;
+        std::string from = ss_from.str();
+        NNFUSION_LOG(INFO) << "replace " << from << " to " << m_param_map[outputs[i]];
+        code = replace_all(code, from, "(" + m_param_map[outputs[i]] + ")");
+    }
+    return code;
+}
+
 void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
 {
     auto& lu = *_lu;
@@ -99,7 +125,12 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
         if (std::dynamic_pointer_cast<BlockFusionCudaCodegen>(kernel) != nullptr)
             for (auto tensor : kernel->m_context->tensors)
                 params.push_back(m_param_map[tensor]);
-        lu << kernel->emit_block_kernel_call(params)->get_code();
+        if (FLAGS_frecursive_stack && is_emitting_block_kernel) {
+            lu << "// " << kernel->emit_block_kernel_call(params)->get_code();
+            lu << inline_kernel(ins);
+        } else {
+            lu << kernel->emit_block_kernel_call(params)->get_code();
+        }
         if (ins != instructions->back())
             lu << "Barrier();\n";
     }
@@ -110,7 +141,23 @@ LanguageUnit_p cuda::Recursion::emit_function_body()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
     allocate_shared_memory(_lu);
-    generate_subgraph_code(_lu);
+    if (FLAGS_frecursive_stack && !is_emitting_block_kernel) {
+        std::vector<std::string> params;
+        for (size_t i = 0; i < m_context->inputs.size(); i++) {
+            stringstream ss;
+            ss << "input" << i;
+            params.push_back(ss.str());
+        }
+        for (size_t i = 0; i < m_context->outputs.size(); i++) {
+            stringstream ss;
+            ss << "output" << i;
+            params.push_back(ss.str());
+        }
+        params.push_back("shared_buffer");
+        lu << m_block_func_name << "_block_kernel(" << join(params, ", ") << ");";
+    } else {
+        generate_subgraph_code(_lu);
+    }
     return _lu;
 }
 
@@ -155,6 +202,7 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
         auto body = kernel->get_or_emit_source();
         auto block_kernel = kernel->emit_block_kernel();
         block_kernel->require(body->dep_unit);
+        // HACK: still need to emit the if kernel when inlined, for emiting the kernels the ``if'' depends on
         _lu->require(block_kernel);
         kernel_code->require(block_kernel);
     }

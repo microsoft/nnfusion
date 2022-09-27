@@ -14,6 +14,9 @@ namespace nnfusion
     namespace kernels
     {
         class KernelEmitter;
+        namespace cuda {
+            class Recursion;
+        }
 
         class KernelContext
         {
@@ -66,6 +69,7 @@ namespace nnfusion
         // for an operator
         class KernelEmitter
         {
+            friend class cuda::Recursion;
         public:
             using Pointer = shared_ptr<KernelEmitter>;
 

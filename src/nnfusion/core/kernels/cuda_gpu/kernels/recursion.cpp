@@ -6,11 +6,13 @@
 #include "convolution.hpp"
 #include "nnfusion/core/operators/op_define/recursion.hpp"
 #include "nnfusion/engine/pass/graph/blockfusion/blockfusion_codegen.hpp"
+#include <regex>
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DEFINE_bool(frecursive_stack, false, "recursive with manual stack");
+DEFINE_int32(frecursive_max_depth, 20, "manual stack size");
 
 cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
     : CudaEmitter(ctx)
@@ -109,6 +111,126 @@ std::string cuda::Recursion::inline_kernel(std::shared_ptr<ir::Instruction> ins)
     return code;
 }
 
+std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Instruction> ins) {
+    std::vector<std::string> call_sites;
+    std::regex pattern(FuncForward::m_block_func_name + "_block_kernel.*?;");
+    // https://stackoverflow.com/questions/21667295/how-to-match-multiple-results-using-stdregex
+    string::const_iterator search_start(code.cbegin());
+    smatch match;
+    while (std::regex_search(search_start, code.cend(), match, pattern)) {
+        call_sites.push_back(match[0]);
+        search_start = match.suffix().first;
+    }
+    if (call_sites.size() == 0) return code;
+    std::vector<std::vector<std::string>> caller_params;
+    // https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
+    for (auto call: call_sites) {
+        std::vector<std::string> params;
+        call = call.substr((FuncForward::m_block_func_name + "_block_kernel(").length());
+        std::cout << "params: " << call << ": ";
+        size_t pos = 0;
+        while ((pos = call.find(", ")) != std::string::npos) {
+            std::string token = call.substr(0, pos);
+            params.push_back(token);
+            call.erase(0, pos + 2);
+        }
+        params.push_back(call.substr(0, call.length() - 2));
+        for (auto param: params)
+            std::cout << param << "|";
+        std::cout << "\n";
+        caller_params.push_back(params);
+    }
+    std::vector<int> input_need_stack;
+    for (int i = 0; i < m_context->inputs.size(); i++) {
+        bool all_same = true;
+        std::string std = "(input" + std::to_string(i) + ")";
+        for (int j = 0; j < caller_params.size(); j++) {
+            if (caller_params[j][i] != std) all_same = false;
+        }
+        if (!all_same) {
+            input_need_stack.push_back(i);
+        }
+    }
+    std::vector<int> output_need_stack;
+    for (int i = 0; i < m_context->outputs.size(); i++) {
+        bool all_same = true;
+        std::string std = "(output" + std::to_string(i) + ")";
+        for (int j = 0; j < caller_params.size(); j++) {
+            if (caller_params[j][i] != std) all_same = false;
+        }
+        if (!all_same) {
+            output_need_stack.push_back(i);
+        }
+    }
+
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_to_stack"));
+    LanguageUnit& lu = *_lu;
+    auto inputs = m_context->inputs;
+    auto outputs = m_context->outputs;
+    lu << "__shared__ int s_label[" << FLAGS_frecursive_max_depth << "];\n";
+    for (auto input_id: input_need_stack) {
+        lu << "__shared__ " << inputs[input_id]->get_element_type().c_type_string() << "* s_input" << input_id << "[" << FLAGS_frecursive_max_depth << "];\n";
+    }
+    for (auto output_id: output_need_stack) {
+        lu << "__shared__ " << outputs[output_id]->get_element_type().c_type_string() << "* s_output" << output_id << "[" << FLAGS_frecursive_max_depth << "];\n";
+    }
+    lu << "int stack_top = 1;\n";
+    lu << "bool is_master_thread = (threadIdx.x == 0);\n";
+    lu << "if (is_master_thread)\n";
+    lu.block_begin();
+    lu << "s_label[stack_top] = 0;\n";
+    for (auto input_id: input_need_stack) {
+        lu << "s_input" << input_id << "[stack_top] = input" << input_id << ";\n";
+    }
+    for (auto output_id: output_need_stack) {
+        lu << "s_output" << output_id << "[stack_top] = output" << output_id << ";\n";
+    }
+    lu.block_end();
+    lu << "__syncthreads();\n";
+    lu << "while (stack_top)";
+    lu.block_begin();
+    lu << "func_start:;\n";
+    lu << "int label = s_label[stack_top];\n";
+    for (auto input_id: input_need_stack) {
+        lu << "input" << input_id << " = s_input" << input_id << "[stack_top];\n";
+    }
+    for (auto output_id: output_need_stack) {
+        lu << "output" << output_id << " = s_output" << output_id << "[stack_top];\n";
+    }
+    lu << "switch (label)";
+    lu.block_begin();
+    for (int i = 0; i < call_sites.size(); i++) {
+        lu << "case " << i+1 << ": goto LABEL" << i+1 << "; break;\n"; 
+    }
+    lu << "default: break;\n";
+    lu.block_end();
+    for (int i = 0; i < call_sites.size(); i++) {
+        LanguageUnit_p _lu_call(new LanguageUnit(get_function_name() + "_to_stack_" + std::to_string(i)));
+        LanguageUnit& lu_call = *_lu_call;
+        lu_call << "if (is_master_thread)";
+        lu_call.block_begin();
+        lu_call << "s_label[stack_top] = " << i + 1 << ";\n";
+        lu_call << "stack_top++;\n";
+        for (auto input_id: input_need_stack) {
+            lu_call << "s_input" << input_id << "[stack_top] = " << caller_params[i][input_id] << ";\n";
+        }
+        for (auto output_id: output_need_stack) {
+            lu_call << "s_output" << output_id << "[stack_top] = " << caller_params[i][output_id + inputs.size()] << ";\n";
+        }
+        lu_call << "s_label[stack_top] = 0;\n";
+        lu_call.block_end();
+        lu_call << "else stack_top++;\n";
+        lu_call << "__syncthreads();\n";
+        lu_call << "goto func_start;\n";
+        lu_call << "LABEL" << i + 1 << ":;\n";
+        code = replace_one(code, call_sites[i], lu_call.get_code());
+    }
+    lu << code;
+    lu << "stack_top--;\n";
+    lu.block_end();
+    return lu.get_code();
+}
+
 void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
 {
     auto& lu = *_lu;
@@ -127,7 +249,9 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
                 params.push_back(m_param_map[tensor]);
         if (FLAGS_frecursive_stack && is_emitting_block_kernel) {
             lu << "// " << kernel->emit_block_kernel_call(params)->get_code();
-            lu << inline_kernel(ins);
+            std::string inlined = inline_kernel(ins);
+            std::string stacked = to_stack(inlined, ins);
+            lu << stacked;
         } else {
             lu << kernel->emit_block_kernel_call(params)->get_code();
         }

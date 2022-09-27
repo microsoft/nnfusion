@@ -448,11 +448,12 @@ class DefaultPolicy:
         codegen_dict.thread = cur_threads
         codegen_dict.rstep = [rsteps[ax] for ax in node.raxis]
         codegen_dict.reduce_thread = [reduce_thread[ax] for ax in node.raxis]
-        # if node.get_dtype().bits == 16:
-        #     codegen_dict._step = [1 for _ in range(ndim)]
-        #     for i in range(ndim):
-        #         if codegen_dict.block[i] // codegen_dict.thread[i] % 2 == 0:
-        #             codegen_dict._step[i] = 2
+        if node.get_dtype().bits == 16: # set step=2 for fp16 case
+            codegen_dict._step = [1 for _ in range(ndim)]
+            for i in reversed(range(ndim)):
+                if codegen_dict.block[i] // codegen_dict.thread[i] % 2 == 0:
+                    codegen_dict._step[i] = 2
+                    break
         # if len(rstep_map) > 0 and np.prod(block_tile) * np.prod(list(rstep_map.values())) < 1000:
         #     codegen_dict["unroll"] = True
         # # assign virtual threads

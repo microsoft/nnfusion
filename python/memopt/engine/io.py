@@ -20,6 +20,7 @@ def load_model(fname: str) -> List[Node]:
         anno, options = ir.find('## @'), []
         if anno >= 0:
             ir, options = ir[:anno].strip(), ir[ir.index(':', anno) + 1:].strip().split('|')
+            options = [option.strip() for option in options]
         input_list = []
         for src_node, src_id in inputs:
             if src_node not in node_map:
@@ -42,6 +43,13 @@ def load_model(fname: str) -> List[Node]:
                 node.add_tag(key, value)
         node_map[node_id] = node
         ordered_nodes.append(node)
+    # check for tensorCore shapes
+    for node in ordered_nodes:
+        if node.get_tag("tensorCoreConfig"):
+            C_ax_m, C_ax_n = node.get_tag("tensorCoreConfig")
+            shape = node.get_shape()
+            if shape[C_ax_m] % 8 != 0 or shape[C_ax_n] % 8 != 0 or shape[C_ax_m] * shape[C_ax_n] % 256 != 0:
+                node.add_tag("tensorCoreConfig", False)
     return ordered_nodes
 
 def dump(fusion_groups: List[FusionGroup]):

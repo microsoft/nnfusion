@@ -8,10 +8,11 @@ import time
 from model.pytorch import *
 
 def tofp16model(in_file_name, out_file_name):
-    from onnx import load_model, save_model
-    from onnxmltools.utils import float16_converter
+    from onnx import load_model, save_model, checker
+    from onnxconverter_common import convert_float_to_float16
     onnx_model = load_model(in_file_name)
-    trans_model = float16_converter.convert_float_to_float16(onnx_model,keep_io_types=True)
+    trans_model = convert_float_to_float16(onnx_model, keep_io_types=False)
+    checker.check_model(trans_model)
     save_model(trans_model, out_file_name)
 
 def torch2onnx(prefix, model, inputs, fp16):

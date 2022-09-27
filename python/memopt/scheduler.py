@@ -1,3 +1,4 @@
+from ast import Str
 from .fusion import Config
 
 import tvm
@@ -10,20 +11,32 @@ class Scheduler:
     def __init__(self):
         pass
 
-    def cooperative_fetch(self, shared, sch, strides: Stride = Stride(), vec: int = 1):
+    def cooperative_fetch(self, shared, sch, strides: Stride = Stride(), inner_step: int = 1, vectorize_inner=True):
         assert self.thread_per_block[2] == 1
         axes = sch[shared].op.axis
         if strides.is_valid():
             sch[shared].storage_align(axes[strides.ax], strides.stride - 1, strides.stride)
         fused = sch[shared].fuse(*axes)
-        fused, tv = sch[shared].split(fused, factor=vec)
+        fused, tv = sch[shared].split(fused, factor=inner_step)
         _t, tx = sch[shared].split(fused, factor=self.thread_per_block[0])
         oo, ty = sch[shared].split(_t, factor=self.thread_per_block[1])
         sch[shared].reorder(oo, ty, tx)
-        sch[shared].vectorize(tv)
+        if vectorize_inner:
+            sch[shared].vectorize(tv)
+        else:
+            sch[shared].unroll(tv)
         sch[shared].unroll(oo)
         sch[shared].bind(tx, te.thread_axis("threadIdx.x"))
         sch[shared].bind(ty, te.thread_axis("threadIdx.y"))
+
+    def requires_cache(self, tensor, op):
+        assert tensor in op.input_tensors
+        if tensor in self.shared_inputs:
+            return True
+        cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
+                    and len(op.output(0).shape) > len(tensor.shape) \
+                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
+        return cache
 
     # [Parameters]
     #   schedule: the original TVM schedule of an op
@@ -91,16 +104,13 @@ class Scheduler:
         for va in vthd_axis:
             self.sche[out].bind(va, te.thread_axis("vthread"))
         self.sche[out].bind(thrd_fused, te.thread_axis("threadIdx.x"))
+        for tn in tile_axis:
+            self.sche[out].unroll(tn)
 
         cache_plan = {}
         for op in self.elementwise_ops:
             for tensor in op.input_tensors:
-                cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) \
-                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-                if tensor in self.shared_inputs:
-                    cache = True
-                if cache:
+                if self.requires_cache(tensor, op):
                     if tensor not in cache_plan:
                         cache_plan[tensor] = []
                     cache_plan[tensor].append(op)
@@ -108,7 +118,11 @@ class Scheduler:
         for tensor, consumers in cache_plan.items():
             tensor_shared = self.sche.cache_read(tensor, "shared", consumers)
             self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
-            self.cooperative_fetch(tensor_shared, self.sche)
+            if tensor in self.shared_inputs_strides:
+                strides = self.shared_inputs_strides[tensor]
+            else:
+                strides = Stride()
+            self.cooperative_fetch(tensor_shared, self.sche, strides)
             tensor_local = self.sche.cache_read(tensor_shared, "local", consumers)
             self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche
@@ -140,6 +154,9 @@ class Scheduler:
         for va in vthd_axis:
             self.sche[out].bind(va, te.thread_axis("vthread"))
         self.sche[out].bind(thrd_fused, te.thread_axis("threadIdx.x"))
+        for tn in tile_axis:
+            self.sche[out].unroll(tn)
+
         self.sche[reg_tile].compute_at(self.sche[out], thrd_fused)
 
         reduce_outer_axis, reduce_inner_axis = [], []
@@ -170,12 +187,7 @@ class Scheduler:
         cache_plan = {}
         for op in self.elementwise_ops:
             for tensor in op.input_tensors:
-                cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) \
-                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-                if tensor in self.shared_inputs:
-                    cache = True
-                if cache:
+                if self.requires_cache(tensor, op):
                     if tensor not in cache_plan:
                         cache_plan[tensor] = []
                     cache_plan[tensor].append(op)
@@ -183,7 +195,11 @@ class Scheduler:
         for tensor, consumers in cache_plan.items():
             tensor_shared = self.sche.cache_read(tensor, "shared", consumers)
             self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
-            self.cooperative_fetch(tensor_shared, self.sche)
+            if tensor in self.shared_inputs_strides:
+                strides = self.shared_inputs_strides[tensor]
+            else:
+                strides = Stride()
+            self.cooperative_fetch(tensor_shared, self.sche, strides)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
             consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
             if len(consumers) == 0:continue
@@ -233,19 +249,16 @@ class Scheduler:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
             if input_tensor in self.shared_inputs:
                 self.sche[shared_tensor].compute_at(self.sche[out], blck_fused)
+                strides = self.shared_inputs_strides[input_tensor]
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
-            self.cooperative_fetch(shared_tensor, self.sche)
+                strides = Stride()
+            self.cooperative_fetch(shared_tensor, self.sche, strides)
 
         cache_plan = {}
         for op in self.elementwise_ops:
             for tensor in op.input_tensors:
-                cache = isinstance(self.sche[tensor].op, tvm.te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) \
-                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-                if tensor in self.shared_inputs:
-                    cache = True
-                if cache:
+                if self.requires_cache(tensor, op):
                     if tensor not in cache_plan:
                         cache_plan[tensor] = []
                     cache_plan[tensor].append(op)
@@ -253,7 +266,11 @@ class Scheduler:
         for tensor, consumers in cache_plan.items():
             tensor_shared = self.sche.cache_read(tensor, "shared", consumers)
             self.sche[tensor_shared].compute_at(self.sche[out], thrd_fused)
-            self.cooperative_fetch(tensor_shared, self.sche)
+            if tensor in self.shared_inputs_strides:
+                strides = self.shared_inputs_strides[tensor]
+            else:
+                strides = Stride()
+            self.cooperative_fetch(tensor_shared, self.sche, strides)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
             consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
             if len(consumers) == 0:continue
@@ -394,8 +411,10 @@ class Scheduler:
             self.sche[BS].compute_at(self.sche[out], blck_fused)
         else:
             self.sche[BS].compute_at(self.sche[CF], ko)
-        self.cooperative_fetch(AS, self.sche, ASstrideDef, 8)
-        self.cooperative_fetch(BS, self.sche, BSstrideDef, 8)
+        vectorize_A = isinstance(A.op, te.PlaceholderOp)
+        vectorize_B = isinstance(B.op, te.PlaceholderOp)
+        self.cooperative_fetch(AS, self.sche, ASstrideDef, 8, vectorize_A)
+        self.cooperative_fetch(BS, self.sche, BSstrideDef, 8, vectorize_B)
 
         shape = (wmma_m, wmma_n, wmma_k)
         AL_gemm = te.placeholder(AL_shape, name="AL_gemm", dtype=A.dtype)
@@ -443,5 +462,27 @@ class Scheduler:
                 CS_stride, CF_stride, shape, C.dtype, CL_shape, CL_shape
             ),
         )
+
+        cache_plan = {}
+        for op in self.elementwise_ops:
+            for tensor in op.input_tensors:
+                if self.requires_cache(tensor, op):
+                    if tensor not in cache_plan:
+                        cache_plan[tensor] = []
+                    cache_plan[tensor].append(op)
+
+        for tensor, consumers in cache_plan.items():
+            tensor_shared = self.sche.cache_read(tensor, "shared", consumers)
+            self.sche[tensor_shared].compute_at(self.sche[out], blck_fused)
+            if tensor in self.shared_inputs_strides:
+                strides = self.shared_inputs_strides[tensor]
+            else:
+                strides = Stride()
+            self.cooperative_fetch(tensor_shared, self.sche, strides)
+            # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
+            consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
+            if len(consumers) == 0:continue
+            tensor_local = self.sche.cache_read(tensor_shared, "local", consumers)
+            self.sche[tensor_local].compute_at(self.sche[out], tx)
 
         return self.sche

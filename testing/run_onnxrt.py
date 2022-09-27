@@ -7,7 +7,7 @@ import argparse
 
 def ref_output(onnx_model_path, device):
     onnx_model = onnx.load(onnx_model_path)
-    # onnx.checker.check_model(onnx_model)
+    onnx.checker.check_model(onnx_model)
     onnx_model = onnx.shape_inference.infer_shapes(onnx_model)
     sess_options = ort.SessionOptions()
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
@@ -23,22 +23,25 @@ def ref_output(onnx_model_path, device):
     ort_session = ort.InferenceSession(onnx_model_path, providers=providers, sess_options=sess_options)
     io_binding = ort_session.io_binding()
     for value in ort_session.get_inputs():
-        if value.type.find("int64") >= 0:
+        if value.type == 'tensor(int64)':
             tensor = np.ones(value.shape).astype(np.int64)
-        elif value.type.find("float") >= 0:
+        elif value.type == 'tensor(float16)':
+            tensor = np.random.normal(size=value.shape).astype(np.float16)
+        elif value.type == 'tensor(float)':
             tensor = np.random.normal(size=value.shape).astype(np.float32)
         else:
             raise NotImplementedError(value.type)
+        # this eliminates H2D copy for profiling
         io_binding.bind_cpu_input(value.name, tensor)
     outputs = ort_session.get_outputs()
-
+    # this eliminates D2H copy for profiling
     for item in outputs:
-        io_binding.bind_output(item.name)
+        io_binding.bind_output(item.name, 'cuda')
     ort_session.run_with_iobinding(io_binding)
     def get_runtime():
-        tic = time.time()
+        tic = time.monotonic_ns()
         ort_session.run_with_iobinding(io_binding)
-        return (time.time() - tic) * 1000
+        return (time.monotonic_ns() - tic) / 1e6
     _ = [get_runtime() for i in range(200)] # warmup
     times = [get_runtime() for i in range(800)]
     print(np.mean(times), np.min(times), np.max(times))

@@ -58,10 +58,14 @@ def modify_output_pass(f, mod, ctx):
     def process3(op):
         nonlocal write_stmt, stack
         stack.pop(-1)
-        if (isinstance(op, tvm.tir.BufferStore) and op.buffer in buffer_map.values()) or (write_stmt and write_stmt == op):
-            if not any([isinstance(x, (tvm.tir.stmt.For, tvm.tir.stmt.IfThenElse)) for x in stack]):
+        if (isinstance(op, tvm.tir.BufferStore) and op.buffer in buffer_map.values()) \
+            or (isinstance(op, tvm.tir.Call) and op.op.name == "tir.tvm_store_matrix_sync") \
+            or (write_stmt and write_stmt == op):
+            if not any([isinstance(x, (tvm.tir.For, tvm.tir.IfThenElse)) for x in stack]) \
+                and not isinstance(stack[-1], tvm.tir.Evaluate): # sometimes calls to tir.tvm_store_matrix_sync are wrapped by evaluate node
                 write_stmt = None
                 barrier = tvm.tir.Call(None, "tir.tvm_storage_sync", tvm.runtime.convert(["shared"]))
+                # TODO: need to remove unnecessary/redundant barrier?
                 return tvm.tir.stmt_seq(barrier, op, barrier)
             else:
                 write_stmt = stack[-1]

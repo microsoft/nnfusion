@@ -107,9 +107,10 @@ extern "C" float profile({}) {{
             torch_arrs.append(arr)
         latency = self.lib.profile(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
         if latency < 0:
-            return 10000
+            self.latency = 10000
+            return self.latency
         self.latency = latency
-        return latency
+        return self.latency
 
     def get_example_outputs(self, device="cuda:0", seed=0):
         import torch

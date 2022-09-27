@@ -300,7 +300,7 @@ namespace nnfusion
                     name, std::vector<std::size_t>(kernel_shape.size(), 1UL));
             }
 
-            std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto)
+            std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto, bool ignore_graph_input)
             {
                 std::unordered_set<std::string> node_inputs;
                 std::unordered_set<std::string> node_outputs;
@@ -315,6 +315,21 @@ namespace nnfusion
                     {
                         node_outputs.insert(node_proto.output(i));
                     }
+                    if (node_proto.op_type() == "If") {
+                        Node node(node_proto);
+                        auto then_inputs = extract_input(node.get_attribute_value<onnx::GraphProto>("then_branch"));
+                        node_inputs.insert(then_inputs.begin(), then_inputs.end());
+                        auto else_inputs = extract_input(node.get_attribute_value<onnx::GraphProto>("else_branch"));
+                        node_inputs.insert(else_inputs.begin(), else_inputs.end());
+                    } else if (node_proto.op_type() == "Loop") {
+                        Node node(node_proto);
+                        auto body_inputs = extract_input(node.get_attribute_value<onnx::GraphProto>("body"));
+                        node_inputs.insert(body_inputs.begin(), body_inputs.end());
+                    } else if (node_proto.op_type() == "Recursion") {
+                        Node node(node_proto);
+                        auto body_inputs = extract_input(node.get_attribute_value<onnx::GraphProto>("body"));
+                        node_inputs.insert(body_inputs.begin(), body_inputs.end());
+                    }
                 }
 
                 std::unordered_set<std::string> graph_inputs;
@@ -326,14 +341,6 @@ namespace nnfusion
                     }
                 }
 
-                return graph_inputs;
-            }
-
-            onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto, const onnx::GraphProto& full_graph_proto)
-            {
-                onnx::GraphProto completed_graphproto(graph_proto);
-
-                auto all_inputs = extract_input(graph_proto);
                 std::unordered_set<std::string> existing_inputs;
                 for (auto input_proto : graph_proto.input())
                 {
@@ -341,7 +348,8 @@ namespace nnfusion
                 }
 
                 std::unordered_set<std::string> missing_inputs;
-                for (auto input : all_inputs)
+
+                for (auto input : graph_inputs)
                 {
                     if (existing_inputs.find(input) == existing_inputs.end())
                     {
@@ -349,6 +357,14 @@ namespace nnfusion
                         // std::cout << input << std::endl;
                     }
                 }
+
+                return missing_inputs;
+            }
+
+            onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto, const onnx::GraphProto& full_graph_proto)
+            {
+                onnx::GraphProto completed_graphproto(graph_proto);
+                std::unordered_set<std::string> missing_inputs = extract_input(graph_proto);
 
                 std::unordered_map<std::string, size_t> full_graph_initializer_index;
                 for (size_t i = 0; i < full_graph_proto.initializer().size(); i++) {

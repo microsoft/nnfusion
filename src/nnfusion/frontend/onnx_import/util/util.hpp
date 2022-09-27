@@ -389,7 +389,7 @@ namespace nnfusion
                                        const std::string& name,
                                        const Shape& kernel_shape);
 
-            std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto);
+            std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto, bool ignore_graph_input=false);
             onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto, const onnx::GraphProto& full_graph_proto);
             std::shared_ptr<graph::GNode> find_node_from_graph(const graph::Graph::Pointer graph,
                                                                const std::string& name);

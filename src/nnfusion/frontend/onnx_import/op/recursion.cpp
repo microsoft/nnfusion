@@ -102,11 +102,21 @@ namespace nnfusion
                     }
                     output_shape_st.pop();
                     output_types_st.pop();
-                    for (auto node : body_graph->get_ordered_ops())
+                    for (auto node : body_graph->get_nodes())
                     {
-                        if (node->get_op_type() == "Parameter")
+                        if (node->get_op_type() == "Parameter") {
+                            auto item = node->get_name();
+                            if (!node_inputs.count(item))
+                            {
+                                int idx = node_inputs.size();
+                                node_inputs[item] = idx;
+                                auto indexed_node = all_ng_nodes.at(item)[0];
+                                input_indexes.push_back(GNodeIndex{indexed_node.gnode, 0});
+                            }
+                            NNFUSION_CHECK(node_inputs.count(node->get_name()));
                             node->Set<int>("subgraph_input_map",
                                            int(node_inputs[node->get_name()]));
+                        }
                     }
                     auto recursion_op =
                         std::make_shared<op::Recursion>(body_graph, output_shapes, output_types);

@@ -324,6 +324,7 @@ namespace nnfusion
                             {
                                 int idx = node_inputs.size();
                                 node_inputs[item] = idx;
+                                NNFUSION_CHECK(all_ng_nodes.find(item) != all_ng_nodes.end()) << "item: " << item;
                                 auto indexed_node = all_ng_nodes.at(item)[0];
                                 input_indexes.push_back(GNodeIndex{indexed_node.gnode, 0});
 

@@ -37,6 +37,7 @@ DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
 DEFINE_bool(fcheck_result, false, "Check result with external inputs and outputs");
 DECLARE_bool(fif_launch_then_else);
+DEFINE_int32(fstack_size, -1, "cudaLimitStackSize");
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -132,6 +133,10 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
         {
             lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
             lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
+        }
+        if (FLAGS_fstack_size != -1)
+        {
+            lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceSetLimit(cudaLimitStackSize, " << FLAGS_fstack_size <<"));\n";
         }
     }
 

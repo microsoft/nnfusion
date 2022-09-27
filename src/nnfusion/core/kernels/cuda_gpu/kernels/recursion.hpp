@@ -17,8 +17,11 @@ namespace nnfusion
                 LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params) override;
+                void update_context_from_gnode(std::shared_ptr<nnfusion::graph::GNode> gnode);
                 void set_launch_config() override;
                 static std::string m_block_func_name;
+            private:
+                std::shared_ptr<nnfusion::descriptor::Tensor> m_workspace;
             };
 
             class Recursion : public ControlFlowEmitter

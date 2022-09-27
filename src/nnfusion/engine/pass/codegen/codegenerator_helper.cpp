@@ -163,7 +163,7 @@ FunctionFile_p FunctionFile::convert_from(std::shared_ptr<nnfusion::kernels::Ker
         args[args.size() - 1] = ',';
 
         pos = body_unit.find("Barrier();");
-        if (pos > 0) {
+        if (pos > 0 || gnode->get_op_type() == "Recursion") {
             std::vector<std::string> params;
             for (int i = 0, j; j = args.find(',', i), j >= 0; i = j + 1)
             {

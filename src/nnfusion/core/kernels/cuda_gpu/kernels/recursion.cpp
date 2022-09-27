@@ -16,7 +16,7 @@ cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
     std::stringstream tag;
     tag << "_FuncForwardOP";
     custom_tag = tag.str();
-    auto m_workspace = allocate_tensor(Shape{0}, nnfusion::element::character);
+    m_workspace = allocate_tensor(Shape{0}, nnfusion::element::character);
     m_workspace->set_name("recursion_stack");
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
@@ -51,6 +51,13 @@ LanguageUnit_p cuda::FuncForward::emit_block_kernel_call(std::vector<std::string
 }
 
 std::string cuda::FuncForward::m_block_func_name = "";
+
+void cuda::FuncForward::update_context_from_gnode(std::shared_ptr<nnfusion::graph::GNode> gnode) {
+    auto ctx = std::make_shared<KernelContext>(gnode);
+    m_context = ctx;
+    m_context->inputs.push_back(m_workspace);
+    m_context->input_names.push_back(m_workspace->get_name());
+}
 
 cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     : ControlFlowEmitter(ctx)

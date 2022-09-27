@@ -34,7 +34,7 @@ std::map<std::string, int> cuda::ControlFlowEmitter::get_subgraph_inputs(const i
                 ins->getGNode()->get_op_type() == "Constant")
             {
                 auto input_map = (*ins->getGNode())["subgraph_input_map"];
-                NNFUSION_CHECK(input_map.is_valid());
+                NNFUSION_CHECK(input_map.is_valid()) << "invalid input: " << ins->getGNode()->get_name();
                 inputs[ins->get_outputs()[0]->get_name()] = input_map.as<int>();
             }
         }

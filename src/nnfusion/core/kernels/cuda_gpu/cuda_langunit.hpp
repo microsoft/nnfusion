@@ -39,6 +39,7 @@ namespace nnfusion
         {
             LU_DECLARE(division_by_invariant_multiplication);
             LU_DECLARE(rocm_division_by_invariant_multiplication);
+            LU_DECLARE(cuda_cpu_division_by_invariant_multiplication);
             LU_DECLARE(load);
             LU_DECLARE(mad16);
             LU_DECLARE(mod16);

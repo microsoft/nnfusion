@@ -20,7 +20,7 @@ LanguageUnit_p cuda_cpu::CPUOpEmitter::emit_function_call() {
 LanguageUnit_p cuda_cpu::CPUOpEmitter::emit_function_body() {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_body"));
     auto& lu = *_lu;
-    lu << "// todo: " << m_context->op->get_unique_name();
+    lu << "todo: " << m_context->op->get_unique_name();
     return _lu;
 }
 

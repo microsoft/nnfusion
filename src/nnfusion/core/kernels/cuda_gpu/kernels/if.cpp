@@ -486,6 +486,10 @@ LanguageUnit_p cuda::If::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
+    auto op = static_pointer_cast<op::If>(m_context->gnode->get_op_ptr());
+    m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
+    m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
+
     if (FLAGS_fif_launch_then_else || FLAGS_fif_launch_d2h) {
         // std::string outer_control = FLAGS_fif_launch_then_else ? "if (*input0)" : "";
         for (auto& group: m_kernel_groups) {

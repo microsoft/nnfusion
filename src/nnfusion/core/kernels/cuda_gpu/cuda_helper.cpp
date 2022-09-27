@@ -103,7 +103,8 @@ void cuda::coordinate_transform_to_multi_d(CodeWriter& writer,
                                            std::string i_coord_product,
                                            std::string o_coordinates,
                                            size_t rank,
-                                           bool register_arguments)
+                                           bool register_arguments,
+                                           std::string magic_div)
 {
     std::string brace_open = (register_arguments) ? "" : "[";
     std::string brace_close = (register_arguments) ? "" : "]";
@@ -120,7 +121,7 @@ void cuda::coordinate_transform_to_multi_d(CodeWriter& writer,
     writer << "int coordinate_product = " << i_coord_product << ";\n";
     for (size_t i = 0; i < rank; i++)
     {
-        writer << "int " << o_coordinates << i << " = division_by_invariant_multiplication("
+        writer << "int " << o_coordinates << i << " = " << magic_div << "("
                << "coordinate_product, " << i_stride_magic << brace_open << i << brace_close << ", "
                << i_stride_shift << brace_open << i << brace_close << ");\n";
         writer << "coordinate_product -= (" << o_coordinates << i << " * " << i_strides
@@ -137,7 +138,8 @@ std::string cuda::collective_coordinate_transform_helper(CodeWriter& writer,
                                                          std::string o_coordinates,
                                                          size_t rank,
                                                          bool register_arguments,
-                                                         std::string reduced_idx)
+                                                         std::string reduced_idx,
+                                                         std::string magic_div)
 {
     coordinate_transform_to_multi_d(writer,
                                     i_strides,
@@ -146,7 +148,8 @@ std::string cuda::collective_coordinate_transform_helper(CodeWriter& writer,
                                     i_thread_index,
                                     o_coordinates,
                                     rank,
-                                    register_arguments);
+                                    register_arguments,
+                                    magic_div);
 
     std::string brace_open = (register_arguments) ? "" : "[";
     std::string brace_close = (register_arguments) ? "" : "]";

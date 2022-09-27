@@ -42,7 +42,8 @@ namespace nnfusion
                                                  std::string i_coord_product,
                                                  std::string o_coordinates,
                                                  size_t rank,
-                                                 bool register_arguments);
+                                                 bool register_arguments,
+                                                 std::string magic_div = "division_by_invariant_multiplication");
 
             std::string
                 collective_coordinate_transform_helper(CodeWriter& writer,
@@ -54,7 +55,8 @@ namespace nnfusion
                                                        std::string o_coordinates,
                                                        size_t rank,
                                                        bool register_arguments,
-                                                       std::string reduced_idx = "reduced_idx");
+                                                       std::string reduced_idx = "reduced_idx",
+                                                       std::string magic_div = "division_by_invariant_multiplication");
 
             void div_to_mul(const nnfusion::NVShape& shape,
                             std::vector<int>& magic,

@@ -87,7 +87,6 @@ namespace nnfusion
                     // function signature:
                     // extern "C" __global__ void kernel(m_context->dtypes[0]* input0, m_context->dtypes[0]* input1, m_context->dtypes[2]* output0)
                     auto& writer = *_lu;
-                    writer << "copy from cuda emitter, needs further change\n";
 
                     auto expand_vector_int = [](string name, vector<int>& d) {
                         stringstream ss;
@@ -108,9 +107,9 @@ namespace nnfusion
                     writer << expand_vector_uint32("strides", strides)
                            << expand_vector_int("stride_magic", stride_magic)
                            << expand_vector_int("stride_shift", stride_shift)
-                           << expand_vector_uint32("reduced_strides", reduced_strides)
-                           << "const int tid = blockDim.x * blockIdx.x + threadIdx.x;\n";
-                    writer << "if (tid < nthreads)\n";
+                           << expand_vector_uint32("reduced_strides", reduced_strides);
+                        //    << "const int tid = blockDim.x * blockIdx.x + threadIdx.x;\n";
+                    writer << "for (int tid = 0; tid < nthreads; tid++)\n";
                     writer.block_begin();
                     {
                         // calculate tensor coordinates (inverse tensor reduction)
@@ -123,8 +122,10 @@ namespace nnfusion
                                                                    "reduced_strides",
                                                                    "coordinate",
                                                                    rank,
-                                                                   true);
-                        writer << "output0[tid] = load(input0, " << reduced_idx << ");\n";
+                                                                   true,
+                                                                   "reduced_idx",
+                                                                   "division_by_invariant_multiplication_cpu");
+                        writer << "output0[tid] = input0[" << reduced_idx << "];\n";
                     }
                     writer.block_end();
                     return _lu;
@@ -132,7 +133,7 @@ namespace nnfusion
 
                 virtual LanguageUnit_p get_division_by_invariant_multiplication()
                 {
-                    return declaration::division_by_invariant_multiplication;
+                    return declaration::cuda_cpu_division_by_invariant_multiplication;
                 }
 
                 LanguageUnit_p emit_dependency() override
@@ -163,20 +164,6 @@ namespace nnfusion
                 bool is_memcpy = false;
             };
 
-            class RocmBroadcast : public Broadcast
-            {
-            public:
-                RocmBroadcast(shared_ptr<KernelContext> ctx)
-                    : Broadcast(ctx)
-                {
-                }
-
-                virtual LanguageUnit_p get_division_by_invariant_multiplication() override
-                {
-                    return declaration::rocm_division_by_invariant_multiplication;
-                }
-            };
-
         } // namespace cuda
     }     // namespace kernels
 } // namespace nnfusion
@@ -188,7 +175,3 @@ using namespace nnfusion::kernels;
 REGISTER_KERNEL_EMITTER("Broadcast",                                               //op_name
                         Device(SINGLE_CPU).TypeConstraint(element::f32).Priority(2), //attrs
                         cuda_cpu::Broadcast)                                           // constructor
-
-REGISTER_KERNEL_EMITTER("Broadcast",                                               //op_name
-                        Device(SINGLE_CPU).TypeConstraint(element::f32).Priority(2), //attrs
-                        cuda_cpu::RocmBroadcast)                                       // constructor

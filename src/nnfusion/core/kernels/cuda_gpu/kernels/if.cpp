@@ -464,9 +464,9 @@ LanguageUnit_p cuda::If::emit_function_body()
 LanguageUnit_p cuda::If::emit_function_call()
 {
     if (!FLAGS_fif_launch_then_else && !FLAGS_fif_launch_d2h) {
-        return CudaEmitter::emit_function_call();
+        return ControlFlowEmitter::emit_function_call();
     } else {
-        return KernelEmitter::emit_function_call();
+        return KernelEmitter::emit_function_call(); // no launch config
     }
 }
 

@@ -3,8 +3,126 @@
 
 using namespace nnfusion;
 using namespace kernels;
+using namespace nnfusion::async;
 
 DECLARE_bool(floop_in_c);
+DEFINE_bool(ffast_barrier, false, "Use Rammer's fast barrier in control flow codegen");
+
+LanguageUnit_p cuda::ControlFlowEmitter::emit_function_call()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
+    auto& lu = *_lu;
+    vector<string> names;
+    set_launch_config();
+
+    auto gnode = m_context->gnode;
+    string stream_name = "0";
+    if (gnode && (*gnode)["Async_info"].is_valid())
+    {
+        auto& async_info = (*gnode)["Async_info"].as<AsyncExecutionInfo>();
+        if (async_info.execution_stream != nullptr)
+            stream_name = async_info.execution_stream->get_name();
+    }
+
+    //set stream during codegen
+    names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
+    names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+    if (FLAGS_ffast_barrier) {
+        for (size_t i = 0; i < m_context->tensor_names.size(); i++) {
+            if (m_context->tensors[i]->is_memset()) { // be_state_buffer
+                names.push_back(m_context->tensor_names[i]);
+            }
+        }
+        names.push_back("0"); // state_base
+    }
+    // names.insert(names.end(), m_context->tensor_names.begin(), m_context->tensor_names.end());
+    lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z << "), dim3("
+       << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z << "), 0, " << stream_name
+       << ">>>(" << join(names, ", ") << ");\n";
+
+    return _lu;
+}
+
+LanguageUnit_p cuda::ControlFlowEmitter::emit_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
+    auto& lu = *_lu;
+
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+
+    if (FLAGS_ffast_barrier) {
+        params.push_back("int32_t* be_state_buffer");
+        params.push_back("int32_t state_base");
+    }
+
+    set_launch_config();
+    emit_function_body();
+    lu << "extern \"C\" __launch_bounds__(" << m_blockDim.x * m_blockDim.y * m_blockDim.z
+       << ") __global__ void "
+       << "(" << join(params, ", ") << ")";
+    return _lu;
+}
+
+LanguageUnit_p cuda::ControlFlowEmitter::emit_block_kernel_call(std::vector<std::string> params)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
+    auto& lu = *_lu;
+    if (FLAGS_ffast_barrier) {
+        params.push_back("be_state_buffer");
+        params.push_back("state_base");
+    }
+    params.push_back("shared_buffer");
+    lu << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ");"
+       << "\n";
+    return _lu;
+}
+
+LanguageUnit_p cuda::ControlFlowEmitter::emit_device_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_sig"));
+    auto& lu = *_lu;
+
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+    if (FLAGS_ffast_barrier) {
+        params.push_back("int32_t* be_state_buffer");
+        params.push_back("int32_t state_base");
+    }
+    params.push_back("char* shared_buffer");
+    lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ")";
+    return _lu;
+}
 
 std::pair<cuda::dim3, cuda::dim3>
     cuda::ControlFlowEmitter::get_subgraph_launch_config(ir::BasicBlock::Pointer instructions)

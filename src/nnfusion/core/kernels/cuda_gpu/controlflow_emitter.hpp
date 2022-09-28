@@ -18,6 +18,10 @@ namespace nnfusion
             public:
                 using CudaEmitter::CudaEmitter;
                 LanguageUnit_p emit_device_function_body() override;
+                LanguageUnit_p emit_function_call() override;
+                LanguageUnit_p emit_function_signature() override;
+                LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params) override;
+                LanguageUnit_p emit_device_function_signature() override;
 
             protected:
                 static std::pair<cuda::dim3, cuda::dim3>
@@ -43,6 +47,7 @@ namespace nnfusion
                 descriptor::Tensor::Pointer m_workspace;
                 std::unordered_map<nnfusion::descriptor::Tensor::Pointer, std::string> m_param_map;
                 std::unordered_map<std::string, size_t> m_pool_offset;
+                descriptor::Tensor::Pointer m_sync_tensor;
             };
         }
     }

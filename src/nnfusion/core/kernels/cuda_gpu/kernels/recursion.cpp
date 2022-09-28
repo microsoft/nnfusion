@@ -13,6 +13,7 @@ using namespace nnfusion::kernels;
 
 DEFINE_bool(frecursive_stack, false, "recursive with manual stack");
 DEFINE_int32(frecursive_max_depth, 20, "manual stack size");
+DECLARE_bool(ffast_barrier);
 
 cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
     : CudaEmitter(ctx)
@@ -48,6 +49,10 @@ LanguageUnit_p cuda::FuncForward::emit_block_kernel_call(std::vector<std::string
     auto& lu = *_lu;
     if (m_block_func_name == "")
         m_block_func_name = m_kernel_name + "_recursion";
+    if (FLAGS_ffast_barrier) {
+        params.push_back("be_state_buffer");
+        params.push_back("state_base");
+    }
     params.push_back("shared_buffer");
 
     lu << m_block_func_name + "_block_kernel(" << join(params, ", ") << ");\n";
@@ -78,13 +83,27 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
         m_pool_offset[pair.second->get_name()] = m_workspace_size;
         m_workspace_size += pair.second->max_allocated();
     }
-    m_workspace = allocate_tensor(Shape{m_workspace_size * 20}, nnfusion::element::character);
+    m_workspace = allocate_tensor(Shape{m_workspace_size * FLAGS_frecursive_max_depth}, nnfusion::element::character);
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
     m_block_func_name = move(FuncForward::m_block_func_name);
     NNFUSION_CHECK(!m_block_func_name.empty());
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
     m_body_instructions = create_param_map(m_loop_body_tu->program, op->get_output_map(), true);
+    if (FLAGS_ffast_barrier) {
+        auto launch_config = get_subgraph_launch_config(m_body_instructions);
+        dim3 grid_dim = launch_config.second;
+        m_sync_tensor = std::make_shared<nnfusion::descriptor::Tensor>(
+                    nnfusion::element::i32,
+                    nnfusion::PartialShape(
+                        {(size_t)grid_dim.x * (size_t)grid_dim.y * (size_t)grid_dim.z}),
+                        get_function_name() + "_be_state_buffer",
+                    nnfusion::NNFusion_DeviceType::CUDA_GPU);
+        m_sync_tensor->set_memset(true, 0);
+        m_sync_tensor->set_persistent(true);
+        m_context->tensors.push_back(m_sync_tensor);
+        m_context->tensor_names.push_back(m_sync_tensor->get_name());
+    }
 }
 
 std::string cuda::Recursion::inline_kernel(std::shared_ptr<ir::Instruction> ins) {
@@ -250,6 +269,7 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
         if (FLAGS_frecursive_stack && is_emitting_block_kernel) {
             lu << "// " << kernel->emit_block_kernel_call(params)->get_code();
             std::string inlined = inline_kernel(ins);
+            // todo: to_stack should be called per recursive op
             std::string stacked = to_stack(inlined, ins);
             lu << stacked;
         } else {

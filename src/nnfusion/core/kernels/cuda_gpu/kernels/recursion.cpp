@@ -16,7 +16,7 @@ DEFINE_int32(frecursive_max_depth, 20, "manual stack size");
 DECLARE_bool(ffast_barrier);
 
 cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
-    : CudaEmitter(ctx)
+    : ControlFlowEmitter(ctx)
 {
     std::stringstream tag;
     tag << "_FuncForwardOP";
@@ -275,8 +275,13 @@ void cuda::Recursion::generate_subgraph_code(LanguageUnit_p _lu)
         } else {
             lu << kernel->emit_block_kernel_call(params)->get_code();
         }
-        if (ins != instructions->back())
-            lu << "Barrier();\n";
+        if (FLAGS_ffast_barrier) {
+            if (dynamic_pointer_cast<ControlFlowEmitter>(kernel) == nullptr && dynamic_pointer_cast<FuncForward>(kernel) == nullptr)
+                lu << "Barrier();\n";
+        } else {
+            if (ins != instructions->back())
+                lu << "Barrier();\n";
+        }
     }
 }
 
@@ -296,6 +301,10 @@ LanguageUnit_p cuda::Recursion::emit_function_body()
             stringstream ss;
             ss << "output" << i;
             params.push_back(ss.str());
+        }
+        if (FLAGS_ffast_barrier) {
+            params.push_back("be_state_buffer");
+            params.push_back("state_base");
         }
         params.push_back("shared_buffer");
         lu << m_block_func_name << "_block_kernel(" << join(params, ", ") << ");";

@@ -13,6 +13,7 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 DEFINE_bool(floop_in_c, false, "loop in c");
 DEFINE_int32(floop_copy_blockdim, 256, "");
+DECLARE_bool(ffast_barrier);
 
 cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     : ControlFlowEmitter(ctx)
@@ -37,6 +38,19 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
     for (auto& item : output_map)
         item.second--;
     m_body_instructions = create_param_map(m_loop_body_tu->program, output_map, !FLAGS_floop_in_c);
+    if (FLAGS_ffast_barrier) {
+        set_launch_config();
+        m_sync_tensor = std::make_shared<nnfusion::descriptor::Tensor>(
+                    nnfusion::element::i32,
+                    nnfusion::PartialShape(
+                        {(size_t)m_gridDim.x * (size_t)m_gridDim.y * (size_t)m_gridDim.z}),
+                        get_function_name() + "_be_state_buffer",
+                    nnfusion::NNFusion_DeviceType::CUDA_GPU);
+        m_sync_tensor->set_memset(true, 0);
+        m_sync_tensor->set_persistent(true);
+        m_context->tensors.push_back(m_sync_tensor);
+        m_context->tensor_names.push_back(m_sync_tensor->get_name());
+    }
 }
 
 void fetch_dependent(const std::set<int64_t>& emitted, std::vector<std::shared_ptr<nnfusion::graph::GNode>>& depend, std::shared_ptr<nnfusion::graph::GNode> node) {
@@ -98,6 +112,7 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
     for (auto ins : *m_body_instructions)
     {
         auto node = ins->getGNode();
+        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         // std::cout << node->get_id() << " " << node->get_op_type() << " depends on: ";
         if (in_cuda) {
             // whether to add a barrier
@@ -113,13 +128,15 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
             }
             // std::cout << std::endl;
             if (need_barrier) {
+                if (FLAGS_ffast_barrier && std::dynamic_pointer_cast<ControlFlowEmitter>(kernel) != nullptr) {
+                    NNFUSION_CHECK_FAIL() << "TODO: skip barrier for control flow kernels";
+                }
                 lu << "Barrier();\n";
                 outputs.clear();
             }
             outputs.insert(node->get_id());
             emitted.insert(node->get_id());
         }
-        auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         std::vector<string> params;
         for (auto tensor : ins->get_inputs())
             params.push_back(m_param_map[tensor]);

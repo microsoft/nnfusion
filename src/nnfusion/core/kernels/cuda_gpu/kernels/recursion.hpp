@@ -10,7 +10,7 @@ namespace nnfusion
     {
         namespace cuda
         {
-            class FuncForward : public CudaEmitter
+            class FuncForward : public ControlFlowEmitter
             {
             public:
                 FuncForward(shared_ptr<KernelContext> ctx);

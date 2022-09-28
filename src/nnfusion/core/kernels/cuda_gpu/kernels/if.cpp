@@ -13,6 +13,7 @@ using namespace nnfusion::kernels;
 DEFINE_bool(fif_launch_then_else, false, "launch kernels in both then branch and else branch");
 DEFINE_bool(fif_launch_d2h, false, "launch kernels in both then branch and else branch");
 DEFINE_int32(ffused_max_grid, 512, "max griddim in fused kernels");
+DECLARE_bool(ffast_barrier);
 
 cuda::If::If(shared_ptr<KernelContext> ctx)
     : ControlFlowEmitter(ctx)
@@ -46,6 +47,19 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
     m_pool_offset = else_branch_pool_offset;
     m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
+    if (FLAGS_ffast_barrier) {
+        set_launch_config();
+        m_sync_tensor = std::make_shared<nnfusion::descriptor::Tensor>(
+                    nnfusion::element::i32,
+                    nnfusion::PartialShape(
+                        {(size_t)m_gridDim.x * (size_t)m_gridDim.y * (size_t)m_gridDim.z}),
+                        get_function_name() + "_be_state_buffer",
+                    nnfusion::NNFusion_DeviceType::CUDA_GPU);
+        m_sync_tensor->set_memset(true, 0);
+        m_sync_tensor->set_persistent(true);
+        m_context->tensors.push_back(m_sync_tensor);
+        m_context->tensor_names.push_back(m_sync_tensor->get_name());
+    }
     // Hardcoded fusion rule: fuse all kernels with shm_size=0
     std::vector<std::vector<int>> then_kernel_groups;
     std::vector<std::vector<int>> else_kernel_groups;
@@ -208,8 +222,15 @@ void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::
             lu << kernel_call;
             lu.block_end();
         }
-        if (i != end_id - 1)
-            lu << "Barrier();\n";
+        if (FLAGS_ffast_barrier) {
+            if (!(i == end_id - 1 && !is_emitting_block_kernel)) {
+                if (std::dynamic_pointer_cast<ControlFlowEmitter>(kernel) == nullptr)
+                    lu << "Barrier();\n";
+            }
+        } else {
+            if (i != end_id - 1)
+                lu << "Barrier();\n";
+        }
     }
 }
 

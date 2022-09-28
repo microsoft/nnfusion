@@ -190,6 +190,8 @@ void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::
 {
     auto& lu = *_lu;
     if (end_id == -1) end_id = instructions->size();
+    int last_griddim = -1;
+    bool last_need_wait = false;
     for (int i = start_id; i < end_id; i++)
     {
         auto ins = instructions->at(i);
@@ -204,6 +206,10 @@ void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::
                 params.push_back(m_param_map[tensor]);
         std::string kernel_call = kernel->emit_block_kernel_call(params)->get_code();
         int griddim = kernel->get_grid_dim().x;
+        if (FLAGS_ffast_barrier && last_need_wait) {
+            lu << emit_block_executor_instruction_wait_for(last_griddim, min(griddim, max_grid_dim))->get_code();
+        }
+        last_griddim = min(griddim, max_grid_dim);
         if (griddim > max_grid_dim) {
             size_t start_pos = kernel_call.find("blockIdx.x");
             kernel_call = replace_one(kernel_call, "blockIdx.x", "blockIdx.x + start_block");
@@ -224,13 +230,21 @@ void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::
         }
         if (FLAGS_ffast_barrier) {
             if (!(i == end_id - 1 && !is_emitting_block_kernel)) {
-                if (std::dynamic_pointer_cast<ControlFlowEmitter>(kernel) == nullptr)
-                    lu << "Barrier();\n";
+                if (std::dynamic_pointer_cast<ControlFlowEmitter>(kernel) == nullptr) {
+                    lu << emit_block_executor_instruction_step_to(last_griddim)->get_code();
+                    last_need_wait = true;
+                } else {
+                    last_need_wait = false;
+                }
+                //     lu << "Barrier();\n";
             }
         } else {
             if (i != end_id - 1)
                 lu << "Barrier();\n";
         }
+    }
+    if (FLAGS_ffast_barrier && is_emitting_block_kernel) {
+        lu << emit_block_executor_instruction_wait_for(last_griddim)->get_code();
     }
 }
 
@@ -507,6 +521,7 @@ LanguageUnit_p cuda::If::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
+    if (FLAGS_ffast_barrier) _lu->require(declaration::step_to_device);
     auto op = static_pointer_cast<op::If>(m_context->gnode->get_op_ptr());
     m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
     m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));

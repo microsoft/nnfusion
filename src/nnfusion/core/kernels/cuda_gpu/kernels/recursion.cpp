@@ -334,6 +334,7 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
+    if (FLAGS_ffast_barrier) _lu->require(declaration::step_to_device);
     auto saved = m_kernel_name;
     m_kernel_name = m_block_func_name;
     // include the recursion kernel declare at first

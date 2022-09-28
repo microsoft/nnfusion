@@ -66,7 +66,7 @@ LanguageUnit_p cuda::ControlFlowEmitter::emit_function_signature()
     }
 
     if (FLAGS_ffast_barrier) {
-        params.push_back("int32_t* be_state_buffer");
+        params.push_back("volatile int32_t* be_state_buffer");
         params.push_back("int32_t state_base");
     }
 
@@ -115,12 +115,39 @@ LanguageUnit_p cuda::ControlFlowEmitter::emit_device_function_signature()
         params.push_back(ss.str());
     }
     if (FLAGS_ffast_barrier) {
-        params.push_back("int32_t* be_state_buffer");
-        params.push_back("int32_t state_base");
+        params.push_back("volatile int32_t* be_state_buffer");
+        params.push_back("int32_t& state_base");
     }
     params.push_back("char* shared_buffer");
     lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ")";
+    return _lu;
+}
+
+LanguageUnit_p cuda::ControlFlowEmitter::emit_block_executor_instruction_step_to(int max_block)
+{
+    LanguageUnit_p _lu(new LanguageUnit());
+    auto& lu = *_lu;
+    lu << "state_base++;\n";
+    lu << "if (blockIdx.x < " << max_block << ") " 
+       << "BlockFusion_step_to_device_function(be_state_buffer, blockIdx.x, state_base);\n";
+
+    return _lu;
+}
+
+LanguageUnit_p cuda::ControlFlowEmitter::emit_block_executor_instruction_wait_for(int max_block_last, int max_block_cur)
+{
+    LanguageUnit_p _lu(new LanguageUnit());
+    auto& lu = *_lu;
+    if (max_block_cur != -1) {
+        lu << "if (blockIdx.x < " << max_block_cur << ")";
+        lu.block_begin();
+    }
+    lu << "if (threadIdx.x < " << max_block_last << ") while (be_state_buffer[threadIdx.x] < state_base);\n";
+    lu << "__syncthreads();\n";
+    if (max_block_cur != -1) {
+        lu.block_end();
+    }
     return _lu;
 }
 

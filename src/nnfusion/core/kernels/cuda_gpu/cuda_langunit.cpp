@@ -2255,3 +2255,14 @@ __global__ void inc_iter(int64_t* i) {
     i[0] = i[0] + 1;
 }
 )");
+
+LU_DEFINE(declaration::step_to_device,
+          R"(
+__device__ __forceinline__ void BlockFusion_step_to_device_function(volatile int* be_state_buffer, int be_id, int step_id) {
+    __threadfence();
+    __syncthreads();
+    if (threadIdx.x == 0) {
+        be_state_buffer[be_id] = step_id;
+    }
+}
+)");

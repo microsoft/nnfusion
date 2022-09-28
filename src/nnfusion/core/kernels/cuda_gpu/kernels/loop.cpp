@@ -245,6 +245,7 @@ LanguageUnit_p cuda::Loop::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
+    if (FLAGS_ffast_barrier) _lu->require(declaration::step_to_device);
     for (auto ins : *m_body_instructions)
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());

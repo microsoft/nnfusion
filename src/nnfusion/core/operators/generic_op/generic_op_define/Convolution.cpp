@@ -30,55 +30,139 @@ REGISTER_OP(Convolution)
     })
     */
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-        auto ir_template =
-            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
-
         auto _op = static_pointer_cast<nnfusion::op::Convolution>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
-        const auto& dilation_h = _op->get_window_dilation_strides()[0];
-        const auto& dilation_w = _op->get_window_dilation_strides()[1];
-        const auto& stride_h = _op->get_window_movement_strides()[0];
-        const auto& stride_w = _op->get_window_movement_strides()[1];
-        const auto& is_nchw = _op->get_data_format() == "NCHW";
-        const auto& padding_below = _op->get_padding_below();
-        const auto& padding_above = _op->get_padding_above();
-        const auto& padding_h = _op->get_padding_below()[0];
-        const auto& padding_w = _op->get_padding_below()[1];
-        const auto& kernel_size_h =
-            is_nchw ? curr->get_input_shape(1)[2] : curr->get_input_shape(1)[0];
-        const auto& kernel_size_w =
-            is_nchw ? curr->get_input_shape(1)[3] : curr->get_input_shape(1)[1];
-        const auto& in_shape = curr->get_input_shape(0);
-        const auto& out_shape = curr->get_output_shape(0);
-        const std::string data_format = is_nchw ? "nchw" : "nhwc";
-        NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
-        NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
-        NNFUSION_CHECK(padding_below == padding_above)
-            << "Asymetric padding is not supported by now.";
-        nnfusion::op::OpConfig::any config;
-        std::string HO = "-@pad_0@ + KH + HO * " + to_string(stride_h);
-        std::string WO = "-@pad_1@ + KW + WO * " + to_string(stride_w);
-        std::string shape_template =
-            is_nchw ? "[N, C, " + HO + ", " + WO + "]" : "[N, " + HO + ", " + WO + ", C]";
-        config["input1_layout"] = is_nchw ? "[F, C, KH, KW]" : "[KH, KW, C, F]";
-        config["output0_layout"] = is_nchw ? "[N, F, HO, WO]" : "[N, HO, WO, F]";
-        config["height"] = is_nchw ? out_shape[2] : out_shape[1];
-        config["width"] = is_nchw ? out_shape[3] : out_shape[2];
-        config["pad_0"] = to_string(padding_h);
-        config["pad_1"] = to_string(padding_w);
-        config["input0_layout"] = op::create_code_from_template(shape_template, config);
 
-        std::string pad_cond;
-        if (padding_h || padding_w)
+        if (_op->get_data_format() == "NCHW" || _op->get_data_format() == "NHWC") // Conv2D
         {
-            config["in_height"] = is_nchw ? in_shape[2] : in_shape[1];
-            config["in_width"] = is_nchw ? in_shape[3] : in_shape[2];
-            auto pad_template = ".when([" + HO + " >= 0, " + HO + " < @in_height@, " + WO +
-                                " >= 0, " + WO +
-                                " < @in_width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
-            pad_cond = op::create_code_from_template(pad_template, config);
-        }
-        config["pad_cond"] = pad_cond;
+            auto ir_template =
+                R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where HO in @height@, WO in @width@; )";
 
-        return op::create_code_from_template(ir_template, config);
+            const auto& dilation_h = _op->get_window_dilation_strides()[0];
+            const auto& dilation_w = _op->get_window_dilation_strides()[1];
+            const auto& stride_h = _op->get_window_movement_strides()[0];
+            const auto& stride_w = _op->get_window_movement_strides()[1];
+            const auto& is_nchw = _op->get_data_format() == "NCHW";
+            const auto& padding_below = _op->get_padding_below();
+            const auto& padding_above = _op->get_padding_above();
+            const auto& padding_h = _op->get_padding_below()[0];
+            const auto& padding_w = _op->get_padding_below()[1];
+            const auto& kernel_size_h =
+                is_nchw ? curr->get_input_shape(1)[2] : curr->get_input_shape(1)[0];
+            const auto& kernel_size_w =
+                is_nchw ? curr->get_input_shape(1)[3] : curr->get_input_shape(1)[1];
+            const auto& in_shape = curr->get_input_shape(0);
+            const auto& out_shape = curr->get_output_shape(0);
+            const std::string data_format = is_nchw ? "nchw" : "nhwc";
+            if (dilation_h != 1 || dilation_w != 1)
+            {
+                NNFUSION_LOG(NNFUSION_WARNING) << "Not support other dilation yet.";
+                return "";
+            }
+            if (padding_below != padding_above)
+            {
+                NNFUSION_LOG(NNFUSION_WARNING) << "Asymetric padding is not supported by now.";
+                return "";
+            }
+            // NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
+            // NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
+            // NNFUSION_CHECK(padding_below == padding_above)
+            //     << "Asymetric padding is not supported by now.";
+            nnfusion::op::OpConfig::any config;
+            std::string HO = "-@pad_0@ + KH + HO * " + to_string(stride_h);
+            std::string WO = "-@pad_1@ + KW + WO * " + to_string(stride_w);
+            std::string shape_template =
+                is_nchw ? "[N, C, " + HO + ", " + WO + "]" : "[N, " + HO + ", " + WO + ", C]";
+            config["input1_layout"] = is_nchw ? "[F, C, KH, KW]" : "[KH, KW, C, F]";
+            config["output0_layout"] = is_nchw ? "[N, F, HO, WO]" : "[N, HO, WO, F]";
+            config["height"] = is_nchw ? out_shape[2] : out_shape[1];
+            config["width"] = is_nchw ? out_shape[3] : out_shape[2];
+            config["pad_0"] = to_string(padding_h);
+            config["pad_1"] = to_string(padding_w);
+            config["input0_layout"] = op::create_code_from_template(shape_template, config);
+
+            std::string pad_cond;
+            if (padding_h || padding_w)
+            {
+                config["in_height"] = is_nchw ? in_shape[2] : in_shape[1];
+                config["in_width"] = is_nchw ? in_shape[3] : in_shape[2];
+                auto pad_template =
+                    ".when([" + HO + " >= 0, " + HO + " < @in_height@, " + WO + " >= 0, " + WO +
+                    " < @in_width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
+                pad_cond = op::create_code_from_template(pad_template, config);
+            }
+            config["pad_cond"] = pad_cond;
+
+            return op::create_code_from_template(ir_template, config);
+        }
+        else if (_op->get_data_format() == "NCDHW") // Conv3D
+        {
+            auto ir_template =
+                R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where DO in @depth@, HO in @height@, WO in @width@; )";
+
+            const auto& dilation_d = _op->get_window_dilation_strides()[0];
+            const auto& dilation_h = _op->get_window_dilation_strides()[1];
+            const auto& dilation_w = _op->get_window_dilation_strides()[2];
+            const auto& stride_d = _op->get_window_movement_strides()[0];
+            const auto& stride_h = _op->get_window_movement_strides()[1];
+            const auto& stride_w = _op->get_window_movement_strides()[2];
+            const auto& padding_below = _op->get_padding_below();
+            const auto& padding_above = _op->get_padding_above();
+            const auto& padding_d = _op->get_padding_below()[0];
+            const auto& padding_h = _op->get_padding_below()[1];
+            const auto& padding_w = _op->get_padding_below()[2];
+            const auto& kernel_size_d = curr->get_input_shape(1)[2];
+            const auto& kernel_size_h = curr->get_input_shape(1)[3];
+            const auto& kernel_size_w = curr->get_input_shape(1)[4];
+            const auto& in_shape = curr->get_input_shape(0);
+            const auto& out_shape = curr->get_output_shape(0);
+            const std::string data_format = "NCDHW";
+            if (dilation_d != 1 || dilation_h != 1 || dilation_w != 1)
+            {
+                NNFUSION_LOG(NNFUSION_WARNING) << "Not support other dilation yet.";
+                return "";
+            }
+            if (padding_below != padding_above)
+            {
+                NNFUSION_LOG(NNFUSION_WARNING) << "Asymetric padding is not supported by now.";
+                return "";
+            }
+            // NNFUSION_CHECK(dilation_d == 1) << "Not support other dilation yet.";
+            // NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
+            // NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
+            // NNFUSION_CHECK(padding_below == padding_above)
+            //     << "Asymetric padding is not supported by now.";
+            nnfusion::op::OpConfig::any config;
+            std::string DO = "-@pad_0@ + KD + DO * " + to_string(stride_d);
+            std::string HO = "-@pad_1@ + KH + HO * " + to_string(stride_h);
+            std::string WO = "-@pad_2@ + KW + WO * " + to_string(stride_w);
+            std::string shape_template = "[N, C, " + DO + ", " + HO + ", " + WO + "]";
+            config["input1_layout"] = "[F, C, KD, KH, KW]";
+            config["output0_layout"] = "[N, F, DO, HO, WO]";
+            config["depth"] = out_shape[2];
+            config["height"] = out_shape[3];
+            config["width"] = out_shape[4];
+            config["pad_0"] = to_string(padding_d);
+            config["pad_1"] = to_string(padding_h);
+            config["pad_2"] = to_string(padding_w);
+            config["input0_layout"] = op::create_code_from_template(shape_template, config);
+
+            std::string pad_cond;
+            if (padding_d || padding_h || padding_w)
+            {
+                config["in_depth"] = in_shape[2];
+                config["in_height"] = in_shape[3];
+                config["in_width"] = in_shape[4];
+                auto pad_template =
+                    ".when([" + DO + " >= 0, " + DO + " < @in_depth@, " + HO + " >= 0, " + HO +
+                    " < @in_height@, " + WO + " >= 0, " + WO +
+                    " < @in_width@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
+                pad_cond = op::create_code_from_template(pad_template, config);
+            }
+            config["pad_cond"] = pad_cond;
+
+            return op::create_code_from_template(ir_template, config);
+        }
+
+        return "";
     });

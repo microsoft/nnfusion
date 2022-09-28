@@ -142,7 +142,8 @@ bool ExtractGraphSignature::extract_args(std::shared_ptr<InterpreterContext> ctx
             const element::Type& et = tv->get_element_type();
 
             string type;
-            if(!element::Type::nnfusion_element_type_to_dtype_string(tv->get_element_type(), type)){
+            if (!element::Type::nnfusion_element_type_to_dtype_string(tv->get_element_type(), type))
+            {
                 NNFUSION_LOG(ERROR) << "Get element type failed";
                 return false;
             }
@@ -188,7 +189,8 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
 
         tu->out.push_back(tv);
         string type;
-        if(!element::Type::nnfusion_element_type_to_dtype_string(tv->get_element_type(), type)){
+        if (!element::Type::nnfusion_element_type_to_dtype_string(tv->get_element_type(), type))
+        {
             NNFUSION_LOG(ERROR) << "Get element type failed";
             return false;
         }

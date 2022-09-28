@@ -171,10 +171,14 @@ LanguageUnit_p cuda::BatchNormNCHW::emit_function_body()
     /*
      * todo: may have better solution, details in https://github.com/microsoft/nnfusion/issues/434
      * */
-    if(dtype == nnfusion::element::f16){
-        lu << "output0[st + i] = __hadd(input1[c_id] , __hdiv(__hmul(input0[c_id], __hsub(input2[st + i], input3[c_id])), sqrtf(__hadd(__float2half("
+    if (dtype == nnfusion::element::f16)
+    {
+        lu << "output0[st + i] = __hadd(input1[c_id] , __hdiv(__hmul(input0[c_id], "
+              "__hsub(input2[st + i], input3[c_id])), sqrtf(__hadd(__float2half("
            << epsilon << "), input4[c_id]))));\n";
-    }else{
+    }
+    else
+    {
         lu << "(input1[c_id] + (input0[c_id] * "
               "(input2[st + i] - input3[c_id]) / sqrtf("
            << epsilon << " + input4[c_id])));\n";

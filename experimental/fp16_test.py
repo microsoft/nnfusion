@@ -27,10 +27,12 @@ def cooperative_fetch_2d(shared, sch, block_size, strides):
     axes = sch[shared].op.axis
     sch[shared].storage_align(axes[0], strides - 1, strides)
     fused = sch[shared].fuse(*axes)
+    fused, vec = sch[shared].split(fused, factor=8)
     oo, temp_0 = sch[shared].split(fused, factor=block_size[0] * block_size[1] * block_size[2])
     inner_z, temp_1 = sch[shared].split(temp_0, factor=block_size[0] * block_size[1])
     inner_y, inner_x = sch[shared].split(temp_1, factor=block_size[0])
-    sch[shared].reorder(oo, inner_z, inner_y, inner_x)
+    sch[shared].reorder(oo, inner_z, inner_y, inner_x, vec)
+    sch[shared].vectorize(vec)
     sch[shared].bind(inner_x, te.thread_axis("threadIdx.x"))
     sch[shared].bind(inner_y, te.thread_axis("threadIdx.y"))
     sch[shared].bind(inner_z, te.thread_axis("threadIdx.z"))
@@ -42,11 +44,11 @@ def get_schedule(A, B, C):
     AF = s.cache_read(AS, "wmma.matrix_a", [C])
     BF = s.cache_read(BS, "wmma.matrix_b", [C])
     CF = s.cache_write(C, "wmma.accumulator")
-    wmma_m, wmma_n, wmma_k = 16, 16, 16
-    rstep_size = 4
+    wmma_m, wmma_n, wmma_k = 32, 8, 16
+    rstep_size = 2
 
-    m_tile = [128, 64, wmma_m]
-    n_tile = [64, 32, wmma_n]
+    m_tile = [256, 128, wmma_m]
+    n_tile = [128, 64, wmma_n]
     block_size = [32, int(m_tile[0] / m_tile[1]), int(n_tile[0] / n_tile[1])]
 
     block_i, mc = s[C].split(C.op.axis[0], factor=m_tile[0])
@@ -159,7 +161,7 @@ def refernce(M, K, N, device=0, seed=0):
     return C.cpu().numpy()
 
 if __name__ == "__main__":
-    M, K, N = 1920 * 1080, 64, 64
+    M, K, N = 8192, 3072, 3072
     args = matmul(M, K, N)
     s = get_schedule(*args)
     with memopt.Scope(s):
@@ -170,9 +172,9 @@ if __name__ == "__main__":
         cp = CompileResult(None, source, memopt.get_scope().block_size, memopt.get_scope().grid_size, "default_function_kernel0", args)
     cp.append_host_call()
     cp.compile_and_load()
-    ref = refernce(M, K, N)
-    out = cp.get_example_outputs()[0]
-    print(np.max(np.abs(out-ref)))
+    # ref = refernce(M, K, N)
+    # out = cp.get_example_outputs()[0]
+    # print(np.max(np.abs(out-ref)))
     print(cp.profile())
 
     # print(out, ref)

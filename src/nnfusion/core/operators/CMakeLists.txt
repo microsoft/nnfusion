@@ -19,7 +19,6 @@ set(SRC
     op_define/add.cpp
     op_define/allreduce.cpp
     op_define/and.cpp
-    op_define/argmax.cpp
     op_define/argmin.cpp
     op_define/asin.cpp
     op_define/atan.cpp

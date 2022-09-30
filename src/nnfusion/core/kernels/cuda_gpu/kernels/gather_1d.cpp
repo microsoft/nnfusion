@@ -80,7 +80,8 @@ LanguageUnit_p cuda::Gather1D::emit_function_body()
                << "slice_i = i - batch_indices_i * " << slice_size << ";\n";
         }
 
-        lu << "uint32_t gather_i = __ldg(indices + indices_i);\n";
+        lu << m_context->dtypes[1] << " gather_i = __ldg(indices + indices_i);\n";
+        lu << "if (gather_i < 0) gather_i += " << gather_dim_size << ";\n";
         lu << "if (gather_i >= " << gather_dim_size << ")\n"
            << "   out[i] = 0;\n"
            << "else\n";

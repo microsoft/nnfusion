@@ -29,7 +29,7 @@ DEFINE_bool(ffix_slice, false, "A hack fix to re-pass symbolic values to slice o
 
 static inline int64_t get_valid_array_idx(int64_t idx, int64_t last_idx)
 {
-    return (idx >= 0) ? std::min(idx, last_idx) : std::max<int64_t>(0, last_idx + idx);
+    return (idx >= 0) ? std::min(idx, last_idx) : std::max<int64_t>(0, last_idx + idx + 1);
 }
 
 namespace nnfusion
@@ -126,6 +126,7 @@ namespace nnfusion
                     for (auto idx = 0; idx < axes.size(); ++idx)
                     {
                         size_t axis = axes.at(idx);
+                        axis = get_valid_array_idx(axis, data_shape.size() - 1);
                         lower_bounds.at(axis) =
                             get_valid_array_idx(starts.at(idx), data_shape.at(axis));
                         upper_bounds.at(axis) =

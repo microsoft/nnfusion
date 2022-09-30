@@ -120,5 +120,6 @@ REGISTER_OP(GatherV2)
             op_config["input1_layout"] = "";
         }
 
+        NNFUSION_LOG(INFO) << op::create_code_from_template(ir_template, op_config);
         return op::create_code_from_template(ir_template, op_config);
     });

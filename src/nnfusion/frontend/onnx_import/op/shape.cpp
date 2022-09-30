@@ -35,10 +35,17 @@ namespace nnfusion
                 {
                     auto data = GetInputIndex(all_ng_nodes, node_proto, 0);
                     auto data_shape = data.get_shape();
+                    NNFUSION_LOG(INFO)<<node_proto.output(0)<<"\t"<<data_shape;
                     auto op = std::make_shared<op::Constant>(
                         nnfusion::element::i64, Shape{data_shape.size()}, data_shape);
                     op->set_name(node_proto.output(0));
                     auto gnode = m_graph->add_node_and_edge(op, nnfusion::graph::GNodeVector{});
+
+                      auto const_op = std::dynamic_pointer_cast<op::Constant>(gnode->get_op_ptr());
+                      std::vector<char> one(const_op->get_data_size());
+                      memcpy(one.data(), const_op->get_data_ptr(), one.size());
+                      NNFUSION_LOG(INFO) << const_op->get_name() << "\t" << one.size() << "\t" << vector_to_string(std::vector<int>(one.begin(), one.end()));
+
                     NamedNodeVector ret{{node_proto.output(0), gnode}};
                     return ret;
                 }

@@ -99,6 +99,8 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
             offset = 0
             for dtype, var, size in re.findall(pattern, src):
                 src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
-                offset += int(size) * _type_bytes[dtype]
+                buffer_len = int(size) * _type_bytes[dtype]
+                buffer_len = (buffer_len + 31) // 32 * 32
+                offset += buffer_len
             scope.total_internal_shared_memory = offset
     return src

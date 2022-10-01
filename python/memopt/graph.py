@@ -201,7 +201,9 @@ class IRNode(Node):
                 src_node = self.inputs[input_id].src_node
                 if not src_node.is_placeholder():
                     continue
-            result += np.prod(shapes[tensor.name]) * int(tvm.DataType(tensor.dtype).bits // 8)
+            buffer_len = np.prod(shapes[tensor.name]) * int(tvm.DataType(tensor.dtype).bits // 8)
+            buffer_len = (buffer_len + 31) // 32 * 32
+            result += buffer_len
         return result
 
     def infer_strides_TensorCore(self, shape, rstep={}) -> Tuple[Stride, Stride, Stride]:
@@ -257,7 +259,9 @@ class IRNode(Node):
                             num_elem = AS_elem
                         else:
                             num_elem = BS_elem
-                    result += num_elem * int(tvm.DataType(tensor.dtype).bits // 8)
+                    buffer_len = num_elem * int(tvm.DataType(tensor.dtype).bits // 8)
+                    buffer_len = (buffer_len + 31) // 32 * 32
+                    result += buffer_len
         return result
 
     @functools.lru_cache()

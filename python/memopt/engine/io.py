@@ -48,7 +48,9 @@ def load_model(fname: str) -> List[Node]:
         if node.get_tag("tensorCoreConfig"):
             C_ax_m, C_ax_n = node.get_tag("tensorCoreConfig")
             shape = node.get_shape()
-            if shape[C_ax_m] % 8 != 0 or shape[C_ax_n] % 8 != 0 or shape[C_ax_m] * shape[C_ax_n] % 256 != 0:
+            raxis_invalid = any([r % 16 != 0 for r in node.raxis.values()])
+            if shape[C_ax_m] % 8 != 0 or shape[C_ax_n] % 8 != 0 or shape[C_ax_m] * shape[C_ax_n] % 256 != 0 \
+                or raxis_invalid:
                 node.add_tag("tensorCoreConfig", False)
     return ordered_nodes
 

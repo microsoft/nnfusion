@@ -117,6 +117,12 @@ class CodeGenerator():
                     self.block_size, self.grid_size = scope.block_size, scope.grid_size
                 else:
                     assert(self.block_size == scope.block_size and self.grid_size == scope.grid_size)
+                for idx, tensor in zip(shared_inputs_idx, shared_inputs):
+                    num_bytes = scope.exteral_shared_memroy_size[tensor]
+                    src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
+                    block = block_map[(src_node, src_id)]
+                    if block.size() < num_bytes:
+                        raise Exception("Shared memory mismatched", op, tensor, block.size(), num_bytes)
 
                 # make memory plan
                 internal_shared_mem = self.allocator.malloc(scope.total_internal_shared_memory)

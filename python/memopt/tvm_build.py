@@ -55,7 +55,6 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
     passes = [
         (0, modify_output_pass),
         (0, modify_input_pass),
-        (1, check_memory_access_pass),
     ]
     assert(isinstance(sm_outputs, (tuple, list)))
     assert(isinstance(sm_inputs, (tuple, list)))
@@ -93,6 +92,10 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
             src = re.sub(r"__shared__ (\w+) (\w+wmma_accumulator_shared)\[\d+\];", r"\1* \2 = {};".format(reuse_output_name), src, 1)
         for tensor in scope.shared_mem_inputs:
             shared_var_name = tensor.name + "_shared"
+            matched = re.findall(r"__shared__ (\w+) {}\[(\d+)\];".format(shared_var_name), src)
+            assert len(matched) == 1
+            dtype, size = matched[0]
+            scope.exteral_shared_memroy_size[tensor] = int(size) * _type_bytes[dtype]
             src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(shared_var_name), r"\1* {} = {};".format(shared_var_name, tensor.name), src, 1)
         if not global_kernel:
             pattern = r"__shared__ (\w+) (\w+)\[(\d+)\];"

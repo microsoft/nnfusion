@@ -6,11 +6,12 @@ from typing import Optional, List, Tuple
 
 import numpy as np
 from tvm import te, tir
-
+import threading
 from . import einstein_v2 as einstein_core
 
 OUTPUT_TEMP = list()
 INPUT_TEMP = list()
+_lock = threading.Lock()
 
 def einstein_v2(exprss: str, input_dict: List, extra_outputs: Optional[List] = [], **kwargs):
     """
@@ -112,10 +113,13 @@ def output(shape,  # pylint:disable=too-many-arguments
     return result
 
 def translate_to_tvm(expr: str, input_dict, extra_outputs=[]) -> Tuple[List[te.Tensor], List[te.Tensor]]:
+    _lock.acquire()
     OUTPUT_TEMP.clear()
     INPUT_TEMP.clear()
     einstein_v2(expr, input_dict, extra_outputs)
-    return INPUT_TEMP, OUTPUT_TEMP
+    input_args, output_args = INPUT_TEMP.copy(), OUTPUT_TEMP.copy()
+    _lock.release()
+    return input_args, output_args
 
 def translate_ir_to_tvm(antares_ir: str) -> Tuple[List[te.Tensor], List[te.Tensor]]:
     antares_ir = antares_ir.strip()
@@ -126,4 +130,4 @@ def translate_ir_to_tvm(antares_ir: str) -> Tuple[List[te.Tensor], List[te.Tenso
     antares_ir = antares_ir[2:]
     antares_ir = antares_ir.replace("einstein_v2", "translate_to_tvm")
     input_args, output_args = eval(antares_ir, globals(), locals())
-    return input_args.copy(), output_args.copy()
+    return input_args, output_args

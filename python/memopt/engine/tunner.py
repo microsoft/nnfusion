@@ -112,7 +112,7 @@ def eliminate_memcpy(output_nodes):
     if eliminated_node_cnt > 0:
         eliminate_memcpy(output_nodes)
 
-def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=True):
+def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=False):
     if get_log_level() >= 1:
         print("Tuning", [node.name for node in nodes])
     output_nodes, input_desc, output_desc = _extract_subgraph(nodes)

@@ -36,7 +36,7 @@ def ref_output(onnx_model_path, device):
     outputs = ort_session.get_outputs()
     # this eliminates D2H copy for profiling
     for item in outputs:
-        io_binding.bind_output(item.name, 'cuda')
+        io_binding.bind_output(item.name, 'cuda', device)
     ort_session.run_with_iobinding(io_binding)
     def get_runtime():
         tic = time.monotonic_ns()

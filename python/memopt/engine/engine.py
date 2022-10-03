@@ -33,10 +33,11 @@ def _get_nodes_dependency(nodes: List[Node], processed: List[Node]) -> List[Node
     return list(deps)
 
 class Engine:
-    def __init__(self, topk: int, arch, device="cuda:0") -> None:
+    def __init__(self, topk: int, arch, device="cuda:0", enable_checking=False) -> None:
         self.topk = topk
         self.arch = arch
         self.device = device
+        self.enable_checking = enable_checking
 
     def run(self, ordered_nodes: List[Node]) -> List[FusionGroup]:
         output_list = list(filter(lambda node : node.is_output(), ordered_nodes))
@@ -61,7 +62,7 @@ class Engine:
             if node.is_output() or node.is_placeholder():
                 continue
             result = tune([node], self.arch, device=self.device,
-                kernel_name=node.name, topk=self.topk, check=True)
+                kernel_name=node.name, topk=self.topk, check=self.enable_checking)
             fusion_groups.append(FusionGroup([node], group_id, result, 0))
             group_id += 1
         return fusion_groups
@@ -110,7 +111,7 @@ class Engine:
 
             new_group = sorted(new_group, key=lambda n:self.node_topo_id[n])
             result = tune(new_group, self.arch, device=self.device,
-                kernel_name="Group"+str(cur_group_id), topk=self.topk, check=True)
+                kernel_name="Group"+str(cur_group_id), topk=self.topk, check=self.enable_checking)
             if result is None:
                 continue
             gain = self.compute_gain(new_group, result)
@@ -127,7 +128,7 @@ class Engine:
         if cp_result is None: # tune  single op if no fusion is possible
             assert len(cur_group) == 1
             cp_result = tune(cur_group, self.arch, device=self.device,
-                kernel_name="Group"+str(cur_group_id), topk=self.topk, check=True)
+                kernel_name="Group"+str(cur_group_id), topk=self.topk, check=self.enable_checking)
             if cp_result is None:
                 print("Cannot generate code for", top_node)
         return FusionGroup(cur_group, cur_group_id, cp_result, cur_latency_gain)
@@ -139,7 +140,7 @@ class Engine:
                     node.add_tag("latency", 0)
                     continue
                 result = tune([node], self.arch, device=self.device,
-                    kernel_name=node.name, topk=self.topk, check=True)
+                    kernel_name=node.name, topk=self.topk, check=self.enable_checking)
                 if result is None:
                     latency = 10000
                 else:

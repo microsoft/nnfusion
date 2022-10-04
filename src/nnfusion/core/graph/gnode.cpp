@@ -385,13 +385,20 @@ std::ostream& nnfusion::graph::operator<<(std::ostream& s, const GNode& gnode) {
     s << gnode.get_name() << "(" <<  gnode.get_op_type() << ") in {";
     for (auto edge: gnode.get_in_edges()) {
         s << edge->get_src()->get_name();
-        s << " " << edge->get_src()->get_output_shape(edge->get_src_output());
+        if (edge->is_control_edge()) {
+            s << " (control)";
+        } else {
+            s << " " << edge->get_src()->get_output_shape(edge->get_src_output());
+        }
         s << ", ";
     }
     s << "} out {";
     for (auto edge: gnode.get_out_edges()) {
-        s << edge->get_dst()->get_name();
-        s << " " << edge->get_dst()->get_input_shape(edge->get_dst_input());
+        if (edge->is_control_edge()) {
+            s << " (control)";
+        } else {
+            s << " " << edge->get_dst()->get_input_shape(edge->get_dst_input());
+        }
         s << ", ";
     }
     s << "}";

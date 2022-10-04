@@ -45,12 +45,13 @@ class Scheduler:
     # [Return]
     #   new_s: an optimized TVM schedule
     def rewrite_schedule(self, schedule: te.Schedule, config: Config, shared_inputs: List[te.Tensor] = [],
-        shared_inputs_strides: Dict[te.Tensor, Stride] = {}):
+        shared_inputs_strides: Dict[te.Tensor, Stride] = {}, shared_outputs = []):
         self.config = config
         self.sche = schedule
         self.shared_inputs = shared_inputs
         self.shared_inputs_strides = {tensor: Stride() for tensor in shared_inputs}
         self.shared_inputs_strides.update(shared_inputs_strides)
+        self.shared_outputs = shared_outputs
 
         self.reduce_op = None
         self.output_op = None
@@ -282,7 +283,8 @@ class Scheduler:
     def _rewrite_schedule_tc(self):
         assert(self.reduce_op is not None)
         out = self.output_op
-
+        # use_global = len(self.shared_outputs) == 0 and self.reduce_op == self.output_op
+        use_global = False
         assert (len(self.reduce_op.input_tensors) == 2)
         A, B = self.reduce_op.input_tensors
         C = self.reduce_op.output(0)
@@ -291,7 +293,10 @@ class Scheduler:
         AF = self.sche.cache_read(AS, "wmma.matrix_a", [C])
         BF = self.sche.cache_read(BS, "wmma.matrix_b", [C])
         CF = self.sche.cache_write(C, "wmma.accumulator")
-        CS = self.sche.cache_read(CF, "shared", [C])
+        if use_global:
+            CS = C
+        else:
+            CS = self.sche.cache_read(CF, "shared", [C])
 
         wmma_m, wmma_n, wmma_k = self.config.wmma
         assert (wmma_m, wmma_n, wmma_k) in [(16, 16, 16), (8, 32, 16), (32, 8, 16)]
@@ -308,8 +313,12 @@ class Scheduler:
         CL_shape[C_ax_m] = wmma_m
         CL_shape[C_ax_n] = wmma_n
         C_high_ax = min(C_ax_m, C_ax_n)
-        CSstrideDef = Stride(int(np.prod(self.config.block[C_high_ax+1:])) + offset, C_high_ax)
-        CS_stride = CSstrideDef.compute_strides_from_shape(self.config.block)
+        if use_global:
+            CSstrideDef = Stride()
+            CS_stride = CSstrideDef.compute_strides_from_shape(C.shape)
+        else:
+            CSstrideDef = Stride(int(np.prod(self.config.block[C_high_ax+1:])) + offset, C_high_ax)
+            CS_stride = CSstrideDef.compute_strides_from_shape(self.config.block)
         A_high_ax = min(A_ax_m, A_ax_k)
         AS_shape = self.config.tc_extra_conf.AS_shape
         if A in self.shared_inputs:
@@ -334,41 +343,61 @@ class Scheduler:
             assert blk % warp == 0
             self.thread_per_block[1] *= (blk // warp)
 
-        # schedule for output stage
-        blck_axis = []
-        thrd_axis = []
-        for i, axis in enumerate(self.sche[out].op.axis):
-            bx, tx = self.sche[out].split(axis, factor=self.config.block[i])
-            blck_axis.append(bx)
-            thrd_axis.append(tx)
-        axis_order = blck_axis + thrd_axis
-        self.sche[out].reorder(*axis_order)
-        blck_fused = self.sche[out].fuse(*blck_axis)
-        thrd_fused = self.sche[out].fuse(*thrd_axis)
-        thrd_fused, tv = self.sche[out].split(thrd_fused, factor=8)
-        _t, tx = self.sche[out].split(thrd_fused, factor=self.thread_per_block[0])
-        _t, ty = self.sche[out].split(_t, factor=self.thread_per_block[1])
-        self.sche[out].vectorize(tv)
+        if use_global:
+            blck_axis = []
+            warp_axis = []
+            CS_outer_axis = []
+            CS_inner_axis = []
+            for i, axis in enumerate(self.sche[out].op.axis):
+                bx, _t = self.sche[out].split(axis, factor=self.config.block[i])
+                wt, _t = self.sche[out].split(_t, factor=self.config.warp[i])
+                ot, it = self.sche[out].split(_t, factor=CL_shape[i])
+                blck_axis.append(bx)
+                warp_axis.append(wt)
+                CS_outer_axis.append(ot)
+                CS_inner_axis.append(it)
+            axis_order = blck_axis + warp_axis + CS_outer_axis + CS_inner_axis
+            self.sche[out].reorder(*axis_order)
+            blck_fused = self.sche[out].fuse(*blck_axis)
+            warp_fused = self.sche[out].fuse(*warp_axis)
+            self.sche[out].bind(blck_fused, te.thread_axis("blockIdx.x"))
+            self.sche[out].bind(warp_fused, te.thread_axis("threadIdx.y"))
+        else:
+            # schedule for output stage
+            blck_axis = []
+            thrd_axis = []
+            for i, axis in enumerate(self.sche[out].op.axis):
+                bx, tx = self.sche[out].split(axis, factor=self.config.block[i])
+                blck_axis.append(bx)
+                thrd_axis.append(tx)
+            axis_order = blck_axis + thrd_axis
+            self.sche[out].reorder(*axis_order)
+            blck_fused = self.sche[out].fuse(*blck_axis)
+            thrd_fused = self.sche[out].fuse(*thrd_axis)
+            thrd_fused, tv = self.sche[out].split(thrd_fused, factor=8)
+            _t, tx = self.sche[out].split(thrd_fused, factor=self.thread_per_block[0])
+            _t, ty = self.sche[out].split(_t, factor=self.thread_per_block[1])
+            self.sche[out].vectorize(tv)
 
-        self.sche[out].bind(ty, te.thread_axis("threadIdx.y"))
-        self.sche[out].bind(tx, te.thread_axis("threadIdx.x"))
-        self.sche[out].bind(blck_fused, te.thread_axis("blockIdx.x"))
+            self.sche[out].bind(ty, te.thread_axis("threadIdx.y"))
+            self.sche[out].bind(tx, te.thread_axis("threadIdx.x"))
+            self.sche[out].bind(blck_fused, te.thread_axis("blockIdx.x"))
 
-        # schedule for block
-        self.sche[CS].compute_at(self.sche[out], blck_fused)
-        self.sche[CS].storage_align(CS.op.axis[CSstrideDef.ax], CSstrideDef.stride - 1, CSstrideDef.stride)
-        warp_axis = []
-        CS_outer_axis = []
-        CS_inner_axis = []
-        for i, ax in enumerate(CS.op.axis):
-            wt, _t = self.sche[CS].split(ax, factor=self.config.warp[i])
-            ot, it = self.sche[CS].split(_t, factor=CL_shape[i])
-            warp_axis.append(wt)
-            CS_outer_axis.append(ot)
-            CS_inner_axis.append(it)
-        self.sche[CS].reorder(*warp_axis, *CS_outer_axis, *CS_inner_axis)
-        warp_fused = self.sche[CS].fuse(*warp_axis)
-        self.sche[CS].bind(warp_fused, te.thread_axis("threadIdx.y"))
+            # schedule for block
+            self.sche[CS].compute_at(self.sche[out], blck_fused)
+            self.sche[CS].storage_align(CS.op.axis[CSstrideDef.ax], CSstrideDef.stride - 1, CSstrideDef.stride)
+            warp_axis = []
+            CS_outer_axis = []
+            CS_inner_axis = []
+            for i, ax in enumerate(CS.op.axis):
+                wt, _t = self.sche[CS].split(ax, factor=self.config.warp[i])
+                ot, it = self.sche[CS].split(_t, factor=CL_shape[i])
+                warp_axis.append(wt)
+                CS_outer_axis.append(ot)
+                CS_inner_axis.append(it)
+            self.sche[CS].reorder(*warp_axis, *CS_outer_axis, *CS_inner_axis)
+            warp_fused = self.sche[CS].fuse(*warp_axis)
+            self.sche[CS].bind(warp_fused, te.thread_axis("threadIdx.y"))
 
         # Schedule for wmma computation
         self.sche[CF].compute_at(self.sche[CS], warp_fused)
@@ -459,14 +488,14 @@ class Scheduler:
         self.sche[CS].tensorize(
             CS_inner_axis[0],
             intrin_wmma_store_matrix(
-                CS_stride, CF_stride, shape, C.dtype, CL_shape, CL_shape
+                CS_stride, CF_stride, shape, C.dtype, CL_shape, CL_shape, "global" if use_global else "shared"
             ),
         )
 
         cache_plan = {}
         for op in self.elementwise_ops:
             for tensor in op.input_tensors:
-                if self.requires_cache(tensor, op):
+                if tensor in self.shared_inputs:
                     if tensor not in cache_plan:
                         cache_plan[tensor] = []
                     cache_plan[tensor].append(op)

@@ -101,10 +101,11 @@ def intrin_wmma_load_matrix_W(strides_dst, strides_from, shape, layout, A_shape,
     return te.decl_tensor_intrin(C.op, intrin_func, binds={A: BA, C: BC})
 
 
-def intrin_wmma_store_matrix(strides_dst, strides_from, shape, out_dtype, A_shape, C_shape):
+def intrin_wmma_store_matrix(strides_dst, strides_from, shape, out_dtype, A_shape, C_shape, scope):
     """Intrin function for storing the results from wmma.accumulator to shared"""
     wmma_m, wmma_n, wmma_k = shape
     store_matrix_stride = 1
+    assert scope in ["shared", "global"]
     for stride in reversed(strides_dst):
         if stride > 1:
             store_matrix_stride = stride
@@ -120,7 +121,7 @@ def intrin_wmma_store_matrix(strides_dst, strides_from, shape, out_dtype, A_shap
     )
     C = te.compute(C_shape, lambda *i: A(*i), name="C")
     BC = tvm.tir.decl_buffer(
-        C.shape, C.dtype, scope="shared", strides=strides_dst, data_alignment=32, offset_factor=8
+        C.shape, C.dtype, scope=scope, strides=strides_dst, data_alignment=32, offset_factor=8
     )
 
     def intrin_func(ins, outs):

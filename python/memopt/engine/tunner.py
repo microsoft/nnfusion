@@ -130,17 +130,20 @@ def tune(nodes, arch, device="cuda:0", kernel_name="Fused", topk=10, check=False
         result.set_io_desc(input_desc, output_desc)
         result.origin = cached
         return result
-
-    policy_cls = DefaultPolicy
+    if any([node.get_tag("skip") for node in nodes]):
+        return None
+    policy_list = [DefaultPolicy]
     for node in nodes:
         if node.get_tag("tensorCoreConfig"):
-            policy_cls = TCPolicy
+            policy_list = [TCPolicy, DefaultPolicy]
             break
-    policy = policy_cls(output_nodes, arch)
+    configs = []
+    for policy in policy_list:
+        remaining = topk - len(configs)
+        if remaining <= 0:
+            break
+        configs.extend(policy(output_nodes, arch).emit_config(remaining))
     cgen = CodeGenerator()
-    if any([node.get_tag("skip") for node in policy.ordered_nodes]):
-        return None
-    configs = policy.emit_config(topk)
     if len(configs) == 0:
         return None
     compile_results = []

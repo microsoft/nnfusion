@@ -99,7 +99,8 @@ class CodeGenerator():
                 if (op.inputs[idx].src_node, op.inputs[idx].src_id) in strides_map:
                     shared_inputs_strides[op.args[idx]] = strides_map[(op.inputs[idx].src_node, op.inputs[idx].src_id)]
 
-            sch = Scheduler().rewrite_schedule(op.create_schedule(), config, shared_inputs=shared_inputs, shared_inputs_strides=shared_inputs_strides)
+            sch = Scheduler().rewrite_schedule(op.create_schedule(), config, shared_inputs=shared_inputs,
+                shared_inputs_strides=shared_inputs_strides, shared_outputs=shared_outputs_idx)
             with Scope(sch) as scope:
                 # Some inputs which will be used later cannot be overwritten by other internal shared memory,
                 # so we must put these tensor in reuse_disabled_inputs.

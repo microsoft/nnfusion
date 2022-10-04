@@ -148,4 +148,6 @@ class Engine:
                 node.add_tag("latency", latency)
         base = sum([node.get_tag("latency") for node in group])
         new = cp_result.latency
-        return base - new
+        num_nodes = sum([0 if node.get_tag("memcpy") else 1 for node in group])
+        kernel_launch_time = (num_nodes - 1) * 0.01 # ~10us for a kernel
+        return base + kernel_launch_time - new

@@ -88,11 +88,6 @@ class Config:
         self.block_order = None
         self.output_strides = {}
 
-        # For single node code generation, following args can be ommitted
-        # For fusion code generation, following args will be completed by CodeGenerator
-        self.shared_inputs = {}
-        self.reuse_disabled_inputs = {}
-
         # Experimental
         self._raxis_order = []
         self._step = []

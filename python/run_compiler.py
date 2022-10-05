@@ -1,4 +1,5 @@
 from memopt.engine import Engine, load_model, save_results
+from memopt.engine import Tunner, MultiProcTunner
 import memopt
 import arch
 import argparse
@@ -18,8 +19,10 @@ if __name__ == "__main__":
     assert args.input_file.endswith(".json")
     start_time = time.time()
     ordered_nodes = load_model(args.input_file)
-    engine = Engine(args.topk, arch.__getattribute__(args.arch)(),
-        device="cuda:{}".format(args.device), enable_checking=args.check)
+    # tunner = Tunner(arch=arch.__getattribute__(args.arch)(), device="cuda:{}".format(args.device), topk=args.topk, check=args.check)
+    tunner = MultiProcTunner(input_file_path=args.input_file,
+        arch=arch.__getattribute__(args.arch)(), device="cuda:{}".format(args.device), topk=args.topk, check=args.check)
+    engine = Engine(tunner)
     fusion_groups = engine.run(ordered_nodes)
     gain = sum([fg.gain for fg in fusion_groups])
     print("Fusion gain: {}ms".format(gain))

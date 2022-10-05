@@ -1,15 +1,10 @@
-from typing import List
 from memopt.graph import Node, find_topo_sort_priority
 from memopt.utils import CompileResult
-from .tunner import tune
 from memopt import get_log_level
+from .common import FusionGroup
+from .base_tunner import Tunner
 
-class FusionGroup():
-    def __init__(self, node_list: List[Node], group_id: int, cpresult: CompileResult, gain: float) -> None:
-        self.nodes = node_list
-        self.group_id = group_id
-        self.cpresult = cpresult
-        self.gain = gain
+from typing import List
 
 def _get_nodes_dependency(nodes: List[Node], processed: List[Node]) -> List[Node]:
     """
@@ -33,11 +28,8 @@ def _get_nodes_dependency(nodes: List[Node], processed: List[Node]) -> List[Node
     return list(deps)
 
 class Engine:
-    def __init__(self, topk: int, arch, device="cuda:0", enable_checking=False) -> None:
-        self.topk = topk
-        self.arch = arch
-        self.device = device
-        self.enable_checking = enable_checking
+    def __init__(self, tunner: Tunner) -> None:
+        self.tunner = tunner
 
     def run(self, ordered_nodes: List[Node]) -> List[FusionGroup]:
         output_list = list(filter(lambda node : node.is_output(), ordered_nodes))
@@ -61,8 +53,7 @@ class Engine:
         for node in ordered_nodes:
             if node.is_output() or node.is_placeholder():
                 continue
-            result = tune([node], self.arch, device=self.device,
-                kernel_name=node.name, topk=self.topk, check=self.enable_checking)
+            result = self.tunner.tune([node], kernel_name=node.name)
             fusion_groups.append(FusionGroup([node], group_id, result, 0))
             group_id += 1
         return fusion_groups
@@ -110,8 +101,7 @@ class Engine:
                 continue
 
             new_group = sorted(new_group, key=lambda n:self.node_topo_id[n])
-            result = tune(new_group, self.arch, device=self.device,
-                kernel_name="Group"+str(cur_group_id), topk=self.topk, check=self.enable_checking)
+            result = self.tunner.tune(new_group, kernel_name="Group"+str(cur_group_id))
             if result is None:
                 continue
             gain = self.compute_gain(new_group, result)
@@ -127,8 +117,7 @@ class Engine:
 
         if cp_result is None: # tune  single op if no fusion is possible
             assert len(cur_group) == 1
-            cp_result = tune(cur_group, self.arch, device=self.device,
-                kernel_name="Group"+str(cur_group_id), topk=self.topk, check=self.enable_checking)
+            cp_result = self.tunner.tune(cur_group, kernel_name="Group"+str(cur_group_id))
             if cp_result is None:
                 print("Cannot generate code for", top_node)
         return FusionGroup(cur_group, cur_group_id, cp_result, cur_latency_gain)
@@ -139,8 +128,7 @@ class Engine:
                 if node.get_tag("memcpy"):
                     node.add_tag("latency", 0)
                     continue
-                result = tune([node], self.arch, device=self.device,
-                    kernel_name=node.name, topk=self.topk, check=self.enable_checking)
+                result = self.tunner.tune([node], kernel_name=node.name)
                 if result is None:
                     latency = 10000
                 else:

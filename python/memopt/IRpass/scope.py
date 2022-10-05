@@ -1,6 +1,8 @@
-import tvm
 import threading
 from typing import Dict, List
+
+import tvm
+
 
 class Scope(Dict):
     _thread_local = threading.local()

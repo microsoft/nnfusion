@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import re
 import copy
+import re
+
 import numpy as np
 
 # Tensor name: the first charactor must be lower case letter, and the following charactors must be within [a-zA-Z_]

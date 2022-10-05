@@ -1,11 +1,13 @@
-import onnx
+import argparse
 import os.path as osp
 import time
+
+import onnx
 import tvm
-from tvm import relay, auto_scheduler
 import tvm.relay.testing
+from tvm import auto_scheduler, relay
 from tvm.contrib import graph_executor
-import argparse
+
 
 def run_ansor(prefix, device, skip_tuning):
     target = tvm.target.cuda(arch="sm_70")

@@ -1,10 +1,12 @@
-from ops import *
-from memopt.graph import IRNode, OutputNode
 import memopt
-from memopt.fusion import DefaultPolicy
-from arch import *
 import numpy as np
+from memopt.arch import *
+from memopt.graph import IRNode, OutputNode
+from memopt.policy import DefaultPolicy
 from memopt.reference import get_subgraph_reference_outputs
+
+from ops import *
+
 
 def test_policy(ir, input_dict, name="test", check=False):
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))

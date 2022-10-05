@@ -1,5 +1,7 @@
-import numpy as np
 from typing import List
+
+import numpy as np
+
 
 def get_all_factors(n: int) -> List[int]:
     n0 = int(np.ceil(np.sqrt(n)))

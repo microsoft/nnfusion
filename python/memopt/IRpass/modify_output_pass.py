@@ -1,6 +1,8 @@
-import tvm
-from ..scope import get_scope
 import numpy as np
+import tvm
+
+from .scope import get_scope
+
 
 @tvm.tir.transform.prim_func_pass(opt_level=0)
 def modify_output_pass(f, mod, ctx):

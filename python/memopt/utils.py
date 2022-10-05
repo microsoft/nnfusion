@@ -1,15 +1,17 @@
-from .reference import get_ref_tensor
-from .tvm_build import _type_map
-from .fusion import Config
-from .header import cuda_fp16_header, cuda_default_header
-
-from typing import List
-from concurrent.futures import ThreadPoolExecutor
-import tvm
 import ctypes
 import os
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
+from typing import List
+
+import tvm
+
+from .config import Config
+from .header import cuda_default_header, cuda_fp16_header
+from .reference import get_ref_tensor
+from .tvm_build import _type_map
+
 
 class CompileResult:
     def __init__(self, config: Config, code: str, block_size: List[int], grid_size: List[int], name: str, args: List[tvm.te.Tensor]):
@@ -77,17 +79,20 @@ extern "C" float profile({}) {{
         self.host_code = header + self.code + "\n" + host_funcs
         return self.host_code
 
-    def compile_and_load(self) -> ctypes.CDLL:
+    def compile_and_load(self, timeout: float = None) -> ctypes.CDLL:
         assert self.host_code
         src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
         lib_name = src.name.replace(".cu", ".so")
         src.write(self.host_code)
         src.flush()
         compute_version = "".join(tvm.contrib.nvcc.get_target_compute_version().split("."))
-        ret = subprocess.run(
-            ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
-            "-gencode=arch=compute_{},code=compute_{}".format(compute_version, compute_version),
-            "-o", lib_name])
+        try:
+            ret = subprocess.run(
+                ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
+                "-gencode=arch=compute_{},code=compute_{}".format(compute_version, compute_version),
+                "-o", lib_name], timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return None
         if ret.returncode != 0:
             return None
         # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -gencode=arch=compute_61,code=compute_61 -o {}".format(src.name, lib_name))
@@ -142,7 +147,7 @@ extern "C" float profile({}) {{
     def __del__(self):
         self.close_lib()
 
-def compile_and_load_parallel(cpresults):
+def compile_and_load_parallel(cpresults, timeout : float = None):
     with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-        libs = executor.map(CompileResult.compile_and_load, cpresults)
+        libs = executor.map(CompileResult.compile_and_load, cpresults, [timeout for _ in cpresults])
     return list(libs)

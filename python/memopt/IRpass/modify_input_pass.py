@@ -1,5 +1,7 @@
 import tvm
-from ..scope import Scope, get_scope
+
+from .scope import get_scope
+
 
 @tvm.tir.transform.prim_func_pass(opt_level=0)
 def modify_input_pass(f, mod, ctx):
@@ -14,7 +16,6 @@ def modify_input_pass(f, mod, ctx):
         if op.buffer.name not in shared_input_names:
             return op
         new_indices = [tvm.tir.stmt_functor.substitute(expr, blockIdx_var_map) for expr in op.indices]
-        indices_bound = [get_scope().analyzer.const_int_bound(expr) for expr in new_indices]
         return tvm.tir.BufferLoad(op.buffer, new_indices, op.span)
 
     blockIdx_var_map = {}

@@ -1,12 +1,15 @@
-from memopt.reference import get_ref_tensor
-from memopt.scheduler import Scheduler
-from memopt.utils import CompileResult
 import memopt
-import tvm
-from tvm import te
-import torch
 import numpy as np
-from tvm.topi.cuda.tensor_intrin import intrin_wmma_gemm, intrin_wmma_load_matrix_A, intrin_wmma_load_matrix_W, intrin_wmma_store_matrix
+import torch
+import tvm
+from memopt.reference import get_ref_tensor
+from memopt.utils import CompileResult
+from tvm import te
+from tvm.topi.cuda.tensor_intrin import (intrin_wmma_gemm,
+                                         intrin_wmma_load_matrix_A,
+                                         intrin_wmma_load_matrix_W,
+                                         intrin_wmma_store_matrix)
+
 
 def matmul(M, K, N):
     A = te.placeholder((M, K), dtype='float16', name="A")

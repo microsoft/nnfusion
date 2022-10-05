@@ -1,15 +1,18 @@
-from arch.Arch import Arch
-from memopt.graph import Node, find_topo_sort
-from memopt.bestfit import BestFit
-from .config import Config, TileDict, Stride
-
 import functools
-import numpy as np
-from queue import PriorityQueue
 import math
+from queue import PriorityQueue
+from typing import Dict, Generator, Iterable, List
+
+import numpy as np
 import tvm
-from typing import Generator, Iterable, List, Dict
-from .common import coalesced_factor, factorize, get_all_factors, coalesced_tensor_shape
+
+from ..arch import Arch
+from ..bestfit import BestFit
+from ..config import Config, Stride, TileDict
+from ..graph import Node, find_topo_sort
+from .common import (coalesced_factor, coalesced_tensor_shape, factorize,
+                     get_all_factors)
+
 
 def score_block_size(n):
     num_wrap = (n + 31) // 32

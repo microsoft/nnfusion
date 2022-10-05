@@ -1,12 +1,16 @@
-from memopt.graph import Edge, OutputNode, find_topo_sort
-from memopt.fusion import DefaultPolicy, TCPolicy
-from memopt.utils import CompileResult, compile_and_load_parallel
-from memopt.reference import get_subgraph_reference_outputs
-from memopt import get_log_level, CodeGenerator
-import numpy as np
 import hashlib
-import traceback
 import sys
+import traceback
+
+import numpy as np
+
+from ..code_generator import CodeGenerator
+from ..graph import Edge, OutputNode, find_topo_sort
+from ..logging import get_log_level
+from ..policy import DefaultPolicy, TCPolicy
+from ..reference import get_subgraph_reference_outputs
+from ..utils import CompileResult, compile_and_load_parallel
+
 
 def get_max_diff(tensor_list_a, tensor_list_b):
     assert len(tensor_list_a) > 0
@@ -151,11 +155,11 @@ class Tunner(object):
         for cpresult in compile_results:
             if get_log_level() >= 2: print(cpresult.config)
             if cpresult.lib is None:
-                latency = 10000
+                cpresult.latency = 10000
             else:
-                latency = cpresult.profile(self.device)
-            values.append(latency)
-            if get_log_level() >= 2: print(latency)
+                cpresult.latency = cpresult.profile(self.device)
+            values.append(cpresult.latency)
+            if get_log_level() >= 2: print(cpresult.latency)
         compile_results = list(filter(lambda x:x.latency<10000, compile_results))
         compile_results = sorted(compile_results, key=lambda x:x.latency)
         if len(compile_results) == 0:

@@ -1,12 +1,12 @@
-from .IRpass import *
-from .scope import get_scope
-
-import regex as re
-import tvm
-import numpy as np
 from typing import List
 
-_tvm_default_name = "default_function_kernel0"
+import numpy as np
+import regex as re
+import tvm
+
+from .IRpass import *
+
+TVM_DEFAULT_NAME = "default_function_kernel0"
 _type_map = {"float32": "float", "float16": "half", "float64": "double", "int64": "int64_t", "int32": "int"}
 _type_bytes = {"float": 4, "double": 8, "half": 2, "int": 4, "int64_t": 8}
 
@@ -49,7 +49,7 @@ def get_block_reorder_code(block_reoder_expr: tvm.tir.PrimExpr) -> str:
         .format(_lower_C_simple(block_reoder_expr))
 
 def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.target.Target,
-              sm_outputs: List[int] = [], sm_inputs: List[tvm.te.Tensor] = [], name: str = _tvm_default_name,
+              sm_outputs: List[int] = [], sm_inputs: List[tvm.te.Tensor] = [], name: str = TVM_DEFAULT_NAME,
               global_kernel=True, block_reorder=None, strides={}, flatten_block=True, reuse_disabled_inputs=[]) -> str:
     scope = get_scope()
     passes = [
@@ -70,7 +70,7 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
         tvm.register_func("tvm_callback_cuda_compile", override=True)(old_entry)
 
         src = mod.imported_modules[0].get_source()
-        index = src.rindex(_tvm_default_name)
+        index = src.rindex(TVM_DEFAULT_NAME)
         index = src.index("{", index)
         if flatten_block:
             flat_block_code = get_block_flatten_code(scope.block_size)

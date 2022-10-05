@@ -1,13 +1,16 @@
-from .graph import find_topo_sort, Node
-from .bestfit import BestFit
-from .tvm_build import tvm_build, _type_map
-from .utils import CompileResult
-from . import Scheduler, Scope
-from .fusion import Config
+import io
+from typing import Dict, List
 
 import numpy as np
-import io
-from typing import List, Dict
+
+from .bestfit import BestFit
+from .config import Config
+from .graph import Node, find_topo_sort
+from .IRpass import Scope
+from .scheduler import Scheduler
+from .tvm_build import _type_map, tvm_build
+from .utils import CompileResult
+
 
 class CodeGenerator():
     def __init__(self) -> None:

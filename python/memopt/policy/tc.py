@@ -1,12 +1,14 @@
-from .default import DefaultPolicy
-from .common import factorize, get_all_factors
-from .config import Config, TileDict, Stride
-from arch.Arch import Arch
-from memopt.graph import Node
-from memopt.bestfit import BestFit
+from typing import List
 
-from typing import List, Dict
 import numpy as np
+
+from ..arch import Arch
+from ..bestfit import BestFit
+from ..config import Config, TileDict
+from ..graph import Node
+from .common import factorize, get_all_factors
+from .default import DefaultPolicy
+
 
 class TCPolicy(DefaultPolicy):
     def __init__(self, output_nodes: List[Node], arch: Arch) -> None:

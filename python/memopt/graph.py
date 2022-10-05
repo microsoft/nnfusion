@@ -1,10 +1,13 @@
-from typing import List, Union, Tuple, Any, Dict
 import functools
-import tvm
-import lang
+from typing import Any, Dict, List, Tuple, Union
+
 import numpy as np
+import tvm
 from tvm import arith
-from memopt.fusion.config import Stride
+
+from .config import Stride
+from .lang import get_analyzer_by_ir, translate_ir_to_tvm
+
 
 class Edge:
     def __init__(self, src_node: 'Node', dst_node: 'Node', src_id: int, dst_id: int):
@@ -133,7 +136,7 @@ class IRNode(Node):
     def __init__(self, inputs, antares_ir: str, name="Compute") -> None:
         super().__init__(inputs, name)
         self.ir = antares_ir
-        self._input_args, self._output_args = lang.translate_ir_to_tvm(self.ir)
+        self._input_args, self._output_args = translate_ir_to_tvm(self.ir)
         self._output_names = [arg.name for arg in self._output_args]
         if len(self._output_args) > 1:
             self._process_multiple_output()
@@ -147,7 +150,7 @@ class IRNode(Node):
                 new_input_edges.append(input_edge)
             self._in_edges = new_input_edges
         self.args = self._input_args + self._output_args
-        self.ana = lang.get_analyzer_by_ir(self.ir)
+        self.ana = get_analyzer_by_ir(self.ir)
         for edge, arg in zip(self.inputs, self.args):
             edge.src_node.set_shape(arg.shape, edge.src_id)
             edge.src_node.set_dtype(tvm.DataType(arg.dtype), edge.src_id)

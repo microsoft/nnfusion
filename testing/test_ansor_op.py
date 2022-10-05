@@ -9,7 +9,7 @@ import os
 import hashlib
 
 def translate_to_tvm(expr, input_dict):
-    from lang.generic import einstein_v2, OUTPUT_TEMP, INPUT_TEMP
+    from memopt.lang.generic import einstein_v2, OUTPUT_TEMP, INPUT_TEMP
     OUTPUT_TEMP.clear()
     INPUT_TEMP.clear()
     einstein_v2(expr, input_dict)

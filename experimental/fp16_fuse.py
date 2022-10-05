@@ -1,11 +1,8 @@
-from memopt.reference import get_ref_tensor
-from memopt.scheduler import Scheduler
-from memopt.utils import CompileResult
-import memopt
-import tvm
-from tvm import te
-import torch
 import numpy as np
+import torch
+from memopt.reference import get_ref_tensor
+from memopt.utils import CompileResult
+from tvm import te
 
 code = """
 __device__ void top(half* __restrict__ A, half* __restrict__ B, half* __restrict__ output0, char* shared) {

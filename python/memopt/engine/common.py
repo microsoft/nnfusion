@@ -1,7 +1,9 @@
-from typing import List
 import json
-from memopt.graph import Node
-from memopt.utils import CompileResult
+from typing import List
+
+from ..graph import Node
+from ..utils import CompileResult
+
 
 def get_id_by_name(name):
     return int(name.split("_")[-1])

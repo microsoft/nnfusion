@@ -1,4 +1,6 @@
-import code, rlcompleter, readline
+import code
+import readline
+import rlcompleter
 
 """
 This function can start a interactive debug console

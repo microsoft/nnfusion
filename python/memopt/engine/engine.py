@@ -1,10 +1,11 @@
-from memopt.graph import Node, find_topo_sort_priority
-from memopt.utils import CompileResult
-from memopt import get_log_level
-from .common import FusionGroup
-from .base_tunner import Tunner
-
 from typing import List
+
+from ..graph import Node, find_topo_sort_priority
+from ..logging import get_log_level
+from ..utils import CompileResult
+from .base_tunner import Tunner
+from .common import FusionGroup
+
 
 def _get_nodes_dependency(nodes: List[Node], processed: List[Node]) -> List[Node]:
     """
@@ -136,6 +137,4 @@ class Engine:
                 node.add_tag("latency", latency)
         base = sum([node.get_tag("latency") for node in group])
         new = cp_result.latency
-        num_nodes = sum([0 if node.get_tag("memcpy") else 1 for node in group])
-        kernel_launch_time = (num_nodes - 1) * 0.01 # ~10us for a kernel
-        return base + kernel_launch_time - new
+        return base - new

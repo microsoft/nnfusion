@@ -1,5 +1,8 @@
-import torch
 import time
+
+import torch
+
+
 def conv_nchw(n, f, h, w, c, kh, kw, s, d, p):
     inh = (h - 1) * s + (kh - 1) * d + 1 - 2 * p
     inw = (w - 1) * s + (kw - 1) * d + 1 - 2 * p

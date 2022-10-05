@@ -1,11 +1,11 @@
-from ast import Str
-from .fusion import Config
+from typing import Dict, List
 
+import numpy as np
 import tvm
 from tvm import te
-import numpy as np
-from typing import List, Dict
-from .fusion.config import Stride
+
+from .config import Config, Stride
+
 
 class Scheduler:
     def __init__(self):
@@ -462,12 +462,9 @@ class Scheduler:
             )
         CL_compute = te.compute(CL_shape, CLfcompute, name="CL_compute",)
 
-        from .tc_intrin import (
-            intrin_wmma_load_matrix_A,
-            intrin_wmma_load_matrix_W,
-            intrin_wmma_store_matrix,
-            intrin_wmma_gemm,
-        )
+        from .tc_intrin import (intrin_wmma_gemm, intrin_wmma_load_matrix_A,
+                                intrin_wmma_load_matrix_W,
+                                intrin_wmma_store_matrix)
         AF_layout = "row_major" if A_ax_m < A_ax_k else "col_major"
         self.sche[AF].tensorize(
             AF_inner_axis[0],

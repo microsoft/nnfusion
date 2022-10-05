@@ -1,13 +1,15 @@
-from memopt.reference import get_ref_tensor
-from memopt.scheduler import Scheduler
-from memopt.utils import CompileResult
 import memopt
-import tvm
-from tvm import te
-from tc_intrin import init_intrin_strides, intrin_wmma_load_matrix, intrin_wmma_store_matrix
 import torch
-import numpy as np
-from tvm.topi.cuda.tensor_intrin import intrin_wmma_gemm, intrin_wmma_load_matrix_A, intrin_wmma_load_matrix_W
+import tvm
+from memopt.reference import get_ref_tensor
+from memopt.utils import CompileResult
+from tvm import te
+from tvm.topi.cuda.tensor_intrin import (intrin_wmma_gemm,
+                                         intrin_wmma_load_matrix_A,
+                                         intrin_wmma_load_matrix_W)
+
+from tc_intrin import intrin_wmma_store_matrix
+
 # from tvm.topi.cuda.tensor_intrin import (
 #     intrin_wmma_load_matrix_A,
 #     intrin_wmma_load_matrix_W,

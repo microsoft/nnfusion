@@ -1,11 +1,12 @@
-from memopt.fusion.tc import TCPolicy
-from memopt.graph import IRNode, OutputNode
-from memopt.debug import debug
-from arch import *
-from memopt.reference import get_subgraph_reference_outputs
 import memopt
-import tvm
 import numpy as np
+import tvm
+from memopt.arch import *
+from memopt.debug import debug
+from memopt.graph import IRNode, OutputNode
+from memopt.policy import TCPolicy
+from memopt.reference import get_subgraph_reference_outputs
+
 
 def nn(m, n, k):
     ir = "output0[M, N] +=! input0[M, K] * input1[K, N]"

@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional
+
 import numpy as np
+
 
 class TensorCoreExtraConfig:
     def __init__(self, AS_shape, BS_shape, AF_shape, BF_shape, tc_axis) -> None:

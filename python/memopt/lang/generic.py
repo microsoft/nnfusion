@@ -1,12 +1,13 @@
 """
 The entry of Antares-TVM bridge
 """
+import threading
 from collections import OrderedDict
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 from tvm import te, tir
-import threading
+
 from . import einstein_v2 as einstein_core
 
 OUTPUT_TEMP = list()

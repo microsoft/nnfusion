@@ -1,13 +1,13 @@
-from memopt.graph import IRNode, OutputNode
-from memopt.debug import debug
-from memopt.scheduler import Scheduler
-from arch import *
-from memopt.reference import get_subgraph_reference_outputs
 import memopt
-import tvm
 import numpy as np
-from memopt.fusion import Config, Stride
-from memopt.fusion.tc import TCPolicy
+import tvm
+from memopt.arch import *
+from memopt.config import Config, Stride
+from memopt.debug import debug
+from memopt.graph import IRNode, OutputNode
+from memopt.policy import TCPolicy
+from memopt.reference import get_subgraph_reference_outputs
+
 
 def get_matmul_expr(n, k, m):
     ir = "output0[N, M] +=! input0[N, K] * input1[K, M]"

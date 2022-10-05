@@ -1,9 +1,11 @@
-from typing import Iterable, List, Dict
-from collections import OrderedDict
-from tvm import te, tir, arith
 import copy
-import numpy as np
+from collections import OrderedDict
+from typing import Dict, Iterable, List
+
+from tvm import arith, te, tir
+
 from .einstein_v2 import parse_to_ast
+
 
 class Statement():
     def __init__(self, output: str, dependent_region: dict, var_map: OrderedDict, range_map: OrderedDict):

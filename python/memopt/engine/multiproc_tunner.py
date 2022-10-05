@@ -1,14 +1,15 @@
-from memopt.utils import CompileResult
-from memopt import CodeGenerator
-from memopt.graph import find_topo_sort
-from .base_tunner import Tunner, _extract_subgraph, eliminate_memcpy
-from .load_model import load_model
-
-from tvm.contrib.popen_pool import PopenPoolExecutor
-
 import os
 import sys
 import traceback
+
+from tvm.contrib.popen_pool import PopenPoolExecutor
+
+from ..code_generator import CodeGenerator
+from ..graph import find_topo_sort
+from ..utils import CompileResult
+from .base_tunner import Tunner, _extract_subgraph, eliminate_memcpy
+from .load_model import load_model
+
 
 class _save:
     pass

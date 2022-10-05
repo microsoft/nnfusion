@@ -1,7 +1,8 @@
-from memopt.graph import OutputNode, IRNode, Node
-
-from typing import List
 import json
+from typing import List
+
+from ..graph import IRNode, Node, OutputNode
+
 
 # internal name for debug
 def get_node_name(id, op_type):

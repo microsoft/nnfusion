@@ -1,9 +1,10 @@
-from memopt.engine import Engine, load_model, save_results
-from memopt.engine import Tunner, MultiProcTunner
-import memopt
-import arch
 import argparse
 import time
+
+import memopt
+from memopt import arch
+from memopt.engine import (Engine, MultiProcTunner, Tunner, load_model,
+                           save_results)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

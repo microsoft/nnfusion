@@ -1,6 +1,6 @@
-
 import tvm
 from tvm import te
+
 
 def intrin_wmma_load_matrix_A(strides_dst, strides_from, shape, layout, A_shape, C_shape, in_dtype):
     """Intrin function for loading data from shared memory to wmma.matrix_a"""

@@ -1,15 +1,6 @@
 import torch
-from .IRpass import *
-from .scope import get_scope, Scope
-from .scheduler import Scheduler
-from . import utils
+from .logging import get_log_level, set_log_level
 from .code_generator import CodeGenerator
-from .fusion import Config, DefaultPolicy
-
-_verbose = 1
-def set_log_level(verbose):
-    global _verbose
-    _verbose = verbose
-
-def get_log_level():
-    return _verbose
+from .config import Config
+from .IRpass import *
+from .scheduler import Scheduler

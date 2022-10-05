@@ -1,3 +1,4 @@
-from .debug_pass import debug_pass, check_memory_access_pass
+from .debug_pass import debug_pass
 from .modify_input_pass import modify_input_pass
 from .modify_output_pass import modify_output_pass
+from .scope import Scope, get_scope

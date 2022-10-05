@@ -71,8 +71,9 @@ def convert_model_to_onnx(model, model_desc, device, file_name, const_folding):
 def codegen(model_path, flags, output_dir):
     model_path = os.path.abspath(model_path)
     with cd(output_dir):
-        command = "{} {} {}".format("nnfusion", model_path, flags)
+        command = 'bash -c "set -o pipefail; {} {} {} 2>&1 | tee codegen.log"'.format("nnfusion", model_path, flags)
         execute(command)
+        os.system('cat codegen.log')
 
 
 def modify_nnfusion_rt(rt_dir):
@@ -84,10 +85,10 @@ def modify_nnfusion_rt(rt_dir):
 
 def build(rt_dir):
     with cd(rt_dir):
-        command = "cmake . 2>&1 | tee ../../cmake.log"
+        command = 'bash -c "set -o pipefail; cmake . 2>&1 | tee ../../cmake.log"'
         execute([command])
 
-        command = "make -j 2>&1 | tee ../../make.log"
+        command = 'bash -c "set -o pipefail; make -j 2>&1 | tee ../../make.log"'
         execute(command)
 
 

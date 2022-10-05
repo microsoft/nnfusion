@@ -293,6 +293,8 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             all_instructions.push_back(ins);
 
     auto input_map = get_subgraph_inputs(program);
+    std::map<nnfusion::descriptor::Tensor::Pointer, std::string> scalar_map;
+    
     for (auto ins : all_instructions)
     {
         auto kernel = ins->getKernel();
@@ -305,12 +307,21 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             if (index == -1) {
                 if (FLAGS_floop_in_c) {
                     m_param_map[ins->get_outputs()[0]] = "i_dev"; // only defined for loop
+                    scalar_map[ins->get_outputs()[0]] = "i";
                 } else {
                     m_param_map[ins->get_outputs()[0]] = "&i"; // only defined for loop
+                    scalar_map[ins->get_outputs()[0]] = "i";
+                }
+                (*ins->getGNode())["output_unused"] = std::vector<int>();
+            }
+            else {
+                m_param_map[ins->get_outputs()[0]] = "input" + std::to_string(index);
+                if (type == "Constant" && shape_size(ins->get_outputs()[0]->get_shape()) == 1) {
+                    auto const_op = dynamic_pointer_cast<op::Constant>(ins->getGNode()->get_op_ptr());
+                    scalar_map[ins->get_outputs()[0]] = const_op->get_value_strings()[0];
+                    (*ins->getGNode())["output_unused"] = std::vector<int>();
                 }
             }
-            else
-                m_param_map[ins->get_outputs()[0]] = "input" + std::to_string(index);
             continue;
         }
         else if (kernel == nullptr || type == "Result")
@@ -336,15 +347,85 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             auto index_edge = ins->getGNode()->get_in_edge(1);
             auto index_gnode = index_edge->get_src();
             auto stride = ins->get_outputs()[0]->size(/*in_byte*/ false);
-            if (shape_size(index_gnode->get_output_shape(index_edge->get_src_output())) == 1 && index_gnode->get_op_type() == "Constant") {
-                auto const_gnode = std::dynamic_pointer_cast<op::Constant>(index_gnode->get_op_ptr());
-                m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+(" + element::Type::extract_value(const_gnode->get_type(), const_gnode->get_data_ptr()) + ")*" + std::to_string(stride);
+            if (scalar_map.find(index_gnode->get_output_tensor_ptr(0)) != scalar_map.end()) {
+                m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+(" + scalar_map[index_gnode->get_output_tensor_ptr(0)] + ")*" + std::to_string(stride);
+                (*index_gnode)["output_unused"].as<std::vector<int>>().push_back(index_edge->get_src_output());
                 continue;
             } else if (call_on_cuda) {
                 m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+*(" +
                                                     m_param_map[ins->get_inputs()[1]] + ")*" +
                                                     std::to_string(stride);
                 continue;
+            }
+        } 
+        else if (type == "ElementWiseFused") {
+            auto fused_gnode = std::static_pointer_cast<graph::FusedGNode>(ins->getGNode());
+            auto ctxs = fused_gnode->get_op_contexts();
+            bool all_input_scalar = true;
+            for (auto c: ctxs) {
+                std::vector<std::string> input_names;
+                for (size_t i = 0; i < c->inputs.size(); i++) {
+                    if (scalar_map.find(c->inputs[i]) == scalar_map.end()) {
+                        all_input_scalar = false;
+                        break;
+                    }
+                    input_names.push_back(scalar_map[c->inputs[i]]);
+                }
+                if (!all_input_scalar) break;
+                std::string ele_op_type = c->op->get_op_type();
+                // WARNING: be careful, code is written by copilot
+                if (ele_op_type == "Multiply") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 2);
+                    scalar_map[c->outputs[0]] = "(" + input_names[0] + ")*(" + input_names[1] + ")";
+                } else if (ele_op_type == "Add") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 2);
+                    scalar_map[c->outputs[0]] = "(" + input_names[0] + ")+(" + input_names[1] + ")";
+                } else if (ele_op_type == "Subtract") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 2);
+                    scalar_map[c->outputs[0]] = "(" + input_names[0] + ")-(" + input_names[1] + ")";
+                } else if (ele_op_type == "Divide") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 2);
+                    scalar_map[c->outputs[0]] = "(" + input_names[0] + ")/(" + input_names[1] + ")";
+                } else if (ele_op_type == "Negative") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 1);
+                    scalar_map[c->outputs[0]] = "-(" + input_names[0] + ")";
+                } else if (ele_op_type == "Exp") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 1);
+                    scalar_map[c->outputs[0]] = "exp(" + input_names[0] + ")";
+                } else if (ele_op_type == "Log") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 1);
+                    scalar_map[c->outputs[0]] = "log(" + input_names[0] + ")";
+                } else if (ele_op_type == "Sqrt") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 1);
+                    scalar_map[c->outputs[0]] = "sqrt(" + input_names[0] + ")";
+                } else if (ele_op_type == "Sigmoid") {
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    NNFUSION_CHECK(input_names.size() == 1);
+                    NNFUSION_CHECK_FAIL() << "unsupported: " << ele_op_type;
+                } else {
+                    NNFUSION_CHECK_FAIL() << "unsupported: " << ele_op_type;
+                }
+            }
+            bool all_output_scalar = true;
+            for (auto c: ctxs) {
+                for (auto outp: c->outputs) {
+                    if (scalar_map.find(outp) == scalar_map.end()) {
+                        all_output_scalar = false;
+                        break;
+                    }
+                }
+                if (!all_output_scalar) break;
+            }
+            if (all_output_scalar) {
+                (*ins->getGNode())["output_unused"] = std::vector<int>();
             }
         }
         else if (dynamic_pointer_cast<CudaEmitter>(kernel) == nullptr)
@@ -394,5 +475,27 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
                 m_param_map[tensor] = get_workspace_tensor(tensor);
         result->push_back(ins);
     }
-    return result;
+    // remove unused kernels
+     ir::BasicBlock::Pointer result_used = std::make_shared<ir::BasicBlock>();
+    for (auto ins: *result) {
+        bool should_remove = false;
+        bool all_output_scalar = true;
+        for (auto outp: ins->get_outputs()) {
+            if (scalar_map.find(outp) == scalar_map.end()) {
+                all_output_scalar = false;
+                break;
+            }
+        }
+        if (all_output_scalar) {
+            if ((*ins->getGNode())["output_unused"].as<std::vector<int>>().size() ==  ins->getGNode()->get_out_edges().size()) {
+                NNFUSION_LOG(INFO) << "unused instruction: " << ins->getKernel()->m_context->gnode->get_name();
+                should_remove = true;
+            }
+        }
+        if (!should_remove) {
+            result_used->push_back(ins);
+        }
+    }
+
+    return result_used;
 }

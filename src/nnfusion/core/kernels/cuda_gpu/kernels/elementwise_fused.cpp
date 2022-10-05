@@ -8,6 +8,8 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 using namespace nnfusion::kernels::cuda;
 
+DEFINE_int32(fmax_block_dim, 256, "Max blockDim for cuda kernel");
+
 int ElementWiseFused::unique_func_id = 0;
 
 ElementWiseFused::ElementWiseFused(shared_ptr<KernelContext> ctx)
@@ -273,7 +275,7 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
 {
     uint32_t num_ele =
         static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-    const int max_block_size = 256;
+    const int max_block_size = FLAGS_fmax_block_dim;
     for (int i = max_block_size; i >= 64; i >>= 1)
     {
         if (num_ele % i == 0)

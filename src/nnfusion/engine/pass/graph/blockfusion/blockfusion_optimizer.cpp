@@ -221,6 +221,25 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
     }
     if (node->get_op_type() == "GatherV2")
         return false;
+    bool skip_due_to_scalar_op = true; // TODO: process scalar op with a single thread
+    for (auto inp: node->get_in_edges()) {
+        if (inp->is_control_edge()) continue;
+        if (shape_size(inp->get_src()->get_output_shape(inp->get_src_output())) > 1) {
+            skip_due_to_scalar_op = false;
+            break;
+        }
+    }
+    for (auto outp: node->get_out_edges()) {
+        if (outp->is_control_edge()) continue;
+        if (shape_size(outp->get_dst()->get_input_shape(outp->get_dst_input())) > 1) {
+            skip_due_to_scalar_op = false;
+            break;
+        }
+    }
+    if (skip_due_to_scalar_op) {
+        NNFUSION_LOG(INFO) << "no need to fuse scalar op " << *node;
+        return false;
+    }
     if (node->get_op_type() == "Convolution" || node->get_op_type() == "Matched_Pattern")
         return false;
 

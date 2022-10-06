@@ -429,8 +429,20 @@ LanguageUnit_p cuda::If::emit_function_body()
     if (FLAGS_fif_launch_then_else || FLAGS_fif_launch_d2h) {
         auto& lu = *_lu;
         if (FLAGS_fif_launch_d2h) {
-            lu << "char cond = 0;\n";
-            lu << "CUDA_SAFE_CALL(cudaMemcpy(&cond, input0, sizeof(char), cudaMemcpyDeviceToHost));\n";
+            bool cond_on_cpu = false;
+            auto node = m_context->gnode;
+            if (node->hasAttribute("cpu_tensor")) {
+                auto cpu_tensors = node->Get<std::vector<int>>("cpu_tensor");
+                if (std::find(cpu_tensors.begin(), cpu_tensors.end(), 0) != cpu_tensors.end()) {
+                    cond_on_cpu = true;
+                }
+            }
+            if (cond_on_cpu) {
+                lu << "char cond = *input0;\n";
+            } else {
+                lu << "char cond = 0;\n";
+                lu << "CUDA_SAFE_CALL(cudaMemcpy(&cond, input0, sizeof(char), cudaMemcpyDeviceToHost));\n";
+            }
             lu << "if (cond)";
             lu.block_begin();
             bool emit_all_args = true;
@@ -499,9 +511,23 @@ LanguageUnit_p cuda::If::emit_function_body()
 LanguageUnit_p cuda::If::emit_function_call()
 {
     if (!FLAGS_fif_launch_then_else && !FLAGS_fif_launch_d2h) {
+        // branch in cuda
         return ControlFlowEmitter::emit_function_call();
     } else {
-        return KernelEmitter::emit_function_call(); // no launch config
+        LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
+        auto& lu = *_lu;
+        vector<string> names;
+        names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
+        names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+        names.insert(names.end(), m_context->tensor_names.begin(), m_context->tensor_names.end());
+        auto node = m_context->gnode;
+        if (node->hasAttribute("cpu_tensor")) {
+            auto cpu_tensors = node->Get<std::vector<int>>("cpu_tensor");
+            for (auto i: cpu_tensors) names[i] = names[i] + "_cpu";
+        }
+        lu << "(";
+        lu << join(names, ", ") << ");\n";
+        return _lu;
     }
 }
 

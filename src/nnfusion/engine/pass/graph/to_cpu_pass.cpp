@@ -7,6 +7,7 @@ using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 
 DEFINE_bool(fenable_cpu, false, "Run small ops on CPU");
+DECLARE_bool(fif_launch_d2h);
 const int cpu_thres = 64;
 
 /*
@@ -119,13 +120,48 @@ void const_propogate(std::shared_ptr<nnfusion::graph::Graph>& graph, std::set<st
     }
 }
 
+bool can_eliminate_copy(std::shared_ptr<Edge> edge) {
+    // some gpu op can read tensor from cpu
+    auto src = edge->get_src();
+    auto dst = edge->get_dst();
+    bool src_on_cpu = src->Get<int>(stage_cpu_tag) & 1;
+    bool dst_on_cpu = dst->Get<int>(stage_cpu_tag) & 1;
+    if (dst->get_op_type() == "If" && FLAGS_fif_launch_d2h && edge->get_dst_input() == 0) {
+        auto if_op = std::dynamic_pointer_cast<op::If>(dst->get_op_ptr());
+        bool cond_not_used = true;
+        auto then_graph = if_op->get_then_branch_graph();
+        auto else_graph = if_op->get_else_branch_graph();
+        for (auto gnode: then_graph->get_nodes()) {
+            if (gnode->get_op_type() == "Parameter") {
+                if (gnode->Get<int>("subgraph_input_map") == 0) {
+                    cond_not_used = false;
+                    break;
+                }
+            }
+        }
+        for (auto gnode: else_graph->get_nodes()) {
+            if (gnode->get_op_type() == "Parameter") {
+                if (gnode->Get<int>("subgraph_input_map") == 0) {
+                    cond_not_used = false;
+                    break;
+                }
+            }
+        }
+        if (cond_not_used) {
+            dst->Set<std::vector<int>>("cpu_tensor", std::vector<int>(1, 0));
+            return true;
+        }
+    }
+    return false;
+}
+
 void add_copy_node(std::shared_ptr<nnfusion::graph::Graph>& graph) {
     for (auto gnode: graph->get_ordered_ops()) {
         for (auto out_edge: gnode->get_out_edges()) {
             auto out_node = out_edge->get_dst();
             bool src_on_cpu = gnode->Get<int>(stage_cpu_tag) & 1;
             bool dst_on_cpu = out_node->Get<int>(stage_cpu_tag) & 1;
-            if (src_on_cpu != dst_on_cpu) {
+            if (src_on_cpu != dst_on_cpu && !can_eliminate_copy(out_edge)) {
                 std::shared_ptr<op::Op> op = src_on_cpu ? dynamic_pointer_cast<op::Op>(std::make_shared<op::H2D>()) : dynamic_pointer_cast<op::Op>(std::make_shared<op::D2H>());
                 auto copy_node = graph->add_node_and_edge(op, {GNodeIndex(gnode, out_edge->get_src_output())}, 1);
                 copy_node->get_op_ptr()->revalidate_and_infer_types(copy_node);

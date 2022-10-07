@@ -117,12 +117,12 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNHWC()
         if (input_row_start >= 0 && input_col_start >= 0 && input_row_end < in_height &&
             input_col_end < in_width)
         {
-            #pragma unroll 
+            #pragma unroll
             for (int filter_row = 0; filter_row < filter_height; ++filter_row)
             {
                 const int in_row = input_row_start + filter_row;
                 const int filter_offset_temp = filter_width * filter_row;
-                #pragma unroll 
+                #pragma unroll
                 for (int filter_col = 0; filter_col < filter_width; ++filter_col)
                 {
                     const int in_col = input_col_start + filter_col;
@@ -140,12 +140,12 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNHWC()
         }
         else
         {
-            #pragma unroll 
+            #pragma unroll
             for (int filter_row = 0; filter_row < filter_height; ++filter_row)
             {
                 const int in_row = input_row_start + filter_row;
                 const int filter_offset_temp = filter_width * filter_row;
-                #pragma unroll 
+                #pragma unroll
                 for (int filter_col = 0; filter_col < filter_width; ++filter_col)
                 {
                     const int in_col = input_col_start + filter_col;
@@ -197,9 +197,9 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNCHW()
     auto src =
         nnfusion::op::create_code_from_template(R"(
     typedef @data_type@ S;
-    float *input = input0;
-    float *filter = input1;
-    float *output = output0;
+    S *input = input0;
+    S *filter = input1;
+    S *output = output0;
 
     const int in_height = @in_rows@;
     const int in_width = @in_cols@;
@@ -301,12 +301,12 @@ LanguageUnit_p cuda::DepthwiseConv2dNative::emit_DepthwiseConv2dGPUKernelNCHW()
         else
         {
             // Loop that needs to check for boundary conditions.
-            #pragma unroll 
+            #pragma unroll
             for (int filter_row = 0; filter_row < filter_height; ++filter_row)
             {
                 const int in_row = input_row_start + filter_row;
                 const int filter_offset_temp = filter_width * filter_row;
-                #pragma unroll 
+                #pragma unroll
                 for (int filter_col = 0; filter_col < filter_width; ++filter_col)
                 {
                     const int in_col = input_col_start + filter_col;

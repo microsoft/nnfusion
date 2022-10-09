@@ -15,7 +15,7 @@ DEFINE_bool(fconv_cnhw, false, "Use CNHW layout");
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 
-void update_output(std::shared_ptr<GNode> gnode, std::vector<bool> to_cnhw, std::map<std::pair<std::string, size_t>, bool>& global_dict) {
+void update_output(std::shared_ptr<GNode> gnode, std::vector<bool> to_cnhw, std::map<std::pair<std::string, size_t>, bool>& global_dict, bool run_check = true) {
     NNFUSION_LOG(INFO) << "to_cnhw: " << *gnode << " " << gnode->get_unique_name() << " " << to_cnhw[0];
     for (int i = 0; i < gnode->get_output_size(); i++) {
         global_dict[std::make_pair(gnode->get_unique_name(), i)] = to_cnhw[i];
@@ -35,14 +35,16 @@ void update_output(std::shared_ptr<GNode> gnode, std::vector<bool> to_cnhw, std:
             for (auto& user_edge: users) {
                 auto dst_gnode = user_edge->get_dst();
                 auto dst_id = user_edge->get_dst_input();
-                NNFUSION_LOG(INFO) << "change input shape " << dst_gnode->get_name() << " " << dst_id << " from " << dst_gnode->get_input_shape(dst_id) << " to "  << shape;
-                dst_gnode->set_input(dst_id, std::make_shared<Input>(dtype, PartialShape(shape)));
+                if (dst_gnode->get_input_shape(dst_id) != shape) {
+                    NNFUSION_LOG(INFO) << "change input shape " << dst_gnode->get_name() << " " << dst_id << " from " << dst_gnode->get_input_shape(dst_id) << " to "  << shape;
+                    dst_gnode->set_input(dst_id, std::make_shared<Input>(dtype, PartialShape(shape)));
+                }
             }
         }
         output_shapes.push_back(gnode->get_output_shape(i));
     }
 
-    if (gnode->get_op_type() != "Convolution" && gnode->get_op_type() != "BatchNormInference") { // cannot pass the validation of these ops, skip it to avoid validation fail
+    if (run_check && gnode->get_op_type() != "Convolution" && gnode->get_op_type() != "BatchNormInference") { // cannot pass the validation of these ops, skip it to avoid validation fail
         gnode->get_op_ptr()->revalidate_and_infer_types(gnode);
         gnode->get_op_ptr()->infer_shared_memory(gnode);
         for (int i = 0; i < gnode->get_output_size(); i++) {
@@ -52,9 +54,9 @@ void update_output(std::shared_ptr<GNode> gnode, std::vector<bool> to_cnhw, std:
     NNFUSION_LOG(INFO) << "after to_cnhw: " << *gnode << " " << gnode->get_unique_name() << " " << to_cnhw[0];
 }
 
-void update_output(std::shared_ptr<GNode> gnode, bool to_cnhw, std::map<std::pair<std::string, size_t>, bool>& global_dict) {
+void update_output(std::shared_ptr<GNode> gnode, bool to_cnhw, std::map<std::pair<std::string, size_t>, bool>& global_dict, bool run_check = true) {
     NNFUSION_CHECK(gnode->get_output_size() == 1);
-    update_output(gnode, std::vector<bool>{to_cnhw}, global_dict);
+    update_output(gnode, std::vector<bool>{to_cnhw}, global_dict, run_check);
 }
 
 void transpose_const_op(std::shared_ptr<op::Constant> op) {
@@ -114,6 +116,7 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::map<std::
             }
             int op_use_cnhw = input_is_cnhw[0];
             if (!all_same) {
+                op_use_cnhw = -1;
                 for (int i = 0; i < input_is_cnhw.size(); i++) {
                     NNFUSION_CHECK(gnode->get_input_shape(i).size() == 4) << "only consider 4d tensor now";
                     std::string input_op_type = gnode->get_in_edge(i)->get_src()->get_op_type();
@@ -157,6 +160,35 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::map<std::
                             NNFUSION_LOG(INFO) << "axisset: " << bcast_op->get_broadcast_axes() << " shape: " << bcast_op->get_broadcast_shape() << " node: " << *bcast_node;
                             update_output(bcast_node, true, is_cnhw);
                             NNFUSION_LOG(INFO) << "bcast inner outer: " << bcast_op->is_inner_broadcast() << " " << bcast_op->is_outer_broadcast();
+                        } else if (nnfusion::kernels::cuda::CudaElementOpMap.find(gnode->get_in_edge(i)->get_src()->get_op_type()) != nnfusion::kernels::cuda::CudaElementOpMap.end()) {
+                            auto inode = gnode->get_in_edge(i)->get_src();
+                            assert(inode->get_output_shape(0).size() == 4);
+                            auto trans_gnode = nnfusion::graph::numpy_transpose(inode, {1, 0, 2, 3}, 0);
+                            trans_gnode->get_op_ptr()->revalidate_and_infer_types(trans_gnode);
+                            graph->add_gnode_and_edge(trans_gnode, GNodeIndexVector({GNodeIndex(inode, 0)}));
+                            gnode->set_input(i, std::make_shared<Input>(trans_gnode->get_output_element_type(0), trans_gnode->get_output_partial_shape(0)));
+                            graph->remove_edge(gnode->get_in_edge(i));
+                            graph->add_edge(trans_gnode, 0, gnode, i);
+                            is_cnhw[std::make_pair(trans_gnode->get_unique_name(), 0)] = false;
+                        } else {
+                            NNFUSION_CHECK_FAIL() << "not implemented " << *gnode;
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < input_is_cnhw.size(); i++) {
+                        if (input_is_cnhw[i] == op_use_cnhw) continue;
+                        if (gnode->get_in_edge(i)->get_src()->get_op_type() == "BatchNormInference") {
+                            auto bn_node = gnode->get_in_edge(i)->get_src();
+                            assert(bn_node->get_output_shape(0).size() == 4);
+                            auto trans_gnode = nnfusion::graph::numpy_transpose(bn_node, {1, 0, 2, 3}, 0);
+                            trans_gnode->get_op_ptr()->revalidate_and_infer_types(trans_gnode);
+                            graph->add_gnode_and_edge(trans_gnode, GNodeIndexVector({GNodeIndex(bn_node, 0)}));
+                            gnode->set_input(i, std::make_shared<Input>(trans_gnode->get_output_element_type(0), trans_gnode->get_output_partial_shape(0)));
+                            graph->remove_edge(gnode->get_in_edge(i));
+                            graph->add_edge(trans_gnode, 0, gnode, i);
+                            update_output(trans_gnode, 0, is_cnhw);
+                        } else {
+                            NNFUSION_CHECK_FAIL() << "not implemented" << *(gnode->get_in_edge(i)->get_src());
                         }
                     }
                 }
@@ -217,15 +249,17 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::map<std::
                 NNFUSION_CHECK_FAIL() << "not implemented";
                 // TODO: keep cnhw when reshape to a 4d tensor. Be careful of out_shape attribute of reshape_op
             } else {
-                AxisVector order = op->get_input_order();
-                for (auto& o: order)
-                    if (o == 0 || o == 1) { o = 1 - o; }
-                Shape shape = op->get_output_shape();
-                NNFUSION_LOG(INFO) << *gnode << " change order to " << order;
-                auto new_reshape_op = std::make_shared<op::Reshape>(order, shape);
-                new_reshape_op->set_name(op->get_name());
-                gnode->construct_from_op_ptr(new_reshape_op);
-                update_output(gnode, false, is_cnhw );
+                if (input_is_cnhw[0]) {
+                    AxisVector order = op->get_input_order();
+                    for (auto& o: order)
+                        if (o == 0 || o == 1) { o = 1 - o; }
+                    Shape shape = op->get_output_shape();
+                    NNFUSION_LOG(INFO) << *gnode << " change order to " << order;
+                    auto new_reshape_op = std::make_shared<op::Reshape>(order, shape);
+                    new_reshape_op->set_name(op->get_name());
+                    gnode->construct_from_op_ptr(new_reshape_op);
+                }
+                update_output(gnode, false, is_cnhw);
             }
         } else if (op_type == "Sum") {
             auto op = std::dynamic_pointer_cast<op::Sum>(gnode->get_op_ptr());
@@ -304,6 +338,8 @@ void update_graph(std::shared_ptr<nnfusion::graph::Graph>& graph, std::map<std::
     }
 }
 
+
+// a hacked pass, not very stable
 bool ConvLayoutPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
     if (!FLAGS_fconv_cnhw)

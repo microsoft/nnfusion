@@ -486,7 +486,7 @@ bool CpuCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 }
             }
 
-            LanguageUnit_p kernel_func_call = func_call_codegen(ins, func_call_only, function_call);
+            LanguageUnit_p kernel_func_call = func_call_codegen(ins, {}, func_call_only, function_call);
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);

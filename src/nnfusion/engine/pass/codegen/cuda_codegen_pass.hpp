@@ -72,8 +72,10 @@ namespace nnfusion
                 get_paras_and_args(std::vector<nnfusion::ir::Instruction::Pointer>& ir_vec);
             virtual nnfusion::LanguageUnit_p
                 func_call_codegen(nnfusion::ir::Instruction::Pointer ins,
+                                  const std::unordered_map<std::string, std::string>& replaced_extern_result_memory,
                                   bool func_call_only = false,
-                                  const std::string& func_call = "");
+                                  const std::string& func_call = ""
+                                  );
             virtual LanguageUnit_p get_d2hcopy(std::shared_ptr<TranslationUnit> tu);
             virtual LanguageUnit_p get_h2dcopy(std::shared_ptr<TranslationUnit> tu);
             virtual LanguageUnit_p get_sync();

@@ -36,6 +36,7 @@ DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
 DEFINE_bool(fcheck_result, false, "Check result with external inputs and outputs");
+DEFINE_string(fcheck_prefix_name, "", "prefix for saving external inputs and outputs");
 DECLARE_bool(fif_launch_then_else);
 DEFINE_int32(fstack_size, -1, "cudaLimitStackSize");
 
@@ -270,6 +271,26 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     return;
 }
 
+bool has_graph_output(std::shared_ptr<ir::Instruction> ins, const std::unordered_map<std::string, std::string>& replaced_extern_result_memory) {
+    for (auto input: ins->getGNode()->get_in_edges()) {
+        if (!input->is_control_edge() && input->get_src()->get_op_ptr()->is_output()) {
+            return true;
+        }
+    }
+    for (auto output: ins->getGNode()->get_out_edges()) {
+        if (!output->is_control_edge() && output->get_dst()->get_op_ptr()->is_output()) {
+            return true;
+        }
+    }
+    for (size_t i = 0; i < ins->getGNode()->get_in_edges().size(); i++) {
+        std::string in_name = ins->getGNode()->get_input_tensor(i).get_name();
+        if (replaced_extern_result_memory.count(in_name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                     std::shared_ptr<TranslationUnit> tu)
 {
@@ -324,7 +345,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 if (kernel->is_static_function() ||
                     kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    if (!kernel->is_eliminative())
+                    if (!kernel->is_eliminative() || (has_graph_output(ins, replaced_extern_result_memory) && FLAGS_fextern_result_memory))
                     {
                         auto kernel_func_def = codegenerator::FunctionFile::convert_from(kernel);
 
@@ -390,7 +411,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                            call_str.substr(pos_right + sizeof(">>>(") - 1);
 #endif
             }
-            LanguageUnit_p kernel_func_call = func_call_codegen(ins, func_call_only, call_str);
+            LanguageUnit_p kernel_func_call = func_call_codegen(ins, replaced_extern_result_memory, func_call_only, call_str);
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
@@ -733,8 +754,10 @@ std::pair<std::string, std::string>
 }
 
 nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instruction::Pointer ins,
+                                                            const std::unordered_map<std::string, std::string>& replaced_extern_result_memory,
                                                             bool func_call_only,
-                                                            const std::string& func_call)
+                                                            const std::string& func_call
+                                                                )
 {
     std::string symbol;
     auto kernel = ins->getKernel();
@@ -817,9 +840,9 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     }
     else
     {
-        if (ins->getKernel()->is_eliminative())
+        if (ins->getKernel()->is_eliminative() && !((has_graph_output(ins, replaced_extern_result_memory) && FLAGS_fextern_result_memory)))
         {
-            lu << "// eliminated: " << func_call;
+                lu << "// eliminated: " << func_call;
         }
         // todo: this hack is to eliminate d2d copy caused by extern result memory
         else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
@@ -1270,7 +1293,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
                         << tensor.get_tensor_layout()->get_size() << "));\n";
             }
             if (FLAGS_fcheck_result) {
-                fillval << "load_param(\"../../bin/input_ref_" << i << ".bin\", (void*)" << tensor.get_name()
+                fillval << "load_param(\"../../bin/" + FLAGS_fcheck_prefix_name + "input_ref_" << i << ".bin\", (void*)" << tensor.get_name()
                         << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * " << tensor.get_tensor_layout()->get_size() << ");\n";
             } else {
                 fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
@@ -1289,7 +1312,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
                 lu_main << "CUDA_SAFE_CALL(cudaMallocHost((void**)&" << tensor.get_name()
                         << "_ref, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
                         << tensor.get_tensor_layout()->get_size() << "));\n";
-                fillval << "load_param(\"../../bin/output_ref_" << i << ".bin\", (void*)" << tensor.get_name()
+                fillval << "load_param(\"../../bin/" + FLAGS_fcheck_prefix_name + "output_ref_" << i << ".bin\", (void*)" << tensor.get_name()
                         << "_ref, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
                         << tensor.get_tensor_layout()->get_size() << ");\n";
             } else {

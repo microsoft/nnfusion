@@ -12,6 +12,7 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 DEFINE_bool(floop_in_c, false, "loop in c");
+DECLARE_int32(ffused_max_grid);
 DEFINE_int32(floop_copy_blockdim, 256, "");
 DECLARE_bool(ffast_barrier);
 
@@ -146,8 +147,23 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
             for (auto tensor : kernel->m_context->tensors)
                 params.push_back(m_param_map[tensor]);
         if (in_cuda) {
-            lu << get_launch_bound(ins);
-            lu << kernel->emit_block_kernel_call(params)->get_code();
+            cuda::dim3 grid = kernel->get_grid_dim();
+            std::string launch_bound = get_launch_bound(ins);
+            std::string kernel_call = kernel->emit_block_kernel_call(params)->get_code();
+            if (grid.x > FLAGS_ffused_max_grid) {
+                kernel_call = replace_one(kernel_call, "blockIdx.x", "blockIdx.x + start_block");
+                launch_bound = replace_one(launch_bound, "blockIdx.x", "blockIdx.x + start_block");
+                lu << "for (int start_block = 0; start_block < " << grid.x << "; start_block += gridDim.x)\n";
+                lu.block_begin();
+                lu << launch_bound;
+                lu.block_begin();
+                lu << kernel_call;
+                lu.block_end();
+                lu.block_end();
+            } else {
+                lu << launch_bound;
+                lu << kernel_call;
+            }
         } else {
             cuda::dim3 grid_dim = kernel->get_grid_dim();
             cuda::dim3 block_dim = kernel->get_block_dim();
@@ -238,6 +254,7 @@ void cuda::Loop::set_launch_config()
     auto cfg0 = get_subgraph_launch_config(m_body_instructions);
     m_blockDim = cfg0.first;
     m_gridDim = cfg0.second;
+    m_gridDim.x = min(m_gridDim.x, FLAGS_ffused_max_grid);
 }
 
 LanguageUnit_p cuda::Loop::emit_dependency()

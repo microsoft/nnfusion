@@ -410,6 +410,10 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
                     NNFUSION_CHECK(c->outputs.size() == 1);
                     NNFUSION_CHECK(input_names.size() == 1);
                     NNFUSION_CHECK_FAIL() << "unsupported: " << ele_op_type;
+                } else if (ele_op_type == "Reshape") {
+                    // skip the reshape of tensor with size 1
+                    NNFUSION_CHECK(c->outputs.size() == 1);
+                    scalar_map[c->outputs[0]] = input_names[0];
                 } else {
                     NNFUSION_CHECK_FAIL() << "unsupported: " << ele_op_type;
                 }

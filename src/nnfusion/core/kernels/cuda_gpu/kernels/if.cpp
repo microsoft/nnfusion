@@ -11,6 +11,7 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DEFINE_bool(fif_launch_then_else, false, "launch kernels in both then branch and else branch");
+DEFINE_bool(fif_launch_then_else_naive, false, "launch kernels in both then branch and else branch without fusion");
 DEFINE_bool(fif_launch_d2h, false, "launch kernels in both then branch and else branch");
 DEFINE_int32(ffused_max_grid, 512, "max griddim in fused kernels");
 DECLARE_bool(ffast_barrier);
@@ -112,7 +113,7 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
         printf("\n");
     }
     m_kernel_groups.clear();
-    if (FLAGS_fif_launch_d2h) {
+    if (FLAGS_fif_launch_d2h || (FLAGS_fif_launch_then_else && FLAGS_fif_launch_then_else_naive)) {
         for (auto group: then_kernel_groups) {
             m_kernel_groups.push_back(make_pair(group, std::vector<int>()));
         }

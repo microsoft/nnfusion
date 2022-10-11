@@ -12,6 +12,7 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DEFINE_bool(frecursive_stack, false, "recursive with manual stack");
+DEFINE_bool(fstack_in_glb, false, "stack in global memory");
 DEFINE_int32(frecursive_max_depth, 20, "manual stack size");
 DECLARE_bool(ffast_barrier);
 
@@ -83,9 +84,25 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
         m_pool_offset[pair.second->get_name()] = m_workspace_size;
         m_workspace_size += pair.second->max_allocated();
     }
+    size_t context_param_offset = 233333333;
+    if (FLAGS_fstack_in_glb) {
+        m_param_offset["s_label"] = m_workspace_size;
+        m_workspace_size += sizeof(int) * FLAGS_frecursive_max_depth;
+        for (auto input: m_context->inputs) {
+            m_param_offset[input->get_name()] = m_workspace_size;
+            m_workspace_size += sizeof(void*) * FLAGS_frecursive_max_depth;
+        }
+        for (auto output: m_context->outputs) {
+            m_param_offset[output->get_name()] = m_workspace_size;
+            m_workspace_size += sizeof(void*) * FLAGS_frecursive_max_depth;
+        }
+        context_param_offset = m_workspace_size;
+        m_workspace_size += sizeof(void*) * FLAGS_frecursive_max_depth; // reserved for m_workspace tensor
+    }
     m_workspace = allocate_tensor(Shape{m_workspace_size * FLAGS_frecursive_max_depth}, nnfusion::element::character);
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
+    m_param_offset[m_workspace->get_name()] = context_param_offset;
     m_block_func_name = move(FuncForward::m_block_func_name);
     NNFUSION_CHECK(!m_block_func_name.empty());
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
@@ -186,15 +203,28 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
     LanguageUnit& lu = *_lu;
     auto inputs = m_context->inputs;
     auto outputs = m_context->outputs;
-    lu << "__shared__ int s_label[" << FLAGS_frecursive_max_depth << "];\n";
-    for (auto input_id: input_need_stack) {
-        lu << "__shared__ " << inputs[input_id]->get_element_type().c_type_string() << "* s_input" << input_id << "[" << FLAGS_frecursive_max_depth << "];\n";
-    }
-    for (auto output_id: output_need_stack) {
-        lu << "__shared__ " << outputs[output_id]->get_element_type().c_type_string() << "* s_output" << output_id << "[" << FLAGS_frecursive_max_depth << "];\n";
+    if (FLAGS_fstack_in_glb) {
+        lu << "volatile int* s_label = (volatile int*) input" + std::to_string(m_context->inputs.size() - 1) << " + " << m_param_offset["s_label"] << ";\n";
+        for (auto input_id: input_need_stack) {
+            lu << inputs[input_id]->get_element_type().c_type_string() << "* volatile * s_input" << input_id << " = (" << inputs[input_id]->get_element_type().c_type_string() << "* volatile *) input" + std::to_string(m_context->inputs.size() - 1) << " + " << m_param_offset[inputs[input_id]->get_name()] << ";\n";
+        }
+        for (auto output_id: output_need_stack) {
+            lu << outputs[output_id]->get_element_type().c_type_string() << "* volatile * s_output" << output_id << " = (" << outputs[output_id]->get_element_type().c_type_string() << "* volatile *) input" + std::to_string(m_context->inputs.size() - 1) << " + " << m_param_offset[outputs[output_id]->get_name()] << ";\n";
+        }
+    } else {
+        lu << "__shared__ int s_label[" << FLAGS_frecursive_max_depth << "];\n";
+        for (auto input_id: input_need_stack) {
+            lu << "__shared__ " << inputs[input_id]->get_element_type().c_type_string() << "* s_input" << input_id << "[" << FLAGS_frecursive_max_depth << "];\n";
+        }
+        for (auto output_id: output_need_stack) {
+            lu << "__shared__ " << outputs[output_id]->get_element_type().c_type_string() << "* s_output" << output_id << "[" << FLAGS_frecursive_max_depth << "];\n";
+        }
     }
     lu << "int stack_top = 1;\n";
-    lu << "bool is_master_thread = (threadIdx.x == 0);\n";
+    if (FLAGS_fstack_in_glb)
+        lu << "bool is_master_thread = (threadIdx.x == 0 && blockIdx.x == 0);\n";
+    else
+        lu << "bool is_master_thread = (threadIdx.x == 0);\n";
     lu << "if (is_master_thread)\n";
     lu.block_begin();
     lu << "s_label[stack_top] = 0;\n";
@@ -205,7 +235,10 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
         lu << "s_output" << output_id << "[stack_top] = output" << output_id << ";\n";
     }
     lu.block_end();
-    lu << "__syncthreads();\n";
+    if (FLAGS_fstack_in_glb)
+        lu << "Barrier();\n";
+    else
+        lu << "__syncthreads();\n";
     lu << "while (stack_top)";
     lu.block_begin();
     lu << "func_start:;\n";
@@ -216,6 +249,10 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
     for (auto output_id: output_need_stack) {
         lu << "output" << output_id << " = s_output" << output_id << "[stack_top];\n";
     }
+    if (FLAGS_fstack_in_glb)
+        lu << "Barrier();\n";
+    else
+        lu << "__syncthreads();\n";
     lu << "switch (label)";
     lu.block_begin();
     for (int i = 0; i < call_sites.size(); i++) {
@@ -239,7 +276,10 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
         lu_call << "s_label[stack_top] = 0;\n";
         lu_call.block_end();
         lu_call << "else stack_top++;\n";
-        lu_call << "__syncthreads();\n";
+        if (FLAGS_fstack_in_glb)
+            lu_call << "Barrier();\n";
+        else
+            lu_call << "__syncthreads();\n";
         lu_call << "goto func_start;\n";
         lu_call << "LABEL" << i + 1 << ":;\n";
         code = replace_one(code, call_sites[i], lu_call.get_code());

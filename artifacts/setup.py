@@ -1,8 +1,40 @@
 from setuptools import setup, find_packages
 
-import roller
-
 setup(
-    name="roller",
-    packages=find_packages('.')
+    name='roller',
+    version='0.1',
+    description='ROLLER: Fast and Efficient Tensor Compilation for Deep Learning.',
+    url='https://github.com/microsoft/nnfusion',
+    author='Microsoft',
+    author_email='nnfusion-team@microsoft.com',
+    license='MIT',
+    classifiers=[
+        'Development Status :: 2 - Pre-Alpha',
+        'Environment :: GPU',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+        'Topic :: Software Development',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+    ],
+    keywords=['Roller', 'Tensor Compilation', 'Deep Learning'],
+    python_requires='>=3.6, <4',
+    install_requires=[
+    ],
+    zip_safe=False,
+    project_urls={
+        'Source': 'https://github.com/microsoft/nnfusion',
+        'Tracker': 'https://github.com/microsoft/nnfusion/issues',
+    },
 )

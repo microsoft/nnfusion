@@ -227,6 +227,7 @@ namespace nnfusion
                                 NNFUSION_LOG(INFO) << "No Antares codegen for IR: " << ir;
                                 return;
                             }
+                            
                             { // check output_shapes of NNFusion and Antares, fallback when shapes mismatch.
                                 auto antares_output_shapes =
                                     AntaresKEImp::get_output_shapes(info.first);
@@ -237,6 +238,7 @@ namespace nnfusion
                                     flag_match = false;
                                 }
 
+
                                 if (antares_output_shapes.size() != ctx->outputs.size())
                                 {
                                     flag_match = false;
@@ -245,8 +247,15 @@ namespace nnfusion
                                 {
                                     for (int i = 0; i < antares_output_shapes.size(); i++)
                                     {
+                                        nnfusion::Shape simplified_nnfusion_output_shape;
+                                        auto nnfusion_output_shape = ctx->outputs[i]->get_shape();
+                                        for (auto d : nnfusion_output_shape)
+                                        {
+                                            if (d != 1)
+                                                simplified_nnfusion_output_shape.push_back(d);
+                                        }
                                         if (antares_output_shapes[i] !=
-                                            ctx->outputs[i]->get_shape())
+                                            simplified_nnfusion_output_shape)
                                         {
                                             NNFUSION_LOG(INFO)
                                                 << "NNFusion shape: "

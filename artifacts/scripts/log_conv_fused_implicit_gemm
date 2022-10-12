@@ -1,0 +1,1383 @@
+Traceback (most recent call last):
+  File "./antares/antares_compiler.py", line 728, in <module>
+    main_compute()
+  File "./antares/antares_compiler.py", line 467, in main_compute
+    assert digests is not None, "Failed to generate CPU result for correctness reference"
+AssertionError: Failed to generate CPU result for correctness reference
+  >> Backend = c-cuda, Python PID = 28929, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+  >> Backend = c-cuda, Python PID = 29479, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[conv[F, SA]], axis=[iter_var(F, range(min=0, ext=128)), iter_var(SA, range(min=0, ext=100352))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 10 results with threshold 0.0
+[debug] config = {"0": "{\"tile\": [128, 64], \"step\": [8]}", "1": "{\"tile\": [8, 4], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [16, 8], 'SA': [16, 4], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [8, 16, 1], 'SA': [4, 16, 1], 'RA': [8, 1]}
+[debug] thread per block 256
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 128, 57, 57], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 128, 128, 57, 57, 3, 3, 2, 2, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA] where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 128, 57, 57], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(256) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 1568
+  // [thread_extent] threadIdx.x = 256
+  float conv_local[32];
+  conv_local[(0)] = 0.000000e+00f;
+  conv_local[(4)] = 0.000000e+00f;
+  conv_local[(8)] = 0.000000e+00f;
+  conv_local[(12)] = 0.000000e+00f;
+  conv_local[(16)] = 0.000000e+00f;
+  conv_local[(20)] = 0.000000e+00f;
+  conv_local[(24)] = 0.000000e+00f;
+  conv_local[(28)] = 0.000000e+00f;
+  conv_local[(1)] = 0.000000e+00f;
+  conv_local[(5)] = 0.000000e+00f;
+  conv_local[(9)] = 0.000000e+00f;
+  conv_local[(13)] = 0.000000e+00f;
+  conv_local[(17)] = 0.000000e+00f;
+  conv_local[(21)] = 0.000000e+00f;
+  conv_local[(25)] = 0.000000e+00f;
+  conv_local[(29)] = 0.000000e+00f;
+  conv_local[(2)] = 0.000000e+00f;
+  conv_local[(6)] = 0.000000e+00f;
+  conv_local[(10)] = 0.000000e+00f;
+  conv_local[(14)] = 0.000000e+00f;
+  conv_local[(18)] = 0.000000e+00f;
+  conv_local[(22)] = 0.000000e+00f;
+  conv_local[(26)] = 0.000000e+00f;
+  conv_local[(30)] = 0.000000e+00f;
+  conv_local[(3)] = 0.000000e+00f;
+  conv_local[(7)] = 0.000000e+00f;
+  conv_local[(11)] = 0.000000e+00f;
+  conv_local[(15)] = 0.000000e+00f;
+  conv_local[(19)] = 0.000000e+00f;
+  conv_local[(23)] = 0.000000e+00f;
+  conv_local[(27)] = 0.000000e+00f;
+  conv_local[(31)] = 0.000000e+00f;
+  for (int RA_outer = 0; RA_outer < 144; ++RA_outer) {
+    __shared__ float kernel_pad_shared[1024];
+  // [thread_extent] threadIdx.x = 256
+    __syncthreads();
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)))];
+    kernel_pad_shared[((((int)threadIdx.x) + 256))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 36864))];
+    kernel_pad_shared[((((int)threadIdx.x) + 512))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 73728))];
+    kernel_pad_shared[((((int)threadIdx.x) + 768))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 110592))];
+    __shared__ float data_pad_shared[512];
+  // [thread_extent] threadIdx.x = 256
+    data_pad_shared[(((int)threadIdx.x))] = data[((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 415872) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) / 9) * 3249)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 114)) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3) * 57)) + ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) * 2)) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)))];
+    data_pad_shared[((((int)threadIdx.x) + 256))] = data[((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 415872) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) / 9) * 3249)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 114)) + ((((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3) * 57)) + ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) * 2)) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)))];
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[8];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 128))];
+      kernel_pad_shared_local[(2)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 256))];
+      kernel_pad_shared_local[(3)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 384))];
+      kernel_pad_shared_local[(4)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 512))];
+      kernel_pad_shared_local[(5)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 640))];
+      kernel_pad_shared_local[(6)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 768))];
+      kernel_pad_shared_local[(7)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 896))];
+      float data_pad_shared_local[4];
+      data_pad_shared_local[(0)] = data_pad_shared[(((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)))];
+      data_pad_shared_local[(1)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 16))];
+      data_pad_shared_local[(2)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 32))];
+      data_pad_shared_local[(3)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 48))];
+      conv_local[(0)] = (conv_local[(0)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(0)]));
+      conv_local[(4)] = (conv_local[(4)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(0)]));
+      conv_local[(8)] = (conv_local[(8)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(0)]));
+      conv_local[(12)] = (conv_local[(12)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(0)]));
+      conv_local[(16)] = (conv_local[(16)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(0)]));
+      conv_local[(20)] = (conv_local[(20)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(0)]));
+      conv_local[(24)] = (conv_local[(24)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(0)]));
+      conv_local[(28)] = (conv_local[(28)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(0)]));
+      conv_local[(1)] = (conv_local[(1)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(1)]));
+      conv_local[(5)] = (conv_local[(5)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(1)]));
+      conv_local[(9)] = (conv_local[(9)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(1)]));
+      conv_local[(13)] = (conv_local[(13)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(1)]));
+      conv_local[(17)] = (conv_local[(17)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(1)]));
+      conv_local[(21)] = (conv_local[(21)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(1)]));
+      conv_local[(25)] = (conv_local[(25)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(1)]));
+      conv_local[(29)] = (conv_local[(29)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(1)]));
+      conv_local[(2)] = (conv_local[(2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(2)]));
+      conv_local[(6)] = (conv_local[(6)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(2)]));
+      conv_local[(10)] = (conv_local[(10)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(2)]));
+      conv_local[(14)] = (conv_local[(14)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(2)]));
+      conv_local[(18)] = (conv_local[(18)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(2)]));
+      conv_local[(22)] = (conv_local[(22)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(2)]));
+      conv_local[(26)] = (conv_local[(26)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(2)]));
+      conv_local[(30)] = (conv_local[(30)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(2)]));
+      conv_local[(3)] = (conv_local[(3)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(3)]));
+      conv_local[(7)] = (conv_local[(7)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(3)]));
+      conv_local[(11)] = (conv_local[(11)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(3)]));
+      conv_local[(15)] = (conv_local[(15)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(3)]));
+      conv_local[(19)] = (conv_local[(19)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(3)]));
+      conv_local[(23)] = (conv_local[(23)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(3)]));
+      conv_local[(27)] = (conv_local[(27)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(3)]));
+      conv_local[(31)] = (conv_local[(31)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(3)]));
+    }
+  }
+  conv_unpad[(((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)))] = conv_local[(0)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605632))] = conv_local[(4)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211264))] = conv_local[(8)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816896))] = conv_local[(12)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422528))] = conv_local[(16)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028160))] = conv_local[(20)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633792))] = conv_local[(24)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239424))] = conv_local[(28)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 16))] = conv_local[(1)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605648))] = conv_local[(5)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211280))] = conv_local[(9)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816912))] = conv_local[(13)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422544))] = conv_local[(17)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028176))] = conv_local[(21)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633808))] = conv_local[(25)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239440))] = conv_local[(29)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 32))] = conv_local[(2)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605664))] = conv_local[(6)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211296))] = conv_local[(10)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816928))] = conv_local[(14)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422560))] = conv_local[(18)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028192))] = conv_local[(22)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633824))] = conv_local[(26)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239456))] = conv_local[(30)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 48))] = conv_local[(3)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605680))] = conv_local[(7)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211312))] = conv_local[(11)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816944))] = conv_local[(15)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422576))] = conv_local[(19)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028208))] = conv_local[(23)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633840))] = conv_local[(27)];
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239472))] = conv_local[(31)];
+}
+[CheckFail] /home/yuqxia/venv/roller_antares/lib/python3.7/site-packages/antares_core/backends/c-cuda/include/backend.hpp:162
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": false}
+
+[Antares] Average time cost / run = inf sec, 0 gflops. (Checked: False)
+
+  >> Backend = c-cuda, Python PID = 30585, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[conv[F, SA]], axis=[iter_var(F, range(min=0, ext=168)), iter_var(SA, range(min=0, ext=225792))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 2 results with threshold 0.0
+found 10 results with threshold 0.2
+[debug] config = {"0": "{\"tile\": [24, 512], \"step\": [8]}", "1": "{\"tile\": [2, 16], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [12, 2], 'SA': [32, 16], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [2, 12, 1], 'SA': [16, 32, 1], 'RA': [8, 1]}
+[debug] thread per block 384
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 168, 42, 42], kernel:float32[168, 168, 1, 1] -> conv_unpad:float32[168, 225792]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 168, 168, 42, 42, 1, 1, 1, 1, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA] where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 168, 42, 42], kernel:float32[168, 168, 1, 1] -> conv_unpad:float32[168, 225792]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(384) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 3087
+  // [thread_extent] threadIdx.x = 384
+  float conv_local[32];
+  for (int vthread_s = 0; vthread_s < 16; ++vthread_s) {
+    conv_local[(vthread_s)] = 0.000000e+00f;
+    conv_local[((vthread_s + 16))] = 0.000000e+00f;
+  }
+  for (int RA_outer = 0; RA_outer < 21; ++RA_outer) {
+    __shared__ float kernel_pad_shared[192];
+  // [thread_extent] threadIdx.x = 384
+    __syncthreads();
+    if (((int)threadIdx.x) < 192) {
+      kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)blockIdx.x) / 441) * 4032) + ((((int)threadIdx.x) >> 3) * 168)) + (RA_outer * 8)) + (((int)threadIdx.x) & 7)))];
+    }
+    __shared__ float data_pad_shared[4096];
+  // [thread_extent] threadIdx.x = 384
+    data_pad_shared[(((int)threadIdx.x))] = data[(((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 384))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 384) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 768))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 768) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 1152))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 1152) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 1536))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)) + 5292))];
+    data_pad_shared[((((int)threadIdx.x) + 1920))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 1920) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 2304))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 2304) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 2688))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 2688) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 3072))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)) + 10584))];
+    data_pad_shared[((((int)threadIdx.x) + 3456))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 3456) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    if (((int)threadIdx.x) < 256) {
+      data_pad_shared[((((int)threadIdx.x) + 3840))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 3840) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) % 42)))];
+    }
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[2];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 5) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 5) * 8) + RA_inner_outer) + 96))];
+      float data_pad_shared_local[16];
+      for (int vthread_s1 = 0; vthread_s1 < 16; ++vthread_s1) {
+        data_pad_shared_local[(vthread_s1)] = data_pad_shared[((((RA_inner_outer * 512) + (vthread_s1 * 32)) + (((int)threadIdx.x) & 31)))];
+      }
+      for (int vthread_s2 = 0; vthread_s2 < 16; ++vthread_s2) {
+        conv_local[(vthread_s2)] = (conv_local[(vthread_s2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(vthread_s2)]));
+        conv_local[((vthread_s2 + 16))] = (conv_local[((vthread_s2 + 16))] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(vthread_s2)]));
+      }
+    }
+  }
+  for (int vthread_s3 = 0; vthread_s3 < 16; ++vthread_s3) {
+    conv_unpad[(((((((((int)blockIdx.x) / 441) * 5419008) + ((((int)threadIdx.x) >> 5) * 225792)) + ((((int)blockIdx.x) % 441) * 512)) + (vthread_s3 * 32)) + (((int)threadIdx.x) & 31)))] = conv_local[(vthread_s3)];
+    conv_unpad[((((((((((int)blockIdx.x) / 441) * 5419008) + ((((int)threadIdx.x) >> 5) * 225792)) + ((((int)blockIdx.x) % 441) * 512)) + (vthread_s3 * 32)) + (((int)threadIdx.x) & 31)) + 2709504))] = conv_local[((vthread_s3 + 16))];
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 319891406910000.0, "TPR": 0.00175001}
+
+[Antares] Average time cost / run = 0.00175001 sec, 7326.47 gflops. (Checked: True)
+
+Finish Conv Implicit GEMM Fused\n
+  >> Backend = c-cuda, Python PID = 32756, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[(conv[F, SA] + bias[F])], axis=[iter_var(F, range(min=0, ext=128)), iter_var(SA, range(min=0, ext=100352))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 10 results with threshold 0.0
+[debug] config = {"0": "{\"tile\": [128, 64], \"step\": [8]}", "1": "{\"tile\": [8, 4], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [16, 8], 'SA': [16, 4], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [8, 16, 1], 'SA': [4, 16, 1], 'RA': [8, 1]}
+[debug] thread per block 256
+
+// ---------------------------------------------------------------------------
+// GLOBALS: bias:float32[128], data:float32[128, 128, 28, 28], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 128, 128, 28, 28, 3, 3, 1, 1, 1, 1; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA] + bias[F] where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}, "bias": {"dtype": "float32", "shape": [_F]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- bias:float32[128], data:float32[128, 128, 28, 28], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(256) void template_op_kernel0(float* __restrict__ bias, float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 1568
+  // [thread_extent] threadIdx.x = 256
+  float conv_local[32];
+  conv_local[(0)] = 0.000000e+00f;
+  conv_local[(4)] = 0.000000e+00f;
+  conv_local[(8)] = 0.000000e+00f;
+  conv_local[(12)] = 0.000000e+00f;
+  conv_local[(16)] = 0.000000e+00f;
+  conv_local[(20)] = 0.000000e+00f;
+  conv_local[(24)] = 0.000000e+00f;
+  conv_local[(28)] = 0.000000e+00f;
+  conv_local[(1)] = 0.000000e+00f;
+  conv_local[(5)] = 0.000000e+00f;
+  conv_local[(9)] = 0.000000e+00f;
+  conv_local[(13)] = 0.000000e+00f;
+  conv_local[(17)] = 0.000000e+00f;
+  conv_local[(21)] = 0.000000e+00f;
+  conv_local[(25)] = 0.000000e+00f;
+  conv_local[(29)] = 0.000000e+00f;
+  conv_local[(2)] = 0.000000e+00f;
+  conv_local[(6)] = 0.000000e+00f;
+  conv_local[(10)] = 0.000000e+00f;
+  conv_local[(14)] = 0.000000e+00f;
+  conv_local[(18)] = 0.000000e+00f;
+  conv_local[(22)] = 0.000000e+00f;
+  conv_local[(26)] = 0.000000e+00f;
+  conv_local[(30)] = 0.000000e+00f;
+  conv_local[(3)] = 0.000000e+00f;
+  conv_local[(7)] = 0.000000e+00f;
+  conv_local[(11)] = 0.000000e+00f;
+  conv_local[(15)] = 0.000000e+00f;
+  conv_local[(19)] = 0.000000e+00f;
+  conv_local[(23)] = 0.000000e+00f;
+  conv_local[(27)] = 0.000000e+00f;
+  conv_local[(31)] = 0.000000e+00f;
+  for (int RA_outer = 0; RA_outer < 144; ++RA_outer) {
+    __shared__ float kernel_pad_shared[1024];
+  // [thread_extent] threadIdx.x = 256
+    __syncthreads();
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)))];
+    kernel_pad_shared[((((int)threadIdx.x) + 256))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 36864))];
+    kernel_pad_shared[((((int)threadIdx.x) + 512))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 73728))];
+    kernel_pad_shared[((((int)threadIdx.x) + 768))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 110592))];
+    __shared__ float data_pad_shared[512];
+  // [thread_extent] threadIdx.x = 256
+    data_pad_shared[(((int)threadIdx.x))] = (((((1 <= (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3))) && ((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3)) < 29)) && (1 <= ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)))) && (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)) < 29)) ? data[(((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 100352) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) / 9) * 784)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 28)) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3) * 28)) + (((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28)) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)) - 29))] : 0.000000e+00f);
+    data_pad_shared[((((int)threadIdx.x) + 256))] = (((((1 <= (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3))) && ((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3)) < 29)) && (1 <= ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)))) && (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)) < 29)) ? data[(((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 100352) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) / 9) * 784)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 28)) + ((((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3) * 28)) + (((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28)) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)) - 29))] : 0.000000e+00f);
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[8];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 128))];
+      kernel_pad_shared_local[(2)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 256))];
+      kernel_pad_shared_local[(3)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 384))];
+      kernel_pad_shared_local[(4)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 512))];
+      kernel_pad_shared_local[(5)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 640))];
+      kernel_pad_shared_local[(6)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 768))];
+      kernel_pad_shared_local[(7)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 896))];
+      float data_pad_shared_local[4];
+      data_pad_shared_local[(0)] = data_pad_shared[(((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)))];
+      data_pad_shared_local[(1)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 16))];
+      data_pad_shared_local[(2)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 32))];
+      data_pad_shared_local[(3)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 48))];
+      conv_local[(0)] = (conv_local[(0)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(0)]));
+      conv_local[(4)] = (conv_local[(4)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(0)]));
+      conv_local[(8)] = (conv_local[(8)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(0)]));
+      conv_local[(12)] = (conv_local[(12)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(0)]));
+      conv_local[(16)] = (conv_local[(16)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(0)]));
+      conv_local[(20)] = (conv_local[(20)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(0)]));
+      conv_local[(24)] = (conv_local[(24)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(0)]));
+      conv_local[(28)] = (conv_local[(28)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(0)]));
+      conv_local[(1)] = (conv_local[(1)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(1)]));
+      conv_local[(5)] = (conv_local[(5)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(1)]));
+      conv_local[(9)] = (conv_local[(9)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(1)]));
+      conv_local[(13)] = (conv_local[(13)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(1)]));
+      conv_local[(17)] = (conv_local[(17)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(1)]));
+      conv_local[(21)] = (conv_local[(21)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(1)]));
+      conv_local[(25)] = (conv_local[(25)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(1)]));
+      conv_local[(29)] = (conv_local[(29)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(1)]));
+      conv_local[(2)] = (conv_local[(2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(2)]));
+      conv_local[(6)] = (conv_local[(6)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(2)]));
+      conv_local[(10)] = (conv_local[(10)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(2)]));
+      conv_local[(14)] = (conv_local[(14)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(2)]));
+      conv_local[(18)] = (conv_local[(18)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(2)]));
+      conv_local[(22)] = (conv_local[(22)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(2)]));
+      conv_local[(26)] = (conv_local[(26)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(2)]));
+      conv_local[(30)] = (conv_local[(30)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(2)]));
+      conv_local[(3)] = (conv_local[(3)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(3)]));
+      conv_local[(7)] = (conv_local[(7)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(3)]));
+      conv_local[(11)] = (conv_local[(11)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(3)]));
+      conv_local[(15)] = (conv_local[(15)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(3)]));
+      conv_local[(19)] = (conv_local[(19)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(3)]));
+      conv_local[(23)] = (conv_local[(23)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(3)]));
+      conv_local[(27)] = (conv_local[(27)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(3)]));
+      conv_local[(31)] = (conv_local[(31)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(3)]));
+    }
+  }
+  conv_unpad[(((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)))] = (conv_local[(0)] + bias[((((int)threadIdx.x) >> 4))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605632))] = (conv_local[(4)] + bias[(((((int)threadIdx.x) >> 4) + 16))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211264))] = (conv_local[(8)] + bias[(((((int)threadIdx.x) >> 4) + 32))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816896))] = (conv_local[(12)] + bias[(((((int)threadIdx.x) >> 4) + 48))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422528))] = (conv_local[(16)] + bias[(((((int)threadIdx.x) >> 4) + 64))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028160))] = (conv_local[(20)] + bias[(((((int)threadIdx.x) >> 4) + 80))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633792))] = (conv_local[(24)] + bias[(((((int)threadIdx.x) >> 4) + 96))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239424))] = (conv_local[(28)] + bias[(((((int)threadIdx.x) >> 4) + 112))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 16))] = (conv_local[(1)] + bias[((((int)threadIdx.x) >> 4))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605648))] = (conv_local[(5)] + bias[(((((int)threadIdx.x) >> 4) + 16))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211280))] = (conv_local[(9)] + bias[(((((int)threadIdx.x) >> 4) + 32))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816912))] = (conv_local[(13)] + bias[(((((int)threadIdx.x) >> 4) + 48))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422544))] = (conv_local[(17)] + bias[(((((int)threadIdx.x) >> 4) + 64))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028176))] = (conv_local[(21)] + bias[(((((int)threadIdx.x) >> 4) + 80))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633808))] = (conv_local[(25)] + bias[(((((int)threadIdx.x) >> 4) + 96))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239440))] = (conv_local[(29)] + bias[(((((int)threadIdx.x) >> 4) + 112))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 32))] = (conv_local[(2)] + bias[((((int)threadIdx.x) >> 4))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605664))] = (conv_local[(6)] + bias[(((((int)threadIdx.x) >> 4) + 16))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211296))] = (conv_local[(10)] + bias[(((((int)threadIdx.x) >> 4) + 32))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816928))] = (conv_local[(14)] + bias[(((((int)threadIdx.x) >> 4) + 48))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422560))] = (conv_local[(18)] + bias[(((((int)threadIdx.x) >> 4) + 64))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028192))] = (conv_local[(22)] + bias[(((((int)threadIdx.x) >> 4) + 80))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633824))] = (conv_local[(26)] + bias[(((((int)threadIdx.x) >> 4) + 96))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239456))] = (conv_local[(30)] + bias[(((((int)threadIdx.x) >> 4) + 112))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 48))] = (conv_local[(3)] + bias[((((int)threadIdx.x) >> 4))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605680))] = (conv_local[(7)] + bias[(((((int)threadIdx.x) >> 4) + 16))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211312))] = (conv_local[(11)] + bias[(((((int)threadIdx.x) >> 4) + 32))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816944))] = (conv_local[(15)] + bias[(((((int)threadIdx.x) >> 4) + 48))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422576))] = (conv_local[(19)] + bias[(((((int)threadIdx.x) >> 4) + 64))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028208))] = (conv_local[(23)] + bias[(((((int)threadIdx.x) >> 4) + 80))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633840))] = (conv_local[(27)] + bias[(((((int)threadIdx.x) >> 4) + 96))]);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239472))] = (conv_local[(31)] + bias[(((((int)threadIdx.x) >> 4) + 112))]);
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 708230655560000.0, "TPR": 0.0031456}
+
+[Antares] Average time cost / run = 0.0031456 sec, 9449.26 gflops. (Checked: True)
+
+Traceback (most recent call last):
+  File "./antares/antares_compiler.py", line 728, in <module>
+    main_compute()
+  File "./antares/antares_compiler.py", line 467, in main_compute
+    assert digests is not None, "Failed to generate CPU result for correctness reference"
+AssertionError: Failed to generate CPU result for correctness reference
+  >> Backend = c-cuda, Python PID = 1011, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+  >> Backend = c-cuda, Python PID = 1460, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[(conv[F, SA] + bias[F])], axis=[iter_var(F, range(min=0, ext=168)), iter_var(SA, range(min=0, ext=225792))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 2 results with threshold 0.0
+found 10 results with threshold 0.2
+[debug] config = {"0": "{\"tile\": [24, 512], \"step\": [8]}", "1": "{\"tile\": [2, 16], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [12, 2], 'SA': [32, 16], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [2, 12, 1], 'SA': [16, 32, 1], 'RA': [8, 1]}
+[debug] thread per block 384
+
+// ---------------------------------------------------------------------------
+// GLOBALS: bias:float32[168], data:float32[128, 168, 42, 42], kernel:float32[168, 168, 1, 1] -> conv_unpad:float32[168, 225792]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 168, 168, 42, 42, 1, 1, 1, 1, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA] + bias[F] where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}, "bias": {"dtype": "float32", "shape": [_F]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- bias:float32[168], data:float32[128, 168, 42, 42], kernel:float32[168, 168, 1, 1] -> conv_unpad:float32[168, 225792]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(384) void template_op_kernel0(float* __restrict__ bias, float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 3087
+  // [thread_extent] threadIdx.x = 384
+  float conv_local[32];
+  for (int vthread_s = 0; vthread_s < 16; ++vthread_s) {
+    conv_local[(vthread_s)] = 0.000000e+00f;
+    conv_local[((vthread_s + 16))] = 0.000000e+00f;
+  }
+  for (int RA_outer = 0; RA_outer < 21; ++RA_outer) {
+    __shared__ float kernel_pad_shared[192];
+  // [thread_extent] threadIdx.x = 384
+    __syncthreads();
+    if (((int)threadIdx.x) < 192) {
+      kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)blockIdx.x) / 441) * 4032) + ((((int)threadIdx.x) >> 3) * 168)) + (RA_outer * 8)) + (((int)threadIdx.x) & 7)))];
+    }
+    __shared__ float data_pad_shared[4096];
+  // [thread_extent] threadIdx.x = 384
+    data_pad_shared[(((int)threadIdx.x))] = data[(((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 384))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 384) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 768))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 768) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 1152))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 1152) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 1536))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)) + 5292))];
+    data_pad_shared[((((int)threadIdx.x) + 1920))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 1920) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 2304))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 2304) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 2688))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 2688) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 3072))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)) + 10584))];
+    data_pad_shared[((((int)threadIdx.x) + 3456))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 3456) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    if (((int)threadIdx.x) < 256) {
+      data_pad_shared[((((int)threadIdx.x) + 3840))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 3840) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) % 42)))];
+    }
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[2];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 5) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 5) * 8) + RA_inner_outer) + 96))];
+      float data_pad_shared_local[16];
+      for (int vthread_s1 = 0; vthread_s1 < 16; ++vthread_s1) {
+        data_pad_shared_local[(vthread_s1)] = data_pad_shared[((((RA_inner_outer * 512) + (vthread_s1 * 32)) + (((int)threadIdx.x) & 31)))];
+      }
+      for (int vthread_s2 = 0; vthread_s2 < 16; ++vthread_s2) {
+        conv_local[(vthread_s2)] = (conv_local[(vthread_s2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(vthread_s2)]));
+        conv_local[((vthread_s2 + 16))] = (conv_local[((vthread_s2 + 16))] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(vthread_s2)]));
+      }
+    }
+  }
+  for (int vthread_s3 = 0; vthread_s3 < 16; ++vthread_s3) {
+    conv_unpad[(((((((((int)blockIdx.x) / 441) * 5419008) + ((((int)threadIdx.x) >> 5) * 225792)) + ((((int)blockIdx.x) % 441) * 512)) + (vthread_s3 * 32)) + (((int)threadIdx.x) & 31)))] = (conv_local[(vthread_s3)] + bias[((((((int)blockIdx.x) / 441) * 24) + (((int)threadIdx.x) >> 5)))]);
+    conv_unpad[((((((((((int)blockIdx.x) / 441) * 5419008) + ((((int)threadIdx.x) >> 5) * 225792)) + ((((int)blockIdx.x) % 441) * 512)) + (vthread_s3 * 32)) + (((int)threadIdx.x) & 31)) + 2709504))] = (conv_local[((vthread_s3 + 16))] + bias[(((((((int)blockIdx.x) / 441) * 24) + (((int)threadIdx.x) >> 5)) + 12))]);
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 319952640640000.0, "TPR": 0.00175557}
+
+[Antares] Average time cost / run = 0.00175557 sec, 7303.27 gflops. (Checked: True)
+
+Finish Conv Implicit GEMM Fused Bias
+Traceback (most recent call last):
+  File "./antares/antares_compiler.py", line 728, in <module>
+    main_compute()
+  File "./antares/antares_compiler.py", line 467, in main_compute
+    assert digests is not None, "Failed to generate CPU result for correctness reference"
+AssertionError: Failed to generate CPU result for correctness reference
+  >> Backend = c-cuda, Python PID = 3943, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+  >> Backend = c-cuda, Python PID = 4574, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[tir.call_pure_extern("max", conv[F, SA], 0f)], axis=[iter_var(F, range(min=0, ext=128)), iter_var(SA, range(min=0, ext=100352))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 10 results with threshold 0.0
+[debug] config = {"0": "{\"tile\": [128, 64], \"step\": [8]}", "1": "{\"tile\": [8, 4], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [16, 8], 'SA': [16, 4], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [8, 16, 1], 'SA': [4, 16, 1], 'RA': [8, 1]}
+[debug] thread per block 256
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 128, 57, 57], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 128, 128, 57, 57, 3, 3, 2, 2, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA].call(`max`, [0.0]) where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 128, 57, 57], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(256) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 1568
+  // [thread_extent] threadIdx.x = 256
+  float conv_local[32];
+  conv_local[(0)] = 0.000000e+00f;
+  conv_local[(4)] = 0.000000e+00f;
+  conv_local[(8)] = 0.000000e+00f;
+  conv_local[(12)] = 0.000000e+00f;
+  conv_local[(16)] = 0.000000e+00f;
+  conv_local[(20)] = 0.000000e+00f;
+  conv_local[(24)] = 0.000000e+00f;
+  conv_local[(28)] = 0.000000e+00f;
+  conv_local[(1)] = 0.000000e+00f;
+  conv_local[(5)] = 0.000000e+00f;
+  conv_local[(9)] = 0.000000e+00f;
+  conv_local[(13)] = 0.000000e+00f;
+  conv_local[(17)] = 0.000000e+00f;
+  conv_local[(21)] = 0.000000e+00f;
+  conv_local[(25)] = 0.000000e+00f;
+  conv_local[(29)] = 0.000000e+00f;
+  conv_local[(2)] = 0.000000e+00f;
+  conv_local[(6)] = 0.000000e+00f;
+  conv_local[(10)] = 0.000000e+00f;
+  conv_local[(14)] = 0.000000e+00f;
+  conv_local[(18)] = 0.000000e+00f;
+  conv_local[(22)] = 0.000000e+00f;
+  conv_local[(26)] = 0.000000e+00f;
+  conv_local[(30)] = 0.000000e+00f;
+  conv_local[(3)] = 0.000000e+00f;
+  conv_local[(7)] = 0.000000e+00f;
+  conv_local[(11)] = 0.000000e+00f;
+  conv_local[(15)] = 0.000000e+00f;
+  conv_local[(19)] = 0.000000e+00f;
+  conv_local[(23)] = 0.000000e+00f;
+  conv_local[(27)] = 0.000000e+00f;
+  conv_local[(31)] = 0.000000e+00f;
+  for (int RA_outer = 0; RA_outer < 144; ++RA_outer) {
+    __shared__ float kernel_pad_shared[1024];
+  // [thread_extent] threadIdx.x = 256
+    __syncthreads();
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)))];
+    kernel_pad_shared[((((int)threadIdx.x) + 256))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 36864))];
+    kernel_pad_shared[((((int)threadIdx.x) + 512))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 73728))];
+    kernel_pad_shared[((((int)threadIdx.x) + 768))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 110592))];
+    __shared__ float data_pad_shared[512];
+  // [thread_extent] threadIdx.x = 256
+    data_pad_shared[(((int)threadIdx.x))] = data[((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 415872) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) / 9) * 3249)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 114)) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3) * 57)) + ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) * 2)) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)))];
+    data_pad_shared[((((int)threadIdx.x) + 256))] = data[((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 415872) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) / 9) * 3249)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 114)) + ((((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3) * 57)) + ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) * 2)) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)))];
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[8];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 128))];
+      kernel_pad_shared_local[(2)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 256))];
+      kernel_pad_shared_local[(3)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 384))];
+      kernel_pad_shared_local[(4)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 512))];
+      kernel_pad_shared_local[(5)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 640))];
+      kernel_pad_shared_local[(6)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 768))];
+      kernel_pad_shared_local[(7)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 896))];
+      float data_pad_shared_local[4];
+      data_pad_shared_local[(0)] = data_pad_shared[(((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)))];
+      data_pad_shared_local[(1)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 16))];
+      data_pad_shared_local[(2)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 32))];
+      data_pad_shared_local[(3)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 48))];
+      conv_local[(0)] = (conv_local[(0)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(0)]));
+      conv_local[(4)] = (conv_local[(4)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(0)]));
+      conv_local[(8)] = (conv_local[(8)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(0)]));
+      conv_local[(12)] = (conv_local[(12)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(0)]));
+      conv_local[(16)] = (conv_local[(16)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(0)]));
+      conv_local[(20)] = (conv_local[(20)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(0)]));
+      conv_local[(24)] = (conv_local[(24)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(0)]));
+      conv_local[(28)] = (conv_local[(28)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(0)]));
+      conv_local[(1)] = (conv_local[(1)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(1)]));
+      conv_local[(5)] = (conv_local[(5)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(1)]));
+      conv_local[(9)] = (conv_local[(9)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(1)]));
+      conv_local[(13)] = (conv_local[(13)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(1)]));
+      conv_local[(17)] = (conv_local[(17)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(1)]));
+      conv_local[(21)] = (conv_local[(21)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(1)]));
+      conv_local[(25)] = (conv_local[(25)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(1)]));
+      conv_local[(29)] = (conv_local[(29)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(1)]));
+      conv_local[(2)] = (conv_local[(2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(2)]));
+      conv_local[(6)] = (conv_local[(6)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(2)]));
+      conv_local[(10)] = (conv_local[(10)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(2)]));
+      conv_local[(14)] = (conv_local[(14)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(2)]));
+      conv_local[(18)] = (conv_local[(18)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(2)]));
+      conv_local[(22)] = (conv_local[(22)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(2)]));
+      conv_local[(26)] = (conv_local[(26)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(2)]));
+      conv_local[(30)] = (conv_local[(30)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(2)]));
+      conv_local[(3)] = (conv_local[(3)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(3)]));
+      conv_local[(7)] = (conv_local[(7)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(3)]));
+      conv_local[(11)] = (conv_local[(11)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(3)]));
+      conv_local[(15)] = (conv_local[(15)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(3)]));
+      conv_local[(19)] = (conv_local[(19)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(3)]));
+      conv_local[(23)] = (conv_local[(23)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(3)]));
+      conv_local[(27)] = (conv_local[(27)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(3)]));
+      conv_local[(31)] = (conv_local[(31)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(3)]));
+    }
+  }
+  conv_unpad[(((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)))] = max(conv_local[(0)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605632))] = max(conv_local[(4)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211264))] = max(conv_local[(8)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816896))] = max(conv_local[(12)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422528))] = max(conv_local[(16)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028160))] = max(conv_local[(20)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633792))] = max(conv_local[(24)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239424))] = max(conv_local[(28)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 16))] = max(conv_local[(1)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605648))] = max(conv_local[(5)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211280))] = max(conv_local[(9)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816912))] = max(conv_local[(13)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422544))] = max(conv_local[(17)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028176))] = max(conv_local[(21)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633808))] = max(conv_local[(25)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239440))] = max(conv_local[(29)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 32))] = max(conv_local[(2)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605664))] = max(conv_local[(6)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211296))] = max(conv_local[(10)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816928))] = max(conv_local[(14)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422560))] = max(conv_local[(18)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028192))] = max(conv_local[(22)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633824))] = max(conv_local[(26)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239456))] = max(conv_local[(30)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 48))] = max(conv_local[(3)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605680))] = max(conv_local[(7)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211312))] = max(conv_local[(11)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816944))] = max(conv_local[(15)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422576))] = max(conv_local[(19)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028208))] = max(conv_local[(23)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633840))] = max(conv_local[(27)], 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239472))] = max(conv_local[(31)], 0.000000e+00f);
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 743173567050000.0, "TPR": 0.00293069}
+
+[Antares] Average time cost / run = 0.00293069 sec, 10142.2 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 5592, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[tir.call_pure_extern("max", conv[F, SA], 0f)], axis=[iter_var(F, range(min=0, ext=168)), iter_var(SA, range(min=0, ext=225792))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 2 results with threshold 0.0
+found 10 results with threshold 0.2
+[debug] config = {"0": "{\"tile\": [24, 512], \"step\": [8]}", "1": "{\"tile\": [2, 16], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [12, 2], 'SA': [32, 16], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [2, 12, 1], 'SA': [16, 32, 1], 'RA': [8, 1]}
+[debug] thread per block 384
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 168, 42, 42], kernel:float32[168, 168, 1, 1] -> conv_unpad:float32[168, 225792]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 168, 168, 42, 42, 1, 1, 1, 1, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = conv[F, SA].call(`max`, [0.0]) where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 168, 42, 42], kernel:float32[168, 168, 1, 1] -> conv_unpad:float32[168, 225792]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(384) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 3087
+  // [thread_extent] threadIdx.x = 384
+  float conv_local[32];
+  for (int vthread_s = 0; vthread_s < 16; ++vthread_s) {
+    conv_local[(vthread_s)] = 0.000000e+00f;
+    conv_local[((vthread_s + 16))] = 0.000000e+00f;
+  }
+  for (int RA_outer = 0; RA_outer < 21; ++RA_outer) {
+    __shared__ float kernel_pad_shared[192];
+  // [thread_extent] threadIdx.x = 384
+    __syncthreads();
+    if (((int)threadIdx.x) < 192) {
+      kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)blockIdx.x) / 441) * 4032) + ((((int)threadIdx.x) >> 3) * 168)) + (RA_outer * 8)) + (((int)threadIdx.x) & 7)))];
+    }
+    __shared__ float data_pad_shared[4096];
+  // [thread_extent] threadIdx.x = 384
+    data_pad_shared[(((int)threadIdx.x))] = data[(((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 384))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 384) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 768))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 768) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 1152))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 1152) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 1536))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)) + 5292))];
+    data_pad_shared[((((int)threadIdx.x) + 1920))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 1920) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 2304))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 2304) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 2688))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 2688) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 3072))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)) + 10584))];
+    data_pad_shared[((((int)threadIdx.x) + 3456))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 3456) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    if (((int)threadIdx.x) < 256) {
+      data_pad_shared[((((int)threadIdx.x) + 3840))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 3840) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) % 42)))];
+    }
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[2];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 5) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 5) * 8) + RA_inner_outer) + 96))];
+      float data_pad_shared_local[16];
+      for (int vthread_s1 = 0; vthread_s1 < 16; ++vthread_s1) {
+        data_pad_shared_local[(vthread_s1)] = data_pad_shared[((((RA_inner_outer * 512) + (vthread_s1 * 32)) + (((int)threadIdx.x) & 31)))];
+      }
+      for (int vthread_s2 = 0; vthread_s2 < 16; ++vthread_s2) {
+        conv_local[(vthread_s2)] = (conv_local[(vthread_s2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(vthread_s2)]));
+        conv_local[((vthread_s2 + 16))] = (conv_local[((vthread_s2 + 16))] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(vthread_s2)]));
+      }
+    }
+  }
+  for (int vthread_s3 = 0; vthread_s3 < 16; ++vthread_s3) {
+    conv_unpad[(((((((((int)blockIdx.x) / 441) * 5419008) + ((((int)threadIdx.x) >> 5) * 225792)) + ((((int)blockIdx.x) % 441) * 512)) + (vthread_s3 * 32)) + (((int)threadIdx.x) & 31)))] = max(conv_local[(vthread_s3)], 0.000000e+00f);
+    conv_unpad[((((((((((int)blockIdx.x) / 441) * 5419008) + ((((int)threadIdx.x) >> 5) * 225792)) + ((((int)blockIdx.x) % 441) * 512)) + (vthread_s3 * 32)) + (((int)threadIdx.x) & 31)) + 2709504))] = max(conv_local[((vthread_s3 + 16))], 0.000000e+00f);
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 319891406910000.0, "TPR": 0.00174695}
+
+[Antares] Average time cost / run = 0.00174695 sec, 7339.31 gflops. (Checked: True)
+
+Finish Conv Implicit GEMM Fused Relu
+  >> Backend = c-cuda, Python PID = 7838, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[tir.call_pure_extern("max", (conv[F, SA] + bias[F]), 0f)], axis=[iter_var(F, range(min=0, ext=128)), iter_var(SA, range(min=0, ext=100352))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 10 results with threshold 0.0
+[debug] config = {"0": "{\"tile\": [128, 64], \"step\": [8]}", "1": "{\"tile\": [8, 4], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [16, 8], 'SA': [16, 4], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [8, 16, 1], 'SA': [4, 16, 1], 'RA': [8, 1]}
+[debug] thread per block 256
+
+// ---------------------------------------------------------------------------
+// GLOBALS: bias:float32[128], data:float32[128, 128, 28, 28], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 128, 128, 28, 28, 3, 3, 1, 1, 1, 1; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = (conv[F, SA] + bias[F]).call(`max`, [0.0]) where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}, "bias": {"dtype": "float32", "shape": [_F]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- bias:float32[128], data:float32[128, 128, 28, 28], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(256) void template_op_kernel0(float* __restrict__ bias, float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 1568
+  // [thread_extent] threadIdx.x = 256
+  float conv_local[32];
+  conv_local[(0)] = 0.000000e+00f;
+  conv_local[(4)] = 0.000000e+00f;
+  conv_local[(8)] = 0.000000e+00f;
+  conv_local[(12)] = 0.000000e+00f;
+  conv_local[(16)] = 0.000000e+00f;
+  conv_local[(20)] = 0.000000e+00f;
+  conv_local[(24)] = 0.000000e+00f;
+  conv_local[(28)] = 0.000000e+00f;
+  conv_local[(1)] = 0.000000e+00f;
+  conv_local[(5)] = 0.000000e+00f;
+  conv_local[(9)] = 0.000000e+00f;
+  conv_local[(13)] = 0.000000e+00f;
+  conv_local[(17)] = 0.000000e+00f;
+  conv_local[(21)] = 0.000000e+00f;
+  conv_local[(25)] = 0.000000e+00f;
+  conv_local[(29)] = 0.000000e+00f;
+  conv_local[(2)] = 0.000000e+00f;
+  conv_local[(6)] = 0.000000e+00f;
+  conv_local[(10)] = 0.000000e+00f;
+  conv_local[(14)] = 0.000000e+00f;
+  conv_local[(18)] = 0.000000e+00f;
+  conv_local[(22)] = 0.000000e+00f;
+  conv_local[(26)] = 0.000000e+00f;
+  conv_local[(30)] = 0.000000e+00f;
+  conv_local[(3)] = 0.000000e+00f;
+  conv_local[(7)] = 0.000000e+00f;
+  conv_local[(11)] = 0.000000e+00f;
+  conv_local[(15)] = 0.000000e+00f;
+  conv_local[(19)] = 0.000000e+00f;
+  conv_local[(23)] = 0.000000e+00f;
+  conv_local[(27)] = 0.000000e+00f;
+  conv_local[(31)] = 0.000000e+00f;
+  for (int RA_outer = 0; RA_outer < 144; ++RA_outer) {
+    __shared__ float kernel_pad_shared[1024];
+  // [thread_extent] threadIdx.x = 256
+    __syncthreads();
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)))];
+    kernel_pad_shared[((((int)threadIdx.x) + 256))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 36864))];
+    kernel_pad_shared[((((int)threadIdx.x) + 512))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 73728))];
+    kernel_pad_shared[((((int)threadIdx.x) + 768))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 110592))];
+    __shared__ float data_pad_shared[512];
+  // [thread_extent] threadIdx.x = 256
+    data_pad_shared[(((int)threadIdx.x))] = (((((1 <= (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3))) && ((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3)) < 29)) && (1 <= ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)))) && (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)) < 29)) ? data[(((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 100352) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) / 9) * 784)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 28)) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3) * 28)) + (((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28)) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)) - 29))] : 0.000000e+00f);
+    data_pad_shared[((((int)threadIdx.x) + 256))] = (((((1 <= (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3))) && ((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3)) < 29)) && (1 <= ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)))) && (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)) < 29)) ? data[(((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 100352) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) / 9) * 784)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 28)) + ((((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3) * 28)) + (((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28)) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)) - 29))] : 0.000000e+00f);
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[8];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 128))];
+      kernel_pad_shared_local[(2)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 256))];
+      kernel_pad_shared_local[(3)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 384))];
+      kernel_pad_shared_local[(4)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 512))];
+      kernel_pad_shared_local[(5)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 640))];
+      kernel_pad_shared_local[(6)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 768))];
+      kernel_pad_shared_local[(7)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 896))];
+      float data_pad_shared_local[4];
+      data_pad_shared_local[(0)] = data_pad_shared[(((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)))];
+      data_pad_shared_local[(1)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 16))];
+      data_pad_shared_local[(2)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 32))];
+      data_pad_shared_local[(3)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 48))];
+      conv_local[(0)] = (conv_local[(0)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(0)]));
+      conv_local[(4)] = (conv_local[(4)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(0)]));
+      conv_local[(8)] = (conv_local[(8)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(0)]));
+      conv_local[(12)] = (conv_local[(12)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(0)]));
+      conv_local[(16)] = (conv_local[(16)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(0)]));
+      conv_local[(20)] = (conv_local[(20)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(0)]));
+      conv_local[(24)] = (conv_local[(24)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(0)]));
+      conv_local[(28)] = (conv_local[(28)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(0)]));
+      conv_local[(1)] = (conv_local[(1)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(1)]));
+      conv_local[(5)] = (conv_local[(5)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(1)]));
+      conv_local[(9)] = (conv_local[(9)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(1)]));
+      conv_local[(13)] = (conv_local[(13)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(1)]));
+      conv_local[(17)] = (conv_local[(17)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(1)]));
+      conv_local[(21)] = (conv_local[(21)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(1)]));
+      conv_local[(25)] = (conv_local[(25)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(1)]));
+      conv_local[(29)] = (conv_local[(29)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(1)]));
+      conv_local[(2)] = (conv_local[(2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(2)]));
+      conv_local[(6)] = (conv_local[(6)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(2)]));
+      conv_local[(10)] = (conv_local[(10)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(2)]));
+      conv_local[(14)] = (conv_local[(14)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(2)]));
+      conv_local[(18)] = (conv_local[(18)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(2)]));
+      conv_local[(22)] = (conv_local[(22)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(2)]));
+      conv_local[(26)] = (conv_local[(26)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(2)]));
+      conv_local[(30)] = (conv_local[(30)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(2)]));
+      conv_local[(3)] = (conv_local[(3)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(3)]));
+      conv_local[(7)] = (conv_local[(7)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(3)]));
+      conv_local[(11)] = (conv_local[(11)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(3)]));
+      conv_local[(15)] = (conv_local[(15)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(3)]));
+      conv_local[(19)] = (conv_local[(19)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(3)]));
+      conv_local[(23)] = (conv_local[(23)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(3)]));
+      conv_local[(27)] = (conv_local[(27)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(3)]));
+      conv_local[(31)] = (conv_local[(31)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(3)]));
+    }
+  }
+  conv_unpad[(((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)))] = max((conv_local[(0)] + bias[((((int)threadIdx.x) >> 4))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605632))] = max((conv_local[(4)] + bias[(((((int)threadIdx.x) >> 4) + 16))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211264))] = max((conv_local[(8)] + bias[(((((int)threadIdx.x) >> 4) + 32))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816896))] = max((conv_local[(12)] + bias[(((((int)threadIdx.x) >> 4) + 48))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422528))] = max((conv_local[(16)] + bias[(((((int)threadIdx.x) >> 4) + 64))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028160))] = max((conv_local[(20)] + bias[(((((int)threadIdx.x) >> 4) + 80))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633792))] = max((conv_local[(24)] + bias[(((((int)threadIdx.x) >> 4) + 96))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239424))] = max((conv_local[(28)] + bias[(((((int)threadIdx.x) >> 4) + 112))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 16))] = max((conv_local[(1)] + bias[((((int)threadIdx.x) >> 4))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605648))] = max((conv_local[(5)] + bias[(((((int)threadIdx.x) >> 4) + 16))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211280))] = max((conv_local[(9)] + bias[(((((int)threadIdx.x) >> 4) + 32))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816912))] = max((conv_local[(13)] + bias[(((((int)threadIdx.x) >> 4) + 48))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422544))] = max((conv_local[(17)] + bias[(((((int)threadIdx.x) >> 4) + 64))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028176))] = max((conv_local[(21)] + bias[(((((int)threadIdx.x) >> 4) + 80))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633808))] = max((conv_local[(25)] + bias[(((((int)threadIdx.x) >> 4) + 96))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239440))] = max((conv_local[(29)] + bias[(((((int)threadIdx.x) >> 4) + 112))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 32))] = max((conv_local[(2)] + bias[((((int)threadIdx.x) >> 4))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605664))] = max((conv_local[(6)] + bias[(((((int)threadIdx.x) >> 4) + 16))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211296))] = max((conv_local[(10)] + bias[(((((int)threadIdx.x) >> 4) + 32))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816928))] = max((conv_local[(14)] + bias[(((((int)threadIdx.x) >> 4) + 48))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422560))] = max((conv_local[(18)] + bias[(((((int)threadIdx.x) >> 4) + 64))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028192))] = max((conv_local[(22)] + bias[(((((int)threadIdx.x) >> 4) + 80))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633824))] = max((conv_local[(26)] + bias[(((((int)threadIdx.x) >> 4) + 96))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239456))] = max((conv_local[(30)] + bias[(((((int)threadIdx.x) >> 4) + 112))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 48))] = max((conv_local[(3)] + bias[((((int)threadIdx.x) >> 4))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605680))] = max((conv_local[(7)] + bias[(((((int)threadIdx.x) >> 4) + 16))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211312))] = max((conv_local[(11)] + bias[(((((int)threadIdx.x) >> 4) + 32))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816944))] = max((conv_local[(15)] + bias[(((((int)threadIdx.x) >> 4) + 48))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422576))] = max((conv_local[(19)] + bias[(((((int)threadIdx.x) >> 4) + 64))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028208))] = max((conv_local[(23)] + bias[(((((int)threadIdx.x) >> 4) + 80))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633840))] = max((conv_local[(27)] + bias[(((((int)threadIdx.x) >> 4) + 96))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239472))] = max((conv_local[(31)] + bias[(((((int)threadIdx.x) >> 4) + 112))]), 0.000000e+00f);
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 708230655560000.0, "TPR": 0.00308669}
+
+[Antares] Average time cost / run = 0.00308669 sec, 9629.61 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 8639, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[tir.call_pure_extern("max", (conv[F, SA] + bias[F]), 0f)], axis=[iter_var(F, range(min=0, ext=128)), iter_var(SA, range(min=0, ext=100352))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 10 results with threshold 0.0
+[debug] config = {"0": "{\"tile\": [128, 64], \"step\": [8]}", "1": "{\"tile\": [8, 4], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [16, 8], 'SA': [16, 4], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [8, 16, 1], 'SA': [4, 16, 1], 'RA': [8, 1]}
+[debug] thread per block 256
+
+// ---------------------------------------------------------------------------
+// GLOBALS: bias:float32[128], data:float32[128, 128, 57, 57], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 128, 128, 57, 57, 3, 3, 2, 2, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = (conv[F, SA] + bias[F]).call(`max`, [0.0]) where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}, "bias": {"dtype": "float32", "shape": [_F]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- bias:float32[128], data:float32[128, 128, 57, 57], kernel:float32[128, 128, 3, 3] -> conv_unpad:float32[128, 100352]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(256) void template_op_kernel0(float* __restrict__ bias, float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 1568
+  // [thread_extent] threadIdx.x = 256
+  float conv_local[32];
+  conv_local[(0)] = 0.000000e+00f;
+  conv_local[(4)] = 0.000000e+00f;
+  conv_local[(8)] = 0.000000e+00f;
+  conv_local[(12)] = 0.000000e+00f;
+  conv_local[(16)] = 0.000000e+00f;
+  conv_local[(20)] = 0.000000e+00f;
+  conv_local[(24)] = 0.000000e+00f;
+  conv_local[(28)] = 0.000000e+00f;
+  conv_local[(1)] = 0.000000e+00f;
+  conv_local[(5)] = 0.000000e+00f;
+  conv_local[(9)] = 0.000000e+00f;
+  conv_local[(13)] = 0.000000e+00f;
+  conv_local[(17)] = 0.000000e+00f;
+  conv_local[(21)] = 0.000000e+00f;
+  conv_local[(25)] = 0.000000e+00f;
+  conv_local[(29)] = 0.000000e+00f;
+  conv_local[(2)] = 0.000000e+00f;
+  conv_local[(6)] = 0.000000e+00f;
+  conv_local[(10)] = 0.000000e+00f;
+  conv_local[(14)] = 0.000000e+00f;
+  conv_local[(18)] = 0.000000e+00f;
+  conv_local[(22)] = 0.000000e+00f;
+  conv_local[(26)] = 0.000000e+00f;
+  conv_local[(30)] = 0.000000e+00f;
+  conv_local[(3)] = 0.000000e+00f;
+  conv_local[(7)] = 0.000000e+00f;
+  conv_local[(11)] = 0.000000e+00f;
+  conv_local[(15)] = 0.000000e+00f;
+  conv_local[(19)] = 0.000000e+00f;
+  conv_local[(23)] = 0.000000e+00f;
+  conv_local[(27)] = 0.000000e+00f;
+  conv_local[(31)] = 0.000000e+00f;
+  for (int RA_outer = 0; RA_outer < 144; ++RA_outer) {
+    __shared__ float kernel_pad_shared[1024];
+  // [thread_extent] threadIdx.x = 256
+    __syncthreads();
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)))];
+    kernel_pad_shared[((((int)threadIdx.x) + 256))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 36864))];
+    kernel_pad_shared[((((int)threadIdx.x) + 512))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 73728))];
+    kernel_pad_shared[((((int)threadIdx.x) + 768))] = kernel[(((((((((int)threadIdx.x) >> 3) * 1152) + ((((RA_outer * 8) + (((int)threadIdx.x) & 7)) / 9) * 9)) + (((((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 9) / 3) * 3)) + (((RA_outer * 8) + (((int)threadIdx.x) & 7)) % 3)) + 110592))];
+    __shared__ float data_pad_shared[512];
+  // [thread_extent] threadIdx.x = 256
+    data_pad_shared[(((int)threadIdx.x))] = data[((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 415872) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) / 9) * 3249)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 114)) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 9) / 3) * 57)) + ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) * 2)) + (((RA_outer * 8) + (((int)threadIdx.x) >> 6)) % 3)))];
+    data_pad_shared[((((int)threadIdx.x) + 256))] = data[((((((((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) / 784) * 415872) + (((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) / 9) * 3249)) + (((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 784) / 28) * 114)) + ((((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 4) % 9) / 3) * 57)) + ((((((int)blockIdx.x) * 64) + (((int)threadIdx.x) & 63)) % 28) * 2)) + ((((RA_outer * 8) + (((int)threadIdx.x) >> 6)) + 1) % 3)))];
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[8];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 128))];
+      kernel_pad_shared_local[(2)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 256))];
+      kernel_pad_shared_local[(3)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 384))];
+      kernel_pad_shared_local[(4)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 512))];
+      kernel_pad_shared_local[(5)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 640))];
+      kernel_pad_shared_local[(6)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 768))];
+      kernel_pad_shared_local[(7)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 4) * 8) + RA_inner_outer) + 896))];
+      float data_pad_shared_local[4];
+      data_pad_shared_local[(0)] = data_pad_shared[(((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)))];
+      data_pad_shared_local[(1)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 16))];
+      data_pad_shared_local[(2)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 32))];
+      data_pad_shared_local[(3)] = data_pad_shared[((((RA_inner_outer * 64) + (((int)threadIdx.x) & 15)) + 48))];
+      conv_local[(0)] = (conv_local[(0)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(0)]));
+      conv_local[(4)] = (conv_local[(4)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(0)]));
+      conv_local[(8)] = (conv_local[(8)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(0)]));
+      conv_local[(12)] = (conv_local[(12)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(0)]));
+      conv_local[(16)] = (conv_local[(16)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(0)]));
+      conv_local[(20)] = (conv_local[(20)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(0)]));
+      conv_local[(24)] = (conv_local[(24)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(0)]));
+      conv_local[(28)] = (conv_local[(28)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(0)]));
+      conv_local[(1)] = (conv_local[(1)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(1)]));
+      conv_local[(5)] = (conv_local[(5)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(1)]));
+      conv_local[(9)] = (conv_local[(9)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(1)]));
+      conv_local[(13)] = (conv_local[(13)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(1)]));
+      conv_local[(17)] = (conv_local[(17)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(1)]));
+      conv_local[(21)] = (conv_local[(21)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(1)]));
+      conv_local[(25)] = (conv_local[(25)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(1)]));
+      conv_local[(29)] = (conv_local[(29)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(1)]));
+      conv_local[(2)] = (conv_local[(2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(2)]));
+      conv_local[(6)] = (conv_local[(6)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(2)]));
+      conv_local[(10)] = (conv_local[(10)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(2)]));
+      conv_local[(14)] = (conv_local[(14)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(2)]));
+      conv_local[(18)] = (conv_local[(18)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(2)]));
+      conv_local[(22)] = (conv_local[(22)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(2)]));
+      conv_local[(26)] = (conv_local[(26)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(2)]));
+      conv_local[(30)] = (conv_local[(30)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(2)]));
+      conv_local[(3)] = (conv_local[(3)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(3)]));
+      conv_local[(7)] = (conv_local[(7)] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(3)]));
+      conv_local[(11)] = (conv_local[(11)] + (kernel_pad_shared_local[(2)] * data_pad_shared_local[(3)]));
+      conv_local[(15)] = (conv_local[(15)] + (kernel_pad_shared_local[(3)] * data_pad_shared_local[(3)]));
+      conv_local[(19)] = (conv_local[(19)] + (kernel_pad_shared_local[(4)] * data_pad_shared_local[(3)]));
+      conv_local[(23)] = (conv_local[(23)] + (kernel_pad_shared_local[(5)] * data_pad_shared_local[(3)]));
+      conv_local[(27)] = (conv_local[(27)] + (kernel_pad_shared_local[(6)] * data_pad_shared_local[(3)]));
+      conv_local[(31)] = (conv_local[(31)] + (kernel_pad_shared_local[(7)] * data_pad_shared_local[(3)]));
+    }
+  }
+  conv_unpad[(((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)))] = max((conv_local[(0)] + bias[((((int)threadIdx.x) >> 4))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605632))] = max((conv_local[(4)] + bias[(((((int)threadIdx.x) >> 4) + 16))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211264))] = max((conv_local[(8)] + bias[(((((int)threadIdx.x) >> 4) + 32))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816896))] = max((conv_local[(12)] + bias[(((((int)threadIdx.x) >> 4) + 48))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422528))] = max((conv_local[(16)] + bias[(((((int)threadIdx.x) >> 4) + 64))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028160))] = max((conv_local[(20)] + bias[(((((int)threadIdx.x) >> 4) + 80))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633792))] = max((conv_local[(24)] + bias[(((((int)threadIdx.x) >> 4) + 96))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239424))] = max((conv_local[(28)] + bias[(((((int)threadIdx.x) >> 4) + 112))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 16))] = max((conv_local[(1)] + bias[((((int)threadIdx.x) >> 4))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605648))] = max((conv_local[(5)] + bias[(((((int)threadIdx.x) >> 4) + 16))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211280))] = max((conv_local[(9)] + bias[(((((int)threadIdx.x) >> 4) + 32))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816912))] = max((conv_local[(13)] + bias[(((((int)threadIdx.x) >> 4) + 48))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422544))] = max((conv_local[(17)] + bias[(((((int)threadIdx.x) >> 4) + 64))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028176))] = max((conv_local[(21)] + bias[(((((int)threadIdx.x) >> 4) + 80))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633808))] = max((conv_local[(25)] + bias[(((((int)threadIdx.x) >> 4) + 96))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239440))] = max((conv_local[(29)] + bias[(((((int)threadIdx.x) >> 4) + 112))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 32))] = max((conv_local[(2)] + bias[((((int)threadIdx.x) >> 4))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605664))] = max((conv_local[(6)] + bias[(((((int)threadIdx.x) >> 4) + 16))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211296))] = max((conv_local[(10)] + bias[(((((int)threadIdx.x) >> 4) + 32))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816928))] = max((conv_local[(14)] + bias[(((((int)threadIdx.x) >> 4) + 48))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422560))] = max((conv_local[(18)] + bias[(((((int)threadIdx.x) >> 4) + 64))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028192))] = max((conv_local[(22)] + bias[(((((int)threadIdx.x) >> 4) + 80))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633824))] = max((conv_local[(26)] + bias[(((((int)threadIdx.x) >> 4) + 96))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239456))] = max((conv_local[(30)] + bias[(((((int)threadIdx.x) >> 4) + 112))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 48))] = max((conv_local[(3)] + bias[((((int)threadIdx.x) >> 4))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 1605680))] = max((conv_local[(7)] + bias[(((((int)threadIdx.x) >> 4) + 16))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 3211312))] = max((conv_local[(11)] + bias[(((((int)threadIdx.x) >> 4) + 32))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 4816944))] = max((conv_local[(15)] + bias[(((((int)threadIdx.x) >> 4) + 48))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 6422576))] = max((conv_local[(19)] + bias[(((((int)threadIdx.x) >> 4) + 64))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 8028208))] = max((conv_local[(23)] + bias[(((((int)threadIdx.x) >> 4) + 80))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 9633840))] = max((conv_local[(27)] + bias[(((((int)threadIdx.x) >> 4) + 96))]), 0.000000e+00f);
+  conv_unpad[((((((((int)threadIdx.x) >> 4) * 100352) + (((int)blockIdx.x) * 64)) + (((int)threadIdx.x) & 15)) + 11239472))] = max((conv_local[(31)] + bias[(((((int)threadIdx.x) >> 4) + 112))]), 0.000000e+00f);
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 743199239170000.0, "TPR": 0.00295864}
+
+[Antares] Average time cost / run = 0.00295864 sec, 10046.4 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 9455, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(conv_unpad, body=[tir.call_pure_extern("max", (conv[F, SA] + bias[F]), 0f)], axis=[iter_var(F, range(min=0, ext=168)), iter_var(SA, range(min=0, ext=225792))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: True
+found 2 results with threshold 0.0
+found 10 results with threshold 0.2
+[debug] config = {"0": "{\"tile\": [24, 512], \"step\": [8]}", "1": "{\"tile\": [2, 16], \"step\": [1]}", "2": "{\"tile\": [1, 1], \"step\": [1]}"}
+{'F': [12, 2], 'SA': [32, 16], 'RA': [8, 1]}
+[debug] adjusted tiling: {'F': [2, 12, 1], 'SA': [16, 32, 1], 'RA': [8, 1]}
+[debug] thread per block 384
+
+// ---------------------------------------------------------------------------
+// GLOBALS: bias:float32[168], data:float32[128, 168, 42, 42], kernel:float32[168, 168, 1, 1] -> conv_unpad:float32[168, 225792]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _F, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 168, 168, 42, 42, 1, 1, 1, 1, 0, 0; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              _SA, _RA = _N * _HO * _WO, _C * _KH * _KW; \
+              einstein_v2(f" \
+                data_pad[RA, SA] = data[SA // {_HO * _WO}, RA // {_KH * _KW}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} - {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} - {_PW}].when([SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} >= {_PH}, SA % {_HO * _WO} // {_WO} * {_SH} + RA % {_KH * _KW} // {_KW} < {_H} + {_PH}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} >= {_PW}, SA % {_HO * _WO} % {_WO} * {_SW} + RA % {_KH * _KW} % {_KW} < {_W + _PW}], 0.0) where RA in {_RA}, SA in {_SA}; \
+                kernel_pad[F, RA] = kernel[F, RA // {_KH * _KW}, RA % {_KH * _KW} // {_KW}, RA % {_KH * _KW} % {_KW}] where F in {_F}, RA in {_RA}; \
+                conv[F, SA] +=! kernel_pad[F, RA] * data_pad[RA, SA] where F in {_F}, SA in {_SA}, RA in {_RA}; \
+                conv_unpad[F, SA] = (conv[F, SA] + bias[F]).call(`max`, [0.0]) where F in {_F}, SA in {_SA} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_F, _C, _KH, _KW]}, "bias": {"dtype": "float32", "shape": [_F]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- bias:float32[168], data:float32[128, 168, 42, 42], kernel:float32[168, 168, 1, 1] -> conv_unpad:float32[168, 225792]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(384) void template_op_kernel0(float* __restrict__ bias, float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad) {
+  // [thread_extent] blockIdx.x = 3087
+  // [thread_extent] threadIdx.x = 384
+  float conv_local[32];
+  for (int vthread_s = 0; vthread_s < 16; ++vthread_s) {
+    conv_local[(vthread_s)] = 0.000000e+00f;
+    conv_local[((vthread_s + 16))] = 0.000000e+00f;
+  }
+  for (int RA_outer = 0; RA_outer < 21; ++RA_outer) {
+    __shared__ float kernel_pad_shared[192];
+  // [thread_extent] threadIdx.x = 384
+    __syncthreads();
+    if (((int)threadIdx.x) < 192) {
+      kernel_pad_shared[(((int)threadIdx.x))] = kernel[((((((((int)blockIdx.x) / 441) * 4032) + ((((int)threadIdx.x) >> 3) * 168)) + (RA_outer * 8)) + (((int)threadIdx.x) & 7)))];
+    }
+    __shared__ float data_pad_shared[4096];
+  // [thread_extent] threadIdx.x = 384
+    data_pad_shared[(((int)threadIdx.x))] = data[(((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 384))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 384) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 768))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 768) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 1152))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 1152) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 1536))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)) + 5292))];
+    data_pad_shared[((((int)threadIdx.x) + 1920))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 1920) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 2304))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 2304) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 256) & 511)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 2688))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 2688) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 128)) % 42)))];
+    data_pad_shared[((((int)threadIdx.x) + 3072))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) / 1764) * 296352) + (RA_outer * 14112)) + ((((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((int)threadIdx.x)) % 42)) + 10584))];
+    data_pad_shared[((((int)threadIdx.x) + 3456))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 3456) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + ((((int)threadIdx.x) + 384) & 511)) % 42)))];
+    if (((int)threadIdx.x) < 256) {
+      data_pad_shared[((((int)threadIdx.x) + 3840))] = data[((((((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) / 1764) * 296352) + (RA_outer * 14112)) + (((((int)threadIdx.x) + 3840) >> 9) * 1764)) + ((((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) % 1764) / 42) * 42)) + ((((((int)blockIdx.x) % 441) * 512) + (((int)threadIdx.x) + 256)) % 42)))];
+    }
+    __syncthreads();
+    for (int RA_inner_outer = 0; RA_inner_outer < 8; ++RA_inner_outer) {
+      float kernel_pad_shared_local[2];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[((((((int)threadIdx.x) >> 5) * 8) + RA_inner_outer))];
+      kernel_pad_shared_local[(1)] = kernel_pad_shared[(((((((int)threadIdx.x) >> 5) * 8) + RA_inner_outer) + 96))];
+      float data_pad_shared_local[16];
+      for (int vthread_s1 = 0; vthread_s1 < 16; ++vthread_s1) {
+        data_pad_shared_local[(vthread_s1)] = data_pad_shared[((((RA_inner_outer * 512) + (vthread_s1 * 32)) + (((int)threadIdx.x) & 31)))];
+      }
+      for (int vthread_s2 = 0; vthread_s2 < 16; ++vthread_s2) {
+        conv_local[(vthread_s2)] = (conv_local[(vthread_s2)] + (kernel_pad_shared_local[(0)] * data_pad_shared_local[(vthread_s2)]));
+        conv_local[((vthread_s2 + 16))] = (conv_local[((vthread_s2 + 16))] + (kernel_pad_shared_local[(1)] * data_pad_shared_local[(vthread_s2)]));
+      }
+    }
+  }
+  for (int vthread_s3 = 0; vthread_s3 < 16; ++vthread_s3) {
+    conv_unpad[(((((((((int)blockIdx.x) / 441) * 5419008) + ((((int)threadIdx.x) >> 5) * 225792)) + ((((int)blockIdx.x) % 441) * 512)) + (vthread_s3 * 32)) + (((int)threadIdx.x) & 31)))] = max((conv_local[(vthread_s3)] + bias[((((((int)blockIdx.x) / 441) * 24) + (((int)threadIdx.x) >> 5)))]), 0.000000e+00f);
+    conv_unpad[((((((((((int)blockIdx.x) / 441) * 5419008) + ((((int)threadIdx.x) >> 5) * 225792)) + ((((int)blockIdx.x) % 441) * 512)) + (vthread_s3 * 32)) + (((int)threadIdx.x) & 31)) + 2709504))] = max((conv_local[((vthread_s3 + 16))] + bias[(((((((int)blockIdx.x) / 441) * 24) + (((int)threadIdx.x) >> 5)) + 12))]), 0.000000e+00f);
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 319952640640000.0, "TPR": 0.00175501}
+
+[Antares] Average time cost / run = 0.00175501 sec, 7305.6 gflops. (Checked: True)
+
+Finish Conv Implicit GEMM Fused Bias Relu

@@ -57,7 +57,9 @@ def schedule(attrs):
       config_list = apis.get_config_space(
           op, device_name=os.environ.get('DEV_NAME', 'V100'))
       config_case = attrs.auto_config.define_knob(
-          f'RollerCase', list(config_list), init_vals=list(range(10)))
+          f'RollerCase',
+          list(config_list),
+          init_vals=list(range(len(config_list))))
       os.environ['MY_SPACE'] = json.dumps(config_list)
     attrs.scheduler = apis.apply_config(
         op, sched=attrs.scheduler, config=config_case, device_name='V100')

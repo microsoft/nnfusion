@@ -247,14 +247,19 @@ namespace nnfusion
                                 {
                                     for (int i = 0; i < antares_output_shapes.size(); i++)
                                     {
-                                        nnfusion::Shape simplified_nnfusion_output_shape;
+                                        nnfusion::Shape simplified_nnfusion_output_shape, simplified_antares_output_shape;
                                         auto nnfusion_output_shape = ctx->outputs[i]->get_shape();
                                         for (auto d : nnfusion_output_shape)
                                         {
                                             if (d != 1)
                                                 simplified_nnfusion_output_shape.push_back(d);
                                         }
-                                        if (antares_output_shapes[i] !=
+                                        for (auto d : antares_output_shapes[i])
+                                        {
+                                            if (d != 1)
+                                                simplified_antares_output_shape.push_back(d);
+                                        }
+                                        if (simplified_antares_output_shape !=
                                             simplified_nnfusion_output_shape)
                                         {
                                             NNFUSION_LOG(INFO)

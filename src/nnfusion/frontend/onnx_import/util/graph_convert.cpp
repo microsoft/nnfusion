@@ -516,7 +516,7 @@ namespace nnfusion
 
             NamedNodeVector GraphConvert::convert_node(const onnx::NodeProto& node_proto)
             {
-                NNFUSION_LOG(INFO) << "convert node: " << node_proto.name();
+                NNFUSION_LOG(DEBUG) << "convert node: " << node_proto.name();
                 const auto& convert_func =
                     get_convert_func(node_proto.op_type(), node_proto.domain());
                 NamedNodeVector ret;
@@ -535,7 +535,7 @@ namespace nnfusion
                 }
                 for (int i = 0; i < ret.size(); i++)
                 {
-                    NNFUSION_LOG(INFO) << "node " << node_proto.name() << ", output " << ret[i].name
+                    NNFUSION_LOG(DEBUG) << "node " << node_proto.name() << ", output " << ret[i].name
                                        << ", shape " << ret[i].gnode_index.get_shape();
                 }
                 return std::move(ret);

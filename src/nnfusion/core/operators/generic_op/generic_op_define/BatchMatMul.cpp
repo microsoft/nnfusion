@@ -162,5 +162,9 @@ REGISTER_OP(BatchMatMul)
         op_config["input1_layout"] = vector_to_string<std::vector<std::string>>(input1_layout);
         op_config["output0_layout"] = vector_to_string<std::vector<std::string>>(output0_layout);
 
-        return op::create_code_from_template(ir_template, op_config);
+        auto ir = op::create_code_from_template(ir_template, op_config);
+        if (curr->get_output_element_type(0) == nnfusion::element::f16) {
+            ir += "## @: tensorCoreConfig=(" + to_string(output0_layout.size() - 2) + ", " + to_string(output0_layout.size() - 1) + ")";
+        }
+        return ir;
     });

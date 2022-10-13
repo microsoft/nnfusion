@@ -34,6 +34,32 @@
 using namespace std;
 using namespace nnfusion;
 
+std::string nnfusion::tmpnam(int* status)
+{
+    char* nnfusion_home = getenv("NNFUSION_HOME");
+    std::string base_dir;
+    if (nnfusion_home == NULL)
+    {
+        char* home = getenv("HOME");
+        if (home != NULL)
+        {
+            base_dir = std::string(home) + "/.nnfusion/tmp/";
+            NNFUSION_LOG(NNFUSION_WARNING) << "$NNFUSION_HOME was not set, use "
+                                           << std::string(home) << "/.nnfusion.";
+        }
+    }
+    else
+    {
+        base_dir = std::string(nnfusion_home) + "/tmp/";
+    }
+
+    system(("mkdir -p " + base_dir).c_str());
+
+    std::string tmp_dir = base_dir + "/XXXXXXXXXXXXXXXX";
+    int stat = mkstemp((char*)tmp_dir.c_str());
+    return tmp_dir;
+}
+
 // std::string nnfusion::to_cplusplus_sourcecode_literal(bool val)
 // {
 //     return val ? "true" : "false";
@@ -235,7 +261,7 @@ void nnfusion::aligned_free(void* p)
 //     // are still connected to the bprop graph as parameters
 //     nnfusion::clone_nodes(bprop->get_ops(), *(fprop_cache.node_param_map));
 
-//     // invert the fprop_cache cloned node map for easy back and for acces.
+//     // invert the fprop_cache cloned node map for easy back and for access.
 //     std::unordered_map<std::shared_ptr<Node>, std::shared_ptr<Node>> inverted_node_map;
 //     for (auto kv : fprop_cache.node_param_map->get_node_map())
 //     {
@@ -403,7 +429,7 @@ namespace nnfusion
         element::half result(parse_string<float>(s));
         return result;
     }
-}
+} // namespace nnfusion
 
 // std::ostream& operator<<(std::ostream& os, const nnfusion::NodeVector& nv)
 // {

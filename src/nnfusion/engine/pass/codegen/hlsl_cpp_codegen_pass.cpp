@@ -23,6 +23,9 @@ DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
+DECLARE_bool(ffunction_codegen);
+DEFINE_bool(fhlsl_descriptor_heap, false, "enable DirectX descriptor heap");
+DEFINE_bool(fhlsl_free_memory, false, "free host memory after coping to device");
 
 void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                     std::shared_ptr<TranslationUnit> tu)
@@ -61,7 +64,16 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
-        lu_init_begin << "\nvoid hlsl_init()\n{\n";
+        if (FLAGS_ffunction_codegen)
+            lu_init_begin << "\nvoid hlsl_init(char* workspace)\n{\n";
+        else
+            lu_init_begin << "\nvoid hlsl_init()\n{\n";
+
+        lu_init_begin << "dxModuleSetCompat(\"cs_6_2\");\n";
+        if (FLAGS_fhlsl_descriptor_heap)
+        {
+            lu_init_begin << "dxInit(1);\n";
+        }
     }
 
     auto& lu_init_end = *(projgen->lup_init->end);
@@ -116,6 +128,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(header::D3D12APIWrapper);
     projgen->lup_codegen->require(header::unordered_map);
     projgen->lup_codegen->require(codegen_device_type());
+    projgen->lup_codegen->require(codegen_workspace_size(tu));
     projgen->lup_codegen->require(declaration::dxModuleLaunchAsync);
     // projgen->lup_codegen->require(macro::OutputDebugStringA);
     // LanguageUnit_p num_inputs_outputs = std::make_shared<LanguageUnit>(
@@ -274,7 +287,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
-            auto mem_ref = codegen_mem_ref(kernel);
+            auto mem_ref = codegen_mem_ref(ins);
             if (mem_ref != nullptr)
                 lup_func_calls->unit_vec.push_back(mem_ref);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
@@ -314,14 +327,23 @@ void HLSLCPPCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> 
     lup_header->require(macro::RUNTIME_API);
     auto& lu_header = *lup_header;
 
+    lu_header << "#include \"half.hpp\";\n";
+    lu_header << "using DebugDataType = half_float::half;\n";
+    lu_header << "//using DebugDataType = int64_t;\n";
+    lu_header << "using namespace half_float;\n";
+
     lu_header << "extern \"C\" RUNTIME_API int get_device_type();\n";
+    lu_header << "extern \"C\" RUNTIME_API size_t get_workspace_size();\n";
     lu_header << "extern \"C\" RUNTIME_API int kernel_entry";
     if (FLAGS_fhost_entry)
         lu_header << "_host";
     std::string params = get_kernel_entry_paras(tu, FLAGS_fhost_entry);
     lu_header << "(" << params << ");\n";
 
-    lu_header << "extern \"C\" RUNTIME_API void hlsl_init();\n";
+    if (FLAGS_ffunction_codegen)
+        lu_header << "extern \"C\" RUNTIME_API void hlsl_init(char* workspace);\n";
+    else
+        lu_header << "extern \"C\" RUNTIME_API void hlsl_init();\n";
 
     lu_header << "extern \"C\" RUNTIME_API void hlsl_free();\n";
 
@@ -368,6 +390,129 @@ void HLSLCPPCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ct
 
     lu_ << "int main()";
     lu_.block_begin();
+    if (FLAGS_fhlsl_free_memory)
+    {
+        lu_ << "\nhlsl_init();\n\n";
+
+        for (size_t i = 0; i < tu->arg.size(); i++)
+        {
+            auto& tensor = *tu->arg[i];
+            //malloc host input arg
+            lu_ << "//input argument\n";
+            lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
+                << "_host = new " << tensor.get_element_type().c_type_string() << "["
+                << tensor.get_tensor_layout()->get_size() << "];\n";
+            if (!FLAGS_fhost_entry)
+            {
+                lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
+                    << tensor.get_element_type().c_type_string() << ") * "
+                    << tensor.get_tensor_layout()->get_size() << ");\n";
+            }
+            lu_ << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
+                << tensor.get_name() << "_host[i]= 1;\n";
+            if (!FLAGS_fhost_entry)
+            {
+                lu_ << "dxMemcpyHtoDAsync(" << tensor.get_name() << ", " << tensor.get_name()
+                    << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                    << tensor.get_tensor_layout()->get_size() << ", 0);\n";
+
+                lu_ << "dxStreamSynchronize(0);\n";
+
+                lu_ << "delete " << tensor.get_name() << "_host;\n";
+            }
+        }
+
+        for (size_t i = 0; i < tu->out.size(); i++)
+        {
+            auto& tensor = *tu->out[i];
+            //malloc host output arg
+            lu_ << "//output argument\n";
+            lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
+                << "_host = new " << tensor.get_element_type().c_type_string() << "["
+                << tensor.get_tensor_layout()->get_size() << "];\n";
+            lu_ << "void* " << tensor.get_name() << ";\n";
+            if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
+            {
+                lu_ << tensor.get_name() << " = dxMemAlloc(sizeof("
+                    << tensor.get_element_type().c_type_string() << ") * "
+                    << tensor.get_tensor_layout()->get_size() << ");\n";
+            }
+        }
+
+        lu_ << "int steps = 100;\n";
+        lu_ << "auto start = std::chrono::high_resolution_clock::now();\n";
+        lu_ << "for (int i = 0; i < steps; i++)\n  ";
+        if (FLAGS_fhost_entry)
+        {
+            std::string args = get_kernel_entry_args(tu, true);
+            lu_ << "kernel_entry_host(" << args << ");\n";
+        }
+        else
+        {
+            std::string args = get_kernel_entry_args(tu, false);
+            //lu_ << get_h2dcopy(tu)->get_code();
+            lu_ << "kernel_entry(" << args << ");\n";
+        }
+        lu_ << get_sync()->get_code();
+        lu_ << "auto end = std::chrono::high_resolution_clock::now();\n";
+        lu_ << "auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - "
+               "start);\n";
+        lu_ << "OutputDebugStringA(\"Time: \%f ms\\n\", duration.count() / 1000.0 / steps);\n";
+
+        if (!FLAGS_fhost_entry)
+        {
+            lu_ << get_d2hcopy(tu)->get_code();
+            lu_ << get_sync()->get_code();
+        }
+        lu_ << "std::string result;\n";
+        for (size_t i = 0; i < tu->out.size(); i++)
+        {
+            auto& tensor = *tu->out[i];
+            // lu_ << "std::cout << \"" << tensor.get_name() << "_host = [\" << " << tensor.get_name()
+            //     << "_host[0] << \", \" << " << tensor.get_name() << "_host[1] << \",  .., \" << "
+            //     << tensor.get_name() << "_host[" << tensor.get_tensor_layout()->get_size()
+            //     << "-1] << \"]\" << std::endl;";
+            size_t num = std::min(size_t(10), tensor.get_tensor_layout()->get_size());
+            if (num == 1)
+            {
+                lu_ << "result = \"" << tensor.get_name() << "_host = [\" + std::to_string("
+                    << tensor.get_name() << "_host[0]) + \"]\\n\";\n";
+            }
+            else
+            {
+                lu_ << "result = \"" << tensor.get_name() << "_host = [";
+                for (size_t j = 0; j < num; j++)
+                {
+                    lu_ << "\" + std::to_string(" << tensor.get_name() << "_host[" << j
+                        << "]) + \", ";
+                }
+                lu_ << ".., \" + std::to_string(" << tensor.get_name() << "_host["
+                    << tensor.get_tensor_layout()->get_size() << "-1]) + \"]\\n\";\n";
+            }
+            lu_ << "OutputDebugStringA(result.c_str());\n";
+        }
+
+        lu_ << "\n//free context\n";
+        if (!FLAGS_fhost_entry)
+        {
+            for (size_t i = 0; i < tu->arg.size(); i++)
+            {
+                auto& tensor = *tu->arg[i];
+                lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+            }
+        }
+
+        if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
+        {
+            for (size_t i = 0; i < tu->out.size(); i++)
+            {
+                auto& tensor = *tu->out[i];
+                lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+            }
+        }
+        lu_ << "hlsl_free();\n\n";
+    }
+    else
     {
         lu_ << "\nhlsl_init();\n\n";
 

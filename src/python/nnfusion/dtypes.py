@@ -10,6 +10,12 @@ TypeObject = collections.namedtuple(
     "TypeObject", ["type_str", "c_type", "torch_type", "numpy_type"])
 
 str2type = {
+    "half":
+        TypeObject._make(["float16", ctypes.c_uint16, torch.float16,
+                          numpy.float16]),
+    "float16":
+        TypeObject._make(["float16", ctypes.c_uint16, torch.float16,
+                          numpy.float16]),
     "float":
     TypeObject._make(["float32", ctypes.c_float, torch.float32,
                       numpy.float32]),
@@ -20,8 +26,8 @@ str2type = {
     TypeObject._make(
         ["float64", ctypes.c_double, torch.float64, numpy.float64]),
     "float64":
-    TypeObject._make(["float64", ctypes.c_float, torch.float32,
-                      numpy.float32]),
+    TypeObject._make(["float64", ctypes.c_double, torch.float64,
+                      numpy.float64]),
     "int8":
     TypeObject._make(["int8", ctypes.c_int8, torch.int8, numpy.int8]),
     "int16":
@@ -33,9 +39,9 @@ str2type = {
     "uint8":
     TypeObject._make(["uint8", ctypes.c_uint8, torch.uint8, numpy.uint8]),
     "uint16":
-    TypeObject._make(["uint8", ctypes.c_uint16, None, numpy.uint16]),
+    TypeObject._make(["uint16", ctypes.c_uint16, None, numpy.uint16]),
     "uint32":
-    TypeObject._make(["uint8", ctypes.c_uint32, None, numpy.uint32]),
+    TypeObject._make(["uint32", ctypes.c_uint32, None, numpy.uint32]),
     "uint64":
-    TypeObject._make(["uint8", ctypes.c_uint64, None, numpy.uint64]),
+    TypeObject._make(["uint64", ctypes.c_uint64, None, numpy.uint64]),
 }

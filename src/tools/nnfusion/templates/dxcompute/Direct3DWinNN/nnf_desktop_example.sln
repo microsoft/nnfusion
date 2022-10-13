@@ -4,8 +4,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.31025.109
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nnf_desktop_example", "nnf_desktop_example\nnf_desktop_example.vcxproj", "{9E8C851A-9066-42A5-B160-F279A099A6C7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225} = {6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nnfusion_rt", "runtime\runtime.vcxproj", "{6FCA8D82-F478-46DA-B473-E3A8DEC9B312}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225} = {6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "antares", "antares\antares.vcxproj", "{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +39,14 @@ Global
 		{6FCA8D82-F478-46DA-B473-E3A8DEC9B312}.Release|x64.Build.0 = Release|x64
 		{6FCA8D82-F478-46DA-B473-E3A8DEC9B312}.Release|x86.ActiveCfg = Release|Win32
 		{6FCA8D82-F478-46DA-B473-E3A8DEC9B312}.Release|x86.Build.0 = Release|Win32
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}.Debug|x64.ActiveCfg = Debug|x64
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}.Debug|x64.Build.0 = Debug|x64
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}.Debug|x86.ActiveCfg = Debug|Win32
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}.Debug|x86.Build.0 = Debug|Win32
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}.Release|x64.ActiveCfg = Release|x64
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}.Release|x64.Build.0 = Release|x64
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}.Release|x86.ActiveCfg = Release|Win32
+		{6C8FB0D7-C5A4-4F39-A9B0-B8F4854E8225}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

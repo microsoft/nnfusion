@@ -17,7 +17,9 @@
 *.swo
 
 build/
-custom_op/
+dist/
+__pycache__
+nnfusion.tar.gz
 
 # makeenv and test intermediate files
 tmp/
@@ -49,6 +51,9 @@ doc/doxygen/html/*
 
 # python egg
 *.egg-info
+
+# Macos
+**/.DS_Store
 
 nnfusion_rt/
 models/frozenmodels/

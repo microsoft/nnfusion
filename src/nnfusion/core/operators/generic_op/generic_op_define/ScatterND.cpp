@@ -34,7 +34,7 @@ REGISTER_OP(ScatterND)
             {
                 auto temp = batch_dims;
                 temp.push_back(to_string(i));
-                output_layout.push_back("input1" +
+                output_layout.push_back("@input1@" +
                                         vector_to_string<std::vector<std::string>>(temp));
             }
             else

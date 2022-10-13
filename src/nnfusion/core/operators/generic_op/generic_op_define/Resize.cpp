@@ -144,14 +144,14 @@ REGISTER_OP(Resize)
 
             auto expression_template =
                 "h_map[CH] = ((CH + 0.5)//@h_scale@ - 0.5).call(`min`, "
-                "[const(@h_shape@).cast('float')]).call(`max`, [const(0.0)]) where CH in "
+                "[const(@h_shape@).cast(`float`)]).call(`max`, [const(0.0)]) where CH in "
                 "@oh_shape@;"
-                "h_weight[CH] = h_map[CH].call('remainder') where CH in "
+                "h_weight[CH] = h_map[CH].call(`remainder`) where CH in "
                 "@oh_shape@;"
                 "w_map[CH] = ((CH + 0.5)//@w_scale@ - 0.5).call(`min`, "
-                "[const(@w_shape@).cast('float')]).call(`max`, [const(0.0)]) where CH in "
+                "[const(@w_shape@).cast(`float`)]).call(`max`, [const(0.0)]) where CH in "
                 "@ow_shape@;"
-                "w_weight[CH] = w_map[CH].call('remainder') where CH in "
+                "w_weight[CH] = w_map[CH].call(`remainder`) where CH in "
                 "@ow_shape@;"
                 "@output0@@output0_layout@ = @input0@@input00_layout@ * (1.0 - h_weight@h_layout@) "
                 "* "
@@ -171,14 +171,14 @@ REGISTER_OP(Resize)
             for (int d = 0; d < 2; ++d)
                 input00_layout[d] = input01_layout[d] = input11_layout[d] = input10_layout[d];
 
-            input00_layout[2] = "h_map[" + output_layout[2] + "].cast('int32')";
-            input00_layout[3] = "w_map[" + output_layout[3] + "].cast('int32')";
-            input10_layout[2] = "h_map[" + output_layout[2] + "].call('ceil')";
-            input10_layout[3] = "w_map[" + output_layout[3] + "].cast('int32')";
-            input01_layout[2] = "h_map[" + output_layout[2] + "].cast('int32')";
-            input01_layout[3] = "w_map[" + output_layout[3] + "].call('ceil')";
-            input11_layout[2] = "h_map[" + output_layout[2] + "].call('ceil')";
-            input11_layout[3] = "w_map[" + output_layout[3] + "].call('ceil')";
+            input00_layout[2] = "h_map[" + output_layout[2] + "].cast(`int32`)";
+            input00_layout[3] = "w_map[" + output_layout[3] + "].cast(`int32`)";
+            input10_layout[2] = "h_map[" + output_layout[2] + "].call(`ceil`)";
+            input10_layout[3] = "w_map[" + output_layout[3] + "].cast(`int32`)";
+            input01_layout[2] = "h_map[" + output_layout[2] + "].cast(`int32`)";
+            input01_layout[3] = "w_map[" + output_layout[3] + "].call(`ceil`)";
+            input11_layout[2] = "h_map[" + output_layout[2] + "].call(`ceil`)";
+            input11_layout[3] = "w_map[" + output_layout[3] + "].call(`ceil`)";
 
             vector<std::string> w_layout;
             w_layout.push_back(output_layout[3]);
@@ -236,13 +236,13 @@ REGISTER_OP(Resize)
             auto expression_template =
                 "h_map[CH] = (CH * @h_scale@) where CH in @oh_shape@;"
                 "w_map[CH] = (CH * @w_scale@) where CH in @ow_shape@;"
-                "@output0@@output0_layout@ = (1.0 - h_map[@N3@].call('remainder')) * (1.0 - "
-                "w_map[@N4@].call('remainder')) * @input0@@input00_layout@ +"
-                "(h_map[@N3@].call('remainder')) * (1.0 - w_map[@N4@].call('remainder')) * "
+                "@output0@@output0_layout@ = (1.0 - h_map[@N3@].call(`remainder`)) * (1.0 - "
+                "w_map[@N4@].call(`remainder`)) * @input0@@input00_layout@ +"
+                "(h_map[@N3@].call(`remainder`)) * (1.0 - w_map[@N4@].call(`remainder`)) * "
                 "@input0@@input10_layout@ +"
-                "(1.0 - h_map[@N3@].call('remainder')) * (w_map[@N4@].call('remainder')) * "
+                "(1.0 - h_map[@N3@].call(`remainder`)) * (w_map[@N4@].call(`remainder`)) * "
                 "@input0@@input01_layout@ +"
-                "(h_map[@N3@].call('remainder')) * (w_map[@N4@].call('remainder')) * "
+                "(h_map[@N3@].call(`remainder`)) * (w_map[@N4@].call(`remainder`)) * "
                 "@input0@@input11_layout@ where @con@;";
 
             std::string cond;
@@ -253,14 +253,14 @@ REGISTER_OP(Resize)
             for (int d = 0; d < 2; ++d)
                 input00_layout[d] = input01_layout[d] = input11_layout[d] = input10_layout[d];
 
-            input00_layout[2] = "h_map[" + output_layout[2] + "].cast('int32')";
-            input00_layout[3] = "w_map[" + output_layout[3] + "].cast('int32')";
-            input10_layout[2] = "h_map[" + output_layout[2] + "].call('ceil')";
-            input10_layout[3] = "w_map[" + output_layout[3] + "].cast('int32')";
-            input01_layout[2] = "h_map[" + output_layout[2] + "].cast('int32')";
-            input01_layout[3] = "w_map[" + output_layout[3] + "].call('ceil')";
-            input11_layout[2] = "h_map[" + output_layout[2] + "].call('ceil')";
-            input11_layout[3] = "w_map[" + output_layout[3] + "].call('ceil')";
+            input00_layout[2] = "h_map[" + output_layout[2] + "].cast(`int32`)";
+            input00_layout[3] = "w_map[" + output_layout[3] + "].cast(`int32`)";
+            input10_layout[2] = "h_map[" + output_layout[2] + "].call(`ceil`)";
+            input10_layout[3] = "w_map[" + output_layout[3] + "].cast(`int32`)";
+            input01_layout[2] = "h_map[" + output_layout[2] + "].cast(`int32`)";
+            input01_layout[3] = "w_map[" + output_layout[3] + "].call(`ceil`)";
+            input11_layout[2] = "h_map[" + output_layout[2] + "].call(`ceil`)";
+            input11_layout[3] = "w_map[" + output_layout[3] + "].call(`ceil`)";
 
             vector<std::string> w_layout;
             w_layout.push_back(output_layout[3]);
@@ -289,4 +289,5 @@ REGISTER_OP(Resize)
                  {"con", cond}});
             return expr;
         }
+        return "";
     });

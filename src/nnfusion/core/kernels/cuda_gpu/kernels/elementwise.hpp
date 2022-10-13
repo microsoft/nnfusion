@@ -63,7 +63,7 @@ namespace nnfusion
                     uint32_t nthreads = static_cast<uint32_t>(
                         nnfusion::shape_size(m_context->outputs[0]->get_shape()));
                     NNFUSION_CHECK(num_inputs > 0)
-                        << "At least one input and one output tesnor for elementwise-op.";
+                        << "At least one input and one output tensor for elementwise-op.";
 
                     int grids, blocks, bound;
                     compute_best_config(grids, blocks, bound);

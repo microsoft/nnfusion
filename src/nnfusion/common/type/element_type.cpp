@@ -59,7 +59,7 @@ bool element::Type::nnfusion_element_type_to_dtype_string(const element::Type& n
                                                           std::string& dtype)
 {
     if (ng_et == element::boolean)
-        dtype = "char";
+        dtype = "int";
     else if (ng_et == element::character)
         dtype = "char";
     else if (ng_et == element::f16)
@@ -93,11 +93,11 @@ bool element::Type::dtype_string_to_nnfusion_element_type(const std::string& dty
 {
     if (dtype == "char")
         ng_et = element::character;
-    else if (dtype == "float16")
+    else if (dtype == "float16" || dtype == "half")
         ng_et = element::f16;
-    else if (dtype == "float32")
+    else if (dtype == "float32" || dtype == "float")
         ng_et = element::f32;
-    else if (dtype == "float64")
+    else if (dtype == "float64" || dtype == "double")
         ng_et = element::f64;
     else if (dtype == "int8")
         ng_et = element::i8;
@@ -105,7 +105,7 @@ bool element::Type::dtype_string_to_nnfusion_element_type(const std::string& dty
         ng_et = element::i16;
     else if (dtype == "int32")
         ng_et = element::i32;
-    else if (dtype == "int64")
+    else if (dtype == "int64" || dtype == "int64_t")
         ng_et = element::i64;
     else if (dtype == "uint8")
         ng_et == element::u8;
@@ -290,8 +290,8 @@ namespace nnfusion
         {
             return bf16;
         }
-    }
-}
+    } // namespace element
+} // namespace nnfusion
 
 std::ostream& element::operator<<(std::ostream& out, const element::Type& obj)
 {

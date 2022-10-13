@@ -1419,7 +1419,7 @@ TEST(nnfusion_onnx_import, trainable_dropout_op)
     auto model = frontend::load_onnx_model(
         file_util::path_join(SERIALIZED_ZOO, "onnx/trainable_dropout.onnx"));
 
-    float dropout_raito = 0.5;
+    float dropout_ratio = 0.5;
     vector<float> input(2 * 128 * 1024, 1);
     RawInputs raw_inputs;
     // (2, 128, 1024)
@@ -1444,7 +1444,7 @@ TEST(nnfusion_onnx_import, trainable_dropout_op)
     {
         if (mask[i])
         {
-            EXPECT_EQ(output[i], input[i] / (1 - dropout_raito));
+            EXPECT_EQ(output[i], input[i] / (1 - dropout_ratio));
         }
         else
         {
@@ -1454,7 +1454,7 @@ TEST(nnfusion_onnx_import, trainable_dropout_op)
     }
 
     auto ratio = (float)num_output_zero / input.size();
-    EXPECT_NEAR(ratio, dropout_raito, 0.02);
+    EXPECT_NEAR(ratio, dropout_ratio, 0.02);
 }
 
 TEST(nnfusion_onnx_import, depthtospace_dcr_op)
@@ -1594,4 +1594,62 @@ TEST(nnfusion_onnx_import, customized_op_slice)
     {
         EXPECT_EQ(expected_outputs[i], outputs[i]);
     }
+}
+
+TEST(nnfusion_onnx_import, gru_op)
+{
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/gru_bidirectional.onnx"));
+
+    RawInputs raw_inputs;
+    raw_inputs.emplace_back(
+        convert_to_raw(vector<float>{1,
+                                     2,
+                                     3,
+                                     4,
+                                     5,
+                                     6,
+                                     7,
+                                     8,
+                                     9,
+                                     10,
+                                     11,
+                                     12,
+                                     13,
+                                     14,
+                                     15,
+                                     16,
+                                     17,
+                                     18})); // [seq_len=2, batch_size=3, input_size=3]
+
+    RawOutputs raw_outputs{mixed_type_execute(model, raw_inputs, "NNFusion")};
+    auto outputs{convert_from_raw<float>(raw_outputs[0])};
+
+    vector<float> expected_outputs{
+        1.0720683e-02, -7.9221731e-01, -5.8064010e-02, 9.1135913e-01, -9.9989843e-01,
+        5.4036913e-04, -1.3896774e-01, -2.2083531e-04, 9.7151285e-01, -1.0000005e+00,
+        2.6464471e-05, -6.7724022e-03, -8.3446542e-07, 9.9089122e-01, -1.0000005e+00,
+
+        1.3207304e-03, -8.5305351e-01, -1.0513758e-01, 9.9690926e-01, -9.9998397e-01,
+        6.5981556e-05, -1.9718896e-01, -4.2057058e-04, 9.9999201e-01, -1.0000004e+00,
+        3.2186520e-06, -1.0266423e-02, -1.4305122e-06, 1.0000000e+00, -1.0000004e+00,
+
+        1.0720860e-02, -7.9228514e-01, -5.8064010e-02, 9.9995363e-01, -1.0000005e+00,
+        5.4036913e-04, -1.3898313e-01, -2.2083531e-04, 9.9999678e-01, -1.0000004e+00,
+        2.6464471e-05, -6.7731128e-03, -8.3446542e-07, 1.0000001e+00, -1.0000004e+00,
+
+        1.2516981e-06, -2.8800979e-04, 0.0000000e+00,  9.9712622e-01, -1.0000005e+00,
+        1.1920935e-07, -1.2159353e-05, 0.0000000e+00,  9.9909741e-01, -1.0000005e+00,
+        0.0000000e+00, -4.7683739e-07, 0.0000000e+00,  9.9971712e-01, -1.0000005e+00,
+    }; // [seq_len=2, num_direction=2, batch_size=3, hidden_size=5]
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    // mask value near zero
+    for (size_t i = 0; i < expected_outputs.size(); i++)
+    {
+        if (expected_outputs[i] < 1e-5)
+            expected_outputs[i] = 0;
+        if (outputs[i] < 1e-5)
+            outputs[i] = 0;
+    }
+    EXPECT_TRUE(test::all_close_f(expected_outputs, outputs));
 }

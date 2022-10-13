@@ -20,6 +20,8 @@
 //----------------------------------------------------------------------------------------------
 
 #include "gemm.hpp"
+#include <cmath>
+#include <limits>
 #include "../util/util.hpp"
 #include "nnfusion/core/graph/util/autobroadcast.hpp"
 #include "nnfusion/core/graph/util/numpy_transpose.hpp"
@@ -52,7 +54,7 @@ namespace nnfusion
                             0, false, static_cast<bool>(transA), static_cast<bool>(transB)),
                         {A, B});
 
-                    if (alpha_value != 1)
+                    if (std::fabs(alpha_value - 1.0) > std::numeric_limits<float>::epsilon())
                     {
                         auto alpha_op = std::make_shared<op::Constant>(
                             element::f32, result->get_shape(), std::vector<float>({alpha_value}));
@@ -67,23 +69,28 @@ namespace nnfusion
                                                             {result, alpha});
                     }
 
-                    if (beta_value != 0)
+                    if (std::fabs(beta_value) > 0)
                     {
                         auto C = input_indexes[2];
-                        auto beta_op = std::make_shared<op::Constant>(
-                            element::f32, C.get_shape(), std::vector<float>({beta_value}));
-                        auto beta = m_graph->add_node_and_edge(beta_op, graph::GNodeVector({}));
-                        if (beta->get_element_type() != C.get_element_type())
+                        auto bias_node = C.gnode;
+                        if (std::fabs(beta_value - 1.0) > std::numeric_limits<float>::epsilon())
                         {
-                            auto cast_op = std::make_shared<op::Convert>(C.get_element_type());
-                            beta = m_graph->add_node_and_edge(cast_op, {beta});
+                            auto beta_op = std::make_shared<op::Constant>(
+                                element::f32, C.get_shape(), std::vector<float>({beta_value}));
+                            auto beta = m_graph->add_node_and_edge(beta_op, graph::GNodeVector({}));
+                            if (beta->get_element_type() != C.get_element_type())
+                            {
+                                auto cast_op = std::make_shared<op::Convert>(C.get_element_type());
+                                beta = m_graph->add_node_and_edge(cast_op, {beta});
+                            }
+                            bias_node = m_graph->add_node_and_edge(std::make_shared<op::Multiply>(),
+                                                                   {C, GNodeIndex{beta, 0}});
                         }
-                        auto bias = m_graph->add_node_and_edge(std::make_shared<op::Multiply>(),
-                                                               {C, GNodeIndex{beta, 0}});
-                        std::tie(result, bias) =
-                            numpy_broadcast(std::make_pair(result, bias), m_graph);
-                        result =
-                            m_graph->add_node_and_edge(std::make_shared<op::Add>(), {result, bias});
+
+                        std::tie(result, bias_node) =
+                            numpy_broadcast(std::make_pair(result, bias_node), m_graph);
+                        result = m_graph->add_node_and_edge(std::make_shared<op::Add>(),
+                                                            {result, bias_node});
                     }
 
                     return {{node_proto.output(0), result}};

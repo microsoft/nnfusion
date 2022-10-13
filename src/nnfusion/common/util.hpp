@@ -45,6 +45,7 @@ namespace nnfusion
     // }
 
     // std::string to_cplusplus_sourcecode_literal(bool val);
+    std::string tmpnam(int* status);
 
     template <typename T>
     std::string join(const T& v, const std::string& sep = ", ")
@@ -212,7 +213,7 @@ namespace nnfusion
     //     * This utility takes forward-propogation and back-propagation functions
     //     * and turns them into clone functions where the intermediate values of
     //     * the forward prop are added to the output of fprop and the input of the bprop
-    //     * to avoid repeat calcualtions.
+    //     * to avoid repeat calculations.
     //     * The last argument is the adjoints coming into the bprop function, the output
     //     * bprop function will have these nodes as the first N input parameters
     //     **/

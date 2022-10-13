@@ -141,7 +141,12 @@ bool ExtractGraphSignature::extract_args(std::shared_ptr<InterpreterContext> ctx
             tu->arg.push_back(tv);
             const element::Type& et = tv->get_element_type();
 
-            string type = et.c_type_string();
+            string type;
+            if (!element::Type::nnfusion_element_type_to_dtype_string(tv->get_element_type(), type))
+            {
+                NNFUSION_LOG(ERROR) << "Get element type failed";
+                return false;
+            }
             stringstream ss;
             ss << "((" << type << "*)(inputs[" << arg_index << "]))";
             ctx->m_variable_name_map[tv->get_name()] = ss.str();
@@ -183,8 +188,12 @@ bool ExtractGraphSignature::extract_output(std::shared_ptr<InterpreterContext> c
         NNFUSION_CHECK_NOT_NULLPTR(tv);
 
         tu->out.push_back(tv);
-
-        string type = tv->get_element_type().c_type_string();
+        string type;
+        if (!element::Type::nnfusion_element_type_to_dtype_string(tv->get_element_type(), type))
+        {
+            NNFUSION_LOG(ERROR) << "Get element type failed";
+            return false;
+        }
         stringstream ss;
         ss << "((" << type << "*)(outputs[" << i << "]))";
         ctx->m_variable_name_map[tv->get_name()] = ss.str();

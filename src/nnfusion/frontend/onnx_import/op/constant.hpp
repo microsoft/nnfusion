@@ -50,6 +50,7 @@ namespace nnfusion
                                               const element::Type&, const Tensor&)>>
                         the_map = {{element::f32, __make_constant_op<float>},
                                    {element::f64, __make_constant_op<double>},
+                                   {element::boolean, __make_constant_op<int32_t>},
                                    {element::i32, __make_constant_op<int32_t>},
                                    {element::i64, __make_constant_op<int64_t>},
                                    {element::u32, __make_constant_op<uint32_t>},

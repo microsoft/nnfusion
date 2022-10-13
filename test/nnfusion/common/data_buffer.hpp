@@ -91,7 +91,7 @@ namespace nnfusion
             DataBuffer buf(tp);
             T ele[10];
 
-            NNFUSION_LOG(INFO) << "Testting DataBuffer for type " << tp;
+            NNFUSION_LOG(INFO) << "Testing DataBuffer for type " << tp;
 
             // test constructor
             ASSERT_EQ(buf.size(), 0U);

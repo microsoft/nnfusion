@@ -24,7 +24,7 @@ namespace nnfusion
 {
     namespace op
     {
-        /// \brief create StopGrdient op
+        /// \brief create StopGradient op
         class StopGradient : public ElementwiseArithmetic
         {
         public:

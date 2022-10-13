@@ -184,7 +184,7 @@ namespace nnfusion
             return get_op_configs()[opname];
         }
 
-        inline const OpConfig& lookup_op_config(const std::string& opname)
+        inline OpConfig& lookup_op_config(const std::string& opname)
         {
             auto it = get_op_configs().find(opname);
             if (it != get_op_configs().end())
@@ -264,7 +264,9 @@ namespace nnfusion
             std::vector<std::string> shape_def;
             for (int d = 0; d < shape.size(); d++)
             {
-                shape_def.push_back(shape[d] == 0 ? "1" : ("N" + to_string(d)));
+                // Tensor with shape [0] is treated as scalar value and convert its shape to [1]
+                shape_def.push_back((shape.size() == 1 && shape[d] == 0) ? "1"
+                                                                         : ("N" + to_string(d)));
             }
             return shape_def;
         }
@@ -333,7 +335,7 @@ namespace nnfusion
 
                 if (name != "")
                     set_name(name);
-                // NNFUSION_LOG(INFO) << "Managing GenericOp for Opeartor: type = " << opname
+                // NNFUSION_LOG(INFO) << "Managing GenericOp for operator: type = " << opname
                 //                    << ", name = " << name;
 
                 localOpConfig.check_constrait();
@@ -352,7 +354,18 @@ namespace nnfusion
                     localOpConfig.f_infershape !=
                         nnfusion::op::infershape::unimplemented_and_not_used)
                     localOpConfig.f_infershape(gnode);
-                else
+
+                bool not_infered = false;
+                for (auto i = 0; i < gnode->get_output_size(); i++)
+                {
+                    if (gnode->get_outputs()[i]->get_element_type().size() == 0)
+                    {
+                        not_infered = true;
+                        break;
+                    }
+                }
+
+                if (not_infered)
                 {
                     // Infershape with Antares IR (only for Opv2)
                     nnfusion::kernels::AntaresKEImp ke;
@@ -390,6 +403,13 @@ namespace nnfusion
                         return std::move(ret);
                     };
                     // GLOBALS: input0:float32[2, 4] -> output0:float32[1, 3]\n
+                    if (result.first.find("// GLOBALS: ") == std::string::npos)
+                    {
+                        std::string err = "Unexpected response for Op " + gnode->get_op_type() +
+                                          "\nIR: " + get_translation(gnode) + "\nResponse: \n" +
+                                          result.first;
+                        throw std::runtime_error(err);
+                    }
                     auto output_params = ssplit(
                         ssplit(get_between(result.first, "// GLOBALS: ", "\n"), "->")[1], "],");
                     for (int i = 0; i < output_params.size(); ++i)

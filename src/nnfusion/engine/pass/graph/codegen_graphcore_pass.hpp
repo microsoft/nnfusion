@@ -579,8 +579,8 @@ namespace nnfusion
 
                         fout << op::create_code_from_template(
                             "Tensor @out_name@ = poplin::matMulGrouped(g, "
-                            "@A@.reshape({@batch@, @orginA..@})@transA@, "
-                            "@B@.reshape({@batch@, @orginB..@})@transB@, prog, "
+                            "@A@.reshape({@batch@, @originA..@})@transA@, "
+                            "@B@.reshape({@batch@, @originB..@})@transB@, prog, "
                             "FLOAT).reshape({@out_shape@});\n",
                             {
                                 {"out_name", arg_names[curr]},
@@ -591,10 +591,10 @@ namespace nnfusion
                                 {"batch", batch},
                                 {"A", arg_names[curr->get_in_edge(0)->get_src()]},
                                 {"B", arg_names[curr->get_in_edge(1)->get_src()]},
-                                {"orginA..",
+                                {"originA..",
                                  std::to_string(shape_0[shape_0.size() - 2]) + ", " +
                                      std::to_string(shape_0[shape_0.size() - 1])},
-                                {"orginB..",
+                                {"originB..",
                                  std::to_string(shape_1[shape_1.size() - 2]) + ", " +
                                      std::to_string(shape_1[shape_1.size() - 1])},
                                 {"transA", transA ? ".dimShuffle({0, 2, 1})" : ""},

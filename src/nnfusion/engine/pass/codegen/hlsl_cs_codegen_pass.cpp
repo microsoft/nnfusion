@@ -22,6 +22,7 @@ DECLARE_bool(fcodegen_debug);
 DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
+DECLARE_bool(ffunction_codegen);
 
 void HLSLCSCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -208,7 +209,7 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
                 {
-                    // do not add requre
+                    // do not add require
                 }
                 else
                 {
@@ -239,7 +240,7 @@ bool HLSLCSCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 std::make_shared<LanguageUnit>(fu->call_unit->get_symbol(), call_str);
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
-            auto mem_ref = codegen_mem_ref(kernel);
+            auto mem_ref = codegen_mem_ref(ins);
             if (mem_ref != nullptr)
                 lup_func_calls->unit_vec.push_back(mem_ref);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
@@ -287,6 +288,7 @@ bool HLSLCSCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
         "total_memory", "// total memory:" + to_string(total_alloc) + "\n");
     lup_mem_alloc->unit_vec.push_back(total);
 
+    size_t offset = 0;
     for (const auto& allocator : allocator_list)
     {
         auto init = allocator.second->emit_memory_init();
@@ -294,6 +296,12 @@ bool HLSLCSCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
         auto free = allocator.second->emit_memory_free();
 
         lup_member->unit_vec.push_back(init);
+        if (FLAGS_ffunction_codegen)
+        {
+            auto mempool_offset = allocator.second->emit_memory_pool_offset(offset);
+            offset += allocator.second->max_allocated();
+            lup_mem_alloc->unit_vec.push_back(mempool_offset);
+        }
         lup_mem_alloc->unit_vec.push_back(alloc);
         // lup_mem_alloc->require(init);
         lup_mem_free->unit_vec.push_back(free);

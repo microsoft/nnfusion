@@ -16,6 +16,9 @@ DEFINE_int32(min_log_level,
 DEFINE_bool(fcustomized_mem_imp, false, "Use customized memory implementation in codegen files;");
 DEFINE_bool(fhost_entry, false, "provide entry on host memory");
 DEFINE_bool(fuse_cpuprofiler, false, "");
+DEFINE_bool(fcodegen_pybind, false, "");
+DEFINE_bool(ffunction_codegen, false, "");
+
 using namespace nnfusion;
 
 Engine::Engine()

@@ -4,7 +4,7 @@
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 REGISTER_OP(SelectNode)
-    .attr<int>("index", 0) // regulization
+    .attr<int>("index", 0) // regularization
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         int node_index = generic_op->localOpConfig.getRoot()["index"];

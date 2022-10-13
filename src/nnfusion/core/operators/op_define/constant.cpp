@@ -72,6 +72,7 @@ DataBuffer Constant::get_buffer() const
 
 vector<string> Constant::get_value_strings() const
 {
+    NNFUSION_LOG(INFO) << m_element_type;
     vector<string> rc;
 
     if (m_element_type == nnfusion::element::boolean ||
@@ -89,6 +90,13 @@ vector<string> Constant::get_value_strings() const
         {
             temp = static_cast<float>(value);
             rc.push_back(to_cpp_string(temp));
+        }
+    }
+    else if (m_element_type == nnfusion::element::f16)
+    {
+        for (float value : get_float16_vector())
+        {
+            rc.push_back(to_cpp_string(value));
         }
     }
     else if (m_element_type == nnfusion::element::f32)

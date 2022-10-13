@@ -13,7 +13,7 @@ DECLARE_bool(fkernels_as_files);
 DECLARE_int64(fkernels_files_number);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_string(fantares_perf_file);
-
+DECLARE_bool(ffunction_codegen);
 bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
                           std::shared_ptr<TranslationUnit> tu)
 {
@@ -181,11 +181,19 @@ bool BaseCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
         "total_memory", "// total memory:" + to_string(total_alloc) + "\n");
     lup_mem_alloc->unit_vec.push_back(total);
 
+    size_t offset = 0;
     for (const auto& allocator : allocator_list)
     {
         auto init = allocator.second->emit_memory_init();
         auto alloc = allocator.second->emit_memory_alloc();
         auto free = allocator.second->emit_memory_free();
+
+        if (FLAGS_ffunction_codegen)
+        {
+            auto mempool_offset = allocator.second->emit_memory_pool_offset(offset);
+            offset += allocator.second->max_allocated();
+            lup_mem_alloc->unit_vec.push_back(mempool_offset);
+        }
         lup_mem_alloc->unit_vec.push_back(alloc);
         lup_mem_alloc->require(init);
         lup_mem_free->unit_vec.push_back(free);
@@ -289,22 +297,33 @@ std::pair<LanguageUnit_p, LanguageUnit_p>
     return std::make_pair(lup_alloc, lup_free);
 }
 
-nnfusion::LanguageUnit_p BaseCodegenPass::codegen_mem_ref(KernelEmitter::Pointer kernel)
+nnfusion::LanguageUnit_p BaseCodegenPass::codegen_mem_ref(nnfusion::ir::Instruction::Pointer ins)
 {
-    if (!kernel || FLAGS_fcustomized_mem_imp)
+    auto kernel = ins->getKernel();
+    if (!kernel || FLAGS_fcustomized_mem_imp || ins->getGNode()->get_op_type() == "Result")
         return nullptr;
     LanguageUnit_p _lu(new LanguageUnit(kernel->get_function_name() + "_mem_ref"));
     auto& lu = *_lu;
     bool empty = true;
-    if (auto annotations = kernel->m_context->annotations)
+    if ((*ins)["InplaceTensorMapping"].is_valid())
     {
-        for (auto oi_pair : annotations->get_in_place_oi_pairs())
+        auto in_place_outputs =
+            (*ins)["InplaceTensorMapping"]
+                .as<std::map<std::shared_ptr<descriptor::Tensor>,
+                             std::pair<std::shared_ptr<descriptor::Tensor>, size_t>>>();
+        for (auto output : kernel->m_context->outputs)
         {
-            if (oi_pair.force_inplace == true)
+            if (is_ref_tensor(ins, output))
             {
-                auto input = kernel->m_context->inputs[oi_pair.input];
-                auto output = kernel->m_context->outputs[oi_pair.output];
-                lu << output->get_name() << " = " << input->get_name() << ";\n";
+                auto parent_tensor = in_place_outputs.at(output).first;
+                size_t tensor_offset = in_place_outputs.at(output).second;
+
+                auto root_tensor = parent_tensor->get_root_tensor()
+                                       ? parent_tensor->get_root_tensor()
+                                       : parent_tensor;
+                lu << output->get_name() << " = " << root_tensor->get_name()
+                   << ((tensor_offset > 0) ? (" + " + std::to_string(tensor_offset)) : (""))
+                   << ";\n";
                 empty = false;
             }
         }
@@ -313,6 +332,23 @@ nnfusion::LanguageUnit_p BaseCodegenPass::codegen_mem_ref(KernelEmitter::Pointer
     if (empty)
         return nullptr;
     return _lu;
+}
+
+bool BaseCodegenPass::is_ref_tensor(nnfusion::ir::Instruction::Pointer ins,
+                                    shared_ptr<nnfusion::descriptor::Tensor> output)
+{
+    if ((*ins)["InplaceTensorMapping"].is_valid())
+    {
+        auto in_place_outputs =
+            (*ins)["InplaceTensorMapping"]
+                .as<std::map<std::shared_ptr<descriptor::Tensor>,
+                             std::pair<std::shared_ptr<descriptor::Tensor>, size_t>>>();
+        // input tensor is unallocated (e.g., Parameter), need to assign address at runtime
+        if (in_place_outputs.count(output) > 0 &&
+            (in_place_outputs.at(output).first)->get_pool_offset() == SIZE_MAX)
+            return true;
+    }
+    return false;
 }
 
 LanguageUnit_p BaseCodegenPass::codegen_device_type()
@@ -324,4 +360,22 @@ LanguageUnit_p BaseCodegenPass::codegen_device_type()
     *lu_devtype << "    return " << device_type() << ";\n";
     *lu_devtype << "}\n";
     return lu_devtype;
+}
+
+LanguageUnit_p BaseCodegenPass::codegen_workspace_size(std::shared_ptr<TranslationUnit> tu)
+{
+    auto lu_workspace = make_shared<LanguageUnit>("workspace_size");
+
+    auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
+
+    size_t total_alloc = 0;
+    for (const auto& allocator : allocator_list)
+    {
+        total_alloc += allocator.second->max_allocated();
+    }
+
+    *lu_workspace << "size_t get_workspace_size()\n{\n";
+    *lu_workspace << "    return " << total_alloc << ";\n";
+    *lu_workspace << "}\n";
+    return lu_workspace;
 }

@@ -10,11 +10,11 @@
 #include <iomanip>
 
 #include "gflags/gflags.h"
+#include "nnfusion/core/operators/op.hpp"
 #include "nnfusion/frontend/onnx_import/onnx.hpp"
 #include "nnfusion/frontend/tensorflow_import/tensorflow.hpp"
 #include "nnfusion/frontend/torchscript_import/torchscript.hpp"
 #include "nnfusion/frontend/util/parameter.hpp"
-#include "nnfusion/core/operators/op.hpp"
 
 #include "nnfusion/engine/device/cpu.hpp"
 #include "nnfusion/engine/device/cuda.hpp"
@@ -212,8 +212,8 @@ int main(int argc, char** argv)
         nnfusion::engine::HLSLMultiEngine hlsl_multi_engine;
         switch (get_device_type(FLAGS_fdefault_device))
         {
-            case CUDA_GPU: cuda_multi_engine.run_on_graphs(vec_graph); break;
-            case HLSL: hlsl_multi_engine.run_on_graphs(vec_graph); break;
+        case CUDA_GPU: cuda_multi_engine.run_on_graphs(vec_graph); break;
+        case HLSL: hlsl_multi_engine.run_on_graphs(vec_graph); break;
         }
     }
     return 0;

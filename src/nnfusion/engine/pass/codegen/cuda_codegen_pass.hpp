@@ -97,8 +97,7 @@ namespace nnfusion
                              std::shared_ptr<TranslationUnit> tu) override;
 
             CodeGenerator::Pointer get_projgen() { return this->projgen; }
-
-            bool invoke_after_projgen(){return this->after_projgen();};
+            bool invoke_after_projgen() { return this->after_projgen(); };
         };
     }
 }

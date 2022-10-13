@@ -16,6 +16,8 @@
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_profiling_pass.hpp"
+#include "nnfusion/engine/pass/graph/ir_based_fusion_pass.hpp"
+#include "nnfusion/engine/pass/graph/subgraph_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
 #include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
 #include "nnfusion/engine/pass/graph/multi_reshape_folding_pass.hpp"
@@ -42,6 +44,7 @@ ROCmEngine::ROCmEngine()
     : Engine()
 {
     g_passes->push_back(make_shared<CSEPass>());
+    g_passes->push_back(make_shared<SubGraphFusionPass>());
     g_passes->push_back(make_shared<AutodiffPass>());
     g_passes->push_back(make_shared<GradientWeightMappingPass>());
     g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
@@ -52,6 +55,7 @@ ROCmEngine::ROCmEngine()
     g_passes->push_back(make_shared<AssignLayoutPass>());
     g_passes->push_back(make_shared<OpInplacePass>());
     g_passes->push_back(make_shared<ReduceFusionPass>());
+    g_passes->push_back(make_shared<IRBasedFusionPass>());
 
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
 

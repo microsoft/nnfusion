@@ -40,6 +40,7 @@ def _schedule_single(attrs, output, op_name, tail_op):
 def schedule(attrs):
   config = os.environ.get('CONFIG', '').strip()
   step = int(os.environ.get('STEP', '0'))
+  device_name = os.environ.get('DEV_NAME', 'V100')
   attrs.advanced_sched = config or step > 0
   tail_op, explicit_ops = None, [x for x in attrs.explicit_ops]
 
@@ -55,14 +56,14 @@ def schedule(attrs):
           AntaresGlobal.auto_config._candidate['RollerCase']]
     else:
       config_list = apis.get_config_space(
-          op, device_name=os.environ.get('DEV_NAME', 'V100'))
+          op, device_name=device_name,step=step)
       config_case = attrs.auto_config.define_knob(
           f'RollerCase',
           list(config_list),
           init_vals=list(range(len(config_list))))
       os.environ['MY_SPACE'] = json.dumps(config_list)
     attrs.scheduler = apis.apply_config(
-        op, sched=attrs.scheduler, config=config_case, device_name='V100')
+        op, sched=attrs.scheduler, config=config_case, device_name=device_name)
     return
   except:
     traceback.print_exc()

@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-def get_config_space(op, device_name):
+def get_config_space(op, device_name, step):
   assert op.num_outputs == 1, 'ERROR: input op\'s output num is {}, expected 1'.format(
       op.num_outputs)
 
@@ -56,7 +56,7 @@ def get_config_space(op, device_name):
                            setting['reg_tiling'], setting['st_align'],
                            setting['padding_threshold_cap'])
 
-  rprogs = policy.emit_config_without_trails(10)
+  rprogs = policy.emit_config_without_trails(step)
   candidates = []
   for rprog in rprogs:
     candidates.append((rprog.Dump(), json.dumps(setting), is_IODependent))

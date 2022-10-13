@@ -70,6 +70,7 @@ namespace nnfusion
                     auto op = func_param(tensor.get_ng_type(), tensor);
 
                     op->set_name(node_proto.output(0));
+                    op->set_global_consistent_name(node_proto.output(0));
                     auto gnode = m_graph->add_node_and_edge(op, graph::GNodeVector({}));
                     NamedNodeVector ret{{node_proto.output(0), gnode}};
 

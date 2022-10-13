@@ -22,17 +22,19 @@
 using namespace std;
 using namespace nnfusion::op;
 
-Slice::Slice(const nnfusion::Coordinate& lower_bounds,
-             const nnfusion::Coordinate& upper_bounds,
-             const nnfusion::Strides& strides)
+Slice::Slice(const nnfusion::Shape& lower_bounds,
+             const nnfusion::Shape& upper_bounds,
+             const nnfusion::Strides& strides,
+             const nnfusion::Shape& out_shape)
     : Op("Slice")
     , m_lower_bounds(lower_bounds)
     , m_upper_bounds(upper_bounds)
     , m_strides(strides)
+    , m_out_shape(out_shape)
 {
 }
 
-Slice::Slice(const nnfusion::Coordinate& lower_bounds, const nnfusion::Coordinate& upper_bounds)
+Slice::Slice(const nnfusion::Shape& lower_bounds, const nnfusion::Shape& upper_bounds)
     : Op("Slice")
     , m_lower_bounds(lower_bounds)
     , m_upper_bounds(upper_bounds)
@@ -88,6 +90,20 @@ void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
         result_axis_size =
             result_axis_size / m_strides[i] + ((result_axis_size % m_strides[i] == 0) ? 0 : 1);
         result_dims[i] = result_axis_size;
+    }
+
+    if (m_lower_bounds.is_dynamic() || m_upper_bounds.is_dynamic())
+    {
+        NNFUSION_CHECK(m_out_shape.size() == output_rank);
+        auto sym_shape = m_out_shape.get_sym_shape();
+        NNFUSION_CHECK(sym_shape);
+        for (auto i = 0; i < output_rank; i++)
+        {
+            NNFUSION_CHECK(sym_shape->at(i).max() == size_t(result_dims[i]));
+        }
+        (*gnode)["symbolic"] = true;
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), m_out_shape);
+        return;
     }
 
     gnode->set_output_type_and_shape(

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "../util/util.hpp"
+#include "nnfusion/common/symbolic_shape.hpp"
 
 namespace nnfusion
 {
@@ -38,18 +39,20 @@ namespace nnfusion
                 ValueInfo() = delete;
                 explicit ValueInfo(
                     const onnx::ValueInfoProto& value_info_proto,
-                    const std::unordered_map<std::string, size_t>& value_dim_params = {})
+                    const std::unordered_map<std::string, SymDim>& value_dim_params = {})
                     : m_value_info_proto{&value_info_proto}
                 {
                     NNFUSION_CHECK(value_info_proto.type().has_tensor_type())
                         << "value info has no tensor type specified.";
-
+                    auto sym_shape = std::make_shared<SymShape>();
                     for (const auto& dim : value_info_proto.type().tensor_type().shape().dim())
                     {
                         if (dim.value_case() ==
                             onnx::TensorShapeProto_Dimension::ValueCase::kDimValue)
                         {
                             m_shape.emplace_back(static_cast<Shape::value_type>(dim.dim_value()));
+                            sym_shape->emplace_back(
+                                SymDim(static_cast<Shape::value_type>(dim.dim_value())));
                         }
                         else if (dim.value_case() ==
                                  onnx::TensorShapeProto_Dimension::ValueCase::kDimParam)
@@ -57,8 +60,9 @@ namespace nnfusion
                             std::string value_name = dim.dim_param();
                             NNFUSION_CHECK(value_dim_params.count(value_name))
                                 << "unknown input dim_param: " << value_name;
-                            m_shape.emplace_back(
-                                static_cast<Shape::value_type>(value_dim_params.at(value_name)));
+                            m_shape.emplace_back(static_cast<Shape::value_type>(
+                                value_dim_params.at(value_name).max()));
+                            sym_shape->emplace_back(value_dim_params.at(value_name));
                         }
                         else
                         {
@@ -71,6 +75,13 @@ namespace nnfusion
                         onnx::TensorProto_DataType(
                             m_value_info_proto->type().tensor_type().elem_type()),
                         &m_type);
+
+                    if (sym_shape->is_dynamic())
+                    {
+                        m_shape.sym_shape = sym_shape;
+                    }
+
+                    this->set_sym_shape(sym_shape);
                 }
 
                 ValueInfo& operator=(const ValueInfo&) = delete;
@@ -79,10 +90,16 @@ namespace nnfusion
                 const std::string& get_name() const { return m_value_info_proto->name(); }
                 const Shape& get_shape() const { return m_shape; }
                 const element::Type& get_element_type() const { return m_type; }
+                void set_sym_shape(std::shared_ptr<SymShape> sym_shape)
+                {
+                    this->sym_shape = sym_shape;
+                }
+                std::shared_ptr<SymShape> get_sym_shape() { return this->sym_shape; }
             private:
                 const onnx::ValueInfoProto* m_value_info_proto;
                 Shape m_shape;
                 element::Type m_type;
+                std::shared_ptr<SymShape> sym_shape;
             };
 
             inline std::ostream& operator<<(std::ostream& outs, const ValueInfo& info)

@@ -81,5 +81,23 @@ namespace nnfusion
             unordered_set<string> global_required;
             bool superscaler_enable = false;
         };
+
+        class CudaMultiCodegenPassPre : public CudaCodegenPass
+        {
+        public:
+            CudaMultiCodegenPassPre(
+                const std::string& codegen_folder = "./nnfusion_rt/cuda_codegen/",
+                const std::string& kernel_folder = "./nnfusion_rt/cuda_codegen/",
+                const std::string kernel_suffix = ".cu")
+                : CudaCodegenPass(codegen_folder, kernel_folder, kernel_suffix)
+            {
+            }
+
+            virtual bool run(std::shared_ptr<InterpreterContext> ctx,
+                             std::shared_ptr<TranslationUnit> tu) override;
+
+            CodeGenerator::Pointer get_projgen() { return this->projgen; }
+            bool invoke_after_projgen() { return this->after_projgen(); };
+        };
     }
 }

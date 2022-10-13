@@ -47,9 +47,12 @@ namespace nnfusion
             bool is_parameter() const override { return true; }
             bool require_grad() const { return m_require_grad; }
             void set_require_grad(bool value = true) { m_require_grad = value; }
+            std::shared_ptr<SymShape> get_sym_shape() { return sym_shape; }
+            void set_sym_shape(std::shared_ptr<SymShape> sym_shape) { this->sym_shape = sym_shape; }
         protected:
             bool m_cacheable;
             bool m_require_grad;
+            std::shared_ptr<SymShape> sym_shape;
         };
     }
 }

@@ -29,6 +29,7 @@
 #include "nnfusion/common/axis_vector.hpp"
 #include "nnfusion/common/shape.hpp"
 #include "nnfusion/core/graph/gnode_vector.hpp"
+#include "sha256.hpp"
 #include "type/element_type.hpp"
 
 namespace nnfusion
@@ -70,6 +71,9 @@ namespace nnfusion
         os << "[" << nnfusion::join(v, sep) << "]";
         return os.str();
     }
+
+    // Replace the all the sub str "src" in "str" to "dst"
+    std::string replace_sub_str(std::string str, std::string src, std::string dst);
 
     //     size_t hash_combine(const std::vector<size_t>& list);
     //     void dump(std::ostream& out, const void*, size_t);

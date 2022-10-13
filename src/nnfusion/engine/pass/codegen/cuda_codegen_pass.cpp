@@ -35,6 +35,7 @@ DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
 DECLARE_bool(ffunction_codegen);
+DECLARE_bool(fmulti_shape);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -151,6 +152,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     {
         auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
         lu_exec_init << "// kernel_entry_init\n";
+        lu_exec_init << codegen_global_symbols(tu)->get_code();
         // emit memset
         for (const auto& allocator : allocator_list)
         {
@@ -462,6 +464,11 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
 
             if (gnode && gnode->is_parameter())
                 continue;
+
+            // this tensor will be shared buffer with other one, skip init here.
+            if (gnode && gnode->is_constant() && (*gnode)["shared_tensor"].is_valid_as<bool>())
+                continue;
+
             // if (kernel && kernel->is_eliminative())
             //     continue;
             if (kernel && kernel->get_or_emit_source())
@@ -1519,4 +1526,15 @@ void CudaCodegenPass::fill_exec_host(std::shared_ptr<TranslationUnit> tu)
     // lu_exec_host_vec.push_back(get_sync());
     lu_exec_host_vec.push_back(get_d2hcopy(tu));
     lu_exec_host_vec.push_back(get_sync());
+}
+
+bool CudaMultiCodegenPassPre::run(std::shared_ptr<InterpreterContext> ctx,
+                                  std::shared_ptr<TranslationUnit> tu)
+{
+    initialize(ctx, tu);
+    NNFUSION_CHECK(collect_mem(ctx, tu));
+    NNFUSION_CHECK(collect_stream(ctx, tu));
+    NNFUSION_CHECK(collect_funcs(ctx, tu));
+    NNFUSION_CHECK(modify_codegen());
+    return true;
 }

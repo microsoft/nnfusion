@@ -14,25 +14,19 @@
 // limitations under the License.
 //*****************************************************************************
 
-//----------------------------------------------------------------------------------------------
-//  Copyright (c) Microsoft Corporation. All rights reserved.
-//  Licensed under the MIT License. See License.txt in the project root for license information.
-//----------------------------------------------------------------------------------------------
-
-#pragma once
-
-#include <iostream>
-#include <string>
 #include "nnfusion/common/symbolic_shape.hpp"
-#include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/common/util.hpp"
 
-namespace nnfusion
+std::ostream& nnfusion::operator<<(std::ostream& s, const SymShape& shape)
 {
-    namespace frontend
-    {
-        // Convert an ONNX model to a nnfusion graph
-        std::shared_ptr<nnfusion::graph::Graph>
-            load_onnx_model(const std::string&,
-                            const std::unordered_map<std::string, SymDim>& dim_params = {});
-    } // namespace frontend
-} // namespace nnfusion
+    s << "Shape{";
+    s << nnfusion::join(shape);
+    s << "}";
+    return s;
+}
+
+std::ostream& nnfusion::operator<<(std::ostream& str, const SymDim& dimension)
+{
+    str << dimension.to_string();
+    return str;
+}

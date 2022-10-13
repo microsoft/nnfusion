@@ -76,6 +76,40 @@ void Concat::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
         concatenated_shape[m_concatenation_axis] = concatenation_axis_output_dim;
     }
 
+    // check if need symbolic inference
+    bool has_symbol_shape = false;
+    for (auto i = 0; i < gnode->get_input_size(); i++)
+    {
+        if (gnode->get_input_shape(i).get_sym_shape())
+        {
+            has_symbol_shape = true;
+            break;
+        }
+    }
+
+    if (has_symbol_shape)
+    {
+        auto input_shape_0 = gnode->get_input_shape(0);
+        auto output_shape = std::make_shared<nnfusion::SymShape>(input_shape_0);
+        if (input_shape_0.get_sym_shape())
+            output_shape = std::make_shared<nnfusion::SymShape>(*(input_shape_0.get_sym_shape()));
+
+        for (auto i = 1; i < gnode->get_input_size(); i++)
+        {
+            nnfusion::Shape this_input_shape = gnode->get_input_shape(i);
+            NNFUSION_CHECK(m_concatenation_axis < this_input_shape.size());
+            NNFUSION_CHECK(this_input_shape.size() == output_shape->size());
+            for (auto i = 0; i < this_input_shape.size(); i++)
+            {
+                if (i == m_concatenation_axis)
+                    (*output_shape)[i] += this_input_shape.get_sym_shape()
+                                              ? (*this_input_shape.get_sym_shape())[i]
+                                              : nnfusion::SymDim(this_input_shape[i]);
+            }
+        }
+        concatenated_shape.sym_shape = output_shape;
+    }
+
     gnode->set_output_type_and_shape(0, inputs_et, concatenated_shape);
 }
 

@@ -137,6 +137,212 @@ void CodegenMainBlockUnit::collect_requirement()
     return;
 }
 
+bool CodeGenerator::codegen_with_preprocess(bool clean, std::string ns)
+{
+    // pass exec info: pwd, write_to
+    pass_exec_info();
+
+    // sort LanguageUnit
+    std::vector<LanguageUnit_p> sorted_unit;
+
+    std::unordered_set<LanguageUnit_p> visited;
+    std::unordered_map<LanguageUnit_p, std::vector<LanguageUnit_p>> required_by;
+    std::unordered_map<LanguageUnit_p, int> ind;
+
+    auto comparef = [](const LanguageUnit_p& a, const LanguageUnit_p& b) {
+        auto prior = [](LanguageUnit_p lup) {
+            if (lup->symbol.find("header::") != string::npos)
+                return 0;
+            if (lup->symbol.find("macro::") != string::npos)
+                return 1;
+            if (lup->symbol.find("declaration::") != string::npos)
+                return 2;
+            return 3;
+        };
+        return prior(a) > prior(b);
+    };
+
+    std::priority_queue<LanguageUnit_p, std::vector<LanguageUnit_p>, decltype(comparef)>
+        prior_queue(comparef);
+    std::queue<LanguageUnit_p> queue;
+    queue.push(lup_codegen);
+    while (!queue.empty())
+    {
+        auto cur = queue.front();
+        queue.pop();
+        if (visited.find(cur) != visited.end())
+            continue;
+        visited.insert(cur);
+        ind[cur] = cur->local_symbol.size();
+        if (ind[cur] == 0)
+        {
+            prior_queue.push(cur);
+            continue;
+        }
+        for (auto& it : cur->local_symbol)
+        {
+            LanguageUnit_p lu = it.second;
+            required_by[lu].push_back(cur);
+            queue.push(lu);
+        }
+    }
+
+    while (!prior_queue.empty())
+    {
+        auto cur = prior_queue.top();
+        prior_queue.pop();
+        sorted_unit.push_back(cur);
+        for (auto it : required_by[cur])
+        {
+            ind[it] -= 1;
+
+            if (ind[it] == 0)
+            {
+                prior_queue.push(it);
+            }
+        }
+    }
+
+    std::unordered_set<std::string> codegen_files;
+    auto clear_file = [&](const std::string& pwd, const std::string& write_to) {
+        int pos = pwd.find("/");
+        while (pos != std::string::npos)
+        {
+            std::string dir = pwd.substr(0, pos);
+            NNFUSION_CHECK(nnfusion::codegen::create_folder(dir));
+            pos = pwd.find("/", pos + 1);
+        }
+
+        std::string search;
+        if (write_to.empty() || write_to[0] == '/')
+            search = write_to;
+        else
+            search = pwd;
+
+        if (!pwd.empty() && pwd.back() != '/')
+            search = pwd + "/";
+
+        std::string shared_header;
+        if (write_to.substr(0, 6) == "shared")
+        {
+            shared_header = search + "shared.h";
+            if (codegen_files.find(shared_header) == codegen_files.end())
+            {
+                codegen_files.insert(shared_header);
+                std::ofstream file;
+                file.open(shared_header);
+                // file << nnfusion::kernels::boilerplate::MIT1->get_code();
+                file.close();
+                // struct stat buffer;
+                // if (stat(shared_header.c_str(), &buffer) == 0)
+                // {
+                //     NNFUSION_CHECK(remove(shared_header.c_str()) == 0);
+                // }
+            }
+        }
+
+        search = pwd + write_to;
+        if (codegen_files.find(search) == codegen_files.end())
+        {
+            codegen_files.insert(search);
+            std::ofstream file;
+            file.open(search);
+            // if (search.find(".txt", search.size() - 4) == string::npos)
+            // {
+            //     file << nnfusion::kernels::boilerplate::MIT1->get_code();
+            // }
+            // else
+            // {
+            //     file << nnfusion::kernels::boilerplate::MIT2->get_code();
+            // }
+
+            if (files_include_shared.find(search) != files_include_shared.end())
+            {
+                file << "#include \"shared.h\"\n";
+            }
+
+            file.close();
+            // struct stat buffer;
+            // if (stat(search.c_str(), &buffer) == 0)
+            // {
+            //     NNFUSION_CHECK(remove(search.c_str()) == 0);
+            // }
+        }
+    };
+
+    auto add_namespace = [&](LanguageUnit_p& lu) {
+        if (lu->symbol.find("header::") > lu->symbol.length() &&
+            lu->symbol.find("dxModuleLaunchAsync") > lu->symbol.length() &&
+            lu->symbol.find("macro::") > lu->symbol.length() &&
+            lu->symbol.find("declaration::typedef") > lu->symbol.length() &&
+            (lu->write_to == "nnfusion_rt" + m_kernel_suffix || lu->write_to == "runtime.cpp"))
+        {
+            if (dynamic_pointer_cast<CodegenMainBlockUnit>(lu) != nullptr)
+            {
+                auto clu = dynamic_pointer_cast<CodegenMainBlockUnit>(lu);
+                auto new_lu = std::make_shared<LanguageUnit>();
+                *new_lu << "namespace " << ns << "{\n";
+                *new_lu << clu->begin->get_code();
+                clu->begin->set_stringstream(new_lu->get_code());
+
+                auto new_ru = std::make_shared<LanguageUnit>();
+                *new_ru << clu->end->get_code();
+                *new_ru << "} //namespace " << ns << "\n";
+                clu->end->set_stringstream(new_ru->get_code());
+            }
+            else
+            {
+                if (lu->get_code().size() == 0)
+                    return;
+                auto new_lu = std::make_shared<LanguageUnit>();
+                *new_lu << "namespace " << ns << "{\n";
+                *new_lu << lu->get_code();
+                *new_lu << "} //namespace " << ns << "\n";
+                lu->set_stringstream(new_lu->get_code());
+            }
+        }
+    };
+
+    // write code
+    std::unordered_set<std::string> executed;
+    for (auto lu : sorted_unit)
+    {
+        if (clean)
+            clear_file(lu->pwd, lu->write_to);
+        else if (lu->write_to != "nnfusion_rt" + m_kernel_suffix && lu->write_to != "runtime.cpp" &&
+                 lu->pwd.find("HLSL") > lu->pwd.length())
+            continue;
+        if (!clean && lu->symbol == "declaration::dxModuleLaunchAsync")
+            continue;
+        if (!ns.empty())
+            add_namespace(lu);
+        std::string search_name =
+            lu->symbol + "_" + lu->pwd + "_" + lu->write_to + (ns == "" ? "" : "_" + ns);
+        if (executed.find(search_name) == executed.end())
+        {
+            lu->execute();
+            executed.insert(search_name);
+        }
+    }
+
+    for (auto search : codegen_files)
+    {
+        std::ofstream file;
+        file.open(search, std::ios::app);
+        if (search.find(".txt", search.size() - 4) == string::npos)
+        {
+            file << nnfusion::kernels::boilerplate::MIT1->get_code();
+        }
+        else
+        {
+            file << nnfusion::kernels::boilerplate::MIT2->get_code();
+        }
+        file.close();
+    }
+
+    return true;
+}
+
 bool CodeGenerator::codegen()
 {
     // pass exec info: pwd, write_to
@@ -278,7 +484,6 @@ bool CodeGenerator::codegen()
         std::string search_name = lu->symbol + "_" + lu->pwd + "_" + lu->write_to;
         if (executed.find(search_name) == executed.end())
         {
-            // NNFUSION_LOG(INFO) << lu->symbol << "\t" << lu->pwd << "\t" << lu->write_to;
             lu->execute();
             executed.insert(search_name);
         }
@@ -310,7 +515,6 @@ void CodeGenerator::pass_exec_info()
     std::unordered_map<LanguageUnit_p, LanguageUnit_p> receiver_giver;
 
     auto pass = [&](LanguageUnit_p giver, LanguageUnit_p receiver) {
-
         // NNFUSION_LOG(INFO) << "==================";
         // NNFUSION_LOG(INFO) << giver->symbol << "\t" << giver->pwd << "\t" << giver->write_to;
         // NNFUSION_LOG(INFO) << receiver->symbol << "\t" << receiver->pwd << "\t" << receiver->write_to;
@@ -399,7 +603,6 @@ void CodeGenerator::pass_exec_info()
             }
             curr->collect_requirement();
         }
-
     };
 
     while (!queue.empty())

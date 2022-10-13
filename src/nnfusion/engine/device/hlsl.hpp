@@ -15,5 +15,16 @@ namespace nnfusion
         public:
             HLSLEngine();
         };
+
+        class HLSLMultiEngine : public HLSLEngine
+        {
+        public:
+            HLSLMultiEngine();
+            bool run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
+                               EngineContext::Pointer context = nullptr);
+
+        private:
+            bool erase_all_codegen();
+        };
     } // namespace engine
 } // namespace nnfusion

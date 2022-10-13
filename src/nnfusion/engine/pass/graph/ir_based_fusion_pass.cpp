@@ -14,6 +14,7 @@ using namespace nnfusion::kernels;
 DECLARE_bool(fantares_mode);
 DECLARE_string(ftuning_blocklist);
 DEFINE_bool(fir_based_fusion, false, "");
+DECLARE_bool(fsymbolic);
 DEFINE_string(firfusion_blocklist,
               "",
               "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
@@ -58,7 +59,8 @@ private:
             }
 
             // block list
-            if (m_blocklist.find(node->get_op_type()) != m_blocklist.end())
+            if (m_blocklist.find(node->get_op_type()) != m_blocklist.end() ||
+                (FLAGS_fsymbolic && (*node)["symbolic"].is_valid_as<bool>()))
             {
                 m_tagged_nodes.insert(node);
                 for (auto in_edge : node->get_in_edges())

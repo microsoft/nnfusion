@@ -49,6 +49,7 @@ namespace nnfusion
         virtual void allocate(shared_ptr<descriptor::Tensor> tensor,
                               shared_ptr<descriptor::Tensor> root_tensor,
                               size_t offset = 0);
+        void register_tensor(shared_ptr<descriptor::Tensor> tensor);
         virtual void free(shared_ptr<descriptor::Tensor> tensor);
 
         void dump(std::ofstream&);

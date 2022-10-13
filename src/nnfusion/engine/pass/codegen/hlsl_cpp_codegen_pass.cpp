@@ -86,6 +86,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     {
         std::string params = get_kernel_entry_paras(tu);
         lu_exec_begin << "\nint kernel_entry(" << params << ")\n{\n";
+        lu_exec_begin << codegen_global_symbols(tu)->get_code();
     }
 
     auto& lu_exec_end = *(projgen->lup_exec->end);
@@ -177,7 +178,8 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    if (!kernel->is_eliminative())
+                    if (!(kernel->is_eliminative() ||
+                          (*gnode)["is_eliminative"].is_valid_as<bool>()))
                     {
                         LanguageUnit_p kernel_func_def;
                         if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
@@ -211,7 +213,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                 fname = "compressed_src_" + std::to_string(hashcode);
                             }
 
-                            std::string file = "file://HLSL/" + fname + m_kernel_suffix;
+                            auto end = m_kernel_folder.find_last_of('/');
+                            auto last_end = m_kernel_folder.find_last_of('/', end - 1);
+                            auto folder_name = m_kernel_folder.substr(last_end + 1, end - last_end);
+                            std::string file = "file://" + folder_name + fname + m_kernel_suffix;
 
                             std::string load_str =
                                 module_name + " = dxModuleLoad(\"" + file + "\");\n";
@@ -257,10 +262,44 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             NNFUSION_CHECK_NOT_NULLPTR(async_info.execution_stream);
             std::string stream_name = async_info.execution_stream->get_name();
             std::string call_str = fu->call_unit->get_code();
+            // todo: this hack is to eliminate d2d copy caused by extern result memory
+            if (FLAGS_fextern_result_memory && gnode)
+            {
+                size_t non_control_edge = 0;
+                std::shared_ptr<nnfusion::graph::Edge> out_edge;
+                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
+                {
+                    if (!gnode->get_out_edges()[i]->is_control_edge())
+                    {
+                        non_control_edge++;
+                        out_edge = gnode->get_out_edges()[i];
+                        if (non_control_edge > 1)
+                            break;
+                    }
+                }
+
+                // inplace the result tensor into kernel only if there is one out edge
+                if (non_control_edge == 1)
+                {
+                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
+                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
+                        !is_ref_tensor(ins, out_tensor))
+                    {
+                        std::shared_ptr<GNode> output = out_edge->get_dst();
+                        std::string in_name = output->get_input_tensor(0).get_name();
+                        std::string out_name = output->get_output_tensor(0).get_name();
+                        int pos = call_str.find(", " + in_name);
+                        call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        (*output)["is_eliminative"] = true;
+                    }
+                }
+            }
+
             if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
             {
                 call_str = func_name + call_str;
-                if (kernel && kernel->is_eliminative())
+                if ((kernel && kernel->is_eliminative()) ||
+                    (*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "// " + call_str;
                 }
@@ -276,7 +315,8 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                     call_str = call_str.replace(s_pos + 20, e_pos - s_pos - 20, module_name);
                 }
 
-                if (kernel && kernel->is_eliminative())
+                if ((kernel && kernel->is_eliminative()) ||
+                    (*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "/*\n" + call_str + "*/\n";
                 }
@@ -875,4 +915,17 @@ LanguageUnit_p HLSLCPPCodegenPass::get_h2dcopy(std::shared_ptr<TranslationUnit> 
 LanguageUnit_p HLSLCPPCodegenPass::get_sync()
 {
     return std::make_shared<LanguageUnit>("device_sync", "dxStreamSynchronize(0);\n");
+}
+
+bool HLSLMultiCodegenPassPre::run(std::shared_ptr<InterpreterContext> ctx,
+                                  std::shared_ptr<TranslationUnit> tu)
+{
+    initialize(ctx, tu);
+    NNFUSION_CHECK(collect_mem(ctx, tu));
+    NNFUSION_CHECK(collect_stream(ctx, tu));
+    NNFUSION_CHECK(collect_funcs(ctx, tu));
+    // projgen->codegen();
+    // NNFUSION_CHECK(modify_codegen());
+    NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " done.";
+    return true;
 }

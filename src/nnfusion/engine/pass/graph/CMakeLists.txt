@@ -41,4 +41,5 @@ target_link_libraries(nnfusion_engine_pass_graph
     nnfusion_cache_manager
     nnfusion_operators
     kernels_hlsl
+    nnfusion_common
 )

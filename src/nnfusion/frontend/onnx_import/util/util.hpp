@@ -62,6 +62,36 @@ namespace nnfusion
                 }
 
                 template <>
+                inline std::vector<char> get_data(const onnx::TensorProto& tensor)
+                {
+                    if (tensor.has_raw_data())
+                    {
+                        return __get_raw_data<char>(tensor.raw_data());
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_BOOL)
+                    {
+                        return __get_data<char>(tensor.int32_data());
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_UINT8)
+                    {
+                        return __get_data<char>(tensor.int32_data());
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_INT8)
+                    {
+                        return __get_data<char>(tensor.int32_data());
+                    }
+
+                    NNFUSION_CHECK_FAIL()
+                        << "invalid data type: "
+                        << onnx::TensorProto_DataType_Name(
+                               static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
+                    return std::vector<char>();
+                }
+
+                template <>
                 inline std::vector<float> get_data(const onnx::TensorProto& tensor)
                 {
                     if (tensor.has_raw_data())
@@ -129,17 +159,13 @@ namespace nnfusion
                         nnfusion::Shape shape{std::begin(tensor.dims()), std::end(tensor.dims())};
                         size_t num_element = shape_size(shape);
                         std::vector<int32_t> raw_data = __get_data<int32_t>(tensor.int32_data());
-                        std::vector<half_float::half> ret((num_element + 1) / 2);
+                        std::vector<half_float::half> ret(num_element);
                         uint32_t* src_p = (uint32_t*)raw_data.data();
                         uint16_t* dst_p = (uint16_t*)ret.data();
                         for (size_t i = 0; i < num_element; i++)
                         {
                             NNFUSION_CHECK((src_p[i] & 0xFFFF0000) == 0);
                             dst_p[i] = src_p[i] & 0x0000FFFF;
-                        }
-                        if (num_element % 2 == 1)
-                        {
-                            dst_p[num_element] = 0;
                         }
 
                         return ret;

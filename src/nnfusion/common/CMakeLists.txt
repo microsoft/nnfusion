@@ -15,6 +15,7 @@ set(SRC
     type/type_protocal.cpp
     shape.cpp
     partial_shape.cpp
+    symbolic_shape.cpp
     axis_set.cpp
     axis_vector.cpp
     dimension.cpp
@@ -23,6 +24,7 @@ set(SRC
     coordinate.cpp
     coordinate_diff.cpp
     device_type.cpp
+    sha256.cpp
 )
 
 add_library(nnfusion_common STATIC ${SRC})

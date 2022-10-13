@@ -20,6 +20,7 @@
 //----------------------------------------------------------------------------------------------
 
 #include "unsqueeze.hpp"
+#include "nnfusion/frontend/util/evaluator.hpp"
 
 namespace nnfusion
 {
@@ -62,6 +63,45 @@ namespace nnfusion
                 }
 
             } // namespace set_1
+
+            namespace set_13
+            {
+                NamedNodeVector
+                    TranslateUnsqueezeOp(const onnx::NodeProto& node_proto,
+                                         const NodeMap& all_ng_nodes,
+                                         std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto inputs = GetAllInputIndex(all_ng_nodes, node_proto);
+                    auto data = inputs[0];
+                    auto input_shape = data.get_shape();
+                    std::vector<int64_t> axes;
+                    NNFUSION_CHECK(GetValueFromNGraphOp(inputs[1].gnode, &axes));
+
+                    Node node(node_proto);
+                    ///\todo: check duplicate axes between neg and pos axes
+                    for (auto& axis : axes)
+                    {
+                        axis += axis < 0 ? input_shape.size() + axes.size() : 0;
+                    }
+
+                    NNFUSION_CHECK(!axes.empty()) << "'axes' attribute is mandatory.";
+                    std::sort(std::begin(axes), std::end(axes), std::less<int64_t>());
+
+                    auto output_shape = input_shape;
+                    for (auto axis : axes)
+                    {
+                        output_shape.insert(std::next(output_shape.begin(), axis), 1);
+                    }
+
+                    nnfusion::AxisVector ng_axis_order(input_shape.size());
+                    std::iota(ng_axis_order.begin(), ng_axis_order.end(), 0);
+                    auto reshape_op = std::make_shared<op::Reshape>(ng_axis_order, output_shape);
+                    reshape_op->set_name(node_proto.output(0));
+                    auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {data});
+                    return {{node_proto.output(0), reshape_gnode}};
+                }
+
+            } // namespace set_13
 
         } //namespace onnx_import
 

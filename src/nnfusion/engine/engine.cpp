@@ -18,6 +18,7 @@ DEFINE_bool(fhost_entry, false, "provide entry on host memory");
 DEFINE_bool(fuse_cpuprofiler, false, "");
 DEFINE_bool(fcodegen_pybind, false, "");
 DEFINE_bool(ffunction_codegen, false, "");
+DEFINE_bool(fmulti_shape, false, "");
 
 using namespace nnfusion;
 
@@ -41,6 +42,9 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
     if (g_passes != nullptr)
         result = g_passes->run_on_graph(graph, context);
 
+    if (context != nullptr)
+        context->m_legacy_graph = graph;
+
     NNFUSION_CHECK(result) << "Engine failed after finished graph passes.";
 
     ir::Program::Pointer p = nullptr;
@@ -48,6 +52,9 @@ bool Engine::run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer co
         p = g_visitor->run_on_graph(graph, context);
     else
         return result;
+
+    if (context != nullptr)
+        context->m_legacy_program = p;
 
     NNFUSION_CHECK(p != nullptr) << "Engine failed after finished graph visitor.";
 

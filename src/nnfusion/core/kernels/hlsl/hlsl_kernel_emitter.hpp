@@ -85,6 +85,9 @@ namespace nnfusion
             protected:
                 // map tensor names and allocate tmp tensor
                 void process_antares_kernel_info();
+                void find_launch_config(const std::string& str,
+                                        std::map<std::string, std::string>& symbol_expr,
+                                        std::string& block_num);
                 std::string ir, options;
                 std::vector<AntaresKernelInfo::Pointer> kernel_info;
                 std::unordered_map<std::string, std::string>

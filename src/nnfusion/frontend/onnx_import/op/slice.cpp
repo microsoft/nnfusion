@@ -25,6 +25,8 @@
 #include "nnfusion/frontend/util/evaluator.hpp"
 #include "slice.hpp"
 
+DEFINE_bool(ffix_slice, false, "A hack fix to re-pass symbolic values to slice op");
+
 static inline int64_t get_valid_array_idx(int64_t idx, int64_t last_idx)
 {
     return (idx >= 0) ? std::min(idx, last_idx) : std::max<int64_t>(0, last_idx + idx);
@@ -118,6 +120,7 @@ namespace nnfusion
                     Shape data_shape = data.get_shape();
                     Shape lower_bounds(data_shape.size());
                     Shape upper_bounds = data_shape;
+                    Shape out_shape = data_shape;
                     Strides strides(data_shape.size(), 1);
 
                     for (auto idx = 0; idx < axes.size(); ++idx)
@@ -130,7 +133,70 @@ namespace nnfusion
                         strides.at(axis) = steps.at(idx);
                     }
 
-                    auto op = std::make_shared<op::Slice>(lower_bounds, upper_bounds, strides);
+                    for (auto i = 0; i < data_shape.size(); i++)
+                    {
+                        size_t result_axis_size = upper_bounds[i] - lower_bounds[i];
+                        result_axis_size = result_axis_size / strides[i] +
+                                           ((result_axis_size % strides[i] == 0) ? 0 : 1);
+                        out_shape[i] = result_axis_size;
+                    }
+
+                    if (FLAGS_ffix_slice)
+                    {
+                        if (data_shape == Shape{2048, 2048} && axes.size() == 1 && axes[0] == 0)
+                        {
+                            auto dim_params = m_graph->get_dim_params();
+                            if (dim_params.count("past_seq") > 0 &&
+                                dim_params["past_seq"].is_dynamic())
+                            {
+                                NNFUSION_CHECK(dim_params.count("seq") > 0 &&
+                                               dim_params["deq"].is_static());
+                                SymDim past_seq = dim_params["past_seq"];
+                                SymDim seq = dim_params["seq"];
+                                auto symbol_lower_bounds = std::make_shared<SymShape>(lower_bounds);
+                                auto symbol_upper_bounds = std::make_shared<SymShape>(upper_bounds);
+                                auto symbol_out_shape = std::make_shared<SymShape>(out_shape);
+                                NNFUSION_CHECK(lower_bounds[0] == past_seq.max());
+                                NNFUSION_CHECK(upper_bounds[0] == (past_seq.max() + seq.max()));
+                                symbol_lower_bounds->at(0) = past_seq;
+                                symbol_upper_bounds->at(0) = (past_seq + seq);
+                                lower_bounds.set_sym_shape(symbol_lower_bounds);
+                                upper_bounds.set_sym_shape(symbol_upper_bounds);
+                                out_shape.set_sym_shape(symbol_out_shape);
+                                NNFUSION_LOG(INFO) << "Fix Slice symbol bounds: " << lower_bounds
+                                                   << " | " << upper_bounds;
+                            }
+                        }
+
+                        if (data_shape.size() == 2 && data_shape[1] == 2048 && axes.size() == 1 &&
+                            axes[0] == 1)
+                        {
+                            auto dim_params = m_graph->get_dim_params();
+                            if (dim_params.count("past_seq") > 0 &&
+                                dim_params["past_seq"].is_dynamic())
+                            {
+                                NNFUSION_CHECK(dim_params.count("seq") > 0 &&
+                                               dim_params["deq"].is_static());
+                                SymDim past_seq = dim_params["past_seq"];
+                                SymDim seq = dim_params["seq"];
+                                auto symbol_lower_bounds = std::make_shared<SymShape>(lower_bounds);
+                                auto symbol_upper_bounds = std::make_shared<SymShape>(upper_bounds);
+                                auto symbol_out_shape = std::make_shared<SymShape>(out_shape);
+                                NNFUSION_CHECK(lower_bounds[1] == 0);
+                                NNFUSION_CHECK(upper_bounds[1] == (past_seq.max() + seq.max()));
+                                symbol_upper_bounds->at(1) = (past_seq + seq);
+                                symbol_out_shape->at(1) = (past_seq + seq);
+                                lower_bounds.set_sym_shape(symbol_lower_bounds);
+                                upper_bounds.set_sym_shape(symbol_upper_bounds);
+                                out_shape.set_sym_shape(symbol_out_shape);
+                                NNFUSION_LOG(INFO) << "Fix Slice symbol bounds: " << lower_bounds
+                                                   << " | " << upper_bounds;
+                            }
+                        }
+                    }
+
+                    auto op =
+                        std::make_shared<op::Slice>(lower_bounds, upper_bounds, strides, out_shape);
                     op->set_name(node_proto.output(0));
                     nnfusion::json stat;
                     stat["starts"] = starts;

@@ -24,6 +24,11 @@ DEFINE_string(fmem_log_path, "memory.log", "The file path of memory log.");
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fhost_entry);
+DECLARE_bool(fmulti_shape);
+
+std::unordered_map<std::string, std::shared_ptr<descriptor::Tensor>>
+    AssignTensorMemoryLayout::m_shared_const_tensor;
+bool AssignTensorMemoryLayout::m_is_first_graph = true;
 
 bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -119,6 +124,32 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                 }
                 else
                 {
+                    if (gnode->is_constant() && FLAGS_fmulti_shape &&
+                        !(tensor->get_global_consistent_name().empty()))
+                    {
+                        if (m_is_first_graph)
+                        {
+                            NNFUSION_CHECK(m_shared_const_tensor.count(
+                                               tensor->get_global_consistent_name()) == 0);
+                            m_shared_const_tensor[tensor->get_global_consistent_name()] = tensor;
+                            // NNFUSION_LOG(INFO) << "graph::0 set cache tensor " << tensor->get_global_consistent_name() << ", gnode=" << gnode->get_name();
+                        }
+                        else if (m_shared_const_tensor.count(tensor->get_global_consistent_name()) >
+                                 0)
+                        {
+                            auto shared_tensor =
+                                m_shared_const_tensor[tensor->get_global_consistent_name()];
+                            if (tensor->get_shape() == shared_tensor->get_shape())
+                            {
+                                // NNFUSION_LOG(INFO) << "graph::1 get cache tensor " << tensor->get_global_consistent_name() << ", gnode=" << gnode->get_name();
+                                auto allocator = maf->get_allocator(tensor);
+                                tensor->share_with_tensor(shared_tensor);
+                                allocator->register_tensor(tensor);
+                                (*gnode)["shared_tensor"] = true;
+                                continue;
+                            }
+                        }
+                    }
                     auto allocator = maf->get_allocator(tensor);
                     tensor->set_pool(allocator->get_name());
                     allocator->allocate(tensor);
@@ -173,6 +204,11 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
 
             (*ins)["MemoryInfo"] = mem_info;
         }
+    }
+
+    if (FLAGS_fmulti_shape)
+    {
+        m_is_first_graph = false;
     }
 
     if (dump_trace)

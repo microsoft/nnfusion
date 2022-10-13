@@ -27,8 +27,6 @@ bool BaseCodegenPass::run(std::shared_ptr<InterpreterContext> ctx,
     projgen->codegen();
     NNFUSION_CHECK(after_projgen());
     NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " done.";
-    exit(0);
-
     return true;
 }
 
@@ -64,7 +62,6 @@ void BaseCodegenPass::separate_func_defs_files(int file_number, const string& ke
 {
     if (kernel_folder != m_kernel_folder)
         change_kernel_folder(kernel_folder);
-
     if (file_number <= 0)
     {
         for (auto it : kernel_func_defs)
@@ -378,4 +375,35 @@ LanguageUnit_p BaseCodegenPass::codegen_workspace_size(std::shared_ptr<Translati
     *lu_workspace << "    return " << total_alloc << ";\n";
     *lu_workspace << "}\n";
     return lu_workspace;
+}
+
+LanguageUnit_p BaseCodegenPass::codegen_global_symbols(std::shared_ptr<TranslationUnit> tu)
+{
+    auto lu_symbols = make_shared<LanguageUnit>("global_symbols");
+    std::unordered_map<std::string, int> symbol_value;
+    for (size_t i = 0; i < tu->arg.size(); i++)
+    {
+        auto& shape = (*tu->arg[i]).get_shape();
+        if (shape.is_dynamic())
+        {
+            for (auto dim : *(shape.get_sym_shape()))
+            {
+                if (dim.is_dynamic())
+                {
+                    symbol_value[dim.sym()] = dim.max();
+                }
+            }
+        }
+    }
+    for (auto pair : symbol_value)
+    {
+        //*lu_symbols << "int64_t " << pair.first;
+        *lu_symbols << "int64_t " << pair.first << " = get_" << pair.first << "();\n";
+        // if (pair.second < std::numeric_limits<size_t>::max())
+        // {
+        //     *lu_symbols << " = " << pair.second;
+        // }
+        // *lu_symbols << ";\n";
+    }
+    return lu_symbols;
 }

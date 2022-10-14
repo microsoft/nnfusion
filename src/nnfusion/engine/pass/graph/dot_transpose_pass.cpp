@@ -81,6 +81,90 @@ bool DotTransposePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& gra
     bool using_pass = FLAGS_fdot_transpose;
     if (!using_pass)
         return true;
+    {
+        // we first try to optimize it with a heristic rule
+        std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
+
+        for (auto& it : nodes)
+        {
+            if (it->get_op_type() != "Dot")
+            {
+                continue;
+            }
+            auto dot = std::dynamic_pointer_cast<nnfusion::op::Dot>(it->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(dot);
+            auto trans_A = dot->get_transpose_A();
+            auto trans_B = dot->get_transpose_B();
+
+            auto input0_edge = it->get_in_edge(0);
+            auto input1_edge = it->get_in_edge(1);
+
+            auto input0_node = input0_edge->get_src();
+            auto input1_node = input1_edge->get_src();
+
+            auto input0_index = input0_edge->get_src_output();
+            auto input1_index = input1_edge->get_src_output();
+
+            auto input0_shape = input0_node->get_shape();
+            auto input1_shape = input1_node->get_shape();
+            if (input0_shape.size() != 2 && input1_shape.size() != 2)
+            {
+                continue;
+            }
+
+            auto M = trans_A ? input0_shape[1] : input0_shape[0];
+            auto N = trans_B ? input1_shape[0] : input0_shape[1];
+            auto K = trans_A ? input0_shape[0] : input0_shape[1];
+
+            // put the spactial axis as leading dim
+            bool optimized = false;
+            if (M >= 256 && N >= 256 && K >= 1024)
+            {
+                if (!trans_A)
+                {
+                    auto trans_gnode = nnfusion::graph::numpy_transpose(
+                        input0_node, nnfusion::AxisVector(), input0_index);
+                    graph->add_node(trans_gnode);
+                    graph->add_edge(input0_node, input0_index, trans_gnode, 0);
+                    input0_node = trans_gnode;
+                    optimized = true;
+                    trans_A = true;
+                }
+                if (trans_B)
+                {
+                    auto trans_gnode = nnfusion::graph::numpy_transpose(
+                        input1_node, nnfusion::AxisVector(), input1_index);
+                    graph->add_node(trans_gnode);
+                    graph->add_edge(input1_node, input1_index, trans_gnode, 0);
+                    input1_node = trans_gnode;
+                    optimized = true;
+                    trans_B = false;
+                }
+            }
+
+            if (optimized)
+            {
+                if (it->get_in_edge(0)->get_src() != input0_node)
+                {
+                    graph->remove_edge(it->get_in_edge(0));
+                    auto new_input = make_shared<nnfusion::graph::Input>(
+                        it->get_input_element_type(0), input0_node->get_shape());
+                    it->set_input(0, new_input);
+                    graph->add_edge(input0_node, 0, it, 0);
+                }
+                if (it->get_in_edge(1)->get_src() != input1_node)
+                {
+                    graph->remove_edge(it->get_in_edge(1));
+                    auto new_input = make_shared<nnfusion::graph::Input>(
+                        it->get_input_element_type(1), input1_node->get_shape());
+                    it->set_input(1, new_input);
+                    graph->add_edge(input1_node, 0, it, 1);
+                }
+                dot->set_transpose(trans_A, trans_B);
+            }
+        }
+        return true;
+    }
 
     auto cache_manager = std::make_shared<cache::KernelCacheManager>();
     if (!cache_manager->is_valid())

@@ -10,8 +10,8 @@
 #undef __HIP_PLATFORM_NVCC__
 
 #include <hip/hip_runtime.h>
-#include <hip/hcc_detail/hip_fp16.h>
-#include <rocblas.h>
+#include <hip/hip_fp16.h>
+#include <rocblas/rocblas.h>
 // #include <hipsparse.h>
 // #include <hiprand/hiprand.h>
 // #include <hiprand_kernel.h>
@@ -665,7 +665,7 @@ UN_IMPLEMENTED(cudnnGetRNNLinLayerBiasParams, cudnnStatus_t)
 #if MIOPEN_VERSION_MINOR <= 8
 #define cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)  __cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)
 #else
-#error "BUG from MIOpen 1.8.0"
+//#error "BUG from MIOpen 1.8.0"
 #define cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)  miopenTransformTensor(hd, a, x, d_x, b, y, d_y)
 #endif
 
@@ -725,6 +725,8 @@ UN_IMPLEMENTED(cudnnGetReductionWorkspaceSize, cudnnStatus_t)
 UN_IMPLEMENTED(cudnnReduceTensor, cudnnStatus_t)
 
 
+template<class T> __forceinline__ __device__ T hip_max(const T &x, const T &y) { return x > y ? x : y; }
+template<class T> __forceinline__ __device__ T hip_min(const T &x, const T &y) { return x < y ? x : y; }	
 /////////////////////////////////////////////////////////////////
 
 template<class T> static inline T& getVariable(const void *key) {

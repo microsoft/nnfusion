@@ -50,6 +50,7 @@ ROCmEngine::ROCmEngine()
     g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
     g_passes->push_back(make_shared<MultiReshapeFoldingPass>());
     g_passes->push_back(make_shared<VectorDotTransposePass>());
+    g_passes->push_back(make_shared<DotTransposePass>());
     g_passes->push_back(make_shared<GemmFusionPass>());
     g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
     g_passes->push_back(make_shared<AssignLayoutPass>());
@@ -73,7 +74,7 @@ ROCmEngine::ROCmEngine()
     g_passes->push_back(make_shared<BlockFusionPass>());
 
     // Specific opt for dot
-    g_passes->push_back(make_shared<DotTransposePass>());
+    //g_passes->push_back(make_shared<DotTransposePass>());
 
     // Assign stream passes
     g_passes->push_back(make_shared<AssignAsyncInfoPass>());

@@ -80,6 +80,8 @@ for node_id in range(len(model.graph.node)):
         model.graph.output.append(debug_tensor)
         node_name_dict.update({debug_tensor.name: model.graph.node[node_id].name+'_'+str(output_id)})
 
+onnx.save_model(model, "model.debug.onnx", save_as_external_data=True)
+
 print("Importing ONNX model into ONNX Runtime...")
 ort.set_default_logger_severity(args.logger_severity)
 
@@ -99,7 +101,7 @@ providers = args.provider.split(",")
 if "CPUExecutionProvider" not in providers:
     providers.append("CPUExecutionProvider")
 
-ort_session = ort.InferenceSession(args.file, sess_options, providers=providers)
+ort_session = ort.InferenceSession("model.debug.onnx", sess_options, providers=providers)
 
 if args.provider != '':
     ort_session.set_providers([args.provider])
@@ -126,4 +128,3 @@ for step in range(1):
             # print_offset = int(len(out_flat) / 3)
             # max_len = min(10, len(out_flat) - print_offset)
             # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
-

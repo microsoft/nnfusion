@@ -47,10 +47,10 @@ REGISTER_OP(InstanceNormalization)
         float epsilon = cfg["epsilon"].is_null()?1e-5:float(cfg["epsilon"]);
 
         auto expression = op::create_code_from_template(
-            "mediate0[N,C] +=! @input0@[N,C,@I@] / @dims@;"
-            "mediate1[N,C] +=! (@input0@[N,C,@I@] - mediate0[N,C]).call(`pow`, 2) / @dims@;"
+            "mediate0[N,C] +=! @input0@[N,C,@I@];"
+            "mediate1[N,C] +=! (@input0@[N,C,@I@] - mediate0[N,C] / @dims@).call(`pow`, 2);"
             "@output0@[N, C, @I@] = @input2@[C] + @input1@[C] * (@input0@[N, C, @I@] - "
-            "mediate0[N,C]) / (@epsilon@ + mediate1[N,C]).call(`sqrt`);",
+            "mediate0[N,C]  / @dims@) / (@epsilon@ + mediate1[N,C] / @dims@).call(`sqrt`);",
             {{"dims", to_string(ins_size * 1.0)},
             {"epsilon",to_string(epsilon)},
             {"I", I}

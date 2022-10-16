@@ -15,7 +15,7 @@ REGISTER_OP(Range).attr<int>("start").attr<int>("limit").attr<int>("delta").infe
         nnfusion::Shape output_shape_0;
         output_shape_0.push_back(num);
 
-        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape_0);
+        gnode->set_output_type_and_shape(0, element::i32, output_shape_0);
     })
 .translate_v2([](std::shared_ptr<graph::GNode> gnode) -> std::string {
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
@@ -24,9 +24,10 @@ REGISTER_OP(Range).attr<int>("start").attr<int>("limit").attr<int>("delta").infe
         float delta = generic_op->localOpConfig.getRoot()["delta"];
         int num = (int)((limit - start + delta - 1) / delta);
 
-        return op::create_code_from_template("@output0@[N]=@start@ + @delta@ * N",
+        return op::create_code_from_template("@output0@[N0] = (@start@ + @delta@ * N0.val()).cast(`int32`) where N0 in @num@;",
             {
             {"start", to_string(start)},
-            {"delta", to_string(delta)}
+            {"delta", to_string(delta)},
+            {"num", to_string(num)}
             });
     });

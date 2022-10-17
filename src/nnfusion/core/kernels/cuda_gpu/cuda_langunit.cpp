@@ -22,8 +22,8 @@ LU_DEFINE(header::math_constants, "#include <math_constants.h>\n");
 LU_DEFINE(macro::HALF_MAX,
           R"(#ifndef __HALF_COMPARE_EX__
 #define __HALF_COMPARE_EX__
-inline __device__ half max(half x, half y) { return x > y ? x : y; }
-inline __device__ half min(half x, half y) { return x < y ? x : y; }
+__forceinline__ __device__ __half hmax(const __half &a, const __half &b) { return a > b ? a : b; }
+__forceinline__ __device__ __half hmin(const __half &a, const __half &b) { return a < b ? a : b; }
 #endif
 )");
 

@@ -3,7 +3,7 @@ on:
   pull_request_target:
   workflow_dispatch:
   push:
-    branches: ["**"]
+    branches: [main, master, workflow]
     tags-ignore: ["**"]
 jobs:
   build-and-test:

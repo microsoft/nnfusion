@@ -1,0 +1,18 @@
+name: Build And Test
+on:
+  pull_request_target:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+    tags-ignore: ["**"]
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: self-hosted
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Apply Code Style
+        run: ./maint/script/apply_code_style.sh
+      - name: Start test pipeline
+        run: ./maint/script/test.sh

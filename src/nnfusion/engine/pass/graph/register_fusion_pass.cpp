@@ -47,7 +47,12 @@ namespace
         FuseGroup() {}
         std::unordered_set<shared_ptr<GNode>> nodes;
     };
-    const std::unordered_set<std::string> inlined_ops = {"Broadcast", "Reshape", "Slice", "BatchNormInference", "Convert"};
+    const std::unordered_set<std::string> inlined_ops = {
+        "Broadcast", "Reshape",
+        "Slice",
+        "Convert",
+        "CNHW2NCHW"
+    };
     std::unordered_set<std::string> skip_ops = {};
     void parse_skip_ops() {
         stringstream ss(FLAGS_ffusion_skiplist);
@@ -93,6 +98,7 @@ public:
                 update_inline_nodes();
             } else if (tnode->node_->get_out_edges().size() == 1 &&
                 node_map_[tnode->node_->get_out_edges()[0]->get_dst()]->group_id_ == -1) {
+                // Inline these node to following nodes
                 continue;
             } else {
                // fuse remaining elem op

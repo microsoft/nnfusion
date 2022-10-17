@@ -162,3 +162,53 @@ REGISTER_OP(ImplicitGemm)
         }
         return ir;
     });
+
+REGISTER_OP(FusedDot)
+    .attr<size_t>("M")
+    .attr<size_t>("N")
+    .attr<bool>("transpose_A")
+    .attr<bool>("transpose_B")
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        size_t m = generic_op->localOpConfig.getRoot()["M"];
+        size_t n = generic_op->localOpConfig.getRoot()["N"];
+        nnfusion::Shape output_shape{m, n};
+        gnode->set_output_type_and_shape(
+            0, gnode->get_input_element_type(0), output_shape);
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+        string fuse_template =
+            R"( temp0@A_fused_layout@ +=! @input0@@A_layout@ where M in @M@;)";
+        string compute_template =
+            R"( @output0@[M, N] +=! temp0@A_fused_layout@ * @input1@@B_layout@; )";
+        string ir_template = fuse_template + compute_template;
+        bool transpose_A = generic_op->localOpConfig.getRoot()["transpose_A"];
+        bool transpose_B = generic_op->localOpConfig.getRoot()["transpose_B"];
+        size_t m = generic_op->localOpConfig.getRoot()["M"];
+        op::OpConfig::any op_config;
+        op_config["M"] = m;
+        op_config["A_fused_layout"] = transpose_A ? "[K, M]" : "[M, K]";
+        op_config["B_layout"] = transpose_B ? "[N, K]" : "[K, N]";
+
+        auto A_shape = curr->get_input_shape(0);
+        int raxis = transpose_A ? A_shape.size() - 2 : A_shape.size() - 1;
+        string A_layout;
+        size_t stride = m;
+        for (int i = 0; i < A_shape.size(); i++) {
+            if (i > 0) A_layout += ", ";
+            if (i == raxis) A_layout += "K";
+            else {
+                stride /= A_shape[i];
+                A_layout += "M//"+ to_string(stride) + "%" + to_string(A_shape[i]);
+            }
+        }
+        op_config["A_layout"] = "[" + A_layout + "]";
+
+        auto ir = op::create_code_from_template(ir_template, op_config);
+
+        if (curr->get_output_element_type(0) == nnfusion::element::f16) {
+            ir += "## @: tensorCoreConfig=(0, 1)";
+        }
+        return ir;
+    });

@@ -283,8 +283,8 @@ class Scheduler:
     def _rewrite_schedule_tc(self):
         assert(self.reduce_op is not None)
         out = self.output_op
-        # use_global = len(self.shared_outputs) == 0 and self.reduce_op == self.output_op
-        use_global = False
+        use_global = len(self.shared_outputs) == 0 and self.reduce_op == self.output_op
+        # use_global = False
         assert (len(self.reduce_op.input_tensors) == 2)
         A, B = self.reduce_op.input_tensors
         C = self.reduce_op.output(0)
@@ -440,10 +440,11 @@ class Scheduler:
             self.sche[BS].compute_at(self.sche[out], blck_fused)
         else:
             self.sche[BS].compute_at(self.sche[CF], ko)
-        vectorize_A = isinstance(A.op, te.PlaceholderOp)
-        vectorize_B = isinstance(B.op, te.PlaceholderOp)
-        self.cooperative_fetch(AS, self.sche, ASstrideDef, 8, vectorize_A)
-        self.cooperative_fetch(BS, self.sche, BSstrideDef, 8, vectorize_B)
+        # TVM sometimes errors when vectorize=8 for some inlining
+        vectorize_A = 8 if isinstance(A.op, te.PlaceholderOp) else 4
+        vectorize_B = 8 if isinstance(B.op, te.PlaceholderOp) else 4
+        self.cooperative_fetch(AS, self.sche, ASstrideDef, vectorize_A)
+        self.cooperative_fetch(BS, self.sche, BSstrideDef, vectorize_B)
 
         shape = (wmma_m, wmma_n, wmma_k)
         AL_gemm = te.placeholder(AL_shape, name="AL_gemm", dtype=A.dtype)

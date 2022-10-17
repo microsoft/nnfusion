@@ -6,6 +6,7 @@ import logging
 import sys, time, subprocess
 import json
 import os
+import re
 
 
 def _schedule_single(attrs, output, op_name, tail_op):
@@ -41,12 +42,17 @@ def schedule(attrs):
   config = os.environ.get('CONFIG', '').strip()
   step = int(os.environ.get('STEP', '0'))
   device_name = os.environ.get('DEV_NAME', 'V100')
+  use_tc = os.environ.get('USETC', '0')
   attrs.advanced_sched = config or step > 0
   tail_op, explicit_ops = None, [x for x in attrs.explicit_ops]
 
   import traceback
   op = explicit_ops[-1]
-
+  op_body = str(op.body)
+  match_case = '\[reduce\(combiner=comm_reducer\(result=\[\(x \+ y\)\], lhs=\[x\], rhs=\[y\], identity_element=\[0h\]\), source=\[\([a-zA-Z0-9]+\[.+,.+\]\*[a-zA-Z0-9]+\[.+,.+\]\)\], init='
+  x = re.search(match_case, op_body)
+  use_tc = x != None
+  
   try:
     from roller import apis
     from antares.common import AntaresGlobal
@@ -56,7 +62,7 @@ def schedule(attrs):
           AntaresGlobal.auto_config._candidate['RollerCase']]
     else:
       config_list = apis.get_config_space(
-          op, device_name=device_name,step=step)
+          op, device_name=device_name, use_tc=use_tc)
       config_case = attrs.auto_config.define_knob(
           f'RollerCase',
           list(config_list),

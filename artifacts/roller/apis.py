@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-def get_config_space(op, device_name, step):
+def get_config_space(op, device_name, use_tc):
   assert op.num_outputs == 1, 'ERROR: input op\'s output num is {}, expected 1'.format(
       op.num_outputs)
 
@@ -27,9 +27,8 @@ def get_config_space(op, device_name, step):
       'schedule_fuse': False,
       'st_align': False,
       'keep_tiny': False,
-      'use_tc': False,
+      'use_tc': use_tc,
   }
-
   # TODO: align shape
   shape = extract_shape_info(op)
   roller_op = Op(op, shape, op.output(0).dtype, setting['use_tc'])
@@ -55,8 +54,7 @@ def get_config_space(op, device_name, step):
     policy = PolicyPlainRT(roller_op, roller_arch, setting['smem_tiling'],
                            setting['reg_tiling'], setting['st_align'],
                            setting['padding_threshold_cap'])
-
-  rprogs = policy.emit_config_without_trails(step)
+  rprogs = policy.emit_config_without_trails(10)
   candidates = []
   for rprog in rprogs:
     candidates.append((rprog.Dump(), json.dumps(setting), is_IODependent))
@@ -128,7 +126,7 @@ def apply_config(op, sched, config, device_name):
 
   print('[debug] config =', rprog.Dump())
 
-  if setting['use_tc']:
+  if setting['use_tc'] and op.output(0).dtype=='float16':
     assert op.num_outputs == 1, 'use_tc = True expected 1 output, while get {}'.format(
         op.num_outputs)
     return schedule_tensorcore(sched, rprog, op.output(0))

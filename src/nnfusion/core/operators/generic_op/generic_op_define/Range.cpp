@@ -24,10 +24,10 @@ REGISTER_OP(Range).attr<int>("start").attr<int>("limit").attr<int>("delta").infe
         float delta = generic_op->localOpConfig.getRoot()["delta"];
         int num = (int)((limit - start + delta - 1) / delta);
 
-        return op::create_code_from_template("@output0@[N0] = (@start@ + @delta@ * N0.val()).cast(`int32`) where N0 in @num@;",
+        return op::create_code_from_template("@output0@[N0] = (const(@start@, `int32`) + @delta@ * N0) where N0 in @num@;",
             {
-            {"start", to_string(start)},
-            {"delta", to_string(delta)},
+            {"start", to_string(int(start))},
+            {"delta", to_string(int(delta))},
             {"num", to_string(num)}
             });
     });

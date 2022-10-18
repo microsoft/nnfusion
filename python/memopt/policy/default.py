@@ -168,8 +168,10 @@ class DefaultPolicy:
         if len(node.raxis) == 0:
             return {}
         raxis = node.raxis
-        tile = node.get_shape()
+        tile = [1 for _ in node.get_shape()]
         all_steps = self.get_node_reduce_step_candidates(node)
+        def sim(a, b):
+            return  (2 * a * b) / (a * a + b * b)
 
         def _score(rstep_id):
             rstep = {k : all_steps[k][rstep_id[k]] for k in rstep_id}
@@ -178,7 +180,7 @@ class DefaultPolicy:
             for edge in node.inputs:
                 if edge.src_node.is_placeholder():
                     read_transaction_elements = 128 // (edge.src_node.get_dtype().bits // 8)
-                    score += min(coalesced_factor(shape[edge.dst_id], edge.src_node.get_shape()), read_transaction_elements)
+                    score += sim(coalesced_factor(shape[edge.dst_id], edge.src_node.get_shape()), read_transaction_elements)
             return score
 
         def _enlarge(rstep_id):

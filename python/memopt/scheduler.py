@@ -280,6 +280,12 @@ class Scheduler:
 
         return self.sche
 
+    # check whether a tensor is connected from shared inputs
+    def _is_from_shared(self, tensor):
+        if tensor in self.shared_inputs:
+            return True
+        return any(map(self._is_from_shared, tensor.op.input_tensors))
+
     def _rewrite_schedule_tc(self):
         assert(self.reduce_op is not None)
         out = self.output_op
@@ -443,6 +449,8 @@ class Scheduler:
         # TVM sometimes errors when vectorize=8 for some inlining
         vectorize_A = 8 if isinstance(A.op, te.PlaceholderOp) else 4
         vectorize_B = 8 if isinstance(B.op, te.PlaceholderOp) else 4
+        if self._is_from_shared(A): vectorize_A = 1
+        if self._is_from_shared(B): vectorize_B = 1
         self.cooperative_fetch(AS, self.sche, ASstrideDef, vectorize_A)
         self.cooperative_fetch(BS, self.sche, BSstrideDef, vectorize_B)
 

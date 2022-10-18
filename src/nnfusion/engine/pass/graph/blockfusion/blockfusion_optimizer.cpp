@@ -31,7 +31,8 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
                                                              std::string _device_name,
                                                              int _fusion_level,
                                                              bool _flag_interplay,
-                                                             bool _flag_check_correctness)
+                                                             bool _flag_check_correctness,
+                                                             bool is_outmost_graph)
     : BlockFusionOptimizer(g, _device_type, _flag_check_correctness)
 {
     m_nodes.resize(m_graph->get_max_node_id());
@@ -48,6 +49,7 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
     {
         m_active_gnodes_name.insert(active_gnodes[i]->get_name());
     }
+    m_is_outmost_graph = is_outmost_graph;
 }
 
 bool BlockFusionWavefrontOptimizer::Optimize()
@@ -199,7 +201,7 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
 
     if (std::dynamic_pointer_cast<BlockCudaEmitter>(kernel) == nullptr)
     {
-        NNFUSION_LOG(INFO) << "Operator " << node->get_name()
+        NNFUSION_LOG(INFO) << "Operator " << *node
                            << " is not BlockCudaEmitter, skip in BlockFusion";
         return false;
     }
@@ -219,26 +221,29 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
             return false;
         }
     }
-    if (node->get_op_type() == "GatherV2")
-        return false;
-    bool skip_due_to_scalar_op = true; // TODO: process scalar op with a single thread
-    for (auto inp: node->get_in_edges()) {
-        if (inp->is_control_edge()) continue;
-        if (shape_size(inp->get_src()->get_output_shape(inp->get_src_output())) > 1) {
-            skip_due_to_scalar_op = false;
-            break;
+    
+    if (!m_is_outmost_graph) { // these ops are specially treated in control flow codegen
+        if (node->get_op_type() == "GatherV2")
+            return false;
+        bool skip_due_to_scalar_op = true; // TODO: process scalar op with a single thread
+        for (auto inp: node->get_in_edges()) {
+            if (inp->is_control_edge()) continue;
+            if (shape_size(inp->get_src()->get_output_shape(inp->get_src_output())) > 1) {
+                skip_due_to_scalar_op = false;
+                break;
+            }
         }
-    }
-    for (auto outp: node->get_out_edges()) {
-        if (outp->is_control_edge()) continue;
-        if (shape_size(outp->get_dst()->get_input_shape(outp->get_dst_input())) > 1) {
-            skip_due_to_scalar_op = false;
-            break;
+        for (auto outp: node->get_out_edges()) {
+            if (outp->is_control_edge()) continue;
+            if (shape_size(outp->get_dst()->get_input_shape(outp->get_dst_input())) > 1) {
+                skip_due_to_scalar_op = false;
+                break;
+            }
         }
-    }
-    if (skip_due_to_scalar_op) {
-        NNFUSION_LOG(INFO) << "no need to fuse scalar op " << *node;
-        return false;
+        if (skip_due_to_scalar_op) {
+            NNFUSION_LOG(INFO) << "no need to fuse scalar op " << *node;
+            return false;
+        }
     }
     if (node->get_op_type() == "Convolution" || node->get_op_type() == "Matched_Pattern")
         return false;

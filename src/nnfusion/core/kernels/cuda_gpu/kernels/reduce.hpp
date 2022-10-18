@@ -15,11 +15,11 @@ namespace nnfusion
         namespace cuda
         {
             template <class T>
-            class Reduce : public CudaEmitter
+            class Reduce : public BlockCudaEmitter
             {
             public:
                 Reduce(shared_ptr<KernelContext> ctx)
-                    : CudaEmitter(ctx)
+                    : BlockCudaEmitter(ctx)
                 {
                     if (auto reduce =
                             dynamic_pointer_cast<nnfusion::op::Reduce>(ctx->gnode->get_op_ptr()))
@@ -209,13 +209,19 @@ namespace nnfusion
                 {
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
                     auto& lu = *_lu;
-                    auto code = nnfusion::op::create_code_from_template(
+                    auto code1 = nnfusion::op::create_code_from_template(
                         R"(
 int width = @width@;
 int block_size = @block_size@;
 const int warp_size = @warp_size@;
-__shared__ float shm[warp_size];
-
+                    )",
+                        {{"width", width},
+                         {"block_size", expected_block_size},
+                         {"warp_size", 32}});
+                    lu << code1;
+                    emit_alloc_shared(lu, "shm", "float", 32);
+                    auto code2 = nnfusion::op::create_code_from_template(
+                        R"(
 int thread_idx = threadIdx.x;
 int block_idx = blockIdx.x;
 int data_idx_offset = block_idx * width;
@@ -230,7 +236,7 @@ if (thread_idx == 0) output0[block_idx] = val;
 )",
                         {{"width", width}, {"block_size", expected_block_size}, {"warp_size", 32}});
 
-                    lu << code << "\n";
+                    lu << code2 << "\n";
                     return _lu;
                 }
 
@@ -427,8 +433,9 @@ if (thread_idx == 0) output0[block_idx] = val;
                     block_size_x = fmin(512, block_size_x);
 
                     // TODO (yanhon): if sdata size is not specified, frozen_reduce_sum_2_graph.pb will crash
-                    lu << "extern __shared__ " << output_type << " sdata[" << block_size_x
-                       << "];\n";
+                    emit_alloc_shared(lu, "sdata", "float", block_size_x );
+                    // lu << "extern __shared__ " << output_type << " sdata[" << block_size_x
+                    //    << "];\n";
                     //lu << "extern __shared__ " << output_type << " sdata[];\n";
                     lu << "uint32_t tid = threadIdx.x; \n";
                     lu << "uint32_t step = blockDim.x; \n";
@@ -481,7 +488,7 @@ if (thread_idx == 0) output0[block_idx] = val;
                             lu << "sdata[warp_idx] = r;\n";
                         }
                         lu.block_end();
-                        lu << "__syncthreads();\n";
+                        emit_thread_sync(lu);
 
                         uint32_t warp_size = block_size_x >> 5;
 

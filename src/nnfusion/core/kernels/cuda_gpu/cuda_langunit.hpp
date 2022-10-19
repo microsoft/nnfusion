@@ -59,6 +59,7 @@ namespace nnfusion
             LU_DECLARE(barrier);
             LU_DECLARE(inc_iter);
             LU_DECLARE(step_to_device);
+            LU_DECLARE(block_barrier);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

@@ -13,6 +13,9 @@ using namespace nnfusion::kernels;
 
 DEFINE_bool(frecursive_stack, false, "recursive with manual stack");
 DEFINE_bool(fstack_in_glb, false, "stack in global memory");
+DEFINE_bool(fparallel_recursion, false, "parallel recursion");
+DEFINE_int32(fparallel_recursion_min, -1, "parallel recursion min");
+DEFINE_int32(fparallel_recursion_grid, -1, "parallel recursion grid");
 DEFINE_int32(frecursive_max_depth, 20, "manual stack size");
 DECLARE_bool(ffast_barrier);
 
@@ -99,7 +102,11 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
         context_param_offset = m_workspace_size;
         m_workspace_size += sizeof(void*) * FLAGS_frecursive_max_depth; // reserved for m_workspace tensor
     }
-    m_workspace = allocate_tensor(Shape{m_workspace_size * FLAGS_frecursive_max_depth}, nnfusion::element::character);
+    if (FLAGS_fparallel_recursion) {
+        m_workspace = allocate_tensor(Shape{m_workspace_size * FLAGS_frecursive_max_depth * (FLAGS_fparallel_recursion_grid / FLAGS_fparallel_recursion_min)}, nnfusion::element::character);
+    } else {
+        m_workspace = allocate_tensor(Shape{m_workspace_size * FLAGS_frecursive_max_depth}, nnfusion::element::character);
+    }
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
     m_param_offset[m_workspace->get_name()] = context_param_offset;
@@ -147,6 +154,28 @@ std::string cuda::Recursion::inline_kernel(std::shared_ptr<ir::Instruction> ins)
     return code;
 }
 
+std::string to_local_block(std::string code) {
+    code = "int exec_block_id;" + code; 
+    std::string pattern = "if \\(blockIdx.x < [[:digit:]]+\\)";
+    while (true) {
+        std::smatch m;
+        std::regex_search(code, m, std::regex(pattern));
+        if (m.empty()) break;
+        NNFUSION_LOG(INFO) << m.size() << "matches: " << m[0];;
+        int max_block_size = std::stoi(m[0].str().substr(17, m[0].str().size() - 18));
+        std::cout << "max_block_size: " << max_block_size << std::endl;
+        std::cout << "----------------\n";
+        if (max_block_size >= FLAGS_fparallel_recursion_min) {
+            code = replace_all(code, m[0].str(), "for (int exec_block_id = local_block_id; exec_block_id < " + std::to_string(max_block_size) + "; exec_block_id += local_block_size)");
+        } else {
+            code = replace_all(code, m[0].str(), "exec_block_id = local_block_id; if (exec_block_id < " + std::to_string(max_block_size) + ")");
+        }
+    }
+    code = replace_all(code, "blockIdx.x", "exec_block_id");
+    code = replace_all(code, "Barrier()", "block_Barrier(local_block_id, local_block_size)");
+    return code;
+}
+
 std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Instruction> ins) {
     std::vector<std::string> call_sites;
     std::regex pattern(FuncForward::m_block_func_name + "_block_kernel.*?;");
@@ -158,6 +187,9 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
         search_start = match.suffix().first;
     }
     if (call_sites.size() == 0) return code;
+    if (FLAGS_fparallel_recursion) {
+        code = to_local_block(code);
+    }
     std::vector<std::vector<std::string>> caller_params;
     // https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
     for (auto call: call_sites) {
@@ -205,6 +237,7 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
     auto outputs = m_context->outputs;
     if (FLAGS_fstack_in_glb) {
         lu << "volatile int* s_label = (volatile int*) input" + std::to_string(m_context->inputs.size() - 1) << " + " << m_param_offset["s_label"] << ";\n";
+
         for (auto input_id: input_need_stack) {
             lu << inputs[input_id]->get_element_type().c_type_string() << "* volatile * s_input" << input_id << " = (" << inputs[input_id]->get_element_type().c_type_string() << "* volatile *) input" + std::to_string(m_context->inputs.size() - 1) << " + " << m_param_offset[inputs[input_id]->get_name()] << ";\n";
         }
@@ -218,6 +251,10 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
         }
         for (auto output_id: output_need_stack) {
             lu << "__shared__ " << outputs[output_id]->get_element_type().c_type_string() << "* s_output" << output_id << "[" << FLAGS_frecursive_max_depth << "];\n";
+        }
+        if (FLAGS_fparallel_recursion) {
+            lu << "__shared__ int s_local_block_size[" << FLAGS_frecursive_max_depth << "];\n";
+            lu << "__shared__ int s_local_block_id[" << FLAGS_frecursive_max_depth << "];\n";
         }
     }
     lu << "int stack_top = 1;\n";
@@ -234,6 +271,10 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
     for (auto output_id: output_need_stack) {
         lu << "s_output" << output_id << "[stack_top] = output" << output_id << ";\n";
     }
+    if (FLAGS_fparallel_recursion) {
+        lu << "s_local_block_size[stack_top] = gridDim.x;\n";
+        lu << "s_local_block_id[stack_top] = blockIdx.x;\n";
+    }
     lu.block_end();
     if (FLAGS_fstack_in_glb)
         lu << "Barrier();\n";
@@ -249,6 +290,10 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
     for (auto output_id: output_need_stack) {
         lu << "output" << output_id << " = s_output" << output_id << "[stack_top];\n";
     }
+    if (FLAGS_fparallel_recursion) {
+        lu << "int local_block_id = s_local_block_id[stack_top];\n";
+        lu << "int local_block_size = s_local_block_size[stack_top];\n";
+    }
     if (FLAGS_fstack_in_glb)
         lu << "Barrier();\n";
     else
@@ -260,11 +305,50 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
     }
     lu << "default: break;\n";
     lu.block_end();
+    NNFUSION_LOG(INFO) << "call_sites";
+    for (int i = 0; i < call_sites.size(); i++) std::cout << call_sites[i] << std::endl;
+    // HACK: assume all call sites can run in parallel. check is needed.
+    std::cout <<" ------------------ " << std::endl;
     for (int i = 0; i < call_sites.size(); i++) {
         LanguageUnit_p _lu_call(new LanguageUnit(get_function_name() + "_to_stack_" + std::to_string(i)));
         LanguageUnit& lu_call = *_lu_call;
+        lu_call.indent = 2;
         lu_call << "if (is_master_thread)";
         lu_call.block_begin();
+        if (i == 0 && FLAGS_fparallel_recursion) {
+            lu_call << "if (" << FLAGS_fparallel_recursion_min << " * " << call_sites.size() << " <= local_block_size)";
+            lu_call.block_begin();
+            lu_call << "int block_per_call = local_block_size / " << call_sites.size() << ";\n";
+            lu_call << "int remain = local_block_size % " << call_sites.size() << ";\n";
+            lu_call << "int start_block_id = 0;\n";
+            lu_call << "int end_block_id, new_local_block_size;\n";
+            for (int j = 0; j < call_sites.size(); j++) {
+                lu_call << "new_local_block_size = " << j << " < remain ? block_per_call + 1 : block_per_call;\n";
+                lu_call << "end_block_id = start_block_id + new_local_block_size;\n";
+                lu_call << "if (local_block_id >= start_block_id && local_block_id < end_block_id)\n";
+                lu_call.block_begin();
+                lu_call << "s_label[stack_top] = " << call_sites.size() << ";\n";
+                lu_call << "stack_top++;\n";
+                for (auto input_id: input_need_stack) {
+                    if (input_id != m_context->inputs.size() - 1) {
+                        lu_call << "s_input" << input_id << "[stack_top] = " << caller_params[j][input_id] << ";\n";
+                    } else {
+                        lu_call << "s_input" << input_id << "[stack_top] = " << caller_params[j][input_id] << " + start_block_id / " << FLAGS_fparallel_recursion_min << " * " << FLAGS_frecursive_max_depth << " * " << m_workspace_size << ";\n";
+                    }
+                }
+                for (auto output_id: output_need_stack) {
+                    lu_call << "s_output" << output_id << "[stack_top] = " << caller_params[j][output_id + inputs.size()] << ";\n";
+                }
+                lu_call << "s_label[stack_top] = 0;\n";
+                lu_call << "s_local_block_size[stack_top] = new_local_block_size;\n";
+                lu_call << "s_local_block_id[stack_top] = local_block_id - start_block_id;\n";
+                lu_call.block_end();
+                lu_call << "start_block_id = end_block_id;\n";
+            }
+            lu_call.block_end(); 
+            lu_call << "else\n";
+            lu_call.block_begin();
+        }
         lu_call << "s_label[stack_top] = " << i + 1 << ";\n";
         lu_call << "stack_top++;\n";
         for (auto input_id: input_need_stack) {
@@ -274,7 +358,10 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
             lu_call << "s_output" << output_id << "[stack_top] = " << caller_params[i][output_id + inputs.size()] << ";\n";
         }
         lu_call << "s_label[stack_top] = 0;\n";
+        lu_call << "s_local_block_size[stack_top] = local_block_size;\n";
+        lu_call << "s_local_block_id[stack_top] = local_block_id;\n";
         lu_call.block_end();
+        if (i == 0 && FLAGS_fparallel_recursion) lu_call.block_end();
         lu_call << "else stack_top++;\n";
         if (FLAGS_fstack_in_glb)
             lu_call << "Barrier();\n";
@@ -359,6 +446,7 @@ void cuda::Recursion::set_launch_config()
     auto cfg0 = get_subgraph_launch_config(m_body_instructions);
     m_blockDim = cfg0.first;
     m_gridDim = cfg0.second;
+    if (FLAGS_fparallel_recursion_grid != -1) m_gridDim.x = FLAGS_fparallel_recursion_grid;
 }
 
 static void replace_dep_code(LanguageUnit_p lu, const std::string& src, const std::string& tgt)
@@ -374,6 +462,7 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
     _lu->require(declaration::barrier);
+    if (FLAGS_fparallel_recursion) _lu->require(declaration::block_barrier);
     if (FLAGS_ffast_barrier) _lu->require(declaration::step_to_device);
     auto saved = m_kernel_name;
     m_kernel_name = m_block_func_name;

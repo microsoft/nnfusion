@@ -2266,3 +2266,34 @@ __device__ __forceinline__ void BlockFusion_step_to_device_function(volatile int
     }
 }
 )");
+
+LU_DEFINE(declaration::block_barrier,
+          R"(
+__device__ void block_Barrier(int local_block_id, int block_num) {
+    static volatile uint32_t global_state_in[1024] = {0};
+    static volatile uint32_t global_state_out[1024] = {0};
+    int block_start = blockIdx.x - local_block_id;
+    int to_be = block_num;
+    __threadfence();
+    __syncthreads();
+    if (threadIdx.x == 0) {
+        global_state_in[blockIdx.x] = to_be;
+    }
+    if (local_block_id == 0) {
+        for (int i = threadIdx.x; i < block_num; i += blockDim.x) {
+            while (global_state_in[i + block_start] != to_be) {}
+        }
+        for (int i = threadIdx.x; i < block_num; i += blockDim.x)
+            global_state_in[i + block_start] = 0;
+        __syncthreads();
+        for (int i = threadIdx.x; i < block_num; i += blockDim.x)
+            global_state_out[i + block_start] = to_be;
+    }
+    if (threadIdx.x == 0) {
+        while (global_state_out[blockIdx.x] != to_be) {};
+        global_state_out[blockIdx.x] = 0;
+    }
+    __syncthreads();
+}
+)"
+);

@@ -1,5 +1,6 @@
-import torch
 import numpy as np
+import torch
+
 
 def resnet(batch_size):
     from torchvision.models import resnet18 as Net
@@ -38,8 +39,9 @@ def EDSR(batch_size):
     return model, (input, )
 
 def bert(batch_size):
-    from .pytorch_bert import BertModel
     from .bert_config import BertConfig
+    from .pytorch_bert import BertModel
+
     # from transformers import BertModel, BertConfig
     config = BertConfig(vocab_size=30522,
                 hidden_size=768,
@@ -61,7 +63,8 @@ def bert(batch_size):
     return model, inputs
 
 def transformer(batch_size):
-    from transformers import EncoderDecoderModel, BertConfig, EncoderDecoderConfig
+    from transformers import (BertConfig, EncoderDecoderConfig,
+                              EncoderDecoderModel)
     config = BertConfig(vocab_size=30522,
                 hidden_size=768,
                 num_hidden_layers=12,
@@ -129,3 +132,12 @@ def NeRF(batch_size):
     model = MLP(batch_size=1920*1080, in_dim=64, out_dim=3, hidden_dim=64, n_layers=7)
     input = torch.randn(1920*1080, 64)
     return model, (input, )
+
+def Conformer(batch_size):
+    from torchaudio.models import Conformer
+    num_frame = 512
+    input_dim = 512
+    model = Conformer(input_dim=input_dim, num_heads=8, ffn_dim=512, num_layers=12, depthwise_conv_kernel_size=31)
+    lengths = torch.LongTensor([num_frame for _ in range(batch_size)])
+    input = torch.randn(batch_size, num_frame, input_dim)
+    return model, (input, lengths)

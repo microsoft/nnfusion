@@ -1,14 +1,16 @@
-import torch
-import numpy as np
-import os.path as osp
-import os
 import argparse
+import os
+import os.path as osp
 import time
+
+import numpy as np
+import torch
 
 from model.pytorch import *
 
+
 def tofp16model(in_file_name, out_file_name):
-    from onnx import load_model, save_model, checker
+    from onnx import checker, load_model, save_model
     from onnxconverter_common import convert_float_to_float16
     onnx_model = load_model(in_file_name)
     trans_model = convert_float_to_float16(onnx_model, keep_io_types=False)
@@ -65,6 +67,9 @@ if __name__ == "__main__":
     model, inputs = globals()[args.model](args.bs)
 
     if args.run_torch:
+        if args.fp16:
+            model = model.half()
+            inputs = [x.half() if torch.is_floating_point(x) else x for x in inputs]
         run_torch(model, inputs)
     else:
         os.makedirs(args.prefix, exist_ok=True)

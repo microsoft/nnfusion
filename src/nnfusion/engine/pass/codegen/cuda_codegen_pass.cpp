@@ -775,7 +775,8 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
             lu << "// eliminated: " << func_call;
         }
         // todo: this hack is to eliminate d2d copy caused by extern result memory
-        else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
+        else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output()
+                 && !gnode->get_in_edge(0)->get_src()->get_op_ptr()->is_parameter())
         {
             lu << "// eliminated: " << func_call;
         }

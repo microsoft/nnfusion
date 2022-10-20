@@ -16,7 +16,7 @@ DEFINE_bool(fstack_in_glb, false, "stack in global memory");
 DEFINE_bool(fparallel_recursion, false, "parallel recursion");
 DEFINE_int32(fparallel_recursion_min, -1, "parallel recursion min");
 DEFINE_int32(fparallel_recursion_grid, -1, "parallel recursion grid");
-DEFINE_int32(frecursive_max_depth, 20, "manual stack size");
+DEFINE_int32(frecursive_max_depth, 32, "manual stack size");
 DECLARE_bool(ffast_barrier);
 
 cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
@@ -358,8 +358,10 @@ std::string cuda::Recursion::to_stack(std::string code, std::shared_ptr<ir::Inst
             lu_call << "s_output" << output_id << "[stack_top] = " << caller_params[i][output_id + inputs.size()] << ";\n";
         }
         lu_call << "s_label[stack_top] = 0;\n";
-        lu_call << "s_local_block_size[stack_top] = local_block_size;\n";
-        lu_call << "s_local_block_id[stack_top] = local_block_id;\n";
+        if (FLAGS_fparallel_recursion) {
+            lu_call << "s_local_block_size[stack_top] = local_block_size;\n";
+            lu_call << "s_local_block_id[stack_top] = local_block_id;\n";
+        }
         lu_call.block_end();
         if (i == 0 && FLAGS_fparallel_recursion) lu_call.block_end();
         lu_call << "else stack_top++;\n";

@@ -2270,8 +2270,8 @@ __device__ __forceinline__ void BlockFusion_step_to_device_function(volatile int
 LU_DEFINE(declaration::block_barrier,
           R"(
 __device__ void block_Barrier(int local_block_id, int block_num) {
-    static volatile uint32_t global_state_in[1024] = {0};
-    static volatile uint32_t global_state_out[1024] = {0};
+    static volatile uint64_t global_state_in[1024] = {0};
+    static volatile uint64_t global_state_out[1024] = {0};
     int block_start = blockIdx.x - local_block_id;
     int to_be = block_num;
     __threadfence();

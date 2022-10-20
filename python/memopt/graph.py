@@ -85,6 +85,8 @@ class Node:
 
     def set_dtype(self, dtype: tvm.DataType, id=0) -> None:
         assert isinstance(dtype, tvm.DataType), type(dtype)
+        if dtype == tvm.DataType("bool"):
+            dtype = tvm.DataType("int8")
         if len(self._dtypes) <= id:
             self._dtypes.extend([None for _ in range(id - len(self._dtypes) + 1)])
         elif self._dtypes[id] is not None:
@@ -204,7 +206,7 @@ class IRNode(Node):
                 src_node = self.inputs[input_id].src_node
                 if not src_node.is_placeholder():
                     continue
-            buffer_len = np.prod(shapes[tensor.name]) * int(tvm.DataType(tensor.dtype).bits // 8)
+            buffer_len = np.prod(shapes[tensor.name]) * int((tvm.DataType(tensor.dtype).bits + 7) // 8)
             buffer_len = (buffer_len + 31) // 32 * 32
             result += buffer_len
         return result
@@ -262,7 +264,7 @@ class IRNode(Node):
                             num_elem = AS_elem
                         else:
                             num_elem = BS_elem
-                    buffer_len = num_elem * int(tvm.DataType(tensor.dtype).bits // 8)
+                    buffer_len = num_elem * int((tvm.DataType(tensor.dtype).bits + 7) // 8)
                     buffer_len = (buffer_len + 31) // 32 * 32
                     result += buffer_len
         return result

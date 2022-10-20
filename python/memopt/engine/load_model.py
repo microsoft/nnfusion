@@ -27,7 +27,11 @@ def load_model(fname: str) -> List[Node]:
                 assert node_map[src_node] is not None, "Detected ring in topo order {}->{} !".format(src_node, node_id)
                 input_list.append([node_map[src_node], src_id])
         if op_type == "Result":
-            node = OutputNode(*input_list[0])
+            if input_list[0] is not None:
+                node = OutputNode(*input_list[0])
+            else:
+                # result node connect to placeholder, simply ignore
+                continue
         else:
             node = IRNode(input_list, ir, get_node_name(node_id, op_type))
             for option in options:

@@ -1,15 +1,19 @@
+import argparse
+import ctypes
+import os
+
 import numpy as np
 import onnx
 import onnxruntime as ort
-import ctypes
-import os
 import torch
-import argparse
+
 
 def get_max_diff(tensor_list_a, tensor_list_b):
     assert len(tensor_list_a) > 0
     total_diff = [0]
     for a, b in zip(tensor_list_a, tensor_list_b):
+        a = a.astype(np.float32)
+        b = b.astype(np.float32)
         assert a.shape == b.shape
         diff = np.abs(a-b)
         diff /= np.abs(b).clip(1) # handle large floating numbers

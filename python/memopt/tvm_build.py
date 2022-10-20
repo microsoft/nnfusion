@@ -7,8 +7,8 @@ import tvm
 from .IRpass import *
 
 TVM_DEFAULT_NAME = "default_function_kernel0"
-_type_map = {"float32": "float", "float16": "half", "float64": "double", "int64": "int64_t", "int32": "int"}
-_type_bytes = {"float": 4, "double": 8, "half": 2, "int": 4, "int64_t": 8}
+_type_map = {"float32": "float", "float16": "half", "float64": "double", "int64": "int64_t", "int32": "int", "bool": "bool", "int8": "int8_t"}
+_type_bytes = {"float": 4, "double": 8, "half": 2, "int": 4, "int64_t": 8, "bool": 1, "int8_t": 1, "signed char": 1}
 
 def get_valid_name(var):
     if var.name.find(".") >= 0:
@@ -92,16 +92,16 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
             src = re.sub(r"__shared__ (\w+) (\w+wmma_accumulator_shared)\[\d+\];", r"\1* \2 = {};".format(reuse_output_name), src, 1)
         for tensor in scope.shared_mem_inputs:
             shared_var_name = tensor.name + "_shared"
-            matched = re.findall(r"__shared__ (\w+) {}\[(\d+)\];".format(shared_var_name), src)
+            matched = re.findall(r"__shared__ ((?:signed |unsigned )?\w+) {}\[(\d+)\];".format(shared_var_name), src)
             assert len(matched) == 1
             dtype, size = matched[0]
             scope.exteral_shared_memroy_size[tensor] = int(size) * _type_bytes[dtype]
-            src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(shared_var_name), r"\1* {} = {};".format(shared_var_name, tensor.name), src, 1)
+            src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(shared_var_name), r"\1* {} = {};".format(shared_var_name, tensor.name), src, 1)
         if not global_kernel:
-            pattern = r"__shared__ (\w+) (\w+)\[(\d+)\];"
+            pattern = r"__shared__ ((?:signed |unsigned )?\w+) (\w+)\[(\d+)\];"
             offset = 0
             for dtype, var, size in re.findall(pattern, src):
-                src = re.sub(r"__shared__ (\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
+                src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
                 buffer_len = int(size) * _type_bytes[dtype]
                 buffer_len = (buffer_len + 31) // 32 * 32
                 offset += buffer_len

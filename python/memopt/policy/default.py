@@ -179,7 +179,7 @@ class DefaultPolicy:
             shape = node.infer_dependency(tile, rstep=rstep)
             for edge in node.inputs:
                 if edge.src_node.is_placeholder():
-                    read_transaction_elements = 128 // (edge.src_node.get_dtype().bits // 8)
+                    read_transaction_elements = 128 // ((edge.src_node.get_dtype().bits + 7) // 8)
                     score += sim(coalesced_factor(shape[edge.dst_id], edge.src_node.get_shape()), read_transaction_elements)
             return score
 
@@ -271,13 +271,13 @@ class DefaultPolicy:
             dep = node.infer_dependency(tile_map[node])
             for i, edge in enumerate(node.inputs):
                 if edge.src_node.is_placeholder():
-                    read_transaction_elements = 128 // (edge.src_node.get_dtype().bits // 8)
+                    read_transaction_elements = 128 // ((edge.src_node.get_dtype().bits + 7) // 8)
                     footprint += coalesced_tensor_shape(dep[i], edge.src_node.get_shape(), read_transaction_elements)
                 elif edge.src_node not in tile_map:
                     tile_map[edge.src_node] = dep[i]
                     queue.append(edge.src_node)
         for node in self.output_nodes:
-            write_transaction_elements = 32 // (edge.src_node.get_dtype().bits // 8)
+            write_transaction_elements = 32 // ((edge.src_node.get_dtype().bits + 7) // 8)
             footprint += coalesced_tensor_shape(tile_map[node], node.get_shape(), write_transaction_elements)
         return footprint, tile_map
 
@@ -302,7 +302,7 @@ class DefaultPolicy:
             # alloc outputs
             for edge in node.outputs:
                 if not edge.dst_node.is_output() and (node, edge.src_id) not in block_map:
-                    dtype_bytes = node.get_dtype(edge.src_id).bits // 8
+                    dtype_bytes = (node.get_dtype(edge.src_id).bits + 7) // 8
                     stride = td.stride_map[node][len(node.inputs) + edge.src_id]
                     output_elem = stride.compute_elements_from_shape(td.get_tile(node))
                     block_map[(node, edge.src_id)] = allocator.malloc(output_elem * dtype_bytes)
@@ -334,7 +334,7 @@ class DefaultPolicy:
         if reg_usage > self.arch.reg_cap[0]:
             td.valid = False
             return td
-        td.block_per_SM = min(self.arch.max_smem_usage // max(td.smem_cost, 1), self.arch.reg_cap[0] // reg_usage, 4)
+        td.block_per_SM = min(self.arch.max_smem_usage // max(td.smem_cost, 1), self.arch.reg_cap[0] // max(reg_usage, 1), 4)
         td.num_wave = int(np.ceil(grid_size / (td.block_per_SM * self.arch.compute_max_core[0]))) # self.arch.compute_max_core[0]
         return td
 

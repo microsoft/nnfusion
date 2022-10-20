@@ -43,7 +43,7 @@ class TCPolicy(DefaultPolicy):
             # alloc outputs
             for edge in node.outputs:
                 if not edge.dst_node.is_output() and (node, edge.src_id) not in block_map:
-                    dtype_bytes = node.get_dtype(edge.src_id).bits // 8
+                    dtype_bytes = (node.get_dtype(edge.src_id).bits + 7) // 8
                     stride = td.stride_map[node][len(node.inputs) + edge.src_id]
                     output_elem = stride.compute_elements_from_shape(td.get_tile(node))
                     block_map[(node, edge.src_id)] = allocator.malloc(output_elem * dtype_bytes)

@@ -22,10 +22,10 @@ def modify_output_pass(f, mod, ctx):
             assert all([bound.max_value < 1e9 for bound in indices_bound])
             if target_buffer[op.buffer] in get_scope().strides:
                 strides = get_scope().strides[target_buffer[op.buffer]].compute_strides_from_shape(shape)
-                num_bytes = shape[0] * strides[0] * (int(tvm.DataType(op.buffer.dtype).bits) // 8)
+                num_bytes = shape[0] * strides[0] * (int(tvm.DataType(op.buffer.dtype).bits + 7) // 8)
             else:
                 strides = op.buffer.strides
-                num_bytes = np.prod(shape) * (int(tvm.DataType(op.buffer.dtype).bits) // 8)
+                num_bytes = np.prod(shape) * (int(tvm.DataType(op.buffer.dtype).bits + 7) // 8)
             get_scope().exteral_shared_memroy_size[target_buffer[op.buffer]] = num_bytes
             buffer = tvm.tir.decl_buffer(shape, op.buffer.dtype, op.buffer.name, op.buffer.data, strides,
                 op.buffer.elem_offset, op.buffer.scope, op.buffer.data_alignment, op.buffer.offset_factor)

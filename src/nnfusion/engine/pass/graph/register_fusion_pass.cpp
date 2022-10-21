@@ -2,6 +2,7 @@
 #include "kernel_selection.hpp"
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/core/graph/graph_util.hpp"
 #include "nnfusion/core/operators/op_define/broadcast.hpp"
 #include "nnfusion/core/operators/op_define/fused.hpp"
 #include "nnfusion/core/operators/op_define/reshape.hpp"
@@ -51,7 +52,8 @@ namespace
         "Broadcast", "Reshape",
         "Slice",
         "Convert",
-        "CNHW2NCHW"
+        "CNHW2NCHW",
+        "CNW2NCW"
     };
     std::unordered_set<std::string> skip_ops = {};
     void parse_skip_ops() {
@@ -63,6 +65,26 @@ namespace
             skip_ops.insert(substr);
         }
     }
+
+    GNodeVector find_topo_sort_priority(std::shared_ptr<Graph> g) {
+        GNodeVector nodes;
+        unordered_map<shared_ptr<GNode>, int> topo_layer;
+        ReverseDFS(g.get(), g->get_outputs(),
+            [&](std::shared_ptr<GNode> node) { topo_layer[node] = 0; },
+            [&](std::shared_ptr<GNode> node) {
+                for (auto edge : node->get_in_edges())
+                    topo_layer[node] = max(topo_layer[node], topo_layer[edge->get_src()] + 1);
+            },
+            nullptr
+        );
+        ReverseDFS(g.get(), g->get_outputs(),
+            nullptr,
+            [&](std::shared_ptr<GNode> node) { nodes.push_back(node); },
+            [&](std::shared_ptr<GNode> a, std::shared_ptr<GNode> b) { return topo_layer[a] > topo_layer[b]; }
+        );
+        return nodes;
+    }
+
 }
 
 class RegisterFusionOptimizer {
@@ -70,7 +92,7 @@ public:
     RegisterFusionOptimizer(std::shared_ptr<Graph> g)
     : m_graph(g) {
         int id = 0;
-        for (auto node : m_graph->get_ordered_ops()) {
+        for (auto node : find_topo_sort_priority(m_graph)) {
             node_list_.push_back(make_shared<TaggedNode>(node, id++));
             node_map_[node] = node_list_.back();
         }
@@ -110,7 +132,7 @@ public:
             insert_fuse_group(group);
         }
         auto nodes = nlohmann::json().array();
-        for (auto& node : m_graph->get_ordered_ops()) {
+        for (auto& node : find_topo_sort_priority(m_graph)) {
             if (node->get_op_ptr()->is_tensor_op()) continue;
             auto str = nnfusion::op::get_translation_v2(node);
             if (skip_ops.count(node->get_op_type())) {
@@ -191,6 +213,9 @@ private:
                 fusible &= tnode->inlined_;
                 fusible &= node->get_output_shape(0) == output_shape;
                 fusible &= !(skip_ops.count(node->get_op_type()) || skip_ops.count(top_node->node_->get_op_type()));
+                if (node->get_op_type() == "Reshape") {
+                    fusible &= !std::dynamic_pointer_cast<op::Reshape>(node->get_op_ptr())->get_is_layout_change();
+                }
             }
 
             // add to group

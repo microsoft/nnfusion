@@ -212,3 +212,89 @@ REGISTER_OP(FusedDot)
         }
         return ir;
     });
+
+REGISTER_OP(Conv1DImplicitGemm)
+    .attr<size_t>("N")
+    .attr<size_t>("C")
+    .attr<size_t>("L")
+    .attr<size_t>("P")
+    .attr<size_t>("S")
+    .attr<size_t>("D")
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        size_t c = generic_op->localOpConfig.getRoot()["C"];
+        size_t n = generic_op->localOpConfig.getRoot()["N"];
+        size_t l = generic_op->localOpConfig.getRoot()["L"];
+        nnfusion::Shape output_shape{c, n * l};
+        gnode->set_output_type_and_shape(
+            0, gnode->get_input_element_type(0), output_shape);
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        // N, C, L
+        // F, C, KL
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+        size_t kl = curr->get_input_shape(1)[2];
+        size_t n = curr->get_input_shape(0)[0];
+        size_t c = curr->get_input_shape(0)[1];
+        size_t inl = curr->get_input_shape(0)[2];
+        size_t f = generic_op->localOpConfig.getRoot()["C"];
+        size_t l = generic_op->localOpConfig.getRoot()["L"];
+        size_t p = generic_op->localOpConfig.getRoot()["P"];
+        size_t s = generic_op->localOpConfig.getRoot()["S"];
+        size_t d = generic_op->localOpConfig.getRoot()["D"];
+        NNFUSION_CHECK(inl = (l - 1) * s + (kl - 1) * d + 1 - 2 * p);
+        size_t padl = inl + 2 * p;
+        string pad_template = "";
+        string data_template = R"( data[K, N] = @input0@[N//@l@, K//@kl@, N%@l@*@s@+K%@kl@*@d@] where K in @kl*c@, N in @n*l@; )";
+        string kernel_template = R"( kernel[M, K] = @input1@[M, K//@kl@, K%@kl@] where K in @kl*c@, M in @f@; )";
+        string compute_template = R"( @output0@[M, N] +=! kernel[M, K] * data[K, N]; )";
+        if (p != 0) {
+            pad_template = R"( pad[N, C, L0] = @input0@[N, C, L0-@p@].when([L0>=@p@, L0<@inl+p@], const(0.0).cast(@input0@[N, C, L0-@p@].dtype())) where L0 in @padl@; )";
+            string input_str = "@input0@";
+            data_template.replace(data_template.find(input_str), input_str.size(), "pad");
+        }
+        string expression_template = pad_template + data_template + kernel_template + compute_template;
+        nnfusion::json config;
+        config["p"] = p;
+        config["s"] = s;
+        config["d"] = d;
+        config["padl"] = inl + 2 * p;
+        config["inl+p"] = inl+p;
+        config["l"] = l;
+        config["kl"] = kl;
+        config["kl*c"] = kl*c;
+        config["n*l"] = n*l;
+        config["f"] = f;
+        string ir = op::create_code_from_template(
+            expression_template, config);
+        if (curr->get_output_element_type(0) == nnfusion::element::f16) {
+            ir += "## @: tensorCoreConfig=(0, 1)";
+        }
+        return ir;
+    });
+
+REGISTER_OP(CNW2NCW)
+    .attr<size_t>("N")
+    .attr<size_t>("C")
+    .attr<size_t>("L")
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        size_t N = generic_op->localOpConfig.getRoot()["N"];
+        size_t C = generic_op->localOpConfig.getRoot()["C"];
+        size_t L = generic_op->localOpConfig.getRoot()["L"];
+        nnfusion::Shape output_shape{N, C, L};
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        string expression_template =
+            R"( @output0@[N, C, L] = @input0@[C, L+N*@L@] where N in @N@, L in @L@; )";
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+        size_t L = generic_op->localOpConfig.getRoot()["L"];
+        size_t N = generic_op->localOpConfig.getRoot()["N"];
+        nnfusion::json config;
+        config["L"] = L;
+        config["N"] = N;
+        string expression_code = op::create_code_from_template(
+            expression_template, config);
+        return expression_code;
+    });

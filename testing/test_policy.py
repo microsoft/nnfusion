@@ -19,7 +19,6 @@ def test_policy(ir, input_dict, name="test", check=False):
     cgen = memopt.CodeGenerator()
     for config in configs:
         cpresult = cgen.compile(output_nodes, config, "cuda", kernel_name="Fused")
-        cpresult.append_host_call()
         compile_results.append(cpresult)
     memopt.utils.compile_and_load_parallel(compile_results)
     best_latency = 10000

@@ -21,7 +21,6 @@ class CompileResult:
         self.grid_size = grid_size
         self.args = args
         self.name = name
-        self.host_code = None
         self.lib = None
         self.latency = None
         self.origin = self
@@ -31,7 +30,7 @@ class CompileResult:
         self.input_desc = input_desc
         self.output_desc = output_desc
 
-    def append_host_call(self) -> str:
+    def _create_code_for_profiling(self) -> str:
         num_params = len(self.args)
         args = ["args" + str(i) for i in range(num_params)]
         call_args = ", ".join(args)
@@ -76,14 +75,14 @@ extern "C" float profile({}) {{
         header = cuda_default_header
         if self.use_fp16:
             header += cuda_fp16_header
-        self.host_code = header + self.code + "\n" + host_funcs
-        return self.host_code
+        profiling_code = header + self.code + "\n" + host_funcs
+        return profiling_code
 
     def compile_and_load(self, timeout: float = None) -> ctypes.CDLL:
-        assert self.host_code
+        profiling_code = self._create_code_for_profiling()
         src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
         lib_name = src.name.replace(".cu", ".so")
-        src.write(self.host_code)
+        src.write(profiling_code)
         src.flush()
         compute_version = "".join(tvm.contrib.nvcc.get_target_compute_version().split("."))
         try:
@@ -95,7 +94,6 @@ extern "C" float profile({}) {{
             return None
         if ret.returncode != 0:
             return None
-        # ret = os.system("nvcc --compiler-options '-fPIC' --shared {} -lcuda -gencode=arch=compute_61,code=compute_61 -o {}".format(src.name, lib_name))
         self.lib = ctypes.CDLL(lib_name)
         self.lib.profile.restype = ctypes.c_float
         subprocess.run(["rm", lib_name], check=True)

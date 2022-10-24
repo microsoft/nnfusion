@@ -209,7 +209,6 @@ class Tunner(object):
             return None
         compile_results = self.generate_code(output_nodes, configs, kernel_name)
         for cpresult in compile_results:
-            cpresult.append_host_call()
             cpresult.set_io_desc(input_desc, output_desc)
         compile_and_load_parallel(compile_results)
         best = self.select_best(output_nodes, compile_results)

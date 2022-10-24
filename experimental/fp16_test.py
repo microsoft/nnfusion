@@ -172,7 +172,6 @@ if __name__ == "__main__":
         source = source[source.index('extern "C" __global__'):]
         print(memopt.get_scope().block_size, memopt.get_scope().grid_size)
         cp = CompileResult(None, source, memopt.get_scope().block_size, memopt.get_scope().grid_size, "default_function_kernel0", args)
-    cp.append_host_call()
     cp.compile_and_load()
     # ref = refernce(M, K, N)
     # out = cp.get_example_outputs()[0]

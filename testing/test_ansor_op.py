@@ -49,7 +49,6 @@ def test(expr, input_dict, name="ansor.log"):
     with memopt.Scope(sch) as scope:
         kernel_code = tvm_build(sch, args, "cuda", [], [], name="MyMatMul", global_kernel=True)
         cp = memopt.utils.CompileResult(None, kernel_code, scope.block_size, scope.grid_size, "MyMatMul", args)
-        cp.append_host_call()
         cp.compile_and_load()
         print(cp.profile())
 

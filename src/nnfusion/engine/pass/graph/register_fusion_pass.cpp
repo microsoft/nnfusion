@@ -8,6 +8,7 @@
 #include "nnfusion/core/operators/op_define/reshape.hpp"
 #include "nnfusion/core/operators/util/elementwise_arithmetic.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
+#include "nnfusion/util/util.hpp"
 #include "gflags/gflags.h"
 
 #include <queue>
@@ -21,6 +22,7 @@ DEFINE_string(ftune_input_file, "", "the input json file path");
 DEFINE_string(ffusion_skiplist,
     "",
     "List of op types that skips in fusion");
+DECLARE_string(fdefault_device);
 
 namespace
 {
@@ -354,8 +356,9 @@ public:
             fused_node->set_name(name);
             shared_ptr<KernelContext> ctx(new KernelContext(fused_node));
             (*fused_node)["Kernel_Selection_Result"] = std::make_pair<NNFusion_DeviceType, KernelEmitter::Pointer>(
-                CUDA_GPU, make_shared<cuda::FusionCudaEmitter>(ctx, group));
+                nnfusion::get_device_type(FLAGS_fdefault_device.c_str()), make_shared<cuda::FusionCudaEmitter>(ctx, group));
         }
+        return true;
     }
 private:
     shared_ptr<Graph> m_graph;

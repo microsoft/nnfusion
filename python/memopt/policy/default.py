@@ -13,19 +13,6 @@ from ..graph import Node, find_topo_sort
 from .common import (coalesced_factor, coalesced_tensor_shape, factorize,
                      get_all_factors)
 
-
-def score_block_size(n):
-    num_wrap = (n + 31) // 32
-    r1 = max(num_wrap/4, 4/num_wrap)
-    r2 = (num_wrap * 32 - n) / n
-    return (r1, r2)
-
-def get_block_size(n):
-    factors = get_all_factors(n)
-    factors = list(filter(lambda x: x <= 1024, factors))
-    factor_ordered = sorted(factors, key=score_block_size)
-    return factor_ordered[0]
-
 class DefaultPolicy:
     def __init__(self, output_nodes: List[Node], arch:Arch) -> None:
         self.arch = arch
@@ -161,6 +148,18 @@ class DefaultPolicy:
                         queue.append((edge.src_node, subtensor_shape))
         return False
 
+    def score_block_size(self, n):
+        num_wrap = (n + self.arch.warp_size - 1) // self.arch.warp_size
+        r1 = max(num_wrap/self.arch.sm_partition, self.arch.sm_partition/num_wrap)
+        r2 = (num_wrap * self.arch.warp_size - n) / n
+        return (r1, r2)
+
+    def get_block_size(self, n):
+        factors = get_all_factors(n)
+        factors = list(filter(lambda x: x <= 1024, factors))
+        factor_ordered = sorted(factors, key=self.score_block_size)
+        return factor_ordered[0]
+
     def get_node_reduce_step_candidates(self, node):
         return {k : get_all_factors(node.raxis[k]) for k in node.raxis}
 
@@ -179,7 +178,7 @@ class DefaultPolicy:
             shape = node.infer_dependency(tile, rstep=rstep)
             for edge in node.inputs:
                 if edge.src_node.is_placeholder():
-                    read_transaction_elements = 128 // ((edge.src_node.get_dtype().bits + 7) // 8)
+                    read_transaction_elements = self.arch.transaction_size[1] // ((edge.src_node.get_dtype().bits + 7) // 8)
                     score += sim(coalesced_factor(shape[edge.dst_id], edge.src_node.get_shape()), read_transaction_elements)
             return score
 
@@ -209,7 +208,7 @@ class DefaultPolicy:
         return rstep
 
     def _expand_reduce_axis(self, td: TileDict):
-        smem_limit = min(self.arch.max_smem_usage // td.block_per_SM, self.arch.mem_cap(0))
+        smem_limit = min(self.arch.max_smem_usage // td.block_per_SM, self.arch.smem_cap)
         rstep_map = td.rstep_map.copy()
         def _optimize(node, rstep):
             all_steps = self.get_node_reduce_step_candidates(node)
@@ -271,13 +270,13 @@ class DefaultPolicy:
             dep = node.infer_dependency(tile_map[node])
             for i, edge in enumerate(node.inputs):
                 if edge.src_node.is_placeholder():
-                    read_transaction_elements = 128 // ((edge.src_node.get_dtype().bits + 7) // 8)
+                    read_transaction_elements = self.arch.transaction_size[1] // ((edge.src_node.get_dtype().bits + 7) // 8)
                     footprint += coalesced_tensor_shape(dep[i], edge.src_node.get_shape(), read_transaction_elements)
                 elif edge.src_node not in tile_map:
                     tile_map[edge.src_node] = dep[i]
                     queue.append(edge.src_node)
         for node in self.output_nodes:
-            write_transaction_elements = 32 // ((edge.src_node.get_dtype().bits + 7) // 8)
+            write_transaction_elements = self.arch.transaction_size[0] // ((edge.src_node.get_dtype().bits + 7) // 8)
             footprint += coalesced_tensor_shape(tile_map[node], node.get_shape(), write_transaction_elements)
         return footprint, tile_map
 
@@ -324,18 +323,18 @@ class DefaultPolicy:
         td.footprint, td.tile_map = self._compute_memory_footprint(output_tile)
         self.compute_stride_map(td)
         td.smem_cost = self._compute_shared_memory_usage(td)
-        if td.smem_cost > self.arch.mem_cap(0):
+        if td.smem_cost > self.arch.smem_cap:
             td.valid = False
             return td
         output_shape = self.output_nodes[0].get_shape()
         grid_size = int(np.prod([np.ceil(y / x) for x, y in zip(output_tile, output_shape)]))
         # estimated reg usage
         reg_usage = int(2 * max([np.prod(td.get_tile(node)) * node.get_dtype().bits / 32 for node in self.ordered_nodes]))
-        if reg_usage > self.arch.reg_cap[0]:
+        if reg_usage > self.arch.reg_cap:
             td.valid = False
             return td
-        td.block_per_SM = min(self.arch.max_smem_usage // max(td.smem_cost, 1), self.arch.reg_cap[0] // max(reg_usage, 1), 4)
-        td.num_wave = int(np.ceil(grid_size / (td.block_per_SM * self.arch.compute_max_core[0]))) # self.arch.compute_max_core[0]
+        td.block_per_SM = min(self.arch.max_smem_usage // max(td.smem_cost, 1), self.arch.reg_cap // max(reg_usage, 1), self.arch.sm_partition)
+        td.num_wave = int(np.ceil(grid_size / (td.block_per_SM * self.arch.compute_max_core)))
         return td
 
     def check_tile_shape_isvalid(self, td: TileDict):
@@ -351,7 +350,7 @@ class DefaultPolicy:
         node_space_sizes = [int(np.prod(td.get_tile(node))) for node in self.ordered_nodes]
         max_block_size = functools.reduce(math.gcd, node_space_sizes)
 
-        if max_block_size < 128 and max_block_size == min(node_space_sizes):
+        if max_block_size < self.arch.warp_size * self.arch.sm_partition and max_block_size == min(node_space_sizes):
             node_reduce_sizes = [int(np.prod(list(td.get_rstep(node).values()))) for node in self.ordered_nodes]
             total_sizes = [x * y for x, y in zip(node_space_sizes, node_reduce_sizes)]
             max_possible_size = functools.reduce(math.gcd, total_sizes)
@@ -359,12 +358,12 @@ class DefaultPolicy:
                 lambda x: x % max_block_size == 0 and x <= 1024, get_all_factors(max_possible_size)))
             possible_block_sizes = list(filter( # either be a factor of space or cover fully cover the space
                 lambda x: all([x % s == 0 or s % x == 0 for s in node_space_sizes]) , possible_block_sizes))
-            factor_ordered = sorted(possible_block_sizes, key=score_block_size)
+            factor_ordered = sorted(possible_block_sizes, key=self.score_block_size)
             return factor_ordered
         else:
             possible_block_sizes = get_all_factors(max_block_size)
             possible_block_sizes = list(filter(lambda x: x <= 1024, possible_block_sizes))
-        factor_ordered = sorted(possible_block_sizes, key=score_block_size)
+        factor_ordered = sorted(possible_block_sizes, key=self.score_block_size)
         return factor_ordered
 
     def assign_block_size(self, td: TileDict, topk=1) -> Generator[Dict, Node, Config]:
@@ -419,10 +418,10 @@ class DefaultPolicy:
             block_tile = [int(np.ceil(tile[i] / thread[i])) for i in range(ndim)]
             shape = node.infer_dependency(block_tile)
             for edge in node.inputs:
-                score += np.prod(shape[edge.dst_id]) / self.arch.memory_bw(1)
+                score += np.prod(shape[edge.dst_id]) / self.arch.bandwidth[1]
             for edge in node.outputs:
                 if edge.dst_node in self.output_nodes: # write to global
-                    score += coalesced_tensor_shape(thread, node.get_shape(), 8) / self.arch.memory_bw(0)
+                    score += coalesced_tensor_shape(thread, node.get_shape(), 8) / self.arch.bandwidth[0]
             return score
         for factor in reversed(factors):
             score_map = {}

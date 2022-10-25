@@ -4,3 +4,4 @@ from .code_generator import CodeGenerator
 from .config import Config
 from .IRpass import *
 from .scheduler import Scheduler
+from . import arch

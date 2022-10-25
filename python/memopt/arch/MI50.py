@@ -1,32 +1,16 @@
-from .Arch import *
+import tvm
 
-class MI50(Arch):
-    # compute 7.0
-    def __init__(self, para_opt = True):
-        super().__init__()
-        self.num_level = 2
-        # DRAM: memory level 0
-        # SMEM: memory level 1
-        # REG: memory level 2
-        # bandwidth in GBps
-        self.bandwidth = [900, 8000]
-        # compute throughput in GFLOPS
-        self.peak_flops = 12000
-        self.limit = []
-        self.reg_cap = [20000, 70]
-        self.smem_cap = [34000]
-        # self.reg_cap = [32768, 96]
-        # self._smem_cap = [64000]
-        # self.Transaction_size = [128, 4] # in bytes
-        self.compute_max_core = [60]
-        # self._mem_max_core = [80, 80 * 4 * 32]
-        # self.para_opt = para_opt
-
+class M150:
+    def __init__(self):
+        self.reg_cap = 32768
+        self.smem_cap = 65536
+        self.compute_max_core = 60
         self.warp_size = 64
-        self.compute_sm_partition = [60, 4]
-        self.smem_sm_partition = [60, 4]
-        self.compute_block_schedule_way = ["warp"]
-        self.smem_block_schedule_way = ["warp"]
-        self.transaction_size = [64, 128]   # in bytes
-        self.glbmem_sm_partition = [60, 1]  # 1: active blocks
-        self.smem_bank_size=4
+        self.sm_partition = 4
+        self.transaction_size = [32, 128]   # in bytes
+        self.max_smem_usage = 65536
+        self.bandwidth = [900, 8000]
+        self.platform = "ROCm"
+        # still generate cuda code
+        # ROCm platform does not support inter-warp reduction, setting thread_warp_size to 1 can avoid such error.
+        self.target = tvm.target.Target("cuda -keys=cuda,gpu -arch=sm_70 -max_num_threads=1024 -model=unknown -thread_warp_size=1")

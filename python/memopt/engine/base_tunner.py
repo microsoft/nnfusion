@@ -143,7 +143,7 @@ class Tunner(object):
         compile_results = []
         for config in configs:
             try:
-                cpresult = cgen.compile(output_nodes, config, "cuda", kernel_name=kernel_name)
+                cpresult = cgen.compile(output_nodes, config, self.arch.target, kernel_name=kernel_name)
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
                 continue
@@ -210,7 +210,7 @@ class Tunner(object):
         compile_results = self.generate_code(output_nodes, configs, kernel_name)
         for cpresult in compile_results:
             cpresult.set_io_desc(input_desc, output_desc)
-        compile_and_load_parallel(compile_results)
+        compile_and_load_parallel(compile_results, self.arch)
         best = self.select_best(output_nodes, compile_results)
         self.set_cache(signature, best)
         return best

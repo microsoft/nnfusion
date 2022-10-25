@@ -8,7 +8,7 @@ from typing import List
 import tvm
 
 from .config import Config
-from .header import cuda_default_header, cuda_fp16_header
+from .header import *
 from .reference import get_ref_tensor
 from .tvm_build import _type_map
 
@@ -78,18 +78,26 @@ extern "C" float profile({}) {{
         profiling_code = header + self.code + "\n" + host_funcs
         return profiling_code
 
-    def compile_and_load(self, timeout: float = None) -> ctypes.CDLL:
-        profiling_code = self._create_code_for_profiling()
-        src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
-        lib_name = src.name.replace(".cu", ".so")
+    def compile_and_load(self, arch, timeout: float = None) -> ctypes.CDLL:
+        if arch.platform == "CUDA":
+            profiling_code = self._create_code_for_profiling()
+            src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
+            lib_name = src.name.replace(".cu", ".so")
+            compute_version = arch.compute_capability
+            command = ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
+                "-gencode=arch=compute_{},code=compute_{}".format(compute_version, compute_version),
+                "-o", lib_name]
+        elif arch.platform == "ROCm":
+            profiling_code = self._create_rocm_code_for_profiling()
+            src = tempfile.NamedTemporaryFile(mode='w', suffix=".cpp")
+            lib_name = src.name.replace(".cpp", ".so")
+            command = ["hipcc", "-fPIC", "--shared", "-O2", src.name, "-o", lib_name]
+        else:
+            raise NotImplementedError(platform)
         src.write(profiling_code)
         src.flush()
-        compute_version = "".join(tvm.contrib.nvcc.get_target_compute_version().split("."))
         try:
-            ret = subprocess.run(
-                ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
-                "-gencode=arch=compute_{},code=compute_{}".format(compute_version, compute_version),
-                "-o", lib_name], timeout=timeout)
+            ret = subprocess.run(command, timeout=timeout)
         except subprocess.TimeoutExpired:
             return None
         if ret.returncode != 0:
@@ -98,6 +106,54 @@ extern "C" float profile({}) {{
         self.lib.profile.restype = ctypes.c_float
         subprocess.run(["rm", lib_name], check=True)
         return self.lib
+
+    def _create_rocm_code_for_profiling(self) -> str:
+        num_params = len(self.args)
+        args = ["args" + str(i) for i in range(num_params)]
+        call_args = ", ".join(args)
+        args = ["{}* args{}".format(_type_map[self.args[i].dtype], i) for i in range(num_params)]
+        def_args = ", ".join(args)
+        block_str = "dim3({}, {}, {})".format(self.block_size[0], self.block_size[1], self.block_size[2])
+        grid_str = "dim3({}, {}, {})".format(self.grid_size[0], self.grid_size[1], self.grid_size[2])
+        call_str = "{}<<<{}, {}>>>({})".format(self.name, grid_str, block_str, call_args)
+        host_funcs = \
+"""
+extern "C" void call({}) {{
+    {};
+}}
+""".format(def_args, call_str)
+
+        host_funcs += \
+"""
+extern "C" float profile({}) {{
+    float ms;
+    hipEvent_t start, stop;
+    hipEventCreateWithFlags(&start, hipEventDefault);
+    hipEventCreateWithFlags(&stop, hipEventDefault);
+    hipEventRecord(start, 0);
+    {};
+    if (hipEventRecord(stop, 0) != hipSuccess) return -1;
+    if (hipEventSynchronize(stop) != hipSuccess) return -1;
+    if (hipGetLastError() != hipSuccess) return -1;
+    hipEventElapsedTime(&ms, start, stop);
+    int repeats = int(ceil(100.0 / ms));
+    hipEventRecord(start, 0);
+    for (int _ = 0; _ < repeats; _++)
+        {};
+    if (hipEventRecord(stop, 0) != hipSuccess) return -1;
+    if (hipEventSynchronize(stop) != hipSuccess) return -1;
+    if (hipGetLastError() != hipSuccess) return -1;
+    hipEventElapsedTime(&ms, start, stop);
+    hipEventDestroy(start);
+    hipEventDestroy(stop);
+    return ms / repeats;
+}}
+""".format(def_args, call_str, call_str)
+        header = rocm_default_header
+        if self.use_fp16:
+            raise NotImplementedError()
+        profiling_code = header + self.code + "\n" + host_funcs
+        return profiling_code
 
     def profile(self, device="cuda:0") -> float:
         assert self.lib
@@ -145,7 +201,7 @@ extern "C" float profile({}) {{
     def __del__(self):
         self.close_lib()
 
-def compile_and_load_parallel(cpresults, timeout : float = None):
+def compile_and_load_parallel(cpresults, arch, timeout : float = None):
     with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-        libs = executor.map(CompileResult.compile_and_load, cpresults, [timeout for _ in cpresults])
+        libs = executor.map(CompileResult.compile_and_load, cpresults, [arch for _ in cpresults], [timeout for _ in cpresults])
     return list(libs)

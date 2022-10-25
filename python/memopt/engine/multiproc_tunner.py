@@ -1,6 +1,5 @@
 import os
-import sys
-import traceback
+import tvm
 
 from tvm.contrib.popen_pool import PopenPoolExecutor
 
@@ -18,7 +17,7 @@ def init_server(path):
     ordered_nodes = load_model(path)
     _save.node_map = {node.name: node for node in ordered_nodes}
 
-def call_build(node_names, send_config, kernel_name):
+def call_build(node_names, send_config, kernel_name, target_str):
     cgen = CodeGenerator()
     nodes = [_save.node_map[name] for name in node_names]
     output_nodes, _, _ = _extract_subgraph(nodes)
@@ -28,7 +27,7 @@ def call_build(node_names, send_config, kernel_name):
         if node.name in send_config:
             config[node] = send_config[node.name]
     try:
-        cpresult = cgen.compile(output_nodes, config, "cuda", kernel_name=kernel_name)
+        cpresult = cgen.compile(output_nodes, config, tvm.target.Target(target_str), kernel_name=kernel_name)
     except Exception as e:
         # traceback.print_exc(file=sys.stdout)
         return e
@@ -46,7 +45,7 @@ class MultiProcTunner(Tunner):
         futures = []
         for config in configs:
             send_config = {node.name : config[node] for node in config}
-            futures.append(self.pool.submit(call_build, node_names, send_config, kernel_name))
+            futures.append(self.pool.submit(call_build, node_names, send_config, kernel_name, str(self.arch.target)))
         for future, config in zip(futures, configs):
             result = future.result()
             if isinstance(result, Exception):

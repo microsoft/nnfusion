@@ -228,7 +228,7 @@ if __name__ == "__main__":
             te.placeholder((K, N), dtype='float16', name="input2"),
             te.placeholder((M, N), dtype='float16', name="output0")]
     cp = CompileResult(None, code, [32, 2, 2], [16200, 1, 1], "Fused", args)
-    cp.compile_and_load()
+    cp.compile_and_load(V100())
     print(cp.profile())
     out = cp.get_example_outputs()
     ref = refernce(M, K, N)

@@ -7,12 +7,13 @@ from memopt.reference import get_subgraph_reference_outputs
 
 from ops import *
 
+arch = V100()
 
 def test_policy(ir, input_dict, name="test", check=False):
     expr = "- einstein_v2('{}', {})".format(ir, str(input_dict))
     A = IRNode([None for _ in input_dict], expr)
     output_nodes = [OutputNode(A)]
-    policy = DefaultPolicy(output_nodes, V100())
+    policy = DefaultPolicy(output_nodes, arch)
     configs = policy.emit_config(10)
 
     compile_results = []
@@ -20,7 +21,7 @@ def test_policy(ir, input_dict, name="test", check=False):
     for config in configs:
         cpresult = cgen.compile(output_nodes, config, "cuda", kernel_name="Fused")
         compile_results.append(cpresult)
-    memopt.utils.compile_and_load_parallel(compile_results)
+    memopt.utils.compile_and_load_parallel(compile_results, arch)
     best_latency = 10000
     best = None
     values = []

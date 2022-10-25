@@ -48,6 +48,8 @@ def ref_output(onnx_model_path):
 
 def test_output(prefix, inputs, outputs):
     lib_path = os.path.join(prefix, "build/libnnfusion_naive_rt.so")
+    if not os.path.exists(lib_path):
+        return None
     lib = ctypes.CDLL(lib_path)
     cur_dir = os.path.abspath(".")
     os.chdir(prefix)
@@ -75,7 +77,11 @@ if __name__ == "__main__":
     prefix = args.prefix
     inputs, outputs_ref = ref_output(os.path.join(prefix, "model.onnx"))
 
-    outputs = test_output(os.path.join(prefix, "nnfusion_rt/cuda_codegen/"), inputs, outputs_ref)
+    subdirs = ["cuda_codegen", "rocm_codegen"]
+    for subdir in subdirs:
+        outputs = test_output(os.path.join(prefix, f"nnfusion_rt/{subdir}/"), inputs, outputs_ref)
+        if outputs is not None:
+            break
 
     max_diff = get_max_diff(outputs, outputs_ref)
     print("Output diff : ", max_diff)

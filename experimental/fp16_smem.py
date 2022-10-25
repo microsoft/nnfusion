@@ -168,7 +168,7 @@ if __name__ == "__main__":
         print(memopt.get_scope().block_size, memopt.get_scope().grid_size)
         cp = CompileResult(None, source, memopt.get_scope().block_size, memopt.get_scope().grid_size, "default_function_kernel0", args)
         print(cp.code)
-    cp.compile_and_load()
+    cp.compile_and_load(V100())
     ref = refernce(M, K, N)
     out = cp.get_example_outputs()[0]
     print(np.max(np.abs(out-ref)))

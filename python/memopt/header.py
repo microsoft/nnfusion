@@ -65,3 +65,8 @@ inline __device__ longlong4 make_int8(int x0, int x1, int x2, int x3, int x4, in
 }
 
 """
+
+rocm_default_header = """
+#include <hip/hip_runtime.h>
+#include <math.h>
+"""

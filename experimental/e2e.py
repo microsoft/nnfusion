@@ -53,7 +53,7 @@ def run_all():
         node.add_tag("tensorCoreConfig", (0, 1))
         configs[node] = Config().from_dict(configs[node]).complete_config(node)
     cpresult = memopt.CodeGenerator().compile(output_nodes, configs, target, kernel_name="Fused")
-    cpresult.compile_and_load()
+    cpresult.compile_and_load(V100())
     print(cpresult.code)
     out = cpresult.get_example_outputs()
     print(cpresult.profile())
@@ -89,7 +89,7 @@ def run_search():
     for config in configs:
         cpresult = cgen.compile(output_nodes, config, target, kernel_name="Fused")
         compile_results.append(cpresult)
-    memopt.utils.compile_and_load_parallel(compile_results)
+    memopt.utils.compile_and_load_parallel(compile_results, V100())
     best_latency = 10000
     best = None
     values = []

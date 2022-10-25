@@ -46,9 +46,8 @@ def test(func, args, ax_m, ax_n):
     cgen = memopt.CodeGenerator()
     for i, config in enumerate(configs):
         cpresult = cgen.compile(output_nodes, config, target, kernel_name="Fused"+str(i))
-        cpresult.append_host_call()
         compile_results.append(cpresult)
-    memopt.utils.compile_and_load_parallel(compile_results)
+    memopt.utils.compile_and_load_parallel(compile_results, V100())
     best_latency = 10000
     best = None
     values = []

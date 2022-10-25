@@ -97,9 +97,9 @@ class TCPolicy(DefaultPolicy):
             return super()._assign_block_size(node, tile, rsteps, block_size)
         ax_m, ax_n = node.get_tag("tensorCoreConfig")
         assert ax_m is not None and ax_n is not None
-        if block_size % 32 != 0:
+        if block_size % self.arch.warp_size != 0:
             return None
-        warps = block_size // 32
+        warps = block_size // self.arch.warp_size
         ndim = len(tile)
         if tile[ax_m] > tile[ax_n]:
             wmma = [32, 8, 16]
@@ -122,7 +122,7 @@ class TCPolicy(DefaultPolicy):
             block_tile = [int(np.ceil(tile[i] / thread[i])) for i in range(ndim)]
             shape = node.infer_dependency(block_tile)
             for edge in node.inputs:
-                score += np.prod(shape[edge.dst_id]) / self.arch.memory_bw(1)
+                score += np.prod(shape[edge.dst_id]) / self.arch.bandwidth[1]
             return score
 
         warp_tile = wmma_tile.copy()

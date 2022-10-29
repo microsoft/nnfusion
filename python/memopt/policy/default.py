@@ -9,9 +9,10 @@ import tvm
 from ..arch import Arch
 from ..bestfit import BestFit
 from ..config import Config, Stride, TileDict
-from ..graph import Node, find_topo_sort
+from ..graph import IRNode, Node, find_topo_sort
 from .common import (coalesced_factor, coalesced_tensor_shape, factorize,
                      get_all_factors)
+
 
 class DefaultPolicy:
     def __init__(self, output_nodes: List[Node], arch:Arch) -> None:
@@ -407,7 +408,7 @@ class DefaultPolicy:
                         result[edge.src_node] = deps[i]
         return result
 
-    def _assign_block_size(self, node: Node, tile, rsteps, block_size):
+    def _assign_block_size(self, node: IRNode, tile, rsteps, block_size):
         factors = factorize(block_size)
         cur_threads = [1 for _ in tile]
         reduce_thread = {k : 1 for k in rsteps}
@@ -458,32 +459,20 @@ class DefaultPolicy:
                 if codegen_dict.block[i] // codegen_dict.thread[i] % 2 == 0:
                     codegen_dict._step[i] = 2
                     break
-        # if len(rstep_map) > 0 and np.prod(block_tile) * np.prod(list(rstep_map.values())) < 1000:
-        #     codegen_dict["unroll"] = True
-        # # assign virtual threads
-        # codegen_dict = {}
-        # out_shape = node.get_shape()
-        # for i, ax in enumerate(node.saxis):
-        #     strided = coalesced_tensor_shape(cur_threads[i:], out_shape[i:], 8)
-        #     unstrided = cur_threads[i]
-        #     if i + 1 < len(node.saxis):
-        #         unstrided *= coalesced_tensor_shape(cur_threads[i+1:], out_shape[i:], 8)
-        #     else:
-        #         unstrided *= 8
-        #     if strided < unstrided:
-        #         codegen_dict[ax] = [block_tile[i], cur_threads[i], 1]
-        #     else:
-        #         codegen_dict[ax] = [1, cur_threads[i], block_tile[i]]
-
-        # # assign reduce order
-        # # more local memory reuse between two steps is ordered as inner loop
-        # if len(node.raxis) > 0:
-        #     thd_tile = [codegen_dict[ax][-1] for ax in node.saxis]
-        #     ax_score = {}
-        #     for i, rax in enumerate(node.raxis):
-        #         rstep = {ax : 1 for ax in node.raxis}
-        #         rstep[rax] = min(2, node.raxis[rax])
-        #         ax_score[rax] = node.infer_reduction_inputs(thd_tile, rstep)
-        #     axis_order = sorted(ax_score.keys(), key=lambda ax: ax_score[ax], reverse=True)
-        #     codegen_dict["raxis_order"] = axis_order
+        # Plan vectorize
+        def is_cont(shape, vec):
+            if len(shape) == 0: return vec == 1
+            last = shape[-1]
+            if vec % last == 0:
+                return is_cont(shape[0:-1], vec // last)
+            else:
+                return last % vec == 0
+        def is_shape_aligned(shape, factor):
+            return int(np.prod(shape)) % factor == 0
+        vectorize_sizes = [4, 2]
+        for tensor, shape in node.infer_dependency_reduce_inputs(tile, rsteps).items():
+            for v in vectorize_sizes:
+                if is_shape_aligned(shape, block_size * v) and is_cont(shape, v):
+                    codegen_dict.vectorize[tensor] = v
+                    break
         return codegen_dict

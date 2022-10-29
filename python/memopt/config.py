@@ -93,6 +93,7 @@ class Config:
         # Experimental
         self._raxis_order = []
         self._step = []
+        self.vectorize : Dict[str, int] = {}
 
     def to_dict(self) -> Dict:
         dic = {}
@@ -120,6 +121,8 @@ class Config:
             dic["step"] = self._step
         if self._raxis_order != []:
             dic["raxis_order"] = self._raxis_order
+        if self.vectorize != {}:
+            dic["vectorize"] = self.vectorize
         return dic
 
     def from_dict(self, dic: Dict) -> "Config":
@@ -145,6 +148,8 @@ class Config:
             self._step = dic["step"]
         if "raxis_order" in dic:
             self._raxis_order = dic["raxis_order"]
+        if "vectorize" in dic:
+            self.vectorize = dic["vectorize"]
         return self
 
     @property

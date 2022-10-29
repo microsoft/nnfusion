@@ -183,7 +183,11 @@ class Scheduler:
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
                 strides = Stride()
-            self.cooperative_fetch(shared_tensor, self.sche, strides)
+            if input_tensor.name in self.config.vectorize:
+                vectorize = self.config.vectorize[input_tensor.name]
+            else:
+                vectorize = 1
+            self.cooperative_fetch(shared_tensor, self.sche, strides, vectorize)
 
         cache_plan = {}
         for op in self.elementwise_ops:

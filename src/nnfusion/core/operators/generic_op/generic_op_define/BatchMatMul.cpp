@@ -3,6 +3,8 @@
 
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
+DECLARE_bool(ftc_rewrite);
+
 REGISTER_OP(BatchMatMul)
     .attr<nnfusion::op::OpConfig::any>("adj_x", {{"b", false}})
     .attr<nnfusion::op::OpConfig::any>("adj_y", {{"b", false}})
@@ -163,7 +165,7 @@ REGISTER_OP(BatchMatMul)
         op_config["output0_layout"] = vector_to_string<std::vector<std::string>>(output0_layout);
 
         auto ir = op::create_code_from_template(ir_template, op_config);
-        if (curr->get_output_element_type(0) == nnfusion::element::f16) {
+        if (FLAGS_ftc_rewrite && curr->get_output_element_type(0) == nnfusion::element::f16) {
             ir += "## @: tensorCoreConfig=(" + to_string(output0_layout.size() - 2) + ", " + to_string(output0_layout.size() - 1) + ")";
         }
         return ir;

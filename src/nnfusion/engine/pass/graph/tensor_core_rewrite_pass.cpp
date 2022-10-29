@@ -12,6 +12,7 @@ using namespace nnfusion::pass::graph;
 
 DECLARE_string(ftune_output_file);
 DECLARE_string(ffusion_skiplist);
+DEFINE_bool(ftc_rewrite, true, "Enable expression rewrites for TensorCore e.g. ImplicitGEMM");
 
 namespace
 {
@@ -57,7 +58,7 @@ static bool rewrite_conv1d(std::shared_ptr<Graph>& graph, std::shared_ptr<GNode>
 bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
     parse_skip_ops();
-    if (FLAGS_ftune_output_file == "")
+    if (FLAGS_ftune_output_file == "" || !FLAGS_ftc_rewrite)
         return true;
     for (auto node : graph->get_ordered_ops()) {
         if (node->get_op_type() == "Convolution" && node->get_element_type() == element::f16) {

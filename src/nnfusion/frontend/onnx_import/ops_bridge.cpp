@@ -80,6 +80,7 @@
 #include "op/unsqueeze.hpp"
 #include "op/where.hpp"
 #include "ops_bridge.hpp"
+#include "op/hard_sigmoid.hpp"
 
 namespace nnfusion
 {
@@ -195,7 +196,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("GlobalMaxPool", 1, TranslatePoolOp<op::MaxPool>);
                 REGISTER_OPERATOR("Greater", 1, TranslateBinaryOp<op::Greater>);
                 REGISTER_OPERATOR("GRU", 1, TranslateGRUOp);
-                //REGISTER_OPERATOR("HardSigmoid", 1, hard_sigmoid);
+                REGISTER_OPERATOR("HardSigmoid", 1, TranslateHardSigmoidOp);
                 REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
                 REGISTER_OPERATOR("LayerNormalization", 1, TranslateLayerNormalizationOp);
                 REGISTER_OPERATOR("LayerNormalizationGrad", 1, TranslateLayerNormalizationGradOp);

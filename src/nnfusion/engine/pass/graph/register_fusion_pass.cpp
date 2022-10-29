@@ -55,7 +55,8 @@ namespace
         "Slice",
         "Convert",
         "CNHW2NCHW",
-        "CNW2NCW"
+        "CNW2NCW",
+        "HardSigmoid"
     };
     std::unordered_set<std::string> skip_ops = {};
     void parse_skip_ops() {

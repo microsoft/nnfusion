@@ -298,3 +298,31 @@ REGISTER_OP(CNW2NCW)
             expression_template, config);
         return expression_code;
     });
+
+REGISTER_OP(HardSigmoid)
+    .attr<float>("alpha")
+    .attr<float>("beta")
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        NNFUSION_CHECK(1 == gnode->get_input_size());
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), gnode->get_input_shape(0));
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        auto ir_template =
+            R"( @output0@@layout@ = (@input0@@layout@ * const(@alpha@).cast(@dtype@) + const(@beta@).cast(@dtype@)).call(`max`, [const(0).cast(@dtype@)]).call(`min`, [const(1).cast(@dtype@)]); )";
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+        auto input0_shape = nnfusion::Shape(curr->get_input_shape(0));
+        float alpha = generic_op->localOpConfig.getRoot()["alpha"];
+        float beta = generic_op->localOpConfig.getRoot()["beta"];
+
+        op::OpConfig::any op_config;
+        set<int> axes;
+        for (int i = 0; i < input0_shape.size(); i++) axes.insert(i);
+        op_config["layout"] = make_layout(axes);
+        op_config["alpha"] = std::to_string(alpha);
+        op_config["beta"] = std::to_string(beta);;
+        string dtype;
+        NNFUSION_CHECK(element::Type::nnfusion_element_type_to_dtype_string(curr->get_element_type(), dtype));
+        op_config["dtype"] = "`"+  dtype + "`";
+
+        return op::create_code_from_template(ir_template, op_config);
+    });

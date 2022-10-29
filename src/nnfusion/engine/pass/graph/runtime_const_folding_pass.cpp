@@ -4,7 +4,7 @@
 #include "runtime_const_folding_pass.hpp"
 
 DEFINE_string(fconst_folding_backend,
-              "",
+              "CUDA",
               "Choose which backend will be used in Constant folding pass. Disable when not set.");
 
 using namespace nnfusion::pass::graph;

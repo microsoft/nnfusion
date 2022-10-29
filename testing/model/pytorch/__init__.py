@@ -134,7 +134,8 @@ def NeRF(batch_size):
     return model, (input, )
 
 def Conformer(batch_size):
-    from torchaudio.models import Conformer
+    # from torchaudio.models import Conformer # use the next line if torchaudio doesn't works
+    from .Conformer import Conformer
     num_frame = 512
     input_dim = 512
     model = Conformer(input_dim=input_dim, num_heads=8, ffn_dim=512, num_layers=12, depthwise_conv_kernel_size=31)

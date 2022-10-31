@@ -70,3 +70,5 @@ rocm_default_header = """
 #include <hip/hip_runtime.h>
 #include <math.h>
 """
+
+rocm_fp16_header = cuda_fp16_header.replace("<cuda_fp16.h>", "<hip/hip_fp16.h>")

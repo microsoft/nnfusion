@@ -93,7 +93,7 @@ extern "C" float profile({}) {{
             lib_name = src.name.replace(".cpp", ".so")
             command = ["hipcc", "-fPIC", "--shared", "-O2", src.name, "-o", lib_name]
         else:
-            raise NotImplementedError(platform)
+            raise NotImplementedError(arch.platform)
         src.write(profiling_code)
         src.flush()
         try:
@@ -151,7 +151,7 @@ extern "C" float profile({}) {{
 """.format(def_args, call_str, call_str)
         header = rocm_default_header
         if self.use_fp16:
-            raise NotImplementedError()
+            header += rocm_fp16_header
         profiling_code = header + self.code + "\n" + host_funcs
         return profiling_code
 

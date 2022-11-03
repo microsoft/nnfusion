@@ -116,14 +116,17 @@ namespace nnfusion
             int get_device_id() const { return m_device_id; }
             std::string get_device_name() const;
             const std::string& get_unique_name() const { return m_unique_name; }
-            void share_with_tensor(std::shared_ptr<Tensor> tensor) { m_share_buffer_tensor = tensor; }
+            void share_with_tensor(std::shared_ptr<Tensor> tensor)
+            {
+                m_share_buffer_tensor = tensor;
+            }
             std::shared_ptr<Tensor> get_shared_tensor() const { return m_share_buffer_tensor; }
             void set_global_consistent_name(std::string name) { m_global_consistent_name = name; }
             std::string get_global_consistent_name() const { return m_global_consistent_name; }
-
             using Pointer = std::shared_ptr<Tensor>;
 
             static void reset_next_instance_id();
+
         protected:
             nnfusion::element::Type m_element_type;
 

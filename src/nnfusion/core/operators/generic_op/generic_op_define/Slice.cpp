@@ -44,7 +44,8 @@ REGISTER_OP(Slice)
             if (starts.get_sym_shape() && starts.get_sym_shape()->at(d).is_dynamic())
             {
                 auto& dim = starts.get_sym_shape()->at(d);
-                start_str = "alter(`" + dim.expr_to_symbol(dim.sym()) + ":" + std::to_string(dim.max()) + "`)";
+                start_str = "alter(`" + dim.expr_to_symbol(dim.sym()) + ":" +
+                            std::to_string(dim.max()) + "`)";
                 curr->add_symbol(dim);
                 (*curr)["symbolic"] = true;
             }
@@ -60,8 +61,7 @@ REGISTER_OP(Slice)
             input_layout.push_back(
                 (step == 1 ? output_layout[d] : output_layout[d] + " * " + to_string(step)) +
                 " + " + start_str);
-            slice_dims +=
-                (slice_dims.empty() ? "" : " , ") + output_layout[d] + " in " + range_str;
+            slice_dims += (slice_dims.empty() ? "" : " , ") + output_layout[d] + " in " + range_str;
         }
 
         auto expression_code = op::create_code_from_template(

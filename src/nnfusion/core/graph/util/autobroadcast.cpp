@@ -123,14 +123,14 @@ namespace nnfusion
                     arg1_sdim = arg1_size ? arg1_sym_shape->at(arg1_size - 1) : SymDim(1);
                     arg2_sdim = arg2_size ? arg2_sym_shape->at(arg2_size - 1) : SymDim(1);
                 }
-            
+
                 if (arg1_dim == arg2_dim)
                 {
                     // add dimension to broadcast shape + arg1/arg2 reshape
                     plan.m_final_shape.insert(plan.m_final_shape.begin(), arg1_dim);
                     if (symbolic_broadcast)
                     {
-                        final_sym_shape->insert(final_sym_shape->begin(), arg1_sdim); 
+                        final_sym_shape->insert(final_sym_shape->begin(), arg1_sdim);
                     }
                     plan.m_arg1_shape_after_possible_reshaping.insert(
                         plan.m_arg1_shape_after_possible_reshaping.begin(), arg1_dim);
@@ -143,7 +143,7 @@ namespace nnfusion
                     plan.m_final_shape.insert(plan.m_final_shape.begin(), arg1_dim);
                     if (symbolic_broadcast)
                     {
-                        final_sym_shape->insert(final_sym_shape->begin(), arg1_sdim); 
+                        final_sym_shape->insert(final_sym_shape->begin(), arg1_sdim);
                     }
                     plan.m_arg1_shape_after_possible_reshaping.insert(
                         plan.m_arg1_shape_after_possible_reshaping.begin(), arg1_dim);
@@ -156,7 +156,7 @@ namespace nnfusion
                     plan.m_final_shape.insert(plan.m_final_shape.begin(), arg2_dim);
                     if (symbolic_broadcast)
                     {
-                        final_sym_shape->insert(final_sym_shape->begin(), arg2_sdim); 
+                        final_sym_shape->insert(final_sym_shape->begin(), arg2_sdim);
                     }
                     plan.m_arg2_shape_after_possible_reshaping.insert(
                         plan.m_arg2_shape_after_possible_reshaping.begin(), arg2_dim);
@@ -321,7 +321,7 @@ namespace nnfusion
                                              plan.m_arg2_broadcast_axes,
                                              plan.m_final_shape,
                                              graph);
- 
+
             return {arg1_out, arg2_out};
         }
 

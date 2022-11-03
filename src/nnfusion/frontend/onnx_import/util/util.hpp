@@ -71,7 +71,6 @@ namespace nnfusion
 
                     if (tensor.data_type() == onnx::TensorProto_DataType_BOOL)
                     {
-
                         return __get_data<char>(tensor.int32_data());
                     }
                     NNFUSION_CHECK_FAIL()

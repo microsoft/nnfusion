@@ -6,11 +6,11 @@
 #include <sstream>
 #include <utility>
 
+#include "nnfusion/common/util.hpp"
 #include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/kernels/hlsl/hlsl_kernel_emitter.hpp"
 #include "nnfusion/util/curl_request.hpp"
-#include "nnfusion/common/util.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::graph;

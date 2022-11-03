@@ -68,9 +68,9 @@ namespace nnfusion
             };
 
             REGISTER_KERNEL_EMITTER(
-                "GatherV2",                                                       // op_name
+                "GatherV2",                                                        // op_name
                 Device(GENERIC_CPU).TypeConstraint(element::f32).Tag("reference"), // attrs
-                GatherV2)                                                      // constructor
+                GatherV2)                                                          // constructor
 
         } // namespace cpu
     }     // namespace kernels

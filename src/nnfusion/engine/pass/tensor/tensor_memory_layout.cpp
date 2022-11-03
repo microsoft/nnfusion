@@ -26,8 +26,8 @@ DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fhost_entry);
 DECLARE_bool(fmulti_shape);
 
-
-std::unordered_map<std::string, std::shared_ptr<descriptor::Tensor>> AssignTensorMemoryLayout::m_shared_const_tensor;
+std::unordered_map<std::string, std::shared_ptr<descriptor::Tensor>>
+    AssignTensorMemoryLayout::m_shared_const_tensor;
 bool AssignTensorMemoryLayout::m_is_first_graph = true;
 
 bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
@@ -122,7 +122,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                     mem_info.alloc_ref.push_back(tensor);
                     auto root = tensor->get_root_tensor();
                 }
-                else 
+                else
                 {
                     if (gnode->is_constant() && FLAGS_fmulti_shape &&
                         !(tensor->get_global_consistent_name().empty()))

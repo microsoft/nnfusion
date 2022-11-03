@@ -55,7 +55,8 @@ REGISTER_OP(Broadcast)
             else
             {
                 auto out_dim = to_string(output_shape[d]);
-                if (output_shape.get_sym_shape() && output_shape.get_sym_shape()->at(d).is_dynamic())
+                if (output_shape.get_sym_shape() &&
+                    output_shape.get_sym_shape()->at(d).is_dynamic())
                 {
                     auto& dim = output_shape.get_sym_shape()->at(d);
                     out_dim = dim.expr_to_symbol(dim.sym()) + ":" + std::to_string(dim.max());

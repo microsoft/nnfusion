@@ -69,7 +69,9 @@ namespace nnfusion
 
                         kernel_info =
                             nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
-                        NNFUSION_CHECK(!kernel_info.empty());
+                        NNFUSION_CHECK(!kernel_info.empty())
+                            << "Can not extract kernel info from antares response: \n antares IR: "
+                            << ir << "\n antares response: " << antares_code;
                         process_antares_kernel_info();
                     }
                 }

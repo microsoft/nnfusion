@@ -140,7 +140,7 @@ void GNode::set_output_size(size_t n)
         {
             tensor->set_global_consistent_name(m_op_ptr->get_global_consistent_name());
         }
-        
+
         if (!loss_name.empty() && n == 1)
         {
             std::replace(loss_name.begin(), loss_name.end(), '/', '_');

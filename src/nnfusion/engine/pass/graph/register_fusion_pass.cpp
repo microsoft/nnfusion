@@ -105,7 +105,7 @@ public:
 
     bool Optimize() {
         for (auto& tnode : node_list_) {
-            if (tnode->inlined_ || tnode->visited_)
+            if (is_inlinable(tnode->node_) || tnode->visited_)
                 continue;
             // found a new reduce op
             fuse_from_node(tnode);
@@ -121,7 +121,7 @@ public:
             else if (tnode->group_id_ >= 0) { // already processed
                 tnode->visited_ = true;
                 update_inline_nodes();
-            } else if (tnode->node_->get_out_edges().size() == 1 &&
+            } else if (tnode->inlined_ && tnode->node_->get_out_edges().size() == 1 &&
                 node_map_[tnode->node_->get_out_edges()[0]->get_dst()]->group_id_ == -1) {
                 // Inline these node to following nodes
                 continue;
@@ -228,7 +228,7 @@ private:
                     queue.push(node_map_[edge->get_dst()]);
                 }
                 tnode->visited_ = true;
-                if (tnode->inlined_) fuse_inline_dependent_nodes(tnode);
+                if (is_inlinable(tnode->node_)) fuse_inline_dependent_nodes(tnode);
                 update_inline_nodes();
             } else {
                 update_block_list(block_list, tnode);
@@ -250,6 +250,7 @@ private:
         for (auto edge : tnode->node_->get_in_edges()) {
             auto& in_node = node_map_[edge->get_src()];
             if (in_node->visited_) continue;
+            if (!in_node->inlined_) continue;
             NNFUSION_CHECK(in_node->inlined_);
             in_node->group_id_ = tnode->group_id_;
             in_node->visited_ = true;

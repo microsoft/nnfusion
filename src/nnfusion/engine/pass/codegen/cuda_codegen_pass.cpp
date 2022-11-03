@@ -1398,7 +1398,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 find_package(CUDA)
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O2")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O3 --prec-sqrt=false --ftz=true --prec-div=false -fmad=true")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
 )";

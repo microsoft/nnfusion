@@ -12,7 +12,7 @@
 #include "nnfusion/core/graph/util/numpy_transpose.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-DEFINE_bool(fgemm_fusion, false, "GEMM fusion.");
+DEFINE_bool(fgemm_fusion, true, "GEMM fusion.");
 
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;

@@ -56,7 +56,9 @@
 #include "op/log_softmax.hpp"
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
+#include "op/mean.hpp"
 #include "op/memory_copy.hpp"
+#include "op/multi_elementwise.hpp"
 #include "op/non_zero.hpp"
 #include "op/one_hot.hpp"
 #include "op/pad.hpp"
@@ -210,11 +212,11 @@ namespace nnfusion
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("MaxPool", 1, TranslatePoolOp<op::MaxPool>);
-                REGISTER_OPERATOR("Max", 1, TranslateBinaryOp<op::Maximum>);
-                //REGISTER_OPERATOR("Mean", 1, mean);
+                REGISTER_OPERATOR("Max", 1, TranslateMultiElementwiseOp<op::Maximum>);
+                REGISTER_OPERATOR("Mean", 1, TranslateMeanOp);
                 REGISTER_OPERATOR("MemcpyFromHost", 1, TranslateMemcpyFromHostOp);
                 REGISTER_OPERATOR("MemcpyToHost", 1, TranslateMemcpyToHostOp);
-                REGISTER_OPERATOR("Min", 1, TranslateLegacyBinaryOp<op::Minimum>);
+                REGISTER_OPERATOR("Min", 1, TranslateMultiElementwiseOp<op::Minimum>);
                 REGISTER_OPERATOR("Mul", 1, TranslateLegacyBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Mul", 7, TranslateBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);
@@ -264,7 +266,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Squeeze", 11, TranslateSqueezeOp);
                 REGISTER_OPERATOR("Sub", 1, TranslateLegacyBinaryOp<op::Subtract>);
                 REGISTER_OPERATOR("Sub", 7, TranslateBinaryOp<op::Subtract>);
-                REGISTER_OPERATOR("Sum", 1, TranslateSumOp);
+                REGISTER_OPERATOR("Sum", 1, TranslateMultiElementwiseOp<op::Add>);
                 REGISTER_OPERATOR("Tan", 1, TranslateUnaryOp<op::Tan>);
                 REGISTER_OPERATOR("Tanh", 1, TranslateUnaryOp<op::Tanh>);
                 REGISTER_OPERATOR("TanhGrad", 1, TranslateTanhGradOp);

@@ -111,20 +111,39 @@ void Dot::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
         std::vector<nnfusion::Dimension> result_dims(
             size_t(arg0_shape.rank()) + size_t(arg1_shape.rank()) - 2 * m_reduction_axes_count);
 
+        // symbolic shape inference
+        auto sym_out = std::make_shared<SymShape>(
+            size_t(arg0_shape.rank()) + size_t(arg1_shape.rank()) - 2 * m_reduction_axes_count);
+        auto sym_a = arg0_shape.to_shape().get_sym_shape();
+        auto sym_b = arg1_shape.to_shape().get_sym_shape();
+        bool has_sym_input = (sym_a || sym_b);
+        if (!sym_a)
+        {
+            sym_a = std::make_shared<nnfusion::SymShape>(arg0_shape.to_shape());
+        }
+        if (!sym_b)
+        {
+            sym_b = std::make_shared<nnfusion::SymShape>(arg1_shape.to_shape());
+        }
+
         size_t i = 0;
 
         for (size_t j = 0; j < size_t(arg0_shape.rank()) - m_reduction_axes_count; j++)
         {
             size_t idx = m_transpose_A ? size_t(arg0_shape.rank()) - 1 - j : j;
+            (*sym_out)[i] = (*sym_a)[idx];
             result_dims[i++] = arg0_shape[idx];
         }
         for (size_t j = m_reduction_axes_count; j < size_t(arg1_shape.rank()); j++)
         {
             size_t idx = m_transpose_B ? size_t(arg0_shape.rank()) - 1 - j : j;
+            (*sym_out)[i] = (*sym_b)[idx];
             result_dims[i++] = arg1_shape[idx];
         }
 
-        result_shape = nnfusion::PartialShape(result_dims);
+        Shape temp = Shape(result_dims.begin(), result_dims.end());
+        temp.set_sym_shape(sym_out);
+        result_shape = nnfusion::PartialShape(temp);
     }
     else
     {

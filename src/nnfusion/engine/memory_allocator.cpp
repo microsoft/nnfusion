@@ -493,7 +493,8 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
             if (tensor->get_shared_tensor())
             {
                 // this tensor can be shared with the grpah_0's tensor
-                lu << tensor->get_name() << " = graph_0::" << tensor->get_shared_tensor()->get_name() << ";\n";
+                lu << tensor->get_name()
+                   << " = graph_0::" << tensor->get_shared_tensor()->get_name() << ";\n";
                 continue;
             }
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());

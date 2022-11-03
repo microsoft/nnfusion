@@ -208,10 +208,9 @@
     <PostBuildEvent>
       <Command>copy .\para_info.json "$(TargetDir)"
 IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
-IF EXIST .\HLSL  xcopy /i /y /e .\HLSL "$(TargetDir)\HLSL"
-IF EXIST .\HLSL_0  xcopy /i /y /e .\HLSL_0 "$(TargetDir)\HLSL_0"
-IF EXIST .\HLSL_1  xcopy /i /y /e .\HLSL_1 "$(TargetDir)\HLSL_1"
-IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"</Command>
+FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
+IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Xbox.XboxOne.x64'">
@@ -257,9 +256,7 @@ IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"</Command
     <PostBuildEvent>
       <Command>copy .\para_info.json "$(TargetDir)"
 IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
-IF EXIST .\HLSL  xcopy /i /y /e .\HLSL "$(TargetDir)\HLSL"
-IF EXIST .\HLSL_0  xcopy /i /y /e .\HLSL_0 "$(TargetDir)\HLSL_0"
-IF EXIST .\HLSL_1  xcopy /i /y /e .\HLSL_1 "$(TargetDir)\HLSL_1"
+FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
 IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
 </Command>
     </PostBuildEvent>
@@ -301,9 +298,7 @@ IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
     <PostBuildEvent>
       <Command>copy .\para_info.json "$(TargetDir)"
 IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
-IF EXIST .\HLSL  xcopy /i /y /e .\HLSL "$(TargetDir)\HLSL"
-IF EXIST .\HLSL_0  xcopy /i /y /e .\HLSL_0 "$(TargetDir)\HLSL_0"
-IF EXIST .\HLSL_1  xcopy /i /y /e .\HLSL_1 "$(TargetDir)\HLSL_1"
+FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
 IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
 </Command>
     </PostBuildEvent>

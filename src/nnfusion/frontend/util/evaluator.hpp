@@ -58,9 +58,9 @@ namespace nnfusion
                     return it;
                 }
 
-                NNFUSION_LOG(INFO)
-                    << "[" << depth << ":" << arg_idx << "] Working for node: " << gnode->get_name()
-                    << ": " << gnode->get_op_type();
+                NNFUSION_LOG(INFO) << "[" << depth << ":" << arg_idx
+                                   << "] Working for node: " << gnode->get_name() << ": "
+                                   << gnode->get_op_type();
                 static std::map<std::shared_ptr<GNode>, std::vector<std::vector<char>>> dict;
                 auto it = dict.find(gnode);
                 if (it != dict.end())
@@ -125,7 +125,8 @@ namespace nnfusion
 
                 bool const_infer_success = false;
                 shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-                NNFUSION_LOG(INFO) << "[" << depth << "] Evaluate node: " << gnode->get_name() << ": " << gnode->get_op_type();
+                NNFUSION_LOG(INFO) << "[" << depth << "] Evaluate node: " << gnode->get_name()
+                                   << ": " << gnode->get_op_type();
                 for (auto& kernel_reg : kernel_regs)
                 {
                     auto kernel = kernel_reg->m_factory(ctx);
@@ -183,7 +184,9 @@ namespace nnfusion
                 if (!gnode->is_constant())
                 {
                     auto outs = get_node_outputs(gnode);
-                    NNFUSION_CHECK(outs.size() == 1);
+                    NNFUSION_CHECK(outs.size() == 1) << "Expect only 1 output for gnode "
+                                                     << gnode->get_name() << ", but " << outs.size()
+                                                     << " found.";
                     auto out_type = gnode->get_output_element_type(0);
                     NNFUSION_LOG(INFO) << "Asking for Constant value from op-type: "
                                        << gnode->get_op_type();

@@ -46,7 +46,8 @@ void Op::increase_graph_id()
 
 Op::Op(const std::string& op_type)
     : m_op_type(op_type)
-    , m_instance_id(op_type=="Constant"?m_next_constant_id.fetch_add(1):m_next_instance_id.fetch_add(1))
+    , m_instance_id(op_type == "Constant" ? m_next_constant_id.fetch_add(1)
+                                          : m_next_instance_id.fetch_add(1))
     , m_unique_name(get_op_type() + "_" + to_string(m_instance_id) + "_" + to_string(m_graph_id))
 {
 }
@@ -96,8 +97,11 @@ void Op::revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
                                                                       "Result",
                                                                       "Softmax",
                                                                       "Max",
-                                                                      "Sum"});
-            if (symbolic_infer_ops.find(gnode->get_op_type()) == symbolic_infer_ops.end())
+                                                                      "Sum",
+                                                                      "Dot"});
+            if (std::dynamic_pointer_cast<op::ElementwiseArithmetic>(gnode->get_op_ptr()) ==
+                    nullptr &&
+                symbolic_infer_ops.find(gnode->get_op_type()) == symbolic_infer_ops.end())
             {
                 NNFUSION_CHECK(false) << "Unsupported op for symbolic input: "
                                       << gnode->get_op_type();

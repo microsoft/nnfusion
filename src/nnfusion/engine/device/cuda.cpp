@@ -4,6 +4,8 @@
 #include "cuda.hpp"
 #include "reversed_dfs_visitor.hpp"
 
+#include "nnfusion/engine/pass/codegen/cuda_codegen_pass.hpp"
+#include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/graph/assign_async_info_pass.hpp"
 #include "nnfusion/engine/pass/graph/assign_layout_pass.hpp"
 #include "nnfusion/engine/pass/graph/autodiff_pass.hpp"
@@ -28,12 +30,10 @@
 #include "nnfusion/engine/pass/graph/subgraph_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/superscaler_dataparallelism_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
-#include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
 #include "nnfusion/engine/pass/tensor/liveness_analysis.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_memory_layout.hpp"
-#include "nnfusion/engine/pass/codegen/cuda_codegen_pass.hpp"
 #include "nnfusion/frontend/util/parameter.hpp"
 
 using namespace nnfusion;
@@ -109,8 +109,8 @@ CudaMultiEngine::CudaMultiEngine()
     this->erase_all_codegen();
 }
 
-bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs, 
-    EngineContext::Pointer context)
+bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
+                                    EngineContext::Pointer context)
 {
     std::vector<CodeGenerator::Pointer> proj_gens;
     std::vector<std::unordered_map<std::string, size_t>> vec_pool_size(graphs.size());
@@ -208,10 +208,10 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     global_sym_defs << "extern \"C\" void set_" << param.first << "(int64_t);\n"
                                     << "extern \"C\" int64_t get_" << param.first << "();\n";
                     global_sym_methods << "int64_t " << param.first << ";\n"
-                                       << "extern \"C\" void set_" << param.first << "(int64_t s) { "
-                                       << param.first << " = s; }\n"
-                                       << "extern \"C\" int64_t get_" << param.first << "() { return "
-                                       << param.first << "; }\n";
+                                       << "extern \"C\" void set_" << param.first
+                                       << "(int64_t s) { " << param.first << " = s; }\n"
+                                       << "extern \"C\" int64_t get_" << param.first
+                                       << "() { return " << param.first << "; }\n";
                 }
                 for (auto dim_params : vec_dim_params)
                 {
@@ -220,11 +220,13 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     {
                         if (!condition.empty())
                             condition += " && ";
-                        if(param.second.min() == 0)
-                            condition += "get_" + param.first + "() == " + to_string(param.second.max());
+                        if (param.second.min() == 0)
+                            condition +=
+                                "get_" + param.first + "() == " + to_string(param.second.max());
                         else
-                            condition += "get_" + param.first + "() >=" + to_string(param.second.min()) 
-                                + " && " + " get_" + param.first + "() <=" + to_string(param.second.max());
+                            condition += "get_" + param.first + "() >=" +
+                                         to_string(param.second.min()) + " && " + " get_" +
+                                         param.first + "() <=" + to_string(param.second.max());
                     }
                     global_entry << "if(" << condition << ")\n{\n";
                     global_entry << "\t return graph_" << graph_cnt
@@ -233,32 +235,35 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     graph_cnt++;
                 }
                 auto outs = tu.back()->out;
-                for(int i=0;i<outs.size();i++)
+                for (int i = 0; i < outs.size(); i++)
                 {
                     auto out = outs[i];
-                    for(int j=0;j<out->get_shape().size();j++)
+                    for (int j = 0; j < out->get_shape().size(); j++)
                     {
                         auto dim_name = "output_" + to_string(i) + "_dim_" + to_string(j);
                         global_sym_defs << "extern \"C\" int64_t get_" << dim_name << "();\n";
                         global_sym_methods << "extern \"C\" int64_t get_" << dim_name << "()\n{\n";
 
-                        for(int k=0;k<vec_dim_params.size();k++)
+                        for (int k = 0; k < vec_dim_params.size(); k++)
                         {
                             std::string condition = "";
-                            auto&dim_params = vec_dim_params[k];
-                            for(auto param : dim_params)
+                            auto& dim_params = vec_dim_params[k];
+                            for (auto param : dim_params)
                             {
                                 if (!condition.empty())
                                     condition += " && ";
-                                if(param.second.min() == 0)
-                                    condition += param.first + " == " + to_string(param.second.max());
-                                else 
-                                    condition += param.first + " >= " + to_string(param.second.min()) 
-                                        + " && " + param.first + " <= " + to_string(param.second.max());
+                                if (param.second.min() == 0)
+                                    condition +=
+                                        param.first + " == " + to_string(param.second.max());
+                                else
+                                    condition += param.first + " >= " +
+                                                 to_string(param.second.min()) + " && " +
+                                                 param.first + " <= " +
+                                                 to_string(param.second.max());
                             }
                             std::string val;
                             auto sym_shape = tu[k]->out[i]->get_shape().sym_shape;
-                            if(sym_shape != nullptr)
+                            if (sym_shape != nullptr)
                             {
                                 auto sym = (*sym_shape)[j];
                                 val = sym.is_dynamic() ? sym.sym() : to_string(sym.max());
@@ -267,7 +272,8 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                             {
                                 val = to_string(tu[k]->out[i]->get_shape()[j]);
                             }
-                            global_sym_methods << "\tif(" << condition << ") { return " << val << ";}\n";
+                            global_sym_methods << "\tif(" << condition << ") { return " << val
+                                               << ";}\n";
                         }
 
                         global_sym_methods << "\treturn -1;\n}\n";
@@ -275,32 +281,35 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 }
 
                 auto args = tu.back()->arg;
-                for(int i=0;i<args.size();i++)
+                for (int i = 0; i < args.size(); i++)
                 {
                     auto arg = args[i];
-                    for(int j=0;j<arg->get_shape().size();j++)
+                    for (int j = 0; j < arg->get_shape().size(); j++)
                     {
                         auto dim_name = arg->get_name() + "_dim_" + to_string(j);
                         global_sym_defs << "extern \"C\" int64_t get_" << dim_name << "();\n";
                         global_sym_methods << "extern \"C\" int64_t get_" << dim_name << "()\n{\n";
 
-                        for(int k=0;k<vec_dim_params.size();k++)
+                        for (int k = 0; k < vec_dim_params.size(); k++)
                         {
                             std::string condition = "";
-                            auto&dim_params = vec_dim_params[k];
-                            for(auto param : dim_params)
+                            auto& dim_params = vec_dim_params[k];
+                            for (auto param : dim_params)
                             {
                                 if (!condition.empty())
                                     condition += " && ";
-                                if(param.second.min() == 0)
-                                    condition += param.first + " == " + to_string(param.second.max());
-                                else 
-                                    condition += param.first + " >= " + to_string(param.second.min()) 
-                                        + " && " + param.first + " <= " + to_string(param.second.max());
+                                if (param.second.min() == 0)
+                                    condition +=
+                                        param.first + " == " + to_string(param.second.max());
+                                else
+                                    condition += param.first + " >= " +
+                                                 to_string(param.second.min()) + " && " +
+                                                 param.first + " <= " +
+                                                 to_string(param.second.max());
                             }
                             std::string val;
                             auto sym_shape = tu[k]->arg[i]->get_shape().sym_shape;
-                            if(sym_shape != nullptr)
+                            if (sym_shape != nullptr)
                             {
                                 auto sym = (*sym_shape)[j];
                                 val = sym.is_dynamic() ? sym.sym() : to_string(sym.max());
@@ -309,7 +318,8 @@ bool CudaMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                             {
                                 val = to_string(tu[k]->arg[i]->get_shape()[j]);
                             }
-                            global_sym_methods << "\tif(" << condition << ") { return " << val << ";}\n";
+                            global_sym_methods << "\tif(" << condition << ") { return " << val
+                                               << ";}\n";
                         }
 
                         global_sym_methods << "\treturn -1;\n}\n";
@@ -376,7 +386,8 @@ void CudaMultiEngine::remove_extern_c(std::string f)
     ofile.close();
 }
 
-std::string CudaMultiEngine::get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu, bool is_host)
+std::string CudaMultiEngine::get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu,
+                                                    bool is_host)
 {
     unordered_set<string> allocated;
     vector<string> params;
@@ -413,7 +424,8 @@ std::string CudaMultiEngine::get_kernel_entry_paras(std::shared_ptr<TranslationU
     return join(params, ", ");
 }
 
-std::string CudaMultiEngine::get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu, bool is_host)
+std::string CudaMultiEngine::get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu,
+                                                   bool is_host)
 {
     vector<string> args;
     for (int i = 0; i < tu->arg.size(); i++)
@@ -438,4 +450,3 @@ std::string CudaMultiEngine::get_kernel_entry_args(std::shared_ptr<TranslationUn
     }
     return join(args, ", ");
 }
-

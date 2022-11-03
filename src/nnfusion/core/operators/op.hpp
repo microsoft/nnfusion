@@ -135,9 +135,9 @@ namespace nnfusion
             }
             void set_global_consistent_name(std::string name) { m_global_consistent_name = name; }
             std::string get_global_consistent_name() const { return m_global_consistent_name; }
-
             static void reset_next_instance_id();
             static void increase_graph_id();
+
         protected:
             Op(const std::string& op_type);
 

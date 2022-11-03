@@ -183,7 +183,7 @@ class Scheduler:
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
                 strides = Stride()
-            if input_tensor.name in self.config.vectorize:
+            if input_tensor.name in self.config.vectorize and not self._is_from_shared(input_tensor):
                 vectorize = self.config.vectorize[input_tensor.name]
             else:
                 vectorize = 1

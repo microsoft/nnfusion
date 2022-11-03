@@ -106,4 +106,10 @@ def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.targe
                 buffer_len = (buffer_len + 31) // 32 * 32
                 offset += buffer_len
             scope.total_internal_shared_memory = offset
+        if global_kernel:
+            pattern = r"__shared__ ((?:signed |unsigned )?\w+) (\w+)\[(\d+)\];"
+            for dtype, var, size in re.findall(pattern, src):
+                buffer_len = int(size) * _type_bytes[dtype]
+                buffer_len = (buffer_len + 31) // 32 * 32
+                src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(var), r"__shared__ \1 {}[{}];".format(var, buffer_len // _type_bytes[dtype]), src, 1)
     return src

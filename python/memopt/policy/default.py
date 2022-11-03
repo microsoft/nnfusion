@@ -463,16 +463,20 @@ class DefaultPolicy:
         def is_cont(shape, vec):
             if len(shape) == 0: return vec == 1
             last = shape[-1]
-            if vec % last == 0:
+            if last == 1:
                 return is_cont(shape[0:-1], vec // last)
             else:
                 return last % vec == 0
         def is_shape_aligned(shape, factor):
             return int(np.prod(shape)) % factor == 0
-        vectorize_sizes = [4, 2]
-        for tensor, shape in node.infer_dependency_reduce_inputs(tile, rsteps).items():
+        def is_type_allowed(dtype, vec):
+            return dtype.bits * vec <= 128
+        vectorize_sizes = [8, 4, 2]
+        dtypes = node.get_reduce_inputs_dtype()
+        shapes = node.infer_dependency_reduce_inputs(tile, rsteps)
+        for tensor, shape in shapes.items():
             for v in vectorize_sizes:
-                if is_shape_aligned(shape, block_size * v) and is_cont(shape, v):
+                if is_shape_aligned(shape, block_size * v) and is_cont(shape, v) and is_type_allowed(dtypes[tensor], v):
                     codegen_dict.vectorize[tensor] = v
                     break
         return codegen_dict

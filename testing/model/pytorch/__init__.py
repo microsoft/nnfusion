@@ -27,7 +27,8 @@ def squeezenet(batch_size):
     return model, (input, )
 
 def swin_transformer(batch_size):
-    from .swin_transformer import SwinTransformer
+    # from .swin_transformer import SwinTransformer
+    from timm.models.swin_transformer import SwinTransformer
     model = SwinTransformer()
     input = torch.randn(batch_size, 3, 224, 224)
     return model, (input, )
@@ -42,7 +43,7 @@ def bert(batch_size):
     from .bert_config import BertConfig
     from .pytorch_bert import BertModel
 
-    # from transformers import BertModel, BertConfig
+    # from transformers import BertConfig, BertModel
     config = BertConfig(vocab_size=30522,
                 hidden_size=768,
                 num_hidden_layers=12,

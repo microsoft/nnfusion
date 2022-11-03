@@ -1,9 +1,11 @@
+import argparse
+import os
+import time
+
 import numpy as np
 import onnx
 import onnxruntime as ort
-import os
-import time
-import argparse
+
 
 def ref_output(onnx_model_path, device):
     onnx_model = onnx.load(onnx_model_path)
@@ -11,15 +13,20 @@ def ref_output(onnx_model_path, device):
     onnx_model = onnx.shape_inference.infer_shapes(onnx_model)
     sess_options = ort.SessionOptions()
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-    providers = [
-        ('CUDAExecutionProvider', {
-            'device_id': device,
-            'arena_extend_strategy': 'kNextPowerOfTwo',
-            'gpu_mem_limit': 8 * 1024 * 1024 * 1024,
-            'cudnn_conv_algo_search': 'EXHAUSTIVE',
-            'do_copy_in_default_stream': True,
-        })
-    ]
+    if 'ROCMExecutionProvider' in ort.get_available_providers():
+        providers = ['ROCMExecutionProvider', 'CPUExecutionProvider']
+    elif 'CUDAExecutionProvider' in ort.get_available_providers():
+        providers = [
+            ('CUDAExecutionProvider', {
+                'device_id': device,
+                'arena_extend_strategy': 'kNextPowerOfTwo',
+                'gpu_mem_limit': 8 * 1024 * 1024 * 1024,
+                'cudnn_conv_algo_search': 'EXHAUSTIVE',
+                'do_copy_in_default_stream': True,
+            })
+        ]
+    else:
+        raise RuntimeError("No valid Provider")
     ort_session = ort.InferenceSession(onnx_model_path, providers=providers, sess_options=sess_options)
     io_binding = ort_session.io_binding()
     for value in ort_session.get_inputs():
@@ -42,10 +49,9 @@ def ref_output(onnx_model_path, device):
         tic = time.monotonic_ns()
         ort_session.run_with_iobinding(io_binding)
         return (time.monotonic_ns() - tic) / 1e6
-    _ = [get_runtime() for i in range(200)] # warmup
-    times = [get_runtime() for i in range(800)]
+    _ = [get_runtime() for i in range(50)] # warmup
+    times = [get_runtime() for i in range(100)]
     print(np.mean(times), np.min(times), np.max(times))
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

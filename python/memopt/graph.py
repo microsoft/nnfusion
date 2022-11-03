@@ -184,6 +184,15 @@ class IRNode(Node):
                     result[tensor.name] = shapes[tensor.name]
         return result
 
+    def get_reduce_inputs_dtype(self):
+        dtype_map = {}
+        for op in self._sche.stage_map:
+            if not isinstance(op, tvm.te.ComputeOp):continue
+            if len(op.reduce_axis) > 0:
+                for tensor in op.input_tensors:
+                    dtype_map[tensor.name] = tvm.DataType(tensor.dtype)
+        return dtype_map
+
     def infer_smem_usage(self, shape, rstep) -> int:
         result = 0
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}

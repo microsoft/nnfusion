@@ -9,6 +9,7 @@ pip:
 - torchvision==0.13.0
 - onnx==1.12
 - onnxruntime==1.12
+- timm==0.5.4
 
 Finally, add ./python to PYTHONPATH.
 

@@ -1,5 +1,6 @@
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import copy
 import json
@@ -7,19 +8,19 @@ import logging
 import math
 import os
 import shutil
+import sys
 import tarfile
 import tempfile
-import sys
 from io import open
 
 import torch
-from torch import nn
-from torch.nn import CrossEntropyLoss
-from torch.utils import checkpoint
-from torch.nn import Module
-from torch.nn.parameter import Parameter
 import torch.nn.functional as F
 import torch.nn.init as init
+from torch import nn
+from torch.nn import CrossEntropyLoss, Module
+from torch.nn.parameter import Parameter
+from torch.utils import checkpoint
+
 '''
 BertEmbeddings:
 --------------------------------------------------------------------------------------------------'''
@@ -106,9 +107,10 @@ class BertSelfAttention(nn.Module):
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
-        self.query = nn.Linear(config.hidden_size, self.all_head_size)
-        self.key = nn.Linear(config.hidden_size, self.all_head_size)
-        self.value = nn.Linear(config.hidden_size, self.all_head_size)
+        # self.query = nn.Linear(config.hidden_size, self.all_head_size)
+        # self.key = nn.Linear(config.hidden_size, self.all_head_size)
+        # self.value = nn.Linear(config.hidden_size, self.all_head_size)
+        self.to_qkv = nn.Linear(config.hidden_size, 3 * self.all_head_size)
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
@@ -123,10 +125,11 @@ class BertSelfAttention(nn.Module):
         return x.permute(0, 2, 3, 1)
 
     def forward(self, hidden_states, attention_mask):
-        mixed_query_layer = self.query(hidden_states)
-        mixed_key_layer = self.key(hidden_states)
-        mixed_value_layer = self.value(hidden_states)
+        # mixed_query_layer = self.query(hidden_states)
+        # mixed_key_layer = self.key(hidden_states)
+        # mixed_value_layer = self.value(hidden_states)
 
+        mixed_query_layer, mixed_key_layer, mixed_value_layer = self.to_qkv(hidden_states).chunk(3, dim=-1)
         query_layer = self.transpose_for_scores(mixed_query_layer)
         key_layer = self.transpose_key_for_scores(mixed_key_layer)
         value_layer = self.transpose_for_scores(mixed_value_layer)
@@ -167,7 +170,7 @@ class BertSelfOutput(nn.Module):
 
 
 '''
-BertIntermediate & BertOutput （2-layer FeedForward)
+BertIntermediate & BertOutput (2-layer FeedForward)
 --------------------------------------------------------------------------------------------------'''
 class BertIntermediate(nn.Module):
     def __init__(self, config):

@@ -40,15 +40,17 @@ namespace nnfusion
                     std::unordered_map<std::string, std::vector<int64_t>> conv_attrs;
                     conv_attrs["kernel_shape"] = node.get_attribute_value<std::vector<int64_t>>(
                         "kernel_shape",
-                        std::vector<int64_t>{
-                            static_cast<int64_t>(filters_shape.at(2)),
-                            static_cast<int64_t>(filters_shape.at(filters_shape.size() - 1))});
+                        std::vector<int64_t>(filters_shape.begin() + 2, filters_shape.end()));
                     conv_attrs["strides"] = node.get_attribute_value<std::vector<int64_t>>(
                         "strides", std::vector<int64_t>(conv_attrs["kernel_shape"].size(), 1));
                     conv_attrs["dilations"] = node.get_attribute_value<std::vector<int64_t>>(
                         "dilations", std::vector<int64_t>(conv_attrs["kernel_shape"].size(), 1));
                     conv_attrs["pads"] = node.get_attribute_value<std::vector<int64_t>>(
                         "pads", std::vector<int64_t>(conv_attrs["kernel_shape"].size() * 2, 0));
+
+                    std::string auto_pad =
+                        node.get_attribute_value<std::string>("auto_pad", std::string("NOTSET"));
+
                     return conv_attrs;
                 }
 
@@ -108,8 +110,6 @@ namespace nnfusion
                                    groups <= filters_shape.at(0))
                         << "incorrect value of 'group' attribute: " << groups;
                     auto conv_attrs = extract_conv_attrs(node, filters_shape);
-                    std::string auto_pad =
-                        node.get_attribute_value<std::string>("auto_pad", std::string("NOTSET"));
 
                     Shape kernel_shape =
                         Shape(conv_attrs["kernel_shape"].begin(), conv_attrs["kernel_shape"].end());
@@ -117,9 +117,11 @@ namespace nnfusion
                         Strides(conv_attrs["strides"].begin(), conv_attrs["strides"].end());
                     Strides dilations =
                         Strides(conv_attrs["dilations"].begin(), conv_attrs["dilations"].end());
-                    CoordinateDiff padding_above, padding_below;
 
+                    CoordinateDiff padding_above, padding_below;
                     size_t spatial_len = kernel_shape.size();
+                    std::string auto_pad =
+                        node.get_attribute_value<std::string>("auto_pad", std::string("NOTSET"));
                     if (auto_pad == "SAME_UPPER" || auto_pad == "SAME_LOWER")
                     {
                         Shape data_spatial_shape = Shape(data_shape.begin() + 2, data_shape.end());

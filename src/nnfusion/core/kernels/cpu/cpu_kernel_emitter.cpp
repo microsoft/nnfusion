@@ -207,6 +207,65 @@ bool cpu::AntaresCpuKernelEmitter::is_eliminative()
     return (is_memcpy && m_context->inputs[0]->is_same_address(m_context->outputs[0]));
 }
 
+LanguageUnit_p cpu::AntaresCpuReferenceKernelEmitter::emit_function_body()
+{
+    auto& ctx = m_context;
+
+    if (antares_code.empty())
+        return nullptr;
+
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+    auto& lu = *_lu;
+
+    // extract kernel code
+    const char* s_func_pattern = "// [thread_extent] ";
+    const char* e_func_pattern = "\n}\n";
+    const char* s_rank_pattern = "__rank__ = ";
+    const char* e_rank_pattern = "\n";
+    std::string::size_type s_func_pos = antares_code.find(s_func_pattern);
+    std::string::size_type e_func_pos = antares_code.rfind(e_func_pattern);
+
+    if (s_func_pos == std::string::npos || e_func_pos == std::string::npos)
+        return nullptr;
+
+    NNFUSION_CHECK(s_func_pos != std::string::npos && e_func_pos != std::string::npos);
+
+    std::string func_body = antares_code.substr(s_func_pos, e_func_pos - s_func_pos);
+    std::string::size_type s_rank_pos = func_body.find(s_rank_pattern);
+    std::string::size_type e_rank_pos = func_body.find(e_rank_pattern);
+    std::string rank_str = func_body.substr(s_rank_pos + strlen(s_rank_pattern),
+                                            e_rank_pos - s_rank_pos - strlen(s_rank_pattern));
+    int rank = atoi(rank_str.c_str());
+    auto code = op::create_code_from_template(
+        R"(
+int32_t rank = @rank@;
+
+auto func = [&](int __rank__)
+    {
+        @func_body@
+    };
+
+    for (int _rank = 0; _rank < rank; _rank++)
+    {
+        func(_rank);
+    }
+)",
+        {{"rank", rank}, {"func_body", func_body}});
+
+    lu.block_begin();
+    if (func_body.find("min") != std::string::npos)
+    {
+        lu << "using std::min;\n";
+    }
+    if (func_body.find("max") != std::string::npos)
+    {
+        lu << "using std::max;\n";
+    }
+    lu << code << "\n";
+    lu.block_end();
+    return _lu;
+}
+
 LanguageUnit_p cpu::CpuKernelEmitter::emit_function_signature()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));

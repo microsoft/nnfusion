@@ -101,6 +101,18 @@ namespace nnfusion
                 bool is_memcpy = false;
             };
 
+            class AntaresCpuReferenceKernelEmitter : public AntaresCpuKernelEmitter
+            {
+            public:
+                AntaresCpuReferenceKernelEmitter(shared_ptr<KernelContext> ctx)
+                    : AntaresCpuKernelEmitter(ctx)
+                {
+                    m_intra_op_parallelism = false;
+                }
+
+                virtual LanguageUnit_p emit_function_body() override;
+            };
+
             class CustomCPUKernelEmitter : public CpuKernelEmitter
             {
             public:

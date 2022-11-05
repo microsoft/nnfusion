@@ -8,15 +8,47 @@
 
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 #include "nnfusion/frontend/frontend_base.hpp"
 DECLARE_bool(fuse_cpuprofiler);
+DECLARE_bool(fantares_mode);
 namespace nnfusion
 {
     namespace frontend
     {
         namespace
         {
+            bool codegen_antares_cpu_reference_kernel_sync(std::shared_ptr<GNode> gnode)
+            {
+                auto ir = nnfusion::op::get_translation(gnode);
+                if (!ir.empty())
+                {
+                    std::string cache_folder = "./kernel_cache";
+                    struct stat stats;
+                    if (stat(cache_folder.c_str(), &stats) != 0)
+                    {
+                        std::string cmd_create_folder = "mkdir -p " + cache_folder;
+                        int sys_ret = system(cmd_create_folder.c_str());
+                    }
+
+                    std::string file_id = sha256(ir);
+                    auto file_name = cache_folder + "/" + file_id + ".c";
+
+                    std::string cmd = "STEP=0 BACKEND=c-scpu";
+                    cmd += " COMPUTE_V1='";
+                    cmd += ir;
+                    cmd += ("' antares save " + file_name);
+                    int sys_ret = system((cmd).c_str());
+                }
+                else
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
             std::vector<std::vector<char>>
                 get_node_outputs(std::shared_ptr<GNode> gnode, int depth = 0, int arg_idx = 0)
             {
@@ -98,7 +130,35 @@ namespace nnfusion
                 std::vector<shared_ptr<const KernelRegistration>> kernel_regs;
 
                 runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
-                if (FLAGS_fuse_cpuprofiler)
+                if (FLAGS_fuse_cpuprofiler && FLAGS_fantares_mode)
+                {
+                    runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
+                    kernels::KernelRegistrar kernel_registrar_cpu(
+                        gnode->get_op_type(),
+                        kernels::Name(gnode->get_op_type())
+                            .Device(GENERIC_CPU)
+                            .TypeConstraint(element::f32)
+                            .Tag("antares")
+                            .Priority(9)
+                            .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                                               -> shared_ptr<kernels::KernelEmitter> {
+                                return make_shared<kernels::cpu::AntaresCpuReferenceKernelEmitter>(
+                                    context);
+                            })
+                            .Build());
+                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                        gnode->get_op_type(), GENERIC_CPU, element::f32);
+                    for (auto kernel_reg : kernel_regs)
+                    {
+                        if (kernel_reg->m_tag == "antares")
+                        {
+                            kernel_regs = {kernel_reg};
+                            break;
+                        }
+                    }
+                    codegen_antares_cpu_reference_kernel_sync(gnode);
+                }
+                else if (FLAGS_fuse_cpuprofiler)
                 {
                     runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
                     kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(

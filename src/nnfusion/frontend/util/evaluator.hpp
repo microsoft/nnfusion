@@ -130,39 +130,31 @@ namespace nnfusion
                 std::vector<shared_ptr<const KernelRegistration>> kernel_regs;
 
                 runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
-                if (FLAGS_fuse_cpuprofiler && FLAGS_fantares_mode)
+                if (FLAGS_fuse_cpuprofiler)
                 {
                     runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
-                    kernels::KernelRegistrar kernel_registrar_cpu(
-                        gnode->get_op_type(),
-                        kernels::Name(gnode->get_op_type())
-                            .Device(GENERIC_CPU)
-                            .TypeConstraint(element::f32)
-                            .Tag("antares")
-                            .Priority(9)
-                            .KernelFactory([](shared_ptr<kernels::KernelContext> context)
-                                               -> shared_ptr<kernels::KernelEmitter> {
-                                return make_shared<kernels::cpu::AntaresCpuReferenceKernelEmitter>(
-                                    context);
-                            })
-                            .Build());
-                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), GENERIC_CPU, element::f32);
-                    for (auto kernel_reg : kernel_regs)
+                    if (FLAGS_fantares_mode)
                     {
-                        if (kernel_reg->m_tag == "antares")
-                        {
-                            kernel_regs = {kernel_reg};
-                            break;
-                        }
+                        shared_ptr<const KernelRegistration> kernel_reg =
+                            kernels::Name(gnode->get_op_type())
+                                .Device(GENERIC_CPU)
+                                .TypeConstraint(element::f32)
+                                .Tag("reference")
+                                .Priority(0)
+                                .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                                                   -> shared_ptr<kernels::KernelEmitter> {
+                                    return make_shared<
+                                        kernels::cpu::AntaresCpuReferenceKernelEmitter>(context);
+                                })
+                                .Build();
+                        kernel_regs = {kernel_reg};
+                        codegen_antares_cpu_reference_kernel_sync(gnode);
                     }
-                    codegen_antares_cpu_reference_kernel_sync(gnode);
-                }
-                else if (FLAGS_fuse_cpuprofiler)
-                {
-                    runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
-                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), GENERIC_CPU, element::f32);
+                    else
+                    {
+                        kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                            gnode->get_op_type(), GENERIC_CPU, element::f32);
+                    }
                 }
                 else
                 {

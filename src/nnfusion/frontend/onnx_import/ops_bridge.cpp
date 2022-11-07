@@ -219,7 +219,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Mul", 1, TranslateLegacyBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Mul", 7, TranslateBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);
-                REGISTER_OPERATOR("NonZero", 1, TranslateNonZeroOp);
+                REGISTER_OPERATOR("NonZero", 9, TranslateNonZeroOp);
                 REGISTER_OPERATOR("Not", 1, TranslateUnaryOp<op::Not>);
                 REGISTER_OPERATOR("OneHot", 1, TranslateOneHotOp);
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);

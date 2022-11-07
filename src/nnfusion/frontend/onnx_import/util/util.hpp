@@ -26,6 +26,7 @@
 #include <iterator>    // std::begin, std::end
 #include <type_traits> // std::enable_if, std::is_floating_point, std::is_integral
 #include <vector>
+#include <bitset>
 
 #include "../onnx_base.hpp"
 #include "nnfusion/common/common.hpp"
@@ -212,15 +213,11 @@ namespace nnfusion
                     // onnx store float16 bit-wise in int32_data
                     if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT16)
                     {
-                        // nnfusion::Shape shape{std::begin(tensor.dims()), std::end(tensor.dims())};
-                        // size_t num_element = shape_size(shape);
                         auto raw = __get_data<int32_t>(tensor.int32_data());
                         std::vector<half_float::half> fp16_data(raw.size());
-                        // cout << "element count: " << num_element << endl;
-                        // cout << "buffer:" << raw.size() << endl;
                         for (size_t i = 0; i < raw.size(); i++)
                         {
-                            NNFUSION_CHECK(raw[i] & 0xFFFF0000 == 0) << "Invalid float16 data";
+                            NNFUSION_CHECK((raw[i] & 0xFFFF0000) == 0) << "Invalid float16 data: " << std::bitset<8*sizeof(raw[i])>(raw[i]);
                             fp16_data[i].set_raw_data(static_cast<uint16_t>(raw[i] & 0x0000FFFF));
                         }
                         return {std::begin(fp16_data), std::end(fp16_data)};

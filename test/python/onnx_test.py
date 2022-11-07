@@ -39,11 +39,11 @@ class TestContext:
             flag = False 
             opname = ""
             for v in ops:
-                if "test_"+v+"_" in case.name:
+                if "test_"+v+"_" in case.name or "test_"+v == case.name:
                     flag = True
                     opname = v
             if flag:
-                self.run(case, v)
+                self.run(case, opname)
 
     def _build_model(self, model_path):
         import nnfusion

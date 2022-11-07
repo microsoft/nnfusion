@@ -35,8 +35,10 @@ namespace nnfusion
         {
             namespace set_1
             {
-                // support Mean for op_set 13 and below
-                NamedNodeVector TranslateMeanOp(const onnx::NodeProto& node_proto,
+                // support Max, Min, Sum for op_set 13 and below
+                template <typename T>
+                NamedNodeVector
+                    TranslateMultiElementwiseOp(const onnx::NodeProto& node_proto,
                                                 const NodeMap& all_ng_nodes,
                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
@@ -50,25 +52,13 @@ namespace nnfusion
                         rhs_index = input_indexes[i];
                         std::tie(lhs_index, rhs_index) =
                             graph::numpy_broadcast(std::make_pair(lhs_index, rhs_index), m_graph);
-                        auto op = std::make_shared<nnfusion::op::Add>();
+                        auto op = std::make_shared<T>();
                         NNFUSION_CHECK(node_proto.output_size() == 1)
                             << "Binary op should only has one output.";
                         op->set_name(node_proto.output(0) + std::to_string(i - 1));
                         ret_node = m_graph->add_node_and_edge(op, {lhs_index, rhs_index});
                         lhs_index = GNodeIndex(ret_node);
                     }
-
-                    auto size_op = std::make_shared<op::Constant>(
-                        ret_node->get_element_type(),
-                        nnfusion::Shape(),
-                        std::vector<std::string>{std::to_string(input_indexes.size())});
-                    auto size_node = m_graph->add_node_and_edge(size_op, GNodeVector({}));
-                    std::tie(ret_node, size_node) =
-                        graph::numpy_broadcast(std::make_pair(ret_node, size_node), m_graph);
-
-                    ret_node = m_graph->add_node_and_edge(std::make_shared<op::Divide>(),
-                                                          {ret_node, size_node});
-
                     NamedNodeVector ret{{node_proto.output(0), ret_node}};
                     return ret;
                 }
@@ -76,4 +66,4 @@ namespace nnfusion
             } // namespace set_1
         }     // namespace onnx_import
     }         // namespace frontend
-} // namespace nnfusion
+} // namespace ngraph

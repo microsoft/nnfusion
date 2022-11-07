@@ -56,14 +56,15 @@
 #include "op/log_softmax.hpp"
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
+#include "op/mean.hpp"
 #include "op/memory_copy.hpp"
+#include "op/multi_elementwise.hpp"
 #include "op/non_zero.hpp"
 #include "op/one_hot.hpp"
 #include "op/pad.hpp"
 #include "op/pool.hpp"
 #include "op/range.hpp"
 #include "op/reduce.hpp"
-#include "op/reducel2.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
 #include "op/roll.hpp"
@@ -136,14 +137,14 @@ namespace nnfusion
                 }
                 return result;
             }
-
+#define PACK(...) __VA_ARGS__
 #define REGISTER_DOMAIN_OPERATOR(domain_, name_, ver_, fn_)                                        \
     m_map[domain_][name_].emplace(                                                                 \
         ver_,                                                                                      \
         std::bind(                                                                                 \
             set_##ver_::fn_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
 
-#define REGISTER_OPERATOR(name_, ver_, fn_) REGISTER_DOMAIN_OPERATOR("", name_, ver_, fn_)
+#define REGISTER_OPERATOR(name_, ver_, fn_) REGISTER_DOMAIN_OPERATOR("", name_, ver_, PACK(fn_))
 
 #define REGISTER_EMPTY_DOMAIN(domain_) m_map[domain_]
 
@@ -210,15 +211,15 @@ namespace nnfusion
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("MaxPool", 1, TranslatePoolOp<op::MaxPool>);
-                REGISTER_OPERATOR("Max", 1, TranslateBinaryOp<op::Maximum>);
-                //REGISTER_OPERATOR("Mean", 1, mean);
+                REGISTER_OPERATOR("Max", 1, TranslateMultiElementwiseOp<op::Maximum>);
+                REGISTER_OPERATOR("Mean", 1, TranslateMeanOp);
                 REGISTER_OPERATOR("MemcpyFromHost", 1, TranslateMemcpyFromHostOp);
                 REGISTER_OPERATOR("MemcpyToHost", 1, TranslateMemcpyToHostOp);
-                REGISTER_OPERATOR("Min", 1, TranslateLegacyBinaryOp<op::Minimum>);
+                REGISTER_OPERATOR("Min", 1, TranslateMultiElementwiseOp<op::Minimum>);
                 REGISTER_OPERATOR("Mul", 1, TranslateLegacyBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Mul", 7, TranslateBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);
-                REGISTER_OPERATOR("NonZero", 1, TranslateNonZeroOp);
+                REGISTER_OPERATOR("NonZero", 9, TranslateNonZeroOp);
                 REGISTER_OPERATOR("Not", 1, TranslateUnaryOp<op::Not>);
                 REGISTER_OPERATOR("OneHot", 1, TranslateOneHotOp);
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);
@@ -226,16 +227,28 @@ namespace nnfusion
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
                 REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
                 //REGISTER_OPERATOR("Reciprocal", 1, reciprocal);
-                //REGISTER_OPERATOR("ReduceLogSum", 1, reduce_log_sum);
-                //REGISTER_OPERATOR("ReduceLogSumExp", 1, reduce_log_sum_exp);
-                //REGISTER_OPERATOR("ReduceL1", 1, reduce_l1);
-                REGISTER_OPERATOR("ReduceL2", 1, TranslateReduceL2Op);
-                //REGISTER_OPERATOR("ReduceMax", 1, reduce_max);
-                REGISTER_OPERATOR("ReduceMean", 1, TranslateReduceMeanOp);
-                //REGISTER_OPERATOR("ReduceMin", 1, reduce_min);
-                //REGISTER_OPERATOR("ReduceProd", 1, reduce_prod);
-                REGISTER_OPERATOR("ReduceSum", 1, TranslateReduceSumOp);
-                //REGISTER_OPERATOR("ReduceSumSquare", 1, reduce_sum_square);
+                REGISTER_OPERATOR(
+                    "ReduceLogSum", 1, PACK(TranslateReduceOp<op::Log, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceLogSumExp", 1, PACK(TranslateReduceOp<op::Log, op::Sum, op::Exp>));
+                REGISTER_OPERATOR(
+                    "ReduceL1", 1, PACK(TranslateReduceOp<op::Abs, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceL2", 1, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
+                REGISTER_OPERATOR(
+                    "ReduceMax", 1, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceMean", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Divide>));
+                REGISTER_OPERATOR(
+                    "ReduceMin", 1, PACK(TranslateReduceOp<op::NoOp, op::Min, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceProd", 1, PACK(TranslateReduceOp<op::NoOp, op::Product, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceSum", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceSum", 13, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceSumSquare", 1, PACK(TranslateReduceOp<op::Square, op::Sum, op::NoOp>));
                 REGISTER_OPERATOR("Relu", 1, TranslateUnaryOp<op::Relu>);
                 REGISTER_OPERATOR("Reshape", 1, TranslateReshapeOp);
                 REGISTER_OPERATOR("ReshapeGrad", 1, TranslateReshapeGradOp);
@@ -264,7 +277,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Squeeze", 11, TranslateSqueezeOp);
                 REGISTER_OPERATOR("Sub", 1, TranslateLegacyBinaryOp<op::Subtract>);
                 REGISTER_OPERATOR("Sub", 7, TranslateBinaryOp<op::Subtract>);
-                REGISTER_OPERATOR("Sum", 1, TranslateSumOp);
+                REGISTER_OPERATOR("Sum", 1, TranslateMultiElementwiseOp<op::Add>);
                 REGISTER_OPERATOR("Tan", 1, TranslateUnaryOp<op::Tan>);
                 REGISTER_OPERATOR("Tanh", 1, TranslateUnaryOp<op::Tanh>);
                 REGISTER_OPERATOR("TanhGrad", 1, TranslateTanhGradOp);

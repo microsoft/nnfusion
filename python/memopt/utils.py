@@ -91,7 +91,7 @@ extern "C" float profile({}) {{
             profiling_code = self._create_rocm_code_for_profiling()
             src = tempfile.NamedTemporaryFile(mode='w', suffix=".cpp")
             lib_name = src.name.replace(".cpp", ".so")
-            command = ["hipcc", "-fPIC", "--shared", "-O2", src.name, "-o", lib_name]
+            command = ["hipcc", "-fPIC", "--shared", "-O2", "-ffast-math", src.name, "-o", lib_name]
         else:
             raise NotImplementedError(arch.platform)
         src.write(profiling_code)

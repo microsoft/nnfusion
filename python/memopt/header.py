@@ -71,4 +71,37 @@ rocm_default_header = """
 #include <math.h>
 """
 
-rocm_fp16_header = cuda_fp16_header.replace("<cuda_fp16.h>", "<hip/hip_fp16.h>")
+rocm_fp16_header = """
+#define half _Float16
+#define __float2half_rn(x) half(x)
+
+#define htanh tanhf
+#define htan tanf
+#define hatan atanf
+#define herf erff
+#include <hip/hcc_detail/hip_fp16_math_fwd.h>
+#define hpow __ocml_pown_f16
+#define hsqrt __ocml_sqrt_f16
+#define hexp __ocml_exp_f16
+
+// Pack two half values.
+inline __device__ __host__ unsigned
+__pack_half2(const half x, const half y) {
+  unsigned v0 = *((unsigned short *)&x);
+  unsigned v1 = *((unsigned short *)&y);
+  return (v1 << 16) | v0;
+}
+
+// There is no make_int8 in cuda, but TVM codegen seem to use it
+inline __device__ longlong4 make_int8(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
+  int2 i0 = make_int2(x0, x1);
+  int2 i1 = make_int2(x2, x3);
+  int2 i2 = make_int2(x4, x5);
+  int2 i3 = make_int2(x6, x7);
+  long long l0 = *(long long*)&i0;
+  long long l1 = *(long long*)&i1;
+  long long l2 = *(long long*)&i2;
+  long long l3 = *(long long*)&i3;
+  return make_longlong4(l0, l1, l2, l3);
+}
+"""

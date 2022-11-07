@@ -175,8 +175,6 @@ class Scheduler:
 
         for input_tensor in self.reduce_op.input_tensors:
             shared_tensor = self.sche.cache_read(input_tensor, "shared", [reg_tile])
-            # local_tensor = self.sche.cache_read(shared_tensor, "local", [reg_tile])
-            # self.sche[local_tensor].compute_at(self.sche[reg_tile], space_fused)
             if input_tensor in self.shared_inputs:
                 self.sche[shared_tensor].compute_at(self.sche[out], blck_fused)
                 strides = self.shared_inputs_strides[input_tensor]
@@ -258,7 +256,11 @@ class Scheduler:
             else:
                 self.sche[shared_tensor].compute_at(self.sche[reg_tile], reduce_outer_axis[-1])
                 strides = Stride()
-            self.cooperative_fetch(shared_tensor, self.sche, strides)
+            if input_tensor.name in self.config.vectorize and not self._is_from_shared(input_tensor):
+                vectorize = self.config.vectorize[input_tensor.name]
+            else:
+                vectorize = 1
+            self.cooperative_fetch(shared_tensor, self.sche, strides, vectorize)
 
         cache_plan = {}
         for op in self.elementwise_ops:

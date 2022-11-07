@@ -19,36 +19,6 @@ namespace nnfusion
     {
         namespace
         {
-            bool codegen_antares_cpu_reference_kernel_sync(std::shared_ptr<GNode> gnode)
-            {
-                auto ir = nnfusion::op::get_translation(gnode);
-                if (!ir.empty())
-                {
-                    std::string cache_folder = "./kernel_cache";
-                    struct stat stats;
-                    if (stat(cache_folder.c_str(), &stats) != 0)
-                    {
-                        std::string cmd_create_folder = "mkdir -p " + cache_folder;
-                        int sys_ret = system(cmd_create_folder.c_str());
-                    }
-
-                    std::string file_id = sha256(ir);
-                    auto file_name = cache_folder + "/" + file_id + ".c";
-
-                    std::string cmd = "STEP=0 BACKEND=c-scpu";
-                    cmd += " COMPUTE_V1='";
-                    cmd += ir;
-                    cmd += ("' antares save " + file_name);
-                    int sys_ret = system((cmd).c_str());
-                }
-                else
-                {
-                    return false;
-                }
-
-                return true;
-            }
-
             std::vector<std::vector<char>>
                 get_node_outputs(std::shared_ptr<GNode> gnode, int depth = 0, int arg_idx = 0)
             {
@@ -148,7 +118,8 @@ namespace nnfusion
                                 })
                                 .Build();
                         kernel_regs = {kernel_reg};
-                        codegen_antares_cpu_reference_kernel_sync(gnode);
+                        cpu::AntaresCpuReferenceKernelEmitter::codegen_cpu_reference_kernel_sync(
+                            gnode);
                     }
                     else
                     {

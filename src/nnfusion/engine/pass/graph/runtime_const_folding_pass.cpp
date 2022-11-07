@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "runtime_const_folding_pass.hpp"
-#include "nnfusion/frontend/util/evaluator.hpp"
+#include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 
 DEFINE_string(fconst_folding_backend,
               "",
@@ -130,7 +130,8 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
                         })
                         .Build();
                 kernel_regs = {kernel_reg};
-                nnfusion::frontend::codegen_antares_cpu_reference_kernel_sync(it);
+                nnfusion::kernels::cpu::AntaresCpuReferenceKernelEmitter::
+                    codegen_cpu_reference_kernel_sync(it);
             }
             else
             {

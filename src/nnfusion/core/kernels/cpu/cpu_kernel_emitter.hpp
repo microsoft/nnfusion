@@ -101,16 +101,43 @@ namespace nnfusion
                 bool is_memcpy = false;
             };
 
-            class AntaresCpuReferenceKernelEmitter : public AntaresCpuKernelEmitter
+            class AntaresCpuReferenceKernelEmitter : public CpuKernelEmitter
             {
             public:
                 AntaresCpuReferenceKernelEmitter(shared_ptr<KernelContext> ctx)
-                    : AntaresCpuKernelEmitter(ctx)
+                    : CpuKernelEmitter(ctx)
+                    , m_antares_ke_imp(new AntaresKEImp)
                 {
                     m_intra_op_parallelism = false;
+                    if (FLAGS_fantares_mode)
+                    {
+                        auto ir = nnfusion::op::get_translation(ctx->gnode);
+                        if (!ir.empty())
+                        {
+                            auto info = m_antares_ke_imp->autogen(ir, "c-scpu");
+                            antares_code = info.first;
+                            m_is_tuned = info.second;
+
+                            std::string annotation = nnfusion::op::get_annotation(ir);
+                            // if is_memcpy, no need to request antares server
+                            if (annotation.find("|memcpy|") != string::npos)
+                            {
+                                is_memcpy = true;
+                            }
+                        }
+                    }
                 }
 
+                bool is_eliminative() override;
                 virtual LanguageUnit_p emit_function_body() override;
+                virtual LanguageUnit_p emit_dependency() override;
+
+                static bool codegen_cpu_reference_kernel_sync(
+                    std::shared_ptr<nnfusion::graph::GNode> gnode);
+
+                AntaresKEImp::Pointer m_antares_ke_imp;
+                std::string antares_code;
+                bool is_memcpy = false;
             };
 
             class CustomCPUKernelEmitter : public CpuKernelEmitter

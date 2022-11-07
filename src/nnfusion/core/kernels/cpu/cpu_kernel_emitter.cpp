@@ -266,6 +266,48 @@ auto func = [&](int __rank__)
     return _lu;
 }
 
+LanguageUnit_p cpu::AntaresCpuReferenceKernelEmitter::emit_dependency()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+    return _lu;
+}
+
+bool cpu::AntaresCpuReferenceKernelEmitter::is_eliminative()
+{
+    return (is_memcpy && m_context->inputs[0]->is_same_address(m_context->outputs[0]));
+}
+
+bool cpu::AntaresCpuReferenceKernelEmitter::codegen_cpu_reference_kernel_sync(
+    std::shared_ptr<nnfusion::graph::GNode> gnode)
+{
+    auto ir = nnfusion::op::get_translation(gnode);
+    if (!ir.empty())
+    {
+        std::string cache_folder = "./kernel_cache";
+        struct stat stats;
+        if (stat(cache_folder.c_str(), &stats) != 0)
+        {
+            std::string cmd_create_folder = "mkdir -p " + cache_folder;
+            int sys_ret = system(cmd_create_folder.c_str());
+        }
+
+        std::string file_id = sha256(ir);
+        auto file_name = cache_folder + "/" + file_id + ".c-scpu" + ".c";
+
+        std::string cmd = "STEP=0 BACKEND=c-scpu";
+        cmd += " COMPUTE_V1='";
+        cmd += ir;
+        cmd += ("' antares save " + file_name);
+        int sys_ret = system((cmd).c_str());
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
+}
+
 LanguageUnit_p cpu::CpuKernelEmitter::emit_function_signature()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));

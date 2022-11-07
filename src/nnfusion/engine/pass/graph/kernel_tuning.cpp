@@ -385,7 +385,7 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
             }
 
             std::string file_id = sha256(ir);
-            auto file_name = cache_folder + "/" + file_id + ".c";
+            auto file_name = cache_folder + "/" + file_id + "." + FLAGS_ftuning_platform + ".c";
             bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
 
             std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
@@ -472,7 +472,7 @@ void load_irs_and_tune_kernels_sync(std::string filename,
         }
 
         std::string file_id = sha256(ir);
-        auto file_name = cache_folder + "/" + file_id + ".c";
+        auto file_name = cache_folder + "/" + file_id + "." + FLAGS_ftuning_platform + ".c";
 
         std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
         cmd += FLAGS_ftuning_platform;

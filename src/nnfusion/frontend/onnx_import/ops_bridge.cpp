@@ -268,7 +268,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Tan", 1, TranslateUnaryOp<op::Tan>);
                 REGISTER_OPERATOR("Tanh", 1, TranslateUnaryOp<op::Tanh>);
                 REGISTER_OPERATOR("TanhGrad", 1, TranslateTanhGradOp);
-                REGISTER_OPERATOR("Tile", 1, TranslateTileOp);
+                REGISTER_OPERATOR("Tile", 6, TranslateTileOp);
                 // REGISTER_OPERATOR("ThresholdedRelu", 1, thresholded_relu);
                 REGISTER_OPERATOR("TrainableDropout", 1, TranslateTrainableDropoutOp);
                 REGISTER_DOMAIN_OPERATOR(

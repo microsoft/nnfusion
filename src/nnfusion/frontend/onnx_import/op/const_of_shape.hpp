@@ -44,12 +44,21 @@ namespace nnfusion
                     NNFUSION_CHECK(GetValueFromNGraphOp(input.gnode, &output_shape));
 
                     Node node(node_proto);
-                    auto value = node.get_attribute_value<Tensor>("value");
-                    NNFUSION_CHECK(nnfusion::shape_size(value.get_shape()) == 1);
-                    auto const_op =
-                        make_constant_op(onnx::TensorProto_DataType(value),
-                                         Shape(std::begin(output_shape), std::end(output_shape)),
-                                         value);
+                    std::shared_ptr<nnfusion::op::Constant> const_op;
+                    try
+                    {
+                        auto value = node.get_attribute_value<Tensor>("value");
+                        NNFUSION_CHECK(nnfusion::shape_size(value.get_shape()) == 1);
+                        const_op = make_constant_op(
+                            onnx::TensorProto_DataType(value),
+                            Shape(std::begin(output_shape), std::end(output_shape)),
+                            value);
+                    }
+                    catch (const std::exception&)
+                    {
+                        auto vec = std::vector<float>{0};
+                        const_op = std::make_shared<op::Constant>(element::f32, Shape{1}, vec);
+                    }
 
                     auto const_gnode = m_graph->add_node_and_edge(const_op, graph::GNodeVector({}));
 

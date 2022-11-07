@@ -28,7 +28,7 @@ inline __device__ half min(half x, half y) { return x < y ? x : y; }
 #endif
 )");
 
-LU_DEFINE(macro::HALF_OPERATIONS,
+LU_DEFINE(macro::CUDA_HALF_OPERATIONS,
           R"(
 #define CUDA_UNSUPPORTED_HALF_MATH_BINARY(HALF_MATH_NAME, FP32_MATH_NAME) \
 inline __device__ half HALF_MATH_NAME(half x, half y) {                   \
@@ -53,7 +53,10 @@ CUDA_UNSUPPORTED_HALF_MATH_UNARY(herf, erf)
 
 #undef CUDA_UNSUPPORTED_HALF_MATH_BINARY
 #undef CUDA_UNSUPPORTED_HALF_MATH_UNARY
+)");
 
+LU_DEFINE(macro::TVM_PACK_VALUES,
+          R"(
 inline __device__ longlong4 make_int8(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
   int2 i0 = make_int2(x0, x1);
   int2 i1 = make_int2(x2, x3);

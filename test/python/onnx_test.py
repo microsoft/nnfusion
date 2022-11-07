@@ -37,11 +37,13 @@ class TestContext:
             repo = git.Repo.clone_from(self.onnx_remote, self.onnx_repo)
         for case in load_model_tests(data_dir=self.onnx_tests, kind=self.onnx_test_kind):
             flag = False 
+            opname = ""
             for v in ops:
-                if "test_"+v in case.name:
+                if "test_"+v+"_" in case.name:
                     flag = True
+                    opname = v
             if flag:
-                self.run(case)
+                self.run(case, v)
 
     def _build_model(self, model_path):
         import nnfusion
@@ -116,7 +118,7 @@ class TestContext:
                 )
 
     
-    def run(self, model_test) -> None:
+    def run(self, model_test, op_name) -> None:
         import nnfusion
         from nnfusion.data_format import cast_pytorch_tensor
         model_dir = model_test.model_dir
@@ -125,7 +127,7 @@ class TestContext:
         try:
             rt = self._build_model(model_pb_path)
         except:
-            print("@,", model_test.name, ", BUILD ERROR", ", FAILED")
+            print("@,", op_name, ",", model_test.name, ", BUILD ERROR", ", FAILED")
             return
         # debug_tensor(rt)
         for test_data_npz in glob.glob(os.path.join(model_dir, "test_data_*.npz")):
@@ -152,29 +154,29 @@ class TestContext:
                     output_file, ref_outputs, model.graph.output[i].type
                 )
 
-            nnf_inputs = dict()
-            nnf_torch_inputs = list()
-            for input_i in range(len(inputs)):
-                name = model.graph.input[input_i].name
-                nnf_torch_inputs.append(torch.tensor(inputs[input_i]).cuda())
-                nnf_inputs[name] = cast_pytorch_tensor(nnf_torch_inputs[-1])
-            nnf_outputs = dict()
-            nnf_torch_outputs = list()
-            for output_i in range(len(ref_outputs)):
-                name = model.graph.output[output_i].name
-                nnf_torch_outputs.append(torch.tensor(ref_outputs[output_i]).cuda())
-                nnf_torch_outputs[-1].zero_()
-                nnf_outputs[name] = cast_pytorch_tensor(nnf_torch_outputs[-1])
             try:
+                nnf_inputs = dict()
+                nnf_torch_inputs = list()
+                for input_i in range(len(inputs)):
+                    name = model.graph.input[input_i].name
+                    nnf_torch_inputs.append(torch.tensor(inputs[input_i]).cuda())
+                    nnf_inputs[name] = cast_pytorch_tensor(nnf_torch_inputs[-1])
+                nnf_outputs = dict()
+                nnf_torch_outputs = list()
+                for output_i in range(len(ref_outputs)):
+                    name = model.graph.output[output_i].name
+                    nnf_torch_outputs.append(torch.tensor(ref_outputs[output_i]).cuda())
+                    nnf_torch_outputs[-1].zero_()
+                    nnf_outputs[name] = cast_pytorch_tensor(nnf_torch_outputs[-1])
                 rt.feed_data(nnf_inputs, nnf_outputs)
+                outputs = [t.cpu().numpy() for t in nnf_torch_outputs]#list(prepared_model.run(inputs))
             except:
-                print("@,", model_test.name, ", EXECUTION ERROR", ", FAILED")
+                print("@,", op_name , ",", model_test.name, ", EXECUTION ERROR", ", FAILED")
                 continue
-            outputs = [t.cpu().numpy() for t in nnf_torch_outputs]#list(prepared_model.run(inputs))
             r = self._assert_similar_outputs(
                 ref_outputs, outputs, rtol=model_test.rtol, atol=model_test.atol
             )
-            print("@,", model_test.name, "," + test_data_dir, ", PASS" if r else ", FAILED")
+            print("@,", op_name, ",", model_test.name, "," + test_data_dir, ", PASS" if r else ", FAILED")
 
 
 if __name__ == "__main__":

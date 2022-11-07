@@ -71,10 +71,8 @@ namespace nnfusion
                     }
                     NNFUSION_CHECK(m_value_info_proto->type().tensor_type().has_elem_type())
                         << "value info has no element type specified.";
-                    ONNXDataTypeToNNFusionElementType(
-                        onnx::TensorProto_DataType(
-                            m_value_info_proto->type().tensor_type().elem_type()),
-                        &m_type);
+                    m_type = ONNXDataTypeToNNFusionElementType(onnx::TensorProto_DataType(
+                        m_value_info_proto->type().tensor_type().elem_type()));
 
                     if (sym_shape->is_dynamic())
                     {

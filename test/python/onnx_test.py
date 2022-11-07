@@ -14,9 +14,8 @@ from onnx.backend.test.runner import Runner
 from onnx.backend.base import Backend
 
 
-
 class TestContext:
-    root_dir : str = "/home/wenxh/nnfusion_onnxtest/nnfusion"
+    root_dir : str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../")
     onnx_remote : str = "git@github.com:onnx/onnx.git"
     onnx_repo : str = os.path.join(root_dir, "build/onnx")
     onnx_tests : str = os.path.join(onnx_repo, "onnx/backend/test/data")
@@ -24,9 +23,14 @@ class TestContext:
     nnfusion_bin : str = os.path.join(root_dir, "build/src/tools/nnfusion/")
     nnfusion_python : str = os.path.join(root_dir, "src/python/")
     nnfusion_workdir : str = "nnfusion_work"
+    # remain unchanged
     nnfusion_argstr = "-f onnx -fmulti_shape=false -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fantares_mode=true -fblockfusion_level=0 -fkernel_fusion_level=0 -fantares_codegen_server=127.0.0.1:8880 -fkernel_tuning_steps=0 -ffold_where=1 -fsymbolic=1 -fort_folding=0 -fsplit_softmax=1 -fhost_entry=0 -fir_based_fusion=1 -fextern_result_memory=1"
+    antares_url = "127.0.0.1:8880"
+    nnfusion_device = "CUDA"
+    nnfusion_codegen_dir = "nnfusion_rt/cuda_codegen"
 
     def __init__(self, ops) -> None:
+        self.nnfusion_argstr = self.nnfusion_argstr.replace("127.0.0.1:8880", self.antares_url).replace("CUDA", self.nnfusion_device)
         os.environ["PATH"] = os.path.abspath(self.nnfusion_bin) + ":" + os.environ["PATH"]
         sys.path.insert(1, os.path.abspath(self.nnfusion_python))
         self.nnfusion = __import__('nnfusion')

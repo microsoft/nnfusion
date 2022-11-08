@@ -184,7 +184,9 @@ namespace nnfusion
                 if (!gnode->is_constant())
                 {
                     auto outs = get_node_outputs(gnode);
-                    NNFUSION_CHECK(outs.size() == 1);
+                    NNFUSION_CHECK(outs.size() == 1) << "Expect only 1 output for gnode "
+                                                     << gnode->get_name() << ", but " << outs.size()
+                                                     << " found.";
                     auto out_type = gnode->get_output_element_type(0);
                     NNFUSION_LOG(INFO) << "Asking for Constant value from op-type: "
                                        << gnode->get_op_type();

@@ -140,7 +140,7 @@ copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y</
 copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y
 copy .\para_info.json "$(TargetDir)"
 IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
-IF EXIST .\HLSL  xcopy /i /y /e .\HLSL "$(TargetDir)\HLSL"
+FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
 IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
 </Command>
     </PostBuildEvent>
@@ -169,7 +169,7 @@ IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
 copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y
 copy .\para_info.json "$(TargetDir)"
 IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
-IF EXIST .\HLSL  xcopy /i /y /e .\HLSL "$(TargetDir)\HLSL"
+FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
 IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
 </Command>
     </PostBuildEvent>

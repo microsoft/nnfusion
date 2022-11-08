@@ -22,6 +22,7 @@ parser.add_argument('--warmup', type=int, default=5, help='The number of warmup 
 parser.add_argument('--iters', type=int, default=100, help='The number of execution iterations.')
 parser.add_argument('--provider', type=str, default='CPUExecutionProvider', help='The backend provider.')
 parser.add_argument('--logger_severity', type=int, default=2, help='onnxruntime.set_default_logger_severity.')
+parser.add_argument('--device_only', action="store_true", default=False, help='count device time instead of end2end time')
 args = parser.parse_args()
 
 if not os.path.exists(args.file):
@@ -127,10 +128,20 @@ for warmup in range(args.warmup):
             # max_len = min(10, len(out_flat) - print_offset)
             # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
 
+if args.device_only:
+    io_binding = ort_session.io_binding()
+    for key, value in ort_inputs.items():
+        io_binding.bind_ortvalue_input(key, ort.OrtValue.ortvalue_from_numpy(value, 'cuda', 0))
+    for o in outputs_name:
+        io_binding.bind_output(o, 'cuda')
+
 if args.iters > 0:
     print('>> Evaluating Benchmark ...')
     t_start = time.time()
     for step in range(args.iters):
-        ort_session.run(outputs_name, ort_inputs)
+        if args.device_only:
+            ort_session.run_with_iobinding(io_binding)
+        else:
+            ort_session.run(outputs_name, ort_inputs)
     t_end = time.time()
     print('>> Average time for each run: %.4f ms;' % ((t_end - t_start) * 1e3 / args.iters))

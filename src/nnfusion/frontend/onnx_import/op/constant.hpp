@@ -66,9 +66,11 @@ namespace nnfusion
                     Node node(node_proto);
                     auto tensor = node.get_attribute_value<Tensor>("value");
 
-                    const auto& func_param = ONNX_CONST_MAP().at(tensor.get_ng_type());
-                    auto op = func_param(tensor.get_ng_type(), tensor);
+                    // const auto& func_param = ONNX_CONST_MAP().at(tensor.get_ng_type());
+                    // auto op = func_param(tensor.get_ng_type(), tensor);
 
+                    auto op = make_constant_op(
+                        onnx::TensorProto_DataType(tensor), tensor.get_shape(), tensor);
                     op->set_name(node_proto.output(0));
                     op->set_global_consistent_name(node_proto.output(0));
                     auto gnode = m_graph->add_node_and_edge(op, graph::GNodeVector({}));
@@ -77,6 +79,11 @@ namespace nnfusion
                     return ret;
                 }
             } // namespace set_1
-        }     //namespace onnx_import
-    }         // namespace frontend
+
+            namespace set_9
+            {
+                using set_1::TranslateConstantOp;
+            }
+        } //namespace onnx_import
+    }     // namespace frontend
 } // namespace nnfusion

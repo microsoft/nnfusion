@@ -30,7 +30,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_9
             {
                 NamedNodeVector TranslateWhereOp(const onnx::NodeProto& node_proto,
                                                  const NodeMap& all_ng_nodes,
@@ -56,7 +56,7 @@ namespace nnfusion
 
                     return {{node_proto.output(0), GNodeIndex(where_gnode)}};
                 }
-            } // namespace set_1
+            } // namespace set_9
         }     // namespace onnx_import
     }         // namespace frontend
 } // namespace nnfusion

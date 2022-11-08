@@ -31,7 +31,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_9
             {
                 NamedNodeVector
                     TranslateConstantOfShapeOp(const onnx::NodeProto& node_proto,
@@ -65,7 +65,7 @@ namespace nnfusion
                     return {{node_proto.output(0), const_gnode}};
                 }
 
-            } // namespace set_1
+            } // namespace set_9
         }     //namespace onnx_import
 
     } // namespace frontend

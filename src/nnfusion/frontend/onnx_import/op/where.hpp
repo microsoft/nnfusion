@@ -30,12 +30,17 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_9
             {
                 NamedNodeVector TranslateWhereOp(const onnx::NodeProto& node_proto,
                                                  const NodeMap& all_ng_nodes,
                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph);
-            } // namespace set_1
-        }     // namespace onnx_import
-    }         // namespace frontend
+            } // namespace set_9
+
+            namespace set_16
+            {
+                using set_9::TranslateWhereOp;
+            }
+        } // namespace onnx_import
+    }     // namespace frontend
 } // namespace nnfusion

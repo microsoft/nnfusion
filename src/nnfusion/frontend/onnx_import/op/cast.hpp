@@ -39,9 +39,8 @@ namespace nnfusion
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
                     Node node(node_proto);
                     int64_t target_type = node.get_attribute_value<int64_t>("to");
-                    element::Type et_type;
-                    ONNXDataTypeToNNFusionElementType(
-                        static_cast<onnx::TensorProto_DataType>(target_type), &et_type);
+                    element::Type et_type = ONNXDataTypeToNNFusionElementType(
+                        static_cast<onnx::TensorProto_DataType>(target_type));
 
                     auto op = std::make_shared<op::Convert>(et_type);
                     op->set_name(node_proto.output(0));

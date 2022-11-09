@@ -7,6 +7,7 @@ import numpy as np
 import onnx
 import torch
 import git
+import shutil
 from onnx import AttributeProto, defs, load, ModelProto, NodeProto, TypeProto, numpy_helper
 from onnx.backend.test.case import collect_snippets
 from onnx.backend.test.loader import load_model_tests
@@ -14,23 +15,37 @@ from onnx.backend.test.runner import Runner
 from onnx.backend.base import Backend
 
 
-
 class TestContext:
+<<<<<<< HEAD
     root_dir : str = "/home/jxue/repo/nnfusion"
     onnx_remote : str = "https://github.com/onnx/onnx.git"
+=======
+    root_dir : str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../")
+    onnx_remote : str = "git@github.com:onnx/onnx.git"
+>>>>>>> origin/xbox
     onnx_repo : str = os.path.join(root_dir, "build/onnx")
     onnx_tests : str = os.path.join(onnx_repo, "onnx/backend/test/data")
     onnx_test_kind : str = "node"
     nnfusion_bin : str = os.path.join(root_dir, "build/src/tools/nnfusion/")
     nnfusion_python : str = os.path.join(root_dir, "src/python/")
     nnfusion_workdir : str = "nnfusion_work"
+    # remain unchanged
     nnfusion_argstr = "-f onnx -fmulti_shape=false -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fantares_mode=true -fblockfusion_level=0 -fkernel_fusion_level=0 -fantares_codegen_server=127.0.0.1:8880 -fkernel_tuning_steps=0 -ffold_where=1 -fsymbolic=1 -fort_folding=0 -fsplit_softmax=1 -fhost_entry=0 -fir_based_fusion=1 -fextern_result_memory=1"
+<<<<<<< HEAD
     data_types = ["int8", "int16", "int32", "int64", "float16", "float32", "float64"]
+=======
+    antares_url = "127.0.0.1:8880"
+    nnfusion_device = "CUDA"
+    nnfusion_codegen_dir = "nnfusion_rt/cuda_codegen"
+>>>>>>> origin/xbox
 
     def __init__(self, ops) -> None:
+        self.nnfusion_argstr = self.nnfusion_argstr.replace("127.0.0.1:8880", self.antares_url).replace("CUDA", self.nnfusion_device)
         os.environ["PATH"] = os.path.abspath(self.nnfusion_bin) + ":" + os.environ["PATH"]
         sys.path.insert(1, os.path.abspath(self.nnfusion_python))
         self.nnfusion = __import__('nnfusion')
+        shutil.rmtree(self.nnfusion_workdir)
+        os.mkdir(self.nnfusion_workdir)
         # from nnfusion.executor import Executor
         # from nnfusion.session import generate_sample, codegen, modify_nnfusion_rt, build
         # from nnfusion.data_format import cast_pytorch_tensor, cast_hlsl_tensor, HLSLTensor
@@ -40,22 +55,31 @@ class TestContext:
             flag = False 
             opname = ""
             for v in ops:
+<<<<<<< HEAD
                 if "test_"+v+"_" in case.name:
                     data_type = case.name.split('_')[-1]
                     if data_type in self.data_types:
                         flag = True
                         opname = v
+=======
+                if "test_"+v+"_" in case.name or "test_"+v == case.name:
+                    flag = True
+                    opname = v
+>>>>>>> origin/xbox
             if flag:
-                self.run(case, v)
+                self.run(case, opname)
 
-    def _build_model(self, model_path):
+    def _build_model(self, model_test):
         import nnfusion
         from nnfusion.executor import Executor
         from nnfusion.session import generate_sample, codegen, modify_nnfusion_rt, build
-        if not os.path.exists(self.nnfusion_workdir):
-            os.mkdir(self.nnfusion_workdir)
-        codegen(model_path, self.nnfusion_argstr, self.nnfusion_workdir)
-        rt_dir = os.path.join(self.nnfusion_workdir, "nnfusion_rt/cuda_codegen")
+        model_dir = model_test.model_dir
+        model_pb_path = os.path.join(model_dir, "model.onnx")
+        nnfusion_workdir = os.path.join(self.nnfusion_workdir, model_test.name)
+        if not os.path.exists(nnfusion_workdir):
+            os.mkdir(nnfusion_workdir)
+        codegen(model_pb_path, self.nnfusion_argstr, nnfusion_workdir)
+        rt_dir = os.path.join(nnfusion_workdir, "nnfusion_rt/cuda_codegen")
         modify_nnfusion_rt(rt_dir)
         build(rt_dir)
         return Executor(rt_dir)
@@ -128,7 +152,7 @@ class TestContext:
         model_pb_path = os.path.join(model_dir, "model.onnx")
         model = onnx.load(model_pb_path)
         try:
-            rt = self._build_model(model_pb_path)
+            rt = self._build_model(model_test)
         except:
             print("@,", op_name, ",", model_test.name, ", BUILD ERROR", ", FAILED")
             return

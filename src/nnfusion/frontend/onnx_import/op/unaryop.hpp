@@ -51,21 +51,11 @@ namespace nnfusion
 
             } // namespace set_1
 
-            namespace set_6
+            namespace set_9
             {
                 using set_1::TranslateUnaryOp;
-            }
 
-            namespace set_7
-            {
-                using set_1::TranslateUnaryOp;
-            }
-
-            namespace set_13
-            {
-                using set_1::TranslateUnaryOp;
-            } 
-
+            } // namespace set_1
         }     // namespace onnx_import
     }         // namespace frontend
 } // namespace ngraph

@@ -150,9 +150,7 @@ namespace nnfusion
             OperatorsBridge::OperatorsBridge()
             {
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
-                REGISTER_OPERATOR("Abs", 6, TranslateUnaryOp<op::Abs>);
-                REGISTER_OPERATOR("Abs", 13, TranslateUnaryOp<op::Abs>);
-                REGISTER_OPERATOR("Acos", 7, TranslateUnaryOp<op::Acos>);
+                REGISTER_OPERATOR("Acos", 1, TranslateUnaryOp<op::Acos>);
                 REGISTER_OPERATOR("AveragePool", 1, TranslateAveragePoolOp);
                 REGISTER_OPERATOR("AdamOptimizer", 1, TranslateAdamOptimizerOp);
                 REGISTER_OPERATOR("Add", 1, TranslateLegacyBinaryOp<op::Add>);

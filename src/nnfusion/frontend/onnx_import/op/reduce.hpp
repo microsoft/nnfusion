@@ -134,13 +134,25 @@ namespace nnfusion
                 }
             } // namespace set_1
 
+            namespace set_11
+            {
+                using set_1::TranslateReduceOp;
+            }
+
+            namespace set_12
+            {
+                using set_1::TranslateReduceOp;
+            }
+
             namespace set_13
             {
+                using set_1::TranslateReduceOp;
+
                 // ReduceSum-13 has move the axes to input
-                template <typename PrologueOp, typename ReduceOp, typename EpilogueOp>
-                NamedNodeVector TranslateReduceOp(const onnx::NodeProto& node_proto,
-                                                  const NodeMap& all_ng_nodes,
-                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                NamedNodeVector
+                    TranslateReduceSumOp(const onnx::NodeProto& node_proto,
+                                         const NodeMap& all_ng_nodes,
+                                         std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_indexs = GetAllInputIndex(all_ng_nodes, node_proto);
                     NNFUSION_CHECK(input_indexs.size() > 0);
@@ -188,16 +200,8 @@ namespace nnfusion
                         }
                     }
 
-                    // Add prologue op
-                    auto pro_gnode = set_1::AddPrologueOrEpilogueOp<PrologueOp>(
-                        m_graph, input_index.gnode, reduction_axes);
-
-                    auto sum_op = std::make_shared<ReduceOp>(reduction_axes);
-                    auto sum_gnode = m_graph->add_node_and_edge(sum_op, {pro_gnode});
-
-                    // Add epilogue op
-                    auto epi_gnode = set_1::AddPrologueOrEpilogueOp<EpilogueOp>(
-                        m_graph, sum_gnode, reduction_axes);
+                    auto sum_op = std::make_shared<op::Sum>(reduction_axes);
+                    auto sum_gnode = m_graph->add_node_and_edge(sum_op, {input_index.gnode});
 
                     NamedNodeVector ret;
                     if (keepdims)
@@ -209,18 +213,18 @@ namespace nnfusion
                             result_shape_with_keep[i] =
                                 reduction_axes.count(i) == 0 ? input_shape[i] : 1;
                         }
-                        nnfusion::AxisVector axis_order(epi_gnode->get_shape().size());
+                        nnfusion::AxisVector axis_order(sum_gnode->get_shape().size());
                         std::iota(axis_order.begin(), axis_order.end(), 0);
                         auto reshape_op =
                             std::make_shared<op::Reshape>(axis_order, result_shape_with_keep);
                         reshape_op->set_name(node_proto.output(0));
-                        auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {epi_gnode});
+                        auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {sum_gnode});
                         ret.push_back({node_proto.output(0), reshape_gnode});
                     }
                     else
                     {
-                        epi_gnode->get_op_ptr()->set_name(node_proto.output(0));
-                        ret.push_back({node_proto.output(0), epi_gnode});
+                        sum_gnode->get_op_ptr()->set_name(node_proto.output(0));
+                        ret.push_back({node_proto.output(0), sum_gnode});
                     }
 
                     return ret;

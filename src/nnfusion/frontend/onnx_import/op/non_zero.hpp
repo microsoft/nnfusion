@@ -89,6 +89,10 @@ namespace nnfusion
                 }
 
             } // namespace set_9
+            namespace set_13
+            {
+                using set_9::TranslateNonZeroOp;
+            }
 
         } //namespace onnx_import
 

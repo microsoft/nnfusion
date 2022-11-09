@@ -83,6 +83,10 @@ namespace nnfusion
                 }
 
             } // namespace set_1
+            namespace set_6
+            {
+                using set_1::TranslateLegacyBinaryOp;
+            }
 
             namespace set_7
             {
@@ -107,6 +111,22 @@ namespace nnfusion
                 }
 
             } // namespace set_7
-        }     // namespace onnx_import
-    }         // namespace frontend
+            namespace set_12
+            {
+                using set_7::TranslateBinaryOp;
+            }
+            namespace set_13
+            {
+                using set_7::TranslateBinaryOp;
+            }
+            namespace set_14
+            {
+                using set_7::TranslateBinaryOp;
+            }
+            namespace set_15
+            {
+                using set_7::TranslateBinaryOp;
+            }
+        } // namespace onnx_import
+    }     // namespace frontend
 } // namespace ngraph

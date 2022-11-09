@@ -64,6 +64,22 @@ namespace nnfusion
                 }
 
             } // namespace set_1
+            namespace set_6
+            {
+                using set_1::TranslateMultiElementwiseOp;
+            } // namespace set_6
+            namespace set_8
+            {
+                using set_1::TranslateMultiElementwiseOp;
+            } // namespace set_8
+            namespace set_12
+            {
+                using set_1::TranslateMultiElementwiseOp;
+            } // namespace set_12
+            namespace set_13
+            {
+                using set_1::TranslateMultiElementwiseOp;
+            } // namespace set_13
         }     // namespace onnx_import
     }         // namespace frontend
 } // namespace ngraph

@@ -175,7 +175,7 @@ TEST(nnfusion_onnx_import, add_abc_op)
 {
     auto model =
         frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/add_abc.onnx"));
-
+ 
     Inputs inputs{{1}, {2}, {3}};
     Outputs expected_outputs{{6}};
 
@@ -281,7 +281,8 @@ TEST(nnfusion_onnx_import, asin_op)
         EXPECT_TRUE(test::all_close_f(expected_outputs[i], outputs[i]));
     }
 }
-/* no kernel implemented for argmax and argmin
+
+// todo : no kernel implemented for argmax and argmin
 TEST(nnfusion_onnx_import, argmax_int32_op)
 {
     auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/argmax_int32.onnx"));
@@ -331,7 +332,7 @@ TEST(nnfusion_onnx_import, argmin_no_keepdims)
         EXPECT_TRUE(test::all_close_f(expected_outputs[i], outputs[i]));
     }
 }
-*/
+
 TEST(nnfusion_onnx_import, atan_op)
 {
     auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/atan.onnx"));

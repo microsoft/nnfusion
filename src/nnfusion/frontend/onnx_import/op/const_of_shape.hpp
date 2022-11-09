@@ -47,7 +47,7 @@ namespace nnfusion
                     auto value = node.get_attribute_value<Tensor>("value");
                     NNFUSION_CHECK(nnfusion::shape_size(value.get_shape()) == 1);
                     auto const_op =
-                        make_constant_op(onnx::TensorProto_DataType(value),
+                        make_constant_op(value.get_ng_type(),
                                          Shape(std::begin(output_shape), std::end(output_shape)),
                                          value);
 

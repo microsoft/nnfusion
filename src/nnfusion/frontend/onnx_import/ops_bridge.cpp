@@ -221,7 +221,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);
                 REGISTER_OPERATOR("NonZero", 9, TranslateNonZeroOp);
                 REGISTER_OPERATOR("Not", 1, TranslateUnaryOp<op::Not>);
-                REGISTER_OPERATOR("OneHot", 1, TranslateOneHotOp);
+                REGISTER_OPERATOR("OneHot", 9, TranslateOneHotOp);
+                REGISTER_OPERATOR("OneHot", 11, TranslateOneHotOp);
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);
                 REGISTER_OPERATOR("Pow", 1, TranslateBinaryOp<op::Power>);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);

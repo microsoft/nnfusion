@@ -24,7 +24,7 @@ class TestContext:
     nnfusion_bin : str = os.path.join(root_dir, "build/src/tools/nnfusion/")
     nnfusion_python : str = os.path.join(root_dir, "src/python/")
     nnfusion_workdir : str = "nnfusion_work"
-    nnfusion_argstr = "-f onnx -fmulti_shape=false -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fantares_mode=true -fblockfusion_level=0 -fkernel_fusion_level=0 -fantares_codegen_server=13.67.110.208:8880 -fkernel_tuning_steps=0 -ffold_where=1 -fsymbolic=1 -fort_folding=0 -fsplit_softmax=1 -fhost_entry=0 -fir_based_fusion=1 -fextern_result_memory=1"
+    nnfusion_argstr = "-f onnx -fmulti_shape=false -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fantares_mode=true -fblockfusion_level=0 -fkernel_fusion_level=0 -fantares_codegen_server=127.0.0.1:8880 -fkernel_tuning_steps=0 -ffold_where=1 -fsymbolic=1 -fort_folding=0 -fsplit_softmax=1 -fhost_entry=0 -fir_based_fusion=1 -fextern_result_memory=1"
 
     def __init__(self, ops) -> None:
         os.environ["PATH"] = os.path.abspath(self.nnfusion_bin) + ":" + os.environ["PATH"]

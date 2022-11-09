@@ -42,7 +42,6 @@ namespace nnfusion
                                               std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
-
                     Node node(node_proto);
                     auto axis = node.get_attribute_value<int64_t>("axis", 0);
                     auto keepdims = node.get_attribute_value<int64_t>("keepdims", 1);

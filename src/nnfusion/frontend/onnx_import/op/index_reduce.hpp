@@ -86,6 +86,24 @@ namespace nnfusion
                 }
 
             } // namespace set_1
+
+            namespace set_11
+            {
+                using set_1::TranslateIndexReductionOp;
+            }
+            namespace set_12
+            {
+                using set_1::TranslateIndexReductionOp;
+            }
+            namespace set_13
+            {
+                using set_1::TranslateIndexReductionOp;
+            }
+            namespace set_14
+            {
+                using set_1::TranslateIndexReductionOp;
+            }
+
         }     // namespace onnx_import
     }         // namespace frontend
 } // namespace ngraph

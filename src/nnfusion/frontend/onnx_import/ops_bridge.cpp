@@ -241,6 +241,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ReshapeGrad", 1, TranslateReshapeGradOp);
                 //REGISTER_OPERATOR("Selu", 1, selu);
                 REGISTER_OPERATOR("Shape", 1, TranslateShapeOp);
+                REGISTER_OPERATOR("Shape", 15, TranslateShapeOp);
                 REGISTER_OPERATOR("Sigmoid", 1, TranslateUnaryOp<op::Sigmoid>);
                 REGISTER_OPERATOR("Sin", 1, TranslateUnaryOp<op::Sin>);
                 REGISTER_OPERATOR("Slice", 1, TranslateSliceOp);

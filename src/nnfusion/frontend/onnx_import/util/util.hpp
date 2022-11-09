@@ -21,12 +21,12 @@
 
 #pragma once
 
+#include <bitset>
 #include <cmath>       // std::floor
 #include <cstddef>     // std::size_t
 #include <iterator>    // std::begin, std::end
 #include <type_traits> // std::enable_if, std::is_floating_point, std::is_integral
 #include <vector>
-#include <bitset>
 
 #include "../onnx_base.hpp"
 #include "nnfusion/common/common.hpp"
@@ -217,7 +217,9 @@ namespace nnfusion
                         std::vector<half_float::half> fp16_data(raw.size());
                         for (size_t i = 0; i < raw.size(); i++)
                         {
-                            NNFUSION_CHECK((raw[i] & 0xFFFF0000) == 0) << "Invalid float16 data: " << std::bitset<8*sizeof(raw[i])>(raw[i]);
+                            NNFUSION_CHECK((raw[i] & 0xFFFF0000) == 0)
+                                << "Invalid float16 data: "
+                                << std::bitset<8 * sizeof(raw[i])>(raw[i]);
                             fp16_data[i].set_raw_data(static_cast<uint16_t>(raw[i] & 0x0000FFFF));
                         }
                         return {std::begin(fp16_data), std::end(fp16_data)};

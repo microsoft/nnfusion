@@ -16,8 +16,8 @@ from onnx.backend.base import Backend
 
 
 class TestContext:
-    root_dir : str = "/home/wenxh/nnfusion_onnxtest/nnfusion"
-    onnx_remote : str = "git@github.com:onnx/onnx.git"
+    root_dir : str = "/home/jxue/repo/nnfusion"
+    onnx_remote : str = "https://github.com/onnx/onnx.git"
     onnx_repo : str = os.path.join(root_dir, "build/onnx")
     onnx_tests : str = os.path.join(onnx_repo, "onnx/backend/test/data")
     onnx_test_kind : str = "node"
@@ -25,6 +25,7 @@ class TestContext:
     nnfusion_python : str = os.path.join(root_dir, "src/python/")
     nnfusion_workdir : str = "nnfusion_work"
     nnfusion_argstr = "-f onnx -fmulti_shape=false -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fantares_mode=true -fblockfusion_level=0 -fkernel_fusion_level=0 -fantares_codegen_server=127.0.0.1:8880 -fkernel_tuning_steps=0 -ffold_where=1 -fsymbolic=1 -fort_folding=0 -fsplit_softmax=1 -fhost_entry=0 -fir_based_fusion=1 -fextern_result_memory=1"
+    data_types = ["int8", "int16", "int32", "int64", "float16", "float32", "float64"]
 
     def __init__(self, ops) -> None:
         os.environ["PATH"] = os.path.abspath(self.nnfusion_bin) + ":" + os.environ["PATH"]
@@ -40,8 +41,10 @@ class TestContext:
             opname = ""
             for v in ops:
                 if "test_"+v+"_" in case.name:
-                    flag = True
-                    opname = v
+                    data_type = case.name.split('_')[-1]
+                    if data_type in self.data_types:
+                        flag = True
+                        opname = v
             if flag:
                 self.run(case, v)
 
@@ -177,6 +180,9 @@ class TestContext:
                 ref_outputs, outputs, rtol=model_test.rtol, atol=model_test.atol
             )
             print("@,", op_name, ",", model_test.name, "," + test_data_dir, ", PASS" if r else ", FAILED")
+            if not r:
+                print("ref:", ref_outputs)
+                print("nnf:", outputs)
 
 
 if __name__ == "__main__":

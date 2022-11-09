@@ -71,10 +71,8 @@ namespace nnfusion
                     }
                     NNFUSION_CHECK(m_value_info_proto->type().tensor_type().has_elem_type())
                         << "value info has no element type specified.";
-                    ONNXDataTypeToNNFusionElementType(
-                        onnx::TensorProto_DataType(
-                            m_value_info_proto->type().tensor_type().elem_type()),
-                        &m_type);
+                    m_type = ONNXDataTypeToNNFusionElementType(onnx::TensorProto_DataType(
+                        m_value_info_proto->type().tensor_type().elem_type()));
 
                     if (sym_shape->is_dynamic())
                     {
@@ -90,7 +88,10 @@ namespace nnfusion
                 const std::string& get_name() const { return m_value_info_proto->name(); }
                 const Shape& get_shape() const { return m_shape; }
                 const element::Type& get_element_type() const { return m_type; }
-                void set_sym_shape(std::shared_ptr<SymShape> sym_shape) { this->sym_shape = sym_shape; }
+                void set_sym_shape(std::shared_ptr<SymShape> sym_shape)
+                {
+                    this->sym_shape = sym_shape;
+                }
                 std::shared_ptr<SymShape> get_sym_shape() { return this->sym_shape; }
             private:
                 const onnx::ValueInfoProto* m_value_info_proto;

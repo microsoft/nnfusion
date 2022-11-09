@@ -2441,7 +2441,7 @@ namespace nnfusion
                 LanguageUnit_p emit_function_body() override
                 {
                     LanguageUnit lu(get_function_name());
-                    lu << "std::vector<const float*> in_args;";
+                    lu << "std::vector<const " << dtype.c_type_string() << "*> in_args;";
                     lu << "std::vector<Shape> in_shapes;";
                     for (size_t t = 0; t < m_context->inputs.size(); t++)
                     {

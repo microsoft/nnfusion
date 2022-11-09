@@ -44,8 +44,7 @@ namespace nnfusion
             ///
             /// \param lower_bounds The axiswise lower bounds of the slice (inclusive).
             /// \param upper_bounds The axiswise upper bounds of the slice (exclusive).
-            Slice(const nnfusion::Shape& lower_bounds,
-                  const nnfusion::Shape& upper_bounds);
+            Slice(const nnfusion::Shape& lower_bounds, const nnfusion::Shape& upper_bounds);
 
             /// \return The inclusive lower-bound coordinates.
             const nnfusion::Shape& get_lower_bounds() const { return m_lower_bounds; }

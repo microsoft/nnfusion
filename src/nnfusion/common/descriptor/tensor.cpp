@@ -56,7 +56,7 @@ nnfusion::descriptor::Tensor::Tensor(const nnfusion::element::Type& element_type
     , m_ref_count(1)
     , m_group(group)
     , m_device_id(device_id)
-    , m_instance_id(is_constant?m_next_constant_id.fetch_add(1):m_next_instance_id.fetch_add(1))
+    , m_instance_id(is_constant ? m_next_constant_id.fetch_add(1) : m_next_instance_id.fetch_add(1))
     , m_unique_name("tensor_" + to_string(m_instance_id))
 {
 }

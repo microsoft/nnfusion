@@ -77,7 +77,7 @@ namespace nnfusion
             return *this;
         }
         std::shared_ptr<SymShape> get_sym_shape() const { return sym_shape; }
-        void set_sym_shape(std::shared_ptr<SymShape> shape) { sym_shape = shape; }
+        void set_sym_shape(std::shared_ptr<SymShape>);
         bool is_dynamic() const;
         std::shared_ptr<SymShape> sym_shape;
     };

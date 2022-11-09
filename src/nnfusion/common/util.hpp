@@ -29,8 +29,8 @@
 #include "nnfusion/common/axis_vector.hpp"
 #include "nnfusion/common/shape.hpp"
 #include "nnfusion/core/graph/gnode_vector.hpp"
-#include "type/element_type.hpp"
 #include "sha256.hpp"
+#include "type/element_type.hpp"
 
 namespace nnfusion
 {

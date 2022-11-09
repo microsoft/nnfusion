@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include "antares_ke_imp.hpp"
-#include "nnfusion/util/curl_request.hpp"
 #include "nnfusion/common/util.hpp"
+#include "nnfusion/util/curl_request.hpp"
 #define ANTARES_FORMAT_CHECK(cond)                                                                 \
     NNFUSION_CHECK(cond) << "Cannot parse antares response, make sure antare server >= v0.2"
 

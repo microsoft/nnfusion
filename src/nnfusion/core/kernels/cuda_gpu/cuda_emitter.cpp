@@ -461,7 +461,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
             }
         }
     }
-    for (auto &dim : m_context->gnode->get_symbols())
+    for (auto& dim : m_context->gnode->get_symbols())
     {
         symbol_expr[dim.expr_to_symbol(dim.sym())] = dim.sym();
     }

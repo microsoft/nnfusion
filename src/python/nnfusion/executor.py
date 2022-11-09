@@ -6,8 +6,9 @@ import os
 import platform
 import torch
 
-from .data_format import HLSLTensor, cast_pytorch_tensor
+from .data_format import HLSLTensor, cast_pytorch_tensor, cast_hlsl_tensor
 from .description import IODescription
+from .dtypes import str2type
 from .utils import cd
 
 
@@ -43,14 +44,24 @@ def parse_nnf_params(param_file):
                 dtype = "float32"
             elif dtype == "double":
                 dtype = "float64"
+
             shape = desc["shape"]
             if len(shape) == 0:
                 shape = [1]
+
+            if "symbolic_shape" in desc:
+                symbolic_shape = desc["symbolic_shape"]
+            else:
+                symbolic_shape = shape
+            if len(symbolic_shape) == 0:
+                symbolic_shape = [1]
+
             out[name] = {
                 "name": name,
                 "id": int(index),
                 "dtype": dtype,
                 "shape": shape,
+                "symbolic_shape": symbolic_shape,
                 "raw_id": desc["id"],
                 "nnf_name": desc["name"]
             }
@@ -137,29 +148,116 @@ class Executor(object):
         input_index = {}
         output_descs = [None] * (len(outputs))
         output_index = {}
+        expected_inputs = {}
+        expected_outputs = {}
+
+        def convert_sym_shape(in_shape):
+            out_shape = []
+            for dim in in_shape:
+                if isinstance(dim, str) and not dim.isdigit():
+                    out_shape.append(dim)
+                else:
+                    out_shape.append(int(dim))
+            return tuple(out_shape)
+
+
         for weight in weights.values():
             input_descs[weight["id"]] = IODescription(weight["name"],
                                                       weight["shape"],
                                                       weight["dtype"])
             input_index[weight["name"]] = weight["id"]
+            expected_inputs[weight["name"]] = {
+                "shape": convert_sym_shape(weight["symbolic_shape"]),
+                "dtype": weight["dtype"]
+            }
         for input in inputs.values():
             input_descs[input["id"]] = IODescription(input["name"],
                                                      input["shape"],
                                                      input["dtype"])
             input_index[input["name"]] = input["id"]
+            expected_inputs[input["name"]] = {
+                "shape": convert_sym_shape(input["symbolic_shape"]),
+                "dtype": input["dtype"]
+            }
         for output in outputs.values():
             output_descs[output["id"]] = IODescription(output["name"],
                                                        output["shape"],
                                                        output["dtype"])
             output_index[output["name"]] = output["id"]
+            expected_outputs[output["name"]] = {
+                "shape": convert_sym_shape(output["symbolic_shape"]),
+                "dtype": output["dtype"]
+            }
         if None in input_descs:
             raise Exception("Missed input index in para_info.json")
         if None in output_descs:
             raise Exception("Missed output index in para_info.json")
-        self.input_descs = input_descs
-        self.input_index = input_index
-        self.output_descs = output_descs
-        self.output_index = output_index
+        self.input_descs = input_descs # list[IODesc]
+        self.input_index = input_index # dict: name -> 0-based index
+        self.output_descs = output_descs # list[IODesc]
+        self.output_index = output_index # dict: name -> 0-based index
+        self.expected_inputs = expected_inputs
+        self.expected_outputs = expected_outputs
+
+    def set_symbol(self, key, value):
+        func_name = "set_" + key
+        func = getattr(self.libnnf, func_name, None)
+        if func is None:
+            raise Exception(f"{func_name} doesn't exist in nnf_rt")
+        func.argtypes = [ctypes.c_int64]
+        func(value)
+
+    def get_symbol(self, key):
+        func_name = "get_" + key
+        func = getattr(self.libnnf, func_name, None)
+        if func is None:
+            raise Exception(f"{func_name} doesn't exist in nnf_rt")
+        func.restype = ctypes.c_int64
+        return func()
+
+    def fix_shape(self, sym_shape):
+        shape = []
+        for dim in sym_shape:
+            if isinstance(dim, str):
+                sym_name = dim
+                dim = self.get_symbol(dim)
+                if dim == -1:
+                    raise Exception(f"get_symbol({sym_name}) returns -1, provided input shape may not be supported by this model")
+            shape.append(dim)
+        return shape
+
+    def set_inputs(self, input_shape):
+        record = {}
+        for name, info in self.expected_inputs.items():
+            for idx, dim in enumerate(info["shape"]):
+                if isinstance(dim, str):
+                    if dim not in record:
+                        record[dim] = input_shape[name][idx]
+                        self.set_symbol(dim, input_shape[name][idx])
+                    else:
+                        if record[dim] != input_shape[name][idx]:
+                            raise Exception(f"Inconsistent value for symbol {dim}")
+
+    def allocate_outputs(self):
+        output_dict = {}
+        for name, info in self.expected_outputs.items():
+            shape = self.fix_shape(info["shape"])
+            if self.host_mode:
+                # host mode leverage pytorch tensor as storage
+                torch_tensor = torch.empty(size=shape, dtype=str2type[info["dtype"]].torch_type)
+                output_dict[name] = cast_pytorch_tensor(torch_tensor)
+            else:
+                if self.device_type == 0:
+                    # cuda device
+                    torch_tensor = torch.empty(size=shape, dtype=str2type[info["dtype"]].torch_type, device="cuda")
+                    output_dict[name] = cast_pytorch_tensor(torch_tensor)
+                elif self.device_type == 3:
+                    # hlsl device
+                    output_dict[name] = cast_hlsl_tensor(HLSLTensor(shape, info["dtype"]))
+                else:
+                    raise Exception("only support allocate device tensor on cuda/hlsl backend.")
+        return output_dict
+
 
     def get_device_type(self):
         if not hasattr(self.libnnf, "get_device_type"):
@@ -181,34 +279,46 @@ class Executor(object):
 
     def __call__(self, *args, **kwargs):
         # self.feed_tensors(*args, **kwargs)
-        self.feed_data(*args, **kwargs)
+        return self.feed_data(*args, **kwargs)
 
     def _dict_to_pointer_list(self, inputs, outputs, strict=True):
         signature = [None] * (len(self.input_descs) + len(self.output_descs))
         params = [None] * (len(self.input_descs) + len(self.output_descs))
+
+        def check_compatible(feed, expect):
+            if data_format.dtype != expect["dtype"]:
+                return False
+            if len(feed.shape) != len(expect["shape"]):
+                return False
+            for feed_dim, expect_dim in zip(feed.shape, expect["shape"]):
+                if isinstance(expect_dim, str):
+                    # ignore symbolic dim
+                    continue
+                if feed_dim != expect_dim:
+                    return False
+            return True
+
         for name, data_format in inputs.items():
-            if name in self.input_index:
-                index = self.input_index[name]
-                if data_format.shape != self.input_descs[
-                        index].shape or data_format.dtype != self.input_descs[
-                            index].dtype:
+            if name in self.expected_inputs:
+                expect_input = self.expected_inputs[name]
+                if not check_compatible(data_format, expect_input):
                     raise Exception(
-                        f"Shape or type mismatch for NNFusion model input {name}, expect [{self.input_descs[index].shape}, {self.input_descs[index].dtype}], feed [{data_format.shape}, {data_format.dtype}]"
+                        f"Shape or type mismatch for NNFusion model input {name}, expect [{expect_input['shape']}, {expect_input['dtype']}], feed [{data_format.shape}, {data_format.dtype}]"
                     )
+                index = self.input_index[name]
                 signature[index] = data_format.pointer_type
                 params[index] = data_format.pointer
             else:
                 if strict:
                     raise Exception(f"Unused input {name}")
         for name, data_format in outputs.items():
-            if name in self.output_index:
-                index = self.output_index[name]
-                if data_format.shape != self.output_descs[
-                        index].shape or data_format.dtype != self.output_descs[
-                            index].dtype:
+            if name in self.expected_outputs:
+                expect_output = self.expected_outputs[name]
+                if not check_compatible(data_format, expect_output):
                     raise Exception(
-                        f"Shape or type mismatch for NNFusion model output {name}, expect [{self.output_descs[index].shape}, {self.output_descs[index].dtype}], feed [{data_format.shape}, {data_format.dtype}]"
+                        f"Shape or type mismatch for NNFusion model output {name}, expect [{expect_output['shape']}, {expect_output['dtype']}], feed [{data_format.shape}, {data_format.dtype}]"
                     )
+                index = self.output_index[name]
                 signature[len(self.input_descs) +
                           index] = data_format.pointer_type
                 params[len(self.input_descs) + index] = data_format.pointer
@@ -217,7 +327,7 @@ class Executor(object):
                     raise Exception(f"Unused output {name}")
         return signature, params
 
-    def feed_data(self, inputs, outputs, strict=True):
+    def feed_data(self, inputs, outputs=None, strict=True):
         """
         Execute the kernel_entry in nnf runtime
 
@@ -227,14 +337,22 @@ class Executor(object):
             strict: False if allow unused inputs/outputs
 
         Returns:
-            None
+            outputs: a dict from name to nnf DataFormat
         """
+        input_shape = {name: value.shape for name, value in inputs.items()}
+        self.set_inputs(input_shape)
+        if outputs is None:
+            outputs = self.allocate_outputs()
         signature, params = self._dict_to_pointer_list(inputs, outputs, strict=strict)
         self.feed_pointers(signature, params)
+        return outputs
 
     def feed_pointers(self, signature, params):
         self.kernel_entry.argtypes = signature
         self.kernel_entry(*params)
+        # synchronize should be included in kernel_entry
+        if HLSLTensor.antares_lib:
+            HLSLTensor.antares_lib.dxStreamSynchronize(None)
 
     def _maybe_reserve_mem(self, device):
         get_workspace_size = getattr(self.libnnf, 'get_workspace_size', None)

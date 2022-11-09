@@ -279,14 +279,31 @@ namespace nnfusion
         {
             alias_name = alias_name.empty() ? input_name : alias_name;
             config[alias_name] = input_name;
+            // mapping from nnfusion type to antares type
             auto d_type = tensor->get_element_type();
-            if (d_type == element::f32)
+            if (d_type == element::f16)
+            {
+                config[alias_name + "_dtype"] = "float16";
+            }
+            else if (d_type == element::f32)
             {
                 config[alias_name + "_dtype"] = "float32";
             }
             else if (d_type == element::f64)
             {
                 config[alias_name + "_dtype"] = "float64";
+            }
+            else if (d_type == element::boolean)
+            {
+                config[alias_name + "_dtype"] = "int8";
+            }
+            else if (d_type == element::i8)
+            {
+                config[alias_name + "_dtype"] = "int8";
+            }
+            else if (d_type == element::i16)
+            {
+                config[alias_name + "_dtype"] = "int16";
             }
             else if (d_type == element::i32)
             {
@@ -296,17 +313,11 @@ namespace nnfusion
             {
                 config[alias_name + "_dtype"] = "int64";
             }
-            else if (d_type == element::f16)
-            {
-                config[alias_name + "_dtype"] = "float16";
-            }
-            else if (d_type == element::boolean)
-            {
-                config[alias_name + "_dtype"] = "int8";
-            }
             else
             {
-                NNFUSION_CHECK_FAIL() << "Unhandled type: " << d_type;
+                NNFUSION_CHECK_FAIL()
+                    << "Unhandled type: " << d_type
+                    << ", antares currently supports int8/16/32/64, float16/32/64";
             }
             auto shape = tensor->get_shape();
             if (shape.size() == 0)

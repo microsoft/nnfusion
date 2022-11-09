@@ -354,9 +354,8 @@ namespace nnfusion
                         move_external_to_rawdata(tensor, model_dir);
                         if (FLAGS_ftraining_mode)
                         {
-                            element::Type type;
-                            ONNXDataTypeToNNFusionElementType(
-                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()), &type);
+                            element::Type type = ONNXDataTypeToNNFusionElementType(
+                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
                             std::shared_ptr<graph::GNode> input_gnode;
                             auto tensor_op = std::make_shared<op::Parameter>(
                                 type,
@@ -370,10 +369,8 @@ namespace nnfusion
                         }
                         else
                         {
-                            auto tensor_op = make_constant_op(
-                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()),
-                                Shape(std::begin(tensor.dims()), std::end(tensor.dims())),
-                                Tensor{tensor});
+                            auto wrapper_tensor = Tensor{tensor};
+                            auto tensor_op = make_constant_op(wrapper_tensor);
                             tensor_op->set_name(tensor.name());
                             tensor_op->set_global_consistent_name(tensor.name());
                             auto tensor_gnode =

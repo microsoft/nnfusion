@@ -2,7 +2,6 @@
 # Licensed under the MIT License.
 
 import ctypes
-from numpy import dtype
 import torch
 
 from . import dtypes
@@ -73,24 +72,40 @@ class HLSLTensor(object):
             cls.antares_lib.dxStreamSynchronize.restype = ctypes.c_int32
         return
 
-    def __init__(self, pytorch_tensor) -> None:
+    @classmethod
+    def build_from_torch(cls, pytorch_tensor):
+        pytorch_tensor = pytorch_tensor.contiguous()
+        shape = pytorch_tensor.shape
+        pt_type = str(pytorch_tensor.dtype).split(".")[-1]
+        dtype = dtypes.str2type[pt_type].type_str
+        hlsl_tensor = HLSLTensor(shape, dtype)
+        if hlsl_tensor.size > 0:
+            cls.antares_lib.dxMemcpyHtoDAsync(hlsl_tensor.pointer, ctypes.cast(pytorch_tensor.data_ptr(), ctypes.c_void_p), hlsl_tensor.size, None)
+            cls.antares_lib.dxStreamSynchronize(None)
+        return hlsl_tensor
+
+    def __init__(self, shape, dtype) -> None:
         if self.antares_lib is None:
             raise Exception("Please init antares lib firstly(e.g. creating a executor instance antomatically init antares lib")
-        pytorch_tensor = pytorch_tensor.contiguous()
-        self.shape = pytorch_tensor.shape
-        self.pt_type = str(pytorch_tensor.dtype).split(".")[-1]
-        self.dtype = dtypes.str2type[self.pt_type].type_str
-        num_element = pytorch_tensor.numel()
-        element_size = pytorch_tensor.element_size()
+        self.shape = shape
+        self.dtype = dtypes.str2type[dtype].type_str
+        num_element = 1
+        for dim in shape:
+            num_element *= dim
+        element_size = dtypes.str2type[dtype].n_byte
         self.size = num_element * element_size
-        self.pointer = self.antares_lib.dxMemAlloc(self.size)    
-        self.antares_lib.dxMemcpyHtoDAsync(self.pointer, ctypes.cast(pytorch_tensor.data_ptr(), ctypes.c_void_p), self.size, None)
-        self.antares_lib.dxStreamSynchronize(None)
+        if self.size > 0:
+            self.pointer = self.antares_lib.dxMemAlloc(self.size)
+        else:
+            self.pointer = None
         
 
     def __del__(self):
         if hasattr(self, "pointer") and self.pointer:
             self.antares_lib.dxMemFree(self.pointer)
+            # access violation reading 0x0000000000000020
+            # possibliy caused by dxFinialize reset stream when release nnf_rt
+            # self.antares_lib.dxStreamSynchronize(None)
             self.pointer == ctypes.c_void_p(None)
     
     def __str__(self):

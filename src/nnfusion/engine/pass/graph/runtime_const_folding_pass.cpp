@@ -121,7 +121,7 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
                     kernels::Name(it->get_op_type())
                         .Device(GENERIC_CPU)
                         .TypeConstraint(element::f32)
-                        .Tag("antares")
+                        .Tag("reference")
                         .Priority(0)
                         .KernelFactory([](shared_ptr<kernels::KernelContext> context)
                                            -> shared_ptr<kernels::KernelEmitter> {

@@ -56,7 +56,7 @@ namespace nnfusion
                                                            const Tensor& tensor)
             {
                 if (type == element::boolean)
-                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<char>());
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<int16_t>());
                 if (type == element::i8)
                     return std::make_shared<op::Constant>(type, shape, tensor.get_data<int8_t>());
                 if (type == element::i16)

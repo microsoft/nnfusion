@@ -264,7 +264,7 @@ namespace nnfusion
                 }
                 else if (ng_element_type == nnfusion::element::boolean)
                 {
-                    *values = GetValueFromConstOp<bool, T>(ng_constant_op);
+                    *values = GetValueFromConstOp<int16_t, T>(ng_constant_op);
                 }
                 else if (ng_element_type == nnfusion::element::character)
                 {

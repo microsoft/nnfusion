@@ -125,12 +125,11 @@ namespace nnfusion
                     if (auto_pad == "SAME_UPPER" || auto_pad == "SAME_LOWER")
                     {
                         Shape data_spatial_shape = Shape(data_shape.begin() + 2, data_shape.end());
-                        CoordinateDiff padding_above, padding_below;
                         for (size_t i = 0; i < spatial_len; i++)
                         {
                             size_t h_in = data_spatial_shape[i];
                             size_t s = strides[i];
-                            size_t h_out = ceil(h_in / s);
+                            size_t h_out = ceil((float)h_in / (float)s);
                             size_t kh = kernel_shape[i];
                             size_t d = dilations[i];
                             size_t p = (h_out - 1) * s + d * (kh - 1) + 1 - h_in;
@@ -142,7 +141,7 @@ namespace nnfusion
                             }
                             else
                             {
-                                size_t p_i = floor(p / 2);
+                                size_t p_i = floor((float)p / 2);
                                 if (auto_pad == "SAME_UPPER")
                                 {
                                     padding_above.push_back(p_i);

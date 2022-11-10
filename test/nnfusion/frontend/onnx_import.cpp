@@ -283,9 +283,10 @@ TEST(nnfusion_onnx_import, asin_op)
 }
 
 // todo : no kernel implemented for argmax and argmin
-TEST(nnfusion_onnx_import, argmax_int32_op)
+TEST(nnfusion_onnx_import, argmax_float32_op)
 {
-    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/argmax_int32.onnx"));
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/argmax_float32_no_keep_dims.onnx"));
 
     vector<vector<int32_t>> inputs{
         vector<int32_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};

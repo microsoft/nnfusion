@@ -1,2 +1,6 @@
 pytest>=7.0.0
 pytest-xdist>=1.4.0
+onnx
+GitPython
+numpy
+torch

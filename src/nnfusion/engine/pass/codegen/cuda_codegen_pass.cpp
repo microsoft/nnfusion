@@ -324,38 +324,40 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             }
 
             std::string call_str = fu->get_specialized_function_call(func_name);
-            // todo: this hack is to eliminate d2d copy caused by extern result memory
-            if (FLAGS_fextern_result_memory && gnode)
+            // this hack is to eliminate d2d copy caused by extern result memory
+            // we only apply the repalce for non-eliminative ops
+            if (FLAGS_fextern_result_memory && gnode && !kernel->is_eliminative() &&
+                !((*gnode)["is_eliminative"].is_valid_as<bool>()))
             {
-                size_t non_control_edge = 0;
-                std::shared_ptr<nnfusion::graph::Edge> out_edge;
-                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
+                auto out_users = gnode->get_output_users(0, false);
+                if (gnode->get_output_size() == 1 && out_users.size() == 1 &&
+                    !is_ref_tensor(ins, kernel->m_context->outputs[0]))
                 {
-                    if (!gnode->get_out_edges()[i]->is_control_edge())
+                    // find the output node along a sequnece of eliminative nodes
+                    auto next_node = out_users[0]->get_dst();
+                    auto next_kernel = (*next_node)["Kernel_Selection_Result"]
+                                           .as<pair<NNFusion_DeviceType, KernelEmitter::Pointer>>()
+                                           .second;
+                    while (!next_node->get_op_ptr()->is_output() &&
+                           ((*next_node)["is_eliminative"].is_valid_as<bool>() ||
+                            next_kernel->is_eliminative()))
                     {
-                        non_control_edge++;
-                        out_edge = gnode->get_out_edges()[i];
-                        if (non_control_edge > 1)
+                        out_users = next_node->get_output_users(0, false);
+                        if (out_users.size() != 1)
                             break;
+                        next_node = out_users[0]->get_dst();
                     }
-                }
-
-                // inplace the result tensor into kernel only if there is one out edge
-                if (non_control_edge == 1)
-                {
-                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
-                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
-                        !is_ref_tensor(ins, out_tensor))
+                    if (next_node->get_op_ptr()->is_output())
                     {
-                        std::shared_ptr<GNode> output = out_edge->get_dst();
-                        std::string in_name = output->get_input_tensor(0).get_name();
-                        std::string out_name = output->get_output_tensor(0).get_name();
+                        std::string in_name = gnode->get_output_tensor(0).get_name();
+                        std::string out_name = next_node->get_output_tensor(0).get_name();
                         int pos = call_str.find(", " + in_name);
                         call_str.replace(pos, in_name.size() + 2, ", " + out_name);
-                        (*output)["is_eliminative"] = true;
+                        (*next_node)["is_eliminative"] = true;
                     }
                 }
             }
+
             int pos_right = call_str.find(">>>(");
             if (pos_right >= 0)
             {
@@ -1396,7 +1398,7 @@ cmake_minimum_required(VERSION 3.5)
 
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
-SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86" CACHE STRING "target architecture")
+SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75" CACHE STRING "target architecture")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)

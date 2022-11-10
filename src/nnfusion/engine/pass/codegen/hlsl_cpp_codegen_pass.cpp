@@ -262,35 +262,37 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             NNFUSION_CHECK_NOT_NULLPTR(async_info.execution_stream);
             std::string stream_name = async_info.execution_stream->get_name();
             std::string call_str = fu->call_unit->get_code();
-            // todo: this hack is to eliminate d2d copy caused by extern result memory
-            if (FLAGS_fextern_result_memory && gnode)
-            {
-                size_t non_control_edge = 0;
-                std::shared_ptr<nnfusion::graph::Edge> out_edge;
-                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
-                {
-                    if (!gnode->get_out_edges()[i]->is_control_edge())
-                    {
-                        non_control_edge++;
-                        out_edge = gnode->get_out_edges()[i];
-                        if (non_control_edge > 1)
-                            break;
-                    }
-                }
 
-                // inplace the result tensor into kernel only if there is one out edge
-                if (non_control_edge == 1)
+            // this hack is to eliminate d2d copy caused by extern result memory
+            // we only apply the repalce for non-eliminative ops
+            if (FLAGS_fextern_result_memory && gnode && !kernel->is_eliminative() &&
+                !((*gnode)["is_eliminative"].is_valid_as<bool>()))
+            {
+                auto out_users = gnode->get_output_users(0, false);
+                if (gnode->get_output_size() == 1 && out_users.size() == 1 &&
+                    !is_ref_tensor(ins, kernel->m_context->outputs[0]))
                 {
-                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
-                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
-                        !is_ref_tensor(ins, out_tensor))
+                    // find the output node along a sequnece of eliminative nodes
+                    auto next_node = out_users[0]->get_dst();
+                    auto next_kernel = (*next_node)["Kernel_Selection_Result"]
+                                           .as<pair<NNFusion_DeviceType, KernelEmitter::Pointer>>()
+                                           .second;
+                    while (!next_node->get_op_ptr()->is_output() &&
+                           ((*next_node)["is_eliminative"].is_valid_as<bool>() ||
+                            next_kernel->is_eliminative()))
                     {
-                        std::shared_ptr<GNode> output = out_edge->get_dst();
-                        std::string in_name = output->get_input_tensor(0).get_name();
-                        std::string out_name = output->get_output_tensor(0).get_name();
+                        out_users = next_node->get_output_users(0, false);
+                        if (out_users.size() != 1)
+                            break;
+                        next_node = out_users[0]->get_dst();
+                    }
+                    if (next_node->get_op_ptr()->is_output())
+                    {
+                        std::string in_name = gnode->get_output_tensor(0).get_name();
+                        std::string out_name = next_node->get_output_tensor(0).get_name();
                         int pos = call_str.find(", " + in_name);
                         call_str.replace(pos, in_name.size() + 2, ", " + out_name);
-                        (*output)["is_eliminative"] = true;
+                        (*next_node)["is_eliminative"] = true;
                     }
                 }
             }

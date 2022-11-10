@@ -91,9 +91,9 @@ namespace nnfusion
                     std::string auto_pad =
                         node.get_attribute_value<std::string>("auto_pad", std::string("NOTSET"));
                     Shape data_spatial_shape = Shape(data_shape.begin() + 2, data_shape.end());
+                    CoordinateDiff padding_above, padding_below;
                     if (auto_pad == "SAME_UPPER" || auto_pad == "SAME_LOWER")
                     {
-                        CoordinateDiff padding_above, padding_below;
                         for (size_t i = 0; i < spatial_len; i++)
                         {
                             size_t h_in = data_spatial_shape[i];
@@ -140,7 +140,6 @@ namespace nnfusion
 
                     if (explicit_outshape)
                     {
-                        CoordinateDiff padding_above, padding_below;
                         for (size_t i = 0; i < spatial_len; i++)
                         {
                             size_t h_in = data_spatial_shape[i];
@@ -194,7 +193,7 @@ namespace nnfusion
                             pad_op, {x_gnode, GNodeIndex(pad_val_gnode)});
                         x_gnode = GNodeIndex(pad_gnode, 0);
                     }
-
+                    NNFUSION_LOG(INFO) << op_config;
                     auto node_name = node_proto.output(0);
                     auto conv_trans_op = std::make_shared<op::GenericOp>(
                         node_name + ".conv", "ConvTranspose", op_config);

@@ -20,7 +20,7 @@ namespace nnfusion
             std::vector<std::vector<char>>
                 get_node_outputs(std::shared_ptr<GNode> gnode, int depth = 0, int arg_idx = 0)
             {
-                // NNFUSION_CHECK(gnode->get_op_type() != "Parameter");
+                NNFUSION_CHECK(gnode->get_op_type() != "Parameter");
                 if (gnode->get_op_type() == "Parameter")
                 {
                     auto data_size = gnode->get_output_tensor(0).size();

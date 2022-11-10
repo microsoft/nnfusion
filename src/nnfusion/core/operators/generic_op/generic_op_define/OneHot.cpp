@@ -31,7 +31,7 @@ REGISTER_OP(OneHot)
         for (int i = 0; i < axis; ++i)
             output_shape_0.push_back(shape_0[i]);
         output_shape_0.push_back(depth);
-        for (int i = axis; i <= shape_0.size(); ++i)
+        for (int i = axis; i < shape_0.size(); ++i)
             output_shape_0.push_back(shape_0[i]);
         gnode->set_output_type_and_shape(0, type, output_shape_0);
     })

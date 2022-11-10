@@ -16,13 +16,8 @@ from onnx.backend.base import Backend
 
 
 class TestContext:
-<<<<<<< HEAD
-    root_dir : str = "/home/jxue/repo/nnfusion"
-    onnx_remote : str = "https://github.com/onnx/onnx.git"
-=======
     root_dir : str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../")
     onnx_remote : str = "git@github.com:onnx/onnx.git"
->>>>>>> origin/xbox
     onnx_repo : str = os.path.join(root_dir, "build/onnx")
     onnx_tests : str = os.path.join(onnx_repo, "onnx/backend/test/data")
     onnx_test_kind : str = "node"
@@ -31,13 +26,10 @@ class TestContext:
     nnfusion_workdir : str = "nnfusion_work"
     # remain unchanged
     nnfusion_argstr = "-f onnx -fmulti_shape=false -fdefault_device=CUDA -fhlsl_codegen_type=cpp -fantares_mode=true -fblockfusion_level=0 -fkernel_fusion_level=0 -fantares_codegen_server=127.0.0.1:8880 -fkernel_tuning_steps=0 -ffold_where=1 -fsymbolic=1 -fort_folding=0 -fsplit_softmax=1 -fhost_entry=0 -fir_based_fusion=1 -fextern_result_memory=1"
-<<<<<<< HEAD
-    data_types = ["int8", "int16", "int32", "int64", "float16", "float32", "float64"]
-=======
     antares_url = "127.0.0.1:8880"
     nnfusion_device = "CUDA"
     nnfusion_codegen_dir = "nnfusion_rt/cuda_codegen"
->>>>>>> origin/xbox
+    data_type_block_list = ["uint"]
 
     def __init__(self, ops) -> None:
         self.nnfusion_argstr = self.nnfusion_argstr.replace("127.0.0.1:8880", self.antares_url).replace("CUDA", self.nnfusion_device)
@@ -55,17 +47,15 @@ class TestContext:
             flag = False 
             opname = ""
             for v in ops:
-<<<<<<< HEAD
-                if "test_"+v+"_" in case.name:
-                    data_type = case.name.split('_')[-1]
-                    if data_type in self.data_types:
+                if "test_"+v+"_" in case.name or "test_"+v == case.name:
+                    skip = False
+                    for type in self.data_type_block_list:
+                        if type in case.name:
+                            skip = True
+                            break
+                    if not skip:
                         flag = True
                         opname = v
-=======
-                if "test_"+v+"_" in case.name or "test_"+v == case.name:
-                    flag = True
-                    opname = v
->>>>>>> origin/xbox
             if flag:
                 self.run(case, opname)
 
@@ -197,16 +187,18 @@ class TestContext:
                     nnf_outputs[name] = cast_pytorch_tensor(nnf_torch_outputs[-1])
                 rt.feed_data(nnf_inputs, nnf_outputs)
                 outputs = [t.cpu().numpy() for t in nnf_torch_outputs]#list(prepared_model.run(inputs))
-            except:
+            except Exception as e:
+                #print(str(e))
                 print("@,", op_name , ",", model_test.name, ", EXECUTION ERROR", ", FAILED")
                 continue
             r = self._assert_similar_outputs(
                 ref_outputs, outputs, rtol=model_test.rtol, atol=model_test.atol
             )
             print("@,", op_name, ",", model_test.name, "," + test_data_dir, ", PASS" if r else ", FAILED")
-            if not r:
-                print("ref:", ref_outputs)
-                print("nnf:", outputs)
+            # if not r:
+            #     print("ref", ref_outputs)
+            #     print("nnf", outputs)
+            #     exit()
 
 
 if __name__ == "__main__":

@@ -263,17 +263,17 @@ namespace nnfusion
                 REGISTER_OPERATOR(
                     "ReduceL2", 13, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
                 REGISTER_OPERATOR(
-                    "ReduceLogSum", 1, PACK(TranslateReduceOp<op::Log, op::Sum, op::NoOp>));
+                    "ReduceLogSum", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
-                    "ReduceLogSum", 11, PACK(TranslateReduceOp<op::Log, op::Sum, op::NoOp>));
+                    "ReduceLogSum", 11, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
-                    "ReduceLogSum", 13, PACK(TranslateReduceOp<op::Log, op::Sum, op::NoOp>));
+                    "ReduceLogSum", 13, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
-                    "ReduceLogSumExp", 1, PACK(TranslateReduceOp<op::Log, op::Sum, op::Exp>));
+                    "ReduceLogSumExp", 1, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
-                    "ReduceLogSumExp", 11, PACK(TranslateReduceOp<op::Log, op::Sum, op::Exp>));
+                    "ReduceLogSumExp", 11, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
-                    "ReduceLogSumExp", 13, PACK(TranslateReduceOp<op::Log, op::Sum, op::Exp>));
+                    "ReduceLogSumExp", 13, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
                     "ReduceMax", 1, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
                 REGISTER_OPERATOR(
@@ -342,6 +342,9 @@ namespace nnfusion
                 REGISTER_OPERATOR("Sub", 1, TranslateLegacyBinaryOp<op::Subtract>);
                 REGISTER_OPERATOR("Sub", 7, TranslateBinaryOp<op::Subtract>);
                 REGISTER_OPERATOR("Sum", 1, TranslateMultiElementwiseOp<op::Add>);
+                REGISTER_OPERATOR("Sum", 6, TranslateMultiElementwiseOp<op::Add>);
+                REGISTER_OPERATOR("Sum", 8, TranslateMultiElementwiseOp<op::Add>);
+                REGISTER_OPERATOR("Sum", 13, TranslateMultiElementwiseOp<op::Add>);
                 REGISTER_OPERATOR("Tan", 1, TranslateUnaryOp<op::Tan>);
                 REGISTER_OPERATOR("Tanh", 1, TranslateUnaryOp<op::Tanh>);
                 REGISTER_OPERATOR("TanhGrad", 1, TranslateTanhGradOp);

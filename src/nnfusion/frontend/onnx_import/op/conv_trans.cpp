@@ -153,7 +153,6 @@ namespace nnfusion
                         op_config["padding_above"] = padding_above;
                         op_config["padding_below"] = padding_below;
                     }
-                    NNFUSION_LOG(INFO) << padding_above << " " << padding_below;
 
                     bool explicit_outshape = false;
                     for (auto dim : op_config["output_shape"])

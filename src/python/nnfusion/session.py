@@ -8,7 +8,7 @@ import tempfile
 import torch
 import json
 import logging
-from .dtypes import str2type
+from .dtypes import to_torch_type, canonical_type
 from .utils import cd, execute
 from .executor import Executor
 from .description import IODescription, ModelDescription
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def tensor2desc(pt_tensor, name=""):
     shape = tuple(pt_tensor.shape)
-    dtype = str2type[str(pt_tensor.dtype).split(".")[-1]].type_str
+    dtype = canonical_type(str(pt_tensor.dtype).split(".")[-1])
     return IODescription(name, shape, dtype)
 
 
@@ -29,10 +29,10 @@ def generate_sample(desc, device=None):
         return torch.randint(0,
                              desc.num_classes,
                              size,
-                             dtype=str2type[desc.dtype].torch_type).to(device)
+                             dtype=to_torch_type(desc.dtype)).to(device)
     else:
         return torch.ones(size,
-                          dtype=str2type[desc.dtype].torch_type).to(device)
+                          dtype=to_torch_type(desc.dtype)).to(device)
 
 
 def generate_output_desc(model, input_desc, device="cpu", raw_input=None):
@@ -256,7 +256,7 @@ class PTSession(object):
                     name].dtype, f"nnf requires output {desc.name} with shape {desc.shape}, but session output desc is {real_outputs[desc.name].shape}"
             self._outputs[desc.name] = cast_pytorch_tensor(
                 torch.zeros(desc.shape,
-                            dtype=str2type[desc.dtype].torch_type,
+                            dtype=to_torch_type(desc.dtype),
                             device=self._device))
 
     def __call__(self, feed_data):

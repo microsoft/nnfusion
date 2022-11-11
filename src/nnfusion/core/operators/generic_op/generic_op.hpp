@@ -295,7 +295,7 @@ namespace nnfusion
             }
             else if (d_type == element::boolean)
             {
-                config[alias_name + "_dtype"] = "int8";
+                config[alias_name + "_dtype"] = "int16";
             }
             else if (d_type == element::i8)
             {
@@ -462,7 +462,7 @@ namespace nnfusion
                             antares2nnfusion{{"float16", nnfusion::element::f16},
                                              {"float32", nnfusion::element::f32},
                                              {"float64", nnfusion::element::f64},
-                                             {"int8", nnfusion::element::boolean},
+                                             {"int16", nnfusion::element::boolean},
                                              {"int32", nnfusion::element::i32},
                                              {"int64", nnfusion::element::i64}};
                         auto it = antares2nnfusion.find(type_str);

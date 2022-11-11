@@ -40,15 +40,17 @@ namespace nnfusion
                     std::unordered_map<std::string, std::vector<int64_t>> conv_attrs;
                     conv_attrs["kernel_shape"] = node.get_attribute_value<std::vector<int64_t>>(
                         "kernel_shape",
-                        std::vector<int64_t>{
-                            static_cast<int64_t>(filters_shape.at(filters_shape.size() - 2)),
-                            static_cast<int64_t>(filters_shape.at(filters_shape.size() - 1))});
+                        std::vector<int64_t>(filters_shape.begin() + 2, filters_shape.end()));
                     conv_attrs["strides"] = node.get_attribute_value<std::vector<int64_t>>(
                         "strides", std::vector<int64_t>(conv_attrs["kernel_shape"].size(), 1));
                     conv_attrs["dilations"] = node.get_attribute_value<std::vector<int64_t>>(
                         "dilations", std::vector<int64_t>(conv_attrs["kernel_shape"].size(), 1));
                     conv_attrs["pads"] = node.get_attribute_value<std::vector<int64_t>>(
                         "pads", std::vector<int64_t>(conv_attrs["kernel_shape"].size() * 2, 0));
+
+                    std::string auto_pad =
+                        node.get_attribute_value<std::string>("auto_pad", std::string("NOTSET"));
+
                     return conv_attrs;
                 }
 
@@ -108,14 +110,6 @@ namespace nnfusion
                                    groups <= filters_shape.at(0))
                         << "incorrect value of 'group' attribute: " << groups;
                     auto conv_attrs = extract_conv_attrs(node, filters_shape);
-                    std::string auto_pad =
-                        node.get_attribute_value<std::string>("auto_pad", std::string("NOTSET"));
-
-                    if (auto_pad != "NOTSET")
-                    {
-                        ///\todo infer pad from input shape
-                        NNFUSION_CHECK_FAIL() << "auto_pad not supported";
-                    }
 
                     Shape kernel_shape =
                         Shape(conv_attrs["kernel_shape"].begin(), conv_attrs["kernel_shape"].end());
@@ -123,43 +117,84 @@ namespace nnfusion
                         Strides(conv_attrs["strides"].begin(), conv_attrs["strides"].end());
                     Strides dilations =
                         Strides(conv_attrs["dilations"].begin(), conv_attrs["dilations"].end());
-                    CoordinateDiff padding_above =
-                        CoordinateDiff(conv_attrs["pads"].begin(),
-                                       conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2);
-                    CoordinateDiff padding_below =
-                        CoordinateDiff(conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2,
-                                       conv_attrs["pads"].end());
 
+                    CoordinateDiff padding_above, padding_below;
+                    size_t spatial_len = kernel_shape.size();
+                    std::string auto_pad =
+                        node.get_attribute_value<std::string>("auto_pad", std::string("NOTSET"));
+                    if (auto_pad == "SAME_UPPER" || auto_pad == "SAME_LOWER")
+                    {
+                        Shape data_spatial_shape = Shape(data_shape.begin() + 2, data_shape.end());
+                        for (size_t i = 0; i < spatial_len; i++)
+                        {
+                            size_t h_in = data_spatial_shape[i];
+                            size_t s = strides[i];
+                            size_t h_out = ceil((float)h_in / (float)s);
+                            size_t kh = kernel_shape[i];
+                            size_t d = dilations[i];
+                            size_t p = (h_out - 1) * s + d * (kh - 1) + 1 - h_in;
+                            if (p % 2 == 0)
+                            {
+                                size_t p_i = p / 2;
+                                padding_above.push_back(p_i);
+                                padding_below.push_back(p_i);
+                            }
+                            else
+                            {
+                                size_t p_i = floor((float)p / 2);
+                                if (auto_pad == "SAME_UPPER")
+                                {
+                                    padding_below.push_back(p_i);
+                                    padding_above.push_back(p_i + 1);
+                                }
+                                else
+                                {
+                                    padding_below.push_back(p_i + 1);
+                                    padding_above.push_back(p_i);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        padding_above = CoordinateDiff(conv_attrs["pads"].begin(),
+                                                       conv_attrs["pads"].begin() +
+                                                           conv_attrs["pads"].size() / 2);
+                        padding_below = CoordinateDiff(conv_attrs["pads"].begin() +
+                                                           conv_attrs["pads"].size() / 2,
+                                                       conv_attrs["pads"].end());
+                    }
                     std::string conv_data_format = assign_data_format(data_shape);
 
-                    if (padding_above != padding_below)
-                    {
-                        int rank = data_shape.size();
-                        Shape padding_above_temp(rank, 0);
-                        Shape padding_below_temp(rank, 0);
-                        Shape padding_interior_temp(rank, 0);
-                        for (int i = 0; i < rank - 2; i++)
-                        {
-                            padding_above_temp[i + 2] = padding_above[i];
-                            padding_below_temp[i + 2] = padding_below[i];
-                            padding_above[i] = 0;
-                            padding_below[i] = 0;
-                        }
+                    // if (padding_above != padding_below)
+                    // {
+                    //     int rank = data_shape.size();
+                    //     Shape padding_above_temp(rank, 0);
+                    //     Shape padding_below_temp(rank, 0);
+                    //     Shape padding_interior_temp(rank, 0);
 
-                        auto pad_val_op =
-                            std::make_shared<op::Constant>(data.get_element_type(),
-                                                           nnfusion::Shape{},
-                                                           std::vector<std::string>{"0"});
-                        auto pad_val_gnode =
-                            m_graph->add_node_and_edge(pad_val_op, GNodeIndexVector{});
+                    //     for (int i = 0; i < spatial_len; i++)
+                    //     {
+                    //         padding_above_temp[i + 2] = padding_above[i];
+                    //         padding_below_temp[i + 2] = padding_below[i];
+                    //         padding_above[i] = 0;
+                    //         padding_below[i] = 0;
+                    //     }
 
-                        auto pad_op = std::make_shared<op::Pad>(
-                            padding_below_temp, padding_above_temp, padding_interior_temp);
+                    //     auto pad_val_op =
+                    //         std::make_shared<op::Constant>(data.get_element_type(),
+                    //                                        nnfusion::Shape{},
+                    //                                        std::vector<std::string>{"0"});
+                    //     auto pad_val_gnode =
+                    //         m_graph->add_node_and_edge(pad_val_op, GNodeIndexVector{});
 
-                        auto pad_gnode =
-                            m_graph->add_node_and_edge(pad_op, {data, GNodeIndex(pad_val_gnode)});
-                        data = GNodeIndex(pad_gnode, 0);
-                    }
+                    //     auto pad_op = std::make_shared<op::Pad>(
+                    //         padding_below_temp, padding_above_temp, padding_interior_temp);
+
+                    //     auto pad_gnode =
+                    //         m_graph->add_node_and_edge(pad_op, {data, GNodeIndex(pad_val_gnode)});
+                    //     data = GNodeIndex(pad_gnode, 0);
+                    // }
 
                     std::shared_ptr<nnfusion::graph::GNode> conv_node = nullptr;
                     if (groups == 1)

@@ -22,7 +22,12 @@
 using namespace nnfusion;
 
 const element::Type element::dynamic(0, false, false, false, "dynamic");
-const element::Type element::boolean(8, false, true, false, "char");
+const element::Type element::boolean(
+    16,
+    false,
+    true,
+    false,
+    "int16_t"); // mapping to int16 is a workaround for hlsl since there is no 8-bit type
 const element::Type element::character(8, false, false, false, "char");
 const element::Type element::bf16(16, true, true, false, "bfloat16");
 const element::Type element::f16(16, true, true, false, "half");
@@ -59,7 +64,7 @@ bool element::Type::nnfusion_element_type_to_dtype_string(const element::Type& n
                                                           std::string& dtype)
 {
     if (ng_et == element::boolean)
-        dtype = "char";
+        dtype = "int16";
     else if (ng_et == element::character)
         dtype = "char";
     else if (ng_et == element::f16)

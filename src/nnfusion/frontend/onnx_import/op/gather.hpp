@@ -51,6 +51,16 @@ namespace nnfusion
                                             std::shared_ptr<nnfusion::graph::Graph> m_graph);
             } // namespace set_1
 
+            namespace set_11
+            {
+                using set_1::TranslateGatherOp;
+            }
+
+            namespace set_13
+            {
+                using set_1::TranslateGatherOp;
+            }
+
         } //namespace onnx_import
 
     } // namespace frontend

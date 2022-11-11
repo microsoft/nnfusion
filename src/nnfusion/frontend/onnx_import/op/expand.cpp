@@ -32,7 +32,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_8
             {
                 NamedNodeVector TranslateExpandOp(const onnx::NodeProto& node_proto,
                                                   const NodeMap& all_ng_nodes,
@@ -43,7 +43,6 @@ namespace nnfusion
                     auto input = input_indexes[0];
 
                     auto input_shape = input.get_shape();
-                    size_t input_rank = input_shape.size();
                     std::vector<int64> expand_shape;
                     NNFUSION_CHECK(GetValueFromNGraphOp(input_indexes[1].gnode, &expand_shape));
 
@@ -66,10 +65,8 @@ namespace nnfusion
                     }
                     return {{node_proto.output(0), input}};
                 }
-
-            } // namespace set_1
-
-        } //namespace onnx_import
+            } // namespace set_8
+        }     //namespace onnx_import
 
     } // namespace frontend
 

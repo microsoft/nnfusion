@@ -94,6 +94,7 @@ set(SRC
     op_define/topk.cpp
     op_define/variable.cpp
     op_define/fused.cpp
+    op_define/while.cpp
     ${generic_op_define}
 )
 

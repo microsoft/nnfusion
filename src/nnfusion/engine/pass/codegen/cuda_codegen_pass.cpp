@@ -801,7 +801,7 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
 
     auto mem_ref = codegen_mem_ref(kernel);
     if (mem_ref != nullptr)
-        lu << codegen_mem_ref(kernel)->get_code();
+        lu << codegen_mem_ref(kernel)->get_code() << "/* memref */";
 
     if (ins->name() == "Memcpy")
     {
@@ -847,7 +847,7 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         // todo: this hack is to eliminate d2d copy caused by extern result memory
         else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
         {
-            lu << "// eliminated: " << func_call;
+            lu << "// eliminated (extern_result_memory): " << func_call;
         }
 
         else

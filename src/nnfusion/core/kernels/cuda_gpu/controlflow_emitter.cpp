@@ -208,7 +208,7 @@ std::string
 std::string cuda::ControlFlowEmitter::get_launch_bound(nnfusion::ir::Instruction::Pointer ins)
 {
     auto type = ins->getGNode()->get_op_type();
-    if (type == "If" || type == "Loop" || type == "Recursion" || type == "FuncForward")
+    if (type == "If" || type == "Loop" || type == "Recursion" || type == "FuncForward" || type ==  "While")
         return "";
     auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
     cuda::dim3 grid = kernel->get_grid_dim();
@@ -469,7 +469,11 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             else if (subgraph_output_map.count(tensor->get_name(false)))
             {
                 auto output_index = subgraph_output_map.at(tensor->get_name(false));
-                m_param_map[tensor] = "output" + std::to_string(output_index);
+                if (output_index == -1) {
+                    m_param_map[tensor] = "&cond";
+                } else {
+                    m_param_map[tensor] = "output" + std::to_string(output_index);
+                }
             }
             else
                 m_param_map[tensor] = get_workspace_tensor(tensor);

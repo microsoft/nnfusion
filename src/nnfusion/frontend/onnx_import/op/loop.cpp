@@ -5,6 +5,7 @@
 #include "../util/graph_convert.hpp"
 #include "../util/util.hpp"
 #include "nnfusion/core/operators/op_define/loop.hpp"
+#include "nnfusion/core/operators/op_define/while.hpp"
 #include <map>
 
 using namespace nnfusion::frontend::onnx_import;
@@ -208,6 +209,8 @@ namespace nnfusion
                     const std::unordered_map<std::string, std::int64_t>& domain2version,
                     const std::unordered_map<std::string, size_t>& dim_params)
                 {
+                    bool is_for_op = (node_proto.input(0) != "");
+
                     Node node(node_proto);
                     onnx::GraphProto loop_body_graph_proto =
                         node.get_attribute_value<onnx::GraphProto>("body");
@@ -215,15 +218,27 @@ namespace nnfusion
                     std::unordered_map<std::string, int> node_inputs;
                     assert(loop_body_graph_proto.input_size() == node_proto.input_size());
                     int idx = 0;
-                    for (const auto& input_proto : loop_body_graph_proto.input())
-                    {
-                        node_inputs[input_proto.name()] = idx++;
-                        if (idx == 1)
-                            node_inputs[input_proto.name()] = -1;
-                    }
-                    for (size_t i = 0; i < node_proto.input_size(); i++)
-                    {
-                        node_inputs[node_proto.input(i)] = i;
+                    if (is_for_op) {
+                      for (const auto& input_proto : loop_body_graph_proto.input())
+                      {
+                          node_inputs[input_proto.name()] = idx++;
+                          if (idx == 1)
+                              node_inputs[input_proto.name()] = -1;
+                      }
+                      for (size_t i = 0; i < node_proto.input_size(); i++)
+                      {
+                          node_inputs[node_proto.input(i)] = i;
+                      }
+                    } else {
+                      for (const auto& input_proto : loop_body_graph_proto.input())
+                      {
+                          node_inputs[input_proto.name()] = idx - 1; // iter_count is ignored
+                          idx ++;
+                      }
+                      for (size_t i = 0; i < node_proto.input_size(); i++)
+                      {
+                          node_inputs[node_proto.input(i)] = i - 1;
+                      }
                     }
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     // we need to know which graph output maps to which Loop op output
@@ -263,8 +278,14 @@ namespace nnfusion
                             output_names.push_back(name);
                             output_name_set.insert(name);
                         }
-                        for (size_t i = 0; i < output_names.size() - 1; i++) {
-                            output_to_input[output_names[i]] = input_names[i + 2];
+                        if (is_for_op) {
+                          for (size_t i = 0; i < output_names.size() - 1; i++) {
+                              output_to_input[output_names[i]] = input_names[i + 2];
+                          }
+                        } else {
+                          for (size_t i = 0; i < output_names.size(); i++) {
+                              output_to_input[output_names[i]] = input_names[i + 1];
+                          }
                         }
                     }
                     // write to the output node after read its corresponding node
@@ -348,24 +369,35 @@ namespace nnfusion
                         }
                     }
 
-                    auto loop_op =
-                        std::make_shared<op::Loop>(loop_body_graph, output_shapes, output_types);
-                    loop_op->set_loop_output_map(loop_output_map);
-                    loop_op->set_name(node_proto.name());
-                    auto loop_gnode = m_graph->add_node_and_edge(
-                        loop_op, input_indexes, /* output_size */ node_proto.output_size());
+                    if (is_for_op) {
+                      auto loop_op =
+                          std::make_shared<op::Loop>(loop_body_graph, output_shapes, output_types);
+                      loop_op->set_loop_output_map(loop_output_map);
+                      loop_op->set_name(node_proto.name());
+                      auto loop_gnode = m_graph->add_node_and_edge(
+                          loop_op, input_indexes, /* output_size */ node_proto.output_size());
 
-                    NamedNodeVector ret;
-                    for (size_t i = 0; i < node_proto.output_size(); i++)
-                    {
-                        ret.push_back(NamedNode(node_proto.output(i), loop_gnode, i));
-                    }
-                    for (auto item : input_indexes)
-                    {
-                        std::cout << "fin " << item.gnode->get_name() << std::endl;
+                      NamedNodeVector ret;
+                      for (size_t i = 0; i < node_proto.output_size(); i++)
+                      {
+                          ret.push_back(NamedNode(node_proto.output(i), loop_gnode, i));
+                      }
+                      return ret;
+                    } else {
+                      auto while_op = std::make_shared<op::While>(loop_body_graph, output_shapes, output_types);
+                      while_op->set_loop_output_map(loop_output_map);
+                      while_op->set_name(node_proto.name());
+                      input_indexes.erase(input_indexes.begin());
+                      auto while_gnode = m_graph->add_node_and_edge(
+                          while_op, input_indexes, /* output_size */ node_proto.output_size());
+                      NamedNodeVector ret;
+                      for (size_t i = 0; i < node_proto.output_size(); i++)
+                      {
+                          ret.push_back(NamedNode(node_proto.output(i), while_gnode, i));
+                      }
+                      return ret;
                     }
 
-                    return ret;
                 }
 
             } // namespace set_1

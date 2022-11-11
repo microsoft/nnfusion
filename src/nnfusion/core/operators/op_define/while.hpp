@@ -22,40 +22,25 @@
 #include "../op.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/engine/interpreter.hpp"
+#include "loop.hpp"
 
 namespace nnfusion
 {
     namespace op
     {
         /// \brief Loop control-flow operation, with same definition as https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Loop-11.
-        class Loop : public Op
+        class While : public Loop
         {
         public:
             /// \brief Constructs an if operation
             ///
             /// \param loop_body_graph The loop body graph.<br>
             /// `[f]`
-            Loop(std::shared_ptr<nnfusion::graph::Graph>& loop_body_graph,
+            While(std::shared_ptr<nnfusion::graph::Graph>& loop_body_graph,
                  const std::vector<nnfusion::PartialShape>& output_shapes,
-                 const std::vector<nnfusion::element::Type>& output_types,
-                 std::string op_type="Loop");
+                 const std::vector<nnfusion::element::Type>& output_types);
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
-            std::shared_ptr<nnfusion::graph::Graph> get_loop_body_graph();
-            TranslationUnit::Pointer get_loop_body_tu();
-            std::unordered_map<std::string, int> get_loop_output_map() { return m_loop_output_map; }
-            void set_loop_output_map(std::unordered_map<std::string, int> map)
-            {
-                m_loop_output_map = std::move(map);
-            }
-            void set_loop_body_tu(TranslationUnit::Pointer);
-
-        protected:
-            std::shared_ptr<nnfusion::graph::Graph> m_loop_body_graph;
-            std::vector<nnfusion::PartialShape> m_output_shapes;
-            std::vector<nnfusion::element::Type> m_output_types;
-            std::unordered_map<std::string, int> m_loop_output_map;
-            TranslationUnit::Pointer m_loop_body_tu;
         };
     } // namespace op
 } // namespace nnfusion

@@ -346,7 +346,8 @@ namespace nnfusion
                             auto item = node->get_name();
                             if (!node_inputs.count(item))
                             {
-                                node_inputs[item] = idx++;
+                                node_inputs[item] = idx - 1;
+                                idx ++;
                                 if (find_node_from_graph(m_graph, item) == nullptr)
                                 {
                                     NNFUSION_CHECK(all_ng_nodes.count(item));

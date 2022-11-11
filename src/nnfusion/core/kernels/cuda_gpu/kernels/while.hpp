@@ -17,6 +17,8 @@ namespace nnfusion
                 While(shared_ptr<KernelContext> ctx);
 
                 LanguageUnit_p emit_function_body() override;
+            protected:
+                size_t m_cond_offset;
             };
         } // namespace cuda
     }     // namespace kernels

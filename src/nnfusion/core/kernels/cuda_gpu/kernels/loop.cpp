@@ -16,7 +16,7 @@ DECLARE_int32(ffused_max_grid);
 DEFINE_int32(floop_copy_blockdim, 256, "");
 DECLARE_bool(ffast_barrier);
 
-cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
+cuda::Loop::Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory)
     : ControlFlowEmitter(ctx)
 {
     std::stringstream tag;
@@ -31,7 +31,8 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx)
         m_pool_offset[pair.second->get_name()] = workspace_size;
         workspace_size += pair.second->max_allocated();
     }
-    m_workspace = allocate_tensor(Shape{workspace_size}, nnfusion::element::character);
+    reserved_memory_start = workspace_size;
+    m_workspace = allocate_tensor(Shape{workspace_size + reserve_memory}, nnfusion::element::character);
     m_context->inputs.push_back(m_workspace);
     m_context->input_names.push_back(m_workspace->get_name());
     auto output_map = op->get_loop_output_map();

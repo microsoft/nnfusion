@@ -15,11 +15,12 @@ DECLARE_bool(ffast_barrier);
 DECLARE_int32(ffused_max_grid);
 
 cuda::While::While(shared_ptr<KernelContext> ctx)
-    : Loop(ctx)
+    : Loop(ctx, 256)
 {
     std::stringstream tag;
     tag << "_WhileOP";
     custom_tag = tag.str();
+    m_cond_offset = reserved_memory_start;
 }
 
 LanguageUnit_p cuda::While::emit_function_body()
@@ -40,9 +41,10 @@ LanguageUnit_p cuda::While::emit_function_body()
         }
         for (int i = 0; i < m_context->outputs.size(); i++)
             lu << "input" << i + 1  << " = output" << i << ";\n";
+        lu << "char* cond = (char*)(input" + std::to_string(m_context->inputs.size() - 1) + "+" + std::to_string(m_cond_offset) + ");\n";
+        lu << "if (blockIdx.x == 0 && threadIdx.x == 0) { cond[0] = input0[0]; }\n";
         lu << "Barrier();\n";
-        lu << "char cond = *input0;\n";
-        lu << "while (cond)";
+        lu << "while (*cond)";
         lu.block_begin();
         generate_subgraph_code(_lu, true);
         lu.block_end();

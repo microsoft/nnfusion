@@ -300,6 +300,7 @@ namespace nnfusion
                 REGISTER_DOMAIN_OPERATOR(
                     "com.microsoft", "TrainableDropoutGrad", 1, TranslateTrainableDropoutGradOp);
                 REGISTER_OPERATOR("Transpose", 1, TranslateTransposeOp);
+                REGISTER_OPERATOR("Transpose", 13, TranslateTransposeOp);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "TransposeMatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("Unsqueeze", 1, TranslateUnsqueezeOp);
                 REGISTER_OPERATOR("Unsqueeze", 13, TranslateUnsqueezeOp);

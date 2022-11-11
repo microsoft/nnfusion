@@ -38,6 +38,11 @@ namespace nnfusion
 
             } // namespace set_1
 
+            namespace set_13
+            {
+                using set_1::TranslateTransposeOp;
+            }
+
         } //namespace onnx_import
 
     } // namespace frontend

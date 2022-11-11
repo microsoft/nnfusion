@@ -144,13 +144,13 @@ namespace nnfusion
                                 size_t p_i = floor((float)p / 2);
                                 if (auto_pad == "SAME_UPPER")
                                 {
-                                    padding_above.push_back(p_i);
-                                    padding_below.push_back(p_i + 1);
+                                    padding_below.push_back(p_i);
+                                    padding_above.push_back(p_i + 1);
                                 }
                                 else
                                 {
-                                    padding_above.push_back(p_i + 1);
-                                    padding_below.push_back(p_i);
+                                    padding_below.push_back(p_i + 1);
+                                    padding_above.push_back(p_i);
                                 }
                             }
                         }
@@ -166,35 +166,35 @@ namespace nnfusion
                     }
                     std::string conv_data_format = assign_data_format(data_shape);
 
-                    if (padding_above != padding_below)
-                    {
-                        int rank = data_shape.size();
-                        Shape padding_above_temp(rank, 0);
-                        Shape padding_below_temp(rank, 0);
-                        Shape padding_interior_temp(rank, 0);
+                    // if (padding_above != padding_below)
+                    // {
+                    //     int rank = data_shape.size();
+                    //     Shape padding_above_temp(rank, 0);
+                    //     Shape padding_below_temp(rank, 0);
+                    //     Shape padding_interior_temp(rank, 0);
 
-                        for (int i = 0; i < spatial_len; i++)
-                        {
-                            padding_above_temp[i + 2] = padding_above[i];
-                            padding_below_temp[i + 2] = padding_below[i];
-                            padding_above[i] = 0;
-                            padding_below[i] = 0;
-                        }
+                    //     for (int i = 0; i < spatial_len; i++)
+                    //     {
+                    //         padding_above_temp[i + 2] = padding_above[i];
+                    //         padding_below_temp[i + 2] = padding_below[i];
+                    //         padding_above[i] = 0;
+                    //         padding_below[i] = 0;
+                    //     }
 
-                        auto pad_val_op =
-                            std::make_shared<op::Constant>(data.get_element_type(),
-                                                           nnfusion::Shape{},
-                                                           std::vector<std::string>{"0"});
-                        auto pad_val_gnode =
-                            m_graph->add_node_and_edge(pad_val_op, GNodeIndexVector{});
+                    //     auto pad_val_op =
+                    //         std::make_shared<op::Constant>(data.get_element_type(),
+                    //                                        nnfusion::Shape{},
+                    //                                        std::vector<std::string>{"0"});
+                    //     auto pad_val_gnode =
+                    //         m_graph->add_node_and_edge(pad_val_op, GNodeIndexVector{});
 
-                        auto pad_op = std::make_shared<op::Pad>(
-                            padding_below_temp, padding_above_temp, padding_interior_temp);
+                    //     auto pad_op = std::make_shared<op::Pad>(
+                    //         padding_below_temp, padding_above_temp, padding_interior_temp);
 
-                        auto pad_gnode =
-                            m_graph->add_node_and_edge(pad_op, {data, GNodeIndex(pad_val_gnode)});
-                        data = GNodeIndex(pad_gnode, 0);
-                    }
+                    //     auto pad_gnode =
+                    //         m_graph->add_node_and_edge(pad_op, {data, GNodeIndex(pad_val_gnode)});
+                    //     data = GNodeIndex(pad_gnode, 0);
+                    // }
 
                     std::shared_ptr<nnfusion::graph::GNode> conv_node = nullptr;
                     if (groups == 1)

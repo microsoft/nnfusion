@@ -26,8 +26,8 @@ REGISTER_OP(ConvTranspose)
         NNFUSION_CHECK(is_nchw) << "ConvTranspose only supports NCHW now!";
 
         Shape kernel_shape = op->localOpConfig.getRoot()["kernel_shape"];
-        NNFUSION_CHECK(kernel_shape[0] == kernel_shape[1])
-            << "ConvTranspose only sopport equal kernel size!";
+        // NNFUSION_CHECK(kernel_shape[0] == kernel_shape[1])
+        //     << "ConvTranspose only sopport equal kernel size!";
 
         Strides strides = op->localOpConfig.getRoot()["strides"];
         CoordinateDiff padding_above = op->localOpConfig.getRoot()["padding_above"];
@@ -49,7 +49,8 @@ REGISTER_OP(ConvTranspose)
                                   ((kernel_shape[i] - 1) * dilations[i] + 1) - padding_above[i] -
                                   padding_below[i];
         }
-
+        NNFUSION_LOG(INFO) << input_shape << kernel_shape << strides << padding_above
+                           << padding_below;
         output_shape[1] = filter_shape[1];
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
     })
@@ -94,58 +95,44 @@ REGISTER_OP(ConvTranspose)
         const auto& in_shape = gnode->get_input_shape(0);
         const auto& out_shape = gnode->get_output_shape(0);
 
-        auto ir_template =
-            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@.when([@pad_cond@], const(0.0).cast(@input0@@input0_layout@.dtype())) * @input1@@input1_layout@ where @where_cond@; )";
-
-        // if (pads_above != pads_below)
-        // {
-        //     NNFUSION_LOG(NNFUSION_WARNING) << "Asymetric padding is not supported by now.";
-        //     return "";
-        // }
-        nnfusion::op::OpConfig::any config;
-        size_t spatial_len = kernel_shape.size();
-        std::string where_cond, pad_cond;
-        std::string input0_layout = "[N, C, ";
-        std::string input1_layout = "[C, F, ";
-        std::string output0_layout = "[N, F, ";
-        for (size_t i = 0; i < spatial_len; i++)
+        bool stridesone = true;
+        for (size_t i = 0; i < strides.size(); i++)
         {
-            std::string DOI = "DO" + to_string(i);
-            std::string KI = "K" + to_string(i);
-            std::string where_DOI = DOI + " in " + to_string(out_shape[2 + i]);
-            std::string where_KI = KI + " in " + to_string(kernel_shape[i]);
-            std::string pad_i = to_string(kernel_shape[i] / 2) + " + " + to_string(pads_above[i]);
-            where_cond += where_DOI + ", " + where_KI;
-            input1_layout += to_string(kernel_shape[i]) + " - " + KI + " - 1";
-            output0_layout += DOI;
-            std::string input_i_pre =
-                "(-" + pad_i + " + " + DOI + " + " + KI + " * " + to_string(dilations[i]) + ")";
-            std::string input_i = input_i_pre + " // " + to_string(strides[i]);
-            input0_layout += input_i;
-            pad_cond += input_i + " >= 0, " + input_i + " < " + to_string(in_shape[i + 2]) + ", " +
-                        input_i_pre + " % " + to_string(strides[i]) + " == 1";
-
-            if (i != spatial_len - 1)
+            if (strides[i] != 1)
             {
-                where_cond += ", ";
-                input1_layout += ", ";
-                output0_layout += ", ";
-                input0_layout += ", ";
-                pad_cond += ", ";
-            }
-            else
-            {
-                input1_layout += "]";
-                output0_layout += "]";
-                input0_layout += "]";
+                stridesone = false;
+                break;
             }
         }
+        auto ir_template1 =
+            R"(output0[N, F, HO, WO] +=! input0[N, C, @ACCESS_H@, @ACCESS_W@].when([@ACCESS_H@ >= 0, @ACCESS_H@ < @_H@, @ACCESS_W@ >= 0, @ACCESS_W@ < @_W@], const(0, input0.dtype())) * input1[C, F, KH, KW] where HO in @_HO@, WO in @_WO@)";
+        auto ir_templateN =
+            R"(mediate0[N, C, HO, WO, KH, KW] = input0[N, C, @ACCESS_H@, @ACCESS_W@].when([@ACCESS_H@ >= 0, @ACCESS_H@ < @_H@, @ACCESS_W@ >= 0, @ACCESS_W@ < @_W@, (HO + @_PH0@ - KH) % @_SH@ == 0, (WO + @_PW0@ - KW) % @_SW@ == 0], const(0, input0.dtype())) where HO in @_HO@, WO in @_WO@, KH in @_KH@, KW in @_KW@; output0[N, F, HO, WO] +=! mediate0[N, C, HO, WO, KH, KW] * input1[C, F, KH, KW])";
+        nnfusion::op::OpConfig::any config;
 
-        config["input1_layout"] = input1_layout;
-        config["output0_layout"] = output0_layout;
-        config["input0_layout"] = input0_layout;
-        config["where_cond"] = where_cond;
-        config["pad_cond"] = pad_cond;
+        std::string access_h =
+            stridesone ? "HO - KH + " + to_string(pads_below[0])
+                       : "(HO - KH + " + to_string(pads_below[0]) + ") // " + to_string(strides[0]);
+        std::string access_w =
+            stridesone ? "WO - KW + " + to_string(pads_below[1])
+                       : "(WO - KW + " + to_string(pads_below[1]) + ") // " + to_string(strides[1]);
+        config["ACCESS_H"] = access_h;
+        config["ACCESS_W"] = access_w;
+        config["_H"] = to_string(in_shape[2]);
+        config["_W"] = to_string(in_shape[3]);
+        config["_HO"] = to_string(out_shape[2]);
+        config["_WO"] = to_string(out_shape[3]);
+        config["_N"] = to_string(in_shape[0]);
+        config["_CI"] = to_string(in_shape[1]);
+        config["_KH"] = to_string(kernel_shape[0]);
+        config["_KW"] = to_string(kernel_shape[1]);
+        config["_PH0"] = to_string(pads_below[0]);
+        config["_PW0"] = to_string(pads_below[1]);
+        config["_SH"] = to_string(strides[0]);
+        config["_SW"] = to_string(strides[1]);
 
-        return op::create_code_from_template(ir_template, config);
+        if (stridesone)
+            return op::create_code_from_template(ir_template1, config);
+        else
+            return op::create_code_from_template(ir_templateN, config);
     });

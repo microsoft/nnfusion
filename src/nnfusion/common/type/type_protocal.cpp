@@ -10,7 +10,7 @@ using namespace nnfusion;
 
 const std::map<element::Type, element::TypeProtocal> element::typeMemProto = {
     {element::dynamic, element::getEmptyProtocal()},
-    {element::boolean, element::getDefaultProtocal<bool>()},
+    {element::boolean, element::getDefaultProtocal<int16_t>()},
     {element::character, element::getDefaultProtocal<char>()},
     {element::bf16, element::getDefaultProtocal<char>()}, // TODO: verify what to do with bf16
     {element::f16,

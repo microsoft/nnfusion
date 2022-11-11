@@ -46,7 +46,7 @@ namespace nnfusion
                     Node node(node_proto);
                     std::shared_ptr<nnfusion::op::Constant> const_op;
                     NNFUSION_LOG(INFO) << Shape(std::begin(output_shape), std::end(output_shape));
-                    try
+                    if (node.has_attribute("value"))
                     {
                         auto value = node.get_attribute_value<Tensor>("value");
                         NNFUSION_CHECK(nnfusion::shape_size(value.get_shape()) == 1);
@@ -55,7 +55,7 @@ namespace nnfusion
                             Shape(std::begin(output_shape), std::end(output_shape)),
                             value);
                     }
-                    catch (const std::exception&)
+                    else
                     {
                         auto vec = std::vector<float>{0};
                         const_op = std::make_shared<op::Constant>(element::f32, Shape{1}, vec);

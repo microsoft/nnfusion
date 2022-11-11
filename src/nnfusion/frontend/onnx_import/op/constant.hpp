@@ -48,6 +48,11 @@ namespace nnfusion
                     return ret;
                 }
             } // namespace set_1
-        }     //namespace onnx_import
-    }         // namespace frontend
+
+            namespace set_9
+            {
+                using set_1::TranslateConstantOp;
+            }
+        } //namespace onnx_import
+    }     // namespace frontend
 } // namespace nnfusion

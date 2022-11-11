@@ -107,6 +107,21 @@ namespace nnfusion
                 }
 
             } // namespace set_7
-        }     // namespace onnx_import
-    }         // namespace frontend
+
+            namespace set_6
+            {
+                using set_7::TranslateBinaryOp;
+            }
+
+            namespace set_13
+            {
+                using set_7::TranslateBinaryOp;
+            }
+
+            namespace set_14
+            {
+                using set_7::TranslateBinaryOp;
+            }
+        } // namespace onnx_import
+    }     // namespace frontend
 } // namespace ngraph

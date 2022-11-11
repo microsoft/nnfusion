@@ -50,6 +50,11 @@ namespace nnfusion
 
             } // namespace set_1
 
+            namespace set_11
+            {
+                using set_1::TranslateConvOp;
+            }
+
         } //namespace onnx_import
 
     } // namespace frontend

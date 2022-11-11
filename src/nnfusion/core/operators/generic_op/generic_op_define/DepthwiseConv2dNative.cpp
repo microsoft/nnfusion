@@ -100,8 +100,7 @@ REGISTER_OP(DepthwiseConv2dNative)
         const auto& in_shape = curr->get_input_shape(0);
         const auto& out_shape = curr->get_output_shape(0);
         const std::string data_format = is_nhwc ? "nhwc" : "nchw";
-        NNFUSION_CHECK(dilation_h == 1) << "Not support other dilation yet.";
-        NNFUSION_CHECK(dilation_w == 1) << "Not support other dilation yet.";
+
         nnfusion::op::OpConfig::any config;
         config["input1_layout"] = "[KH, KW, C, 0]";
         config["output0_layout"] = is_nhwc ? "[N, HO, WO, C]" : "[N, C, HO, WO]";
@@ -113,8 +112,10 @@ REGISTER_OP(DepthwiseConv2dNative)
         config["pad_1"] = to_string(padding_w);
         config["kernel_h"] = to_string(kernel_size_h);
         config["kernel_w"] = to_string(kernel_size_w);
-        std::string HO = "-@pad_0@ + KH + HO * " + to_string(stride_h);
-        std::string WO = "-@pad_1@ + KW + WO * " + to_string(stride_w);
+        std::string HO =
+            "-@pad_0@ + KH * " + to_string(dilation_h) + " + HO * " + to_string(stride_h);
+        std::string WO =
+            "-@pad_1@ + KW * " + to_string(dilation_w) + " + WO * " + to_string(stride_w);
         std::string shape_template =
             is_nhwc ? "[N, " + HO + ", " + WO + ", C]" : "[N, C, " + HO + ", " + WO + "]";
         config["input0_layout"] = op::create_code_from_template(shape_template, config);

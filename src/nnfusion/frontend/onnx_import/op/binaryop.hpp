@@ -85,6 +85,7 @@ namespace nnfusion
             } // namespace set_1
             namespace set_6
             {
+                using set_1::TranslateBinaryOp;
                 using set_1::TranslateLegacyBinaryOp;
             }
 

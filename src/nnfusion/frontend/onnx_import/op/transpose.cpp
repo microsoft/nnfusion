@@ -38,13 +38,17 @@ namespace nnfusion
 
                     auto input_rank = data.get_shape().size();
                     Node node(node_proto);
-                    auto perm = node.get_attribute_value<std::vector<int64_t>>("perm");
-                    if (perm.empty())
-                    {
-                        perm.resize(input_rank);
-                        // by default it reverse input dims
-                        std::iota(perm.rbegin(), perm.rend(), 0);
-                    }
+                    std::vector<int64_t> default_perm(input_rank);
+                    std::iota(default_perm.rbegin(), default_perm.rend(), 0);
+
+                    auto perm =
+                        node.get_attribute_value<std::vector<int64_t>>("perm", default_perm);
+                    // if (perm.empty())
+                    // {
+                    //     perm.resize(input_rank);
+                    //     // by default it reverse input dims
+                    //     std::iota(perm.rbegin(), perm.rend(), 0);
+                    // }
                     AxisVector ng_axis_order(perm.begin(), perm.end());
 
                     auto out_gnode =

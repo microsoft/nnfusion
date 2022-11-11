@@ -327,7 +327,8 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             // this hack is to eliminate d2d copy caused by extern result memory
             // we only apply the repalce for non-eliminative ops
             if (FLAGS_fextern_result_memory && gnode && !kernel->is_eliminative() &&
-                !((*gnode)["is_eliminative"].is_valid_as<bool>()))
+                !((*gnode)["is_eliminative"].is_valid_as<bool>()) &&
+                !gnode->get_op_ptr()->is_constant())
             {
                 auto out_users = gnode->get_output_users(0, false);
                 if (gnode->get_output_size() == 1 && out_users.size() == 1 &&
@@ -1395,19 +1396,15 @@ void CudaCodegenPass::create_cmake_file(std::shared_ptr<InterpreterContext> ctx,
     auto& lu = *lup_cmake;
     lu << R"(project(main_test)
 cmake_minimum_required(VERSION 3.5)
-
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
 SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75" CACHE STRING "target architecture")
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
-
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++11 -march=native")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-
 find_package(CUDA)
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 # set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}  -ftemplate-depth=4096 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75")

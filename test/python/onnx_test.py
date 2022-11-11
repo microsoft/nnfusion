@@ -224,7 +224,7 @@ class TestContext:
                     nnf_torch_outputs[-1].zero_()
                     nnf_outputs[name] = cast_pytorch_tensor(nnf_torch_outputs[-1])
                 rt.feed_data(nnf_inputs, nnf_outputs)
-                outputs = [t.cpu().numpy() for t in nnf_torch_outputs]#list(prepared_model.run(inputs))
+                outputs = [nnf_outputs[output_i.name].to_pytorch_tensor().cpu().numpy() for output_i in model.graph.output]#list(prepared_model.run(inputs))
             except:
                 print("@,", op_name , ",", model_test.name, ", EXECUTION ERROR", ", FAILED")
                 continue

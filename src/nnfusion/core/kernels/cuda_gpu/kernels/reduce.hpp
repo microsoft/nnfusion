@@ -605,11 +605,11 @@ if (thread_idx == 0) output0[block_idx] = val;
             };
 
             template <class T>
-            class ReduceMemcpy : public CudaLibEmitter
+            class ReduceMemcpy : public BlockCudaEmitter
             {
             public:
                 ReduceMemcpy(shared_ptr<KernelContext> ctx)
-                    : CudaLibEmitter(ctx)
+                    : BlockCudaEmitter(ctx)
                 {
                     if (auto reduce =
                             dynamic_pointer_cast<nnfusion::op::Reduce>(ctx->gnode->get_op_ptr()))
@@ -694,18 +694,13 @@ if (thread_idx == 0) output0[block_idx] = val;
                     auto& lu = *_lu;
                     auto& dst = m_context->outputs[0];
                     auto& src = m_context->inputs[0];
-                    lu << dst->get_element_type().c_type_string() << "* " << dst->get_name()
-                       << " = output0;\n";
-                    lu << src->get_element_type().c_type_string() << "* " << src->get_name()
-                       << " = input0;\n";
-
-                    //emit_memcpyDtD(lu, dst, src);
-                    lu << "if (input0 != output0) {\n"
-                       << "    CUDA_SAFE_CALL(cudaMemcpyAsync(" << dst->get_name() << ", "
-                       << src->get_name() << ", " << dst->size()
-                       << ", cudaMemcpyDeviceToDevice, stream));\n"
-                       << "}\n";
-
+                    lu << "int tid = blockIdx.x * blockDim.x + threadIdx.x;\n";
+                    lu << "if (tid < " << shape_size(input_shape) << ")\n";
+                    lu.block_begin();
+                    {
+                        lu << "output0[tid] = input0[tid];\n";
+                    }
+                    lu.block_end();
                     return _lu;
                 }
 
@@ -716,40 +711,12 @@ if (thread_idx == 0) output0[block_idx] = val;
                     return _lu;
                 }
 
-                LanguageUnit_p emit_function_signature() override
-                {
-                    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
-                    auto& lu = *_lu;
-
-                    vector<string> params;
-                    for (size_t i = 0; i < m_context->inputs.size(); i++)
-                    {
-                        stringstream ss;
-                        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
-                        ss << "input" << i;
-                        params.push_back(ss.str());
-                    }
-
-                    for (size_t i = 0; i < m_context->outputs.size(); i++)
-                    {
-                        stringstream ss;
-                        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
-                        ss << "output" << i;
-                        params.push_back(ss.str());
-                    }
-
-                    for (size_t i = 0; i < m_context->tensors.size(); i++)
-                    {
-                        stringstream ss;
-                        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-                        // defult name is: "persit0", "persist1" ...
-                        ss << m_context->tensors[i]->get_name();
-                        params.push_back(ss.str());
-                    }
-
-                    lu << "void "
-                       << "(cudaStream_t stream, " << join(params, ", ") << ")";
-                    return _lu;
+                void set_launch_config() {
+                    size_t nthreads = shape_size(m_context->outputs[0]->get_shape());
+                    size_t block_size_x = min(nthreads, static_cast<size_t>(256));
+                    size_t grid_size_x = (nthreads + block_size_x - 1) / block_size_x;
+                    m_gridDim = dim3(grid_size_x, 1, 1);
+                    m_blockDim = dim3(block_size_x, 1, 1);
                 }
 
             private:

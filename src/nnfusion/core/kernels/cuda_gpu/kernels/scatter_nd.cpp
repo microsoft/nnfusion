@@ -17,7 +17,6 @@ LanguageUnit_p cuda::ScatterND::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
-    lu << "// scatternd kerne\n";
     lu << "uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;\n";
     lu << "if (tid >= " << update_shape << ") { return; }\n";
     lu << "output0[" << update_shape <<"* input1[0] + tid] = input2[tid];\n";

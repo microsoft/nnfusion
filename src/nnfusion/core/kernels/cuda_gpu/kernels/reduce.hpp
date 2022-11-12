@@ -237,6 +237,7 @@ if (thread_idx == 0) output0[block_idx] = val;
                         {{"width", width}, {"block_size", expected_block_size}, {"warp_size", 32}});
 
                     lu << code2 << "\n";
+                    num_local_thread_sync = 2;
                     return _lu;
                 }
 

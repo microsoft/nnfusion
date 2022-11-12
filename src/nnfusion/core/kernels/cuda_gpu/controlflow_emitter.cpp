@@ -470,7 +470,7 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             {
                 auto output_index = subgraph_output_map.at(tensor->get_name(false));
                 if (output_index == -1) {
-                    m_param_map[tensor] = "&cond";
+                    m_param_map[tensor] = "cond";
                 } else {
                     m_param_map[tensor] = "output" + std::to_string(output_index);
                 }

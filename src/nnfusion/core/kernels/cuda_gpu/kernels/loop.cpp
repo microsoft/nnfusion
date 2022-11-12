@@ -112,6 +112,7 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
     auto& lu = *_lu;
     std::set<int64_t> outputs;
     std::set<int64_t> emitted;
+    bool all_kernel_uses_single_block = true;
     for (auto ins : *m_body_instructions)
     {
         auto node = ins->getGNode();
@@ -134,7 +135,12 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
                 if (FLAGS_ffast_barrier && std::dynamic_pointer_cast<ControlFlowEmitter>(kernel) != nullptr) {
                     NNFUSION_CHECK_FAIL() << "TODO: skip barrier for control flow kernels";
                 }
-                lu << "Barrier();\n";
+                if (all_kernel_uses_single_block) {
+                    lu << "if (blockIdx.x == 0) { __threadfence(); __syncthreads(); }\n";
+                } else {
+                    lu << "Barrier();\n";
+                }
+                all_kernel_uses_single_block = true;
                 outputs.clear();
             }
             outputs.insert(node->get_id());
@@ -174,6 +180,7 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
             lu << "<<<dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), dim3("
             << block_dim.x << ", " << block_dim.y << ", " << block_dim.z << ")>>>(" << join(params, ", ") << ");\n";
         }
+        all_kernel_uses_single_block &= (kernel->get_grid_dim().x == 1 && kernel->get_grid_dim().y == 1 && kernel->get_grid_dim().z == 1);
     }
     if (in_cuda) {
         lu << "Barrier();\n";

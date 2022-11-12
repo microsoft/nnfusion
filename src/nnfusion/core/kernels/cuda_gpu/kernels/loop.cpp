@@ -16,8 +16,8 @@ DECLARE_int32(ffused_max_grid);
 DEFINE_int32(floop_copy_blockdim, 256, "");
 DECLARE_bool(ffast_barrier);
 
-cuda::Loop::Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory)
-    : ControlFlowEmitter(ctx)
+cuda::Loop::Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory, int input_output_index_bias)
+    : ControlFlowEmitter(ctx), m_input_output_index_bias(input_output_index_bias)
 {
     std::stringstream tag;
     tag << "_LoopOP";
@@ -53,6 +53,7 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory)
         m_context->tensors.push_back(m_sync_tensor);
         m_context->tensor_names.push_back(m_sync_tensor->get_name());
     }
+    m_input_output_index_bias = input_output_index_bias;
 }
 
 void fetch_dependent(const std::set<int64_t>& emitted, std::vector<std::shared_ptr<nnfusion::graph::GNode>>& depend, std::shared_ptr<nnfusion::graph::GNode> node) {
@@ -327,8 +328,8 @@ LanguageUnit_p cuda::Loop::emit_dependency()
         for (size_t i = 0; i < m_context->outputs.size(); i++)
         {
             stringstream ss;
-            ss << m_context->inputs[i + 2]->get_element_type().c_type_string() << "* ";
-            ss << "input" << i + 2;
+            ss << m_context->inputs[i + m_input_output_index_bias]->get_element_type().c_type_string() << "* ";
+            ss << "input" << i + m_input_output_index_bias;
             params_with_type.push_back(ss.str());
         }
 
@@ -352,7 +353,7 @@ LanguageUnit_p cuda::Loop::emit_dependency()
             k << "if (blockIdx.x >= " << block_begin << " && blockIdx.x < " << block_end << ")\n";
             k.block_begin();
             k << "int tid = (blockIdx.x - " << block_begin << ") * blockDim.x + threadIdx.x;\n";
-            k << "if (tid < " << tensor_size << ") output" << i << "[tid] = input" << i + 2 << "[tid];\n";
+            k << "if (tid < " << tensor_size << ") output" << i << "[tid] = input" << i + m_input_output_index_bias << "[tid];\n";
             k.block_end();
             block_begin = block_end;
         }

@@ -13,7 +13,7 @@ namespace nnfusion
             class Loop : public ControlFlowEmitter
             {
             public:
-                Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory=0);
+                Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory=0, int input_output_index_bias=2);
 
                 LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;
@@ -26,6 +26,7 @@ namespace nnfusion
                 TranslationUnit::Pointer m_loop_body_tu;
                 ir::BasicBlock::Pointer m_body_instructions;
                 size_t reserved_memory_start;
+                int m_input_output_index_bias;
             };
         } // namespace cuda
     }     // namespace kernels

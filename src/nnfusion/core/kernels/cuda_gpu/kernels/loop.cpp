@@ -120,22 +120,23 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
         // std::cout << node->get_id() << " " << node->get_op_type() << " depends on: ";
         if (in_cuda) {
             // whether to add a barrier
-            bool need_barrier = false;
-            std::vector<std::shared_ptr<nnfusion::graph::GNode>> depend;
-            fetch_dependent(emitted, depend, node);
-            for (auto src: depend) {
-                if (outputs.find(src->get_id()) != outputs.end()) {
-                    need_barrier = true;
-                    // std::cout << "(depend)";
-                }
-                // std::cout << src->get_id() << " " << src->get_op_type() << ", ";
-            }
-            // std::cout << std::endl;
+            // bool need_barrier = false;
+            // std::vector<std::shared_ptr<nnfusion::graph::GNode>> depend;
+            // fetch_dependent(emitted, depend, node);
+            // for (auto src: depend) {
+            //     if (outputs.find(src->get_id()) != outputs.end()) {
+            //         need_barrier = true;
+            //         // std::cout << "(depend)";
+            //     }
+            //     // std::cout << src->get_id() << " " << src->get_op_type() << ", ";
+            // }
+            // // std::cout << std::endl;
+            bool need_barrier = true;
             if (need_barrier) {
                 if (FLAGS_ffast_barrier && std::dynamic_pointer_cast<ControlFlowEmitter>(kernel) != nullptr) {
                     NNFUSION_CHECK_FAIL() << "TODO: skip barrier for control flow kernels";
                 }
-                if (all_kernel_uses_single_block) {
+                if (all_kernel_uses_single_block && (kernel->get_grid_dim().x == 1 && kernel->get_grid_dim().y == 1 && kernel->get_grid_dim().z == 1)) {
                     lu << "if (blockIdx.x == 0) { __threadfence(); __syncthreads(); }\n";
                 } else {
                     lu << "Barrier();\n";

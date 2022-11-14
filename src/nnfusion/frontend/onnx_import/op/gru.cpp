@@ -15,7 +15,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace
             {
                 std::vector<std::shared_ptr<graph::GNode>>
                     forwardGRU(std::shared_ptr<nnfusion::graph::Graph> m_graph,
@@ -25,6 +25,8 @@ namespace nnfusion
                                std::shared_ptr<graph::GNode> B,
                                std::shared_ptr<graph::GNode> H0,
                                int linear_before_reset,
+                               std::string gate_func,
+                               std::string act_func,
                                bool reverse = false,
                                size_t max_concat_size = std::numeric_limits<std::size_t>::max())
                 {
@@ -121,8 +123,25 @@ namespace nnfusion
                             std::make_shared<op::Add>(),
                             {gates, gates_3}); // [batch, 2 * hidden_size]
                         // sigmoid is default gate activation
-                        gates =
-                            m_graph->add_node_and_edge(std::make_shared<op::Sigmoid>(), {gates});
+                        if (gate_func == "Sigmoid")
+                        {
+                            gates = m_graph->add_node_and_edge(std::make_shared<op::Sigmoid>(),
+                                                               {gates});
+                        }
+                        else if (gate_func == "Tanh")
+                        {
+                            gates =
+                                m_graph->add_node_and_edge(std::make_shared<op::Tanh>(), {gates});
+                        }
+                        else if (gate_func == "Relu")
+                        {
+                            gates =
+                                m_graph->add_node_and_edge(std::make_shared<op::Relu>(), {gates});
+                        }
+                        else
+                        {
+                            NNFUSION_CHECK_FAIL() << "Unsuppoted gate funcion: " << gate_func;
+                        }
                         slice_op = std::make_shared<op::Slice>(Coordinate{0, 0},
                                                                Coordinate{batch_size, hidden_size});
                         auto z =
@@ -171,8 +190,25 @@ namespace nnfusion
                         auto h = m_graph->add_node_and_edge(std::make_shared<op::Add>(),
                                                             {x_hidden, h_hidden});
                         // tanh is default linear activation
-                        h = m_graph->add_node_and_edge(std::make_shared<op::Tanh>(),
-                                                       {h}); // [batch, hidden_size]
+                        if (act_func == "Tanh")
+                        {
+                            h = m_graph->add_node_and_edge(std::make_shared<op::Tanh>(),
+                                                           {h}); // [batch, hidden_size]
+                        }
+                        else if (act_func == "Sigmoid")
+                        {
+                            h = m_graph->add_node_and_edge(std::make_shared<op::Sigmoid>(),
+                                                           {h}); // [batch, hidden_size]
+                        }
+                        else if (act_func == "Relu")
+                        {
+                            h = m_graph->add_node_and_edge(std::make_shared<op::Relu>(),
+                                                           {h}); // [batch, hidden_size]
+                        }
+                        else
+                        {
+                            NNFUSION_CHECK_FAIL() << "Unsuppoted activation: " << act_func;
+                        }
                         auto one_node = m_graph->add_node_and_edge(
                             std::make_shared<op::Constant>(
                                 h->get_element_type(), Shape{}, std::vector<std::string>{"1"}),
@@ -233,7 +269,20 @@ namespace nnfusion
                     // Ht: [batch, hidden_size]
                     return {Y, Ht};
                 }
+            }
+            namespace set_1
+            {
+                NamedNodeVector TranslateGRUOp(const onnx::NodeProto& node_proto,
+                                               const NodeMap& all_ng_nodes,
+                                               std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    NNFUSION_CHECK_FAIL() << "GRU not support for current op_set";
+                    return {};
+                }
+            }
 
+            namespace set_7
+            {
                 NamedNodeVector TranslateGRUOp(const onnx::NodeProto& node_proto,
                                                const NodeMap& all_ng_nodes,
                                                std::shared_ptr<nnfusion::graph::Graph> m_graph)
@@ -325,13 +374,29 @@ namespace nnfusion
 
                     NNFUSION_CHECK(activation_alpha.empty()) << "activation_alpha not supported";
                     NNFUSION_CHECK(activation_beta.empty()) << "activation_beta not supported";
-                    NNFUSION_CHECK(activations.empty()) << "activations not supported";
+                    if (activations.empty())
+                    {
+                        activations.push_back("Sigmoid");
+                        activations.push_back("Tanh");
+                        if (num_directions > 1)
+                        {
+                            activations.push_back("Sigmoid");
+                            activations.push_back("Tanh");
+                        }
+                    }
+                    else
+                    {
+                        NNFUSION_CHECK(activations.size() == 2 * num_directions)
+                            << "gru activations size should be equal to 2 * num_directions";
+                    }
                     NNFUSION_CHECK(clip == 0) << "clip not supported";
                     NNFUSION_CHECK(layout == 0) << "layout not supported";
                     NNFUSION_CHECK(hidden_size == attr_hidden_size) << "hidden_size mismatch";
 
                     std::shared_ptr<graph::GNode> forward_W, forward_R, forward_B, forward_H;
+                    std::string forward_gate, forward_act;
                     std::shared_ptr<graph::GNode> reverse_W, reverse_R, reverse_B, reverse_H;
+                    std::string reverse_gate, reverse_act;
 
                     if (num_directions == 2)
                     {
@@ -368,6 +433,10 @@ namespace nnfusion
                             std::make_shared<op::Slice>(Coordinate{1, 0, 0},
                                                         Coordinate{2, batch_size, hidden_size}),
                             {initial_h});
+                        forward_gate = activations[0];
+                        forward_act = activations[1];
+                        reverse_gate = activations[2];
+                        reverse_act = activations[3];
                     }
                     else if (direction == "forward")
                     {
@@ -375,6 +444,8 @@ namespace nnfusion
                         forward_R = R.gnode;
                         forward_B = B.gnode;
                         forward_H = initial_h.gnode;
+                        forward_gate = activations[0];
+                        forward_act = activations[1];
                     }
                     else if (direction == "reverse")
                     {
@@ -382,6 +453,8 @@ namespace nnfusion
                         reverse_R = R.gnode;
                         reverse_B = B.gnode;
                         reverse_H = initial_h.gnode;
+                        reverse_gate = activations[0];
+                        reverse_act = activations[1];
                     }
 
                     std::vector<std::shared_ptr<graph::GNode>> Y_res, Y_h_res;
@@ -411,6 +484,8 @@ namespace nnfusion
                                        forward_B,
                                        forward_H,
                                        linear_before_reset,
+                                       forward_gate,
+                                       forward_act,
                                        false,
                                        concat_size_limit);
                         res[0] = m_graph->add_node_and_edge(
@@ -451,6 +526,8 @@ namespace nnfusion
                                        reverse_B,
                                        reverse_H,
                                        linear_before_reset,
+                                       reverse_gate,
+                                       reverse_act,
                                        true,
                                        concat_size_limit);
                         res[0] = m_graph->add_node_and_edge(
@@ -481,7 +558,12 @@ namespace nnfusion
                     return {{node_proto.output(0), Y, 0}, {node_proto.output(1), Y_h, 0}};
                 }
 
-            } // namespace set_1
+            } // namespace set_7
+
+            namespace set_14
+            {
+                using set_7::TranslateGRUOp;
+            }
 
         } //namespace onnx_import
 

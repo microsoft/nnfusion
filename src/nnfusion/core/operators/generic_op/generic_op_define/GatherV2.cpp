@@ -74,7 +74,7 @@ REGISTER_OP(GatherV2)
         NNFUSION_CHECK(ret);
 
         auto ir_template =
-            R"( @output0@@output0_layout@ = @input0@[@input0_layout_left@@input1@@input1_layout@@input0_layout_right@]; )";
+            R"( @output0@@output0_layout@ = @input0@[@input0_layout_left@@input1@@input1_layout@.when(@input1@@input1_layout@ >= 0, @input1@@input1_layout@ + const(@gather_dim@).cast(@input1@@input1_layout@.dtype()))@input0_layout_right@]; )";
 
         auto output0_shape = curr->get_output_shape(0);
         auto output0_layout = op::create_layout_from_dims(output0_shape);
@@ -103,6 +103,7 @@ REGISTER_OP(GatherV2)
         op_config["input0_layout_left"] = input0_layout_left;
         op_config["input1_layout"] = vector_to_string<std::vector<std::string>>(input1_layout);
         op_config["input0_layout_right"] = input0_layout_right;
+        op_config["gather_dim"] = std::to_string(input0_shape[axis]);
 
         if (input1_layout.empty())
         {

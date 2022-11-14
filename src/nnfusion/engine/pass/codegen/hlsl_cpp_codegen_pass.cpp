@@ -69,7 +69,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         else
             lu_init_begin << "\nvoid hlsl_init()\n{\n";
 
-        lu_init_begin << "dxModuleSetCompat(\"cs_6_2\");\n";
+        lu_init_begin << "dxModuleSetCompat(\"cs_6_5\");\n";
         if (FLAGS_fhlsl_descriptor_heap)
         {
             lu_init_begin << "dxInit(1);\n";
@@ -167,6 +167,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
         {
             auto kernel = ins->getKernel();
             auto gnode = ins->getGNode();
+            if (gnode && kernel && kernel->is_eliminative())
+            {
+                (*gnode)["is_eliminative"] = true;
+            }
             if (gnode->get_op_ptr()->is_parameter())
                 continue;
             auto& async_info = (*ins)["Async_info"].as<AsyncExecutionInfo>();
@@ -178,8 +182,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    if (!(kernel->is_eliminative() ||
-                          (*gnode)["is_eliminative"].is_valid_as<bool>()))
+                    // if (!(kernel->is_eliminative() ||
+                    //       (*gnode)["is_eliminative"].is_valid_as<bool>()))
+                    if (!(*gnode)["is_eliminative"].is_valid_as<bool>() ||
+                        (*gnode)["is_eliminative"] == false)
                     {
                         LanguageUnit_p kernel_func_def;
                         if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
@@ -279,17 +285,51 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 }
 
                 // inplace the result tensor into kernel only if there is one out edge
-                if (non_control_edge == 1)
+                if (non_control_edge == 1 && !out_edge->get_src()->get_op_ptr()->is_tensor_op())
                 {
                     auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
                     if (out_edge->get_dst()->get_op_ptr()->is_output() &&
                         !is_ref_tensor(ins, out_tensor))
                     {
+                        auto in_node = out_edge->get_src();
+                        while ((*in_node)["is_eliminative"].is_valid_as<bool>() &&
+                               (*in_node)["is_eliminative"] == true &&
+                               !in_node->get_op_ptr()->is_tensor_op())
+                        {
+                            size_t non_ce = 0;
+                            std::shared_ptr<nnfusion::graph::Edge> in_edge;
+                            for (size_t i = 0; i < in_node->get_in_edges().size(); i++)
+                            {
+                                if (!in_node->get_in_edges()[i]->is_control_edge())
+                                {
+                                    non_ce++;
+                                    in_edge = in_node->get_in_edges()[i];
+                                    {
+                                        if (non_ce > 1)
+                                            break;
+                                    }
+                                }
+                            }
+                            if (non_ce > 1)
+                            {
+                                (*in_node)["is_eliminative"] = false;
+                            }
+                            else
+                            {
+                                in_node = in_edge->get_src();
+                            }
+                        }
                         std::shared_ptr<GNode> output = out_edge->get_dst();
-                        std::string in_name = output->get_input_tensor(0).get_name();
+                        // std::string in_name = output->get_input_tensor(0).get_name();
+                        std::string in_name = in_node->get_output_tensor(0).get_name();
                         std::string out_name = output->get_output_tensor(0).get_name();
-                        int pos = call_str.find(", " + in_name);
-                        call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        // int pos = call_str.find(", " + in_name);
+                        // call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        auto old_funcall = node_funccall[in_node];
+                        auto old_call_str = old_funcall->get_code();
+                        int pos = old_call_str.find(in_name + ");");
+                        old_funcall->modify_code(
+                            old_call_str.replace(pos, in_name.size(), out_name));
                         (*output)["is_eliminative"] = true;
                     }
                 }
@@ -298,8 +338,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
             {
                 call_str = func_name + call_str;
-                if ((kernel && kernel->is_eliminative()) ||
-                    (*gnode)["is_eliminative"].is_valid_as<bool>())
+                // if ((kernel && kernel->is_eliminative()) ||
+                //     (*gnode)["is_eliminative"].is_valid_as<bool>())
+                if ((*gnode)["is_eliminative"].is_valid_as<bool>() &&
+                    (*gnode)["is_eliminative"] == true)
                 {
                     call_str = "// " + call_str;
                 }
@@ -315,8 +357,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                     call_str = call_str.replace(s_pos + 20, e_pos - s_pos - 20, module_name);
                 }
 
-                if ((kernel && kernel->is_eliminative()) ||
-                    (*gnode)["is_eliminative"].is_valid_as<bool>())
+                // if ((kernel && kernel->is_eliminative()) ||
+                //     (*gnode)["is_eliminative"].is_valid_as<bool>())
+                if ((*gnode)["is_eliminative"].is_valid_as<bool>() &&
+                    (*gnode)["is_eliminative"] == true)
                 {
                     call_str = "/*\n" + call_str + "*/\n";
                 }
@@ -324,7 +368,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
             LanguageUnit_p kernel_func_call =
                 std::make_shared<LanguageUnit>(fu->call_unit->get_symbol(), call_str);
-
+            if (gnode)
+            {
+                node_funccall[gnode] = kernel_func_call;
+            }
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             auto mem_ref = codegen_mem_ref(ins);

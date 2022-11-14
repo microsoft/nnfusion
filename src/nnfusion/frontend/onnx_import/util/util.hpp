@@ -109,11 +109,11 @@ namespace nnfusion
                     return {std::begin(container), std::end(container)};
                 }
 
-                template <typename T>
+                template <typename T, typename S = T>
                 inline std::vector<T> __get_raw_data(const std::string& raw_data)
                 {
-                    auto it = reinterpret_cast<const T*>(raw_data.data());
-                    return {it, it + (raw_data.size() / sizeof(T))};
+                    auto it = reinterpret_cast<const S*>(raw_data.data());
+                    return {it, it + (raw_data.size() / sizeof(S))};
                 }
 
                 template <typename T>
@@ -149,7 +149,43 @@ namespace nnfusion
 
                     if (tensor.has_raw_data())
                     {
-                        return __get_raw_data<T>(tensor.raw_data());
+                        if (tensor.data_type() == onnx::TensorProto_DataType_BOOL ||
+                            tensor.data_type() == onnx::TensorProto_DataType_INT8)
+                        {
+                            return __get_raw_data<T, char>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_UINT8)
+                        {
+                            return __get_raw_data<T, uint8_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_INT16)
+                        {
+                            return __get_raw_data<T, int16_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_UINT16)
+                        {
+                            return __get_raw_data<T, uint16_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_INT32)
+                        {
+                            return __get_raw_data<T, int32_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_UINT32)
+                        {
+                            return __get_raw_data<T, uint32_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_INT64)
+                        {
+                            return __get_raw_data<T, int64_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_UINT64)
+                        {
+                            return __get_raw_data<T, uint64_t>(tensor.raw_data());
+                        }
+                        else
+                        {
+                            NNFUSION_CHECK_FAIL();
+                        }
                     }
 
                     if (tensor.data_type() == onnx::TensorProto_DataType_BOOL ||
@@ -207,7 +243,22 @@ namespace nnfusion
 
                     if (tensor.has_raw_data())
                     {
-                        return __get_raw_data<T>(tensor.raw_data());
+                        if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT16)
+                        {
+                            return __get_raw_data<T, half_float::half>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT)
+                        {
+                            return __get_raw_data<T, float>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_DOUBLE)
+                        {
+                            return __get_raw_data<T, double>(tensor.raw_data());
+                        }
+                        else
+                        {
+                            NNFUSION_CHECK_FAIL();
+                        }
                     }
 
                     // onnx store float16 bit-wise in int32_data

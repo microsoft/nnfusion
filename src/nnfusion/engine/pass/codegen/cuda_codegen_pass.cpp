@@ -387,11 +387,19 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                         std::string out_name = output->get_output_tensor(0).get_name();
                         // int pos = call_str.find(", " + in_name);
                         // call_str.replace(pos, in_name.size() + 2, ", " + out_name);
-                        auto old_funcall = node_funccall[in_node];
-                        auto old_call_str = old_funcall->get_code();
-                        int pos = old_call_str.find(in_name + ");");
-                        old_funcall->modify_code(
-                            old_call_str.replace(pos, in_name.size(), out_name));
+                        if (node_funccall.find(in_node) == node_funccall.end())
+                        {
+                            int pos = call_str.find(in_name + ");");
+                            call_str.replace(pos, in_name.size(), out_name);
+                        }
+                        else
+                        {
+                            auto old_funcall = node_funccall[in_node];
+                            auto old_call_str = old_funcall->get_code();
+                            int pos = old_call_str.find(in_name + ");");
+                            old_funcall->modify_code(
+                                old_call_str.replace(pos, in_name.size(), out_name));
+                        }
                         (*output)["is_eliminative"] = true;
                     }
                 }

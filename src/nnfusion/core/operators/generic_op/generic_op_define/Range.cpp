@@ -20,6 +20,7 @@ std::string TranslateToIR(std::shared_ptr<graph::GNode> gnode)
     op_config["start"] = std::to_string(start);
     op_config["limit"] = std::to_string(limit);
     op_config["num"] = std::to_string(num);
+    op_config["delta"] = std::to_string(delta);
 
     return op::create_code_from_template(ir_template, op_config);
 }

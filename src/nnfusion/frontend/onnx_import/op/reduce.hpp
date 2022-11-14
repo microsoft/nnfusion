@@ -163,7 +163,12 @@ namespace nnfusion
                     auto keepdims = node.get_attribute_value<int64>("keepdims", 1);
 
                     std::vector<int64> axes;
-                    if (input_indexs.size() == 1)
+                    if (input_indexs.size() == 2)
+                    {
+                        GetValueFromNGraphOp<int64>(input_indexs[1].gnode, &axes);
+                    }
+
+                    if (axes.empty())
                     {
                         // no axes input
                         auto noop_with_empty_axes =
@@ -176,10 +181,6 @@ namespace nnfusion
                             ret.push_back({node_proto.output(0), input_index.gnode});
                             return ret;
                         }
-                    }
-                    else
-                    {
-                        GetValueFromNGraphOp<int64>(input_indexs[1].gnode, &axes);
                     }
 
                     nnfusion::AxisSet reduction_axes;

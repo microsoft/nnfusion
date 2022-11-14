@@ -58,7 +58,7 @@ namespace nnfusion
 
                     axis += axis < 0 ? (indices.get_shape().size() + 1) : 0;
 
-                    auto type_str = nnfusion::element::i64.c_type_string();
+                    auto type_str = off_on_values.get_element_type().c_type_string();
 
                     nnfusion::op::OpConfig::any myConfig;
                     myConfig["axis"] = axis;

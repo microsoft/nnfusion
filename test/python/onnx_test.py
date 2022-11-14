@@ -232,7 +232,8 @@ class TestContext:
                     nnf_outputs[name] = cast_pytorch_tensor(nnf_torch_outputs[-1])
                 rt.feed_data(nnf_inputs, nnf_outputs)
                 outputs = [t.cpu().numpy() for t in nnf_torch_outputs]#list(prepared_model.run(inputs))
-            except:
+            except Exception as e:
+                print(str(e))
                 print("@,", op_name , ",", model_test.name, ", EXECUTION ERROR", ", FAILED")
                 continue
             r = self._assert_similar_outputs(
@@ -248,7 +249,7 @@ class TestContext:
         model = onnx.load(model_pb_path)
         try:
             rt = self._build_model(model_test)
-        except:
+        except Exception as e:
             print("@,", op_name, ",", model_test.name, ", BUILD ERROR", ", FAILED")
             return
         # debug_tensor(rt)
@@ -292,17 +293,18 @@ class TestContext:
                     nnf_outputs[name] = cast_pytorch_tensor(nnf_torch_outputs[-1])
                 rt.feed_data(nnf_inputs, nnf_outputs)
                 outputs = [nnf_outputs[output_i.name].to_pytorch_tensor().cpu().numpy() for output_i in model.graph.output]#list(prepared_model.run(inputs))
-            except:
+            except Exception as e:
+                print(str(e))
                 print("@,", op_name , ",", model_test.name, ", EXECUTION ERROR", ", FAILED")
                 continue
             r = self._assert_similar_outputs(
                 ref_outputs, outputs, rtol=model_test.rtol, atol=model_test.atol
             )
             print("@,", op_name, ",", model_test.name, "," + test_data_dir, ", PASS" if r else ", FAILED")
-            # if not r:
-            #     print("ref", ref_outputs)
-            #     print("nnf", outputs)
-            #     exit()
+            if not r:
+                print("ref", ref_outputs)
+                print("nnf", outputs)
+                exit()
 
 
 if __name__ == "__main__":
@@ -311,7 +313,7 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--name', default="abs,acos") 
     parser.add_argument('-f', '--file', default="default_operators.txt") 
     parser.add_argument('-m', '--mode', default="name") 
-    parser.add_argument("-i", "--input_as_constant", default=True)
+    parser.add_argument("-i", "--input_as_constant", default=False)
     args = parser.parse_args()
     global_flag_input_as_constant = args.input_as_constant
     if args.mode == "name":

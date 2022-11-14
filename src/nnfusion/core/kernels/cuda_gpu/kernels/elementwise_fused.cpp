@@ -276,24 +276,28 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
     uint32_t num_ele =
         static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
     const int max_block_size = FLAGS_fmax_block_dim;
-    for (int i = max_block_size; i >= 64; i >>= 1)
-    {
-        if (num_ele % i == 0)
-        {
-            grids = num_ele / i, blocks = i, bound = 0;
-            // if (grids > max_block_size)
-            //     grids = max_block_size;
-            return;
-        }
+    if (num_ele % max_block_size == 0) {
+        grids = num_ele / max_block_size, blocks = max_block_size, bound = 0;
+        return;
     }
-    for (int i = max_block_size; i >= 32; i--)
-    {
-        if (num_ele % i == 0)
-        {
-            grids = num_ele / i, blocks = i, bound = 0;
-            return;
-        }
-    }
+    // for (int i = max_block_size; i >= 64; i >>= 1)
+    // {
+    //     if (num_ele % i == 0)
+    //     {
+    //         grids = num_ele / i, blocks = i, bound = 0;
+    //         // if (grids > max_block_size)
+    //         //     grids = max_block_size;
+    //         return;
+    //     }
+    // }
+    // for (int i = max_block_size; i >= 32; i--)
+    // {
+    //     if (num_ele % i == 0)
+    //     {
+    //         grids = num_ele / i, blocks = i, bound = 0;
+    //         return;
+    //     }
+    // }
     if (num_ele < 32)
         grids = 1, blocks = num_ele, bound = 0;
     else

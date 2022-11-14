@@ -17,7 +17,7 @@ namespace nnfusion
                         m_input_shape = nnfusion::Shape(ctx->inputs[0]->get_shape());
                         m_output_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
                         m_blockDim = dim3(32, 1, 1); // each block processes an output element
-                        num_local_thread_sync = 5;
+                        num_local_thread_sync = 6;
                         while (m_blockDim.x < m_input_shape[m_op->get_reduction_axis()] && m_blockDim.x < 256)
                         {
                             m_blockDim.x *= 2;

@@ -112,6 +112,11 @@ namespace nnfusion
                 }
 
             } // namespace set_7
+            
+            namespace set_11
+            {
+                using set_7::TranslateBinaryOp;
+            }
             namespace set_12
             {
                 using set_7::TranslateBinaryOp;

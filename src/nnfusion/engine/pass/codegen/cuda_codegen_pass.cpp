@@ -277,6 +277,10 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
         {
             auto kernel = ins->getKernel();
             auto gnode = ins->getGNode();
+            if (gnode && kernel && kernel->is_eliminative())
+            {
+                (*gnode)["is_eliminative"] = true;
+            }
             auto& async_info = (*ins)["Async_info"].as<AsyncExecutionInfo>();
             FunctionUnit_p fu = kernel->get_or_emit_source(true);
             string body_str = fu->body_unit->get_code();
@@ -347,8 +351,37 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                     if (out_edge->get_dst()->get_op_ptr()->is_output() &&
                         !is_ref_tensor(ins, out_tensor))
                     {
+                        auto in_node = out_edge->get_src();
+                        while ((*in_node)["is_eliminative"].is_valid_as<bool>() &&
+                               (*in_node)["is_eliminative"] == true && !in_node->is_parameter())
+                        {
+                            size_t non_ce = 0;
+                            std::shared_ptr<nnfusion::graph::Edge> in_edge;
+                            for (size_t i = 0; i < in_node->get_in_edges().size(); i++)
+                            {
+                                if (!in_node->get_in_edges()[i]->is_control_edge())
+                                {
+                                    non_ce++;
+                                    in_edge = in_node->get_in_edges()[i];
+                                    {
+                                        if (non_ce > 1)
+                                            break;
+                                    }
+                                }
+                            }
+                            if (non_ce > 1)
+                            {
+                                (*in_node)["is_eliminative"] = false;
+                            }
+                            else
+                            {
+                                in_node = in_edge->get_src();
+                            }
+                        }
+
                         std::shared_ptr<GNode> output = out_edge->get_dst();
-                        std::string in_name = output->get_input_tensor(0).get_name();
+                        // std::string in_name = output->get_input_tensor(0).get_name();
+                        std::string in_name = in_node->get_output_tensor(0).get_name();
                         std::string out_name = output->get_output_tensor(0).get_name();
                         int pos = call_str.find(", " + in_name);
                         call_str.replace(pos, in_name.size() + 2, ", " + out_name);
@@ -781,8 +814,10 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     }
     else
     {
-        if (ins->getKernel()->is_eliminative() ||
-            (*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
+        // if (ins->getKernel()->is_eliminative() ||
+        //     (*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
+        if ((*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>() &&
+            (*(ins->getGNode()))["is_eliminative"] == true)
         {
             lu << "// eliminated: " << func_call;
         }
@@ -1395,7 +1430,7 @@ void CudaCodegenPass::create_cmake_file(std::shared_ptr<InterpreterContext> ctx,
 cmake_minimum_required(VERSION 3.5)
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
-SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86" CACHE STRING "target architecture")
+SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 " CACHE STRING "target architecture")
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()

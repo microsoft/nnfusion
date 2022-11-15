@@ -220,7 +220,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Not", 1, TranslateUnaryOp<op::Not>);
                 REGISTER_OPERATOR("OneHot", 1, TranslateOneHotOp);
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);
-                REGISTER_OPERATOR("Pow", 1, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 1, TranslatePowerOp);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
                 REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
                 //REGISTER_OPERATOR("Reciprocal", 1, reciprocal);

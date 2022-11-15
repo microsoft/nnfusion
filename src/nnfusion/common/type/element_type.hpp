@@ -118,6 +118,8 @@ namespace nnfusion
             std::string m_cname{"dynamic"};
         };
 
+        std::string get_backend_cstring(const Type&);
+
         template <typename T>
         const Type& from()
         {

@@ -17,17 +17,16 @@
 #include <cmath>
 #include <iostream>
 
+#include "nnfusion/common/common.hpp"
 #include "nnfusion/common/type/element_type.hpp"
+DECLARE_bool(fantares_mode);
+DECLARE_string(fdefault_device);
 
 using namespace nnfusion;
 
 const element::Type element::dynamic(0, false, false, false, "dynamic");
-const element::Type element::boolean(
-    16,
-    false,
-    true,
-    false,
-    "int16_t"); // mapping to int16 is a workaround for hlsl since there is no 8-bit type
+// mapping boolean to int16 is a workaround for hlsl since there is no 8-bit type
+const element::Type element::boolean(16, false, true, false, "int16_t");
 const element::Type element::character(8, false, false, false, "char");
 const element::Type element::bf16(16, true, true, false, "bfloat16");
 const element::Type element::f16(16, true, true, false, "half");
@@ -326,4 +325,20 @@ bool element::Type::merge(element::Type& dst, const element::Type& t1, const ele
     {
         return false;
     }
+}
+
+std::string element::get_backend_cstring(const element::Type& type)
+{
+    if (FLAGS_fantares_mode && FLAGS_fdefault_device == "CUDA")
+    {
+        if (type.c_type_string() == "int64_t")
+        {
+            return "long long";
+        }
+        if (type.c_type_string() == "uint64_t")
+        {
+            return "unsigned long long";
+        }
+    }
+    return type.c_type_string();
 }

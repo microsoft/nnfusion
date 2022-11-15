@@ -59,8 +59,6 @@ namespace nnfusion
                     auto eps = node.get_attribute_value<float>("epsilon", 1e-5f);
                     eps = eps > 0 ? eps : 1e-5f;
 
-                    std::cout << "eps: " << eps << std::endl;
-
                     int64_t axis = 2;
 
                     // extend axes for weight and bias

@@ -171,6 +171,11 @@ namespace nnfusion
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "Attention", 1, TranslateAttentionOp);
                 REGISTER_OPERATOR("AveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("BatchNormalization", 1, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 6, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 7, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 9, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 14, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 15, TranslateBatchNormOp);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "BiasGelu", 1, TranslateBiasGeluOp);
                 REGISTER_OPERATOR("Cast", 1, TranslateCastOp);
                 REGISTER_OPERATOR("Cast", 6, TranslateCastOp);

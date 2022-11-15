@@ -30,7 +30,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_6
             {
                 NamedNodeVector TranslateTileOp(const onnx::NodeProto& node_proto,
                                                 const NodeMap& all_ng_nodes,
@@ -44,7 +44,12 @@ namespace nnfusion
 
                     return {{node_proto.output(0), generic_gnode, 0}};
                 }
-            } // namespace set_1
-        }     //namespace onnx_import
-    }         // namespace frontend
+            } // namespace set_6
+
+            namespace set_13
+            {
+                using set_6::TranslateTileOp;
+            }
+        } //namespace onnx_import
+    }     // namespace frontend
 } // namespace  nnfusion

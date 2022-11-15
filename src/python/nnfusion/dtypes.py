@@ -28,6 +28,8 @@ str2type = {
     "float64":
     TypeObject._make(["float64", ctypes.c_double, torch.float64,
                       numpy.float64, 8]),
+    "bool":
+    TypeObject._make(["int16", ctypes.c_int16, torch.int16, numpy.int16, 2]), # keep consistent with nnfusion
     "int8":
     TypeObject._make(["int8", ctypes.c_int8, torch.int8, numpy.int8, 1]),
     "int16":
@@ -45,3 +47,18 @@ str2type = {
     "uint64":
     TypeObject._make(["uint64", ctypes.c_uint64, None, numpy.uint64, 8]),
 }
+
+def canonical_type(in_str):
+    return str2type[in_str].type_str
+
+def to_c_type(in_str):
+    return str2type[in_str].c_type
+
+def to_torch_type(in_str):
+    return str2type[in_str].torch_type
+
+def to_numpy_type(in_str):
+    return str2type[in_str].numpy_type
+
+def get_nbytes(in_str):
+    return str2type[in_str].n_byte

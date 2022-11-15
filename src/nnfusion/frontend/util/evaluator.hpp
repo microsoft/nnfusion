@@ -20,44 +20,7 @@ namespace nnfusion
             std::vector<std::vector<char>>
                 get_node_outputs(std::shared_ptr<GNode> gnode, int depth = 0, int arg_idx = 0)
             {
-                // NNFUSION_CHECK(gnode->get_op_type() != "Parameter");
-                if (gnode->get_op_type() == "Parameter")
-                {
-                    auto data_size = gnode->get_output_tensor(0).size();
-                    std::vector<char> one(data_size);
-                    if (gnode->get_output_tensor(0).get_element_type() == nnfusion::element::i64)
-                    {
-                        vector<int64_t> _data(data_size / sizeof(int64_t), 1);
-                        memcpy(one.data(), _data.data(), one.size());
-                    }
-                    else if (gnode->get_output_tensor(0).get_element_type() ==
-                             nnfusion::element::i32)
-                    {
-                        vector<int32_t> _data(data_size / sizeof(int32_t), 1);
-                        memcpy(one.data(), _data.data(), one.size());
-                    }
-                    else if (gnode->get_output_tensor(0).get_element_type() ==
-                             nnfusion::element::f32)
-                    {
-                        vector<float> _data(data_size / sizeof(float), 1);
-                        memcpy(one.data(), _data.data(), one.size());
-                    }
-                    else if (gnode->get_output_tensor(0).get_element_type() ==
-                             nnfusion::element::f64)
-                    {
-                        vector<double> _data(data_size / sizeof(double), 1);
-                        memcpy(one.data(), _data.data(), one.size());
-                    }
-                    else
-                    {
-                        NNFUSION_CHECK(gnode->get_op_type() != "Parameter");
-                    }
-                    std::vector<vector<char>> it;
-                    it.push_back(std::move(one));
-                    NNFUSION_CHECK(one.size() == 0);
-                    return it;
-                }
-
+                NNFUSION_CHECK(gnode->get_op_type() != "Parameter");
                 NNFUSION_LOG(INFO) << "[" << depth << ":" << arg_idx
                                    << "] Working for node: " << gnode->get_name() << ": "
                                    << gnode->get_op_type();
@@ -264,7 +227,7 @@ namespace nnfusion
                 }
                 else if (ng_element_type == nnfusion::element::boolean)
                 {
-                    *values = GetValueFromConstOp<bool, T>(ng_constant_op);
+                    *values = GetValueFromConstOp<int16_t, T>(ng_constant_op);
                 }
                 else if (ng_element_type == nnfusion::element::character)
                 {

@@ -277,6 +277,10 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
         {
             auto kernel = ins->getKernel();
             auto gnode = ins->getGNode();
+            if (gnode && kernel && kernel->is_eliminative())
+            {
+                (*gnode)["is_eliminative"] = true;
+            }
             auto& async_info = (*ins)["Async_info"].as<AsyncExecutionInfo>();
             FunctionUnit_p fu = kernel->get_or_emit_source(true);
             string body_str = fu->body_unit->get_code();
@@ -300,7 +304,9 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 if (kernel->is_static_function() ||
                     kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    if (!kernel->is_eliminative())
+                    // if (!kernel->is_eliminative())
+                    if (!(*gnode)["is_eliminative"].is_valid_as<bool>() ||
+                        (*gnode)["is_eliminative"] == false)
                     {
                         auto kernel_func_def = codegenerator::FunctionFile::convert_from(kernel);
 
@@ -341,17 +347,59 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 }
 
                 // inplace the result tensor into kernel only if there is one out edge
-                if (non_control_edge == 1)
+                if (non_control_edge == 1 && !out_edge->get_src()->get_op_ptr()->is_tensor_op())
                 {
                     auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
                     if (out_edge->get_dst()->get_op_ptr()->is_output() &&
                         !is_ref_tensor(ins, out_tensor))
                     {
+                        auto in_node = out_edge->get_src();
+                        while ((*in_node)["is_eliminative"].is_valid_as<bool>() &&
+                               (*in_node)["is_eliminative"] == true &&
+                               !in_node->get_op_ptr()->is_tensor_op())
+                        {
+                            size_t non_ce = 0;
+                            std::shared_ptr<nnfusion::graph::Edge> in_edge;
+                            for (size_t i = 0; i < in_node->get_in_edges().size(); i++)
+                            {
+                                if (!in_node->get_in_edges()[i]->is_control_edge())
+                                {
+                                    non_ce++;
+                                    in_edge = in_node->get_in_edges()[i];
+                                    {
+                                        if (non_ce > 1)
+                                            break;
+                                    }
+                                }
+                            }
+                            if (non_ce > 1)
+                            {
+                                (*in_node)["is_eliminative"] = false;
+                            }
+                            else
+                            {
+                                in_node = in_edge->get_src();
+                            }
+                        }
                         std::shared_ptr<GNode> output = out_edge->get_dst();
-                        std::string in_name = output->get_input_tensor(0).get_name();
+                        // std::string in_name = output->get_input_tensor(0).get_name();
+                        std::string in_name = in_node->get_output_tensor(0).get_name();
                         std::string out_name = output->get_output_tensor(0).get_name();
-                        int pos = call_str.find(", " + in_name);
-                        call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        // int pos = call_str.find(", " + in_name);
+                        // call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        if (node_funccall.find(in_node) == node_funccall.end())
+                        {
+                            int pos = call_str.find(in_name + ");");
+                            call_str.replace(pos, in_name.size(), out_name);
+                        }
+                        else
+                        {
+                            auto old_funcall = node_funccall[in_node];
+                            auto old_call_str = old_funcall->get_code();
+                            int pos = old_call_str.find(in_name + ");");
+                            old_funcall->modify_code(
+                                old_call_str.replace(pos, in_name.size(), out_name));
+                        }
                         (*output)["is_eliminative"] = true;
                     }
                 }
@@ -373,6 +421,10 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 #endif
             }
             LanguageUnit_p kernel_func_call = func_call_codegen(ins, func_call_only, call_str);
+            if (gnode)
+            {
+                node_funccall[gnode] = kernel_func_call;
+            }
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
@@ -781,8 +833,10 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     }
     else
     {
-        if (ins->getKernel()->is_eliminative() ||
-            (*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
+        // if (ins->getKernel()->is_eliminative() ||
+        //     (*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
+        if ((*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>() &&
+            (*(ins->getGNode()))["is_eliminative"] == true)
         {
             lu << "// eliminated: " << func_call;
         }
@@ -1076,7 +1130,6 @@ bool CudaCodegenPass::modify_codegen()
             projgen->lup_exec_py->unit_vec.push_back(py_item);
         }
     }
-
     return true;
 }
 
@@ -1393,19 +1446,15 @@ void CudaCodegenPass::create_cmake_file(std::shared_ptr<InterpreterContext> ctx,
     auto& lu = *lup_cmake;
     lu << R"(project(main_test)
 cmake_minimum_required(VERSION 3.5)
-
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
 SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86" CACHE STRING "target architecture")
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
-
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++11 -march=native")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-
 find_package(CUDA)
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 # set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}  -ftemplate-depth=4096 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75")

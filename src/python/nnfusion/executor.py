@@ -8,7 +8,7 @@ import torch
 
 from .data_format import HLSLTensor, cast_pytorch_tensor, cast_hlsl_tensor
 from .description import IODescription
-from .dtypes import str2type
+from .dtypes import to_torch_type
 from .utils import cd
 
 
@@ -241,15 +241,17 @@ class Executor(object):
     def allocate_outputs(self):
         output_dict = {}
         for name, info in self.expected_outputs.items():
+            if info["dtype"] == "int16":
+                print("[Warning] int16 is ambiguous which might be bool or int16")
             shape = self.fix_shape(info["shape"])
             if self.host_mode:
                 # host mode leverage pytorch tensor as storage
-                torch_tensor = torch.empty(size=shape, dtype=str2type[info["dtype"]].torch_type)
+                torch_tensor = torch.empty(size=shape, dtype=to_torch_type(info["dtype"]))
                 output_dict[name] = cast_pytorch_tensor(torch_tensor)
             else:
                 if self.device_type == 0:
                     # cuda device
-                    torch_tensor = torch.empty(size=shape, dtype=str2type[info["dtype"]].torch_type, device="cuda")
+                    torch_tensor = torch.empty(size=shape, dtype=to_torch_type(info["dtype"]), device="cuda")
                     output_dict[name] = cast_pytorch_tensor(torch_tensor)
                 elif self.device_type == 3:
                     # hlsl device

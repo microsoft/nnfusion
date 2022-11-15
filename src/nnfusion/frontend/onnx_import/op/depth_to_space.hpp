@@ -44,6 +44,11 @@ namespace nnfusion
                                             const NodeMap& all_ng_nodes,
                                             std::shared_ptr<nnfusion::graph::Graph> m_graph);
             }
+
+            namespace set_13
+            {
+                using set_11::TranslateDepthToSpaceOp;
+            }
         } // namespace onnx_import
     }     // namespace frontend
 } // namespace nnfusion

@@ -46,6 +46,16 @@ namespace nnfusion
 
             } // namespace set_1
 
+            namespace set_11
+            {
+                using set_1::TranslateLogSoftmaxOp;
+            }
+
+            namespace set_13
+            {
+                using set_1::TranslateLogSoftmaxOp;
+            }
+
         } //namespace onnx_import
 
     } // namespace frontend

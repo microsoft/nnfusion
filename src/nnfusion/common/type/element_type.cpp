@@ -329,7 +329,7 @@ bool element::Type::merge(element::Type& dst, const element::Type& t1, const ele
 
 std::string element::get_backend_cstring(const element::Type& type)
 {
-    if (FLAGS_fantares_mode && FLAGS_fdefault_device == "CUDA")
+    if (FLAGS_fantares_mode && FLAGS_fdefault_device != "HLSL")
     {
         if (type.c_type_string() == "int64_t")
         {

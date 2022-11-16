@@ -163,6 +163,17 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
         std::string main_block = it.first.substr(0, pos);
 
         auto lup_func_calls = get_kernel_func_calls(it.first + "_func_calls", nullptr);
+
+        for (auto ins : it.second)
+        {
+            auto kernel = ins->getKernel();
+            auto gnode = ins->getGNode();
+            if (gnode && kernel && kernel->is_eliminative())
+            {
+                (*gnode)["is_eliminative"] = true;
+            }
+        }
+
         for (auto ins : it.second)
         {
             auto kernel = ins->getKernel();
@@ -178,8 +189,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    if (!(kernel->is_eliminative() ||
-                          (*gnode)["is_eliminative"].is_valid_as<bool>()))
+                    if (!(*gnode)["is_eliminative"].is_valid_as<bool>())
                     {
                         LanguageUnit_p kernel_func_def;
                         if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
@@ -265,8 +275,9 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
             // this hack is to eliminate d2d copy caused by extern result memory
             // we only apply the repalce for non-eliminative ops
-            if (FLAGS_fextern_result_memory && gnode && !kernel->is_eliminative() &&
-                !((*gnode)["is_eliminative"].is_valid_as<bool>()))
+            if (FLAGS_fextern_result_memory && gnode &&
+                !((*gnode)["is_eliminative"].is_valid_as<bool>()) &&
+                !gnode->get_op_ptr()->is_tensor_op())
             {
                 auto out_users = gnode->get_output_users(0, false);
                 if (gnode->get_output_size() == 1 && out_users.size() == 1 &&
@@ -274,12 +285,8 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 {
                     // find the output node along a sequnece of eliminative nodes
                     auto next_node = out_users[0]->get_dst();
-                    auto next_kernel = (*next_node)["Kernel_Selection_Result"]
-                                           .as<pair<NNFusion_DeviceType, KernelEmitter::Pointer>>()
-                                           .second;
                     while (!next_node->get_op_ptr()->is_output() &&
-                           ((*next_node)["is_eliminative"].is_valid_as<bool>() ||
-                            next_kernel->is_eliminative()))
+                           (*next_node)["is_eliminative"].is_valid_as<bool>())
                     {
                         out_users = next_node->get_output_users(0, false);
                         if (out_users.size() != 1)
@@ -300,8 +307,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
             {
                 call_str = func_name + call_str;
-                if ((kernel && kernel->is_eliminative()) ||
-                    (*gnode)["is_eliminative"].is_valid_as<bool>())
+                if ((*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "// " + call_str;
                 }

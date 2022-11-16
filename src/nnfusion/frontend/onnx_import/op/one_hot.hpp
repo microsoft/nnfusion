@@ -48,7 +48,7 @@ namespace nnfusion
 
                     // we currently only handle numeric data types by converting them to double first,
                     // then to real target type in codegen
-                    std::vector<double> off_on_values_vec;
+                    std::vector<long double> off_on_values_vec;
                     NNFUSION_CHECK(GetValueFromNGraphOp(off_on_values.gnode, &off_on_values_vec))
                         << "The input of off_on_values needs to be constant values.";
                     NNFUSION_CHECK(off_on_values_vec.size() == 2);

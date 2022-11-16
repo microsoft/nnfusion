@@ -284,7 +284,8 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_init()
 
         for (auto tensor : m_allocated_tensors)
         {
-            lu << tensor->get_element_type().c_type_string() << "* " << tensor->get_name() << ";\n";
+            lu << element::get_backend_cstring(tensor->get_element_type()) << "* "
+               << tensor->get_name() << ";\n";
         }
     }
     return _lu;
@@ -313,7 +314,8 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
             if (tensor->get_shared_tensor())
             {
                 // this tensor can be shared with the grpah_0's tensor
-                lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
+                lu << tensor->get_name() << " = ("
+                   << element::get_backend_cstring(tensor->get_element_type())
                    << "*)(graph_0::" << tensor->get_shared_tensor()->get_name() << ");\n";
                 continue;
             }
@@ -325,9 +327,9 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
                 lu << "// ";
             }
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
-            lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
-               << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
-               << ");\n";
+            lu << tensor->get_name() << " = ("
+               << element::get_backend_cstring(tensor->get_element_type()) << "*)("
+               << this->get_name() << "_memory_pool+" << tensor->get_pool_offset() << ");\n";
         }
     }
     return _lu;
@@ -419,9 +421,9 @@ LanguageUnit_p nnfusion::HostMemoryAllocator::emit_memory_alloc()
                     << " may refer an external tensor, nnfusion omits its memory allocation.";
                 lu << "// ";
             }
-            lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
-               << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
-               << ");\n";
+            lu << tensor->get_name() << " = ("
+               << element::get_backend_cstring(tensor->get_element_type()) << "*)("
+               << this->get_name() << "_memory_pool+" << tensor->get_pool_offset() << ");\n";
         }
     }
     return _lu;

@@ -4,7 +4,7 @@
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 REGISTER_OP(AdamOptimizer)
-    .attr<float>("lambda", 0.01) // regulization
+    .attr<float>("lambda", 0.01) // regularization
     .attr<float>("epsilon", 1e-6)
     .attr<float>("alpha", 0.9)
     .attr<float>("beta", 0.999)

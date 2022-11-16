@@ -30,6 +30,7 @@
 #include "../core/value_info.hpp"
 #include "../onnx_base.hpp"
 
+#include "nnfusion/common/symbolic_shape.hpp"
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 namespace nnfusion
@@ -42,7 +43,7 @@ namespace nnfusion
             {
             public:
                 GraphConvert(const onnx::ModelProto& model_proto,
-                             const std::unordered_map<std::string, size_t>& dim_params = {},
+                             const std::unordered_map<std::string, SymDim>& dim_params = {},
                              const string& model_dir = "");
 
                 std::shared_ptr<nnfusion::graph::Graph> get_graph() { return m_graph; }
@@ -96,7 +97,7 @@ namespace nnfusion
 
                 graph::GNodeVector m_graph_outputs;
 
-                std::unordered_map<std::string, size_t> m_dim_params;
+                std::unordered_map<std::string, SymDim> m_dim_params;
                 std::string model_dir;
                 std::unordered_map<std::string, std::int64_t> domain2version;
             };

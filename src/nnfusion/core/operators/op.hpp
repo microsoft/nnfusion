@@ -56,14 +56,20 @@ namespace nnfusion
 
     namespace op
     {
+        class GenericOp;
+        class OpConfig;
         class Op : public std::enable_shared_from_this<Op>
         {
         public:
             virtual ~Op();
-            void revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
-            {
-                validate_and_infer_types(gnode);
-            }
+            void revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode);
+            // {
+            //     //validate_and_infer_types(gnode);
+            //     //nnfusion::op::OpConfig::any myConfig;
+            //     auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
+            //         gnode->get_name(), gnode->get_op_type(), nnfusion::op::OpConfig::any());
+            //     generic_op->validate_and_infer_types(gnode);
+            // }
             // Called after transition
             void delayed_validate_and_infer_types(std::shared_ptr<graph::GNode> gnode);
 
@@ -127,7 +133,11 @@ namespace nnfusion
             {
                 m_shared_memory = shared_memory;
             }
+            void set_global_consistent_name(std::string name) { m_global_consistent_name = name; }
+            std::string get_global_consistent_name() const { return m_global_consistent_name; }
 
+            static void reset_next_instance_id();
+            static void increase_graph_id();
         protected:
             Op(const std::string& op_type);
 
@@ -145,8 +155,11 @@ namespace nnfusion
             std::string m_name;
             const std::string m_unique_name;
             static std::atomic<size_t> m_next_instance_id;
+            static std::atomic<size_t> m_next_constant_id;
+            static std::atomic<size_t> m_graph_id;
             std::vector<size_t> m_shared_memory; // for reduce fusion
             nlohmann::json m_config;
+            std::string m_global_consistent_name;
 
         private:
             std::shared_ptr<Annotations> m_op_annotations;

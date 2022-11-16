@@ -19,7 +19,6 @@
 build/
 dist/
 __pycache__
-custom_op/
 nnfusion.tar.gz
 
 # makeenv and test intermediate files
@@ -52,6 +51,9 @@ doc/doxygen/html/*
 
 # python egg
 *.egg-info
+
+# Macos
+**/.DS_Store
 
 nnfusion_rt/
 models/frozenmodels/

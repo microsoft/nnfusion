@@ -35,6 +35,7 @@ DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
 DECLARE_bool(ffunction_codegen);
+DECLARE_bool(fmulti_shape);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -151,6 +152,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     {
         auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
         lu_exec_init << "// kernel_entry_init\n";
+        lu_exec_init << codegen_global_symbols(tu)->get_code();
         // emit memset
         for (const auto& allocator : allocator_list)
         {
@@ -324,15 +326,31 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 }
             }
 
-            std::string call_str = fu->get_specialized_funciton_call(func_name);
+            std::string call_str = fu->get_specialized_function_call(func_name);
             // todo: this hack is to eliminate d2d copy caused by extern result memory
             if (FLAGS_fextern_result_memory && gnode)
             {
+                size_t non_control_edge = 0;
+                std::shared_ptr<nnfusion::graph::Edge> out_edge;
                 for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
                 {
-                    if (gnode->get_out_edges()[i]->get_dst()->get_op_ptr()->is_output())
+                    if (!gnode->get_out_edges()[i]->is_control_edge())
                     {
-                        std::shared_ptr<GNode> output = gnode->get_out_edges()[i]->get_dst();
+                        non_control_edge++;
+                        out_edge = gnode->get_out_edges()[i];
+                        if (non_control_edge > 1)
+                            break;
+                    }
+                }
+
+                // inplace the result tensor into kernel only if there is one out edge
+                if (non_control_edge == 1)
+                {
+                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
+                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
+                        !is_ref_tensor(ins, out_tensor))
+                    {
+                        std::shared_ptr<GNode> output = out_edge->get_dst();
                         std::string in_name = output->get_input_tensor(0).get_name();
                         std::string out_name = output->get_output_tensor(0).get_name();
                         int pos = call_str.find(", " + in_name);
@@ -459,6 +477,11 @@ std::vector<std::pair<string, vector<nnfusion::ir::Instruction::Pointer>>>
 
             if (gnode && gnode->is_parameter())
                 continue;
+
+            // this tensor will be shared buffer with other one, skip init here.
+            if (gnode && gnode->is_constant() && (*gnode)["shared_tensor"].is_valid_as<bool>())
+                continue;
+
             // if (kernel && kernel->is_eliminative())
             //     continue;
             if (kernel && kernel->get_or_emit_source())
@@ -730,9 +753,9 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         }
     }
 
-    auto mem_ref = codegen_mem_ref(kernel);
+    auto mem_ref = codegen_mem_ref(ins);
     if (mem_ref != nullptr)
-        lu << codegen_mem_ref(kernel)->get_code();
+        lu << codegen_mem_ref(ins)->get_code();
 
     if (ins->name() == "Memcpy")
     {
@@ -771,7 +794,8 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     }
     else
     {
-        if (ins->getKernel()->is_eliminative())
+        if (ins->getKernel()->is_eliminative() ||
+            (*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
         {
             lu << "// eliminated: " << func_call;
         }
@@ -1515,4 +1539,15 @@ void CudaCodegenPass::fill_exec_host(std::shared_ptr<TranslationUnit> tu)
     // lu_exec_host_vec.push_back(get_sync());
     lu_exec_host_vec.push_back(get_d2hcopy(tu));
     lu_exec_host_vec.push_back(get_sync());
+}
+
+bool CudaMultiCodegenPassPre::run(std::shared_ptr<InterpreterContext> ctx,
+                                  std::shared_ptr<TranslationUnit> tu)
+{
+    initialize(ctx, tu);
+    NNFUSION_CHECK(collect_mem(ctx, tu));
+    NNFUSION_CHECK(collect_stream(ctx, tu));
+    NNFUSION_CHECK(collect_funcs(ctx, tu));
+    NNFUSION_CHECK(modify_codegen());
+    return true;
 }

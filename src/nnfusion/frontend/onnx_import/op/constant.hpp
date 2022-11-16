@@ -50,6 +50,7 @@ namespace nnfusion
                                               const element::Type&, const Tensor&)>>
                         the_map = {{element::f32, __make_constant_op<float>},
                                    {element::f64, __make_constant_op<double>},
+                                   {element::boolean, __make_constant_op<int32_t>},
                                    {element::i32, __make_constant_op<int32_t>},
                                    {element::i64, __make_constant_op<int64_t>},
                                    {element::u32, __make_constant_op<uint32_t>},
@@ -69,6 +70,7 @@ namespace nnfusion
                     auto op = func_param(tensor.get_ng_type(), tensor);
 
                     op->set_name(node_proto.output(0));
+                    op->set_global_consistent_name(node_proto.output(0));
                     auto gnode = m_graph->add_node_and_edge(op, graph::GNodeVector({}));
                     NamedNodeVector ret{{node_proto.output(0), gnode}};
 

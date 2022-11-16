@@ -132,7 +132,7 @@ LanguageUnit_p KernelEmitter::emit_function_signature()
     {
         stringstream ss;
         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-        // defult name is: "persit0", "persist1" ...
+        // default name is: "persit0", "persist1" ...
         ss << m_context->tensors[i]->get_name();
         params.push_back(ss.str());
     }
@@ -272,7 +272,7 @@ FunctionUnit_p KernelEmitter::emit_source()
     fu->call_unit->clean_require();
     fu->body_unit->clean_require();
 
-    // orgnize dep
+    // organize dep
     NNFUSION_CHECK(fu->body_unit->require(fu->dep_unit));
     NNFUSION_CHECK(fu->call_unit->require(fu->body_unit));
 

@@ -71,6 +71,9 @@ namespace nnfusion
         return os.str();
     }
 
+    // Replace the all the sub str "src" in "str" to "dst"
+    std::string replace_sub_str(std::string str, std::string src, std::string dst);
+
     //     size_t hash_combine(const std::vector<size_t>& list);
     //     void dump(std::ostream& out, const void*, size_t);
 
@@ -213,7 +216,7 @@ namespace nnfusion
     //     * This utility takes forward-propogation and back-propagation functions
     //     * and turns them into clone functions where the intermediate values of
     //     * the forward prop are added to the output of fprop and the input of the bprop
-    //     * to avoid repeat calcualtions.
+    //     * to avoid repeat calculations.
     //     * The last argument is the adjoints coming into the bprop function, the output
     //     * bprop function will have these nodes as the first N input parameters
     //     **/

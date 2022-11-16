@@ -7,8 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "nnfusion/common/symbolic_shape.hpp"
 #include "nnfusion/core/graph/graph.hpp"
-
 namespace nnfusion
 {
     namespace frontend
@@ -24,7 +24,9 @@ namespace nnfusion
 
         std::vector<ParamInfo> build_torchscript_params_from_string(const std::string&);
 
-        std::unordered_map<std::string, size_t> build_onnx_params_from_string(const std::string&);
+        std::unordered_map<std::string, SymDim> build_onnx_params_from_string(const std::string&);
 
+        std::vector<std::unordered_map<std::string, SymDim>>
+            build_multi_onnx_params_from_string(const std::string& ss);
     } // namespace frontend
 } // namespace nnfusion

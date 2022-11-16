@@ -23,6 +23,13 @@
 using namespace std;
 
 atomic<size_t> nnfusion::descriptor::Tensor::m_next_instance_id(0);
+atomic<size_t> nnfusion::descriptor::Tensor::m_next_constant_id(0);
+
+void nnfusion::descriptor::Tensor::reset_next_instance_id()
+{
+    m_next_instance_id = 0;
+    m_next_constant_id = 0;
+}
 
 nnfusion::descriptor::Tensor::Tensor(const nnfusion::element::Type& element_type,
                                      const nnfusion::PartialShape& pshape,
@@ -49,7 +56,7 @@ nnfusion::descriptor::Tensor::Tensor(const nnfusion::element::Type& element_type
     , m_ref_count(1)
     , m_group(group)
     , m_device_id(device_id)
-    , m_instance_id(m_next_instance_id.fetch_add(1))
+    , m_instance_id(is_constant?m_next_constant_id.fetch_add(1):m_next_instance_id.fetch_add(1))
     , m_unique_name("tensor_" + to_string(m_instance_id))
 {
 }

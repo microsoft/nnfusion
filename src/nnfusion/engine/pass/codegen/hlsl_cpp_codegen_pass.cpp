@@ -25,6 +25,7 @@ DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(ffunction_codegen);
 DEFINE_bool(fhlsl_descriptor_heap, false, "enable DirectX descriptor heap");
+DEFINE_bool(fhlsl_free_memory, false, "free host memory after coping to device");
 
 void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                     std::shared_ptr<TranslationUnit> tu)
@@ -68,6 +69,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         else
             lu_init_begin << "\nvoid hlsl_init()\n{\n";
 
+        lu_init_begin << "dxModuleSetCompat(\"cs_6_2\");\n";
         if (FLAGS_fhlsl_descriptor_heap)
         {
             lu_init_begin << "dxInit(1);\n";
@@ -84,6 +86,7 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     {
         std::string params = get_kernel_entry_paras(tu);
         lu_exec_begin << "\nint kernel_entry(" << params << ")\n{\n";
+        lu_exec_begin << codegen_global_symbols(tu)->get_code();
     }
 
     auto& lu_exec_end = *(projgen->lup_exec->end);
@@ -175,7 +178,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    if (!kernel->is_eliminative())
+                    if (!(kernel->is_eliminative() || (*gnode)["is_eliminative"].is_valid_as<bool>()))
                     {
                         LanguageUnit_p kernel_func_def;
                         if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
@@ -209,7 +212,10 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                                 fname = "compressed_src_" + std::to_string(hashcode);
                             }
 
-                            std::string file = "file://HLSL/" + fname + m_kernel_suffix;
+                            auto end = m_kernel_folder.find_last_of('/');
+                            auto last_end = m_kernel_folder.find_last_of('/', end - 1);
+                            auto folder_name = m_kernel_folder.substr(last_end + 1, end - last_end);
+                            std::string file = "file://" + folder_name + fname + m_kernel_suffix;
 
                             std::string load_str =
                                 module_name + " = dxModuleLoad(\"" + file + "\");\n";
@@ -255,10 +261,43 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             NNFUSION_CHECK_NOT_NULLPTR(async_info.execution_stream);
             std::string stream_name = async_info.execution_stream->get_name();
             std::string call_str = fu->call_unit->get_code();
+            // todo: this hack is to eliminate d2d copy caused by extern result memory
+            if (FLAGS_fextern_result_memory && gnode)
+            {
+                size_t non_control_edge = 0;
+                std::shared_ptr<nnfusion::graph::Edge> out_edge;
+                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
+                {
+                    if (!gnode->get_out_edges()[i]->is_control_edge())
+                    {
+                        non_control_edge++;
+                        out_edge = gnode->get_out_edges()[i];
+                        if (non_control_edge > 1)
+                            break;
+                    }
+                }
+
+                // inplace the result tensor into kernel only if there is one out edge
+                if (non_control_edge == 1)
+                {
+                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
+                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
+                        !is_ref_tensor(ins, out_tensor))
+                    {
+                        std::shared_ptr<GNode> output = out_edge->get_dst();
+                        std::string in_name = output->get_input_tensor(0).get_name();
+                        std::string out_name = output->get_output_tensor(0).get_name();
+                        int pos = call_str.find(", " + in_name);
+                        call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        (*output)["is_eliminative"] = true;
+                    }
+                }
+            }
+
             if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
             {
                 call_str = func_name + call_str;
-                if (kernel && kernel->is_eliminative())
+                if ((kernel && kernel->is_eliminative()) || (*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "// " + call_str;
                 }
@@ -274,7 +313,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                     call_str = call_str.replace(s_pos + 20, e_pos - s_pos - 20, module_name);
                 }
 
-                if (kernel && kernel->is_eliminative())
+                if ((kernel && kernel->is_eliminative()) || (*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "/*\n" + call_str + "*/\n";
                 }
@@ -285,7 +324,7 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
-            auto mem_ref = codegen_mem_ref(kernel);
+            auto mem_ref = codegen_mem_ref(ins);
             if (mem_ref != nullptr)
                 lup_func_calls->unit_vec.push_back(mem_ref);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
@@ -324,6 +363,11 @@ void HLSLCPPCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> 
 
     lup_header->require(macro::RUNTIME_API);
     auto& lu_header = *lup_header;
+
+    lu_header << "#include \"half.hpp\";\n";
+    lu_header << "using DebugDataType = half_float::half;\n";
+    lu_header << "//using DebugDataType = int64_t;\n";
+    lu_header << "using namespace half_float;\n";
 
     lu_header << "extern \"C\" RUNTIME_API int get_device_type();\n";
     lu_header << "extern \"C\" RUNTIME_API int64_t get_workspace_size();\n";
@@ -383,6 +427,129 @@ void HLSLCPPCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ct
 
     lu_ << "int main()";
     lu_.block_begin();
+    if (FLAGS_fhlsl_free_memory)
+    {
+        lu_ << "\nhlsl_init();\n\n";
+
+        for (size_t i = 0; i < tu->arg.size(); i++)
+        {
+            auto& tensor = *tu->arg[i];
+            //malloc host input arg
+            lu_ << "//input argument\n";
+            lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
+                << "_host = new " << tensor.get_element_type().c_type_string() << "["
+                << tensor.get_tensor_layout()->get_size() << "];\n";
+            if (!FLAGS_fhost_entry)
+            {
+                lu_ << "void* " << tensor.get_name() << " = dxMemAlloc(sizeof("
+                    << tensor.get_element_type().c_type_string() << ") * "
+                    << tensor.get_tensor_layout()->get_size() << ");\n";
+            }
+            lu_ << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
+                << tensor.get_name() << "_host[i]= 1;\n";
+            if (!FLAGS_fhost_entry)
+            {
+                lu_ << "dxMemcpyHtoDAsync(" << tensor.get_name() << ", " << tensor.get_name()
+                    << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                    << tensor.get_tensor_layout()->get_size() << ", 0);\n";
+
+                lu_ << "dxStreamSynchronize(0);\n";
+
+                lu_ << "delete " << tensor.get_name() << "_host;\n";
+            }
+        }
+
+        for (size_t i = 0; i < tu->out.size(); i++)
+        {
+            auto& tensor = *tu->out[i];
+            //malloc host output arg
+            lu_ << "//output argument\n";
+            lu_ << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
+                << "_host = new " << tensor.get_element_type().c_type_string() << "["
+                << tensor.get_tensor_layout()->get_size() << "];\n";
+            lu_ << "void* " << tensor.get_name() << ";\n";
+            if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
+            {
+                lu_ << tensor.get_name() << " = dxMemAlloc(sizeof("
+                    << tensor.get_element_type().c_type_string() << ") * "
+                    << tensor.get_tensor_layout()->get_size() << ");\n";
+            }
+        }
+
+        lu_ << "int steps = 100;\n";
+        lu_ << "auto start = std::chrono::high_resolution_clock::now();\n";
+        lu_ << "for (int i = 0; i < steps; i++)\n  ";
+        if (FLAGS_fhost_entry)
+        {
+            std::string args = get_kernel_entry_args(tu, true);
+            lu_ << "kernel_entry_host(" << args << ");\n";
+        }
+        else
+        {
+            std::string args = get_kernel_entry_args(tu, false);
+            //lu_ << get_h2dcopy(tu)->get_code();
+            lu_ << "kernel_entry(" << args << ");\n";
+        }
+        lu_ << get_sync()->get_code();
+        lu_ << "auto end = std::chrono::high_resolution_clock::now();\n";
+        lu_ << "auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - "
+               "start);\n";
+        lu_ << "OutputDebugStringA(\"Time: \%f ms\\n\", duration.count() / 1000.0 / steps);\n";
+
+        if (!FLAGS_fhost_entry)
+        {
+            lu_ << get_d2hcopy(tu)->get_code();
+            lu_ << get_sync()->get_code();
+        }
+        lu_ << "std::string result;\n";
+        for (size_t i = 0; i < tu->out.size(); i++)
+        {
+            auto& tensor = *tu->out[i];
+            // lu_ << "std::cout << \"" << tensor.get_name() << "_host = [\" << " << tensor.get_name()
+            //     << "_host[0] << \", \" << " << tensor.get_name() << "_host[1] << \",  .., \" << "
+            //     << tensor.get_name() << "_host[" << tensor.get_tensor_layout()->get_size()
+            //     << "-1] << \"]\" << std::endl;";
+            size_t num = std::min(size_t(10), tensor.get_tensor_layout()->get_size());
+            if (num == 1)
+            {
+                lu_ << "result = \"" << tensor.get_name() << "_host = [\" + std::to_string("
+                    << tensor.get_name() << "_host[0]) + \"]\\n\";\n";
+            }
+            else
+            {
+                lu_ << "result = \"" << tensor.get_name() << "_host = [";
+                for (size_t j = 0; j < num; j++)
+                {
+                    lu_ << "\" + std::to_string(" << tensor.get_name() << "_host[" << j
+                        << "]) + \", ";
+                }
+                lu_ << ".., \" + std::to_string(" << tensor.get_name() << "_host["
+                    << tensor.get_tensor_layout()->get_size() << "-1]) + \"]\\n\";\n";
+            }
+            lu_ << "OutputDebugStringA(result.c_str());\n";
+        }
+
+        lu_ << "\n//free context\n";
+        if (!FLAGS_fhost_entry)
+        {
+            for (size_t i = 0; i < tu->arg.size(); i++)
+            {
+                auto& tensor = *tu->arg[i];
+                lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+            }
+        }
+
+        if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
+        {
+            for (size_t i = 0; i < tu->out.size(); i++)
+            {
+                auto& tensor = *tu->out[i];
+                lu_ << "dxMemFree(" << tensor.get_name() << ");\n";
+            }
+        }
+        lu_ << "hlsl_free();\n\n";
+    }
+    else
     {
         lu_ << "\nhlsl_init();\n\n";
 
@@ -745,4 +912,17 @@ LanguageUnit_p HLSLCPPCodegenPass::get_h2dcopy(std::shared_ptr<TranslationUnit> 
 LanguageUnit_p HLSLCPPCodegenPass::get_sync()
 {
     return std::make_shared<LanguageUnit>("device_sync", "dxStreamSynchronize(0);\n");
+}
+
+bool HLSLMultiCodegenPassPre::run(std::shared_ptr<InterpreterContext> ctx,
+                                  std::shared_ptr<TranslationUnit> tu)
+{
+    initialize(ctx, tu);
+    NNFUSION_CHECK(collect_mem(ctx, tu));
+    NNFUSION_CHECK(collect_stream(ctx, tu));
+    NNFUSION_CHECK(collect_funcs(ctx, tu));
+    // projgen->codegen();
+    // NNFUSION_CHECK(modify_codegen());
+    NNFUSION_LOG(INFO) << "Codegen for " << get_device_str(device_type()) << " done.";
+    return true;
 }

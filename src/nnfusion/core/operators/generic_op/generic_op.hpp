@@ -14,7 +14,7 @@
     static nnfusion::op::OpConfig __register_op_##op_x = nnfusion::op::build_op_config(#op_x)
 #define GENERIC_OP_LOGGING()                                                                       \
     NNFUSION_LOG(DEBUG) << "[GENERIC_OP_LOGGING] " << __FILE__ << ": " << __PRETTY_FUNCTION__;
-
+DECLARE_bool(fsymbolic);
 namespace nnfusion
 {
     namespace op
@@ -264,7 +264,9 @@ namespace nnfusion
             std::vector<std::string> shape_def;
             for (int d = 0; d < shape.size(); d++)
             {
-                shape_def.push_back(shape[d] == 0 ? "1" : ("N" + to_string(d)));
+                // Tensor with shape [0] is treated as scalar value and convert its shape to [1]
+                shape_def.push_back((shape.size() == 1 && shape[d] == 0) ? "1"
+                                                                         : ("N" + to_string(d)));
             }
             return shape_def;
         }
@@ -309,7 +311,17 @@ namespace nnfusion
             auto shape = tensor->get_shape();
             if (shape.size() == 0)
                 shape = {1};
-            config[alias_name + "_shape"] = vector_to_string(shape);
+            std::string str;
+            if (FLAGS_fsymbolic && shape.get_sym_shape() && shape.get_sym_shape()->is_dynamic())
+            {
+                str = vector_to_string(*shape.get_sym_shape());
+            }
+            else
+            {
+                str = vector_to_string(shape);
+            }
+            config[alias_name + "_shape"] = str;
+            //config[alias_name + "_shape"] = vector_to_string(shape.get_sym_shape()->is_dynamic() ? (*shape.get_sym_shape()) : shape);
         }
 
         class GenericOp : public Op
@@ -333,10 +345,14 @@ namespace nnfusion
 
                 if (name != "")
                     set_name(name);
-                // NNFUSION_LOG(INFO) << "Managing GenericOp for Opeartor: type = " << opname
+                // NNFUSION_LOG(INFO) << "Managing GenericOp for operator: type = " << opname
                 //                    << ", name = " << name;
 
                 localOpConfig.check_constrait();
+            }
+            GenericOp(const std::string& name, const std::string& opname)
+                : Op(opname)
+            {
             }
 
             virtual nnfusion::json serialize() { return localOpConfig.getRoot(); }
@@ -347,8 +363,19 @@ namespace nnfusion
 
             virtual void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override
             {
+                NNFUSION_LOG(INFO) << "======: Infershape with IR: " << gnode->get_name() << " "
+                                   << gnode->get_op_type();
+                bool has_symbolic_shape = false;
+                // for (auto input : gnode->get_inputs())
+                // {
+                //     if (input->get_shape().is_dynamic())
+                //     {
+                //         has_symbolic_shape = true;
+                //         break;
+                //     }
+                // }
                 localOpConfig.check_constrait();
-                if (localOpConfig.f_infershape != nullptr &&
+                if (!has_symbolic_shape && localOpConfig.f_infershape != nullptr &&
                     localOpConfig.f_infershape !=
                         nnfusion::op::infershape::unimplemented_and_not_used)
                     localOpConfig.f_infershape(gnode);
@@ -368,6 +395,7 @@ namespace nnfusion
                     // Infershape with Antares IR (only for Opv2)
                     nnfusion::kernels::AntaresKEImp ke;
                     auto result = ke.autogen(get_translation(gnode));
+                    NNFUSION_LOG(INFO) << "==========DEBUG:" << get_translation(gnode);
                     if (result.first == "")
                         throw std::runtime_error("No infershape or Antares IR found for op type: " +
                                                  gnode->get_op_type());
@@ -401,6 +429,13 @@ namespace nnfusion
                         return std::move(ret);
                     };
                     // GLOBALS: input0:float32[2, 4] -> output0:float32[1, 3]\n
+                    if (result.first.find("// GLOBALS: ") == std::string::npos)
+                    {
+                        std::string err = "Unexpected response for Op " + gnode->get_op_type() +
+                                          "\nIR: " + get_translation(gnode) + "\nResponse: \n" +
+                                          result.first;
+                        throw std::runtime_error(err);
+                    }
                     auto output_params = ssplit(
                         ssplit(get_between(result.first, "// GLOBALS: ", "\n"), "->")[1], "],");
                     for (int i = 0; i < output_params.size(); ++i)

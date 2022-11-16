@@ -27,7 +27,7 @@ namespace nnfusion
         {
         public:
             using Pointer = shared_ptr<AntaresKEImp>;
-            AntaresKEImp() {}
+            AntaresKEImp();
             std::pair<std::string, bool> autogen(const std::string& expr);
             static std::unordered_map<std::string, std::pair<std::string, bool>> code_cache;
             static double get_perf(const std::string& response);
@@ -36,6 +36,8 @@ namespace nnfusion
             static std::vector<nnfusion::Shape> get_output_shapes(const std::string& response);
             static std::vector<AntaresKernelInfo::Pointer>
                 get_kernel_info(const std::string& response);
+            std::string m_static_tuning_server;
+            std::string m_dynamic_tuning_server;
         };
     } // namespace kernels
 } // namespace nnfusion

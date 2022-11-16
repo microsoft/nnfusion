@@ -6,7 +6,7 @@
 #include "graph_pass_base.hpp"
 #include "nnfusion/common/common.hpp"
 #include "nnfusion/engine/op.hpp"
-
+DECLARE_bool(fsymbolic);
 namespace nnfusion
 {
     namespace pass
@@ -21,6 +21,21 @@ namespace nnfusion
                     , progress_step(0)
                     , best_perf(-1.0)
                 {
+                    if (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>())
+                    {
+                        op_type = op_type + "*";
+                    }
+                }
+                TuningStatus(std::string op, std::string name, bool symbolic = false)
+                    : op_type(op)
+                    , op_name(name)
+                    , progress_step(0)
+                    , best_perf(-1.0)
+                {
+                    if (symbolic)
+                    {
+                        op_type = op_type + "*";
+                    }
                 }
                 std::string op_type;
                 std::string op_name;
@@ -48,9 +63,13 @@ namespace nnfusion
                                         std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels);
                 bool insert_to_kernel_cache(
                     const std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes);
+                std::string
+                    send_tuning_request(std::string& ir, int64_t step, bool symbolic = false);
 
             private:
                 std::unordered_set<std::string> BlockList;
+                std::string m_static_tuning_server;
+                std::string m_dynamic_tuning_server;
             };
         }
     }

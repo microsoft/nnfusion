@@ -1,4 +1,4 @@
-The new e2e testing tool is targeting easy usage and could be easily extented.
+The new e2e testing tool is targeting easy usage and could be easily extended.
 
 The tool is located at "(source code repo)/test/nnfusion/scripts/e2e_tests.py".
 
@@ -39,7 +39,7 @@ Execution in native enviroment:
 }
 
 ```	
-   In this file, you can use `"set"`, `"append"`, `"clear"` to control the enviorment variable;
+   In this file, you can use `"set"`, `"append"`, `"clear"` to control the environment variable;
 
    Use `"device_capability"` to specify on which device you want to run test;
 

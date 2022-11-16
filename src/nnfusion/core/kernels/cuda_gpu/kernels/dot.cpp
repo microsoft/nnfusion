@@ -291,61 +291,61 @@ LanguageUnit_p cuda::Dot::emit_function_body()
         size_t n = 1;
         size_t k = 1;
 
-        // check if input and output size correct
-        // check and calculate k for arg0 and arg1
-        size_t arg0_k_idx = axes_for_m_count; // first axe in arg0 for k
-        size_t arg1_k_idx = 0;                // first axe in arg1 for k
+            // check if input and output size correct
+            // check and calculate k for arg0 and arg1
+            size_t arg0_k_idx = axes_for_m_count; // first axe in arg0 for k
+            size_t arg1_k_idx = 0;                // first axe in arg1 for k
 
-        for (size_t i = 0; i < axes_for_k_count; i++)
-        {
-            k *= arg0_shape[arg0_k_idx];
-            if (arg0_shape[arg0_k_idx++] != arg1_shape[arg1_k_idx++])
+            for (size_t i = 0; i < axes_for_k_count; i++)
             {
-                std::vector<std::string> arg_vec{"arg0", "arg1"};
-                std::vector<nnfusion::Shape> shape_vec{arg0_shape, arg1_shape};
+                k *= arg0_shape[arg0_k_idx];
+                if (arg0_shape[arg0_k_idx++] != arg1_shape[arg1_k_idx++])
+                {
+                    std::vector<std::string> arg_vec{"arg0", "arg1"};
+                    std::vector<nnfusion::Shape> shape_vec{arg0_shape, arg1_shape};
 
-                NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
-                                      << nnfusion::join(shape_vec) << " respectively, at Node "
-                                      << m_context->gnode->get_name()
-                                      << ", do not match for dot op";
+                    NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
+                                          << nnfusion::join(shape_vec) << " respectively, at Node "
+                                          << m_context->gnode->get_name()
+                                          << ", do not match for dot op";
+                }
             }
-        }
-        // check and calculate m for arg0 and out
-        size_t arg0_m_idx = 0; // first axe in arg0 for m
-        size_t out_m_idx = 0;  // first axe in out for m
-        for (size_t i = 0; i < axes_for_m_count; i++)
-        {
-            m *= arg0_shape[arg0_m_idx];
-            if (arg0_shape[arg0_m_idx++] != out_shape[out_m_idx++])
+            // check and calculate m for arg0 and out
+            size_t arg0_m_idx = 0; // first axe in arg0 for m
+            size_t out_m_idx = 0;  // first axe in out for m
+            for (size_t i = 0; i < axes_for_m_count; i++)
             {
-                std::vector<std::string> arg_vec{"arg0", "output"};
-                std::vector<nnfusion::Shape> shape_vec{arg0_shape, out_shape};
+                m *= arg0_shape[arg0_m_idx];
+                if (arg0_shape[arg0_m_idx++] != out_shape[out_m_idx++])
+                {
+                    std::vector<std::string> arg_vec{"arg0", "output"};
+                    std::vector<nnfusion::Shape> shape_vec{arg0_shape, out_shape};
 
-                NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
-                                      << nnfusion::join(shape_vec) << " respectively, at Node "
-                                      << m_context->gnode->get_name()
-                                      << ", do not match for dot op";
+                    NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
+                                          << nnfusion::join(shape_vec) << " respectively, at Node "
+                                          << m_context->gnode->get_name()
+                                          << ", do not match for dot op";
+                }
             }
-        }
-        // check and calculate n for arg1 and out
-        size_t arg1_n_idx = axes_for_k_count; // first axe in arg1 for n
-        size_t out_n_idx = axes_for_m_count;  // first axe in arg1 for n
-        for (size_t i = 0; i < axes_for_n_count; i++)
-        {
-            n *= arg1_shape[arg1_n_idx];
-            if (arg1_shape[arg1_n_idx++] != out_shape[out_n_idx++])
+            // check and calculate n for arg1 and out
+            size_t arg1_n_idx = axes_for_k_count; // first axe in arg1 for n
+            size_t out_n_idx = axes_for_m_count;  // first axe in arg1 for n
+            for (size_t i = 0; i < axes_for_n_count; i++)
             {
-                std::vector<std::string> arg_vec{"arg1", "output"};
-                std::vector<nnfusion::Shape> shape_vec{arg1_shape, out_shape};
+                n *= arg1_shape[arg1_n_idx];
+                if (arg1_shape[arg1_n_idx++] != out_shape[out_n_idx++])
+                {
+                    std::vector<std::string> arg_vec{"arg1", "output"};
+                    std::vector<nnfusion::Shape> shape_vec{arg1_shape, out_shape};
 
-                NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
-                                      << nnfusion::join(shape_vec) << " respectively, at Node "
-                                      << m_context->gnode->get_name()
-                                      << ", do not match for dot op";
+                    NNFUSION_CHECK_FAIL() << nnfusion::join(arg_vec) << " with "
+                                          << nnfusion::join(shape_vec) << " respectively, at Node "
+                                          << m_context->gnode->get_name()
+                                          << ", do not match for dot op";
+                }
             }
-        }
 
-        lu << "const half alpha = 1.0f;\nconst half beta = 0.f;\n";
+            lu << "const half alpha = 1.0f;\nconst half beta = 0.f;\n";
 
         lu << "CUBLAS_SAFE_CALL(cublasHgemm(cublas_handle,"
            << (trans_B ? " CUBLAS_OP_T," : " CUBLAS_OP_N,")
@@ -411,7 +411,7 @@ LanguageUnit_p cuda::Dot::emit_function_signature()
     {
         stringstream ss;
         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-        // defult name is: "persit0", "persist1" ...
+        // default name is: "persit0", "persist1" ...
         ss << m_context->tensors[i]->get_name();
         params.push_back(ss.str());
     }

@@ -4,10 +4,9 @@ import ctypes
 import json
 import os
 import platform
-
 import torch
 
-from .data_format import cast_pytorch_tensor
+from .data_format import HLSLTensor, cast_pytorch_tensor
 from .description import IODescription
 from .utils import cd
 
@@ -98,6 +97,8 @@ class Executor(object):
 
         # prepare init/free/kernel_entry
         self.init_flag = False
+        if os.path.exists(os.path.join(nnf_rt_dir, "antares.dll")):
+            HLSLTensor.init_antares_lib(os.path.join(nnf_rt_dir, "antares.dll"))
         # dxil.dll and dxcompiler.dll must be manually imported
         if os.path.exists(os.path.join(nnf_rt_dir, "dxil.dll")):
             ctypes.cdll.LoadLibrary(os.path.join(nnf_rt_dir, "dxil.dll"))
@@ -106,10 +107,12 @@ class Executor(object):
         self.libnnf = ctypes.cdll.LoadLibrary(self.libnnf_path)
         if hasattr(self.libnnf, "kernel_entry_host"):
             self.kernel_entry = self.libnnf.kernel_entry_host
+            self.host_mode = True
         elif hasattr(self.libnnf, "kernel_entry"):
             self.kernel_entry = self.libnnf.kernel_entry
+            self.host_mode = False
         else:
-            raise Exception("No kernel_entry found in nnfurion_rt")
+            raise Exception("No kernel_entry found in nnfusion_rt")
         device_type = self.get_device_type()
         if device_type not in self.device_type_map:
             raise Exception(f"Unknown device type: {device_type}")
@@ -180,18 +183,7 @@ class Executor(object):
         # self.feed_tensors(*args, **kwargs)
         self.feed_data(*args, **kwargs)
 
-    def feed_data(self, inputs, outputs, strict=True):
-        """
-        Execute the kernel_entry in nnf runtime
-
-        Parameters:
-            inputs: a dict from name to nnf DataFormat
-            outputs: a dict from name to nnf DataFormat
-            strict: False if allow unused inputs/outputs
-
-        Returns:
-            None
-        """
+    def _dict_to_pointer_list(self, inputs, outputs, strict=True):
         signature = [None] * (len(self.input_descs) + len(self.output_descs))
         params = [None] * (len(self.input_descs) + len(self.output_descs))
         for name, data_format in inputs.items():
@@ -223,6 +215,21 @@ class Executor(object):
             else:
                 if strict:
                     raise Exception(f"Unused output {name}")
+        return signature, params
+
+    def feed_data(self, inputs, outputs, strict=True):
+        """
+        Execute the kernel_entry in nnf runtime
+
+        Parameters:
+            inputs: a dict from name to nnf DataFormat
+            outputs: a dict from name to nnf DataFormat
+            strict: False if allow unused inputs/outputs
+
+        Returns:
+            None
+        """
+        signature, params = self._dict_to_pointer_list(inputs, outputs, strict=strict)
         self.feed_pointers(signature, params)
 
     def feed_pointers(self, signature, params):
@@ -233,7 +240,7 @@ class Executor(object):
         get_workspace_size = getattr(self.libnnf, 'get_workspace_size', None)
         if get_workspace_size is None:
             return None
-
+        get_workspace_size.restype = ctypes.c_size_t
         n_byte = get_workspace_size()
         if not n_byte:
             return None

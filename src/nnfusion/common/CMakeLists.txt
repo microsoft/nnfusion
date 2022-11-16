@@ -15,6 +15,7 @@ set(SRC
     type/type_protocal.cpp
     shape.cpp
     partial_shape.cpp
+    symbolic_shape.cpp
     axis_set.cpp
     axis_vector.cpp
     dimension.cpp

@@ -24,6 +24,8 @@
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "util/reshape.hpp"
 
+DEFINE_bool(fsplit_softmax, false, "decompose softmax into multiple ops");
+
 namespace nnfusion
 {
     namespace frontend
@@ -42,11 +44,74 @@ namespace nnfusion
                     axis += axis < 0 ? input_index.get_shape().size() : 0;
                     nnfusion::AxisSet ng_axes_softmax;
                     ng_axes_softmax.insert(axis);
-                    auto softmax_op = std::make_shared<op::Softmax>(ng_axes_softmax);
-                    softmax_op->set_name(node_proto.output(0));
-                    auto softmax_gnode = m_graph->add_node_and_edge(softmax_op, {input_index});
-                    NamedNodeVector ret{{node_proto.output(0), softmax_gnode}};
-                    return ret;
+                    if (!FLAGS_fsplit_softmax)
+                    {
+                        auto softmax_op = std::make_shared<op::Softmax>(ng_axes_softmax);
+                        softmax_op->set_name(node_proto.output(0));
+                        auto softmax_gnode = m_graph->add_node_and_edge(softmax_op, {input_index});
+                        NamedNodeVector ret{{node_proto.output(0), softmax_gnode}};
+                        return ret;
+                    }
+                    else
+                    {
+                        // Max
+                        auto max_op = std::make_shared<op::Max>(ng_axes_softmax);
+                        max_op->set_name(node_proto.output(0) + "_max");
+                        auto max_gnode = m_graph->add_node_and_edge(max_op, {input_index});
+
+                        // Reshape
+                        auto max_shape = max_gnode->get_output_shape(0);
+                        auto extend_max_shape = max_shape;
+                        for (auto axis : ng_axes_softmax)
+                        {
+                            extend_max_shape.insert(std::next(extend_max_shape.begin(), axis), 1);
+                        }
+                        nnfusion::AxisVector ng_axis_order(max_shape.size());
+                        std::iota(ng_axis_order.begin(), ng_axis_order.end(), 0);
+                        auto reshape_op =
+                            std::make_shared<op::Reshape>(ng_axis_order, extend_max_shape);
+                        reshape_op->set_name(node_proto.output(0) + "_reshape");
+                        auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {max_gnode});
+
+                        //Broadcast
+                        auto max_index = GNodeIndex(reshape_gnode);
+                        std::tie(input_index, max_index) =
+                            graph::numpy_broadcast(std::make_pair(input_index, max_index), m_graph);
+
+                        // Sub
+                        auto sub_op = std::make_shared<op::Subtract>();
+                        sub_op->set_name(node_proto.output(0) + "_sub");
+                        auto sub_gnode =
+                            m_graph->add_node_and_edge(sub_op, {input_index, max_index});
+
+                        // Exp
+                        auto exp_op = std::make_shared<op::Exp>();
+                        exp_op->set_name(node_proto.output(0) + "_exp");
+                        auto exp_gnode = m_graph->add_node_and_edge(exp_op, {sub_gnode});
+
+                        // Sum
+                        auto sum_op = std::make_shared<op::Sum>(ng_axes_softmax);
+                        sum_op->set_name(node_proto.output(0) + "_sum");
+                        auto sum_gnode = m_graph->add_node_and_edge(sum_op, {exp_gnode});
+
+                        // Reshape
+                        reshape_op = std::make_shared<op::Reshape>(ng_axis_order, extend_max_shape);
+                        auto sum_reshape_gnode =
+                            m_graph->add_node_and_edge(reshape_op, {sum_gnode});
+
+                        // Broadcast
+                        auto exp_index = GNodeIndex(exp_gnode);
+                        auto sum_index = GNodeIndex(sum_reshape_gnode);
+                        std::tie(exp_index, sum_index) =
+                            graph::numpy_broadcast(std::make_pair(exp_index, sum_index), m_graph);
+
+                        // Div
+                        auto div_op = std::make_shared<op::Divide>();
+                        div_op->set_name(node_proto.output(0) + "_div");
+                        auto div_gnode = m_graph->add_node_and_edge(div_op, {exp_index, sum_index});
+                        NamedNodeVector ret{{node_proto.output(0), div_gnode}};
+                        return ret;
+                    }
                 }
 
                 NamedNodeVector

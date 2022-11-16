@@ -257,7 +257,8 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
             _lu->require(kernel_i);
 
             dim3 GridDim, BlockDim;
-            find_launch_config(kernel_def, GridDim, BlockDim);
+            std::string blockNum;
+            find_launch_config(kernel_def, GridDim, BlockDim, blockNum);
             std::string call;
             auto ki = kernel_info[i];
             // map mediate name
@@ -304,11 +305,22 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
                     output_names.push_back(mediate_map[name]);
             }
             NNFUSION_CHECK(ki->kernel_name == "template_op_kernel" + to_string(i));
-            call = get_function_name() + "_kernel" + to_string(i) + "<<<dim3(" +
-                   to_string(GridDim.x) + ", " + to_string(GridDim.y) + ", " +
-                   to_string(GridDim.z) + "), dim3(" + to_string(BlockDim.x) + ", " +
-                   to_string(BlockDim.y) + ", " + to_string(BlockDim.z) + "), mem, stream>>>(" +
-                   join(input_names, ", ") + ", " + join(output_names, ", ") + ");";
+            if (blockNum.size() > 0)
+            {
+                call = get_function_name() + "_kernel" + to_string(i) + "<<<dim3(" + blockNum +
+                       ", " + to_string(1) + ", " + to_string(1) + "), dim3(" +
+                       to_string(BlockDim.x) + ", " + to_string(BlockDim.y) + ", " +
+                       to_string(BlockDim.z) + "), mem, stream>>>(" + join(input_names, ", ") +
+                       ", " + join(output_names, ", ") + ");";
+            }
+            else
+            {
+                call = get_function_name() + "_kernel" + to_string(i) + "<<<dim3(" +
+                       to_string(GridDim.x) + ", " + to_string(GridDim.y) + ", " +
+                       to_string(GridDim.z) + "), dim3(" + to_string(BlockDim.x) + ", " +
+                       to_string(BlockDim.y) + ", " + to_string(BlockDim.z) + "), mem, stream>>>(" +
+                       join(input_names, ", ") + ", " + join(output_names, ", ") + ");";
+            }
             lu << call << "\n";
         }
     }
@@ -319,7 +331,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
         NNFUSION_CHECK(start >= 0 && end >= 0 && end > start);
         std::string str = antares_code.substr(start + 4, end - start - 4);
 
-        find_launch_config(str, m_gridDim, m_blockDim);
+        find_launch_config(str, m_gridDim, m_blockDim, m_blockNum);
         // lu.block_begin();
         lu << str << "\n";
         // lu.block_end();
@@ -347,15 +359,28 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_call()
     names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
     names.insert(names.end(), m_context->tensor_names.begin(), m_context->tensor_names.end());
 
+    for (auto& p : symbol_expr)
+    {
+        names.push_back(p.second);
+    }
     if (kernel_info.size() > 1)
     {
         lu << "(0, " << stream_name << ", " << join(names, ", ") << ");\n";
     }
     else
     {
-        lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z << "), dim3("
-           << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z << "), 0, "
-           << stream_name << ">>>(" << join(names, ", ") << ");\n";
+        if (m_blockNum.size() > 0)
+        {
+            lu << "<<<dim3(" << m_blockNum.c_str() << ", " << 1 << ", " << 1 << "), dim3("
+               << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z << "), 0, "
+               << stream_name << ">>>(" << join(names, ", ") << ");\n";
+        }
+        else
+        {
+            lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z
+               << "), dim3(" << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z
+               << "), 0, " << stream_name << ">>>(" << join(names, ", ") << ");\n";
+        }
     }
     return _lu;
 }
@@ -406,6 +431,45 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
         ss << "__restrict__ ";
         ss << "mediate" << i;
         params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        auto shape = m_context->inputs[i]->get_shape();
+        if (shape.is_dynamic())
+        {
+            for (auto dim : *(shape.get_sym_shape()))
+            {
+                if (dim.is_dynamic())
+                {
+                    symbol_expr[dim.expr_to_symbol(dim.sym())] = dim.sym();
+                }
+            }
+        }
+    }
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        auto shape = m_context->outputs[i]->get_shape();
+        if (shape.is_dynamic())
+        {
+            for (auto dim : *(shape.get_sym_shape()))
+            {
+                if (dim.is_dynamic())
+                {
+                    symbol_expr[dim.expr_to_symbol(dim.sym())] = dim.sym();
+                }
+            }
+        }
+    }
+    for (auto &dim : m_context->gnode->get_symbols())
+    {
+        symbol_expr[dim.expr_to_symbol(dim.sym())] = dim.sym();
+    }
+
+    // the key is sortted by std::map
+    for (auto& p : symbol_expr)
+    {
+        params.push_back("int64_t _" + p.first);
     }
 
     set_launch_config();
@@ -499,7 +563,8 @@ void cuda::AntaresCudaKernelEmitter::process_antares_kernel_info()
 
 void cuda::AntaresCudaKernelEmitter::find_launch_config(const std::string& str,
                                                         dim3& gridDim,
-                                                        dim3& blockDim)
+                                                        dim3& blockDim,
+                                                        std::string& blockNum)
 {
     int at_bx = str.find("// [thread_extent] blockIdx.x = "),
         blockX =
@@ -534,6 +599,42 @@ void cuda::AntaresCudaKernelEmitter::find_launch_config(const std::string& str,
 
     gridDim = dim3(blockX, blockY, blockZ);
     blockDim = dim3(threadX, threadY, threadZ);
+
+    // find dynamic blocks for symbolic inputs
+    if (symbol_expr.size() > 0)
+    {
+        std::vector<std::string> sym_args;
+        for (auto& p : symbol_expr)
+        {
+            sym_args.push_back(p.second);
+        }
+
+        int pos = str.find("// [thread_extent] $$ = ");
+        int block_base =
+            (pos >= 0) ? std::atoi(str.data() + pos + sizeof("// [thread_extent] $$ = ") - 1) : 1;
+        if (block_base == -1)
+            block_base = 1;
+
+        blockNum = std::to_string(block_base);
+        int arg_idx = 0;
+        int check_value = block_base;
+        while (true)
+        {
+            std::string target = "// [thread_extent] $" + std::to_string(arg_idx) + " = ";
+            pos = str.find(target);
+            if (pos == std::string::npos)
+                break;
+            int value = std::atoi(str.data() + pos + target.size());
+            std::string value_str(str.data() + pos + target.size());
+            if (value > 0)
+            {
+                NNFUSION_CHECK(arg_idx < sym_args.size());
+                blockNum = blockNum + " * ceil(float(" + sym_args[arg_idx] + ") / " +
+                           std::to_string(value) + ")";
+            }
+            arg_idx++;
+        }
+    }
 }
 
 shared_ptr<nnfusion::cache::KernelEntry> cuda::BlockCudaEmitter::get_kernel_cache_entry(

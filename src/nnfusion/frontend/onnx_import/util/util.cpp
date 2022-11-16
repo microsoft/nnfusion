@@ -91,7 +91,7 @@ namespace nnfusion
                 switch (onnx_et)
                 {
                 case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
-                    return make_constant_op<bool>(element::boolean, shape, tensor);
+                    return make_constant_op<int32_t>(element::i32, shape, tensor);
                 case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
                     return make_constant_op<float>(element::f32, shape, tensor);
                 case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:

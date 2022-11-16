@@ -20,6 +20,8 @@
 //----------------------------------------------------------------------------------------------
 
 #include "where.hpp"
+#include "nnfusion/core/graph/util/autobroadcast.hpp"
+#include "nnfusion/core/graph/util/numpy_transpose.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/core/graph/util/autobroadcast.hpp"
 
@@ -39,6 +41,12 @@ namespace nnfusion
                     auto cond_gnode = input_indices[0];
                     auto x_gnode = input_indices[1];
                     auto y_gnode = input_indices[2];
+
+                    std::tie(x_gnode, y_gnode) =
+                        graph::numpy_broadcast(std::make_pair(x_gnode, y_gnode), m_graph);
+
+                    std::tie(x_gnode, cond_gnode) =
+                        graph::numpy_broadcast(std::make_pair(x_gnode, cond_gnode), m_graph);
 
                     auto node_name = node_proto.output(0);
                     nnfusion::op::OpConfig::any op_config;

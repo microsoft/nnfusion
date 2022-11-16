@@ -15,12 +15,34 @@ REGISTER_OP(GatherV2)
         int axis = generic_op->localOpConfig.getRoot()["axis"];
 
         nnfusion::Shape output_shape_0;
+        auto out_sym_shape = std::make_shared<nnfusion::SymShape>();
         for (int i = 0; i < axis; ++i)
+        {
             output_shape_0.push_back(input_shape_0[i]);
+            if (input_shape_0.get_sym_shape())
+                out_sym_shape->push_back((*input_shape_0.get_sym_shape())[i]);
+            else
+                out_sym_shape->push_back(input_shape_0[i]);
+        }
         for (int i = 0; i < input_shape_1.size(); ++i)
+        {
             output_shape_0.push_back(input_shape_1[i]);
+            if (input_shape_1.get_sym_shape())
+                out_sym_shape->push_back((*input_shape_1.get_sym_shape())[i]);
+            else
+                out_sym_shape->push_back(input_shape_1[i]);
+        }
         for (int i = axis + 1; i < input_shape_0.size(); ++i)
+        {
             output_shape_0.push_back(input_shape_0[i]);
+            if (input_shape_0.get_sym_shape())
+                out_sym_shape->push_back((*input_shape_0.get_sym_shape())[i]);
+            else
+                out_sym_shape->push_back(input_shape_0[i]);
+        }
+
+        if (out_sym_shape->is_dynamic())
+            output_shape_0.sym_shape = out_sym_shape;
 
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape_0);
     })
@@ -98,5 +120,6 @@ REGISTER_OP(GatherV2)
             op_config["input1_layout"] = "";
         }
 
+        NNFUSION_LOG(INFO) << op::create_code_from_template(ir_template, op_config);
         return op::create_code_from_template(ir_template, op_config);
     });

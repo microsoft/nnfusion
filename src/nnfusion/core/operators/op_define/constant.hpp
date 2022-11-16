@@ -67,7 +67,7 @@ namespace nnfusion
                         << "Did not get the expected number of literals for a constant of shape "
                         << m_shape << " (got " << values.size() << ", expected "
                         << (nnfusion::shape_size(m_shape) == 1 ? "" : "1 or ")
-                        << nnfusion::shape_size(m_shape) << ")." << element_type;
+                        << nnfusion::shape_size(m_shape) << ")." << element_type << sizeof(T);
                 }
 
                 if (values.size() == 1)

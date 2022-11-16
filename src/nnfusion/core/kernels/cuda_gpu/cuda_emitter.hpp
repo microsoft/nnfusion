@@ -328,10 +328,15 @@ namespace nnfusion
             protected:
                 // map tensor names and allocate tmp tensor
                 void process_antares_kernel_info();
-                void find_launch_config(const std::string& str, dim3& gridDim, dim3& blockDim);
+                void find_launch_config(const std::string& str,
+                                        dim3& gridDim,
+                                        dim3& blockDim,
+                                        std::string& block_num);
                 std::vector<AntaresKernelInfo::Pointer> kernel_info;
                 std::unordered_map<std::string, std::string>
                     tensor_name_map; // antares tensor name : kernel tensor name
+                std::map<std::string, std::string> symbol_expr;
+                std::string m_blockNum;
             };
 
             class CacheCudaEmitter : public CudaEmitter

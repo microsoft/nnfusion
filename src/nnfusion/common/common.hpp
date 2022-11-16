@@ -35,7 +35,6 @@
 #include "nnfusion/core/operators/op_define/add.hpp"
 #include "nnfusion/core/operators/op_define/allreduce.hpp"
 #include "nnfusion/core/operators/op_define/and.hpp"
-#include "nnfusion/core/operators/op_define/argmax.hpp"
 #include "nnfusion/core/operators/op_define/argmin.hpp"
 #include "nnfusion/core/operators/op_define/asin.hpp"
 #include "nnfusion/core/operators/op_define/atan.hpp"

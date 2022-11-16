@@ -73,6 +73,7 @@ namespace nnfusion
                     // for (int i = 0; i < std::min(10LU, one.size()); ++i)
                     //     NNFUSION_LOG(INFO) << one[i];
                     // puts("...");
+                    NNFUSION_LOG(INFO) << const_op->get_name() << "\t" << one.size() << "\t" << vector_to_string(std::vector<int>(one.begin(), one.end()));
                     auto& it = dict[gnode];
                     it.push_back(std::move(one));
                     NNFUSION_CHECK(one.size() == 0);
@@ -143,7 +144,8 @@ namespace nnfusion
                     NNFUSION_LOG(INFO) << "  For node `" << gnode->get_name()
                                        << "`: get runtime output results of size "
                                        << _outputs.size();
-                    const_infer_success = true;
+                    NNFUSION_LOG(INFO) << vector_to_string(std::vector<int>(_outputs[0].begin(), _outputs[0].end()));
+                    NNFUSION_LOG(INFO) << kernel->get_or_emit_source()->body_unit->get_code();
                     break;
                 }
                 return dict[gnode] = _outputs;
@@ -155,6 +157,8 @@ namespace nnfusion
                 // the data type of nnfusion::Shape is size_t
                 std::vector<VecT> dst_values;
                 std::vector<T> values = ng_constant_op->get_vector<T>();
+                NNFUSION_LOG(INFO) << ng_constant_op->get_name();
+                NNFUSION_LOG(INFO) << vector_to_string(values);
                 dst_values.resize(values.size());
 
                 for (size_t i = 0; i < values.size(); i++)
@@ -167,6 +171,7 @@ namespace nnfusion
             template <typename T, typename S>
             void fill_values(std::vector<T>& dst, std::vector<char> src)
             {
+               NNFUSION_LOG(INFO) << vector_to_string(dst);
                 NNFUSION_CHECK(src.size() % sizeof(S) == 0);
                 dst.resize(src.size() / sizeof(S));
                 S* raw_data = (S*)src.data();

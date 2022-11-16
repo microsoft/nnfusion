@@ -48,15 +48,21 @@ void ArithmeticReduction::validate_and_infer_types(std::shared_ptr<graph::GNode>
                 << ")";
         }
 
+        auto sym_shape = std::make_shared<SymShape>();
+        bool symbolic = input_shape.is_dynamic();
         for (size_t i = 0; i < size_t(input_rank); i++)
         {
             if (m_reduction_axes.count(i) == 0)
             {
                 dims.push_back(input_shape[i]);
+                if (symbolic)
+                    sym_shape->push_back(input_shape.sym_shape->at(i));
             }
         }
 
         result_shape = nnfusion::PartialShape(dims);
+        if (sym_shape->is_dynamic())
+            result_shape.sym_shape = sym_shape;
     }
 
     gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), result_shape);

@@ -135,7 +135,7 @@ you can also directly assign float values to halfs.
 
 In contrast to the float-to-half conversion, which reduces precision, the 
 conversion from half to float (and thus to any other type implicitly 
-convertible from float) is implicit, because all values represetable with 
+convertible from float) is implicit, because all values representable with 
 half-precision are also representable with single-precision. This way the 
 half-to-float conversion behaves similar to the builtin float-to-double 
 conversion and all arithmetic expressions involving both half-precision and 
@@ -213,7 +213,7 @@ However, directly computing with half-precision values is a rather rare
 use-case and usually using actual 'float' values for all computations and 
 temproraries and using 'half's only for storage is the recommended way. But 
 nevertheless the goal of this library was to provide a complete and 
-conceptually clean IEEE-confromant half-precision implementation and in the few 
+conceptually clean IEEE-conformant half-precision implementation and in the few 
 cases when you do need to compute directly in half-precision you do so for a 
 reason and want accurate results.
 

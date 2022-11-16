@@ -390,7 +390,8 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                         if (node_funccall.find(in_node) == node_funccall.end())
                         {
                             int pos = call_str.find(in_name + ");");
-                            call_str.replace(pos, in_name.size(), out_name);
+			    if (pos < call_str.length())
+                            	call_str.replace(pos, in_name.size(), out_name);
                         }
                         else
                         {

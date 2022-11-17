@@ -16,7 +16,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_9
             {
                 NamedNodeVector TranslateNonZeroOp(const onnx::NodeProto& node_proto,
                                                    const NodeMap& all_ng_nodes,
@@ -26,18 +26,16 @@ namespace nnfusion
 
                     auto input = input_indexes[0];
 
-                    NNFUSION_CHECK(input.get_element_type() == nnfusion::element::i64);
-
                     auto input_shape = input.get_shape();
                     size_t input_rank = input_shape.size();
-                    std::vector<int64> input_value;
-                    NNFUSION_CHECK(GetValueFromNGraphOp(input_indexes[0].gnode, &input_value));
+                    std::vector<long double> input_value;
+                    NNFUSION_CHECK(GetValueFromNGraphOp(input.gnode, &input_value));
 
-                    std::vector<std::vector<int64>> non_zero_indices(input_rank);
+                    std::vector<std::vector<int64_t>> non_zero_indices(input_rank);
 
                     for (size_t i = 0; i < input_value.size(); i++)
                     {
-                        if (input_value[i] != 0)
+                        if (input_value[i] > 0 || input_value[i] < 0)
                         {
                             size_t cur = i;
                             for (int index = input_rank - 1; index >= 0; index--)
@@ -48,7 +46,7 @@ namespace nnfusion
                         }
                     }
 
-                    std::vector<int64> raw_data;
+                    std::vector<int64_t> raw_data;
                     for (size_t i = 0; i < non_zero_indices.size(); i++)
                     {
                         for (size_t j = 0; j < non_zero_indices[0].size(); j++)
@@ -67,7 +65,11 @@ namespace nnfusion
                     return {{node_proto.output(0), const_gnode}};
                 }
 
-            } // namespace set_1
+            } // namespace set_9
+            namespace set_13
+            {
+                using set_9::TranslateNonZeroOp;
+            }
 
         } //namespace onnx_import
 

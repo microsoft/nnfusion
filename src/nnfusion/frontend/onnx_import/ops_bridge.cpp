@@ -56,14 +56,15 @@
 #include "op/log_softmax.hpp"
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
+#include "op/mean.hpp"
 #include "op/memory_copy.hpp"
+#include "op/multi_elementwise.hpp"
 #include "op/non_zero.hpp"
 #include "op/one_hot.hpp"
 #include "op/pad.hpp"
 #include "op/pool.hpp"
 #include "op/range.hpp"
 #include "op/reduce.hpp"
-#include "op/reducel2.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
 #include "op/roll.hpp"
@@ -136,14 +137,14 @@ namespace nnfusion
                 }
                 return result;
             }
-
+#define PACK(...) __VA_ARGS__
 #define REGISTER_DOMAIN_OPERATOR(domain_, name_, ver_, fn_)                                        \
     m_map[domain_][name_].emplace(                                                                 \
         ver_,                                                                                      \
         std::bind(                                                                                 \
             set_##ver_::fn_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
 
-#define REGISTER_OPERATOR(name_, ver_, fn_) REGISTER_DOMAIN_OPERATOR("", name_, ver_, fn_)
+#define REGISTER_OPERATOR(name_, ver_, fn_) REGISTER_DOMAIN_OPERATOR("", name_, ver_, PACK(fn_))
 
 #define REGISTER_EMPTY_DOMAIN(domain_) m_map[domain_]
 
@@ -252,32 +253,108 @@ namespace nnfusion
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("MaxPool", 1, TranslatePoolOp<op::MaxPool>);
-                REGISTER_OPERATOR("Max", 1, TranslateBinaryOp<op::Maximum>);
-                //REGISTER_OPERATOR("Mean", 1, mean);
+                REGISTER_OPERATOR("Max", 1, TranslateMultiElementwiseOp<op::Maximum>);
+                REGISTER_OPERATOR("Max", 6, TranslateMultiElementwiseOp<op::Maximum>);
+                REGISTER_OPERATOR("Max", 8, TranslateMultiElementwiseOp<op::Maximum>);
+                REGISTER_OPERATOR("Max", 12, TranslateMultiElementwiseOp<op::Maximum>);
+                REGISTER_OPERATOR("Max", 13, TranslateMultiElementwiseOp<op::Maximum>);
+                REGISTER_OPERATOR("Mean", 1, TranslateMeanOp);
+                REGISTER_OPERATOR("Mean", 6, TranslateMeanOp);
+                REGISTER_OPERATOR("Mean", 8, TranslateMeanOp);
+                REGISTER_OPERATOR("Mean", 13, TranslateMeanOp);
                 REGISTER_OPERATOR("MemcpyFromHost", 1, TranslateMemcpyFromHostOp);
                 REGISTER_OPERATOR("MemcpyToHost", 1, TranslateMemcpyToHostOp);
-                REGISTER_OPERATOR("Min", 1, TranslateLegacyBinaryOp<op::Minimum>);
+                REGISTER_OPERATOR("Min", 1, TranslateMultiElementwiseOp<op::Minimum>);
+                REGISTER_OPERATOR("Min", 6, TranslateMultiElementwiseOp<op::Minimum>);
+                REGISTER_OPERATOR("Min", 8, TranslateMultiElementwiseOp<op::Minimum>);
+                REGISTER_OPERATOR("Min", 12, TranslateMultiElementwiseOp<op::Minimum>);
+                REGISTER_OPERATOR("Min", 13, TranslateMultiElementwiseOp<op::Minimum>);
                 REGISTER_OPERATOR("Mul", 1, TranslateLegacyBinaryOp<op::Multiply>);
+                REGISTER_OPERATOR("Mul", 6, TranslateLegacyBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Mul", 7, TranslateBinaryOp<op::Multiply>);
+                REGISTER_OPERATOR("Mul", 13, TranslateBinaryOp<op::Multiply>);
+                REGISTER_OPERATOR("Mul", 14, TranslateBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);
-                REGISTER_OPERATOR("NonZero", 1, TranslateNonZeroOp);
+                REGISTER_OPERATOR("Neg", 6, TranslateUnaryOp<op::Negative>);
+                REGISTER_OPERATOR("Neg", 13, TranslateUnaryOp<op::Negative>);
+                REGISTER_OPERATOR("NonZero", 9, TranslateNonZeroOp);
+                REGISTER_OPERATOR("NonZero", 13, TranslateNonZeroOp);
                 REGISTER_OPERATOR("Not", 1, TranslateUnaryOp<op::Not>);
-                REGISTER_OPERATOR("OneHot", 1, TranslateOneHotOp);
+                REGISTER_OPERATOR("OneHot", 9, TranslateOneHotOp);
+                REGISTER_OPERATOR("OneHot", 11, TranslateOneHotOp);
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);
+                REGISTER_OPERATOR("Or", 7, TranslateBinaryOp<op::Or>);
                 REGISTER_OPERATOR("Pow", 1, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 7, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 12, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 13, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 15, TranslateBinaryOp<op::Power>);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
                 REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
                 //REGISTER_OPERATOR("Reciprocal", 1, reciprocal);
-                //REGISTER_OPERATOR("ReduceLogSum", 1, reduce_log_sum);
-                //REGISTER_OPERATOR("ReduceLogSumExp", 1, reduce_log_sum_exp);
-                //REGISTER_OPERATOR("ReduceL1", 1, reduce_l1);
-                REGISTER_OPERATOR("ReduceL2", 1, TranslateReduceL2Op);
-                //REGISTER_OPERATOR("ReduceMax", 1, reduce_max);
-                REGISTER_OPERATOR("ReduceMean", 1, TranslateReduceMeanOp);
-                //REGISTER_OPERATOR("ReduceMin", 1, reduce_min);
-                //REGISTER_OPERATOR("ReduceProd", 1, reduce_prod);
-                REGISTER_OPERATOR("ReduceSum", 1, TranslateReduceSumOp);
-                //REGISTER_OPERATOR("ReduceSumSquare", 1, reduce_sum_square);
+                REGISTER_OPERATOR(
+                    "ReduceL1", 1, PACK(TranslateReduceOp<op::Abs, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceL1", 11, PACK(TranslateReduceOp<op::Abs, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceL1", 13, PACK(TranslateReduceOp<op::Abs, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceL2", 1, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
+                REGISTER_OPERATOR(
+                    "ReduceL2", 11, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
+                REGISTER_OPERATOR(
+                    "ReduceL2", 13, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
+                REGISTER_OPERATOR(
+                    "ReduceLogSum", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
+                REGISTER_OPERATOR(
+                    "ReduceLogSum", 11, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
+                REGISTER_OPERATOR(
+                    "ReduceLogSum", 13, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
+                REGISTER_OPERATOR(
+                    "ReduceLogSumExp", 1, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
+                REGISTER_OPERATOR(
+                    "ReduceLogSumExp", 11, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
+                REGISTER_OPERATOR(
+                    "ReduceLogSumExp", 13, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
+                REGISTER_OPERATOR(
+                    "ReduceMax", 1, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceMax", 11, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceMax", 12, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceMax", 13, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceMean", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Divide>));
+                REGISTER_OPERATOR(
+                    "ReduceMean", 11, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Divide>));
+                REGISTER_OPERATOR(
+                    "ReduceMean", 13, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Divide>));
+                REGISTER_OPERATOR(
+                    "ReduceMin", 1, PACK(TranslateReduceOp<op::NoOp, op::Min, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceMin", 11, PACK(TranslateReduceOp<op::NoOp, op::Min, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceMin", 12, PACK(TranslateReduceOp<op::NoOp, op::Min, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceMin", 13, PACK(TranslateReduceOp<op::NoOp, op::Min, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceProd", 1, PACK(TranslateReduceOp<op::NoOp, op::Product, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceProd", 11, PACK(TranslateReduceOp<op::NoOp, op::Product, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceProd", 13, PACK(TranslateReduceOp<op::NoOp, op::Product, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceSum", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceSum", 11, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR("ReduceSum", 13, TranslateReduceSumOp);
+                REGISTER_OPERATOR(
+                    "ReduceSumSquare", 1, PACK(TranslateReduceOp<op::Square, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceSumSquare", 11, PACK(TranslateReduceOp<op::Square, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceSumSquare", 13, PACK(TranslateReduceOp<op::Square, op::Sum, op::NoOp>));
                 REGISTER_OPERATOR("Relu", 1, TranslateUnaryOp<op::Relu>);
                 REGISTER_OPERATOR("Reshape", 1, TranslateReshapeOp);
                 REGISTER_OPERATOR("ReshapeGrad", 1, TranslateReshapeGradOp);
@@ -309,10 +386,11 @@ namespace nnfusion
                 REGISTER_OPERATOR("Sub", 1, TranslateLegacyBinaryOp<op::Subtract>);
                 REGISTER_OPERATOR("Sub", 6, TranslateBinaryOp<op::Subtract>);
                 REGISTER_OPERATOR("Sub", 7, TranslateBinaryOp<op::Subtract>);
-                REGISTER_OPERATOR("Sub", 13, TranslateBinaryOp<op::Subtract>);
-                REGISTER_OPERATOR("Sub", 14, TranslateBinaryOp<op::Subtract>);
-                REGISTER_OPERATOR("Sum", 1, TranslateSumOp);
-                REGISTER_OPERATOR("Tan", 7, TranslateUnaryOp<op::Tan>);
+                REGISTER_OPERATOR("Sum", 1, TranslateMultiElementwiseOp<op::Add>);
+                REGISTER_OPERATOR("Sum", 6, TranslateMultiElementwiseOp<op::Add>);
+                REGISTER_OPERATOR("Sum", 8, TranslateMultiElementwiseOp<op::Add>);
+                REGISTER_OPERATOR("Sum", 13, TranslateMultiElementwiseOp<op::Add>);
+                REGISTER_OPERATOR("Tan", 1, TranslateUnaryOp<op::Tan>);
                 REGISTER_OPERATOR("Tanh", 1, TranslateUnaryOp<op::Tanh>);
                 REGISTER_OPERATOR("Tanh", 6, TranslateUnaryOp<op::Tanh>);
                 REGISTER_OPERATOR("Tanh", 13, TranslateUnaryOp<op::Tanh>);

@@ -281,6 +281,12 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 (*gnode)["is_eliminative"] = true;
             }
+        }
+
+        for (auto ins : it.second)
+        {
+            auto kernel = ins->getKernel();
+            auto gnode = ins->getGNode();
             auto& async_info = (*ins)["Async_info"].as<AsyncExecutionInfo>();
             FunctionUnit_p fu = kernel->get_or_emit_source(true);
             string body_str = fu->body_unit->get_code();
@@ -304,9 +310,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                 if (kernel->is_static_function() ||
                     kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    // if (!kernel->is_eliminative())
-                    if (!(*gnode)["is_eliminative"].is_valid_as<bool>() ||
-                        (*gnode)["is_eliminative"] == false)
+                    if (!(*gnode)["is_eliminative"].is_valid_as<bool>())
                     {
                         auto kernel_func_def = codegenerator::FunctionFile::convert_from(kernel);
 
@@ -330,80 +334,37 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             }
 
             std::string call_str = fu->get_specialized_function_call(func_name);
-            // todo: this hack is to eliminate d2d copy caused by extern result memory
-            if (FLAGS_fextern_result_memory && gnode)
+            // this hack is to eliminate d2d copy caused by extern result memory
+            // we only apply the repalce for non-eliminative ops
+            if (FLAGS_fextern_result_memory && gnode &&
+                !((*gnode)["is_eliminative"].is_valid_as<bool>()) &&
+                !gnode->get_op_ptr()->is_tensor_op())
             {
-                size_t non_control_edge = 0;
-                std::shared_ptr<nnfusion::graph::Edge> out_edge;
-                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
+                auto out_users = gnode->get_output_users(0, false);
+                if (gnode->get_output_size() == 1 && out_users.size() == 1 &&
+                    !is_ref_tensor(ins, kernel->m_context->outputs[0]))
                 {
-                    if (!gnode->get_out_edges()[i]->is_control_edge())
+                    // find the output node along a sequnece of eliminative nodes
+                    auto next_node = out_users[0]->get_dst();
+                    while (!next_node->get_op_ptr()->is_output() &&
+                           (*next_node)["is_eliminative"].is_valid_as<bool>())
                     {
-                        non_control_edge++;
-                        out_edge = gnode->get_out_edges()[i];
-                        if (non_control_edge > 1)
+                        out_users = next_node->get_output_users(0, false);
+                        if (out_users.size() != 1)
                             break;
+                        next_node = out_users[0]->get_dst();
                     }
-                }
-
-                // inplace the result tensor into kernel only if there is one out edge
-                if (non_control_edge == 1 && !out_edge->get_src()->get_op_ptr()->is_tensor_op())
-                {
-                    auto out_tensor = kernel->m_context->outputs[out_edge->get_src_output()];
-                    if (out_edge->get_dst()->get_op_ptr()->is_output() &&
-                        !is_ref_tensor(ins, out_tensor))
+                    if (next_node->get_op_ptr()->is_output())
                     {
-                        auto in_node = out_edge->get_src();
-                        while ((*in_node)["is_eliminative"].is_valid_as<bool>() &&
-                               (*in_node)["is_eliminative"] == true &&
-                               !in_node->get_op_ptr()->is_tensor_op())
-                        {
-                            size_t non_ce = 0;
-                            std::shared_ptr<nnfusion::graph::Edge> in_edge;
-                            for (size_t i = 0; i < in_node->get_in_edges().size(); i++)
-                            {
-                                if (!in_node->get_in_edges()[i]->is_control_edge())
-                                {
-                                    non_ce++;
-                                    in_edge = in_node->get_in_edges()[i];
-                                    {
-                                        if (non_ce > 1)
-                                            break;
-                                    }
-                                }
-                            }
-                            if (non_ce > 1)
-                            {
-                                (*in_node)["is_eliminative"] = false;
-                            }
-                            else
-                            {
-                                in_node = in_edge->get_src();
-                            }
-                        }
-                        std::shared_ptr<GNode> output = out_edge->get_dst();
-                        // std::string in_name = output->get_input_tensor(0).get_name();
-                        std::string in_name = in_node->get_output_tensor(0).get_name();
-                        std::string out_name = output->get_output_tensor(0).get_name();
-                        // int pos = call_str.find(", " + in_name);
-                        // call_str.replace(pos, in_name.size() + 2, ", " + out_name);
-                        if (node_funccall.find(in_node) == node_funccall.end())
-                        {
-                            int pos = call_str.find(in_name + ");");
-                            call_str.replace(pos, in_name.size(), out_name);
-                        }
-                        else
-                        {
-                            auto old_funcall = node_funccall[in_node];
-                            auto old_call_str = old_funcall->get_code();
-                            int pos = old_call_str.find(in_name + ");");
-                            old_funcall->modify_code(
-                                old_call_str.replace(pos, in_name.size(), out_name));
-                        }
-                        (*output)["is_eliminative"] = true;
+                        std::string in_name = gnode->get_output_tensor(0).get_name();
+                        std::string out_name = next_node->get_output_tensor(0).get_name();
+                        int pos = call_str.find(", " + in_name);
+                        call_str.replace(pos, in_name.size() + 2, ", " + out_name);
+                        (*next_node)["is_eliminative"] = true;
                     }
                 }
             }
+
             int pos_right = call_str.find(">>>(");
             if (pos_right >= 0)
             {
@@ -421,10 +382,6 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 #endif
             }
             LanguageUnit_p kernel_func_call = func_call_codegen(ins, func_call_only, call_str);
-            if (gnode)
-            {
-                node_funccall[gnode] = kernel_func_call;
-            }
             if (FLAGS_fcustomized_mem_imp)
                 lup_func_calls->unit_vec.push_back(get_customized_mem_imp(ins).first);
             lup_func_calls->unit_vec.push_back(kernel_func_call);
@@ -833,10 +790,7 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     }
     else
     {
-        // if (ins->getKernel()->is_eliminative() ||
-        //     (*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
-        if ((*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>() &&
-            (*(ins->getGNode()))["is_eliminative"] == true)
+        if ((*(ins->getGNode()))["is_eliminative"].is_valid_as<bool>())
         {
             lu << "// eliminated: " << func_call;
         }

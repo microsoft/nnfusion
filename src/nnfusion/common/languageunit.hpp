@@ -61,7 +61,6 @@ namespace nnfusion
         string collect_required_code();
         virtual void execute(bool append = true);
         virtual void divide_code();
-        void modify_code(const string& code);
 
     protected:
         virtual bool setpwd();

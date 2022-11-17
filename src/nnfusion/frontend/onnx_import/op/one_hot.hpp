@@ -30,7 +30,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_9
             {
                 NamedNodeVector TranslateOneHotOp(const onnx::NodeProto& node_proto,
                                                   const NodeMap& all_ng_nodes,
@@ -42,17 +42,23 @@ namespace nnfusion
                     auto off_on_values = input_indexes[2];
 
                     std::vector<int64> depth_vec;
-                    NNFUSION_CHECK(GetValueFromNGraphOp(depth.gnode, &depth_vec));
+                    NNFUSION_CHECK(GetValueFromNGraphOp(depth.gnode, &depth_vec))
+                        << "The input of depth needs to be constant values.";
                     NNFUSION_CHECK(depth_vec.size() == 1);
 
-                    std::vector<int64> off_on_values_vec;
-                    NNFUSION_CHECK(GetValueFromNGraphOp(off_on_values.gnode, &off_on_values_vec));
+                    // we currently only handle numeric data types by converting them to double first,
+                    // then to real target type in codegen
+                    std::vector<long double> off_on_values_vec;
+                    NNFUSION_CHECK(GetValueFromNGraphOp(off_on_values.gnode, &off_on_values_vec))
+                        << "The input of off_on_values needs to be constant values.";
                     NNFUSION_CHECK(off_on_values_vec.size() == 2);
 
                     Node node(node_proto);
                     auto axis = node.get_attribute_value<int64>("axis", -1);
 
-                    auto type_str = nnfusion::element::i64.c_type_string();
+                    axis += axis < 0 ? (indices.get_shape().size() + 1) : 0;
+
+                    auto type_str = off_on_values.get_element_type().c_type_string();
 
                     nnfusion::op::OpConfig::any myConfig;
                     myConfig["axis"] = axis;
@@ -67,7 +73,11 @@ namespace nnfusion
 
                     return {{node_proto.output(0), generic_gnode}};
                 }
-            } // namespace set_1
-        }     //namespace onnx_import
-    }         // namespace frontend
+            } // namespace set_9
+            namespace set_11
+            {
+                using set_9::TranslateOneHotOp;
+            }
+        } //namespace onnx_import
+    }     // namespace frontend
 } // namespace  nnfusion

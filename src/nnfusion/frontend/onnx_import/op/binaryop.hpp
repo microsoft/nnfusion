@@ -83,6 +83,11 @@ namespace nnfusion
                 }
 
             } // namespace set_1
+            namespace set_6
+            {
+                using set_1::TranslateBinaryOp;
+                using set_1::TranslateLegacyBinaryOp;
+            }
 
             namespace set_7
             {
@@ -107,23 +112,24 @@ namespace nnfusion
                 }
 
             } // namespace set_7
-
-            namespace set_6
-            {
-                using set_7::TranslateBinaryOp;
-            }
-
+            
             namespace set_11
             {
                 using set_7::TranslateBinaryOp;
             }
-
+            namespace set_12
+            {
+                using set_7::TranslateBinaryOp;
+            }
             namespace set_13
             {
                 using set_7::TranslateBinaryOp;
             }
-
             namespace set_14
+            {
+                using set_7::TranslateBinaryOp;
+            }
+            namespace set_15
             {
                 using set_7::TranslateBinaryOp;
             }

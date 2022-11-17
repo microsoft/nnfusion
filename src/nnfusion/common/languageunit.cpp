@@ -116,6 +116,12 @@ string LanguageUnit::collect_required_code()
     return lu.get_code();
 }
 
+void LanguageUnit::modify_code(const string& code)
+{
+    clear();
+    (*this) << code;
+}
+
 void LanguageUnit::execute(bool append)
 {
     auto cd = get_current_dir_name();

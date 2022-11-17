@@ -25,6 +25,8 @@
 
 #include "../core/node.hpp"
 #include "../util/util.hpp"
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#include "reduce.hpp"
 
 namespace nnfusion
 {
@@ -34,50 +36,89 @@ namespace nnfusion
         {
             namespace set_1
             {
-                template <typename T>
-                inline NamedNodeVector
-                    TranslatePoolOp(const onnx::NodeProto& node_proto,
-                                    const NodeMap& all_ng_nodes,
-                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                template <typename PrologueOp, typename ReduceOp, typename EpilogueOp>
+                NamedNodeVector
+                    TranslateGlobalPoolOp(const onnx::NodeProto& node_proto,
+                                          const NodeMap& all_ng_nodes,
+                                          std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
                     Shape input_shape = input_gnode->get_shape();
                     Node node(node_proto);
-                    bool reshaped = false;
+
+                    NNFUSION_CHECK(input_shape.size() >= 3)
+                        << "The input of GlobalPool should have at least 3 dimensions";
+
+                    // GlobalPool is equal to Reduce, e.g., GlobalAveragePool == ReduceMean
+                    nnfusion::AxisSet reduction_axes;
+                    {
+                        for (int i = 2; i < input_shape.size(); i++)
+                        {
+                            reduction_axes.insert(i);
+                        }
+                    }
+                    int64 keepdims = 1;
+
+                    auto pro_gnode =
+                        AddPrologueOrEpilogueOp<PrologueOp>(m_graph, input_gnode, reduction_axes);
+                    auto sum_op = std::make_shared<ReduceOp>(reduction_axes);
+                    auto sum_gnode = m_graph->add_node_and_edge(sum_op, {pro_gnode});
+
+                    // Add epilogue op
+                    auto epi_gnode =
+                        AddPrologueOrEpilogueOp<EpilogueOp>(m_graph, sum_gnode, reduction_axes);
+
+                    NamedNodeVector ret;
+
+                    nnfusion::Shape result_shape_with_keep(input_shape.size());
+
+                    for (size_t i = 0; i < input_shape.size(); i++)
+                    {
+                        result_shape_with_keep[i] =
+                            reduction_axes.count(i) == 0 ? input_shape[i] : 1;
+                    }
+                    nnfusion::AxisVector axis_order(epi_gnode->get_shape().size());
+                    std::iota(axis_order.begin(), axis_order.end(), 0);
+                    auto reshape_op =
+                        std::make_shared<op::Reshape>(axis_order, result_shape_with_keep);
+                    reshape_op->set_name(node_proto.output(0));
+                    auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {epi_gnode});
+                    ret.push_back({node_proto.output(0), reshape_gnode});
+
+                    return ret;
+                }
+
+                NamedNodeVector TranslateMaxPoolOp(const onnx::NodeProto& node_proto,
+                                                   const NodeMap& all_ng_nodes,
+                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
+                    Shape input_shape = input_gnode->get_shape();
+                    // NNFUSION_CHECK(input_shape.size() == 4) << "only support MaxPool2D";
+                    Node node(node_proto);
 
                     // Parse ONNX op attributes
                     Shape kernel_shape;
-                    if (node_proto.op_type().find("Global") != std::string::npos)
-                    {
-                        if (input_shape.size() == 3)
-                        {
-                            // extend to 4 dim
-                            nnfusion::Shape extended_shape(input_shape);
-                            nnfusion::AxisVector ng_axis_order(extended_shape.size());
-                            std::iota(ng_axis_order.begin(), ng_axis_order.end(), 0);
-                            extended_shape.push_back(1);
-                            auto reshape_op =
-                                std::make_shared<op::Reshape>(ng_axis_order, extended_shape);
-                            input_gnode = m_graph->add_node_and_edge(reshape_op, {input_gnode});
-                            reshaped = true;
-                        }
-
-                        kernel_shape = input_gnode->get_shape();
-                        // Remove N and C dimensions and leave only spatial dims.
-                        kernel_shape.erase(std::begin(kernel_shape),
-                                           std::next(std::begin(kernel_shape), 2));
-                    }
-                    else
-                    {
-                        kernel_shape = get_kernel_shape(node, input_gnode);
-                    }
+                    kernel_shape = get_kernel_shape(node, input_gnode);
 
                     auto strides = get_strides(node, input_gnode);
                     auto dilations = get_dilations(node, input_gnode);
+                    for (auto dilation : dilations)
+                    {
+                        NNFUSION_CHECK(dilation == 1) << "only support dilation == 1";
+                    }
                     auto paddings = get_pads(node, input_gnode);
-
-                    bool count_include_pad =
-                        node.get_attribute_value<int64_t>("count_include_pad", 0);
+                    // auto_pad is processed in get_pads()
+                    // auto auto_pad = node.get_attribute_value<std::string>("auto_pad", "NOTSET");
+                    // // NNFUSION_CHECK(auto_pad == "NOTSET") << "The deprecated auto_pad not support yet";
+                    // if (auto_pad != "NOTSET")
+                    // {
+                    //     auto paddings_tmp = get_auto_pads(kernel_shape, auto_pad);
+                    // }
+                    bool storage_order = node.get_attribute_value<int64_t>("storage_order", 0);
+                    NNFUSION_CHECK(storage_order == 0) << "storage_order not support yet";
+                    bool ceil_mode = node.get_attribute_value<int64_t>("ceil_mode", 0);
+                    NNFUSION_CHECK(ceil_mode == 0) << "ceil_mode not support yet";
 
                     // Convert padding from CoordinateDiff to Shape objects
                     const CoordinateDiff& padding_above{paddings.first};
@@ -85,48 +126,96 @@ namespace nnfusion
                     Shape padding_below_shape{std::begin(padding_below), std::end(padding_below)};
                     Shape padding_above_shape{std::begin(padding_above), std::end(padding_above)};
 
-                    std::shared_ptr<op::Op> pool_op;
-                    if (count_include_pad)
+                    std::shared_ptr<op::Op> pool_op = std::make_shared<op::MaxPool>(
+                        kernel_shape, strides, padding_below_shape, padding_above_shape);
+
+                    pool_op->set_name(node_proto.output(0));
+                    auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode});
+                    NamedNodeVector ret{{node_proto.output(0), pool_gnode}};
+                    return ret;
+                }
+
+                NamedNodeVector
+                    TranslateAveragePoolOp(const onnx::NodeProto& node_proto,
+                                           const NodeMap& all_ng_nodes,
+                                           std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
+                    Shape input_shape = input_gnode->get_shape();
+                    Node node(node_proto);
+
+                    // Parse ONNX op attributes
+                    Shape kernel_shape;
+                    kernel_shape = get_kernel_shape(node, input_gnode);
+
+                    auto strides = get_strides(node, input_gnode);
+                    auto paddings = get_pads(node, input_gnode);
+                    // auto_pad is processed in get_pads()
+                    // auto auto_pad = node.get_attribute_value<std::string>("auto_pad", "NOTSET");
+                    // // NNFUSION_CHECK(auto_pad == "NOTSET") << "The deprecated auto_pad not support yet";
+                    // if (auto_pad != "NOTSET")
+                    // {
+                    //     auto paddings_tmp = get_auto_pads(kernel_shape, auto_pad);
+                    // }
+                    // auto storage_order = node.get_attribute_value<int>("storage_order", 0);
+                    // NNFUSION_CHECK(storage_order == 0) << "storage_order not support yet";
+                    bool ceil_mode = node.get_attribute_value<int64_t>("ceil_mode", 0);
+                    NNFUSION_CHECK(ceil_mode == 0) << "ceil_mode not support yet";
+                    bool count_include_pad =
+                        node.get_attribute_value<int64_t>("count_include_pad", 0);
+                    if (!count_include_pad)
                     {
-                        pool_op = std::make_shared<op::AvgPool>(kernel_shape,
-                                                                strides,
-                                                                padding_below_shape,
-                                                                padding_above_shape,
-                                                                count_include_pad);
-                    }
-                    else
-                    {
-                        pool_op = std::make_shared<T>(
-                            kernel_shape, strides, padding_below_shape, padding_above_shape);
+                        NNFUSION_CHECK(input_shape.size() == 4)
+                            << "only support AvgPool2D when count_include_pad = False";
                     }
 
-                    if (reshaped)
-                    {
-                        auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode});
-                        // shrink to 3 dim
-                        nnfusion::Shape shrink_shape(pool_gnode->get_shape());
-                        NNFUSION_CHECK(shrink_shape.size() == 4 && shrink_shape[3] == 1)
-                            << shrink_shape;
-                        nnfusion::AxisVector ng_axis_order(shrink_shape.size());
-                        std::iota(ng_axis_order.begin(), ng_axis_order.end(), 0);
-                        shrink_shape.pop_back();
-                        auto reshape_op =
-                            std::make_shared<op::Reshape>(ng_axis_order, shrink_shape);
-                        reshape_op->set_name(node_proto.output(0));
-                        auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {pool_gnode});
-                        NamedNodeVector ret{{node_proto.output(0), reshape_gnode}};
-                        return ret;
-                    }
-                    else
-                    {
-                        pool_op->set_name(node_proto.output(0));
-                        auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode});
-                        NamedNodeVector ret{{node_proto.output(0), pool_gnode}};
-                        return ret;
-                    }
+                    // Convert padding from CoordinateDiff to Shape objects
+                    const CoordinateDiff& padding_above{paddings.first};
+                    const CoordinateDiff& padding_below{paddings.second};
+                    Shape padding_below_shape{std::begin(padding_below), std::end(padding_below)};
+                    Shape padding_above_shape{std::begin(padding_above), std::end(padding_above)};
+
+                    std::shared_ptr<op::Op> pool_op =
+                        std::make_shared<op::AvgPool>(kernel_shape,
+                                                      strides,
+                                                      padding_below_shape,
+                                                      padding_above_shape,
+                                                      count_include_pad);
+
+                    pool_op->set_name(node_proto.output(0));
+                    auto pool_gnode = m_graph->add_node_and_edge(pool_op, {input_gnode});
+                    NamedNodeVector ret{{node_proto.output(0), pool_gnode}};
+                    return ret;
                 }
 
             } // namespace set_1
-        }     // namespace onnx_import
-    }         // namespace frontend
+
+            namespace set_7
+            {
+                using set_1::TranslateAveragePoolOp;
+            }
+
+            namespace set_8
+            {
+                using set_1::TranslateMaxPoolOp;
+            }
+
+            namespace set_10
+            {
+                using set_1::TranslateAveragePoolOp;
+                using set_1::TranslateMaxPoolOp;
+            } // namespace set_10
+
+            namespace set_11
+            {
+                using set_1::TranslateAveragePoolOp;
+                using set_1::TranslateMaxPoolOp;
+            } // namespace set_11
+
+            namespace set_12
+            {
+                using set_1::TranslateMaxPoolOp;
+            }
+        } // namespace onnx_import
+    }     // namespace frontend
 } // namespace nnfusion

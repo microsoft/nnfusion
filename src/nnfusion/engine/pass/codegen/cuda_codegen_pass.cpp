@@ -553,7 +553,7 @@ std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationU
     for (int i = 0; i < tu->arg.size(); i++)
     {
         auto tv = tu->arg[i];
-        string type = tv->get_element_type().c_type_string();
+        string type = element::get_backend_cstring(tv->get_element_type());
         stringstream ss;
         ss << type << "* " << tv->get_name();
         if (is_host)
@@ -567,7 +567,7 @@ std::string CudaCodegenPass::get_kernel_entry_paras(std::shared_ptr<TranslationU
     for (int i = 0; i < tu->out.size(); i++)
     {
         auto tv = tu->out[i];
-        string type = tv->get_element_type().c_type_string();
+        string type = element::get_backend_cstring(tv->get_element_type());
         stringstream ss;
         if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
             ss << type << "* " << tv->get_name();
@@ -592,7 +592,7 @@ std::pair<std::string, std::string>
     for (int i = 0; i < tu->arg.size(); i++)
     {
         auto tv = tu->arg[i];
-        string type = tv->get_element_type().c_type_string();
+        string type = element::get_backend_cstring(tv->get_element_type());
         stringstream ss1, ss2;
         ss1 << "torch::Tensor " << tv->get_name() << "_ts";
         ss2 << type << "* " << tv->get_name() << " = " << tv->get_name() << "_ts.data_ptr<" << type
@@ -605,7 +605,7 @@ std::pair<std::string, std::string>
     for (int i = 0; i < tu->out.size(); i++)
     {
         auto tv = tu->out[i];
-        string type = tv->get_element_type().c_type_string();
+        string type = element::get_backend_cstring(tv->get_element_type());
         stringstream ss1, ss2;
         ss1 << "torch::Tensor " << tv->get_name() << "_ts";
         if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
@@ -671,7 +671,7 @@ std::pair<std::string, std::string>
                 if (allocated.find(name) == allocated.end() &&
                     name.compare(0, 10, "Parameter_") == 0)
                 {
-                    string type = input->get_element_type().c_type_string();
+                    string type = element::get_backend_cstring(input->get_element_type());
                     stringstream ss;
                     ss << type << "* " << name;
                     allocated.insert(name);
@@ -686,7 +686,7 @@ std::pair<std::string, std::string>
                     auto name = output->get_name();
                     if (allocated.find(name) == allocated.end())
                     {
-                        string type = output->get_element_type().c_type_string();
+                        string type = element::get_backend_cstring(output->get_element_type());
                         stringstream ss;
                         if (FLAGS_fextern_result_memory)
                             ss << type << "* " << name;
@@ -828,7 +828,8 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
     {
         for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
         {
-            if (kernel->m_context->outputs[i]->get_element_type().c_type_string() != "float")
+            if (element::get_backend_cstring(kernel->m_context->outputs[i]->get_element_type()) !=
+                "float")
                 continue;
             auto out_name = kernel->m_context->output_names[i];
             lu << "Debug(\"" << node_name << ", " << out_name << "\", " << out_name << ", \""
@@ -1099,7 +1100,7 @@ void CudaCodegenPass::create_graph_config(std::shared_ptr<InterpreterContext> ct
     for (int i = 0; i < tu->arg.size(); i++)
     {
         lu_graph_config << "#define NNFUSION_GRAPH_INPUT_DTYPE_" << i << " "
-                        << tu->arg[i]->get_element_type().c_type_string() << "\n";
+                        << element::get_backend_cstring(tu->arg[i]->get_element_type()) << "\n";
         lu_graph_config << "#define NNFUSION_GRAPH_INPUT_SHAPE_" << i << " {";
         auto& shape = tu->arg[i]->get_shape();
         for (int j = 0; j < shape.size(); ++j)
@@ -1113,7 +1114,7 @@ void CudaCodegenPass::create_graph_config(std::shared_ptr<InterpreterContext> ct
     for (int i = 0; i < tu->out.size(); i++)
     {
         lu_graph_config << "#define NNFUSION_GRAPH_OUTPUT_DTYPE_" << i << " "
-                        << tu->out[i]->get_element_type().c_type_string() << "\n";
+                        << element::get_backend_cstring(tu->out[i]->get_element_type()) << "\n";
         lu_graph_config << "#define NNFUSION_GRAPH_OUTPUT_SHAPE_" << i << " {";
         auto& shape = tu->out[i]->get_shape();
         for (int j = 0; j < shape.size(); ++j)
@@ -1227,17 +1228,17 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
             auto& tensor = *tu->arg[i];
             //malloc host input arg
             lu_main << "//input argument\n";
-            lu_main << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
-                    << "_host, *" << tensor.get_name() << ";\n";
+            lu_main << element::get_backend_cstring(tensor.get_element_type()) << "* "
+                    << tensor.get_name() << "_host, *" << tensor.get_name() << ";\n";
 
             lu_main << "CUDA_SAFE_CALL(cudaMallocHost((void**)&" << tensor.get_name()
-                    << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ")* "
-                    << tensor.get_tensor_layout()->get_size() << "));\n";
+                    << "_host, sizeof(" << element::get_backend_cstring(tensor.get_element_type())
+                    << ")* " << tensor.get_tensor_layout()->get_size() << "));\n";
             if (!FLAGS_fhost_entry)
             {
                 lu_main << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << tensor.get_name() << ", "
-                        << "sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                        << tensor.get_tensor_layout()->get_size() << "));\n";
+                        << "sizeof(" << element::get_backend_cstring(tensor.get_element_type())
+                        << ") * " << tensor.get_tensor_layout()->get_size() << "));\n";
             }
             fillval << "for (int i = 0; i < " << tensor.get_tensor_layout()->get_size() << "; ++i) "
                     << tensor.get_name() << "_host[i] = 1.0f;\n";
@@ -1248,18 +1249,18 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
         {
             auto& tensor = *tu->out[i];
             //malloc host output arg
-            lu_main << tensor.get_element_type().c_type_string() << "* " << tensor.get_name()
-                    << "_host, *" << tensor.get_name() << ";\n";
+            lu_main << element::get_backend_cstring(tensor.get_element_type()) << "* "
+                    << tensor.get_name() << "_host, *" << tensor.get_name() << ";\n";
 
             lu_main << "CUDA_SAFE_CALL(cudaMallocHost((void**)&" << tensor.get_name()
-                    << "_host, sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                    << tensor.get_tensor_layout()->get_size() << "));\n";
+                    << "_host, sizeof(" << element::get_backend_cstring(tensor.get_element_type())
+                    << ") * " << tensor.get_tensor_layout()->get_size() << "));\n";
 
             if (FLAGS_fextern_result_memory && !FLAGS_fhost_entry)
             {
                 lu_main << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << tensor.get_name() << ","
-                        << " sizeof(" << tensor.get_element_type().c_type_string() << ") * "
-                        << tensor.get_tensor_layout()->get_size() << "));\n";
+                        << " sizeof(" << element::get_backend_cstring(tensor.get_element_type())
+                        << ") * " << tensor.get_tensor_layout()->get_size() << "));\n";
             }
         }
 
@@ -1472,7 +1473,7 @@ LanguageUnit_p CudaCodegenPass::get_d2hcopy(std::shared_ptr<TranslationUnit> tu)
         auto& tensor = *tu->out[i];
         *d2hcopy << "CUDA_SAFE_CALL(cudaMemcpy(" << tensor.get_name() << "_host, "
                  << tensor.get_name() << ", "
-                 << " sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                 << " sizeof(" << element::get_backend_cstring(tensor.get_element_type()) << ") * "
                  << tensor.get_tensor_layout()->get_size() << ", "
                  << "cudaMemcpyDeviceToHost));\n";
     }
@@ -1488,7 +1489,7 @@ LanguageUnit_p CudaCodegenPass::get_h2dcopy(std::shared_ptr<TranslationUnit> tu)
         auto& tensor = *tu->arg[i];
         *h2dcopy << "CUDA_SAFE_CALL(cudaMemcpy(" << tensor.get_name() << ", " << tensor.get_name()
                  << "_host, "
-                 << "sizeof(" << tensor.get_element_type().c_type_string() << ") * "
+                 << "sizeof(" << element::get_backend_cstring(tensor.get_element_type()) << ") * "
                  << tensor.get_tensor_layout()->get_size() << ", "
                  << "cudaMemcpyHostToDevice));\n";
     }

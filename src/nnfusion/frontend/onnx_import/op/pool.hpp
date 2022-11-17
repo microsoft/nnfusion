@@ -163,11 +163,14 @@ namespace nnfusion
                     NNFUSION_CHECK(ceil_mode == 0) << "ceil_mode not support yet";
                     bool count_include_pad =
                         node.get_attribute_value<int64_t>("count_include_pad", 0);
-                    if (!count_include_pad)
-                    {
-                        NNFUSION_CHECK(input_shape.size() == 4)
-                            << "only support AvgPool2D when count_include_pad = False";
-                    }
+
+                    // TODO(lingm): check asymmetric padding, onnx test case passed
+                    // if (!count_include_pad)
+                    // {
+                    //     NNFUSION_CHECK(paddings.first == paddings.second)
+                    //         << "not support asymmetric padding when not "
+                    //            "count_include_pad";
+                    // }
 
                     // Convert padding from CoordinateDiff to Shape objects
                     const CoordinateDiff& padding_above{paddings.first};

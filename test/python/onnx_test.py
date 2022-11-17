@@ -374,7 +374,7 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--name', default="abs,acos") 
     parser.add_argument('-f', '--file', default="default_operators.txt") 
     parser.add_argument('-m', '--mode', default="name") 
-    parser.add_argument("-i", "--input_as_constant", default=True)
+    parser.add_argument("-i", "--input_as_constant", default=False)
     parser.add_argument("-a", "--float_as_half", default=False)
     parser.add_argument("-d", "--float_as_double", default=False)
     args = parser.parse_args()

@@ -55,8 +55,8 @@ class TestContext:
             if flag:
                 if global_flag_float_as_half :
                     case = self._test_float_to_type(case, TensorProto.FLOAT16)
-                elif global_flag_float_as_half :
-                    case = self._test_float_to_type(case, TensorProto.FLOAT64)
+                elif global_flag_float_as_double :
+                    case = self._test_float_to_type(case, TensorProto.DOUBLE)
 
                 if global_flag_input_as_constant:
                     self.run_input_as_constant(case, opname)
@@ -100,7 +100,7 @@ class TestContext:
 
                     if float_to_type == TensorProto.FLOAT16:
                         ndts = ndts.astype(np.float16)
-                    elif float_to_type == TensorProto.FLOAT64:
+                    elif float_to_type == TensorProto.DOUBLE:
                         ndts = ndts.astype(np.float64)
 
                     fp_data = numpy_helper.from_array(ndts, tensor.name)
@@ -380,6 +380,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     global_flag_input_as_constant = args.input_as_constant
     global_flag_float_as_half = args.float_as_half
+    global_flag_float_as_double = args.float_as_double
     if args.mode == "name":
         TestContext(args.name.split(","))
     if args.mode == "file":

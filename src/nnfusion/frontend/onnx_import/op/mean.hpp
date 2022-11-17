@@ -71,6 +71,7 @@ namespace nnfusion
                         graph::numpy_broadcast(std::make_pair(ret_node, size_node), m_graph);
 
                     ret_node = m_graph->add_node_and_edge(std::make_shared<op::Divide>(),
+                                                          {ret_node, size_node});
 
                     NamedNodeVector ret{{node_proto.output(0), ret_node}};
                     return ret;
@@ -92,3 +93,4 @@ namespace nnfusion
             } // namespace set_13
         }     // namespace onnx_import
     }         // namespace frontend
+} // namespace nnfusion

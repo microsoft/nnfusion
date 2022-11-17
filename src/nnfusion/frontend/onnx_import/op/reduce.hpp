@@ -133,16 +133,6 @@ namespace nnfusion
                     return ret;
                 }
             } // namespace set_1
-<<<<<<< HEAD
-
-            namespace set_13
-            {
-                // ReduceSum-13 has move the axes to input
-                template <typename PrologueOp, typename ReduceOp, typename EpilogueOp>
-                NamedNodeVector TranslateReduceOp(const onnx::NodeProto& node_proto,
-                                                  const NodeMap& all_ng_nodes,
-                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph)
-=======
 
             namespace set_11
             {
@@ -163,7 +153,6 @@ namespace nnfusion
                     TranslateReduceSumOp(const onnx::NodeProto& node_proto,
                                          const NodeMap& all_ng_nodes,
                                          std::shared_ptr<nnfusion::graph::Graph> m_graph)
->>>>>>> origin/xbox
                 {
                     auto input_indexs = GetAllInputIndex(all_ng_nodes, node_proto);
                     NNFUSION_CHECK(input_indexs.size() > 0);
@@ -174,16 +163,12 @@ namespace nnfusion
                     auto keepdims = node.get_attribute_value<int64>("keepdims", 1);
 
                     std::vector<int64> axes;
-<<<<<<< HEAD
-                    if (input_indexs.size() == 1)
-=======
                     if (input_indexs.size() == 2)
                     {
                         GetValueFromNGraphOp<int64>(input_indexs[1].gnode, &axes);
                     }
 
                     if (axes.empty())
->>>>>>> origin/xbox
                     {
                         // no axes input
                         auto noop_with_empty_axes =
@@ -197,13 +182,6 @@ namespace nnfusion
                             return ret;
                         }
                     }
-<<<<<<< HEAD
-                    else
-                    {
-                        GetValueFromNGraphOp<int64>(input_indexs[1].gnode, &axes);
-                    }
-=======
->>>>>>> origin/xbox
 
                     nnfusion::AxisSet reduction_axes;
                     {
@@ -223,21 +201,8 @@ namespace nnfusion
                         }
                     }
 
-<<<<<<< HEAD
-                    // Add prologue op
-                    auto pro_gnode = set_1::AddPrologueOrEpilogueOp<PrologueOp>(
-                        m_graph, input_index.gnode, reduction_axes);
-
-                    auto sum_op = std::make_shared<ReduceOp>(reduction_axes);
-                    auto sum_gnode = m_graph->add_node_and_edge(sum_op, {pro_gnode});
-
-                    // Add epilogue op
-                    auto epi_gnode = set_1::AddPrologueOrEpilogueOp<EpilogueOp>(
-                        m_graph, sum_gnode, reduction_axes);
-=======
                     auto sum_op = std::make_shared<op::Sum>(reduction_axes);
                     auto sum_gnode = m_graph->add_node_and_edge(sum_op, {input_index.gnode});
->>>>>>> origin/xbox
 
                     NamedNodeVector ret;
                     if (keepdims)
@@ -249,31 +214,18 @@ namespace nnfusion
                             result_shape_with_keep[i] =
                                 reduction_axes.count(i) == 0 ? input_shape[i] : 1;
                         }
-<<<<<<< HEAD
-                        nnfusion::AxisVector axis_order(epi_gnode->get_shape().size());
-=======
                         nnfusion::AxisVector axis_order(sum_gnode->get_shape().size());
->>>>>>> origin/xbox
                         std::iota(axis_order.begin(), axis_order.end(), 0);
                         auto reshape_op =
                             std::make_shared<op::Reshape>(axis_order, result_shape_with_keep);
                         reshape_op->set_name(node_proto.output(0));
-<<<<<<< HEAD
-                        auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {epi_gnode});
-=======
                         auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {sum_gnode});
->>>>>>> origin/xbox
                         ret.push_back({node_proto.output(0), reshape_gnode});
                     }
                     else
                     {
-<<<<<<< HEAD
-                        epi_gnode->get_op_ptr()->set_name(node_proto.output(0));
-                        ret.push_back({node_proto.output(0), epi_gnode});
-=======
                         sum_gnode->get_op_ptr()->set_name(node_proto.output(0));
                         ret.push_back({node_proto.output(0), sum_gnode});
->>>>>>> origin/xbox
                     }
 
                     return ret;

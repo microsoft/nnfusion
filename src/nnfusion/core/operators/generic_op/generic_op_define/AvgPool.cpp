@@ -49,7 +49,7 @@ REGISTER_OP(AvgPool)
         // }
 
         auto ir_template =
-            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@@avg_window_size@ @where_condition@; )";
+            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@when_condition@/@avg_window_size@ @where_condition@; )";
 
         std::string input0_layout;
         std::string output0_layout;
@@ -83,7 +83,8 @@ REGISTER_OP(AvgPool)
 
             if (!include_padding_in_avg_computation)
             {
-                avg_window_size += " / ((" + axis_name + " * " + to_string(strides[i]) + " + " +
+                avg_window_size += (avg_window_size.empty() ? "" : " * ") + std::string("((") +
+                                   axis_name + " * " + to_string(strides[i]) + " + " +
                                    to_string(kernel[i]) + " - " + to_string(padding_below[i]) +
                                    ").call(`min`, [" + to_string(input_shape[i + 2]) + "])  - (" +
                                    axis_name + " * " + to_string(strides[i]) + " - " +
@@ -101,10 +102,13 @@ REGISTER_OP(AvgPool)
             where_condition = " where " + where_condition;
         }
 
-        if (include_padding_in_avg_computation)
+        if (!include_padding_in_avg_computation)
         {
-            avg_window_size =
-                std::string("/") + std::to_string(nnfusion::shape_size<nnfusion::Shape>(kernel));
+            avg_window_size = "(" + avg_window_size + ").call(`max`, const(1, `int32`))";
+        }
+        else
+        {
+            avg_window_size = std::to_string(nnfusion::shape_size<nnfusion::Shape>(kernel));
         }
 
         op::OpConfig::any op_config;

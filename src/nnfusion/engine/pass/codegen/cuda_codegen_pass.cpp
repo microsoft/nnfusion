@@ -39,6 +39,7 @@ DEFINE_bool(fcheck_result, false, "Check result with external inputs and outputs
 DEFINE_string(fcheck_prefix_name, "", "prefix for saving external inputs and outputs");
 DECLARE_bool(fif_launch_then_else);
 DEFINE_int32(fstack_size, -1, "cudaLimitStackSize");
+DECLARE_bool(fenable_extern_result_inline);
 
 void CudaCodegenPass::set_global_member(std::shared_ptr<InterpreterContext> ctx,
                                         std::shared_ptr<TranslationUnit> tu)
@@ -370,7 +371,7 @@ bool CudaCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
 
             std::string call_str = fu->get_specialized_funciton_call(func_name);
             // todo: this hack is to eliminate d2d copy caused by extern result memory
-            if (FLAGS_fextern_result_memory && gnode)
+            if (FLAGS_fextern_result_memory && FLAGS_fenable_extern_result_inline && gnode)
             {
                 for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
                 {
@@ -845,7 +846,7 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
                 lu << "// eliminated: " << func_call;
         }
         // todo: this hack is to eliminate d2d copy caused by extern result memory
-        else if (FLAGS_fextern_result_memory && gnode && gnode->get_op_ptr()->is_output())
+        else if (FLAGS_fextern_result_memory && FLAGS_fenable_extern_result_inline && gnode && gnode->get_op_ptr()->is_output())
         {
             lu << "// eliminated (extern_result_memory): " << func_call;
         }

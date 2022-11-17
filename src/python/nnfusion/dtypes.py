@@ -40,4 +40,6 @@ str2type = {
     TypeObject._make(["uint8", ctypes.c_uint64, None, numpy.uint64]),
     "bool":
     TypeObject._make(["bool", ctypes.c_bool, torch.bool, numpy.bool]),
+    "char":
+    TypeObject._make(["char", ctypes.c_char, torch.int8, numpy.char]),
 }

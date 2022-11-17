@@ -24,6 +24,7 @@ DEFINE_string(fmem_log_path, "memory.log", "The file path of memory log.");
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fhost_entry);
+DEFINE_bool(fenable_extern_result_inline, true, "Enable the elimination of d2d copy from extern_result_memory.");
 
 bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -83,7 +84,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             unordered_set<std::shared_ptr<descriptor::Tensor>> newlist(alloc_temp);
             // todo: this hack is to eliminate d2d copy caused by extern result memory
             bool skip = false;
-            if (FLAGS_fextern_result_memory && gnode && gnode->get_op_type() != "Loop" && gnode->get_op_type() != "While")
+            if (FLAGS_fextern_result_memory && FLAGS_fenable_extern_result_inline && gnode && gnode->get_op_type() != "Loop" && gnode->get_op_type() != "While")
             {
                 bool all_users_are_result = true;
                 for (size_t i = 0; i < gnode->get_out_edges().size(); i++)

@@ -70,6 +70,8 @@ add_library(onnx_import STATIC
         op/embed_layer_norm.cpp
         op/layer_norm.hpp
         op/layer_norm.cpp
+        op/instance_norm.hpp
+        op/instance_norm.cpp
         op/attention.hpp
         op/attention.cpp
         op/scatternd.hpp
@@ -78,6 +80,8 @@ add_library(onnx_import STATIC
         op/depth_to_space.cpp
         op/roll.hpp
         op/roll.cpp
+        op/lstm.hpp
+        op/lstm.cpp
         op/gru.hpp
         op/gru.cpp
         # ${ops_source}

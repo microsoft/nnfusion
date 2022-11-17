@@ -200,11 +200,11 @@ std::tuple<nnfusion::element::Type, nnfusion::PartialShape>
     {
         for (size_t i = 1; i < input_size; ++i)
         {
-            OP_VALIDATION(this,
-                          nnfusion::element::Type::merge(
-                              element_type, element_type, gnode->get_input_element_type(i)))
-                << "Argument element types are inconsistent: " << element_type << ", "
-                << gnode->get_input_element_type(i);
+            // OP_VALIDATION(this,
+            //               nnfusion::element::Type::merge(
+            //                   element_type, element_type, gnode->get_input_element_type(i)))
+            //     << "Argument element types are inconsistent: " << element_type << ", "
+            //     << gnode->get_input_element_type(i);
 
             OP_VALIDATION(
                 this, nnfusion::PartialShape::merge_into(pshape, gnode->get_input_partial_shape(i)))

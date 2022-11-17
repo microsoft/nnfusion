@@ -106,7 +106,6 @@ namespace nnfusion
             std::string m_kernel_folder;
             std::string m_kernel_suffix;
             std::unordered_set<std::shared_ptr<nnfusion::descriptor::Tensor>> free_at_last;
-            std::unordered_map<std::shared_ptr<GNode>, LanguageUnit_p> node_funccall;
         };
     }
 }

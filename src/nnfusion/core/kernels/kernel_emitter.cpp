@@ -10,6 +10,8 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DECLARE_bool(fextern_result_memory);
+DECLARE_bool(fantares_mode);
+DECLARE_string(fdefault_device);
 
 KernelContext::KernelContext(shared_ptr<graph::GNode> gnode)
     : gnode(gnode)
@@ -253,7 +255,17 @@ FunctionUnit_p KernelEmitter::emit_source()
     }
 
     // emit function units
-    NNFUSION_CHECK_NOT_NULLPTR(fu->signature_unit = emit_function_signature());
+    auto sig = emit_function_signature();
+    NNFUSION_CHECK_NOT_NULLPTR(sig);
+    // a hack way to map int64 to long long
+    if (FLAGS_fantares_mode && FLAGS_fdefault_device != "HLSL")
+    {
+        auto sig_str = sig->get_code();
+        sig_str = replace_sub_str(sig_str, "uint64_t", "unsigned long long");
+        sig_str = replace_sub_str(sig_str, "int64_t", "long long");
+        sig->modify_code(sig_str);
+    }
+    fu->signature_unit = sig;
     fu->body_unit = emit_function_body();
     if (!fu->body_unit)
     {

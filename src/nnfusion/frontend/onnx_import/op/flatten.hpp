@@ -40,7 +40,8 @@ namespace nnfusion
                     auto input_shape = input.get_shape();
 
                     Node node(node_proto);
-                    auto axis = node.get_attribute_value<int64_t>("axis");
+                    auto axis = node.get_attribute_value<int64_t>("axis", 1);
+                    axis += axis < 0 ? input_shape.size() : 0;
                     size_t dim0 = 1;
                     size_t dim1 = 1;
                     for (size_t i = 0; i < input_shape.size(); i++)
@@ -60,8 +61,22 @@ namespace nnfusion
                     auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {input_indexes});
                     return {{node_proto.output(0), GNodeIndex{reshape_gnode}}};
                 }
-
             } // namespace set_1
+
+            namespace set_9
+            {
+                using set_1::TranslateFlattenOp;
+            } // namespace set_9
+
+            namespace set_11
+            {
+                using set_1::TranslateFlattenOp;
+            } // namespace set_11
+
+            namespace set_13
+            {
+                using set_1::TranslateFlattenOp;
+            } // namespace set_13
         }     //namespace onnx_import
 
     } // namespace frontend

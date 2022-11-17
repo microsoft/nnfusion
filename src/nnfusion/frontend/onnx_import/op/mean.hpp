@@ -41,6 +41,10 @@ namespace nnfusion
                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+                    if (input_indexes.size() == 1)
+                    {
+                        return TranslateNoOp(node_proto, all_ng_nodes, m_graph);
+                    }
                     NNFUSION_CHECK(input_indexes.size() >= 2);
                     auto lhs_index = input_indexes[0];
                     GNodeIndex rhs_index;
@@ -67,13 +71,24 @@ namespace nnfusion
                         graph::numpy_broadcast(std::make_pair(ret_node, size_node), m_graph);
 
                     ret_node = m_graph->add_node_and_edge(std::make_shared<op::Divide>(),
-                                                          {ret_node, size_node});
 
                     NamedNodeVector ret{{node_proto.output(0), ret_node}};
                     return ret;
                 }
 
             } // namespace set_1
+
+            namespace set_6
+            {
+                using set_1::TranslateMeanOp;
+            } // namespace set_6
+            namespace set_8
+            {
+                using set_1::TranslateMeanOp;
+            } // namespace set_8
+            namespace set_13
+            {
+                using set_1::TranslateMeanOp;
+            } // namespace set_13
         }     // namespace onnx_import
     }         // namespace frontend
-} // namespace nnfusion

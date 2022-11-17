@@ -102,7 +102,8 @@ namespace nnfusion
 
             ///  out edges
             std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_out_edges() const;
-            std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_output_users(size_t i);
+            std::vector<std::shared_ptr<nnfusion::graph::Edge>>
+                get_output_users(size_t i, bool include_control_edge = true);
 
             void add_out_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
             void remove_out_edge(std::shared_ptr<nnfusion::graph::Edge> edge);

@@ -35,6 +35,12 @@ namespace nnfusion
                                                   const NodeMap& all_ng_nodes,
                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph);
 
+            } // namespace set_1
+
+            namespace set_11
+            {
+                using set_1::TranslateGatherOp;
+
                 NamedNodeVector
                     TranslateGatherNDOp(const onnx::NodeProto& node_proto,
                                         const NodeMap& all_ng_nodes,
@@ -49,7 +55,18 @@ namespace nnfusion
                     TranslateGatherNDGradOp(const onnx::NodeProto& node_proto,
                                             const NodeMap& all_ng_nodes,
                                             std::shared_ptr<nnfusion::graph::Graph> m_graph);
-            } // namespace set_1
+            }
+
+            namespace set_12
+            {
+                using set_11::TranslateGatherNDOp;
+            }
+
+            namespace set_13
+            {
+                using set_1::TranslateGatherOp;
+                using set_11::TranslateGatherNDOp;
+            }
 
         } //namespace onnx_import
 

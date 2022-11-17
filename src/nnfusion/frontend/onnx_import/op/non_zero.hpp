@@ -21,9 +21,13 @@ namespace nnfusion
                 template <typename T>
                 std::shared_ptr<op::Constant> __make_output_constant_op(GNodeIndex input)
                 {
+                    GNodeIndexVector input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+
+                    auto input = input_indexes[0];
+
                     auto input_shape = input.get_shape();
                     size_t input_rank = input_shape.size();
-                    std::vector<T> input_value;
+                    std::vector<long double> input_value;
                     NNFUSION_CHECK(GetValueFromNGraphOp(input.gnode, &input_value));
 
                     std::vector<std::vector<int64_t>> non_zero_indices(input_rank);
@@ -90,8 +94,10 @@ namespace nnfusion
 
             } // namespace set_9
 
+            namespace set_13
+            {
+                using set_9::TranslateNonZeroOp;
+            }
         } //namespace onnx_import
 
     } // namespace frontend
-
-} // namespace nnfusion

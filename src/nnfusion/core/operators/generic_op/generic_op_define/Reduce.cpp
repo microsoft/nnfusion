@@ -11,11 +11,11 @@ std::string reduce_template(std::shared_ptr<graph::GNode> curr, std::string redu
             ret += ", N" + std::to_string(ax);
         return "[" + (axes.empty() ? "N" : ret.substr(2)) + "]";
     };
-    auto attrs = curr->get_op_ptr()->serialize();
 
+    auto op = std::dynamic_pointer_cast<nnfusion::op::ArithmeticReduction>(curr->get_op_ptr());
+    NNFUSION_CHECK(op != nullptr) << "Unsupported reduce op";
     auto input_shape = curr->get_input_shape(0);
-    std::vector<int> _axes = attrs["reduction_axes"];
-    auto axes = std::set<int>(_axes.begin(), _axes.end());
+    auto axes = op->get_reduction_axes();
 
     std::set<int> input_ax, output_ax;
     size_t reduce_size = 1L;

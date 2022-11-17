@@ -32,28 +32,23 @@ namespace nnfusion
         {
             namespace set_11
             {
-                NamedNodeVector TranslateRangeOp(const onnx::NodeProto& node_proto,
-                                                 const NodeMap& all_ng_nodes,
-                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                template <typename T>
+                NamedNodeVector TranslateRange(GNodeVector& input_gnodes,
+                                               const onnx::NodeProto& node_proto,
+                                               std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                    GNodeVector input_gnodes;
-                    auto start_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
-                    input_gnodes.push_back(start_gnode);
-                    auto limit_gnode = GetInputNode(all_ng_nodes, node_proto, 1);
-                    input_gnodes.push_back(limit_gnode);
-                    auto delta_gnode = GetInputNode(all_ng_nodes, node_proto, 2);
-                    input_gnodes.push_back(delta_gnode);
+                    auto start_gnode = input_gnodes[0];
+                    auto limit_gnode = input_gnodes[1];
+                    auto delta_gnode = input_gnodes[2];
 
-                    Node node(node_proto);
-
-                    std::vector<int64> start_vec;
-                    NNFUSION_CHECK(GetValueFromNGraphOp<int64>(start_gnode, &start_vec) == true);
+                    std::vector<T> start_vec;
+                    NNFUSION_CHECK(GetValueFromNGraphOp<T>(start_gnode, &start_vec) == true);
                     NNFUSION_CHECK(start_vec.size() > 0);
-                    std::vector<int64> limit_vec;
-                    NNFUSION_CHECK(GetValueFromNGraphOp<int64>(limit_gnode, &limit_vec) == true);
+                    std::vector<T> limit_vec;
+                    NNFUSION_CHECK(GetValueFromNGraphOp<T>(limit_gnode, &limit_vec) == true);
                     NNFUSION_CHECK(limit_vec.size() > 0);
-                    std::vector<int64> delta_vec;
-                    NNFUSION_CHECK(GetValueFromNGraphOp<int64>(delta_gnode, &delta_vec) == true);
+                    std::vector<T> delta_vec;
+                    NNFUSION_CHECK(GetValueFromNGraphOp<T>(delta_gnode, &delta_vec) == true);
                     NNFUSION_CHECK(delta_vec.size() > 0);
 
                     nnfusion::op::OpConfig::any myConfig;
@@ -67,6 +62,36 @@ namespace nnfusion
                     auto generic_gnode = m_graph->add_node_and_edge(generic_op, input_gnodes);
                     NamedNodeVector ret{{node_proto.output(0), generic_gnode}};
                     return ret;
+                }
+
+                NamedNodeVector TranslateRangeOp(const onnx::NodeProto& node_proto,
+                                                 const NodeMap& all_ng_nodes,
+                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    GNodeVector input_gnodes;
+                    auto start_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
+                    input_gnodes.push_back(start_gnode);
+                    auto limit_gnode = GetInputNode(all_ng_nodes, node_proto, 1);
+                    input_gnodes.push_back(limit_gnode);
+                    auto delta_gnode = GetInputNode(all_ng_nodes, node_proto, 2);
+                    input_gnodes.push_back(delta_gnode);
+
+                    Node node(node_proto);
+                    auto element_type = start_gnode->get_element_type();
+                    NNFUSION_CHECK(element_type == limit_gnode->get_element_type());
+                    NNFUSION_CHECK(element_type == delta_gnode->get_element_type());
+
+                    if (element_type == element::f32)
+                        return TranslateRange<float>(input_gnodes, node_proto, m_graph);
+                    else if (element_type == element::f64)
+                        return TranslateRange<double>(input_gnodes, node_proto, m_graph);
+                    else if (element_type == element::i32)
+                        return TranslateRange<int32_t>(input_gnodes, node_proto, m_graph);
+                    else if (element_type == element::i64)
+                        return TranslateRange<int64_t>(input_gnodes, node_proto, m_graph);
+                    else
+                        NNFUSION_CHECK_FAIL() << "non-supported data type for Range op: "
+                                              << element_type.c_type_string();
                 }
 
             } // namespace set_11

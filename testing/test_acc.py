@@ -14,6 +14,8 @@ def get_max_diff(tensor_list_a, tensor_list_b):
     for a, b in zip(tensor_list_a, tensor_list_b):
         a = a.astype(np.float32)
         b = b.astype(np.float32)
+        if np.any(np.logical_and(np.isnan(a), np.logical_not(np.isnan(b)))):
+            return 1e7
         assert a.shape == b.shape
         diff = np.abs(a-b)
         diff /= np.abs(b).clip(1) # handle large floating numbers

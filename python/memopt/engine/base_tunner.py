@@ -17,6 +17,8 @@ def get_max_diff(tensor_list_a, tensor_list_b):
     total_diff = [0]
     for a, b in zip(tensor_list_a, tensor_list_b):
         assert a.shape == b.shape
+        if np.any(np.logical_and(np.isnan(a), np.logical_not(np.isnan(b)))):
+            return 1e7
         diff = np.abs(a-b)
         diff = diff / np.abs(b).clip(1) # handle large floating numbers
         diff = np.max(diff)
@@ -168,7 +170,7 @@ class Tunner(object):
         if get_log_level() >= 2:
             print("Best Config:", compile_results[0].config)
         if get_log_level() >= 1:
-            print("top1: {} \ttopk: {}".format(values[0], min(values)), flush=True)
+            print("result: {}".format(min(values)), flush=True)
         if not self.check:
             return compile_results[0]
 

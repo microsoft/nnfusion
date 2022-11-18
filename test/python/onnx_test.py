@@ -55,8 +55,7 @@ class TestContext:
             if flag:
                 if global_flag_float_as_half :
                     case = self._test_float_to_type(case, TensorProto.FLOAT16)
-                    case.rtol = 0.00977
-                    case.atol = 0.00977
+                    case = case._replace(rtol=0.00977, atol=0.00977)
                 elif global_flag_float_as_double :
                     case = self._test_float_to_type(case, TensorProto.DOUBLE)
 

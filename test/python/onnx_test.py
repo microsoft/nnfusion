@@ -31,7 +31,7 @@ class TestContext:
     antares_url = "127.0.0.1:8880"
     nnfusion_device = "CUDA"
     nnfusion_codegen_dir = "nnfusion_rt/cuda_codegen"
-    data_type_block_list = ["uint", "expanded"]
+    data_type_block_list = ["uint"]
 
     def __init__(self, ops) -> None:
         self.nnfusion_argstr = self.nnfusion_argstr.replace("127.0.0.1:8880", self.antares_url).replace("CUDA", self.nnfusion_device)
@@ -51,14 +51,8 @@ class TestContext:
             opname = ""
             for v in ops:
                 if "test_"+v+"_" in case.name or "test_"+v == case.name:
-                    skip = False
-                    for type in self.data_type_block_list:
-                        if type in case.name:
-                            skip = True
-                            break
-                    if not skip:
-                        flag = True
-                        opname = v
+                    flag = True
+                    opname = v
             if flag:
                 if global_flag_float_as_half :
                     case = self._test_float_to_type(case, TensorProto.FLOAT16)
@@ -382,9 +376,9 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--name', default="abs,acos") 
     parser.add_argument('-f', '--file', default="default_operators.txt") 
     parser.add_argument('-m', '--mode', default="name") 
-    parser.add_argument("-i", "--input_as_constant", default=False)
-    parser.add_argument("-a", "--float_as_half", default=False)
-    parser.add_argument("-d", "--float_as_double", default=False)
+    parser.add_argument("-i", "--input_as_constant", action="store_true", default=False)
+    parser.add_argument("-a", "--float_as_half", action="store_true", default=False)
+    parser.add_argument("-d", "--float_as_double", action="store_true", default=False)
     args = parser.parse_args()
     global_flag_input_as_constant = args.input_as_constant
     global_flag_float_as_half = args.float_as_half

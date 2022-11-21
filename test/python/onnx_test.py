@@ -31,6 +31,7 @@ class TestContext:
     antares_url = "127.0.0.1:8880"
     nnfusion_device = "CUDA"
     nnfusion_codegen_dir = "nnfusion_rt/cuda_codegen"
+    data_type_block_list = ["uint", "expanded"]
 
     def __init__(self, ops) -> None:
         self.nnfusion_argstr = self.nnfusion_argstr.replace("127.0.0.1:8880", self.antares_url).replace("CUDA", self.nnfusion_device)
@@ -50,8 +51,14 @@ class TestContext:
             opname = ""
             for v in ops:
                 if "test_"+v+"_" in case.name or "test_"+v == case.name:
-                    flag = True
-                    opname = v
+                    skip = False
+                    for type in self.data_type_block_list:
+                        if type in case.name:
+                            skip = True
+                            break
+                    if not skip:
+                        flag = True
+                        opname = v
             if flag:
                 if global_flag_float_as_half :
                     case = self._test_float_to_type(case, TensorProto.FLOAT16)

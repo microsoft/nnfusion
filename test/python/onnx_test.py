@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os, sys, glob
 from typing import IO, Any, Dict, List, Sequence, Union
 from importlib import import_module
@@ -8,13 +6,15 @@ import onnx
 import torch
 import git
 import shutil
-from onnx import AttributeProto, defs, load, ModelProto, NodeProto, TypeProto, numpy_helper
+from onnx import AttributeProto, defs, load, TensorProto, ModelProto, NodeProto, TypeProto, numpy_helper
 from onnx.backend.test.case import collect_snippets
 from onnx.backend.test.loader import load_model_tests
 from onnx.backend.test.runner import Runner
 from onnx.backend.base import Backend
 
 global_flag_input_as_constant = False
+global_flag_float_as_half = False
+global_flag_float_as_double = False
 
 
 class TestContext:
@@ -31,14 +31,14 @@ class TestContext:
     antares_url = "127.0.0.1:8880"
     nnfusion_device = "CUDA"
     nnfusion_codegen_dir = "nnfusion_rt/cuda_codegen"
-    data_type_block_list = ["uint"]
 
     def __init__(self, ops) -> None:
         self.nnfusion_argstr = self.nnfusion_argstr.replace("127.0.0.1:8880", self.antares_url).replace("CUDA", self.nnfusion_device)
         os.environ["PATH"] = os.path.abspath(self.nnfusion_bin) + ":" + os.environ["PATH"]
         sys.path.insert(1, os.path.abspath(self.nnfusion_python))
         self.nnfusion = __import__('nnfusion')
-        shutil.rmtree(self.nnfusion_workdir)
+        if os.path.exists(self.nnfusion_workdir):
+            shutil.rmtree(self.nnfusion_workdir)
         os.mkdir(self.nnfusion_workdir)
         # from nnfusion.executor import Executor
         # from nnfusion.session import generate_sample, codegen, modify_nnfusion_rt, build
@@ -50,20 +50,88 @@ class TestContext:
             opname = ""
             for v in ops:
                 if "test_"+v+"_" in case.name or "test_"+v == case.name:
-                    skip = False
-                    for type in self.data_type_block_list:
-                        if type in case.name:
-                            skip = True
-                            break
-                    if not skip:
-                        flag = True
-                        opname = v
+                    flag = True
+                    opname = v
             if flag:
+                if global_flag_float_as_half :
+                    case = self._test_float_to_type(case, TensorProto.FLOAT16)
+                    case = case._replace(rtol=0.00977, atol=0.00977)
+                elif global_flag_float_as_double :
+                    case = self._test_float_to_type(case, TensorProto.DOUBLE)
+
                 if global_flag_input_as_constant:
                     self.run_input_as_constant(case, opname)
                 else:
                     self.run(case, opname)
+    
+    def _test_float_to_type(self, model_test, float_to_type):
+        #float_to_type = TensorProto.FLOAT16
+        new_model_dir = os.path.join(self.nnfusion_workdir, model_test.name)
+        if not os.path.exists(new_model_dir):
+            os.mkdir(new_model_dir)
+        # modify graph
+        model_pb_path = os.path.join(model_test.model_dir, "model.onnx")
+        new_model_pb_path = os.path.join(new_model_dir, "model.onnx")
+        model = onnx.load(model_pb_path)
+        #print(model)
 
+        def change_model_float(model_pb_path, new_model_pb_path, float_to_type):
+            model = onnx.load(model_pb_path)
+            for in_tensor in model.graph.input:
+                if in_tensor.type.HasField("tensor_type"):
+                    if in_tensor.type.tensor_type.elem_type == TensorProto.FLOAT:
+                        in_tensor.type.tensor_type.elem_type = float_to_type
+
+            for out_tensor in model.graph.output:
+                if out_tensor.type.HasField("tensor_type"):
+                    if out_tensor.type.tensor_type.elem_type == TensorProto.FLOAT:
+                        out_tensor.type.tensor_type.elem_type == float_to_type
+
+            #print(model)
+            onnx.save(model, new_model_pb_path)
+
+        def save_fp(input_file, output_file, float_to_type, tensor):
+            with open(input_file, "rb") as f:
+                protobuf_content = f.read()
+                if tensor.type.HasField("tensor_type") and \
+                    tensor.type.tensor_type.elem_type == TensorProto.FLOAT:
+                    ts = onnx.TensorProto()
+                    ts.ParseFromString(protobuf_content)
+                    ndts = numpy_helper.to_array(ts)
+
+                    if float_to_type == TensorProto.FLOAT16:
+                        ndts = ndts.astype(np.float16)
+                    elif float_to_type == TensorProto.DOUBLE:
+                        ndts = ndts.astype(np.float64)
+
+                    fp_data = numpy_helper.from_array(ndts, tensor.name)
+                    protobuf_content = fp_data.SerializeToString()
+
+                fo = open(output_file, "wb")
+                fo.write(protobuf_content)
+                fo.close()
+
+        for test_data_dir in glob.glob(os.path.join(model_test.model_dir, "test_data_set*")):
+            new_test_data_dir = os.path.join(new_model_dir, test_data_dir.split("/")[-1])
+            if not os.path.exists(new_test_data_dir):
+                os.mkdir(new_test_data_dir)
+            inputs_num = len(glob.glob(os.path.join(test_data_dir, "input_*.pb")))
+            for i in range(inputs_num):
+                input_file = os.path.join(test_data_dir, f"input_{i}.pb")
+                output_file = os.path.join(new_test_data_dir, f"input_{i}.pb")
+                save_fp(input_file, output_file, float_to_type, model.graph.input[i])
+            ref_outputs_num = len(
+                glob.glob(os.path.join(test_data_dir, "output_*.pb"))
+            )
+            for i in range(ref_outputs_num):
+                output_file = os.path.join(test_data_dir, f"output_{i}.pb")
+                output_output_file = os.path.join(new_test_data_dir, f"output_{i}.pb")
+                save_fp(output_file, output_output_file, float_to_type, model.graph.output[i])
+
+        change_model_float(model_pb_path, new_model_pb_path, float_to_type)
+        return model_test._replace(model_dir=new_model_dir)
+
+    
     def _build_model(self, model_test):
         import nnfusion
         from nnfusion.executor import Executor
@@ -248,7 +316,7 @@ class TestContext:
         model = onnx.load(model_pb_path)
         try:
             rt = self._build_model(model_test)
-        except Exception as e:
+        except:
             print("@,", op_name, ",", model_test.name, ", BUILD ERROR", ", FAILED")
             return
         # debug_tensor(rt)
@@ -292,18 +360,13 @@ class TestContext:
                     nnf_outputs[name] = cast_pytorch_tensor(nnf_torch_outputs[-1])
                 rt.feed_data(nnf_inputs, nnf_outputs)
                 outputs = [nnf_outputs[output_i.name].to_pytorch_tensor().cpu().numpy() for output_i in model.graph.output]#list(prepared_model.run(inputs))
-            except Exception as e:
-                print(str(e))
+            except:
                 print("@,", op_name , ",", model_test.name, ", EXECUTION ERROR", ", FAILED")
                 continue
             r = self._assert_similar_outputs(
                 ref_outputs, outputs, rtol=model_test.rtol, atol=model_test.atol
             )
             print("@,", op_name, ",", model_test.name, "," + test_data_dir, ", PASS" if r else ", FAILED")
-            if not r:
-                print("ref", ref_outputs)
-                print("nnf", outputs)
-                exit()
 
 
 if __name__ == "__main__":
@@ -313,8 +376,12 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--file', default="default_operators.txt") 
     parser.add_argument('-m', '--mode', default="name") 
     parser.add_argument("-i", "--input_as_constant", default=False)
+    parser.add_argument("-a", "--float_as_half", default=False)
+    parser.add_argument("-d", "--float_as_double", default=False)
     args = parser.parse_args()
     global_flag_input_as_constant = args.input_as_constant
+    global_flag_float_as_half = args.float_as_half
+    global_flag_float_as_double = args.float_as_double
     if args.mode == "name":
         TestContext(args.name.split(","))
     if args.mode == "file":

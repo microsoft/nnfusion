@@ -56,8 +56,10 @@ target_link_libraries(nnfusion
     ${SQLITE3}
 )
 
+# Always copy templates for every build
+add_custom_target(dummy_target ALL DEPENDS always_copy)
 add_custom_command(
-    TARGET nnfusion
+    OUTPUT always_copy
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/tools/nnfusion/templates ${CMAKE_BINARY_DIR}/src/tools/nnfusion/templates
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/models/pytorch2onnx/ort_run_frozen.py ${CMAKE_BINARY_DIR}/src/tools/nnfusion/templates/onnx/ort_run_frozen.py
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/thirdparty/eigen ${CMAKE_BINARY_DIR}/src/tools/nnfusion/eigen

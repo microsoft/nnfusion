@@ -56,7 +56,11 @@ class TestContext:
             if flag:
                 if global_flag_float_as_half :
                     case = self._test_float_to_type(case, TensorProto.FLOAT16)
-                    case = case._replace(rtol=0.00977, atol=0.00977)
+                    if "_replace" in dir(case):
+                        case = case._replace(rtol=0.00977, atol=0.00977)
+                    else:
+                        case.rtol = 0.00977
+                        case.atol = 0.00977
                 elif global_flag_float_as_double :
                     case = self._test_float_to_type(case, TensorProto.DOUBLE)
 
@@ -130,7 +134,11 @@ class TestContext:
                 save_fp(output_file, output_output_file, float_to_type, model.graph.output[i])
 
         change_model_float(model_pb_path, new_model_pb_path, float_to_type)
-        return model_test._replace(model_dir=new_model_dir)
+        if "_replace" in dir(model_test):
+            return model_test._replace(model_dir=new_model_dir)
+        else:
+            model_test.model_dir=new_model_dir
+            return model_test
 
     
     def _build_model(self, model_test):

@@ -581,9 +581,22 @@ namespace nnfusion
                         Y_c = Y_c_res.at(0);
                     }
 
-                    return {{node_proto.output(0), Y, 0},
-                            {node_proto.output(1), Y_h, 0},
-                            {node_proto.output(1), Y_c, 0}};
+                    if (node_proto.output_size() == 1)
+                    {
+                        return {{node_proto.output(0), Y, 0}};
+                    }
+                    else if (node_proto.output_size() == 2)
+                    {
+                        return {{node_proto.output(0), Y, 0}, {node_proto.output(1), Y_h, 0}};
+                    }
+                    else if (node_proto.output_size() == 3)
+                    {
+                        return {{node_proto.output(0), Y, 0},
+                                {node_proto.output(1), Y_h, 0},
+                                {node_proto.output(2), Y_c, 0}};
+                    }
+
+                    return {};
                 }
 
             } // namespace set_1

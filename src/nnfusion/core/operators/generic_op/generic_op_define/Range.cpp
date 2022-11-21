@@ -39,7 +39,8 @@ REGISTER_OP(Range)
     })
     .translate_v2([](std::shared_ptr<graph::GNode> gnode) -> std::string {
         auto element_type = gnode->get_input_element_type(0);
-        if (element_type == element::f32 || element_type == element::f64)
+        if (element_type == element::f16 || element_type == element::f32 ||
+            element_type == element::f64)
             return TranslateToIR<double>(gnode);
         else if (element_type == element::i32 || element_type == element::i64)
             return TranslateToIR<int64_t>(gnode);

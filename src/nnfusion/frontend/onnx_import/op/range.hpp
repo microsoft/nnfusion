@@ -81,13 +81,10 @@ namespace nnfusion
                     NNFUSION_CHECK(element_type == limit_gnode->get_element_type());
                     NNFUSION_CHECK(element_type == delta_gnode->get_element_type());
 
-                    if (element_type == element::f32)
-                        return TranslateRange<float>(input_gnodes, node_proto, m_graph);
-                    else if (element_type == element::f64)
-                        return TranslateRange<double>(input_gnodes, node_proto, m_graph);
-                    else if (element_type == element::i32)
-                        return TranslateRange<int32_t>(input_gnodes, node_proto, m_graph);
-                    else if (element_type == element::i64)
+                    if (element_type == element::f16 || element_type == element::f32 ||
+                        element_type == element::f64)
+                        return TranslateRange<long double>(input_gnodes, node_proto, m_graph);
+                    else if (element_type == element::i32 || element_type == element::i64)
                         return TranslateRange<int64_t>(input_gnodes, node_proto, m_graph);
                     else
                         NNFUSION_CHECK_FAIL() << "non-supported data type for Range op: "

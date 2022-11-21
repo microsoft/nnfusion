@@ -45,7 +45,7 @@ std::vector<const element::Type*> element::Type::get_known_types()
 {
     std::vector<const element::Type*> rc = {&element::boolean,
                                             &element::character,
-                                            &element::bf16,
+                                            &element::f16,
                                             &element::f32,
                                             &element::f64,
                                             &element::i8,

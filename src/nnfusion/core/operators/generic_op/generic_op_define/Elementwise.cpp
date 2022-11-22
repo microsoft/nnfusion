@@ -32,7 +32,7 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Sqrt", element_op("sqrt", "")},
     {"Rsqrt", element_op("rsqrt", "")},
     {"Tan", element_op("tan", "x0.cast(`float32`).call(`tan`).cast(x0.dtype())")},
-    {"Tanh", element_op("tan", "x0.cast(`float32`).call(`tanh`).cast(x0.dtype())")},
+    {"Tanh", element_op("tanh", "x0.cast(`float32`).call(`tanh`).cast(x0.dtype())")},
     {"Power", element_op("pow", "")},
     {"PowerBackwardBase", element_op("power_backward_base", "")},
     {"PowerBackwardExponent", element_op("power_backward_exponent", "")},

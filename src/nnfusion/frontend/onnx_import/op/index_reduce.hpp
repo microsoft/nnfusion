@@ -44,6 +44,10 @@ namespace nnfusion
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
                     Node node(node_proto);
                     auto axis = node.get_attribute_value<int64_t>("axis", 0);
+                    if (axis < 0)
+                    {
+                        axis += input_gnode->get_shape().size();
+                    }
                     auto keepdims = node.get_attribute_value<int64_t>("keepdims", 1);
 
                     auto reduce_index_op = std::make_shared<T>(axis, element::i64);

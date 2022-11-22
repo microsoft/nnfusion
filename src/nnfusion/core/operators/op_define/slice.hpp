@@ -38,7 +38,8 @@ namespace nnfusion
             Slice(const nnfusion::Shape& lower_bounds,
                   const nnfusion::Shape& upper_bounds,
                   const nnfusion::Strides& strides,
-                  const nnfusion::Shape& out_shape = {});
+                  const nnfusion::Shape& out_shape = {},
+                  const std::vector<int64_t>& steps = {});
 
             /// \brief Constructs a tensor slice operation with unit strides; i.e., every element inside the bounding box will be copied to the output slice.
             ///
@@ -53,6 +54,8 @@ namespace nnfusion
             /// \return The slicing strides.
             const nnfusion::Strides& get_strides() const { return m_strides; }
             void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override;
+            /// \return The slicing steps
+            const std::vector<int64_t>& get_steps() const { return m_steps; }
 
         protected:
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
@@ -61,6 +64,7 @@ namespace nnfusion
             nnfusion::Shape m_upper_bounds;
             nnfusion::Strides m_strides;
             nnfusion::Shape m_out_shape;
+            std::vector<int64_t> m_steps;
         };
     }
 }

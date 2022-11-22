@@ -25,7 +25,7 @@ REGISTER_OP(Slice)
         auto op = static_pointer_cast<nnfusion::op::Slice>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
-        auto steps = op->get_strides();
+        auto steps = op->get_steps();
         auto starts = op->get_lower_bounds();
         auto ends = op->get_upper_bounds();
         auto outs = curr->get_output_shape(0);
@@ -38,7 +38,7 @@ REGISTER_OP(Slice)
             auto step = steps[d];
             auto start = starts[d];
             auto end = ends[d];
-            auto range = (u_int64_t)ceil((double)(end - start) / (double)step);
+            auto range = (int64_t)ceil((double)((int64_t)end - (int64_t)start) / step);
             NNFUSION_CHECK(range == outs[d]);
             auto start_str = to_string(start);
             if (starts.get_sym_shape() && starts.get_sym_shape()->at(d).is_dynamic())

@@ -1,0 +1,42 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/kernels_cpu.dir/barrier.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/cpu_helper.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/cpu_kernel_emitter.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/cpu_langunit.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/concat.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/convolution.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/dot.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/elementwise.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/lstm.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/max_pool.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/pad.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/reduce.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/eigen/softmax.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/general/anyop.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/general/reshape.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/mkl/dot.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/mlas/avg_pool.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/mlas/batch_matmul.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/mlas/convolution.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/mlas/dot.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/mlas/max_pool.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/batch_matmul.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/constant.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/gather_v2.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/kernels.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/one_hot.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/reduce_all.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/reference_common.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/stop_gradient.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/transpose.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/reference/variable.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/simd/elementwise.cpp.o"
+  "CMakeFiles/kernels_cpu.dir/simd/elementwise_fused.cpp.o"
+  "libkernels_cpu.a"
+  "libkernels_cpu.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/kernels_cpu.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

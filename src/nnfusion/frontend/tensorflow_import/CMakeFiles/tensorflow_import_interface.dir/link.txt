@@ -1,0 +1,2 @@
+/usr/bin/ar qc libtensorflow_import_interface.a CMakeFiles/tensorflow_import_interface.dir/tensorflow.cpp.o
+/usr/bin/ranlib libtensorflow_import_interface.a

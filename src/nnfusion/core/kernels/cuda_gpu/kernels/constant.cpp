@@ -78,7 +78,8 @@ namespace nnfusion
                     for (size_t i = 0; i < m_context->inputs.size(); i++)
                     {
                         stringstream ss;
-                        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+                        ss << element::get_backend_cstring(m_context->inputs[i]->get_element_type())
+                           << "* ";
                         ss << "input" << i;
                         params.push_back(ss.str());
                     }
@@ -86,7 +87,9 @@ namespace nnfusion
                     for (size_t i = 0; i < m_context->outputs.size(); i++)
                     {
                         stringstream ss;
-                        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+                        ss << element::get_backend_cstring(
+                                  m_context->outputs[i]->get_element_type())
+                           << "* ";
                         ss << "output" << i;
                         params.push_back(ss.str());
                     }
@@ -94,7 +97,9 @@ namespace nnfusion
                     for (size_t i = 0; i < m_context->tensors.size(); i++)
                     {
                         stringstream ss;
-                        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+                        ss << element::get_backend_cstring(
+                                  m_context->tensors[i]->get_element_type())
+                           << "* ";
                         // default name is: "persit0", "persist1" ...
                         ss << m_context->tensors[i]->get_name();
                         params.push_back(ss.str());

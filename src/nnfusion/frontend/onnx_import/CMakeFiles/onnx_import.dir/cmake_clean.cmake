@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/onnx_import.dir/core/attribute.cpp.o"
+  "CMakeFiles/onnx_import.dir/core/node.cpp.o"
+  "CMakeFiles/onnx_import.dir/onnx_base.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/attention.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/conv.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/conv_trans.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/depth_to_space.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/embed_layer_norm.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/expand.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/gather.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/gemm.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/gru.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/layer_norm.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/matmul.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/no.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/reshape.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/resize.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/roll.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/scatternd.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/shape.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/slice.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/softmax.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/split.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/squeeze.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/transpose.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/unsqueeze.cpp.o"
+  "CMakeFiles/onnx_import.dir/op/where.cpp.o"
+  "CMakeFiles/onnx_import.dir/ops_bridge.cpp.o"
+  "CMakeFiles/onnx_import.dir/util/broadcasting.cpp.o"
+  "CMakeFiles/onnx_import.dir/util/graph_convert.cpp.o"
+  "CMakeFiles/onnx_import.dir/util/reshape.cpp.o"
+  "CMakeFiles/onnx_import.dir/util/util.cpp.o"
+  "libonnx_import.a"
+  "libonnx_import.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/onnx_import.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

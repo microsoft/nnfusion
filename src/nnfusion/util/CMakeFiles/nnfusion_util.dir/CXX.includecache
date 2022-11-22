@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/workspace/v-leiwang3/nnfusion_xbox/src/nnfusion/util/logging.cpp
+chrono
+-
+condition_variable
+-
+ctime
+-
+fstream
+-
+functional
+-
+iomanip
+-
+iostream
+-
+mutex
+-
+thread
+-
+gflags/gflags.h
+/workspace/v-leiwang3/nnfusion_xbox/src/nnfusion/util/gflags/gflags.h
+nnfusion/util/logging.hpp
+/workspace/v-leiwang3/nnfusion_xbox/src/nnfusion/util/nnfusion/util/logging.hpp
+
+src/nnfusion/util/logging.hpp
+deque
+-
+functional
+-
+sstream
+-
+stdexcept
+-
+

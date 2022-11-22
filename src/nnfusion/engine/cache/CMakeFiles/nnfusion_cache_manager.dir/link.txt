@@ -1,0 +1,2 @@
+/usr/bin/ar qc libnnfusion_cache_manager.a CMakeFiles/nnfusion_cache_manager.dir/manager.cpp.o
+/usr/bin/ranlib libnnfusion_cache_manager.a

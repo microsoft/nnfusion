@@ -42,7 +42,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->inputs[i]->get_element_type()) << "* ";
         ss << "input" << i;
         params.push_back(ss.str());
     }
@@ -50,7 +50,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->outputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->outputs[i]->get_element_type()) << "* ";
         ss << "output" << i;
         params.push_back(ss.str());
     }
@@ -403,7 +403,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->inputs[i]->get_element_type()) << "* ";
         if (inplace_input.find(i) == inplace_input.end())
         {
             ss << "__restrict__ ";
@@ -415,7 +415,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->outputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->outputs[i]->get_element_type()) << "* ";
         if (inplace_output.find(i) == inplace_output.end())
         {
             ss << "__restrict__ ";
@@ -427,7 +427,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->tensors.size(); i++)
     {
         stringstream ss;
-        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->tensors[i]->get_element_type()) << "* ";
         ss << "__restrict__ ";
         ss << "mediate" << i;
         params.push_back(ss.str());

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libnnfusion_util.a CMakeFiles/nnfusion_util.dir/logging.cpp.o
+/usr/bin/ranlib libnnfusion_util.a

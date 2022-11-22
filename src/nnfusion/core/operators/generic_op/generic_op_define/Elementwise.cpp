@@ -48,7 +48,7 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Negative", element_op("negative", "-x0")},
     {"Select", element_op("select", "x2.when([x0 == 0], x1)")},
     {"Sign", element_op("sign", "const(1).when([x0 > 0], const(-1).when([x0 < 0], 0))")},
-    {"Gelu", element_op("gelu", "x0 * x0.call(`normcdf`)")},
+    {"Gelu", element_op("gelu", "x0 * x0.call(`normcdf`)"},
     {"Relu", element_op("relu", "x0.call(`max`, [const(0).cast(x0.dtype())])")},
     {"Relu6",
      element_op(

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libnnfusion_engine_pass_graph_blockfusion.a CMakeFiles/nnfusion_engine_pass_graph_blockfusion.dir/block_kernel_schedule.cpp.o CMakeFiles/nnfusion_engine_pass_graph_blockfusion.dir/block_parallel_device.cpp.o CMakeFiles/nnfusion_engine_pass_graph_blockfusion.dir/blockfusion_codegen.cpp.o CMakeFiles/nnfusion_engine_pass_graph_blockfusion.dir/blockfusion_profiler.cpp.o CMakeFiles/nnfusion_engine_pass_graph_blockfusion.dir/blockfusion_optimizer.cpp.o
-/usr/bin/ranlib libnnfusion_engine_pass_graph_blockfusion.a

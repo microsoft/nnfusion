@@ -39,7 +39,8 @@ REGISTER_OP(ArgMax)
             auto axis = _op->get_reduction_axis();
             if (axis >= input_shape.size())
                 NNFUSION_CHECK_FAIL() << "ArgMax: axis out of range";
-
+            auto select_last_index = _op->get_select_last_index();
+            
             auto output_shape = curr->get_output_shape(0);
             auto output_datatype = curr->get_output_element_type(0);
             NNFUSION_CHECK(output_datatype == nnfusion::element::i64 ||
@@ -61,12 +62,16 @@ REGISTER_OP(ArgMax)
             auto output0_layout = make_layout(reduced_axis);
             auto input0_layout =
                 vector_to_string<std::vector<std::string>> (op::create_layout_from_dims(input_shape));
+
             auto ir_template =
-                R"( mediate0@mediate0_layout@ >=! @input0@@input0_layout@;@output0@@output0_layout@ <=! @index0@.when([mediate0@mediate0_layout@ == @input0@@input0_layout@], @index0@.val()).cast(`@output_datatype@`); )";
+                select_last_index
+                    ? R"( mediate0@mediate0_layout@ >=! @input0@@input0_layout@;@output0@@output0_layout@ >=! @index0@.when([mediate0@mediate0_layout@ == @input0@@input0_layout@], const(-1, @index0@.dtype())).cast(`@output_datatype@`); )"
+                    : R"( mediate0@mediate0_layout@ >=! @input0@@input0_layout@;@output0@@output0_layout@ <=! @index0@.when([mediate0@mediate0_layout@ == @input0@@input0_layout@], @index0@.val()).cast(`@output_datatype@`); )";
+
             op::OpConfig::any op_config;
             op_config["input0_layout"] = input0_layout;
             op_config["mediate0_layout"] = mediate0_layout;
-            op_config["index0"] = axis ? "N1" : "N0";
+            op_config["index0"] = "N" + std::to_string(axis);
             op_config["output0_layout"] = output0_layout;
             op_config["output_datatype"] = output_datatype_str;
             auto expression = op::create_code_from_template(ir_template, op_config);

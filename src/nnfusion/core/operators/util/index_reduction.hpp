@@ -28,13 +28,19 @@ namespace nnfusion
         {
         public:
             size_t get_reduction_axis() const { return m_axis; }
+            size_t get_keep_dims() const { return m_keepdims; }
+            size_t get_select_last_index() const { return m_select_last_index; }
             nnfusion::element::Type get_index_element_type() const { return m_index_element_type; }
             IndexReduction(const std::string& node_type,
                            size_t axis,
+                           size_t keepdims,
+                           size_t select_last_index,
                            const nnfusion::element::Type& index_element_type);
 
         protected:
             size_t m_axis;
+            size_t m_keepdims;
+            size_t m_select_last_index;
             nnfusion::element::Type m_index_element_type;
 
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;

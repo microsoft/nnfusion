@@ -26,9 +26,13 @@ using namespace nnfusion::op;
 
 IndexReduction::IndexReduction(const std::string& node_type,
                                size_t axis,
+                               size_t keep_dims,
+                               size_t select_last_index,
                                const nnfusion::element::Type& index_element_type)
     : Op(node_type)
     , m_axis(axis)
+    , m_keepdims(keep_dims)
+    , m_select_last_index(select_last_index)
     , m_index_element_type(index_element_type)
 {
 }
@@ -37,7 +41,7 @@ void IndexReduction::validate_and_infer_types(std::shared_ptr<graph::GNode> gnod
 {
     const nnfusion::PartialShape& arg_shape = gnode->get_input_partial_shape(0);
     nnfusion::Rank rank = arg_shape.rank();
-
+    NNFUSION_LOG(INFO) << "IndexReduction::validate_and_infer_types: rank = " << rank;
     OP_VALIDATION(this, rank.is_dynamic() || size_t(rank) >= 1) << "Argument rank is zero.";
     OP_VALIDATION(this, rank.is_dynamic() || m_axis < size_t(rank))
         << "Reduction axis (" << m_axis << ") is not less than argument rank (" << rank << ").";

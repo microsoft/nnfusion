@@ -118,6 +118,7 @@ namespace nnfusion
 
             // Emit function call
             virtual LanguageUnit_p emit_function_call();
+            virtual LanguageUnit_p emit_function_call(std::vector<std::string> params);
 
             // Emit comments
             virtual LanguageUnit_p emit_comments();

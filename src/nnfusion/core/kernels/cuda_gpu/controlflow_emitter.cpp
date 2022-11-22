@@ -8,15 +8,14 @@ using namespace nnfusion::async;
 DECLARE_bool(floop_in_c);
 DEFINE_bool(ffast_barrier, false, "Use Rammer's fast barrier in control flow codegen");
 
-LanguageUnit_p cuda::ControlFlowEmitter::emit_function_call()
+LanguageUnit_p cuda::ControlFlowEmitter::emit_function_call(std::vector<std::string> names)
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
     auto& lu = *_lu;
-    vector<string> names;
     set_launch_config();
+    string stream_name = "0";
 
     auto gnode = m_context->gnode;
-    string stream_name = "0";
     if (gnode && (*gnode)["Async_info"].is_valid())
     {
         auto& async_info = (*gnode)["Async_info"].as<AsyncExecutionInfo>();
@@ -24,9 +23,20 @@ LanguageUnit_p cuda::ControlFlowEmitter::emit_function_call()
             stream_name = async_info.execution_stream->get_name();
     }
 
+    lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z << "), dim3("
+       << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z << "), 0, " << stream_name
+       << ">>>(" << join(names, ", ") << ");\n";
+    return _lu;
+}
+
+LanguageUnit_p cuda::ControlFlowEmitter::emit_function_call()
+{
+    vector<string> names;
+
     //set stream during codegen
     names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
     names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+    // names.push_back("haha");
     if (FLAGS_ffast_barrier) {
         for (size_t i = 0; i < m_context->tensor_names.size(); i++) {
             if (m_context->tensors[i]->is_memset()) { // be_state_buffer
@@ -36,11 +46,7 @@ LanguageUnit_p cuda::ControlFlowEmitter::emit_function_call()
         names.push_back("0"); // state_base
     }
     // names.insert(names.end(), m_context->tensor_names.begin(), m_context->tensor_names.end());
-    lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z << "), dim3("
-       << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z << "), 0, " << stream_name
-       << ">>>(" << join(names, ", ") << ");\n";
-
-    return _lu;
+    return ControlFlowEmitter::emit_function_call(names);
 }
 
 LanguageUnit_p cuda::ControlFlowEmitter::emit_function_signature()
@@ -350,6 +356,7 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             if (scalar_map.find(index_gnode->get_output_tensor_ptr(0)) != scalar_map.end()) {
                 m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+(" + scalar_map[index_gnode->get_output_tensor_ptr(0)] + ")*" + std::to_string(stride);
                 (*index_gnode)["output_unused"].as<std::vector<int>>().push_back(index_edge->get_src_output());
+                NNFUSION_LOG(INFO) << "m_param_map[" << ins->get_outputs()[0]->get_name() << "] = " << m_param_map[ins->get_outputs()[0]];
                 continue;
             } else if (call_on_cuda) {
                 m_param_map[ins->get_outputs()[0]] = m_param_map[ins->get_inputs()[0]] + "+*(" +

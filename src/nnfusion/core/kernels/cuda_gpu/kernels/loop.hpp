@@ -20,6 +20,7 @@ namespace nnfusion
                 LanguageUnit_p emit_function_call() override;
                 LanguageUnit_p emit_function_signature() override;
                 void set_launch_config() override;
+                bool is_host_kernel_launch() override;
 
             protected:
                 void generate_subgraph_code(LanguageUnit_p lu, bool in_cuda);

@@ -47,6 +47,11 @@ void cuda::FuncForward::set_launch_config()
 {
 }
 
+bool cuda::FuncForward::is_host_kernel_launch()
+{
+    return false;
+}
+
 LanguageUnit_p cuda::FuncForward::emit_block_kernel_call(std::vector<std::string> params)
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
@@ -441,6 +446,11 @@ LanguageUnit_p cuda::Recursion::emit_function_body()
         generate_subgraph_code(_lu);
     }
     return _lu;
+}
+
+bool cuda::Recursion::is_host_kernel_launch()
+{
+    return true;
 }
 
 void cuda::Recursion::set_launch_config()

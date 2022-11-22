@@ -37,10 +37,18 @@ namespace nnfusion
             };
             
             class Recursion;
+            class If;
+            class While;
+            class Loop;
+            class ControlFlowEmitter;
 
             class CudaEmitter : public KernelEmitter
             {
                 friend class cuda::Recursion;
+                friend class cuda::If;
+                friend class cuda::While;
+                friend class cuda::Loop;
+                friend class cuda::ControlFlowEmitter;
             public:
                 CudaEmitter(shared_ptr<KernelContext> ctx)
                     : KernelEmitter(ctx, "cuda")
@@ -51,6 +59,7 @@ namespace nnfusion
                 virtual bool is_static_function() override { return false; }
                 // Need to regenerate function call with new assigned launch config(stream).
                 LanguageUnit_p emit_function_call() override;
+                LanguageUnit_p emit_function_call(std::vector<std::string> names) override;
 
                 dim3 get_grid_dim() { return m_gridDim; }
                 dim3 get_block_dim() { return m_blockDim; }

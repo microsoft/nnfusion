@@ -346,7 +346,11 @@ namespace nnfusion
                             auto item = node->get_name();
                             if (!node_inputs.count(item))
                             {
-                                node_inputs[item] = idx - 1;
+                                if (is_for_op) {
+                                  node_inputs[item] = idx++;
+                                } else {
+                                  node_inputs[item] = idx - 1;
+                                }
                                 idx ++;
                                 if (find_node_from_graph(m_graph, item) == nullptr)
                                 {

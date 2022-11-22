@@ -36,9 +36,6 @@ void ElementwiseArithmetic::validate_and_infer_types(std::shared_ptr<graph::GNod
     nnfusion::element::Type& args_et = std::get<0>(args_et_pshape);
     nnfusion::PartialShape& args_pshape = std::get<1>(args_et_pshape);
 
-    OP_VALIDATION(this, args_et.is_dynamic() || args_et != nnfusion::element::boolean)
-        << "Arguments cannot have boolean element type (argument element type: " << args_et << ").";
-
     gnode->set_output_type_and_shape(0, args_et, args_pshape);
 }
 

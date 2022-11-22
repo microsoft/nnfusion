@@ -148,12 +148,17 @@ LanguageUnit_p KernelEmitter::emit_function_signature()
 
 LanguageUnit_p KernelEmitter::emit_function_call()
 {
-    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
-    auto& lu = *_lu;
-    vector<string> names;
+    std::vector<std::string> names;
     names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
     names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
     names.insert(names.end(), m_context->tensor_names.begin(), m_context->tensor_names.end());
+    return KernelEmitter::emit_function_call(names);
+}
+
+LanguageUnit_p KernelEmitter::emit_function_call(std::vector<std::string> names)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
+    auto& lu = *_lu;
     lu << "(";
 
     auto gnode = m_context->gnode;

@@ -9,9 +9,18 @@ using namespace nnfusion::async;
 
 LanguageUnit_p cuda::CudaEmitter::emit_function_call()
 {
+    vector<string> names;
+    //set stream during codegen
+    names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
+    names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+
+    return CudaEmitter::emit_function_call(names);
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_function_call(std::vector<std::string> names)
+{
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
     auto& lu = *_lu;
-    vector<string> names;
     set_launch_config();
 
     auto gnode = m_context->gnode;
@@ -22,10 +31,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_call()
         if (async_info.execution_stream != nullptr)
             stream_name = async_info.execution_stream->get_name();
     }
-
-    //set stream during codegen
-    names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
-    names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+    
     lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z << "), dim3("
        << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z << "), 0, " << stream_name
        << ">>>(" << join(names, ", ") << ");\n";

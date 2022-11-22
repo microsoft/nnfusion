@@ -296,7 +296,7 @@ namespace nnfusion
 std::ostream& element::operator<<(std::ostream& out, const element::Type& obj)
 {
     out << "element::Type{" << obj.m_bitwidth << ", " << obj.m_is_real << ", " << obj.m_is_signed
-        << ", " << obj.m_is_quantized << ", \"" << obj.m_cname << "\"}";
+        << ", " << obj.m_is_quantized << ", \"" << obj.m_cname << "\", static: " << obj.is_static() << "}";
     return out;
 }
 

@@ -67,6 +67,10 @@ void fetch_dependent(const std::set<int64_t>& emitted, std::vector<std::shared_p
     }
 }
 
+bool cuda::Loop::is_host_kernel_launch() {
+    return !FLAGS_floop_in_c;
+}
+
 LanguageUnit_p cuda::Loop::emit_function_signature() {
     if (FLAGS_floop_in_c) {
         LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
@@ -174,17 +178,33 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
                 lu << kernel_call;
             }
         } else {
-            cuda::dim3 grid_dim = kernel->get_grid_dim();
-            cuda::dim3 block_dim = kernel->get_block_dim();
-            std::string wrapper_func_name = kernel->get_function_name() + "_loop_wrapper";
-            lu << wrapper_func_name;
-            lu << "<<<dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), dim3("
-            << block_dim.x << ", " << block_dim.y << ", " << block_dim.z << ")>>>(" << join(params, ", ") << ");\n";
+            if (dynamic_pointer_cast<ControlFlowEmitter>(kernel) != nullptr) {
+                auto control_flow_kernel = static_pointer_cast<ControlFlowEmitter>(kernel);
+                if (control_flow_kernel->is_host_kernel_launch()) {
+                    std::string func_name = control_flow_kernel->get_function_name();
+                    std::vector<std::string> param_pointers;
+                    dim3 grid_dim = control_flow_kernel->get_grid_dim();
+                    dim3 block_dim = control_flow_kernel->get_block_dim();
+                    std::string hashed_func_name = "tmp_" + std::to_string(std::hash<std::string>{}(func_name));
+                    int param_id = 0;
+                    for (auto param: params) {
+                        lu << "void* " << hashed_func_name << "_" << std::to_string(param_id) << " = " << param << ";\n";
+                        param_pointers.push_back("&" + hashed_func_name + "_" + std::to_string(param_id));
+                        param_id ++;
+                    }
+                    lu << "void* " << func_name << "_param[] = {" << join(param_pointers, ", ") << "};\n";
+                    lu << "cudaLaunchCooperativeKernel((const void*)" << func_name << ", " 
+                       << "dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), "
+                       << "dim3(" << block_dim.x << "," << block_dim.y << ", " << block_dim.z << "), "
+                       << func_name << "_param, (size_t) 0, (cudaStream_t) 0);\n";
+                } else {
+                    lu << kernel->get_function_name() << kernel->emit_function_call(params)->get_code();
+                }
+            } else {
+                lu << kernel->get_function_name() << kernel->emit_function_call(params)->get_code();
+            }
         }
         all_kernel_uses_single_block &= (kernel->get_grid_dim().x == 1 && kernel->get_grid_dim().y == 1 && kernel->get_grid_dim().z == 1);
-    }
-    if (in_cuda) {
-        lu << "Barrier();\n";
     }
 }
 
@@ -280,48 +300,59 @@ LanguageUnit_p cuda::Loop::emit_dependency()
         if (FLAGS_floop_in_c) {
             LanguageUnit_p _k(new LanguageUnit(kernel->get_function_name() + "_loop"));
             auto& k = *_k;
-            vector<string> params;
-            vector<string> params_with_type;
-            for (size_t i = 0; i < kernel->m_context->inputs.size(); i++)
-            {
-                stringstream ss;
-                // ss << kernel->m_context->inputs[i]->get_element_type().c_type_string() << "* ";
-                ss << "input" << i;
-                params.push_back(ss.str());
+            if (std::dynamic_pointer_cast<cuda::ControlFlowEmitter>(kernel)) {
+                vector<string> params;
+                vector<string> params_with_type;
+                for (size_t i = 0; i < kernel->m_context->inputs.size(); i++)
+                {
+                    stringstream ss;
+                    ss << "input" << i;
+                    params.push_back(ss.str());
+                }
+
+                for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
+                {
+                    stringstream ss;
+                    ss << "output" << i;
+                    params.push_back(ss.str());
+                }
+                for (size_t i = 0; i < kernel->m_context->inputs.size(); i++)
+                {
+                    stringstream ss;
+                    ss << kernel->m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+                    ss << "input" << i;
+                    params_with_type.push_back(ss.str());
+                }
+
+                for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
+                {
+                    stringstream ss;
+                    ss << kernel->m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+                    ss << "output" << i;
+                    params_with_type.push_back(ss.str());
+                }
+                std::string func_name = kernel->get_function_name();
+                auto cf_kernel = static_pointer_cast<cuda::ControlFlowEmitter>(kernel);
+                if (cf_kernel->is_host_kernel_launch()) {
+                    k << "__global__ void " << func_name << "(" << join(params_with_type, ", ") << ")";
+                } else {
+                    k << "void " << func_name << "(" << join(params_with_type, ", ") << ")";
+                }
+            } else {
+                LanguageUnit_p sig = kernel->emit_function_signature();
+                std::string sig_code = sig->get_code();
+                size_t param_start = sig_code.find("void (") + 6;
+                std::string param_str = sig_code.substr(param_start - 1, sig_code.find_last_of(')') - param_start + 2);
+                std::string call_str = sig_code.substr(0, param_start - 1);
+                std::string func_name = kernel->get_function_name();
+                k << call_str << func_name << param_str << "\n";
             }
 
-            for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
-            {
-                stringstream ss;
-                // ss << kernel->m_context->outputs[i]->get_element_type().c_type_string() << "* ";
-                ss << "output" << i;
-                params.push_back(ss.str());
-            }
-            for (size_t i = 0; i < kernel->m_context->inputs.size(); i++)
-            {
-                stringstream ss;
-                ss << kernel->m_context->inputs[i]->get_element_type().c_type_string() << "* ";
-                ss << "input" << i;
-                params_with_type.push_back(ss.str());
-            }
-
-            for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
-            {
-                stringstream ss;
-                ss << kernel->m_context->outputs[i]->get_element_type().c_type_string() << "* ";
-                ss << "output" << i;
-                params_with_type.push_back(ss.str());
-            }
-            std::string func_name = kernel->get_function_name() + "_loop_wrapper";
-            k << "__global__ void " << func_name << "(" << join(params_with_type, ", ") << ")";
             k.block_begin();
-            allocate_shared_memory(_k, get_kernel_shared_memory(kernel));
-            LanguageUnit_p block_kernel_call = kernel->emit_block_kernel_call(params);
-            k << block_kernel_call->get_code();
+            k << kernel->emit_function_body()->get_code();
             k.block_end();
-            auto block_kernel = kernel->emit_block_kernel();
-            block_kernel->require(body->dep_unit);
-            _k->require(block_kernel);
+            _k->require(kernel->emit_comments());
+            _k->require(kernel->emit_dependency());
             _lu->require(_k);
             _lu->require(declaration::inc_iter);
         } else {

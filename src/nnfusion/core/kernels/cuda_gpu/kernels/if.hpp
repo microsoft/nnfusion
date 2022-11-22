@@ -18,8 +18,10 @@ namespace nnfusion
                 LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;
                 LanguageUnit_p emit_function_signature() override;
+                LanguageUnit_p emit_function_call(std::vector<std::string>) override;
                 LanguageUnit_p emit_function_call() override;
                 void set_launch_config() override;
+                bool is_host_kernel_launch() override;
 
             private:
                 void generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::Pointer instructions, int max_grid_dim, int start_id = 0, int end_id = -1);

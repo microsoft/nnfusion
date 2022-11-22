@@ -187,6 +187,10 @@ bool cuda::If::is_dense_op_group(ir::BasicBlock::Pointer instructions, std::vect
     return mx;
 }
 
+bool cuda::If::is_host_kernel_launch() {
+    return !FLAGS_fif_launch_d2h && !FLAGS_fif_launch_then_else;
+}
+
 void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::Pointer instructions, int max_grid_dim, int start_id, int end_id)
 {
     auto& lu = *_lu;
@@ -509,18 +513,14 @@ LanguageUnit_p cuda::If::emit_function_body()
     return _lu;
 }
 
-LanguageUnit_p cuda::If::emit_function_call()
-{
+LanguageUnit_p cuda::If::emit_function_call(std::vector<std::string> names) {
     if (!FLAGS_fif_launch_then_else && !FLAGS_fif_launch_d2h) {
+        // NNFUSION_CHECK_FAIL() << "should not reach here";
         // branch in cuda
-        return ControlFlowEmitter::emit_function_call();
+        return ControlFlowEmitter::emit_function_call(names);
     } else {
         LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
         auto& lu = *_lu;
-        vector<string> names;
-        names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
-        names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
-        names.insert(names.end(), m_context->tensor_names.begin(), m_context->tensor_names.end());
         auto node = m_context->gnode;
         if (node->hasAttribute("cpu_tensor")) {
             auto cpu_tensors = node->Get<std::vector<int>>("cpu_tensor");
@@ -530,6 +530,14 @@ LanguageUnit_p cuda::If::emit_function_call()
         lu << join(names, ", ") << ");\n";
         return _lu;
     }
+}
+
+LanguageUnit_p cuda::If::emit_function_call()
+{
+    vector<string> names;
+    names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
+    names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+    return emit_function_call(names);
 }
 
 void cuda::If::set_launch_config()
@@ -646,15 +654,6 @@ LanguageUnit_p cuda::If::emit_function_signature()
         stringstream ss;
         ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
         ss << "output" << i;
-        params.push_back(ss.str());
-    }
-
-    // the temp tensor have been included in input tensors. Duplicate here to align with KernelEmiter::emit_function_call();
-    for (size_t i = 0; i < m_context->tensors.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-        ss << "tensor" << i;
         params.push_back(ss.str());
     }
 

@@ -19,11 +19,13 @@ namespace nnfusion
                 using CudaEmitter::CudaEmitter;
                 LanguageUnit_p emit_device_function_body() override;
                 LanguageUnit_p emit_function_call() override;
+                LanguageUnit_p emit_function_call(std::vector<std::string> names) override;
                 LanguageUnit_p emit_function_signature() override;
                 LanguageUnit_p emit_block_kernel_call(std::vector<std::string> params) override;
                 LanguageUnit_p emit_device_function_signature() override;
                 LanguageUnit_p emit_block_executor_instruction_step_to(int max_block);
                 LanguageUnit_p emit_block_executor_instruction_wait_for(int max_block_last, int max_block_cur=-1);
+                virtual bool is_host_kernel_launch() = 0;
 
             protected:
                 static std::pair<cuda::dim3, cuda::dim3>

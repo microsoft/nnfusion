@@ -1,2 +1,0 @@
-/usr/bin/ar qc libnnfusion_ir.a CMakeFiles/nnfusion_ir.dir/attribute.cpp.o CMakeFiles/nnfusion_ir.dir/instruction.cpp.o CMakeFiles/nnfusion_ir.dir/program.cpp.o
-/usr/bin/ranlib libnnfusion_ir.a

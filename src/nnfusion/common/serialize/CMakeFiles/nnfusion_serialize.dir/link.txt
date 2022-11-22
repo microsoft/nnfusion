@@ -1,2 +1,0 @@
-/usr/bin/ar qc libnnfusion_serialize.a CMakeFiles/nnfusion_serialize.dir/nnf_pbtypes.pb.cc.o CMakeFiles/nnfusion_serialize.dir/nnf_attr_value.pb.cc.o CMakeFiles/nnfusion_serialize.dir/nnf_tensor_shape.pb.cc.o CMakeFiles/nnfusion_serialize.dir/nnf_node_def.pb.cc.o CMakeFiles/nnfusion_serialize.dir/nnf_graph_def.pb.cc.o
-/usr/bin/ranlib libnnfusion_serialize.a

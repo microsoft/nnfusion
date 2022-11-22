@@ -1,2 +1,0 @@
-/usr/bin/ar qc libnnfusion_engine_base.a CMakeFiles/nnfusion_engine_base.dir/engine.cpp.o CMakeFiles/nnfusion_engine_base.dir/op.cpp.o CMakeFiles/nnfusion_engine_base.dir/async_manager.cpp.o CMakeFiles/nnfusion_engine_base.dir/util/file_util.cpp.o
-/usr/bin/ranlib libnnfusion_engine_base.a

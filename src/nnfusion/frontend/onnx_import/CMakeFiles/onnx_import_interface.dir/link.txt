@@ -1,2 +1,0 @@
-/usr/bin/ar qc libonnx_import_interface.a CMakeFiles/onnx_import_interface.dir/onnx.cpp.o
-/usr/bin/ranlib libonnx_import_interface.a

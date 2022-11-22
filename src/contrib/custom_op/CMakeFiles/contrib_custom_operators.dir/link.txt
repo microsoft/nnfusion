@@ -1,2 +1,0 @@
-/usr/bin/ar qc libcontrib_custom_operators.a CMakeFiles/contrib_custom_operators.dir/native/custom_test_op.cpp.o CMakeFiles/contrib_custom_operators.dir/custom_op.cpp.o
-/usr/bin/ranlib libcontrib_custom_operators.a

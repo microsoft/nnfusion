@@ -1,2 +1,0 @@
-/usr/bin/ar qc libnnfusion_engine_mem.a CMakeFiles/nnfusion_engine_mem.dir/memory_allocator.cpp.o
-/usr/bin/ranlib libnnfusion_engine_mem.a

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libtensorflow_import.a CMakeFiles/tensorflow_import.dir/util/graph_convert.cpp.o CMakeFiles/tensorflow_import.dir/util/util.cpp.o CMakeFiles/tensorflow_import.dir/util/bcast.cpp.o CMakeFiles/tensorflow_import.dir/ops/const.cpp.o CMakeFiles/tensorflow_import.dir/tensorflow_base.cpp.o
-/usr/bin/ranlib libtensorflow_import.a

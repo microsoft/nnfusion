@@ -1,2 +1,0 @@
-/usr/bin/ar qc libfrontend_util.a CMakeFiles/frontend_util.dir/parameter.cpp.o
-/usr/bin/ranlib libfrontend_util.a

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libnnfusion_graph.a CMakeFiles/nnfusion_graph.dir/graph.cpp.o CMakeFiles/nnfusion_graph.dir/gnode.cpp.o CMakeFiles/nnfusion_graph.dir/gedge.cpp.o CMakeFiles/nnfusion_graph.dir/graph_util.cpp.o CMakeFiles/nnfusion_graph.dir/util/autobroadcast.cpp.o CMakeFiles/nnfusion_graph.dir/util/numpy_transpose.cpp.o CMakeFiles/nnfusion_graph.dir/subgraph_match.cpp.o
-/usr/bin/ranlib libnnfusion_graph.a

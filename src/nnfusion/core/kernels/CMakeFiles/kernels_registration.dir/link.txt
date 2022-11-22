@@ -1,2 +1,0 @@
-/usr/bin/ar qc libkernels_registration.a CMakeFiles/kernels_registration.dir/kernel_emitter.cpp.o CMakeFiles/kernels_registration.dir/kernel_registration.cpp.o CMakeFiles/kernels_registration.dir/common_langunit.cpp.o CMakeFiles/kernels_registration.dir/antares_ke_imp.cpp.o
-/usr/bin/ranlib libkernels_registration.a

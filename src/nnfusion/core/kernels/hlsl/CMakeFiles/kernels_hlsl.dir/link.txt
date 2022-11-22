@@ -1,2 +1,0 @@
-/usr/bin/ar qc libkernels_hlsl.a CMakeFiles/kernels_hlsl.dir/hlsl_kernel_emitter.cpp.o CMakeFiles/kernels_hlsl.dir/constant.cpp.o CMakeFiles/kernels_hlsl.dir/parameter.cpp.o CMakeFiles/kernels_hlsl.dir/result.cpp.o CMakeFiles/kernels_hlsl.dir/hlsl_langunit.cpp.o
-/usr/bin/ranlib libkernels_hlsl.a

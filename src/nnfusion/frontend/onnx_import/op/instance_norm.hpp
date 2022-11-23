@@ -31,26 +31,16 @@ namespace nnfusion
         {
             namespace set_1
             {
-                NamedNodeVector
-                    TranslateLayerNormalizationOp(const onnx::NodeProto& node_proto,
-                                                  const NodeMap& all_ng_nodes,
-                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph);
-
-                NamedNodeVector TranslateLayerNormalizationGradOp(
+                NamedNodeVector TranslateInstanceNormalizationOp(
                     const onnx::NodeProto& node_proto,
                     const NodeMap& all_ng_nodes,
                     std::shared_ptr<nnfusion::graph::Graph> m_graph);
 
-                NamedNodeVector
-                    TranslateSkipLayerNormOp(const onnx::NodeProto& node_proto,
-                                             const NodeMap& all_ng_nodes,
-                                             std::shared_ptr<nnfusion::graph::Graph> m_graph);
-
             } // namespace set_1
 
-            namespace set_17
+            namespace set_6
             {
-                using set_1::TranslateLayerNormalizationOp;
+                using set_1::TranslateInstanceNormalizationOp;
             }
         } //namespace onnx_import
     }     // namespace frontend

@@ -39,8 +39,8 @@ REGISTER_OP(Einsum)
         assert(!equation.is_null());
         assert(equation == std::string("b i d, b j d -> b i j") || equation == std::string("b i j, b j d -> b i d"));
         if(equation == std::string("b i d, b j d -> b i j"))
-          return "@output0@[B,I,J]+=!@input0@[B,I,D] * @input1@[B,J,D]";
+          return "@output0@[B,I,J]+=!@input0@[B,I,D] * @input1@[B,J,D]; ";
         if(equation == std::string("b i j, b j d -> b i d"))
-          return "@output0@[B,I,D]+=!@input0@[B,I,J] * @input1@[B,J,D]";
+          return "@output0@[B,I,D]+=!@input0@[B,I,J] * @input1@[B,J,D]; ";
         return "";
     });

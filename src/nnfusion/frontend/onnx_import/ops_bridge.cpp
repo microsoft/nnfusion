@@ -82,6 +82,7 @@
 #include "op/where.hpp"
 #include "ops_bridge.hpp"
 #include "op/hard_sigmoid.hpp"
+#include "op/instance_norm.hpp"
 
 namespace nnfusion
 {
@@ -284,6 +285,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("ScatterND", 11, TranslateScatterNDOp);
                 REGISTER_OPERATOR("DepthToSpace", 1, TranslateDepthToSpaceOp);
                 REGISTER_OPERATOR("DepthToSpace", 11, TranslateDepthToSpaceOp);
+                REGISTER_OPERATOR("InstanceNormalization", 1, TranslateInstanceNormalizationOp);
                 REGISTER_DOMAIN_OPERATOR("org.pytorch.aten", "roll", 1, TranslateRollOp);
                 // REGISTER_OPERATOR("Xor", 1, logical_xor);
             }

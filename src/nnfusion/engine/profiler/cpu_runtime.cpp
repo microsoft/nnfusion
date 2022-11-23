@@ -11,6 +11,7 @@
 #include <limits.h>
 
 #include "cpu_runtime.hpp"
+#include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/core/kernels/cpu/cpu_langunit.hpp"
 #include "nnfusion/core/kernels/cpu/reference/reference_common.hpp"
 
@@ -222,30 +223,34 @@ bool ReferenceRuntime::compile(const ProfilingContext::Pointer& ke)
 
 double ReferenceRuntime::invoke(const ProfilingContext::Pointer& ke, void** input, void** output)
 {
-    // Replacing Existed Kernel with Reference Kenel
-    auto& gnode = ke->kernel->m_context->gnode;
-    std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(
-            gnode->get_op_type(), GENERIC_CPU, element::f32);
-    shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-
-    bool has_valid_kernel = false;
-    for (auto kernel_reg : kernel_regs)
+    // Replacing existed kernel with reference kernel if existed kernel is not reference kernel
+    if (std::dynamic_pointer_cast<nnfusion::kernels::cpu::AntaresCpuReferenceKernelEmitter>(
+            ke->kernel) == nullptr)
     {
-        if (kernel_reg->m_tag != "reference")
-            continue;
-        auto kernel = kernel_reg->m_factory(ctx);
-        if (kernel->get_or_emit_source())
+        auto& gnode = ke->kernel->m_context->gnode;
+        std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
+            KernelRegistry::Global()->FindKernelRegistrations(
+                gnode->get_op_type(), GENERIC_CPU, element::f32);
+        shared_ptr<KernelContext> ctx(new KernelContext(gnode));
+
+        bool has_valid_kernel = false;
+        for (auto kernel_reg : kernel_regs)
         {
-            has_valid_kernel = true;
-            NNFUSION_LOG(INFO) << "Replacing with reference kenel.";
-            // Replacing the kernel;
-            ke->kernel = kernel;
+            if (kernel_reg->m_tag != "reference")
+                continue;
+            auto kernel = kernel_reg->m_factory(ctx);
+            if (kernel->get_or_emit_source())
+            {
+                has_valid_kernel = true;
+                NNFUSION_LOG(INFO) << "Replacing with reference kenel.";
+                // Replacing the kernel;
+                ke->kernel = kernel;
+            }
         }
+        if (!has_valid_kernel)
+            return -1.0;
     }
 
-    if (!has_valid_kernel)
-        return -1.0;
     if (codegen(ke) == false)
         return -1.0;
     if (compile(ke) == false)

@@ -8,9 +8,11 @@
 
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 #include "nnfusion/frontend/frontend_base.hpp"
 DECLARE_bool(fuse_cpuprofiler);
+DECLARE_bool(fantares_mode);
 namespace nnfusion
 {
     namespace frontend
@@ -64,8 +66,29 @@ namespace nnfusion
                 if (FLAGS_fuse_cpuprofiler)
                 {
                     runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
-                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), GENERIC_CPU, element::f32);
+                    if (FLAGS_fantares_mode)
+                    {
+                        shared_ptr<const KernelRegistration> kernel_reg =
+                            kernels::Name(gnode->get_op_type())
+                                .Device(GENERIC_CPU)
+                                .TypeConstraint(element::f32)
+                                .Tag("reference")
+                                .Priority(0)
+                                .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                                                   -> shared_ptr<kernels::KernelEmitter> {
+                                    return make_shared<
+                                        kernels::cpu::AntaresCpuReferenceKernelEmitter>(context);
+                                })
+                                .Build();
+                        kernel_regs = {kernel_reg};
+                        cpu::AntaresCpuReferenceKernelEmitter::codegen_cpu_reference_kernel_sync(
+                            gnode);
+                    }
+                    else
+                    {
+                        kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                            gnode->get_op_type(), GENERIC_CPU, element::f32);
+                    }
                 }
                 else
                 {

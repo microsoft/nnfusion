@@ -28,7 +28,8 @@ namespace nnfusion
         public:
             using Pointer = shared_ptr<AntaresKEImp>;
             AntaresKEImp();
-            std::pair<std::string, bool> autogen(const std::string& expr);
+            std::pair<std::string, bool> autogen(const std::string& expr,
+                                                 const std::string& _tuning_platform = "");
             static std::unordered_map<std::string, std::pair<std::string, bool>> code_cache;
             static double get_perf(const std::string& response);
             static std::pair<int, int> get_tuning_step(const std::string& response);

@@ -59,6 +59,7 @@ class DataFormat(object):
             else:
                 return self._reference
         else:
+            # Todo: handle numpy
             raise Exception(f"Can not to_pytorch_tensor for type of {type(self._reference)}")
 
 class HLSLTensor(object):

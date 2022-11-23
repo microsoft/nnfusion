@@ -36,9 +36,9 @@ def inference(nnf_model_path, total_iter):
         elif executor.device_type == 3:
             # hlsl device
             for input in executor.get_inputs():
-                input_dict[input.name] = cast_hlsl_tensor(HLSLTensor(generate_sample(input)))
+                input_dict[input.name] = cast_hlsl_tensor(HLSLTensor.build_from_torch(generate_sample(input)))
             for output in executor.get_outputs():
-                output_dict[output.name] = cast_hlsl_tensor(HLSLTensor(generate_sample(output)))
+                output_dict[output.name] = cast_hlsl_tensor(HLSLTensor.build_from_torch(generate_sample(output)))
         else:
             raise Exception("only support device kernel_entry on cuda/hlsl backend.")
 
@@ -47,7 +47,7 @@ def inference(nnf_model_path, total_iter):
     for _ in range(5):
         executor(input_dict, output_dict)
         for k, v in output_dict.items():
-            print(f"{k} = {v.reference}")
+            print(f"{k} = {v.to_pytorch_tensor()}")
 
     # evaluate
     print(f"Begin evaluation of {total_iter} iters")

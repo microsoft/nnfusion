@@ -110,6 +110,9 @@ REGISTER_OP(GatherV2)
             auto ng_op = curr->get_in_edge(1)->get_src();
             NNFUSION_CHECK(ng_op->is_constant())
                 << "The GatherV2 scalar mode only support \"indices\" as Constant";
+            ir_template =
+                R"( @output0@@output0_layout@ = @input0@[@input0_layout_left@@input1@@input1_layout@@input0_layout_right@]; )";
+
             auto index =
                 *((int64_t*)std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
                       ->get_data_ptr());

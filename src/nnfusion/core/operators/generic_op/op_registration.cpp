@@ -143,8 +143,8 @@ namespace nnfusion
                 if (home != NULL)
                 {
                     base_dir = std::string(home) + "/.nnfusion/custom_op/" + type;
-                    NNFUSION_LOG(NNFUSION_WARNING) << "$NNFUSION_CONTRIB was not set, use "
-                                                   << std::string(home) << "/.nnfusion.";
+                    // NNFUSION_LOG(NNFUSION_WARNING) << "$NNFUSION_CONTRIB was not set, use "
+                    //                                << std::string(home) << "/.nnfusion.";
                 }
             }
             else

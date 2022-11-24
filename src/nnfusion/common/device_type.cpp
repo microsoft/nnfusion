@@ -16,6 +16,22 @@ std::string nnfusion::get_device_str(NNFusion_DeviceType dt)
     }
 }
 
+std::string nnfusion::get_antares_device_type(NNFusion_DeviceType dt, std::string platform)
+{
+    std::string ret;
+    switch (dt)
+    {
+    case CUDA_GPU: ret = "c-cuda"; break;
+    case ROCM_GPU: ret = "c-rocm"; break;
+    case GENERIC_CPU: ret = "c-mcpu"; break;
+    case HLSL: ret = "c-hlsl"; break;
+    case GraphCore: ret = "c-ipu"; break;
+    default: return "unknow";
+    }
+
+    return platform.empty() ? ret : ret + "_" + platform;
+}
+
 nnfusion::NNFusion_DeviceType nnfusion::get_device_type(std::string dt)
 {
     if (dt == "ROCM_GPU" || dt == "ROCm")

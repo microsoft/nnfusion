@@ -97,10 +97,21 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
     {
         NNFUSION_CHECK(false) << "Unsupported elementwise op: " << node->get_op_type();
     }
-
-    if (iter->second.expr == "")
+    // get node dtypes and node op name
+    auto _op_name = iter->first; 
+    auto _op_dtype = node->get_element_type();
+    auto _op_func = iter->second.func;
+    auto _op_expr = iter->second.expr;
+    if(_op_dtype == nnfusion::element::f16 &&
+        (_op_name == "Acos" ||
+         _op_name == "Asin" ||
+         _op_name == "Atan" ))
     {
-        expr += "@input0@@data_layout@.call(`" + iter->second.func + "`";
+        _op_func += "f";
+    }
+    if (_op_expr == "")
+    {
+        expr += "@input0@@data_layout@.call(`" + _op_func + "`";
         if (node->get_input_size() > 1)
         {
             expr += ", [";
@@ -117,7 +128,7 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
     }
     else
     {
-        expr += replace_input_str(iter->second.expr) + ";";
+        expr += replace_input_str(_op_expr) + ";";
     }
 
     auto data_layout = op::create_layout_from_dims(node->get_output_shape(0));

@@ -82,33 +82,38 @@ bool ReferenceRuntime::codegen(const ProfilingContext::Pointer& ke)
     writer << "extern \"C\" double " << fu->name_unit->get_code() << "_host(";
     for (size_t i = 0; i + 1 < arg.size(); i++)
     {
-        writer << arg[i]->get_element_type().c_type_string() << "* " << arg[i]->get_name() << ", ";
+        writer << element::get_backend_cstring(arg[i]->get_element_type()) << "* "
+               << arg[i]->get_name() << ", ";
     }
     if (!arg.empty())
     {
-        writer << arg.back()->get_element_type().c_type_string() << "* " << arg.back()->get_name();
+        writer << element::get_backend_cstring(arg.back()->get_element_type()) << "* "
+               << arg.back()->get_name();
         if (!out.empty())
             writer << ", ";
     }
 
     for (size_t i = 0; i + 1 < out.size(); i++)
     {
-        writer << out[i]->get_element_type().c_type_string() << "* " << out[i]->get_name() << ", ";
+        writer << element::get_backend_cstring(out[i]->get_element_type()) << "* "
+               << out[i]->get_name() << ", ";
     }
     if (!out.empty())
     {
-        writer << out.back()->get_element_type().c_type_string() << "* " << out.back()->get_name();
+        writer << element::get_backend_cstring(out.back()->get_element_type()) << "* "
+               << out.back()->get_name();
     }
     writer << ")\n";
 
     auto tensor_declare = [](const shared_ptr<nnfusion::descriptor::Tensor>& t) -> std::string {
-        return t->get_element_type().c_type_string() + "* " + t->get_name() + ";\n";
+        return element::get_backend_cstring(t->get_element_type()) + "* " + t->get_name() + ";\n";
     };
 
     auto tensor_alloc_host = [](const shared_ptr<nnfusion::descriptor::Tensor>& tensor) {
         stringstream s;
-        s << tensor->get_name() << " = new " << tensor->get_element_type().c_type_string() << "["
-          << tensor->size(false) << "];\n";
+        s << tensor->get_name() << " = new "
+          << element::get_backend_cstring(tensor->get_element_type()) << "[" << tensor->size(false)
+          << "];\n";
         return s.str();
     };
 
@@ -168,22 +173,24 @@ bool ReferenceRuntime::codegen(const ProfilingContext::Pointer& ke)
         writer << "return " << fu->name_unit->get_code() << "_host(";
         for (size_t i = 0; i + 1 < arg.size() + out.size(); i++)
         {
-            string type = i < arg.size()
-                              ? arg[i]->get_element_type().c_type_string()
-                              : (i - arg.size() < out.size()
-                                     ? out[i - arg.size()]->get_element_type().c_type_string()
-                                     : "");
+            string type =
+                i < arg.size()
+                    ? element::get_backend_cstring(arg[i]->get_element_type())
+                    : (i - arg.size() < out.size()
+                           ? element::get_backend_cstring(out[i - arg.size()]->get_element_type())
+                           : "");
             writer << "(" << type << "*)" << (i < arg.size() ? "args" : "outputs") << "["
                    << i - (i >= arg.size() ? arg.size() : 0) << "], ";
         }
         if (arg.size() + out.size() > 0)
         {
             int i = arg.size() + out.size() - 1;
-            string type = i < arg.size()
-                              ? arg[i]->get_element_type().c_type_string()
-                              : (i - arg.size() < out.size()
-                                     ? out[i - arg.size()]->get_element_type().c_type_string()
-                                     : "");
+            string type =
+                i < arg.size()
+                    ? element::get_backend_cstring(arg[i]->get_element_type())
+                    : (i - arg.size() < out.size()
+                           ? element::get_backend_cstring(out[i - arg.size()]->get_element_type())
+                           : "");
             writer << "(" << type << "*)" << (out.size() == 0 ? "args" : "outputs") << "["
                    << i - (i >= arg.size() ? arg.size() : 0) << "]";
         }

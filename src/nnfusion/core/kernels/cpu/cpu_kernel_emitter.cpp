@@ -294,7 +294,7 @@ bool cpu::AntaresCpuReferenceKernelEmitter::codegen_cpu_reference_kernel_sync(
         std::string file_id = sha256(ir);
         auto file_name = cache_folder + "/" + file_id + ".c-scpu" + ".c";
 
-        std::string cmd = "STEP=0 BACKEND=c-scpu";
+        std::string cmd = "PROGRESS=1 STEP=0 BACKEND=c-scpu";
         cmd += " COMPUTE_V1='";
         cmd += ir;
         cmd += ("' antares save " + file_name);

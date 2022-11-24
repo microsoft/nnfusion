@@ -23,7 +23,7 @@ DEFINE_string(ftuning_blocklist,
               "",
               "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
 DEFINE_string(fantares_perf_file, "./antares_perf.csv", "File to save Antares kernel performance.");
-DEFINE_string(ftuning_platform, "", "Antares platform: e.g., c-cuda, c-hlsl_xbox, etc.");
+DEFINE_string(ftuning_platform, "", "Antares platform: e.g., win64, xbox, etc.");
 DEFINE_string(ftuning_agent, "", "Antares tuning agent ip address");
 DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
@@ -338,22 +338,6 @@ void KernelTuning::submit_tuning_batch_asyc(
     }
 }
 
-std::string get_antares_device_type(NNFusion_DeviceType dt, std::string platform = "")
-{
-    std::string ret;
-    switch (dt)
-    {
-    case CUDA_GPU: ret = "c-cuda"; break;
-    case ROCM_GPU: ret = "c-rocm"; break;
-    case GENERIC_CPU: ret = "c-mcpu"; break;
-    case HLSL: ret = "c-hlsl"; break;
-    case GraphCore: ret = "c-ipu"; break;
-    default: return "unknow";
-    }
-
-    return platform.empty() ? ret : ret + "_" + platform;
-}
-
 void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& nodes,
                                        std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels)
 {
@@ -383,15 +367,19 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
                 std::string cmd_create_folder = "mkdir -p " + cache_folder;
                 int sys_ret = system(cmd_create_folder.c_str());
             }
+            std::string antares_backend =
+                get_antares_device_type(n_device_type, FLAGS_ftuning_platform);
 
             std::string file_id = sha256(ir);
-            auto file_name = cache_folder + "/" + file_id + "." + FLAGS_ftuning_platform + ".c";
+            auto file_name = cache_folder + "/" + file_id + "." + antares_backend + ".c";
             bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
 
             std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
-            cmd += FLAGS_ftuning_platform;
+            cmd += antares_backend;
             if (symbolic)
                 cmd += " TVM=0";
+            if (FLAGS_ftuning_agent.size() > 0)
+                cmd += (" AGENT_URL=" + FLAGS_ftuning_agent);
             cmd += " COMPUTE_V1='";
             cmd += ir;
             cmd += ("' antares save " + file_name);
@@ -472,10 +460,12 @@ void load_irs_and_tune_kernels_sync(std::string filename,
         }
 
         std::string file_id = sha256(ir);
-        auto file_name = cache_folder + "/" + file_id + "." + FLAGS_ftuning_platform + ".c";
+        auto antares_backend =
+            get_antares_device_type(get_device_type(FLAGS_fdefault_device), FLAGS_ftuning_platform);
+        auto file_name = cache_folder + "/" + file_id + "." + antares_backend + ".c";
 
         std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
-        cmd += FLAGS_ftuning_platform;
+        cmd += antares_backend;
         if (FLAGS_ftuning_agent.size() > 0)
             cmd += (" AGENT_URL=" + FLAGS_ftuning_agent);
         if (symbolic)

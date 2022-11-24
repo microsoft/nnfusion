@@ -154,7 +154,7 @@ void Reshape::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
                 size_t out_size = m_output_shape[i];
                 out_sym_shape->push_back(m_output_shape[i]);
                 i++, j++;
-                while ((i < in_shape.size() || j < m_output_shape.size()) && in_size != out_size)
+                while ((i < m_output_shape.size() || j < in_shape.size()) && in_size != out_size)
                 {
                     if (in_size < out_size)
                     {
@@ -174,6 +174,20 @@ void Reshape::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
                     << ", output=" << m_output_shape << ", input_order=" << m_input_order;
             }
         }
+
+        // drain the tail of 1s
+        while (i < m_output_shape.size())
+        {
+            NNFUSION_CHECK(m_output_shape[i] == 1);
+            out_sym_shape->push_back(m_output_shape[i]);
+            i++;
+        }
+        while (j < in_shape.size())
+        {
+            NNFUSION_CHECK(in_shape[j] == 1);
+            j++;
+        }
+
         // for (auto i = 0; i < m_output_shape.size(); i++)
         // {
         //     if (m_output_shape[i] == in_shape[m_input_order[j]])

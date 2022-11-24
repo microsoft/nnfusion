@@ -49,7 +49,7 @@ void ArithmeticReduction::validate_and_infer_types(std::shared_ptr<graph::GNode>
         }
 
         auto sym_shape = std::make_shared<SymShape>();
-        bool symbolic = input_shape.is_dynamic();
+        bool symbolic = (input_shape.sym_shape && input_shape.sym_shape->is_dynamic());
         for (size_t i = 0; i < size_t(input_rank); i++)
         {
             if (m_reduction_axes.count(i) == 0)

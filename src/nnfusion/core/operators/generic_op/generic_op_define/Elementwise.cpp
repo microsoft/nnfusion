@@ -16,6 +16,7 @@ struct element_op
 
 static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Abs", element_op("abs", "")},
+    {"Asin", element_op("asin", "")},
     {"Acos", element_op("acos", "")},
     {"Atan", element_op("atan", "")},
     {"Ceiling", element_op("rceil", "")},
@@ -162,6 +163,7 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
         });
 
 REGISTER_ELEM_OP(Abs)
+REGISTER_ELEM_OP(Asin)
 REGISTER_ELEM_OP(Acos)
 REGISTER_ELEM_OP(Atan)
 REGISTER_ELEM_OP(Ceiling)

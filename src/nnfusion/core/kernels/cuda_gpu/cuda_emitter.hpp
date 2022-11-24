@@ -228,6 +228,8 @@ namespace nnfusion
                                 return;
                             }
                             { // check output_shapes of NNFusion and Antares, fallback when shapes mismatch.
+                                // cout << ctx->gnode->get_op_type() << endl;
+                                // cout << ir << endl;
                                 auto antares_output_shapes =
                                     AntaresKEImp::get_output_shapes(info.first);
                                 bool flag_match = true;

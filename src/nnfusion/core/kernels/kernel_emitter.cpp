@@ -254,19 +254,20 @@ FunctionUnit_p KernelEmitter::emit_source()
         return fu;
     }
 
-    // emit function units
-    auto sig = emit_function_signature();
-    NNFUSION_CHECK_NOT_NULLPTR(sig);
     // a hack way to map int64 to long long
-    if (FLAGS_fantares_mode && FLAGS_fdefault_device != "HLSL")
-    {
-        auto sig_str = sig->get_code();
-        sig_str = replace_sub_str(sig_str, "uint64_t", "unsigned long long");
-        sig_str = replace_sub_str(sig_str, "int64_t", "long long");
-        sig->modify_code(sig_str);
-    }
-    fu->signature_unit = sig;
-    fu->body_unit = emit_function_body();
+    auto replace_cstring = [](LanguageUnit_p lp) {
+        if (lp && FLAGS_fantares_mode && FLAGS_fdefault_device != "HLSL")
+        {
+            auto lp_str = lp->get_code();
+            lp_str = replace_sub_str(lp_str, "uint64_t", "unsigned long long");
+            lp_str = replace_sub_str(lp_str, "int64_t", "long long");
+            lp->modify_code(lp_str);
+        }
+        return lp;
+    };
+    // emit function units
+    NNFUSION_CHECK_NOT_NULLPTR(fu->signature_unit = replace_cstring(emit_function_signature()));
+    fu->body_unit = replace_cstring(emit_function_body());
     if (!fu->body_unit)
     {
         return nullptr;

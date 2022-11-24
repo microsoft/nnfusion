@@ -378,6 +378,8 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
             cmd += antares_backend;
             if (symbolic)
                 cmd += " TVM=0";
+            if (FLAGS_ftuning_agent.size() > 0)
+                cmd += (" AGENT_URL=" + FLAGS_ftuning_agent);
             cmd += " COMPUTE_V1='";
             cmd += ir;
             cmd += ("' antares save " + file_name);

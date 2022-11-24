@@ -7,6 +7,7 @@
  */
 
 #include "cuda_runtime.hpp"
+#include <regex>
 #include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cuda_langunit.hpp"
 #include "nnfusion/engine/async_manager.hpp"
@@ -105,7 +106,10 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
 
     // Write function definition
     writer << fu->comment_unit->get_code();
-    writer << fu->get_specialized_signature() << "\n";
+    std::string sig_str = fu->get_specialized_signature().c_str();
+    sig_str = std::regex_replace(sig_str, std::regex("long long"), "int64_t");
+    writer << sig_str << "\n";
+    //writer << fu->get_specialized_signature() << "\n";
     writer.block_begin();
     writer << body_unit << "\n";
     writer.block_end();

@@ -394,7 +394,7 @@ std::string CudaMultiEngine::get_kernel_entry_paras(std::shared_ptr<TranslationU
     for (int i = 0; i < tu->arg.size(); i++)
     {
         auto tv = tu->arg[i];
-        string type = tv->get_element_type().c_type_string();
+        string type = element::get_backend_cstring(tv->get_element_type());
         stringstream ss;
         ss << type << "* " << tv->get_name();
         if (is_host)
@@ -408,7 +408,7 @@ std::string CudaMultiEngine::get_kernel_entry_paras(std::shared_ptr<TranslationU
     for (int i = 0; i < tu->out.size(); i++)
     {
         auto tv = tu->out[i];
-        string type = tv->get_element_type().c_type_string();
+        string type = element::get_backend_cstring(tv->get_element_type());
         stringstream ss;
         if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
             ss << type << "* " << tv->get_name();

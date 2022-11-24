@@ -43,12 +43,13 @@ bool ConvElemFusionOptimizer::fuse_subgraph(SubGraphRecord::Pointer subgraph_rec
     auto bias = pr->nodes[1];
 
     std::shared_ptr<GNode> relu;
+    // NNFUSION_LOG(INFO) <<" =============" << subgraph_record->subgraph->name;
     if (subgraph_record->subgraph->name == "conv_bias_relu")
     {
         relu = pr->nodes[2];
     }
 
-    std::shared_ptr<GNode> bias_input;
+    std::shared_ptr<GNode> bias_input, bias_broadcast;
     int bias_input_idx;
 
     for (auto in_edge : bias->get_in_edges())
@@ -56,8 +57,20 @@ bool ConvElemFusionOptimizer::fuse_subgraph(SubGraphRecord::Pointer subgraph_rec
         auto src = in_edge->get_src();
         if (src != conv)
         {
-            bias_input = src;
-            bias_input_idx = in_edge->get_src_output();
+            if (src->get_op_type() == "Broadcast")
+            {
+                bias_broadcast = src;
+                bias_input = bias_broadcast->get_in_edge(0)->get_src();
+                bias_input_idx = 0;
+            }
+            else
+            {
+                bias_input = src;
+                bias_input_idx = in_edge->get_src_output();
+            }
+
+            // NNFUSION_LOG(INFO) << "bias_input_idx: " << bias_input_idx;
+            // NNFUSION_LOG(INFO) << bias_input->get_op_type();
             break;
         }
     }
@@ -96,7 +109,7 @@ bool ConvElemFusionOptimizer::fuse_subgraph(SubGraphRecord::Pointer subgraph_rec
         graph->add_edge(new_conv, 0, dst, y);
     }
     std::unordered_set<std::shared_ptr<GNode>> nodes_to_remove;
-    nodes_to_remove.insert({conv, bias});
+    nodes_to_remove.insert({conv, bias, bias_broadcast});
     if (relu)
         nodes_to_remove.insert(relu);
     return RemoveNodes(nodes_to_remove, new_conv);

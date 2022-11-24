@@ -25,6 +25,10 @@ db_name = "kernel_cache.db"
 
 # Todo: re-org operator definition to oop and coordinate to NNFusion
 param_list = {
+    "DepthwiseConv2dNative": {
+        'symbol': ['input0', 'input1', 'output0'],
+        'dtype': ['float*', 'float*', 'float*']
+    },
     "Convolution": {
         'symbol': ['input0', 'input1', 'output0'],
         'dtype': ['float*', 'float*', 'float*']
@@ -37,7 +41,19 @@ param_list = {
         'symbol': ['input0', 'output0'],
         'dtype': ['float*', 'float*']
     },
+    "Broadcast": {
+    'symbol': ['input0', 'output0'],
+    'dtype': ['float*', 'float*']
+    },
+    "Sum": {
+    'symbol': ['input0', 'output0'],
+    'dtype': ['float*', 'float*']
+    },
     "Dot": {
+        'symbol': ['input0', 'input1', 'output0'],
+        'dtype': ['float*', 'float*', 'float*']
+    },
+    "BatchMatMul": {
         'symbol': ['input0', 'input1', 'output0'],
         'dtype': ['float*', 'float*', 'float*']
     },
@@ -57,6 +73,10 @@ param_list = {
         'symbol': ['input0', 'input1', 'output0', 'input2'],
         'dtype': ['float*', 'float*', 'float*', 'float*']
     },
+    "Fused_Convolution_Add": {
+        'symbol': ['input0', 'input1', 'output0', 'input2'],
+        'dtype': ['float*', 'float*', 'float*', 'float*']
+    },
     "AvgPool": {
         'symbol': ['input0', 'output0'],
         'dtype': ['float*', 'float*']
@@ -64,7 +84,7 @@ param_list = {
 }
 
 conv_augmented = ["Fused_Convolution_Batchnorm",
-                  "Fused_Convolution_Batchnorm_Relu", "Fused_Convolution_Add_Relu"]
+                  "Fused_Convolution_Batchnorm_Relu", "Fused_Convolution_Add_Relu", "Fused_Convolution_Add"]
 conv_family = ["Convolution", "Fused_Convolution_Relu"] + conv_augmented
 
 
@@ -102,6 +122,13 @@ def gen_key(data, dtype="float"):
                                          for shape in out_shape * 2) + "float" * 2 * len(out_shape)
             else:
                 raise ("to be specified")
+    elif op_type == "DepthwiseConv2dNative":
+        key += "".join(["[", ",".join(str(i)
+                                              for i in parameters["window_movement_strides"]), "]"])
+        key += "".join(["[", ",".join(str(i)
+                                              for i in parameters["window_dilation_strides"]), "]"])
+        key += "".join(["[", ",".join(str(i)
+                                                     for i in parameters["padding_below_diff"]), "]"])
     elif op_type == "AvgPool" or op_type == "MaxPool":
         key += "Shape{" + ", ".join(str(i)
                                     for i in parameters["window_shape"]) + "}"
@@ -109,6 +136,12 @@ def gen_key(data, dtype="float"):
                                       for i in parameters["window_stride"]) + "}"
         key += "Shape{" + ", ".join(str(i)
                                     for i in parameters["padding_below"]) + "}"
+    elif op_type == "Sum":
+        key += "AxisSet{" + ", ".join(str(i)
+                                    for i in parameters["reduction_axis"]) + "}"
+    elif op_type == "Broadcast":
+        key += "AxisSet{" + ", ".join(str(i)
+                                    for i in parameters["broadcast_axis"]) + "}"
     else:
         pass
 
@@ -125,7 +158,7 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
         "blockDim": kernel["blockDim"],
         "gridDim": kernel["gridDim"],
     }
-    if op_type in conv_family:
+    if op_type in conv_family or op_type == "DepthwiseConv2dNative":
         config["in_shape"] = [kernel["parameters"]
                               ["input_shape"], kernel["parameters"]["filter_shape"]]
         config["out_shape"] = [kernel["parameters"]["output_shape"]]
@@ -140,7 +173,7 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
                 "function_signature"] = "extern \"C\" __global__  void (float* input0, float* input1, float* input2, float* output0)"
         else:
             config["function_signature"] = "extern \"C\" __global__  void (float* input0, float* input1, float* output0)"
-    elif (op_type == "Dot"):
+    elif (op_type == "Dot" or op_type == "BatchMatMul"):
         config["in_shape"] = [kernel["parameters"]
                               ["arg0_shape"], kernel["parameters"]["arg1_shape"]]
         config["out_shape"] = [kernel["parameters"]["out_shape"]]
@@ -150,6 +183,20 @@ def gen_config(op_type, kernel, shared_memory, num_sync):
         config["in_shape"] = [kernel["parameters"]["input_shape"]]
         config["out_shape"] = [kernel["parameters"]["output_shape"]]
         config["function_signature"] = "extern \"C\" __global__  void (float* input0, float* output0)"
+    elif (op_type == "Sum"):
+        config["in_shape"] = [kernel["parameters"]["input_shape"]]
+        config["out_shape"] = [kernel["parameters"]["output_shape"]]
+        config["function_signature"] = "extern \"C\" __global__  void (float* input0, float* output0)"
+        config["parameters"] = {
+            "reduction_axis" : kernel["parameters"]["reduction_axis"]
+        }
+    elif (op_type == "Broadcast"):
+        config["in_shape"] = [kernel["parameters"]["input_shape"]]
+        config["out_shape"] = [kernel["parameters"]["output_shape"]]
+        config["function_signature"] = "extern \"C\" __global__  void (float* input0, float* output0)"
+        config["parameters"] = {
+            "broadcast_axis" : kernel["parameters"]["broadcast_axis"]
+        }
     elif (op_type == "AvgPool" or op_type == "MaxPool"):
         config["in_shape"] = [kernel["parameters"]["input_shape"]]
         config["out_shape"] = [kernel["parameters"]["output_shape"]]

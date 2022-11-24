@@ -224,7 +224,7 @@ def _pooling(net, stride, operation):
   pooling_type, pooling_shape = _operation_to_pooling_info(operation)
   if pooling_type == 'avg':
     net = slim.avg_pool2d(net, pooling_shape, stride=stride, padding=padding)
-  elif pooling_type == 'max':
+  elif pooling_type == `max`:
     net = slim.max_pool2d(net, pooling_shape, stride=stride, padding=padding)
   else:
     raise NotImplementedError('Unimplemented pooling type: ', pooling_type)

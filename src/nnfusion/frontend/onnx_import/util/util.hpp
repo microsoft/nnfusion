@@ -68,6 +68,7 @@ namespace nnfusion
                     {
                         return __get_raw_data<half_float::half>(tensor.raw_data());
                     }
+
                     NNFUSION_CHECK_FAIL()
                         << "invalid data type: "
                         << onnx::TensorProto_DataType_Name(

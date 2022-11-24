@@ -1,0 +1,772 @@
+  >> Backend = c-cuda, Python PID = 28930, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(depthwiseconv2d_unpad, body=[depthwiseconv2d[N, C, H, W]], axis=[iter_var(N, range(min=0, ext=128)), iter_var(C, range(min=0, ext=84)), iter_var(H, range(min=0, ext=42)), iter_var(W, range(min=0, ext=42))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: False
+failed to find results with padding threshold 0.0
+failed to find results with padding threshold 0.1
+found 10 results in first round with threshold 0.2
+[debug] config = {"0": "{\"tile\": [1, 1, 4, 48], \"step\": [5, 5]}", "1": "{\"tile\": [1, 1, 1, 2], \"step\": [1, 1]}", "2": "{\"tile\": [1, 1, 1, 1], \"step\": [1, 1]}"}
+{'N': [1, 1], 'C': [1, 1], 'H': [4, 1], 'W': [24, 2], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] adjusted tiling: {'N': [1, 1, 1], 'C': [1, 1, 1], 'H': [1, 4, 1], 'W': [2, 24, 1], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] thread per block 96
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 84, 83, 83], kernel:float32[84, 5, 5] -> depthwiseconv2d_unpad:float32[128, 84, 42, 42]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 84, 83, 83, 5, 5, 2, 2, 2, 2; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 84, 83, 83], kernel:float32[84, 5, 5] -> depthwiseconv2d_unpad:float32[128, 84, 42, 42]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(96) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ depthwiseconv2d_unpad) {
+  // [thread_extent] blockIdx.x = 118272
+  // [thread_extent] threadIdx.x = 96
+  float depthwiseconv2d_local[2];
+  depthwiseconv2d_local[(0)] = 0.000000e+00f;
+  depthwiseconv2d_local[(1)] = 0.000000e+00f;
+  __shared__ float data_pad_shared[957];
+  // [thread_extent] threadIdx.x = 96
+  data_pad_shared[(((int)threadIdx.x))] = ((((2 <= (((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 87))) && (2 <= (((int)threadIdx.x) % 87))) && ((((int)threadIdx.x) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 87) * 83)) + (((int)threadIdx.x) % 87)) - 168))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 96))] = ((((2 <= (((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 96) / 87))) && (2 <= ((((int)threadIdx.x) + 9) % 87))) && (((((int)threadIdx.x) + 9) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 96) / 87) * 83)) + ((((int)threadIdx.x) + 9) % 87)) - 168))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 192))] = (((2 <= ((((int)threadIdx.x) + 18) % 87)) && (((((int)threadIdx.x) + 18) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 192) / 87) * 83)) + ((((int)threadIdx.x) + 18) % 87)) - 168))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 288))] = (((2 <= ((((int)threadIdx.x) + 27) % 87)) && (((((int)threadIdx.x) + 27) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 288) / 87) * 83)) + ((((int)threadIdx.x) + 27) % 87)) - 168))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 384))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 384) / 87)) < 85) && (2 <= ((((int)threadIdx.x) + 36) % 87))) && (((((int)threadIdx.x) + 36) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 384) / 87) * 83)) + ((((int)threadIdx.x) + 36) % 87)) - 168))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 480))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 480) / 87)) < 85) && (2 <= ((((int)threadIdx.x) + 45) % 87))) && (((((int)threadIdx.x) + 45) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 480) / 87) * 83)) + ((((int)threadIdx.x) + 45) % 87)) - 168))] : 0.000000e+00f);
+  if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 576) / 87)) < 87) {
+    data_pad_shared[((((int)threadIdx.x) + 576))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 576) / 87)) < 85) && (2 <= ((((int)threadIdx.x) + 54) % 87))) && (((((int)threadIdx.x) + 54) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 576) / 87) * 83)) + ((((int)threadIdx.x) + 54) % 87)) - 168))] : 0.000000e+00f);
+  }
+  if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 672) / 87)) < 87) {
+    data_pad_shared[((((int)threadIdx.x) + 672))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 672) / 87)) < 85) && (2 <= ((((int)threadIdx.x) + 63) % 87))) && (((((int)threadIdx.x) + 63) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 672) / 87) * 83)) + ((((int)threadIdx.x) + 63) % 87)) - 168))] : 0.000000e+00f);
+  }
+  if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 768) / 87)) < 87) {
+    data_pad_shared[((((int)threadIdx.x) + 768))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 768) / 87)) < 85) && (2 <= ((((int)threadIdx.x) + 72) % 87))) && (((((int)threadIdx.x) + 72) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 768) / 87) * 83)) + ((((int)threadIdx.x) + 72) % 87)) - 168))] : 0.000000e+00f);
+  }
+  if (((int)threadIdx.x) < 93) {
+    if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 864) / 87)) < 87) {
+      data_pad_shared[((((int)threadIdx.x) + 864))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 864) / 87)) < 85) && (2 <= ((((int)threadIdx.x) + 81) % 87))) && (((((int)threadIdx.x) + 81) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 864) / 87) * 83)) + ((((int)threadIdx.x) + 81) % 87)) - 168))] : 0.000000e+00f);
+    }
+  }
+  __shared__ float kernel_pad_shared[25];
+  // [thread_extent] threadIdx.x = 96
+  if (((int)threadIdx.x) < 25) {
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[(((((((int)blockIdx.x) % 924) / 11) * 25) + ((int)threadIdx.x)))];
+  }
+  __syncthreads();
+  for (int KH_inner_outer = 0; KH_inner_outer < 5; ++KH_inner_outer) {
+    for (int KW_inner_outer = 0; KW_inner_outer < 5; ++KW_inner_outer) {
+      float data_pad_shared_local[2];
+      if (((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) / 24) * 2)) + KH_inner_outer) < 87) {
+        data_pad_shared_local[(0)] = data_pad_shared[((((((((int)threadIdx.x) / 24) * 174) + (KH_inner_outer * 87)) + ((((int)threadIdx.x) % 24) * 2)) + KW_inner_outer))];
+        if ((((((int)threadIdx.x) % 24) * 2) + KW_inner_outer) < 39) {
+          data_pad_shared_local[(1)] = data_pad_shared[(((((((((int)threadIdx.x) / 24) * 174) + (KH_inner_outer * 87)) + ((((int)threadIdx.x) % 24) * 2)) + KW_inner_outer) + 48))];
+        }
+      }
+      float kernel_pad_shared_local[1];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[(((KH_inner_outer * 5) + KW_inner_outer))];
+      if ((((((int)blockIdx.x) % 11) * 4) + (((int)threadIdx.x) / 24)) < 42) {
+        depthwiseconv2d_local[(0)] = (depthwiseconv2d_local[(0)] + (data_pad_shared_local[(0)] * kernel_pad_shared_local[(0)]));
+        if ((((int)threadIdx.x) % 24) < 18) {
+          depthwiseconv2d_local[(1)] = (depthwiseconv2d_local[(1)] + (data_pad_shared_local[(1)] * kernel_pad_shared_local[(0)]));
+        }
+      }
+    }
+  }
+  if ((((((int)blockIdx.x) % 11) * 4) + (((int)threadIdx.x) / 24)) < 42) {
+    depthwiseconv2d_unpad[((((((((int)blockIdx.x) / 11) * 1764) + ((((int)blockIdx.x) % 11) * 168)) + ((((int)threadIdx.x) / 24) * 42)) + (((int)threadIdx.x) % 24)))] = depthwiseconv2d_local[(0)];
+    if ((((int)threadIdx.x) % 24) < 18) {
+      depthwiseconv2d_unpad[(((((((((int)blockIdx.x) / 11) * 1764) + ((((int)blockIdx.x) % 11) * 168)) + ((((int)threadIdx.x) / 24) * 42)) + (((int)threadIdx.x) % 24)) + 24))] = depthwiseconv2d_local[(1)];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 22750171599000.0, "TPR": 0.000814515}
+
+[Antares] Average time cost / run = 0.000814515 sec, 1287.49 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 31000, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(depthwiseconv2d_unpad, body=[depthwiseconv2d[N, C, H, W]], axis=[iter_var(N, range(min=0, ext=128)), iter_var(C, range(min=0, ext=42)), iter_var(H, range(min=0, ext=83)), iter_var(W, range(min=0, ext=83))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: False
+failed to find results with padding threshold 0.0
+found 10 results in first round with threshold 0.1
+[debug] config = {"0": "{\"tile\": [1, 1, 8, 88], \"step\": [5, 5]}", "1": "{\"tile\": [1, 1, 1, 2], \"step\": [1, 1]}", "2": "{\"tile\": [1, 1, 1, 1], \"step\": [1, 1]}"}
+{'N': [1, 1], 'C': [1, 1], 'H': [8, 1], 'W': [44, 2], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] adjusted tiling: {'N': [1, 1, 1], 'C': [1, 1, 1], 'H': [1, 8, 1], 'W': [2, 44, 1], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] thread per block 352
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 42, 83, 83], kernel:float32[42, 5, 5] -> depthwiseconv2d_unpad:float32[128, 42, 83, 83]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 42, 83, 83, 5, 5, 1, 1, 2, 2; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 42, 83, 83], kernel:float32[42, 5, 5] -> depthwiseconv2d_unpad:float32[128, 42, 83, 83]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(352) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ depthwiseconv2d_unpad) {
+  // [thread_extent] blockIdx.x = 59136
+  // [thread_extent] threadIdx.x = 352
+  float depthwiseconv2d_local[2];
+  depthwiseconv2d_local[(0)] = 0.000000e+00f;
+  depthwiseconv2d_local[(1)] = 0.000000e+00f;
+  __shared__ float data_pad_shared[1044];
+  // [thread_extent] threadIdx.x = 352
+  data_pad_shared[(((int)threadIdx.x))] = ((((2 <= (((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 87))) && (2 <= (((int)threadIdx.x) % 87))) && ((((int)threadIdx.x) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 87) * 83)) + (((int)threadIdx.x) % 87)) - 168))] : 0.000000e+00f);
+  if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 352) / 87)) < 87) {
+    data_pad_shared[((((int)threadIdx.x) + 352))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 352) / 87)) < 85) && (2 <= ((((int)threadIdx.x) + 4) % 87))) && (((((int)threadIdx.x) + 4) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 352) / 87) * 83)) + ((((int)threadIdx.x) + 4) % 87)) - 168))] : 0.000000e+00f);
+  }
+  if (((int)threadIdx.x) < 340) {
+    if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 704) / 87)) < 87) {
+      data_pad_shared[((((int)threadIdx.x) + 704))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 704) / 87)) < 85) && (2 <= ((((int)threadIdx.x) + 8) % 87))) && (((((int)threadIdx.x) + 8) % 87) < 85)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 704) / 87) * 83)) + ((((int)threadIdx.x) + 8) % 87)) - 168))] : 0.000000e+00f);
+    }
+  }
+  __shared__ float kernel_pad_shared[25];
+  // [thread_extent] threadIdx.x = 352
+  if (((int)threadIdx.x) < 25) {
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[(((((((int)blockIdx.x) % 462) / 11) * 25) + ((int)threadIdx.x)))];
+  }
+  __syncthreads();
+  for (int KH_inner_outer = 0; KH_inner_outer < 5; ++KH_inner_outer) {
+    for (int KW_inner_outer = 0; KW_inner_outer < 5; ++KW_inner_outer) {
+      float data_pad_shared_local[2];
+      if (((((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 44)) + KH_inner_outer) < 87) {
+        data_pad_shared_local[(0)] = data_pad_shared[((((((((int)threadIdx.x) / 44) * 87) + (KH_inner_outer * 87)) + KW_inner_outer) + (((int)threadIdx.x) % 44)))];
+        if ((KW_inner_outer + (((int)threadIdx.x) % 44)) < 43) {
+          data_pad_shared_local[(1)] = data_pad_shared[(((((((((int)threadIdx.x) / 44) * 87) + (KH_inner_outer * 87)) + KW_inner_outer) + (((int)threadIdx.x) % 44)) + 44))];
+        }
+      }
+      float kernel_pad_shared_local[1];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[(((KH_inner_outer * 5) + KW_inner_outer))];
+      if ((((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 44)) < 83) {
+        depthwiseconv2d_local[(0)] = (depthwiseconv2d_local[(0)] + (data_pad_shared_local[(0)] * kernel_pad_shared_local[(0)]));
+        if ((((int)threadIdx.x) % 44) < 39) {
+          depthwiseconv2d_local[(1)] = (depthwiseconv2d_local[(1)] + (data_pad_shared_local[(1)] * kernel_pad_shared_local[(0)]));
+        }
+      }
+    }
+  }
+  if ((((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 44)) < 83) {
+    depthwiseconv2d_unpad[((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 44) * 83)) + (((int)threadIdx.x) % 44)))] = depthwiseconv2d_local[(0)];
+    if ((((int)threadIdx.x) % 44) < 39) {
+      depthwiseconv2d_unpad[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 44) * 83)) + (((int)threadIdx.x) % 44)) + 44))] = depthwiseconv2d_local[(1)];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 45222127624000.0, "TPR": 0.000836636}
+
+[Antares] Average time cost / run = 0.000836636 sec, 2306.25 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 6844, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(depthwiseconv2d_unpad, body=[depthwiseconv2d[N, C, H, W]], axis=[iter_var(N, range(min=0, ext=128)), iter_var(C, range(min=0, ext=336)), iter_var(H, range(min=0, ext=21)), iter_var(W, range(min=0, ext=21))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: False
+failed to find results with padding threshold 0.0
+failed to find results with padding threshold 0.1
+found 10 results in first round with threshold 0.2
+[debug] config = {"0": "{\"tile\": [1, 1, 8, 24], \"step\": [5, 5]}", "1": "{\"tile\": [1, 1, 1, 2], \"step\": [1, 1]}", "2": "{\"tile\": [1, 1, 1, 1], \"step\": [1, 1]}"}
+{'N': [1, 1], 'C': [1, 1], 'H': [8, 1], 'W': [12, 2], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] adjusted tiling: {'N': [1, 1, 1], 'C': [1, 1, 1], 'H': [1, 8, 1], 'W': [2, 12, 1], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] thread per block 96
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 336, 21, 21], kernel:float32[336, 5, 5] -> depthwiseconv2d_unpad:float32[128, 336, 21, 21]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 336, 21, 21, 5, 5, 1, 1, 2, 2; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 336, 21, 21], kernel:float32[336, 5, 5] -> depthwiseconv2d_unpad:float32[128, 336, 21, 21]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(96) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ depthwiseconv2d_unpad) {
+  // [thread_extent] blockIdx.x = 129024
+  // [thread_extent] threadIdx.x = 96
+  float depthwiseconv2d_local[2];
+  depthwiseconv2d_local[(0)] = 0.000000e+00f;
+  depthwiseconv2d_local[(1)] = 0.000000e+00f;
+  __shared__ float data_pad_shared[300];
+  // [thread_extent] threadIdx.x = 96
+  data_pad_shared[(((int)threadIdx.x))] = ((((2 <= (((((int)blockIdx.x) % 3) * 8) + (((int)threadIdx.x) / 25))) && (2 <= (((int)threadIdx.x) % 25))) && ((((int)threadIdx.x) % 25) < 23)) ? data[(((((((((int)blockIdx.x) / 3) * 441) + ((((int)blockIdx.x) % 3) * 168)) + ((((int)threadIdx.x) / 25) * 21)) + (((int)threadIdx.x) % 25)) - 44))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 96))] = (((((((((int)blockIdx.x) % 3) * 8) + ((((int)threadIdx.x) + 96) / 25)) < 23) && (2 <= ((((int)threadIdx.x) + 21) % 25))) && (((((int)threadIdx.x) + 21) % 25) < 23)) ? data[(((((((((int)blockIdx.x) / 3) * 441) + ((((int)blockIdx.x) % 3) * 168)) + (((((int)threadIdx.x) + 96) / 25) * 21)) + ((((int)threadIdx.x) + 21) % 25)) - 44))] : 0.000000e+00f);
+  if ((((((int)blockIdx.x) % 3) * 8) + ((((int)threadIdx.x) + 192) / 25)) < 25) {
+    data_pad_shared[((((int)threadIdx.x) + 192))] = (((((((((int)blockIdx.x) % 3) * 8) + ((((int)threadIdx.x) + 192) / 25)) < 23) && (2 <= ((((int)threadIdx.x) + 17) % 25))) && (((((int)threadIdx.x) + 17) % 25) < 23)) ? data[(((((((((int)blockIdx.x) / 3) * 441) + ((((int)blockIdx.x) % 3) * 168)) + (((((int)threadIdx.x) + 192) / 25) * 21)) + ((((int)threadIdx.x) + 17) % 25)) - 44))] : 0.000000e+00f);
+  }
+  if (((int)threadIdx.x) < 12) {
+    if ((((((int)blockIdx.x) % 3) * 8) + ((((int)threadIdx.x) + 288) / 25)) < 25) {
+      data_pad_shared[((((int)threadIdx.x) + 288))] = ((((((((int)blockIdx.x) % 3) * 8) + ((((int)threadIdx.x) + 288) / 25)) < 23) && (((int)threadIdx.x) < 10)) ? data[(((((((((int)blockIdx.x) / 3) * 441) + ((((int)blockIdx.x) % 3) * 168)) + (((((int)threadIdx.x) + 288) / 25) * 21)) + (((int)threadIdx.x) + 13)) - 44))] : 0.000000e+00f);
+    }
+  }
+  __shared__ float kernel_pad_shared[25];
+  // [thread_extent] threadIdx.x = 96
+  if (((int)threadIdx.x) < 25) {
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[(((((((int)blockIdx.x) % 1008) / 3) * 25) + ((int)threadIdx.x)))];
+  }
+  __syncthreads();
+  for (int KH_inner_outer = 0; KH_inner_outer < 5; ++KH_inner_outer) {
+    for (int KW_inner_outer = 0; KW_inner_outer < 5; ++KW_inner_outer) {
+      float data_pad_shared_local[2];
+      if (((((((int)blockIdx.x) % 3) * 8) + (((int)threadIdx.x) / 12)) + KH_inner_outer) < 25) {
+        data_pad_shared_local[(0)] = data_pad_shared[((((((((int)threadIdx.x) / 12) * 25) + (KH_inner_outer * 25)) + KW_inner_outer) + (((int)threadIdx.x) % 12)))];
+        if ((KW_inner_outer + (((int)threadIdx.x) % 12)) < 13) {
+          data_pad_shared_local[(1)] = data_pad_shared[(((((((((int)threadIdx.x) / 12) * 25) + (KH_inner_outer * 25)) + KW_inner_outer) + (((int)threadIdx.x) % 12)) + 12))];
+        }
+      }
+      float kernel_pad_shared_local[1];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[(((KH_inner_outer * 5) + KW_inner_outer))];
+      if ((((((int)blockIdx.x) % 3) * 8) + (((int)threadIdx.x) / 12)) < 21) {
+        depthwiseconv2d_local[(0)] = (depthwiseconv2d_local[(0)] + (data_pad_shared_local[(0)] * kernel_pad_shared_local[(0)]));
+        if ((((int)threadIdx.x) % 12) < 9) {
+          depthwiseconv2d_local[(1)] = (depthwiseconv2d_local[(1)] + (data_pad_shared_local[(1)] * kernel_pad_shared_local[(0)]));
+        }
+      }
+    }
+  }
+  if ((((((int)blockIdx.x) % 3) * 8) + (((int)threadIdx.x) / 12)) < 21) {
+    depthwiseconv2d_unpad[((((((((int)blockIdx.x) / 3) * 441) + ((((int)blockIdx.x) % 3) * 168)) + ((((int)threadIdx.x) / 12) * 21)) + (((int)threadIdx.x) % 12)))] = depthwiseconv2d_local[(0)];
+    if ((((int)threadIdx.x) % 12) < 9) {
+      depthwiseconv2d_unpad[(((((((((int)blockIdx.x) / 3) * 441) + ((((int)blockIdx.x) % 3) * 168)) + ((((int)threadIdx.x) / 12) * 21)) + (((int)threadIdx.x) % 12)) + 12))] = depthwiseconv2d_local[(1)];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 21134843445000.0, "TPR": 0.000508665}
+
+[Antares] Average time cost / run = 0.000508665 sec, 1954.49 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 7704, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(depthwiseconv2d_unpad, body=[depthwiseconv2d[N, C, H, W]], axis=[iter_var(N, range(min=0, ext=128)), iter_var(C, range(min=0, ext=42)), iter_var(H, range(min=0, ext=83)), iter_var(W, range(min=0, ext=83))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: False
+failed to find results with padding threshold 0.0
+found 10 results in first round with threshold 0.1
+[debug] config = {"0": "{\"tile\": [1, 1, 8, 88], \"step\": [5, 5]}", "1": "{\"tile\": [1, 1, 1, 2], \"step\": [1, 1]}", "2": "{\"tile\": [1, 1, 1, 1], \"step\": [1, 1]}"}
+{'N': [1, 1], 'C': [1, 1], 'H': [8, 1], 'W': [44, 2], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] adjusted tiling: {'N': [1, 1, 1], 'C': [1, 1, 1], 'H': [1, 8, 1], 'W': [2, 44, 1], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] thread per block 352
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 42, 165, 165], kernel:float32[42, 5, 5] -> depthwiseconv2d_unpad:float32[128, 42, 83, 83]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 42, 165, 165, 5, 5, 2, 2, 2, 2; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+              data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                                                              kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+              depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+              depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+            ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 42, 165, 165], kernel:float32[42, 5, 5] -> depthwiseconv2d_unpad:float32[128, 42, 83, 83]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(352) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ depthwiseconv2d_unpad) {
+  // [thread_extent] blockIdx.x = 59136
+  // [thread_extent] threadIdx.x = 352
+  float depthwiseconv2d_local[2];
+  depthwiseconv2d_local[(0)] = 0.000000e+00f;
+  depthwiseconv2d_local[(1)] = 0.000000e+00f;
+  __shared__ float data_pad_shared[3211];
+  // [thread_extent] threadIdx.x = 352
+  data_pad_shared[(((int)threadIdx.x))] = ((((2 <= (((((int)blockIdx.x) % 11) * 16) + (((int)threadIdx.x) / 169))) && (2 <= (((int)threadIdx.x) % 169))) && ((((int)threadIdx.x) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + ((((int)threadIdx.x) / 169) * 165)) + (((int)threadIdx.x) % 169)) - 332))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 352))] = (((2 <= ((((int)threadIdx.x) + 14) % 169)) && (((((int)threadIdx.x) + 14) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 352) / 169) * 165)) + ((((int)threadIdx.x) + 14) % 169)) - 332))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 704))] = (((2 <= ((((int)threadIdx.x) + 28) % 169)) && (((((int)threadIdx.x) + 28) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 704) / 169) * 165)) + ((((int)threadIdx.x) + 28) % 169)) - 332))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 1056))] = (((((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 1056) / 169)) < 167) && (2 <= ((((int)threadIdx.x) + 42) % 169))) && (((((int)threadIdx.x) + 42) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 1056) / 169) * 165)) + ((((int)threadIdx.x) + 42) % 169)) - 332))] : 0.000000e+00f);
+  if ((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 1408) / 169)) < 169) {
+    data_pad_shared[((((int)threadIdx.x) + 1408))] = (((((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 1408) / 169)) < 167) && (2 <= ((((int)threadIdx.x) + 56) % 169))) && (((((int)threadIdx.x) + 56) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 1408) / 169) * 165)) + ((((int)threadIdx.x) + 56) % 169)) - 332))] : 0.000000e+00f);
+  }
+  if ((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 1760) / 169)) < 169) {
+    data_pad_shared[((((int)threadIdx.x) + 1760))] = (((((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 1760) / 169)) < 167) && (2 <= ((((int)threadIdx.x) + 70) % 169))) && (((((int)threadIdx.x) + 70) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 1760) / 169) * 165)) + ((((int)threadIdx.x) + 70) % 169)) - 332))] : 0.000000e+00f);
+  }
+  if ((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 2112) / 169)) < 169) {
+    data_pad_shared[((((int)threadIdx.x) + 2112))] = (((((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 2112) / 169)) < 167) && (2 <= ((((int)threadIdx.x) + 84) % 169))) && (((((int)threadIdx.x) + 84) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 2112) / 169) * 165)) + ((((int)threadIdx.x) + 84) % 169)) - 332))] : 0.000000e+00f);
+  }
+  if ((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 2464) / 169)) < 169) {
+    data_pad_shared[((((int)threadIdx.x) + 2464))] = (((((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 2464) / 169)) < 167) && (2 <= ((((int)threadIdx.x) + 98) % 169))) && (((((int)threadIdx.x) + 98) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 2464) / 169) * 165)) + ((((int)threadIdx.x) + 98) % 169)) - 332))] : 0.000000e+00f);
+  }
+  if ((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 2816) / 169)) < 169) {
+    data_pad_shared[((((int)threadIdx.x) + 2816))] = (((((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 2816) / 169)) < 167) && (2 <= ((((int)threadIdx.x) + 112) % 169))) && (((((int)threadIdx.x) + 112) % 169) < 167)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 2816) / 169) * 165)) + ((((int)threadIdx.x) + 112) % 169)) - 332))] : 0.000000e+00f);
+  }
+  if (((int)threadIdx.x) < 43) {
+    if ((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 3168) / 169)) < 169) {
+      data_pad_shared[((((int)threadIdx.x) + 3168))] = ((((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) + 3168) / 169)) < 167) && (((int)threadIdx.x) < 41)) ? data[(((((((((int)blockIdx.x) / 11) * 27225) + ((((int)blockIdx.x) % 11) * 2640)) + (((((int)threadIdx.x) + 3168) / 169) * 165)) + (((int)threadIdx.x) + 126)) - 332))] : 0.000000e+00f);
+    }
+  }
+  __shared__ float kernel_pad_shared[25];
+  // [thread_extent] threadIdx.x = 352
+  if (((int)threadIdx.x) < 25) {
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[(((((((int)blockIdx.x) % 462) / 11) * 25) + ((int)threadIdx.x)))];
+  }
+  __syncthreads();
+  for (int KH_inner_outer = 0; KH_inner_outer < 5; ++KH_inner_outer) {
+    for (int KW_inner_outer = 0; KW_inner_outer < 5; ++KW_inner_outer) {
+      float data_pad_shared_local[2];
+      if (((((((int)blockIdx.x) % 11) * 16) + ((((int)threadIdx.x) / 44) * 2)) + KH_inner_outer) < 169) {
+        data_pad_shared_local[(0)] = data_pad_shared[((((((((int)threadIdx.x) / 44) * 338) + (KH_inner_outer * 169)) + ((((int)threadIdx.x) % 44) * 2)) + KW_inner_outer))];
+        if ((((((int)threadIdx.x) % 44) * 2) + KW_inner_outer) < 81) {
+          data_pad_shared_local[(1)] = data_pad_shared[(((((((((int)threadIdx.x) / 44) * 338) + (KH_inner_outer * 169)) + ((((int)threadIdx.x) % 44) * 2)) + KW_inner_outer) + 88))];
+        }
+      }
+      float kernel_pad_shared_local[1];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[(((KH_inner_outer * 5) + KW_inner_outer))];
+      if ((((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 44)) < 83) {
+        depthwiseconv2d_local[(0)] = (depthwiseconv2d_local[(0)] + (data_pad_shared_local[(0)] * kernel_pad_shared_local[(0)]));
+        if ((((int)threadIdx.x) % 44) < 39) {
+          depthwiseconv2d_local[(1)] = (depthwiseconv2d_local[(1)] + (data_pad_shared_local[(1)] * kernel_pad_shared_local[(0)]));
+        }
+      }
+    }
+  }
+  if ((((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 44)) < 83) {
+    depthwiseconv2d_unpad[((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 44) * 83)) + (((int)threadIdx.x) % 44)))] = depthwiseconv2d_local[(0)];
+    if ((((int)threadIdx.x) % 44) < 39) {
+      depthwiseconv2d_unpad[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 44) * 83)) + (((int)threadIdx.x) % 44)) + 44))] = depthwiseconv2d_local[(1)];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 45665672509000.0, "TPR": 0.00147311}
+
+[Antares] Average time cost / run = 0.00147311 sec, 1386.42 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 13339, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(depthwiseconv2d_unpad, body=[depthwiseconv2d[N, C, H, W]], axis=[iter_var(N, range(min=0, ext=128)), iter_var(C, range(min=0, ext=84)), iter_var(H, range(min=0, ext=43)), iter_var(W, range(min=0, ext=43))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: False
+failed to find results with padding threshold 0.0
+failed to find results with padding threshold 0.1
+found 10 results in first round with threshold 0.2
+[debug] config = {"0": "{\"tile\": [1, 1, 4, 48], \"step\": [5, 5]}", "1": "{\"tile\": [1, 1, 1, 2], \"step\": [1, 1]}", "2": "{\"tile\": [1, 1, 1, 1], \"step\": [1, 1]}"}
+{'N': [1, 1], 'C': [1, 1], 'H': [4, 1], 'W': [24, 2], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] adjusted tiling: {'N': [1, 1, 1], 'C': [1, 1, 1], 'H': [1, 4, 1], 'W': [2, 24, 1], 'KH': [5, 1], 'KW': [5, 1]}
+[debug] thread per block 96
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 84, 83, 83], kernel:float32[84, 5, 5] -> depthwiseconv2d_unpad:float32[128, 84, 43, 43]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 84, 83, 83, 5, 5, 2, 2, 3, 3; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 84, 83, 83], kernel:float32[84, 5, 5] -> depthwiseconv2d_unpad:float32[128, 84, 43, 43]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(96) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ depthwiseconv2d_unpad) {
+  // [thread_extent] blockIdx.x = 118272
+  // [thread_extent] threadIdx.x = 96
+  float depthwiseconv2d_local[2];
+  depthwiseconv2d_local[(0)] = 0.000000e+00f;
+  depthwiseconv2d_local[(1)] = 0.000000e+00f;
+  __shared__ float data_pad_shared[979];
+  // [thread_extent] threadIdx.x = 96
+  data_pad_shared[(((int)threadIdx.x))] = ((((3 <= (((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 89))) && (3 <= (((int)threadIdx.x) % 89))) && ((((int)threadIdx.x) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 89) * 83)) + (((int)threadIdx.x) % 89)) - 252))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 96))] = ((((3 <= (((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 96) / 89))) && (3 <= ((((int)threadIdx.x) + 7) % 89))) && (((((int)threadIdx.x) + 7) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 96) / 89) * 83)) + ((((int)threadIdx.x) + 7) % 89)) - 252))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 192))] = ((((3 <= (((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 192) / 89))) && (3 <= ((((int)threadIdx.x) + 14) % 89))) && (((((int)threadIdx.x) + 14) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 192) / 89) * 83)) + ((((int)threadIdx.x) + 14) % 89)) - 252))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 288))] = (((3 <= ((((int)threadIdx.x) + 21) % 89)) && (((((int)threadIdx.x) + 21) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 288) / 89) * 83)) + ((((int)threadIdx.x) + 21) % 89)) - 252))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 384))] = (((3 <= ((((int)threadIdx.x) + 28) % 89)) && (((((int)threadIdx.x) + 28) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 384) / 89) * 83)) + ((((int)threadIdx.x) + 28) % 89)) - 252))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 480))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 480) / 89)) < 86) && (3 <= ((((int)threadIdx.x) + 35) % 89))) && (((((int)threadIdx.x) + 35) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 480) / 89) * 83)) + ((((int)threadIdx.x) + 35) % 89)) - 252))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 576))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 576) / 89)) < 86) && (3 <= ((((int)threadIdx.x) + 42) % 89))) && (((((int)threadIdx.x) + 42) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 576) / 89) * 83)) + ((((int)threadIdx.x) + 42) % 89)) - 252))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 672))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 672) / 89)) < 86) && (3 <= ((((int)threadIdx.x) + 49) % 89))) && (((((int)threadIdx.x) + 49) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 672) / 89) * 83)) + ((((int)threadIdx.x) + 49) % 89)) - 252))] : 0.000000e+00f);
+  if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 768) / 89)) < 89) {
+    data_pad_shared[((((int)threadIdx.x) + 768))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 768) / 89)) < 86) && (3 <= ((((int)threadIdx.x) + 56) % 89))) && (((((int)threadIdx.x) + 56) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 768) / 89) * 83)) + ((((int)threadIdx.x) + 56) % 89)) - 252))] : 0.000000e+00f);
+  }
+  if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 864) / 89)) < 89) {
+    data_pad_shared[((((int)threadIdx.x) + 864))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 864) / 89)) < 86) && (3 <= ((((int)threadIdx.x) + 63) % 89))) && (((((int)threadIdx.x) + 63) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 864) / 89) * 83)) + ((((int)threadIdx.x) + 63) % 89)) - 252))] : 0.000000e+00f);
+  }
+  if (((int)threadIdx.x) < 19) {
+    if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 960) / 89)) < 89) {
+      data_pad_shared[((((int)threadIdx.x) + 960))] = ((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 960) / 89)) < 86) && (((int)threadIdx.x) < 16)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 960) / 89) * 83)) + (((int)threadIdx.x) + 70)) - 252))] : 0.000000e+00f);
+    }
+  }
+  __shared__ float kernel_pad_shared[25];
+  // [thread_extent] threadIdx.x = 96
+  if (((int)threadIdx.x) < 25) {
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[(((((((int)blockIdx.x) % 924) / 11) * 25) + ((int)threadIdx.x)))];
+  }
+  __syncthreads();
+  for (int KH_inner_outer = 0; KH_inner_outer < 5; ++KH_inner_outer) {
+    for (int KW_inner_outer = 0; KW_inner_outer < 5; ++KW_inner_outer) {
+      float data_pad_shared_local[2];
+      if (((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) / 24) * 2)) + KH_inner_outer) < 89) {
+        data_pad_shared_local[(0)] = data_pad_shared[((((((((int)threadIdx.x) / 24) * 178) + (KH_inner_outer * 89)) + ((((int)threadIdx.x) % 24) * 2)) + KW_inner_outer))];
+        if ((((((int)threadIdx.x) % 24) * 2) + KW_inner_outer) < 41) {
+          data_pad_shared_local[(1)] = data_pad_shared[(((((((((int)threadIdx.x) / 24) * 178) + (KH_inner_outer * 89)) + ((((int)threadIdx.x) % 24) * 2)) + KW_inner_outer) + 48))];
+        }
+      }
+      float kernel_pad_shared_local[1];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[(((KH_inner_outer * 5) + KW_inner_outer))];
+      if ((((((int)blockIdx.x) % 11) * 4) + (((int)threadIdx.x) / 24)) < 43) {
+        depthwiseconv2d_local[(0)] = (depthwiseconv2d_local[(0)] + (data_pad_shared_local[(0)] * kernel_pad_shared_local[(0)]));
+        if ((((int)threadIdx.x) % 24) < 19) {
+          depthwiseconv2d_local[(1)] = (depthwiseconv2d_local[(1)] + (data_pad_shared_local[(1)] * kernel_pad_shared_local[(0)]));
+        }
+      }
+    }
+  }
+  if ((((((int)blockIdx.x) % 11) * 4) + (((int)threadIdx.x) / 24)) < 43) {
+    depthwiseconv2d_unpad[((((((((int)blockIdx.x) / 11) * 1849) + ((((int)blockIdx.x) % 11) * 172)) + ((((int)threadIdx.x) / 24) * 43)) + (((int)threadIdx.x) % 24)))] = depthwiseconv2d_local[(0)];
+    if ((((int)threadIdx.x) % 24) < 19) {
+      depthwiseconv2d_unpad[(((((((((int)blockIdx.x) / 11) * 1849) + ((((int)blockIdx.x) % 11) * 172)) + ((((int)threadIdx.x) / 24) * 43)) + (((int)threadIdx.x) % 24)) + 24))] = depthwiseconv2d_local[(1)];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 22971666478000.0, "TPR": 0.00106655}
+
+[Antares] Average time cost / run = 0.00106655 sec, 1030.49 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 14842, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(depthwiseconv2d_unpad, body=[depthwiseconv2d[N, C, H, W]], axis=[iter_var(N, range(min=0, ext=128)), iter_var(C, range(min=0, ext=672)), iter_var(H, range(min=0, ext=11)), iter_var(W, range(min=0, ext=11))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: False
+failed to find results with padding threshold 0.0
+failed to find results with padding threshold 0.1
+failed to find results with padding threshold 0.2
+failed to find results with padding threshold 0.3
+failed to find results with padding threshold 0.4
+found 10 results in first round with threshold 0.5
+[debug] config = {"0": "{\"tile\": [1, 1, 4, 16], \"step\": [3, 3]}", "1": "{\"tile\": [1, 1, 1, 2], \"step\": [1, 1]}", "2": "{\"tile\": [1, 1, 1, 1], \"step\": [1, 1]}"}
+{'N': [1, 1], 'C': [1, 1], 'H': [4, 1], 'W': [8, 2], 'KH': [3, 1], 'KW': [3, 1]}
+[debug] adjusted tiling: {'N': [1, 1, 1], 'C': [1, 1, 1], 'H': [1, 4, 1], 'W': [2, 8, 1], 'KH': [3, 1], 'KW': [3, 1]}
+[debug] thread per block 32
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 672, 11, 11], kernel:float32[672, 3, 3] -> depthwiseconv2d_unpad:float32[128, 672, 11, 11]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 672, 11, 11, 3, 3, 1, 1, 1, 1; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 672, 11, 11], kernel:float32[672, 3, 3] -> depthwiseconv2d_unpad:float32[128, 672, 11, 11]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(32) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ depthwiseconv2d_unpad) {
+  // [thread_extent] blockIdx.x = 258048
+  // [thread_extent] threadIdx.x = 32
+  float depthwiseconv2d_local[2];
+  depthwiseconv2d_local[(0)] = 0.000000e+00f;
+  depthwiseconv2d_local[(1)] = 0.000000e+00f;
+  __shared__ float data_pad_shared[78];
+  // [thread_extent] threadIdx.x = 32
+  data_pad_shared[(((int)threadIdx.x))] = ((((1 <= (((((int)blockIdx.x) % 3) * 4) + (((int)threadIdx.x) / 13))) && (1 <= (((int)threadIdx.x) % 13))) && ((((int)threadIdx.x) % 13) < 12)) ? data[(((((((((int)blockIdx.x) / 3) * 121) + ((((int)blockIdx.x) % 3) * 44)) + ((((int)threadIdx.x) / 13) * 11)) + (((int)threadIdx.x) % 13)) - 12))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 32))] = (((((((((int)blockIdx.x) % 3) * 4) + ((((int)threadIdx.x) + 32) / 13)) < 12) && (1 <= ((((int)threadIdx.x) + 6) % 13))) && (((((int)threadIdx.x) + 6) % 13) < 12)) ? data[(((((((((int)blockIdx.x) / 3) * 121) + ((((int)blockIdx.x) % 3) * 44)) + (((((int)threadIdx.x) + 32) / 13) * 11)) + ((((int)threadIdx.x) + 6) % 13)) - 12))] : 0.000000e+00f);
+  if (((int)threadIdx.x) < 14) {
+    if ((((((int)blockIdx.x) % 3) * 4) + ((((int)threadIdx.x) + 64) / 13)) < 13) {
+      data_pad_shared[((((int)threadIdx.x) + 64))] = (((((((((int)blockIdx.x) % 3) * 4) + ((((int)threadIdx.x) + 64) / 13)) < 12) && (1 <= ((((int)threadIdx.x) + 12) % 13))) && (((((int)threadIdx.x) + 12) % 13) < 12)) ? data[(((((((((int)blockIdx.x) / 3) * 121) + ((((int)blockIdx.x) % 3) * 44)) + (((((int)threadIdx.x) + 64) / 13) * 11)) + ((((int)threadIdx.x) + 12) % 13)) - 12))] : 0.000000e+00f);
+    }
+  }
+  __shared__ float kernel_pad_shared[9];
+  // [thread_extent] threadIdx.x = 32
+  if (((int)threadIdx.x) < 9) {
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[(((((((int)blockIdx.x) % 2016) / 3) * 9) + ((int)threadIdx.x)))];
+  }
+  __syncthreads();
+  for (int KH_inner_outer = 0; KH_inner_outer < 3; ++KH_inner_outer) {
+    for (int KW_inner_outer = 0; KW_inner_outer < 3; ++KW_inner_outer) {
+      float data_pad_shared_local[2];
+      if (((((((int)blockIdx.x) % 3) * 4) + (((int)threadIdx.x) >> 3)) + KH_inner_outer) < 13) {
+        data_pad_shared_local[(0)] = data_pad_shared[((((((((int)threadIdx.x) >> 3) * 13) + (KH_inner_outer * 13)) + KW_inner_outer) + (((int)threadIdx.x) & 7)))];
+        if ((KW_inner_outer + (((int)threadIdx.x) & 7)) < 5) {
+          data_pad_shared_local[(1)] = data_pad_shared[(((((((((int)threadIdx.x) >> 3) * 13) + (KH_inner_outer * 13)) + KW_inner_outer) + (((int)threadIdx.x) & 7)) + 8))];
+        }
+      }
+      float kernel_pad_shared_local[1];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[(((KH_inner_outer * 3) + KW_inner_outer))];
+      if ((((((int)blockIdx.x) % 3) * 4) + (((int)threadIdx.x) >> 3)) < 11) {
+        depthwiseconv2d_local[(0)] = (depthwiseconv2d_local[(0)] + (data_pad_shared_local[(0)] * kernel_pad_shared_local[(0)]));
+        if ((((int)threadIdx.x) & 7) < 3) {
+          depthwiseconv2d_local[(1)] = (depthwiseconv2d_local[(1)] + (data_pad_shared_local[(1)] * kernel_pad_shared_local[(0)]));
+        }
+      }
+    }
+  }
+  if ((((((int)blockIdx.x) % 3) * 4) + (((int)threadIdx.x) >> 3)) < 11) {
+    depthwiseconv2d_unpad[((((((((int)blockIdx.x) / 3) * 121) + ((((int)blockIdx.x) % 3) * 44)) + ((((int)threadIdx.x) >> 3) * 11)) + (((int)threadIdx.x) & 7)))] = depthwiseconv2d_local[(0)];
+    if ((((int)threadIdx.x) & 7) < 3) {
+      depthwiseconv2d_unpad[(((((((((int)blockIdx.x) / 3) * 121) + ((((int)blockIdx.x) % 3) * 44)) + ((((int)threadIdx.x) >> 3) * 11)) + (((int)threadIdx.x) & 7)) + 8))] = depthwiseconv2d_local[(1)];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 4144696419600.0, "TPR": 0.000407003}
+
+[Antares] Average time cost / run = 0.000407003 sec, 521.602 gflops. (Checked: True)
+
+  >> Backend = c-cuda, Python PID = 16828, Task = lang.generic;
+  >> Computing CPU result for correctness reference..
+[debug] devname = V100
+[debug] op info =  compute(depthwiseconv2d_unpad, body=[depthwiseconv2d[N, C, H, W]], axis=[iter_var(N, range(min=0, ext=128)), iter_var(C, range(min=0, ext=42)), iter_var(H, range(min=0, ext=83)), iter_var(W, range(min=0, ext=83))], reduce_axis=[], tag=, attrs={})
+[debug] is IODependent: False
+failed to find results with padding threshold 0.0
+found 10 results in first round with threshold 0.1
+[debug] config = {"0": "{\"tile\": [1, 1, 8, 88], \"step\": [7, 7]}", "1": "{\"tile\": [1, 1, 1, 2], \"step\": [1, 1]}", "2": "{\"tile\": [1, 1, 1, 1], \"step\": [1, 1]}"}
+{'N': [1, 1], 'C': [1, 1], 'H': [8, 1], 'W': [44, 2], 'KH': [7, 1], 'KW': [7, 1]}
+[debug] adjusted tiling: {'N': [1, 1, 1], 'C': [1, 1, 1], 'H': [1, 8, 1], 'W': [2, 44, 1], 'KH': [7, 1], 'KW': [7, 1]}
+[debug] thread per block 352
+
+// ---------------------------------------------------------------------------
+// GLOBALS: data:float32[128, 42, 83, 83], kernel:float32[42, 7, 7] -> depthwiseconv2d_unpad:float32[128, 42, 83, 83]
+// BACKEND: c-cuda (default)
+// CONFIG: null
+// COMPUTE_V1: - _N, _C, _H, _W, _KH, _KW, _SH, _SW, _PH, _PW = 128, 42, 83, 83, 7, 7, 1, 1, 3, 3; \
+              _HO, _WO = (_H - _KH + _PH * 2) // _SH + 1, (_W - _KW + _PW * 2) // _SW + 1; \
+              einstein_v2(f" \
+                data_pad[N, C, H, W] = data[N, C, H-{_PH}, W-{_PW}].when([{_PH} <= H, H < {_H+_PH}, {_PW} <= W, W < {_W+_PW}], 0.0) where N in {_N}, C in {_C}, H in {_H + 2 * _PH}, W in {_W + 2 * _PW}; \
+                kernel_pad[C, KH, KW] = kernel[C, KH, KW] where C in {_C}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d[N, C, H, W] +=! data_pad[N, C, H * {_SH} + KH, W * {_SW} + KW] * kernel_pad[C, KH, KW] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO}, KH in {_KH}, KW in {_KW}; \
+                depthwiseconv2d_unpad[N, C, H, W] = depthwiseconv2d[N, C, H, W] where N in {_N}, C in {_C}, H in {_HO}, W in {_WO} \
+              ", { "data": {"dtype": "float32", "shape": [_N, _C, _H, _W]}, "kernel": {"dtype": "float32", "shape": [_C, _KH, _KW]}})
+
+
+// ---------------------------------------------------------------------------
+// LOCAL: template_op_kernel0 -- data:float32[128, 42, 83, 83], kernel:float32[42, 7, 7] -> depthwiseconv2d_unpad:float32[128, 42, 83, 83]
+
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <mma.h>
+
+#ifndef __CUDA_COMMON_MACRO__
+#define __CUDA_COMMON_MACRO__
+
+#if (__CUDA_ARCH__ >= 600)
+
+__forceinline__ __device__ __half max(const __half &a, const __half &b) {{ return a > b ? a : b; }}
+__forceinline__ __device__ __half min(const __half &a, const __half &b) {{ return a < b ? a : b; }}
+
+#endif
+
+#endif
+
+
+extern "C" __global__ __launch_bounds__(352) void template_op_kernel0(float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ depthwiseconv2d_unpad) {
+  // [thread_extent] blockIdx.x = 59136
+  // [thread_extent] threadIdx.x = 352
+  float depthwiseconv2d_local[2];
+  depthwiseconv2d_local[(0)] = 0.000000e+00f;
+  depthwiseconv2d_local[(1)] = 0.000000e+00f;
+  __shared__ float data_pad_shared[1246];
+  // [thread_extent] threadIdx.x = 352
+  data_pad_shared[(((int)threadIdx.x))] = ((((3 <= (((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 89))) && (3 <= (((int)threadIdx.x) % 89))) && ((((int)threadIdx.x) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 89) * 83)) + (((int)threadIdx.x) % 89)) - 252))] : 0.000000e+00f);
+  data_pad_shared[((((int)threadIdx.x) + 352))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 352) / 89)) < 86) && (3 <= ((((int)threadIdx.x) + 85) % 89))) && (((((int)threadIdx.x) + 85) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 352) / 89) * 83)) + ((((int)threadIdx.x) + 85) % 89)) - 252))] : 0.000000e+00f);
+  if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 704) / 89)) < 89) {
+    data_pad_shared[((((int)threadIdx.x) + 704))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 704) / 89)) < 86) && (3 <= ((((int)threadIdx.x) + 81) % 89))) && (((((int)threadIdx.x) + 81) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 704) / 89) * 83)) + ((((int)threadIdx.x) + 81) % 89)) - 252))] : 0.000000e+00f);
+  }
+  if (((int)threadIdx.x) < 190) {
+    if ((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 1056) / 89)) < 89) {
+      data_pad_shared[((((int)threadIdx.x) + 1056))] = (((((((((int)blockIdx.x) % 11) * 8) + ((((int)threadIdx.x) + 1056) / 89)) < 86) && (3 <= ((((int)threadIdx.x) + 77) % 89))) && (((((int)threadIdx.x) + 77) % 89) < 86)) ? data[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + (((((int)threadIdx.x) + 1056) / 89) * 83)) + ((((int)threadIdx.x) + 77) % 89)) - 252))] : 0.000000e+00f);
+    }
+  }
+  __shared__ float kernel_pad_shared[49];
+  // [thread_extent] threadIdx.x = 352
+  if (((int)threadIdx.x) < 49) {
+    kernel_pad_shared[(((int)threadIdx.x))] = kernel[(((((((int)blockIdx.x) % 462) / 11) * 49) + ((int)threadIdx.x)))];
+  }
+  __syncthreads();
+  for (int KH_inner_outer = 0; KH_inner_outer < 7; ++KH_inner_outer) {
+    for (int KW_inner_outer = 0; KW_inner_outer < 7; ++KW_inner_outer) {
+      float data_pad_shared_local[2];
+      if (((((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 44)) + KH_inner_outer) < 89) {
+        data_pad_shared_local[(0)] = data_pad_shared[((((((((int)threadIdx.x) / 44) * 89) + (KH_inner_outer * 89)) + KW_inner_outer) + (((int)threadIdx.x) % 44)))];
+        if ((KW_inner_outer + (((int)threadIdx.x) % 44)) < 45) {
+          data_pad_shared_local[(1)] = data_pad_shared[(((((((((int)threadIdx.x) / 44) * 89) + (KH_inner_outer * 89)) + KW_inner_outer) + (((int)threadIdx.x) % 44)) + 44))];
+        }
+      }
+      float kernel_pad_shared_local[1];
+      kernel_pad_shared_local[(0)] = kernel_pad_shared[(((KH_inner_outer * 7) + KW_inner_outer))];
+      if ((((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 44)) < 83) {
+        depthwiseconv2d_local[(0)] = (depthwiseconv2d_local[(0)] + (data_pad_shared_local[(0)] * kernel_pad_shared_local[(0)]));
+        if ((((int)threadIdx.x) % 44) < 39) {
+          depthwiseconv2d_local[(1)] = (depthwiseconv2d_local[(1)] + (data_pad_shared_local[(1)] * kernel_pad_shared_local[(0)]));
+        }
+      }
+    }
+  }
+  if ((((((int)blockIdx.x) % 11) * 8) + (((int)threadIdx.x) / 44)) < 83) {
+    depthwiseconv2d_unpad[((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 44) * 83)) + (((int)threadIdx.x) % 44)))] = depthwiseconv2d_local[(0)];
+    if ((((int)threadIdx.x) % 44) < 39) {
+      depthwiseconv2d_unpad[(((((((((int)blockIdx.x) / 11) * 6889) + ((((int)blockIdx.x) % 11) * 664)) + ((((int)threadIdx.x) / 44) * 83)) + (((int)threadIdx.x) % 44)) + 44))] = depthwiseconv2d_local[(1)];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+[EvalAgent] Evaluating Modules .. (for backend = c-cuda)
+
+[EvalAgent] Results = {"K/0": 88348654928000.0, "TPR": 0.00137068}
+
+[Antares] Average time cost / run = 0.00137068 sec, 2706.01 gflops. (Checked: True)
+
+Finish Depthwise Conv Schedule Fused\n

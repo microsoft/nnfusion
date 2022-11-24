@@ -282,9 +282,6 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
 
 LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
 {
-    if (input_shape.size() != 4 && input_shape.size() != 5)
-        return nullptr;
-
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
     auto rank = input_shape.size();
@@ -297,8 +294,8 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
         window_shape.insert(window_shape.begin(), 1);
         padding_below.insert(padding_below.begin(), 0);
         window_stride.insert(window_stride.begin(), 1);
-        _input_shape.insert(_input_shape.begin() + 1, 1);
-        _output_shape.insert(_output_shape.begin() + 1, 1);
+        _input_shape.insert(_input_shape.begin() + 2, 1);
+        _output_shape.insert(_output_shape.begin() + 2, 1);
         rank = 4;
     }
 
@@ -511,19 +508,19 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
     auto _d_input_shape = d_input_shape;
     auto _output_shape = output_shape;
     auto _d_output_shape = d_output_shape;
-
+    NNFUSION_LOG(INFO) << "---------4";
     if (rank == 3)
     {
         window_shape.insert(window_shape.begin(), 1);
         padding_below.insert(padding_below.begin(), 0);
         window_stride.insert(window_stride.begin(), 1);
-        _input_shape.insert(_input_shape.begin() + 1, 1);
-        _output_shape.insert(_output_shape.begin() + 1, 1);
-        _d_input_shape.insert(_d_input_shape.begin() + 1, 1);
-        _d_output_shape.insert(_d_output_shape.begin() + 1, 1);
+        _input_shape.insert(_input_shape.begin() + 2, 1);
+        _output_shape.insert(_output_shape.begin() + 2, 1);
+        _d_input_shape.insert(_d_input_shape.begin() + 2, 1);
+        _d_output_shape.insert(_d_output_shape.begin() + 2, 1);
         rank = 4;
     }
-
+    NNFUSION_LOG(INFO) << "---------5";
     // y dy x dx
     auto input_desc = cudnn_tensor_descriptor_from_shape(_input_shape, "input_desc", input_type);
     auto d_input_desc =
@@ -605,14 +602,14 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
     lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(output_desc));\n";
     lu << "CUDNN_SAFE_CALL(cudnnDestroyTensorDescriptor(d_output_desc));\n";
     lu << "CUDNN_SAFE_CALL(cudnnDestroyPoolingDescriptor(desc));\n";
-
+    NNFUSION_LOG(INFO) << "---------6";
     return _lu;
 }
 
-REGISTER_KERNEL_EMITTER(
-    "AvgPool",                                                                    // op_name
-    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::AvgPool1D)                                                              // constructor
+// REGISTER_KERNEL_EMITTER(
+//     "AvgPool",                                                                    // op_name
+//     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+//     cuda::AvgPool1D)                                                              // constructor
 
 REGISTER_KERNEL_EMITTER(
     "AvgPool",                                                                     // op_name

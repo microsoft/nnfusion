@@ -32,7 +32,8 @@ const static std::vector<std::vector<std::string>> PATTERNS = {
     // {"Convolution", "BatchNormInference"},
     // Conv-BN-Relu is converted into Conv-Add-Relu
     {"Convolution", "Add", "Relu"},
-    {"Convolution", "Relu"}};
+    {"Convolution", "Relu"},
+    {"Convolution", "Add"}};
 
 REGISTER_OP(Matched_Pattern)
     // .attr<nnfusion::op::OpConfig::any>("out_shape")
@@ -150,11 +151,11 @@ private:
         {
             // Todo: more tags, more platform
             std::set<std::string> tags = {};
-            auto fetched_kernel = kernel_db->fetch_with_tags(identifier, "CUDA", tags);
+            auto fetched_kernel = kernel_db->fetch_with_tags(identifier, "CUDA_GPU", tags);
             if (fetched_kernel != nullptr)
             {
                 NNFUSION_CHECK(fetched_kernel->function != "");
-                NNFUSION_LOG(INFO) << "Substitution applied: " << identifier;
+                NNFUSION_LOG(DEBUG) << "Substitution applied: " << identifier;
                 return Substitution(matched, identifier);
             }
         }
@@ -196,7 +197,8 @@ private:
             // here we apply the BN folding to remove computation
 
             // biasadd fix for TVM conv-biasadd fusion due to different implementation of BiasAdd in NNFusion and TVM
-            if (m_node->node->get_op_type() == "Add" && FLAGS_fbiasadd_fix)
+            // TODO: no need this fix
+            if (m_node->node->get_op_type() == "Add" && FLAGS_fbiasadd_fix && false)
             {
                 if (m_pattern[0] == "Convolution" && m_pattern[1] == "Add")
                 {
@@ -227,7 +229,21 @@ private:
                 m_node->node->get_op_type() == "Add")
             {
                 auto bias_edge = m_node->node->get_in_edge(1);
-                subs_node->set_input(next_input_id, m_node->node->get_inputs().at(1));
+                auto bias_input = m_node->node->get_inputs().at(1);
+                if (m_pattern[0] == "Convolution" && m_node->node->get_op_type() == "Add" &&
+                    FLAGS_fbiasadd_fix)
+                {
+                    auto broadcast_node = bias_edge->get_src();
+                    auto broadcast_op = std::dynamic_pointer_cast<nnfusion::op::Broadcast>(
+                        broadcast_node->get_op_ptr());
+                    if (broadcast_op)
+                    {
+                        NNFUSION_LOG(INFO) << "Convert Broadcast+Add into a single BiasAdd!";
+                        bias_edge = broadcast_node->get_in_edge(0);
+                        bias_input = broadcast_node->get_inputs().at(0);
+                    }
+                }
+                subs_node->set_input(next_input_id, bias_input);
                 m_graph->add_edge(
                     bias_edge->get_src(), bias_edge->get_src_output(), subs_node, next_input_id++);
             }

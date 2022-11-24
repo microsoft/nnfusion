@@ -14,7 +14,11 @@ cuda::DepthwiseConv2dNative::DepthwiseConv2dNative(shared_ptr<KernelContext> ctx
 
     const Shape input_shape = Shape(ctx->inputs[0]->get_shape());
     // [ filter_rows, filter_cols, in_depth, depth_multiplier]
-    const Shape filter_shape = Shape(ctx->inputs[1]->get_shape());
+    // const Shape filter_shape = Shape(ctx->inputs[1]->get_shape());
+    // ad_hoc
+    const Shape filter_shape_ori = Shape(ctx->inputs[1]->get_shape());
+    Shape filter_shape =
+        Shape{filter_shape_ori[2], filter_shape_ori[3], filter_shape_ori[0], filter_shape_ori[1]};
     const Shape output_shape = Shape(ctx->outputs[0]->get_shape());
 
     data_format = op->localOpConfig.getRoot()["data_format"];

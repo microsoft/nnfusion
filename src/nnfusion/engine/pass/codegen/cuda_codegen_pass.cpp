@@ -1297,6 +1297,7 @@ void CudaCodegenPass::create_main_file(std::shared_ptr<InterpreterContext> ctx,
             lu_main << get_d2hcopy(tu)->get_code();
             lu_main << get_sync()->get_code();
         }
+
         for (size_t i = 0; i < tu->out.size(); i++)
         {
             auto& tensor = *tu->out[i];

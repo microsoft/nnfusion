@@ -4,6 +4,8 @@
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"
 
+DEFINE_bool(fcnhw, false, "Need to fix like concat after convolution with CNHW format.");
+
 namespace nnfusion
 {
     namespace kernels
@@ -344,6 +346,9 @@ namespace nnfusion
                     NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not Concat.";
 
                     this->axis = op->get_concatenation_axis();
+                    // this is a ad-hoc fix for concat after conv with NCHW format
+                    if (FLAGS_fcnhw)
+                        this->axis = 0;
 
                     is_memcpy = true;
                     for (size_t idx = 0; idx < ctx->inputs.size(); idx++)

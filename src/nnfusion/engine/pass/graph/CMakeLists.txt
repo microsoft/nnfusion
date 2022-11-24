@@ -32,6 +32,7 @@ set(SRC
     tensor_core_rewrite_pass.cpp
     ir_based_fusion_pass.cpp
     subgraph_fusion_pass.cpp
+    dump_op.cpp
 
 )
 
@@ -43,4 +44,5 @@ target_link_libraries(nnfusion_engine_pass_graph
     nnfusion_cache_manager
     nnfusion_operators
     kernels_hlsl
+    nnfusion_common
 )

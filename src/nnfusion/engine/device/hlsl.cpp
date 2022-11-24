@@ -366,13 +366,14 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 auto first_params = vec_dim_params[0];
                 for (auto param : first_params)
                 {
-                    global_sym_defs << "extern \"C\" RUNTIME_API void set_" << param.first << "(int64_t);\n"
-                                    << "extern \"C\" RUNTIME_API int64_t get_" << param.first << "();\n";
+                    global_sym_defs
+                        << "extern \"C\" RUNTIME_API void set_" << param.first << "(int64_t);\n"
+                        << "extern \"C\" RUNTIME_API int64_t get_" << param.first << "();\n";
                     global_sym_methods << "int64_t " << param.first << ";\n"
-                                       << "extern \"C\" void set_" << param.first << "(int64_t s) { "
-                                       << param.first << " = s; }\n"
-                                       << "extern \"C\" int64_t get_" << param.first << "() { return "
-                                       << param.first << "; }\n";
+                                       << "extern \"C\" void set_" << param.first
+                                       << "(int64_t s) { " << param.first << " = s; }\n"
+                                       << "extern \"C\" int64_t get_" << param.first
+                                       << "() { return " << param.first << "; }\n";
                 }
                 for (auto dim_params : vec_dim_params)
                 {
@@ -381,11 +382,13 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     {
                         if (!condition.empty())
                             condition += " && ";
-                        if(param.second.min() == 0)
-                            condition += "get_" + param.first + "() == " + to_string(param.second.max());
+                        if (param.second.min() == 0)
+                            condition +=
+                                "get_" + param.first + "() == " + to_string(param.second.max());
                         else
-                            condition += "get_" + param.first + "() >=" + to_string(param.second.min()) 
-                                + " && " + " get_" + param.first + "() <=" + to_string(param.second.max());
+                            condition += "get_" + param.first + "() >=" +
+                                         to_string(param.second.min()) + " && " + " get_" +
+                                         param.first + "() <=" + to_string(param.second.max());
                     }
                     global_entry << "if(" << condition << ")\n{\n";
                     global_entry << "\treturn graph_" << graph_cnt
@@ -394,32 +397,36 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                     graph_cnt++;
                 }
                 auto outs = tu.back()->out;
-                for(int i=0;i<outs.size();i++)
+                for (int i = 0; i < outs.size(); i++)
                 {
                     auto out = outs[i];
-                    for(int j=0;j<out->get_shape().size();j++)
+                    for (int j = 0; j < out->get_shape().size(); j++)
                     {
-                        auto dim_name = out->get_name() + "_dim_" + to_string(j);
-                        global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name << "();\n";
+                        auto dim_name = "output_" + to_string(i) + "_dim_" + to_string(j);
+                        global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name
+                                        << "();\n";
                         global_sym_methods << "extern \"C\" int64_t get_" << dim_name << "()\n{\n";
 
-                        for(int k=0;k<vec_dim_params.size();k++)
+                        for (int k = 0; k < vec_dim_params.size(); k++)
                         {
                             std::string condition = "";
-                            auto&dim_params = vec_dim_params[k];
-                            for(auto param : dim_params)
+                            auto& dim_params = vec_dim_params[k];
+                            for (auto param : dim_params)
                             {
                                 if (!condition.empty())
                                     condition += " && ";
-                                if(param.second.min() == 0)
-                                    condition += param.first + " == " + to_string(param.second.max());
-                                else 
-                                    condition += param.first + " >= " + to_string(param.second.min()) 
-                                        + " && " + param.first + " <= " + to_string(param.second.max());
+                                if (param.second.min() == 0)
+                                    condition +=
+                                        param.first + " == " + to_string(param.second.max());
+                                else
+                                    condition += param.first + " >= " +
+                                                 to_string(param.second.min()) + " && " +
+                                                 param.first + " <= " +
+                                                 to_string(param.second.max());
                             }
                             std::string val;
                             auto sym_shape = tu[k]->out[i]->get_shape().sym_shape;
-                            if(sym_shape != nullptr)
+                            if (sym_shape != nullptr)
                             {
                                 auto sym = (*sym_shape)[j];
                                 val = sym.is_dynamic() ? sym.sym() : to_string(sym.max());
@@ -428,7 +435,8 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                             {
                                 val = to_string(tu[k]->out[i]->get_shape()[j]);
                             }
-                            global_sym_methods << "\tif(" << condition << ") { return " << val << ";}\n";
+                            global_sym_methods << "\tif(" << condition << ") { return " << val
+                                               << ";}\n";
                         }
 
                         global_sym_methods << "\treturn -1;\n}\n";
@@ -436,32 +444,36 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                 }
 
                 auto args = tu.back()->arg;
-                for(int i=0;i<args.size();i++)
+                for (int i = 0; i < args.size(); i++)
                 {
                     auto arg = args[i];
-                    for(int j=0;j<arg->get_shape().size();j++)
+                    for (int j = 0; j < arg->get_shape().size(); j++)
                     {
                         auto dim_name = arg->get_name() + "_dim_" + to_string(j);
-                        global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name << "();\n";
+                        global_sym_defs << "extern \"C\" RUNTIME_API int64_t get_" << dim_name
+                                        << "();\n";
                         global_sym_methods << "extern \"C\" int64_t get_" << dim_name << "()\n{\n";
 
-                        for(int k=0;k<vec_dim_params.size();k++)
+                        for (int k = 0; k < vec_dim_params.size(); k++)
                         {
                             std::string condition = "";
-                            auto&dim_params = vec_dim_params[k];
-                            for(auto param : dim_params)
+                            auto& dim_params = vec_dim_params[k];
+                            for (auto param : dim_params)
                             {
                                 if (!condition.empty())
                                     condition += " && ";
-                                if(param.second.min() == 0)
-                                    condition += param.first + " == " + to_string(param.second.max());
-                                else 
-                                    condition += param.first + " >= " + to_string(param.second.min()) 
-                                        + " && " + param.first + " <= " + to_string(param.second.max());
+                                if (param.second.min() == 0)
+                                    condition +=
+                                        param.first + " == " + to_string(param.second.max());
+                                else
+                                    condition += param.first + " >= " +
+                                                 to_string(param.second.min()) + " && " +
+                                                 param.first + " <= " +
+                                                 to_string(param.second.max());
                             }
                             std::string val;
                             auto sym_shape = tu[k]->arg[i]->get_shape().sym_shape;
-                            if(sym_shape != nullptr)
+                            if (sym_shape != nullptr)
                             {
                                 auto sym = (*sym_shape)[j];
                                 val = sym.is_dynamic() ? sym.sym() : to_string(sym.max());
@@ -470,7 +482,8 @@ bool HLSLMultiEngine::run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
                             {
                                 val = to_string(tu[k]->arg[i]->get_shape()[j]);
                             }
-                            global_sym_methods << "\tif(" << condition << ") { return " << val << ";}\n";
+                            global_sym_methods << "\tif(" << condition << ") { return " << val
+                                               << ";}\n";
                         }
 
                         global_sym_methods << "\treturn -1;\n}\n";

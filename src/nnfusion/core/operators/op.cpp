@@ -46,7 +46,8 @@ void Op::increase_graph_id()
 
 Op::Op(const std::string& op_type)
     : m_op_type(op_type)
-    , m_instance_id(op_type=="Constant"?m_next_constant_id.fetch_add(1):m_next_instance_id.fetch_add(1))
+    , m_instance_id(op_type == "Constant" ? m_next_constant_id.fetch_add(1)
+                                          : m_next_instance_id.fetch_add(1))
     , m_unique_name(get_op_type() + "_" + to_string(m_instance_id) + "_" + to_string(m_graph_id))
 {
 }
@@ -107,6 +108,16 @@ void Op::revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
     }
 
     validate_and_infer_types(gnode);
+    if (FLAGS_fsymbolic)
+    {
+        for (auto output : gnode->get_outputs())
+        {
+            if (output->get_shape().is_dynamic())
+            {
+                (*gnode)["symbolic"] = true;
+            }
+        }
+    }
 }
 
 void Op::delayed_validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)

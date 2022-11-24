@@ -278,6 +278,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Transpose", 1, TranslateTransposeOp);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "TransposeMatMul", 1, TranslateMatmulOp);
                 REGISTER_OPERATOR("Unsqueeze", 1, TranslateUnsqueezeOp);
+                REGISTER_OPERATOR("Unsqueeze", 13, TranslateUnsqueezeOp);
                 REGISTER_OPERATOR("ConvTranspose", 1, TranslateConvTransposeOp);
                 REGISTER_OPERATOR("Resize", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);

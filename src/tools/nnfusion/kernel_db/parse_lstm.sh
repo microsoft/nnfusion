@@ -1,0 +1,1 @@
+python parse_code.py --op_type Dot --source_file /home/v-zhuho/new_repo/TiledCompiler/tiled-compiler/e2e_kernels/lstm_bs128/roller_Dot_\[128\,256\]_\[256\,256\]_\[256\,256\].cu --json_file roller_lstm/roller_Dot_\[128\,256\]_\[256\,256\]_\[256\,256\].json --input0_shape 128 256 --input1_shape 256 256 --output0_shape 128 256

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <utility>
 
+#include "nnfusion/common/util.hpp"
 #include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/kernels/hlsl/hlsl_kernel_emitter.hpp"
@@ -383,12 +384,12 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
                 int sys_ret = system(cmd_create_folder.c_str());
             }
 
-            std::size_t file_id = std::hash<std::string>{}(ir);
-            auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+            std::string file_id = sha256(ir);
+            auto file_name = cache_folder + "/" + file_id + ".c";
             bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
 
             std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
-            cmd += get_antares_device_type(n_device_type, FLAGS_ftuning_platform);
+            cmd += FLAGS_ftuning_platform;
             if (symbolic)
                 cmd += " TVM=0";
             cmd += " COMPUTE_V1='";
@@ -470,8 +471,8 @@ void load_irs_and_tune_kernels_sync(std::string filename,
             int sys_ret = system(cmd_create_folder.c_str());
         }
 
-        std::size_t file_id = std::hash<std::string>{}(ir);
-        auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+        std::string file_id = sha256(ir);
+        auto file_name = cache_folder + "/" + file_id + ".c";
 
         std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
         cmd += FLAGS_ftuning_platform;
@@ -542,11 +543,18 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     std::vector<std::shared_ptr<GNode>> nodes;
     std::tie(nodes, tuned_kernels) = get_tuning_candidates(graph, BlockList, ir2cnt);
 
-    const std::string dump_file = "./antares_irs.txt";
+    std::string param_str;
+    auto dim_infos = graph->get_dim_params();
+    for (auto pair : dim_infos)
+    {
+        param_str += ("_" + pair.first + pair.second.debug_string());
+    }
+
+    const std::string dump_file = "./antares_irs" + param_str + ".txt";
     if (FLAGS_fdump_and_tune_irs == 1)
     {
         dump_tuning_irs(dump_file, nodes, ir2cnt);
-        exit(0);
+        //exit(0);
     }
 
     if (FLAGS_fdump_and_tune_irs == 2)

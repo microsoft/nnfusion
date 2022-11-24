@@ -178,7 +178,8 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             {
                 if (kernel_func_defs.find(body_str) == kernel_func_defs.end())
                 {
-                    if (!(kernel->is_eliminative() || (*gnode)["is_eliminative"].is_valid_as<bool>()))
+                    if (!(kernel->is_eliminative() ||
+                          (*gnode)["is_eliminative"].is_valid_as<bool>()))
                     {
                         LanguageUnit_p kernel_func_def;
                         if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
@@ -297,7 +298,8 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
             if (gnode->get_op_type() == "Result" || gnode->get_op_type() == "Constant")
             {
                 call_str = func_name + call_str;
-                if ((kernel && kernel->is_eliminative()) || (*gnode)["is_eliminative"].is_valid_as<bool>())
+                if ((kernel && kernel->is_eliminative()) ||
+                    (*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "// " + call_str;
                 }
@@ -313,7 +315,8 @@ bool HLSLCPPCodegenPass::collect_funcs(std::shared_ptr<InterpreterContext> ctx,
                     call_str = call_str.replace(s_pos + 20, e_pos - s_pos - 20, module_name);
                 }
 
-                if ((kernel && kernel->is_eliminative()) || (*gnode)["is_eliminative"].is_valid_as<bool>())
+                if ((kernel && kernel->is_eliminative()) ||
+                    (*gnode)["is_eliminative"].is_valid_as<bool>())
                 {
                     call_str = "/*\n" + call_str + "*/\n";
                 }

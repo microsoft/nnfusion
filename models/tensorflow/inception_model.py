@@ -85,7 +85,7 @@ class Inceptionv3Model(base_model.CNNModel):
               [('share',), ('conv', 384, 3, 1)],
               [('conv', 448, 1, 1), ('conv', 384, 3, 3), ('conv', 384, 1, 3)],
               [('share',), ('share',), ('conv', 384, 3, 1)],
-              [('mpool' if pooltype == 'max' else 'apool', 3, 3, 1, 1, 'SAME'),
+              [('mpool' if pooltype == `max` else 'apool', 3, 3, 1, 1, 'SAME'),
                ('conv', 192, 1, 1)]]
       cnn.inception_module('incept_v3_e', cols)
 
@@ -119,7 +119,7 @@ class Inceptionv3Model(base_model.CNNModel):
       incept_v3_aux(cnn)                     # Auxillary Head logits
     inception_v3_d(cnn)                      # 17 x 17 x 1280 mixed_8
     inception_v3_e(cnn, 'avg')               # 8 x 8 x 2048 mixed_9
-    inception_v3_e(cnn, 'max')               # 8 x 8 x 2048 mixed_10
+    inception_v3_e(cnn, `max`)               # 8 x 8 x 2048 mixed_10
     cnn.apool(8, 8, 1, 1, 'VALID')           # 8 x 8 x 2048
     cnn.reshape([-1, 2048])                  # 1 x 1 x 2048
 

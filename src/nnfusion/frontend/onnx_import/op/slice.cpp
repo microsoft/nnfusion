@@ -147,9 +147,11 @@ namespace nnfusion
                         if (data_shape == Shape{2048, 2048} && axes.size() == 1 && axes[0] == 0)
                         {
                             auto dim_params = m_graph->get_dim_params();
-                            if (dim_params.count("past_seq") > 0 && dim_params["past_seq"].is_dynamic())
+                            if (dim_params.count("past_seq") > 0 &&
+                                dim_params["past_seq"].is_dynamic())
                             {
-                                NNFUSION_CHECK(dim_params.count("seq") > 0 && dim_params["deq"].is_static());
+                                NNFUSION_CHECK(dim_params.count("seq") > 0 &&
+                                               dim_params["deq"].is_static());
                                 SymDim past_seq = dim_params["past_seq"];
                                 SymDim seq = dim_params["seq"];
                                 auto symbol_lower_bounds = std::make_shared<SymShape>(lower_bounds);
@@ -162,16 +164,20 @@ namespace nnfusion
                                 lower_bounds.set_sym_shape(symbol_lower_bounds);
                                 upper_bounds.set_sym_shape(symbol_upper_bounds);
                                 out_shape.set_sym_shape(symbol_out_shape);
-                                NNFUSION_LOG(INFO) << "Fix Slice symbol bounds: " << lower_bounds << " | " << upper_bounds;
+                                NNFUSION_LOG(INFO) << "Fix Slice symbol bounds: " << lower_bounds
+                                                   << " | " << upper_bounds;
                             }
                         }
 
-                        if (data_shape.size() == 2 && data_shape[1] == 2048 && axes.size() == 1 && axes[0] == 1)
+                        if (data_shape.size() == 2 && data_shape[1] == 2048 && axes.size() == 1 &&
+                            axes[0] == 1)
                         {
                             auto dim_params = m_graph->get_dim_params();
-                            if (dim_params.count("past_seq") > 0 && dim_params["past_seq"].is_dynamic())
+                            if (dim_params.count("past_seq") > 0 &&
+                                dim_params["past_seq"].is_dynamic())
                             {
-                                NNFUSION_CHECK(dim_params.count("seq") > 0 && dim_params["deq"].is_static());
+                                NNFUSION_CHECK(dim_params.count("seq") > 0 &&
+                                               dim_params["deq"].is_static());
                                 SymDim past_seq = dim_params["past_seq"];
                                 SymDim seq = dim_params["seq"];
                                 auto symbol_lower_bounds = std::make_shared<SymShape>(lower_bounds);
@@ -184,12 +190,14 @@ namespace nnfusion
                                 lower_bounds.set_sym_shape(symbol_lower_bounds);
                                 upper_bounds.set_sym_shape(symbol_upper_bounds);
                                 out_shape.set_sym_shape(symbol_out_shape);
-                                NNFUSION_LOG(INFO) << "Fix Slice symbol bounds: " << lower_bounds << " | " << upper_bounds;
+                                NNFUSION_LOG(INFO) << "Fix Slice symbol bounds: " << lower_bounds
+                                                   << " | " << upper_bounds;
                             }
                         }
                     }
 
-                    auto op = std::make_shared<op::Slice>(lower_bounds, upper_bounds, strides, out_shape);
+                    auto op =
+                        std::make_shared<op::Slice>(lower_bounds, upper_bounds, strides, out_shape);
                     op->set_name(node_proto.output(0));
                     nnfusion::json stat;
                     stat["starts"] = starts;

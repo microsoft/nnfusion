@@ -18,6 +18,7 @@ DECLARE_bool(fsymbolic);
 DEFINE_string(firfusion_blocklist,
               "",
               "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
+DEFINE_int64(fir_fuse_level, 0, "");
 
 class IRBasedFusionOptimizer
 {
@@ -90,9 +91,20 @@ private:
                     m_tagged_nodes.insert(src);
                 }
             }
-            // "+=! op"
-            if (ir.find("+=!") != string::npos)
+            // "+=!, >=! op"
+            if (ir.find("=!") != string::npos)
+            {
                 m_tagged_nodes.insert(node);
+                if (FLAGS_fir_fuse_level == 1)
+                {
+                    for (auto in_edge : node->get_in_edges())
+                    {
+                        auto src = in_edge->get_src();
+                        m_tagged_nodes.insert(src);
+                    }
+                }
+            }
+
             // "=. op"
             if (ir.find("=.") != string::npos)
             {

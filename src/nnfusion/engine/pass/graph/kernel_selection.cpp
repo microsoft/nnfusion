@@ -319,7 +319,6 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
     {
         // fetch all available kernel entries from kernel cache DB
         auto fetched = cache_manager->fetch_all(identifier, get_device_str(devtype));
-
         // emit External kernels
         {
             for (auto kernel_entry : fetched)

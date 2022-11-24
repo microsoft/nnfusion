@@ -90,7 +90,10 @@ namespace nnfusion
                 const std::string& get_name() const { return m_value_info_proto->name(); }
                 const Shape& get_shape() const { return m_shape; }
                 const element::Type& get_element_type() const { return m_type; }
-                void set_sym_shape(std::shared_ptr<SymShape> sym_shape) { this->sym_shape = sym_shape; }
+                void set_sym_shape(std::shared_ptr<SymShape> sym_shape)
+                {
+                    this->sym_shape = sym_shape;
+                }
                 std::shared_ptr<SymShape> get_sym_shape() { return this->sym_shape; }
             private:
                 const onnx::ValueInfoProto* m_value_info_proto;

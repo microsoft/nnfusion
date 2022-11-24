@@ -70,12 +70,19 @@ namespace nnfusion
 
                     {
                         std::string tid =
-                            "blockIdx.x * " + std::to_string(blocks) + " + threadIdx.x";
+                            "blockIdx.x * " + std::to_string(blocks) + " * 2 + threadIdx.x";
+                        std::string tid1 =
+                            "blockIdx.x * " + std::to_string(blocks) + " * 2 + threadIdx.x + 128";
                         if (grids == 1)
+                        {
                             tid = "threadIdx.x";
+                            tid1 = "threadIdx.x + 128";
+                        }
                         if (bound)
+                        {
                             lu << "if (" << tid << " >= " << bound << ") return;";
-
+                            lu << "if (" << tid1 << " >= " << bound << ") return;";
+                        }
                         {
                             std::string invoke_func = op;
                             if (m_context->gnode->get_op_type() == "Convert")
@@ -89,6 +96,13 @@ namespace nnfusion
                                 lu << "input" << i << "[" << tid << "], ";
                             }
                             lu << "input" << num_inputs - 1 << "[" << tid << "]);\n";
+
+                            lu << "output0[" << tid1 << "] = " << invoke_func << "(";
+                            for (size_t i = 0; i < num_inputs - 1; i++)
+                            {
+                                lu << "input" << i << "[" << tid1 << "], ";
+                            }
+                            lu << "input" << num_inputs - 1 << "[" << tid1 << "]);\n";
                         }
                     }
                     return lu_;
@@ -134,26 +148,28 @@ namespace nnfusion
                 {
                     uint32_t num_ele = static_cast<uint32_t>(
                         nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-                    for (int i = 512; i >= 64; i >>= 1)
+                    for (int i = 128; i >= 64; i >>= 1)
                     {
                         if (num_ele % i == 0)
                         {
                             grids = num_ele / i, blocks = i, bound = 0;
+                            grids = grids / 2;
                             return;
                         }
                     }
-                    for (int i = 512; i >= 32; i--)
+                    for (int i = 128; i >= 32; i--)
                     {
                         if (num_ele % i == 0)
                         {
                             grids = num_ele / i, blocks = i, bound = 0;
+                            grids = grids / 2;
                             return;
                         }
                     }
                     if (num_ele < 32)
                         grids = 1, blocks = num_ele, bound = 0;
                     else
-                        grids = (num_ele + 255) / 256, blocks = 256, bound = 1;
+                        grids = (num_ele + 255) / 256, blocks = 128, bound = 1;
                 }
 
                 // shared_ptr<KernelContext> kernel_ctx;

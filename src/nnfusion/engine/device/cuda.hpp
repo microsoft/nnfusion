@@ -16,17 +16,18 @@ namespace nnfusion
             CudaEngine();
         };
 
-    	class CudaMultiEngine : public CudaEngine
-    	{
+        class CudaMultiEngine : public CudaEngine
+        {
         public:
-	        CudaMultiEngine();
-            bool run_on_graphs(std::vector<graph::Graph::Pointer> graphs, 
-                    EngineContext::Pointer context = nullptr);
-	    private:
-	        void remove_extern_c(std::string fname);
-	        std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu, bool is_host);
-	        std::string get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu, bool is_host);
-	        bool erase_all_codegen();
-    	};
+            CudaMultiEngine();
+            bool run_on_graphs(std::vector<graph::Graph::Pointer> graphs,
+                               EngineContext::Pointer context = nullptr);
+
+        private:
+            void remove_extern_c(std::string fname);
+            std::string get_kernel_entry_paras(std::shared_ptr<TranslationUnit> tu, bool is_host);
+            std::string get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu, bool is_host);
+            bool erase_all_codegen();
+        };
     } // namespace engine
 } // namespace nnfusion

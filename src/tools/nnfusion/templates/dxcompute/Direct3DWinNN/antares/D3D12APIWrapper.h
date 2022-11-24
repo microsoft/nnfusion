@@ -26,13 +26,16 @@ __EXPORT__ ANTARES_API int    dxMemcpyHtoDAsync(void* dst, void* src, size_t byt
 __EXPORT__ ANTARES_API int    dxMemcpyDtoHAsync(void* dst, void* src, size_t bytes, void* hStream);
 __EXPORT__ ANTARES_API int    dxMemcpyDtoDAsync(void* dst, void* src, size_t bytes, void* hStream);
 
+__EXPORT__ ANTARES_API void*  dxMemHostRegister(void* dptr, unsigned int subres);
+__EXPORT__ ANTARES_API void   dxMemHostUnregister(void* dptr, unsigned int subres);
+
 __EXPORT__ ANTARES_API int    dxModuleSetCompat(const char* compat_name);
 __EXPORT__ ANTARES_API void*  dxModuleLoad(const char* module_src);
 __EXPORT__ ANTARES_API void*  dxModuleGetShader(void *hModule, const char* fname);
 __EXPORT__ ANTARES_API void   dxModuleUnload(void* hModule);
 
 __EXPORT__ ANTARES_API void*  dxShaderLoad_v2(const char* shader_src);
-__EXPORT__ ANTARES_API int    dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, void* hStream);
+__EXPORT__ ANTARES_API int    dxShaderLaunchAsyncExt(void* hShader, void** buffers, int blocks, void* hStream);
 __EXPORT__ ANTARES_API int    dxShaderLaunchAsync(void* hShader, void** buffers, void* hStream);
 __EXPORT__ ANTARES_API void   dxShaderUnload(void* hShader);
 

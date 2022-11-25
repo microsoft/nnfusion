@@ -9,10 +9,10 @@ REGISTER_OP(ArgMin)
         {
             NNFUSION_CHECK(2 == gnode->get_input_size());
             auto& input_shape = gnode->get_input_shape(0);
-            auto _op = static_pointer_cast<nnfusion::op::ArgMax>(gnode->get_op_ptr());
+            auto _op = static_pointer_cast<nnfusion::op::ArgMin>(gnode->get_op_ptr());
             auto axis = _op->get_reduction_axis();
             if (axis >= input_shape.size())
-                NNFUSION_CHECK_FAIL() << "ArgMax: axis out of range";
+                NNFUSION_CHECK_FAIL() << "ArgMin: axis out of range";
             nnfusion::Shape output_shape_0;
             for (int i = 0; i < input_shape.size(); ++i)
             {
@@ -34,12 +34,12 @@ REGISTER_OP(ArgMin)
                 return "[" + (axis.empty() ? "N" : ret.substr(2)) + "]";
             };
 
-            auto _op = static_pointer_cast<nnfusion::op::ArgMax>(curr->get_op_ptr());
+            auto _op = static_pointer_cast<nnfusion::op::ArgMin>(curr->get_op_ptr());
             auto input_shape = curr->get_input_shape(0);
             auto axis = _op->get_reduction_axis();
             auto select_last_index = _op->get_select_last_index();
             if (axis >= input_shape.size())
-                NNFUSION_CHECK_FAIL() << "ArgMax: axis out of range";
+                NNFUSION_CHECK_FAIL() << "ArgMin: axis out of range";
 
             auto output_shape = curr->get_output_shape(0);
             auto output_datatype = curr->get_output_element_type(0);

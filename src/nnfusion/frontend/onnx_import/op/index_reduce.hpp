@@ -42,12 +42,16 @@ namespace nnfusion
                                               std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
-
                     Node node(node_proto);
                     auto axis = node.get_attribute_value<int64_t>("axis", 0);
+                    if (axis < 0)
+                    {
+                        axis += input_gnode->get_shape().size();
+                    }
                     auto keepdims = node.get_attribute_value<int64_t>("keepdims", 1);
+                    auto select_last_index = node.get_attribute_value<int64_t>("select_last_index", 0);
 
-                    auto reduce_index_op = std::make_shared<T>(axis, element::i64);
+                    auto reduce_index_op = std::make_shared<T>(axis, keepdims, select_last_index, element::i64);
                     std::shared_ptr<graph::GNode> reduce_index_gnode;
 
                     if (keepdims != 0)
@@ -87,6 +91,24 @@ namespace nnfusion
                 }
 
             } // namespace set_1
+
+            namespace set_11
+            {
+                using set_1::TranslateIndexReductionOp;
+            }
+            namespace set_12
+            {
+                using set_1::TranslateIndexReductionOp;
+            }
+            namespace set_13
+            {
+                using set_1::TranslateIndexReductionOp;
+            }
+            namespace set_14
+            {
+                using set_1::TranslateIndexReductionOp;
+            }
+
         }     // namespace onnx_import
     }         // namespace frontend
 } // namespace ngraph

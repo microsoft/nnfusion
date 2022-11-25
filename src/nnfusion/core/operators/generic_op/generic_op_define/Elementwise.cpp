@@ -16,6 +16,7 @@ struct element_op
 
 static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Abs", element_op("abs", "")},
+    {"Asin", element_op("asin", "")},
     {"Acos", element_op("acos", "")},
     {"Atan", element_op("atan", "")},
     {"Ceiling", element_op("rceil", "")},
@@ -97,10 +98,21 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
     {
         NNFUSION_CHECK(false) << "Unsupported elementwise op: " << node->get_op_type();
     }
-
-    if (iter->second.expr == "")
+    // get node dtypes and node op name
+    auto _op_name = iter->first; 
+    auto _op_dtype = node->get_element_type();
+    auto _op_func = iter->second.func;
+    auto _op_expr = iter->second.expr;
+    if(_op_dtype == nnfusion::element::f16 &&
+        (_op_name == "Acos" ||
+         _op_name == "Asin" ||
+         _op_name == "Atan" ))
     {
-        expr += "@input0@@data_layout@.call(`" + iter->second.func + "`";
+        _op_func += "f";
+    }
+    if (_op_expr == "")
+    {
+        expr += "@input0@@data_layout@.call(`" + _op_func + "`";
         if (node->get_input_size() > 1)
         {
             expr += ", [";
@@ -117,10 +129,12 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
     }
     else
     {
-        expr += replace_input_str(iter->second.expr) + ";";
+        expr += replace_input_str(_op_expr) + ";";
     }
 
     auto data_layout = op::create_layout_from_dims(node->get_output_shape(0));
+    NNFUSION_LOG(INFO) << op::create_code_from_template(
+        expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
     return op::create_code_from_template(
         expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
 };
@@ -149,6 +163,7 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
         });
 
 REGISTER_ELEM_OP(Abs)
+REGISTER_ELEM_OP(Asin)
 REGISTER_ELEM_OP(Acos)
 REGISTER_ELEM_OP(Atan)
 REGISTER_ELEM_OP(Ceiling)

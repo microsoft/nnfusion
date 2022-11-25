@@ -42,7 +42,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->inputs[i]->get_element_type()) << "* ";
         ss << "input" << i;
         params.push_back(ss.str());
     }
@@ -50,7 +50,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->outputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->outputs[i]->get_element_type()) << "* ";
         ss << "output" << i;
         params.push_back(ss.str());
     }
@@ -233,6 +233,8 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
             pos = antares_code.find(start, pos + start.size());
         }
         NNFUSION_CHECK(kernels_pos.size() == kernel_info.size());
+        size_t idx = 0;
+        std::unordered_map<string, string> mediate_map;
         for (size_t i = 0; i < kernels_pos.size(); i++)
         {
             std::string kernel;
@@ -263,8 +265,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
             auto ki = kernel_info[i];
             // map mediate name
             std::vector<string> input_names, output_names;
-            size_t idx = 0;
-            std::unordered_map<string, string> mediate_map;
+
             for (auto name : ki->input_names)
             {
                 if (mediate_map.find(name) == mediate_map.end())
@@ -403,7 +404,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->inputs[i]->get_element_type()) << "* ";
         if (inplace_input.find(i) == inplace_input.end())
         {
             ss << "__restrict__ ";
@@ -415,7 +416,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->outputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->outputs[i]->get_element_type()) << "* ";
         if (inplace_output.find(i) == inplace_output.end())
         {
             ss << "__restrict__ ";
@@ -427,7 +428,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->tensors.size(); i++)
     {
         stringstream ss;
-        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->tensors[i]->get_element_type()) << "* ";
         ss << "__restrict__ ";
         ss << "mediate" << i;
         params.push_back(ss.str());

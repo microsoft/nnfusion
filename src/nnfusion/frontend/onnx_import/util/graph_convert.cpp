@@ -479,6 +479,8 @@ namespace nnfusion
 
                 for (const auto& node_proto : onnx_nodes)
                 {
+                    NNFUSION_LOG(INFO) << "Convert Node Type : " << node_proto.op_type();
+
                     auto results = convert_node(node_proto);
                     for (auto& named_gnode : results)
                     {
@@ -519,6 +521,7 @@ namespace nnfusion
                 NNFUSION_LOG(INFO) << "convert node: " << node_proto.name();
                 const auto& convert_func =
                     get_convert_func(node_proto.op_type(), node_proto.domain());
+
                 NamedNodeVector ret;
                 if (convert_func)
                 {

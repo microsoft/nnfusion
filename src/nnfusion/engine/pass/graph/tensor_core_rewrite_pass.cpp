@@ -53,10 +53,12 @@ static bool rewrite_conv1d(std::shared_ptr<Graph>& graph, std::shared_ptr<GNode>
             graph->add_edge(node1, 0, edge->get_dst(), edge->get_dst_input());
     }
     graph->remove_node(node);
+    return true;
 }
 
 bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
+    NNFUSION_LOG(INFO) << "TensorCoreRewritePass Start";
     parse_skip_ops();
     if (FLAGS_ftune_output_file == "" || !FLAGS_ftc_rewrite)
         return true;
@@ -64,7 +66,10 @@ bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
         if (node->get_op_type() == "Convolution" && node->get_element_type() == element::f16) {
             if (skip_ops.count("Convolution")) continue;
             auto op = std::dynamic_pointer_cast<op::Convolution>(node->get_op_ptr());
-            if (op->get_data_format() == "NCW") rewrite_conv1d(graph, node);
+            if (op->get_data_format() == "NCW") {
+                rewrite_conv1d(graph, node);
+                continue;
+            }
             if (op->get_data_format() != "NCHW") continue;
             auto out_shape = node->get_output_shape(0);
             size_t N = out_shape[0], C = out_shape[1], H = out_shape[2], W = out_shape[2];
@@ -130,5 +135,6 @@ bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
             graph->remove_node(node);
         }
     }
+    NNFUSION_LOG(INFO) << "TensorCoreRewritePass End";
     return true;
 }

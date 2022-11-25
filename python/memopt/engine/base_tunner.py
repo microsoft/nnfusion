@@ -98,6 +98,7 @@ def eliminate_memcpy(output_nodes):
                 onode.set_inputs(onode_id, edge)
                 eliminated_node_cnt += 1
             elif not inode.is_placeholder() and onode.is_output():
+                if sum([edge.src_id == inode_id for edge in inode.outputs]) > 1: continue
                 onode.set_shape(inode.get_shape(inode_id), overwrite=True)
                 edge = Edge(inode, onode, inode_id, onode_id)
                 inode.set_outputs(inode_id, edge)

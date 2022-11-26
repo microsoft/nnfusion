@@ -124,6 +124,7 @@ class Scheduler:
             else:
                 strides = Stride()
             self.cooperative_fetch(tensor_shared, self.sche, strides)
+            if len(self.shared_outputs) == 0: continue
             tensor_local = self.sche.cache_read(tensor_shared, "local", consumers)
             self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
         return self.sche
@@ -205,7 +206,7 @@ class Scheduler:
             self.cooperative_fetch(tensor_shared, self.sche, strides)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
             consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
-            if len(consumers) == 0:continue
+            if len(consumers) == 0 or len(self.shared_outputs) == 0: continue
             tensor_local = self.sche.cache_read(tensor_shared, "local", consumers)
             self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
 
@@ -280,7 +281,7 @@ class Scheduler:
             self.cooperative_fetch(tensor_shared, self.sche, strides)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
             consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
-            if len(consumers) == 0:continue
+            if len(consumers) == 0 or len(self.shared_outputs) == 0: continue
             tensor_local = self.sche.cache_read(tensor_shared, "local", consumers)
             self.sche[tensor_local].compute_at(self.sche[out], thrd_fused)
 
@@ -522,7 +523,7 @@ class Scheduler:
             self.cooperative_fetch(tensor_shared, self.sche, strides)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
             consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
-            if len(consumers) == 0:continue
+            if len(consumers) == 0 or len(self.shared_outputs) == 0: continue
             tensor_local = self.sche.cache_read(tensor_shared, "local", consumers)
             self.sche[tensor_local].compute_at(self.sche[out], tx)
 

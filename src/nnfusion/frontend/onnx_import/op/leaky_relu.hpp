@@ -63,6 +63,16 @@ namespace nnfusion
 
             } // namespace set_1
 
+            namespace set_6
+            {
+                using set_1::TranslateLeakyReluOp;
+            }
+
+            namespace set_16
+            {
+                using set_1::TranslateLeakyReluOp;
+            }
+
         } //namespace onnx_import
 
     } // namespace frontend

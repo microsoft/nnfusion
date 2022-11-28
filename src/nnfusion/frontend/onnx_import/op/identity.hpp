@@ -41,6 +41,20 @@ namespace nnfusion
                 }
             } // namespace set_1
 
+            namespace set_13
+            {
+                using set_1::TranslateIdentityOp;
+            }
+
+            namespace set_14
+            {
+                using set_1::TranslateIdentityOp;
+            }
+
+            namespace set_16
+            {
+                using set_1::TranslateIdentityOp;
+            }
         } //namespace onnx_import
 
     } // namespace frontend

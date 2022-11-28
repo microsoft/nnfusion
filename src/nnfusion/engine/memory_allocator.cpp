@@ -244,7 +244,7 @@ void nnfusion::MemoryAllocator::free(shared_ptr<descriptor::Tensor> tensor)
     NNFUSION_CHECK(found) << "bad free" << tensor->get_name() << " " << tensor->get_name(false);
 }
 
-void nnfusion::MemoryAllocator::dump(ofstream& out)
+void nnfusion::MemoryAllocator::dump(ostream& out)
 {
     out << m_trace.str();
     out << "max allocated memory:\n" << m_max_allocated << "\n";

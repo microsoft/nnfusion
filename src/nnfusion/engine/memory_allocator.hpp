@@ -51,7 +51,7 @@ namespace nnfusion
                               size_t offset = 0);
         virtual void free(shared_ptr<descriptor::Tensor> tensor);
 
-        void dump(std::ofstream&);
+        void dump(std::ostream&);
         void record(string symbol, shared_ptr<descriptor::Tensor> tensor);
         virtual LanguageUnit_p emit_memory_init();
         virtual LanguageUnit_p emit_memory_alloc();

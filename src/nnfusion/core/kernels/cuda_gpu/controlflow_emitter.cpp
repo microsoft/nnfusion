@@ -36,7 +36,6 @@ LanguageUnit_p cuda::ControlFlowEmitter::emit_function_call()
     //set stream during codegen
     names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
     names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
-    // names.push_back("haha");
     if (FLAGS_ffast_barrier) {
         for (size_t i = 0; i < m_context->tensor_names.size(); i++) {
             if (m_context->tensors[i]->is_memset()) { // be_state_buffer

@@ -490,7 +490,7 @@ namespace nnfusion
                 for (int i = 0; i < ret.size(); i++)
                 {
                     NNFUSION_LOG(INFO) << "node " << node_proto.name() << ", output " << ret[i].name
-                                       << ", shape " << ret[i].gnode_index.get_shape();
+                                       << ", " << *(ret[i].gnode_index.gnode);
                 }
                 return std::move(ret);
             }

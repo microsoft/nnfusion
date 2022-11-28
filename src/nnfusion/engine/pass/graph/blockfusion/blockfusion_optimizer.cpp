@@ -62,14 +62,14 @@ bool BlockFusionWavefrontOptimizer::Optimize()
     {
         std::shared_ptr<std::vector<std::shared_ptr<FusionGroup>>> fuse_groups =
             ExtractFusionGroups();
-        NNFUSION_LOG(INFO) << "fused groups";
-        for (auto fuse_group: *fuse_groups) {
-            std::cout << "-------------------------\n";
-            std::cout << "merge: " << fuse_group->merge;
-            for (size_t node_id: fuse_group->nodes) {
-                std::cout << *(m_nodes[node_id]->node) << "\n";
-            }
-        }
+        // NNFUSION_LOG(INFO) << "fused groups";
+        // for (auto fuse_group: *fuse_groups) {
+        //     std::cout << "-------------------------\n";
+        //     std::cout << "merge: " << fuse_group->merge;
+        //     for (size_t node_id: fuse_group->nodes) {
+        //         std::cout << *(m_nodes[node_id]->node) << "\n";
+        //     }
+        // }
 
         SplitGroup(fuse_groups);
         NNFUSION_LOG(INFO) << "split groups";
@@ -222,6 +222,13 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
         }
     }
     
+    NNFUSION_LOG(INFO) << "verify_node:" << *node << " " << emitted_kernel.second->is_eliminative();
+    if (node->get_op_type() == "Reshape") {
+        auto op = std::dynamic_pointer_cast<op::Reshape>(node->get_op_ptr());
+        if ((!op->get_is_transpose()) || (!op->get_is_layout_change())) return false;
+    }
+    if (emitted_kernel.second->is_eliminative())
+        return false;
     if (!m_is_outmost_graph) { // these ops are specially treated in control flow codegen
         if (node->get_op_type() == "GatherV2")
             return false;
@@ -337,6 +344,10 @@ std::shared_ptr<std::vector<std::shared_ptr<BlockFusionWavefrontOptimizer::Fusio
     for (auto node : m_graph->get_nodes())
     {
         auto tn = m_nodes[node->get_id()];
+        if (!tn->visited)
+        {
+            NNFUSION_LOG(INFO) << "Node " << *node << " is not visited";
+        }
         NNFUSION_CHECK(tn->visited);
         NNFUSION_CHECK(tn->group_id != DEFAULT_GROUP_ID);
     }

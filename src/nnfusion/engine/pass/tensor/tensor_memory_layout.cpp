@@ -33,9 +33,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
     string mem_log_path = tu->m_graph->get_name() + "_" + FLAGS_fmem_log_path;
 
     // Open memory log file.
-    std::ofstream mem_log;
-    if (dump_trace)
-        mem_log.open(mem_log_path);
+    std::ostream& mem_log = std::cout;
 
     NNFUSION_CHECK(tu->memory_allocator_factory == nullptr);
     tu->memory_allocator_factory =
@@ -53,6 +51,8 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             // do not allocate parameter tensors.
             if (gnode && gnode->is_parameter() && !FLAGS_fhost_entry)
                 continue;
+            if (dump_trace)
+                NNFUSION_LOG(INFO) << "Assign memory layout for " << *gnode;
             // Tensors should be considered
             // Node: inputs outputs
             // Kernel Context: +tensors
@@ -178,7 +178,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
     if (dump_trace)
     {
         // close memory log file.
-        mem_log.close();
+        // mem_log.close();
     }
     NNFUSION_LOG(INFO) << "---------------Tensor memory layout pass done.";
     return true;

@@ -829,7 +829,9 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
         {
             if (element::get_backend_cstring(kernel->m_context->outputs[i]->get_element_type()) !=
-                "float")
+                    "float" &&
+                element::get_backend_cstring(kernel->m_context->outputs[i]->get_element_type()) !=
+                    "half")
                 continue;
             auto out_name = kernel->m_context->output_names[i];
             lu << "Debug(\"" << node_name << ", " << out_name << "\", " << out_name << ", \""

@@ -99,7 +99,7 @@ providers = args.provider.split(",")
 if "CPUExecutionProvider" not in providers:
     providers.append("CPUExecutionProvider")
 
-ort_session = ort.InferenceSession(args.file, sess_options, providers=providers)
+ort_session = ort.InferenceSession(model.SerializeToString(), sess_options, providers=providers)
 
 if args.provider != '':
     ort_session.set_providers([args.provider])

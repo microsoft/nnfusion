@@ -53,7 +53,7 @@ namespace nnfusion
                 bool register_antares_kernel();
 
             private:
-                bool parse_block_list();
+                bool parse_allow_and_block_list();
                 void submit_tuning_batch_asyc(
                     std::vector<std::shared_ptr<nnfusion::graph::GNode>>& nodes,
                     std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels,
@@ -67,7 +67,8 @@ namespace nnfusion
                     send_tuning_request(std::string& ir, int64_t step, bool symbolic = false);
 
             private:
-                std::unordered_set<std::string> BlockList;
+                std::unordered_set<std::string> m_block_list;
+                std::unordered_set<std::string> m_allow_list;
                 std::string m_static_tuning_server;
                 std::string m_dynamic_tuning_server;
             };

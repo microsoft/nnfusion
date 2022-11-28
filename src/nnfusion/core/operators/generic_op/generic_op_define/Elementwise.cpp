@@ -99,14 +99,12 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
         NNFUSION_CHECK(false) << "Unsupported elementwise op: " << node->get_op_type();
     }
     // get node dtypes and node op name
-    auto _op_name = iter->first; 
+    auto _op_name = iter->first;
     auto _op_dtype = node->get_element_type();
     auto _op_func = iter->second.func;
     auto _op_expr = iter->second.expr;
-    if(_op_dtype == nnfusion::element::f16 &&
-        (_op_name == "Acos" ||
-         _op_name == "Asin" ||
-         _op_name == "Atan" ))
+    if (_op_dtype == nnfusion::element::f16 &&
+        (_op_name == "Acos" || _op_name == "Asin" || _op_name == "Atan"))
     {
         _op_func += "f";
     }
@@ -133,8 +131,8 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
     }
 
     auto data_layout = op::create_layout_from_dims(node->get_output_shape(0));
-    NNFUSION_LOG(INFO) << op::create_code_from_template(
-        expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
+    // NNFUSION_LOG(INFO) << op::create_code_from_template(
+    //     expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
     return op::create_code_from_template(
         expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
 };

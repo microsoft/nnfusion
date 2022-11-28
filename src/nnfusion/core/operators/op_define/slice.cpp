@@ -25,12 +25,14 @@ using namespace nnfusion::op;
 Slice::Slice(const nnfusion::Shape& lower_bounds,
              const nnfusion::Shape& upper_bounds,
              const nnfusion::Strides& strides,
-             const nnfusion::Shape& out_shape)
+             const nnfusion::Shape& out_shape,
+             const std::vector<int64_t>& steps)
     : Op("Slice")
     , m_lower_bounds(lower_bounds)
     , m_upper_bounds(upper_bounds)
     , m_strides(strides)
     , m_out_shape(out_shape)
+    , m_steps(steps)
 {
 }
 
@@ -42,6 +44,22 @@ Slice::Slice(const nnfusion::Shape& lower_bounds, const nnfusion::Shape& upper_b
 {
 }
 
+namespace nnfusion
+{
+
+static std::ostream& operator<<(std::ostream& s, const std::vector<int64_t>& steps)
+{
+    s << "Steps{";
+    for(int64_t d : steps)
+    {
+        s << " " << d;
+    }
+    s << "}";
+    return s;
+}
+
+}
+
 void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
 {
     // An empty stride vector with lower_bounds/upper_bounds filled in means that we need to
@@ -50,23 +68,30 @@ void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
     {
         m_strides = nnfusion::Strides(m_lower_bounds.size(), 1);
     }
+    if(m_steps.size() == 0)
+    {
+        m_steps = std::vector<int64_t>(m_lower_bounds.size(), 1);
+    }
 
     OP_VALIDATION(this,
                   m_lower_bounds.size() == m_upper_bounds.size() &&
-                      m_lower_bounds.size() == m_strides.size())
+                      m_lower_bounds.size() == m_strides.size() &&
+                      m_lower_bounds.size() == m_steps.size())
         << "Ranks of lower bounds (" << m_lower_bounds << "), upper bounds (" << m_upper_bounds
-        << ") and strides (" << m_strides << ") do not match.";
+        << ") and strides (" << m_strides << ") and steps (" << m_steps << ") do not match.";
 
     size_t output_rank = m_upper_bounds.size();
 
     for (size_t i = 0; i < output_rank; i++)
     {
-        OP_VALIDATION(this, m_lower_bounds[i] <= m_upper_bounds[i])
-            << "Lower bound for slice is greater than upper bound at axis " << i
-            << " (lower bounds: " << m_lower_bounds << ", upper bounds: " << m_upper_bounds << ").";
+        // OP_VALIDATION(this, m_lower_bounds[i] <= m_upper_bounds[i])
+        //     << "Lower bound for slice is greater than upper bound at axis " << i
+        //     << " (lower bounds: " << m_lower_bounds << ", upper bounds: " << m_upper_bounds << ").";
 
         OP_VALIDATION(this, m_strides[i] != 0) << "Stride for slice is zero at axis " << i
                                                << " (strides: " << m_strides << ").";
+        OP_VALIDATION(this, m_steps[i] != 0) << "Step for slice is zero at axis " << i
+                                             << " (strides: " << m_steps << ").";
     }
 
     const nnfusion::PartialShape& input_shape = gnode->get_input_partial_shape(0);
@@ -86,9 +111,10 @@ void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
             << "Upper bound for slice at axis " << i << " is out of range "
             << "(upper bounds: " << m_upper_bounds << ", argument shape: " << input_shape << ").";
 
-        size_t result_axis_size = m_upper_bounds[i] - m_lower_bounds[i];
-        result_axis_size =
-            result_axis_size / m_strides[i] + ((result_axis_size % m_strides[i] == 0) ? 0 : 1);
+        // size_t result_axis_size = m_upper_bounds[i] - m_lower_bounds[i];
+        // result_axis_size =
+        //     result_axis_size / m_strides[i] + ((result_axis_size % m_strides[i] == 0) ? 0 : 1);
+        int64_t result_axis_size = (int64_t)ceil(1.0 * ((int64_t)m_upper_bounds[i] - (int64_t)m_lower_bounds[i]) / m_steps[i]);
         result_dims[i] = result_axis_size;
     }
 

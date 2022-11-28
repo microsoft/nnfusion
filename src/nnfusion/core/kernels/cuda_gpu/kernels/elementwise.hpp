@@ -6,6 +6,9 @@
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"
 #include "matmuladd.hpp"
+
+DECLARE_int32(fmax_block_dim);
+
 namespace nnfusion
 {
     namespace kernels
@@ -135,7 +138,7 @@ namespace nnfusion
                 {
                     uint32_t num_ele = static_cast<uint32_t>(
                         nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-                    for (int i = 256; i >= 64; i >>= 1)
+                    for (int i = FLAGS_fmax_block_dim; i >= 32; i >>= 1)
                     {
                         if (num_ele % i == 0)
                         {
@@ -143,7 +146,7 @@ namespace nnfusion
                             return;
                         }
                     }
-                    for (int i = 256; i >= 32; i--)
+                    for (int i = FLAGS_fmax_block_dim; i >= 32; i--)
                     {
                         if (num_ele % i == 0)
                         {
@@ -154,7 +157,7 @@ namespace nnfusion
                     if (num_ele < 32)
                         grids = 1, blocks = num_ele, bound = 0;
                     else
-                        grids = (num_ele + 255) / 256, blocks = 256, bound = 1;
+                        grids = (num_ele + FLAGS_fmax_block_dim - 1) / FLAGS_fmax_block_dim, blocks = FLAGS_fmax_block_dim, bound = num_ele;
                 }
 
                 // shared_ptr<KernelContext> kernel_ctx;

@@ -11,6 +11,21 @@ namespace nnfusion
     {
         namespace cuda
         {
+            class BlockSoftmaxLastAxis: public BlockCudaEmitter
+            {
+            public:
+                BlockSoftmaxLastAxis(shared_ptr<KernelContext> ctx);
+
+                LanguageUnit_p emit_function_body() override;
+                LanguageUnit_p emit_dependency() override;
+                void set_launch_config() override;
+
+            private:
+                shared_ptr<nnfusion::op::Softmax> m_op;
+                nnfusion::Shape m_input_shape, m_output_shape;
+                size_t m_num_wraps;
+            };
+
             class Softmax : public CudaLibEmitter
             {
             public:

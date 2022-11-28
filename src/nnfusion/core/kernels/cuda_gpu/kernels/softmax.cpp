@@ -8,6 +8,102 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
+DECLARE_int32(fmax_block_dim);
+
+cuda::BlockSoftmaxLastAxis::BlockSoftmaxLastAxis(shared_ptr<KernelContext> ctx): BlockCudaEmitter(ctx) {
+    m_op = dynamic_pointer_cast<nnfusion::op::Softmax>(ctx->gnode->get_op_ptr());
+    NNFUSION_CHECK_NOT_NULLPTR(m_op) << "Only support Softmax op.";
+    m_input_shape = nnfusion::Shape(ctx->inputs[0]->get_shape());
+    m_output_shape = nnfusion::Shape(ctx->outputs[0]->get_shape());
+    m_num_wraps = shape_size(m_input_shape) / m_input_shape[m_input_shape.size() - 1];
+    m_blockDim = dim3(std::min((size_t) FLAGS_fmax_block_dim, m_num_wraps * 32), 1, 1);
+    size_t wrap_per_block = m_blockDim.x / 32;
+    m_gridDim = dim3((m_num_wraps + wrap_per_block - 1) / wrap_per_block, 1, 1);
+}
+
+LanguageUnit_p cuda::BlockSoftmaxLastAxis::emit_function_body()
+{
+    if (m_op->get_axes().size() != 1 || *(m_op->get_axes().begin()) != m_input_shape.size() - 1) {
+        return nullptr;
+    }
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+    auto& lu = *_lu;
+    size_t stride = m_input_shape[m_input_shape.size() - 1];
+    NNFUSION_CHECK(stride % 32 == 0) << "not implemented";
+    size_t local_size = stride / 32;
+    nnfusion::element::Type T = m_context->inputs[0]->get_element_type();
+    std::string exp_str;
+    if (T == nnfusion::element::f32) {
+        exp_str = "expf";
+    } else if (T == nnfusion::element::f64) {
+        exp_str = "exp";
+    } else {
+        NNFUSION_CHECK_FAIL() << "not implemented";
+    }
+    auto code = nnfusion::op::create_code_from_template(
+        R"(
+int wrap_id = blockIdx.x * @WRAP_PER_BLOCK@ + (threadIdx.x >> 5); 
+if (wrap_id > @NUM_WRAPS@) {
+    return;
+}
+int lane_id = threadIdx.x & 31;
+@T@ local[@LOCAL_SIZE@];
+for (int i = 0; i < @LOCAL_SIZE@; i++){
+    local[i] = input0[wrap_id * @STRIDE@ + i];
+}
+@T@ max_value = local[0];
+for (int i = 1; i < @LOCAL_SIZE@; i++){
+    max_value = max(max_value, local[i]);
+}
+max_value = max(max_value, __shfl_xor_sync(0xffffffff, max_value, 16));
+max_value = max(max_value, __shfl_xor_sync(0xffffffff, max_value, 8));
+max_value = max(max_value, __shfl_xor_sync(0xffffffff, max_value, 4));
+max_value = max(max_value, __shfl_xor_sync(0xffffffff, max_value, 2));
+max_value = max(max_value, __shfl_xor_sync(0xffffffff, max_value, 1));
+
+@T@ sum = 0;
+for (int i = 0; i < @LOCAL_SIZE@; i++){
+    local[i] = @EXP@(local[i] - max_value);
+    sum += local[i];
+}
+
+sum += __shfl_xor_sync(0xffffffff, sum, 16);
+sum += __shfl_xor_sync(0xffffffff, sum, 8);
+sum += __shfl_xor_sync(0xffffffff, sum, 4);
+sum += __shfl_xor_sync(0xffffffff, sum, 2);
+sum += __shfl_xor_sync(0xffffffff, sum, 1);
+
+for (int i = 0; i < @LOCAL_SIZE@; i++){
+    output0[wrap_id * @STRIDE@ + i] = local[i] / sum;
+}
+)",                     {
+                                {"LOCAL_SIZE", stride / 32},
+                                {"STRIDE", stride},
+                                {"NUM_WRAPS", m_num_wraps},
+                                {"WRAP_PER_BLOCK", m_blockDim.x / 32},
+                                {"EXP", exp_str},
+                                {"T", T.c_type_string()},
+                        });
+    lu << code;
+    return _lu;
+}
+
+LanguageUnit_p cuda::BlockSoftmaxLastAxis::emit_dependency()
+{
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+    return _lu;
+}
+
+void cuda::BlockSoftmaxLastAxis::set_launch_config()
+{
+    // have been set in constructor
+}
+
+REGISTER_KERNEL_EMITTER(
+    "Softmax",                                                                     // op_name
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+    cuda::BlockSoftmaxLastAxis)                                                                 // constructor
+
 cuda::Softmax::Softmax(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
 {

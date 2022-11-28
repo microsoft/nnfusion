@@ -129,7 +129,45 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
 
 #define REGISTER_ELEM_OP(op_name)                                                                  \
     REGISTER_OP(op_name)                                                                           \
-        .infershape(nnfusion::op::infershape::copy_shape_from_inputs)                              \
+        .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {                               \
+            int num_inputs = gnode->get_input_size();                                              \
+            auto shape = gnode->get_input_shape(0);                                                \
+            for (int i = 1; i < num_inputs; i++)                                                  \
+            {                                                                                      \
+                auto input_shape = gnode->get_input_shape(i);                                     \
+                while (shape.size() < input_shape.size())                                         \
+                {                                                                                  \
+                    shape.insert(shape.begin(), 1);                                               \
+                }                                                                                  \
+                while (shape.size() > input_shape.size())                                         \
+                {                                                                                  \
+                    input_shape.insert(input_shape.begin(), 1);                                   \
+                }                                                                                  \
+                for (int j = 0; j < shape.size(); j++)                                            \
+                {                                                                                  \
+                    if (shape[j] == 1)                                                             \
+                    {                                                                              \
+                        shape[j] = input_shape[j];                                                 \
+                    }                                                                              \
+                    else if (input_shape[j] == 1)                                                 \
+                    {                                                                              \
+                        continue;                                                                  \
+                    }                                                                              \
+                    else if (shape[j] != input_shape[j])                                           \
+                    {                                                                              \
+                        NNFUSION_CHECK(false) << "Shape mismatch: " << shape << " vs "             \
+                                               << input_shape;                                     \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            NNFUSION_LOG(INFO) << "op_type " << gnode->get_op_type();                              \
+            auto dtype = gnode->get_input_element_type(0);                                         \
+            if (gnode->get_op_type() == "Select")                                                  \
+            {                                                                                      \
+                dtype = gnode->get_input_element_type(2);                                          \
+            }                                                                                      \
+            gnode->set_output_type_and_shape(0, dtype, shape);                                     \
+        })                                                                                         \
         .translate_v2([](std::shared_ptr<graph::GNode> node) -> std::string {                      \
             return trans_elementwise(node);                                                        \
         })                                                                                         \

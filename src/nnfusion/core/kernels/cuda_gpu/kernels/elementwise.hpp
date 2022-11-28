@@ -86,9 +86,10 @@ namespace nnfusion
                             lu << "output0[" << tid << "] = " << invoke_func << "(";
                             for (size_t i = 0; i < num_inputs - 1; i++)
                             {
-                                lu << "input" << i << "[" << tid << "], ";
+                                std::string idx = tid;
+                                lu << "input" << i << "[" << (shape_size(m_context->inputs[i]->get_shape()) > 1 ? tid : std::to_string(0)) << "], ";
                             }
-                            lu << "input" << num_inputs - 1 << "[" << tid << "]);\n";
+                            lu << "input" << num_inputs - 1 << "[" << (shape_size(m_context->inputs[num_inputs - 1]->get_shape()) > 1 ? tid : std::to_string(0)) << "]);\n";
                         }
                     }
                     return lu_;

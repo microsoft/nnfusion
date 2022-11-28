@@ -6,6 +6,8 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
+DECLARE_int32(fmax_block_dim);
+
 cuda::Reshape::Reshape(shared_ptr<KernelContext> ctx)
     : BlockCudaEmitter(ctx)
 {
@@ -556,7 +558,42 @@ LanguageUnit_p cuda::ReshapeMemcpy::emit_function_signature()
     return _lu;
 }
 
-// Register Reshape kernel emitter
+cuda::ReshapeMemcpyBlock::ReshapeMemcpyBlock(shared_ptr<KernelContext> ctx): Reshape(ctx) {}
+
+LanguageUnit_p cuda::ReshapeMemcpyBlock::emit_function_body()
+{
+    if (!is_memcpy && !is_noop)
+    {
+        return nullptr;
+    }
+
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+    auto& lu = *_lu;
+
+    if (is_memcpy)
+    {
+        size_t arg_size = shape_size(arg_shape);
+        lu << "uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;\n";
+        lu << "if (tid >= " << arg_size << ") { return; }\n";
+        lu << "output0[tid] = input0[tid];\n";
+    }
+    else
+    {
+        lu << "// noop as input0 == output0.\n";
+    }
+
+    return _lu;
+}
+
+void cuda::ReshapeMemcpyBlock::set_launch_config() {
+    size_t arg_size = shape_size(arg_shape);
+    uint32_t nthreads = arg_size;
+    uint32_t block_size_x = FLAGS_fmax_block_dim;
+    uint32_t aligned_grid_size_x = align_to_block_size(nthreads, block_size_x);
+
+    m_gridDim = dim3(aligned_grid_size_x, 1, 1);
+    m_blockDim = dim3(block_size_x, 1, 1);
+}
 
 REGISTER_KERNEL_EMITTER(
     "Reshape",                                                                       // op_name
@@ -577,3 +614,8 @@ REGISTER_KERNEL_EMITTER(
     "Reshape",                                                                 // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_lib").Priority(2), // attrs
     cuda::ReshapeMemcpy)                                                       // constructor
+
+REGISTER_KERNEL_EMITTER(
+    "Reshape",
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel_D").Priority(2),
+    cuda::ReshapeMemcpyBlock)

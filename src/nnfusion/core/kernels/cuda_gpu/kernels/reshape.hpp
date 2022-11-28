@@ -18,6 +18,7 @@ namespace nnfusion
 
                 //LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;
+                bool get_is_memcpy() { return is_memcpy; }
                 //void set_launch_config() override;
 
             protected:
@@ -72,6 +73,15 @@ namespace nnfusion
                 NVShape input_strides;
                 NVShape output_strides;
                 NVShape trans_strides;
+            };
+
+            class ReshapeMemcpyBlock: public Reshape
+            {
+            public:
+                ReshapeMemcpyBlock(shared_ptr<KernelContext> ctx);
+
+                LanguageUnit_p emit_function_body() override;
+                void set_launch_config() override;
             };
 
             class ReshapeMemcpy : public CudaLibEmitter

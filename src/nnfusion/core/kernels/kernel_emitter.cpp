@@ -10,6 +10,8 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DECLARE_bool(fextern_result_memory);
+DECLARE_bool(fantares_mode);
+DECLARE_string(fdefault_device);
 
 KernelContext::KernelContext(shared_ptr<graph::GNode> gnode)
     : gnode(gnode)
@@ -132,7 +134,7 @@ LanguageUnit_p KernelEmitter::emit_function_signature()
     {
         stringstream ss;
         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-        // defult name is: "persit0", "persist1" ...
+        // default name is: "persit0", "persist1" ...
         ss << m_context->tensors[i]->get_name();
         params.push_back(ss.str());
     }
@@ -252,9 +254,20 @@ FunctionUnit_p KernelEmitter::emit_source()
         return fu;
     }
 
+    // a hack way to map int64 to long long
+    auto replace_cstring = [](LanguageUnit_p lp) {
+        if (lp && FLAGS_fantares_mode && FLAGS_fdefault_device != "HLSL")
+        {
+            auto lp_str = lp->get_code();
+            lp_str = replace_sub_str(lp_str, "uint64_t", "unsigned long long");
+            lp_str = replace_sub_str(lp_str, "int64_t", "long long");
+            lp->modify_code(lp_str);
+        }
+        return lp;
+    };
     // emit function units
-    NNFUSION_CHECK_NOT_NULLPTR(fu->signature_unit = emit_function_signature());
-    fu->body_unit = emit_function_body();
+    NNFUSION_CHECK_NOT_NULLPTR(fu->signature_unit = replace_cstring(emit_function_signature()));
+    fu->body_unit = replace_cstring(emit_function_body());
     if (!fu->body_unit)
     {
         return nullptr;
@@ -272,7 +285,7 @@ FunctionUnit_p KernelEmitter::emit_source()
     fu->call_unit->clean_require();
     fu->body_unit->clean_require();
 
-    // orgnize dep
+    // organize dep
     NNFUSION_CHECK(fu->body_unit->require(fu->dep_unit));
     NNFUSION_CHECK(fu->call_unit->require(fu->body_unit));
 

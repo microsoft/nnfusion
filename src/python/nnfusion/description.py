@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+from .dtypes import canonical_type
 
 class IODescription(object):
     """ A hashable description for NNFusion model input/output.
@@ -17,7 +18,7 @@ class IODescription(object):
             self._shape = tuple(shape)
         else:
             self._shape = (1, )
-        self._dtype = dtype
+        self._dtype = canonical_type(dtype)
         self._num_classes = num_classes
 
     @property

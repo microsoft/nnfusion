@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <bitset>
 #include <cmath>       // std::floor
 #include <cstddef>     // std::size_t
 #include <iterator>    // std::begin, std::end
@@ -36,19 +37,83 @@ namespace nnfusion
     {
         namespace onnx_import
         {
+            class Tensor;
+            class Node;
+
+            const nnfusion::element::Type& ONNXDataTypeToNNFusionElementType(int onnx_dt);
+
+            std::shared_ptr<op::Constant> make_constant_op(const element::Type& type,
+                                                           const Shape& shape,
+                                                           const Tensor& tensor);
+
+            std::shared_ptr<op::Constant> make_constant_op(const Tensor& tensor);
+
+            std::shared_ptr<graph::GNode> GetInputNode(const NodeMap& all_ng_nodes,
+                                                       const onnx::NodeProto& node,
+                                                       size_t input_idx);
+
+            nnfusion::graph::GNodeIndex GetInputIndex(const NodeMap& all_ng_nodes,
+                                                      const onnx::NodeProto& node,
+                                                      size_t input_idx);
+
+            graph::GNodeVector GetAllInputNode(const NodeMap& all_ng_nodes,
+                                               const onnx::NodeProto& node);
+
+            GNodeIndexVector GetAllInputIndex(const NodeMap& all_ng_nodes,
+                                              const onnx::NodeProto& node);
+
             namespace detail
             {
+                inline bool is_int_type(int type)
+                {
+                    return type == onnx::TensorProto_DataType_BOOL ||
+                           type == onnx::TensorProto_DataType_UINT8 ||
+                           type == onnx::TensorProto_DataType_UINT16 ||
+                           type == onnx::TensorProto_DataType_UINT32 ||
+                           type == onnx::TensorProto_DataType_UINT64 ||
+                           type == onnx::TensorProto_DataType_INT8 ||
+                           type == onnx::TensorProto_DataType_INT16 ||
+                           type == onnx::TensorProto_DataType_INT32 ||
+                           type == onnx::TensorProto_DataType_INT64;
+                }
+
+                inline bool is_float_type(int type)
+                {
+                    return type == onnx::TensorProto_DataType_FLOAT ||
+                           type == onnx::TensorProto_DataType_FLOAT16 ||
+                           type == onnx::TensorProto_DataType_DOUBLE ||
+                           type == onnx::TensorProto_DataType_BFLOAT16;
+                }
+
+                inline bool is_str_type(int type)
+                {
+                    return type == onnx::TensorProto_DataType_STRING;
+                }
+
+                inline bool is_complex_type(int type)
+                {
+                    return type == onnx::TensorProto_DataType_COMPLEX64 ||
+                           type == onnx::TensorProto_DataType_COMPLEX128;
+                }
+
+                inline std::string onnx_type_name(int type)
+                {
+                    static auto desc = onnx::TensorProto_DataType_descriptor();
+                    std::string type_name = desc->FindValueByNumber(type)->name();
+                    return type_name;
+                }
+
                 template <typename T, typename Container>
                 inline std::vector<T> __get_data(const Container& container)
                 {
                     return {std::begin(container), std::end(container)};
                 }
 
-                template <typename T>
+                template <typename T, typename S = T>
                 inline std::vector<T> __get_raw_data(const std::string& raw_data)
                 {
-                    auto it = reinterpret_cast<const T*>(raw_data.data());
-                    return {it, it + (raw_data.size() / sizeof(T))};
+                    auto it = reinterpret_cast<const S*>(raw_data.data());
+                    return {it, it + (raw_data.size() / sizeof(S))};
                 }
 
                 template <typename T>
@@ -56,148 +121,240 @@ namespace nnfusion
                 {
                     NNFUSION_CHECK_FAIL()
                         << tensor.name() << " "
-                        << "unsupported data type: "
-                        << static_cast<onnx::TensorProto_DataType>(tensor.data_type());
+                        << "unsupported data type: " << onnx_type_name(tensor.data_type());
+                    return std::vector<T>();
+                }
+
+                template <typename T, unsigned int W = sizeof(T)>
+                inline std::vector<T> __get_int_data(const onnx::TensorProto& tensor)
+                {
+                    if (!is_int_type(tensor.data_type()))
+                    {
+                        NNFUSION_CHECK_FAIL()
+                            << "Unsupported conversion, target type: "
+                            << element::from<T>().c_type_string()
+                            << ", onnx type: " << onnx_type_name(tensor.data_type());
+                    }
+
+                    // forbid narrowing conversions
+                    nnfusion::element::Type ele_type =
+                        ONNXDataTypeToNNFusionElementType(tensor.data_type());
+                    if (ele_type.size() > W)
+                    {
+                        NNFUSION_CHECK_FAIL()
+                            << "Unsupported narrowing conversion, target type: "
+                            << element::from<T>().c_type_string()
+                            << ", onnx type: " << onnx_type_name(tensor.data_type());
+                    }
+
+                    if (tensor.has_raw_data())
+                    {
+                        if (tensor.data_type() == onnx::TensorProto_DataType_BOOL ||
+                            tensor.data_type() == onnx::TensorProto_DataType_INT8)
+                        {
+                            return __get_raw_data<T, char>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_UINT8)
+                        {
+                            return __get_raw_data<T, uint8_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_INT16)
+                        {
+                            return __get_raw_data<T, int16_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_UINT16)
+                        {
+                            return __get_raw_data<T, uint16_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_INT32)
+                        {
+                            return __get_raw_data<T, int32_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_UINT32)
+                        {
+                            return __get_raw_data<T, uint32_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_INT64)
+                        {
+                            return __get_raw_data<T, int64_t>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_UINT64)
+                        {
+                            return __get_raw_data<T, uint64_t>(tensor.raw_data());
+                        }
+                        else
+                        {
+                            NNFUSION_CHECK_FAIL();
+                        }
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_BOOL ||
+                        tensor.data_type() == onnx::TensorProto_DataType_UINT8 ||
+                        tensor.data_type() == onnx::TensorProto_DataType_INT8 ||
+                        tensor.data_type() == onnx::TensorProto_DataType_UINT16 ||
+                        tensor.data_type() == onnx::TensorProto_DataType_INT16 ||
+                        tensor.data_type() == onnx::TensorProto_DataType_INT32)
+                    {
+                        return __get_data<T>(tensor.int32_data());
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_UINT32 ||
+                        tensor.data_type() == onnx::TensorProto_DataType_UINT64)
+                    {
+                        return __get_data<T>(tensor.uint64_data());
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_INT64)
+                    {
+                        return __get_data<T>(tensor.int64_data());
+                    }
+
+                    NNFUSION_CHECK_FAIL() << "invalid data type: "
+                                          << onnx_type_name(tensor.data_type());
+                    return std::vector<T>();
+                }
+
+                template <typename T, unsigned int W = sizeof(T)>
+                inline std::vector<T> __get_float_data(const onnx::TensorProto& tensor)
+                {
+                    if (tensor.data_type() == onnx::TensorProto_DataType_BFLOAT16)
+                    {
+                        NNFUSION_CHECK_FAIL() << "BF16 not support yet";
+                    }
+
+                    if (!is_float_type(tensor.data_type()))
+                    {
+                        NNFUSION_CHECK_FAIL()
+                            << "Unsupported conversion, target type: "
+                            << element::from<T>().c_type_string()
+                            << ", onnx type: " << onnx_type_name(tensor.data_type());
+                    }
+
+                    // forbid narrowing conversions
+                    nnfusion::element::Type ele_type =
+                        ONNXDataTypeToNNFusionElementType(tensor.data_type());
+                    if (ele_type.size() > W)
+                    {
+                        NNFUSION_CHECK_FAIL()
+                            << "Unsupported narrowing conversion, target type: "
+                            << element::from<T>().c_type_string()
+                            << ", onnx type: " << onnx_type_name(tensor.data_type());
+                    }
+
+                    if (tensor.has_raw_data())
+                    {
+                        if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT16)
+                        {
+                            return __get_raw_data<T, half_float::half>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT)
+                        {
+                            return __get_raw_data<T, float>(tensor.raw_data());
+                        }
+                        else if (tensor.data_type() == onnx::TensorProto_DataType_DOUBLE)
+                        {
+                            return __get_raw_data<T, double>(tensor.raw_data());
+                        }
+                        else
+                        {
+                            NNFUSION_CHECK_FAIL();
+                        }
+                    }
+
+                    // onnx store float16 bit-wise in int32_data
+                    if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT16)
+                    {
+                        auto raw = __get_data<int32_t>(tensor.int32_data());
+                        std::vector<half_float::half> fp16_data(raw.size());
+                        for (size_t i = 0; i < raw.size(); i++)
+                        {
+                            NNFUSION_CHECK((raw[i] & 0xFFFF0000) == 0)
+                                << "Invalid float16 data: "
+                                << std::bitset<8 * sizeof(raw[i])>(raw[i]);
+                            fp16_data[i].set_raw_data(static_cast<uint16_t>(raw[i] & 0x0000FFFF));
+                        }
+                        return {std::begin(fp16_data), std::end(fp16_data)};
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT)
+                    {
+                        return __get_data<T>(tensor.float_data());
+                    }
+
+                    if (tensor.data_type() == onnx::TensorProto_DataType_DOUBLE)
+                    {
+                        return __get_data<T>(tensor.double_data());
+                    }
+
+                    NNFUSION_CHECK_FAIL() << "invalid data type: "
+                                          << onnx_type_name(tensor.data_type());
                     return std::vector<T>();
                 }
 
                 template <>
-                inline std::vector<half_float::half> get_data(const onnx::TensorProto& tensor)
+                inline std::vector<int8_t> get_data(const onnx::TensorProto& tensor)
                 {
-                    if (tensor.has_raw_data())
-                    {
-                        return __get_raw_data<half_float::half>(tensor.raw_data());
-                    }
-                    NNFUSION_CHECK_FAIL()
-                        << "invalid data type: "
-                        << onnx::TensorProto_DataType_Name(
-                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
-
-                    return std::vector<half_float::half>();
+                    return __get_int_data<int8_t>(tensor);
                 }
 
                 template <>
-                inline std::vector<double> get_data(const onnx::TensorProto& tensor)
+                inline std::vector<uint8_t> get_data(const onnx::TensorProto& tensor)
                 {
-                    if (tensor.has_raw_data())
-                    {
-                        return __get_raw_data<double>(tensor.raw_data());
-                    }
-                    switch (tensor.data_type())
-                    {
-                    case onnx::TensorProto_DataType_DOUBLE:
-                        return __get_data<double>(tensor.double_data());
-                    case onnx::TensorProto_DataType_FLOAT:
-                    case onnx::TensorProto_DataType_FLOAT16:
-                        return __get_data<double>(tensor.float_data());
-                    case onnx::TensorProto_DataType_INT32:
-                        return __get_data<double>(tensor.int32_data());
-                    case onnx::TensorProto_DataType_INT64:
-                        return __get_data<double>(tensor.int64_data());
-                    case onnx::TensorProto_DataType_UINT64:
-                        return __get_data<double>(tensor.uint64_data());
-                    default:
-                        NNFUSION_CHECK_FAIL()
-                            << "invalid data type: "
-                            << onnx::TensorProto_DataType_Name(
-                                   static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
-                        break;
-                    }
-                    return std::vector<double>();
+                    return __get_int_data<uint8_t>(tensor);
                 }
 
                 template <>
-                inline std::vector<float> get_data(const onnx::TensorProto& tensor)
+                inline std::vector<int16_t> get_data(const onnx::TensorProto& tensor)
                 {
-                    if (tensor.has_raw_data())
-                    {
-                        return __get_raw_data<float>(tensor.raw_data());
-                    }
+                    return __get_int_data<int16_t>(tensor);
+                }
 
-                    if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT16)
-                    {
-                        nnfusion::Shape shape{std::begin(tensor.dims()), std::end(tensor.dims())};
-                        size_t num_element = shape_size(shape);
-                        std::vector<int32_t> raw_data = __get_data<int32_t>(tensor.int32_data());
-                        std::vector<float> ret((num_element + 1) / 2, 0.0);
-                        uint32_t* src_p = (uint32_t*)raw_data.data();
-                        uint16_t* dst_p = (uint16_t*)ret.data();
-                        for (size_t i = 0; i < num_element; i++)
-                        {
-                            NNFUSION_CHECK((src_p[i] & 0xFFFF0000) == 0);
-                            dst_p[i] = src_p[i] & 0x0000FFFF;
-                        }
-                        if (num_element % 2 == 1)
-                        {
-                            dst_p[num_element] = 0;
-                        }
-
-                        return ret;
-                    }
-                    if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT)
-                    {
-                        return __get_data<float>(tensor.float_data());
-                    }
-                    if (tensor.data_type() == onnx::TensorProto_DataType_INT32)
-                    {
-                        return __get_data<float>(tensor.int32_data());
-                    }
-                    if (tensor.data_type() == onnx::TensorProto_DataType_INT64)
-                    {
-                        return __get_data<float>(tensor.int64_data());
-                    }
-                    if (tensor.data_type() == onnx::TensorProto_DataType_UINT64)
-                    {
-                        return __get_data<float>(tensor.uint64_data());
-                    }
-                    NNFUSION_CHECK_FAIL()
-                        << "invalid data type: "
-                        << onnx::TensorProto_DataType_Name(
-                               static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
-                    return std::vector<float>();
+                template <>
+                inline std::vector<uint16_t> get_data(const onnx::TensorProto& tensor)
+                {
+                    return __get_int_data<uint16_t>(tensor);
                 }
 
                 template <>
                 inline std::vector<int32_t> get_data(const onnx::TensorProto& tensor)
                 {
-                    if (tensor.has_raw_data())
-                    {
-                        return __get_raw_data<int32_t>(tensor.raw_data());
-                    }
-                    if (tensor.data_type() == onnx::TensorProto_DataType_INT32)
-                    {
-                        return __get_data<int32_t>(tensor.int32_data());
-                    }
-                    NNFUSION_CHECK_FAIL() << "invalid data type: "
-                                          << onnx::TensorProto_DataType_Name(
-                                                 onnx::TensorProto_DataType(tensor.data_type()));
-                    return std::vector<int32_t>();
+                    return __get_int_data<int32_t>(tensor);
+                }
+
+                template <>
+                inline std::vector<uint32_t> get_data(const onnx::TensorProto& tensor)
+                {
+                    return __get_int_data<uint32_t>(tensor);
                 }
 
                 template <>
                 inline std::vector<int64_t> get_data(const onnx::TensorProto& tensor)
                 {
-                    if (tensor.has_raw_data())
-                    {
-                        return __get_raw_data<int64_t>(tensor.raw_data());
-                    }
-                    NNFUSION_CHECK(tensor.data_type() == onnx::TensorProto_DataType_INT64);
-
-                    return __get_data<int64_t>(tensor.int64_data());
+                    return __get_int_data<int64_t>(tensor);
                 }
 
                 template <>
                 inline std::vector<uint64_t> get_data(const onnx::TensorProto& tensor)
                 {
-                    if (tensor.has_raw_data())
-                    {
-                        return __get_raw_data<uint64_t>(tensor.raw_data());
-                    }
-                    NNFUSION_CHECK(tensor.data_type() == onnx::TensorProto_DataType_UINT64)
-                        << "invalid data type: "
-                        << onnx::TensorProto_DataType_Name(
-                               static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
-                    return __get_data<uint64_t>(tensor.uint64_data());
+                    return __get_int_data<uint64_t>(tensor);
+                }
+
+                template <>
+                inline std::vector<half_float::half> get_data(const onnx::TensorProto& tensor)
+                {
+                    return __get_float_data<half_float::half>(tensor);
+                }
+
+                template <>
+                inline std::vector<float> get_data(const onnx::TensorProto& tensor)
+                {
+                    return __get_float_data<float>(tensor);
+                }
+
+                template <>
+                inline std::vector<double> get_data(const onnx::TensorProto& tensor)
+                {
+                    return __get_float_data<double>(tensor);
                 }
 
                 /// \brief      Fill specified range with monotonic sequence.
@@ -222,35 +379,6 @@ namespace nnfusion
                     }
                 }
             }
-
-            class Tensor;
-            class Node;
-
-            bool ONNXDataTypeToNNFusionElementType(const onnx::TensorProto_DataType onnx_dt,
-                                                   nnfusion::element::Type* nnfusion_et);
-
-            template <typename T>
-            std::shared_ptr<op::Constant> make_constant_op(const element::Type& type,
-                                                           const Shape shape,
-                                                           const Tensor& tensor);
-
-            std::shared_ptr<op::Constant> make_constant_op(const onnx::TensorProto_DataType onnx_et,
-                                                           const Shape shape,
-                                                           const Tensor& tensor);
-
-            std::shared_ptr<graph::GNode> GetInputNode(const NodeMap& all_ng_nodes,
-                                                       const onnx::NodeProto& node,
-                                                       size_t input_idx);
-
-            nnfusion::graph::GNodeIndex GetInputIndex(const NodeMap& all_ng_nodes,
-                                                      const onnx::NodeProto& node,
-                                                      size_t input_idx);
-
-            graph::GNodeVector GetAllInputNode(const NodeMap& all_ng_nodes,
-                                               const onnx::NodeProto& node);
-
-            GNodeIndexVector GetAllInputIndex(const NodeMap& all_ng_nodes,
-                                              const onnx::NodeProto& node);
 
             /// \brief      Return the monotonic sequence.
             ///

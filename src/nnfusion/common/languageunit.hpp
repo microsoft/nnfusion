@@ -61,6 +61,7 @@ namespace nnfusion
         string collect_required_code();
         virtual void execute(bool append = true);
         virtual void divide_code();
+        void modify_code(const string& code);
 
     protected:
         virtual bool setpwd();
@@ -98,7 +99,7 @@ namespace nnfusion
             return sig;
         }
 
-        string get_specialized_funciton_call(string func_name = "")
+        string get_specialized_function_call(string func_name = "")
         {
             NNFUSION_CHECK_NOT_NULLPTR(this->name_unit);
             NNFUSION_CHECK_NOT_NULLPTR(this->call_unit);

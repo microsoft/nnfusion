@@ -25,7 +25,7 @@ namespace nnfusion
     {
         class CodeWriter;
     }
-}
+} // namespace nnfusion
 
 class nnfusion::codegen::CodeWriter
 {
@@ -79,7 +79,13 @@ public:
         indent--;
         *this << "}\n";
     }
+    void clear()
+    {
+        m_ss.clear(); //clear any bits set
+        m_ss.str(std::string());
+    }
 
+    void set_stringstream(std::string new_s) { m_ss = std::stringstream(new_s); }
 private:
     std::stringstream m_ss;
     bool m_pending_indent;

@@ -191,25 +191,26 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
     writer << "extern \"C\" double " << fu->name_unit->get_code() << "_host(";
     for (size_t i = 0; i + 1 < arg.size(); i++)
     {
-        writer << arg[i]->get_element_type().c_type_string() << "* " << arg_name_dedupe[i]
-               << "_host, ";
+        writer << element::get_backend_cstring(arg[i]->get_element_type()) << "* "
+               << arg_name_dedupe[i] << "_host, ";
     }
     if (!arg.empty())
     {
-        writer << arg.back()->get_element_type().c_type_string() << "* " << arg_name_dedupe.back();
+        writer << element::get_backend_cstring(arg.back()->get_element_type()) << "* "
+               << arg_name_dedupe.back();
         if (!out.empty())
             writer << "_host, ";
     }
 
     for (size_t i = 0; i + 1 < out.size(); i++)
     {
-        writer << out[i]->get_element_type().c_type_string() << "* " << out_name_dedupe[i]
-               << "_host, ";
+        writer << element::get_backend_cstring(out[i]->get_element_type()) << "* "
+               << out_name_dedupe[i] << "_host, ";
     }
     if (!out.empty())
     {
-        writer << out.back()->get_element_type().c_type_string() << "* " << out_name_dedupe.back()
-               << "_host";
+        writer << element::get_backend_cstring(out.back()->get_element_type()) << "* "
+               << out_name_dedupe.back() << "_host";
     }
     writer << ")\n";
 
@@ -235,7 +236,8 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
         }
 
         auto tensor_declare = [](const shared_ptr<nnfusion::descriptor::Tensor>& t) -> std::string {
-            return t->get_element_type().c_type_string() + "* " + t->get_name() + ";\n";
+            return element::get_backend_cstring(t->get_element_type()) + "* " + t->get_name() +
+                   ";\n";
         };
 
         auto tensor_alloc_cuda = [](const shared_ptr<nnfusion::descriptor::Tensor>& tensor) {
@@ -247,8 +249,9 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
 
         auto tensor_alloc_host = [](const shared_ptr<nnfusion::descriptor::Tensor>& tensor) {
             stringstream s;
-            s << tensor->get_name() << " = new " << tensor->get_element_type().c_type_string()
-              << "[" << tensor->size(false) << "];\n";
+            s << tensor->get_name() << " = new "
+              << element::get_backend_cstring(tensor->get_element_type()) << "["
+              << tensor->size(false) << "];\n";
             return s.str();
         };
 
@@ -440,22 +443,24 @@ bool CudaDefaultRuntime::codegen(const ProfilingContext::Pointer& ke)
         writer << "return " << fu->name_unit->get_code() << "_host(";
         for (size_t i = 0; i + 1 < arg.size() + out.size(); i++)
         {
-            string type = i < arg.size()
-                              ? arg[i]->get_element_type().c_type_string()
-                              : (i - arg.size() < out.size()
-                                     ? out[i - arg.size()]->get_element_type().c_type_string()
-                                     : "");
+            string type =
+                i < arg.size()
+                    ? element::get_backend_cstring(arg[i]->get_element_type())
+                    : (i - arg.size() < out.size()
+                           ? element::get_backend_cstring(out[i - arg.size()]->get_element_type())
+                           : "");
             writer << "(" << type << "*)" << (i < arg.size() ? "args" : "outputs") << "["
                    << i - (i >= arg.size() ? arg.size() : 0) << "], ";
         }
         if (arg.size() + out.size() > 0)
         {
             int i = arg.size() + out.size() - 1;
-            string type = i < arg.size()
-                              ? arg[i]->get_element_type().c_type_string()
-                              : (i - arg.size() < out.size()
-                                     ? out[i - arg.size()]->get_element_type().c_type_string()
-                                     : "");
+            string type =
+                i < arg.size()
+                    ? element::get_backend_cstring(arg[i]->get_element_type())
+                    : (i - arg.size() < out.size()
+                           ? element::get_backend_cstring(out[i - arg.size()]->get_element_type())
+                           : "");
             writer << "(" << type << "*)" << (out.size() == 0 ? "args" : "outputs") << "["
                    << i - (i >= arg.size() ? arg.size() : 0) << "]";
         }
@@ -496,10 +501,10 @@ bool CudaDefaultRuntime::compile(const ProfilingContext::Pointer& ke)
 
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
         return false;
@@ -755,25 +760,26 @@ void CUPTIAPI bufferCompleted(CUcontext ctx, uint32_t streamId, uint8_t *buffer,
     writer << "extern \"C\" double " << fu->name_unit->get_code() << "_host(";
     for (size_t i = 0; i + 1 < arg.size(); i++)
     {
-        writer << arg[i]->get_element_type().c_type_string() << "* " << arg_name_dedupe[i]
-               << "_host, ";
+        writer << element::get_backend_cstring(arg[i]->get_element_type()) << "* "
+               << arg_name_dedupe[i] << "_host, ";
     }
     if (!arg.empty())
     {
-        writer << arg.back()->get_element_type().c_type_string() << "* " << arg_name_dedupe.back();
+        writer << element::get_backend_cstring(arg.back()->get_element_type()) << "* "
+               << arg_name_dedupe.back();
         if (!out.empty())
             writer << "_host, ";
     }
 
     for (size_t i = 0; i + 1 < out.size(); i++)
     {
-        writer << out[i]->get_element_type().c_type_string() << "* " << out_name_dedupe[i]
-               << "_host, ";
+        writer << element::get_backend_cstring(out[i]->get_element_type()) << "* "
+               << out_name_dedupe[i] << "_host, ";
     }
     if (!out.empty())
     {
-        writer << out.back()->get_element_type().c_type_string() << "* " << out_name_dedupe.back()
-               << "_host";
+        writer << element::get_backend_cstring(out.back()->get_element_type()) << "* "
+               << out_name_dedupe.back() << "_host";
     }
     writer << ")\n";
 
@@ -795,7 +801,8 @@ void CUPTIAPI bufferCompleted(CUcontext ctx, uint32_t streamId, uint8_t *buffer,
         }
 
         auto tensor_declare = [](const shared_ptr<nnfusion::descriptor::Tensor>& t) -> std::string {
-            return t->get_element_type().c_type_string() + "* " + t->get_name() + ";\n";
+            return element::get_backend_cstring(t->get_element_type()) + "* " + t->get_name() +
+                   ";\n";
         };
 
         auto tensor_alloc_cuda = [](const shared_ptr<nnfusion::descriptor::Tensor>& tensor) {
@@ -807,8 +814,9 @@ void CUPTIAPI bufferCompleted(CUcontext ctx, uint32_t streamId, uint8_t *buffer,
 
         auto tensor_alloc_host = [](const shared_ptr<nnfusion::descriptor::Tensor>& tensor) {
             stringstream s;
-            s << tensor->get_name() << " = new " << tensor->get_element_type().c_type_string()
-              << "[" << tensor->size(false) << "];\n";
+            s << tensor->get_name() << " = new "
+              << element::get_backend_cstring(tensor->get_element_type()) << "["
+              << tensor->size(false) << "];\n";
             return s.str();
         };
 
@@ -979,22 +987,24 @@ void CUPTIAPI bufferCompleted(CUcontext ctx, uint32_t streamId, uint8_t *buffer,
         writer << "return " << fu->name_unit->get_code() << "_host(";
         for (size_t i = 0; i + 1 < arg.size() + out.size(); i++)
         {
-            string type = i < arg.size()
-                              ? arg[i]->get_element_type().c_type_string()
-                              : (i - arg.size() < out.size()
-                                     ? out[i - arg.size()]->get_element_type().c_type_string()
-                                     : "");
+            string type =
+                i < arg.size()
+                    ? element::get_backend_cstring(arg[i]->get_element_type())
+                    : (i - arg.size() < out.size()
+                           ? element::get_backend_cstring(out[i - arg.size()]->get_element_type())
+                           : "");
             writer << "(" << type << "*)" << (i < arg.size() ? "args" : "outputs") << "["
                    << i - (i >= arg.size() ? arg.size() : 0) << "], ";
         }
         if (arg.size() + out.size() > 0)
         {
             int i = arg.size() + out.size() - 1;
-            string type = i < arg.size()
-                              ? arg[i]->get_element_type().c_type_string()
-                              : (i - arg.size() < out.size()
-                                     ? out[i - arg.size()]->get_element_type().c_type_string()
-                                     : "");
+            string type =
+                i < arg.size()
+                    ? element::get_backend_cstring(arg[i]->get_element_type())
+                    : (i - arg.size() < out.size()
+                           ? element::get_backend_cstring(out[i - arg.size()]->get_element_type())
+                           : "");
             writer << "(" << type << "*)" << (out.size() == 0 ? "args" : "outputs") << "["
                    << i - (i >= arg.size() ? arg.size() : 0) << "]";
         }
@@ -1035,10 +1045,10 @@ bool CUPTIRuntime::compile(const ProfilingContext::Pointer& ke)
                    .c_str());
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
         return false;

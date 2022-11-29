@@ -25,7 +25,7 @@ nnf_tgt_dir = "share/nnfusion"
 nnf_blacklist = ["cmake_install.cmake", "Makefile", "CMakeFiles", "__pycache__", "CMakeLists.txt"]
 
 if not os.path.exists(nnf_bin):
-    print("Pleast build nnfusion in /build folder.")
+    print("Please build nnfusion in /build folder.")
     sys.exit(-1)
 
 

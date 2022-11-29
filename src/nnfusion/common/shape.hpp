@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstdio>
+#include <memory>
 #include <vector>
 
 #include "nnfusion/common/axis_set.hpp"
@@ -24,6 +25,7 @@
 
 namespace nnfusion
 {
+    class SymShape;
     /// \brief Shape for a tensor.
     class Shape : public std::vector<size_t>
     {
@@ -41,6 +43,7 @@ namespace nnfusion
         Shape(const Shape& axis_lengths)
             : std::vector<size_t>(axis_lengths)
         {
+            (*this) = axis_lengths;
         }
 
         explicit Shape(size_t n, size_t initial_value = 0)
@@ -58,13 +61,25 @@ namespace nnfusion
         Shape& operator=(const Shape& v)
         {
             static_cast<std::vector<size_t>*>(this)->operator=(v);
+            if (v.get_sym_shape())
+            {
+                this->sym_shape = v.get_sym_shape();
+            }
             return *this;
         }
         Shape& operator=(Shape&& v)
         {
             static_cast<std::vector<size_t>*>(this)->operator=(v);
+            if (v.get_sym_shape())
+            {
+                this->sym_shape = v.get_sym_shape();
+            }
             return *this;
         }
+        std::shared_ptr<SymShape> get_sym_shape() const { return sym_shape; }
+        void set_sym_shape(std::shared_ptr<SymShape>);
+        bool is_dynamic() const;
+        std::shared_ptr<SymShape> sym_shape;
     };
 
     /// Number of elements in spanned by a shape

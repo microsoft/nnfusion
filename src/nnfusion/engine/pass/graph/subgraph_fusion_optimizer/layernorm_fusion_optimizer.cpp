@@ -332,7 +332,7 @@ bool LayerNormFusionOptimizer::fuse_subgraph(SubGraphRecord::Pointer subgraph_re
     //     return false;
     // }
 
-    // todo: move the check to subgraph defination
+    // todo: move the check to subgraph definition
     {
         auto input_shape_0 = input_node->get_output_shape(0);
         auto input_shape_1 = scale->get_output_shape(0);

@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import argparse
 import importlib.machinery
 from types import FunctionType, MethodType
@@ -144,7 +145,7 @@ def get_type_info(typestr):
         return ("float", 4, np.finfo(np.float32).min, np.finfo(np.float32).max)
     if typestr == "double":
         return ("double", 8, np.finfo(np.double).min, np.finfo(np.double).max)
-    if typestr == "int" or typestr == "int32":
+    if typestr == "int" or typestr == "int32" or typestr == "int32_t":
         return ("int", 4, np.iinfo(np.int32).min, np.iinfo(np.int32).max)
     if typestr == "int64" or typestr == "long long" or typestr == "int64_t":
         return ("int64_t", 8, np.iinfo(np.int64).min, np.iinfo(np.int64).max)
@@ -161,3 +162,19 @@ def get_antares_type_str(typestr):
         return "int32"
     if typestr == "int64" or typestr == "int64_t" or typestr == "long long":
         return "int64"
+
+def read_file(file_name):
+    with open(os.path.join(os.path.dirname(__file__), file_name)) as f:
+        lines = f.readlines()
+        return "".join(lines)
+
+def list_tempalte_args(content_str):
+    # match and list all variables begin with "__" and end with "__"
+    res = re.findall(r"__\w+__", content_str)
+    return set(res)
+
+def replace_tempalte_args(content_str, parameters):
+    tkeys = list_tempalte_args(content_str)
+    for tkey in list(tkeys):
+        content_str = content_str.replace(tkey, parameters[tkey])
+    return content_str

@@ -63,6 +63,7 @@ target_link_libraries(unit-test PRIVATE
     nnfusion_serialize
     nnfusion_graph
     nnfusion_ir
+    frontend_util
     # Engine related
     nnfusion_engine_base 
     nnfusion_engine_profiler

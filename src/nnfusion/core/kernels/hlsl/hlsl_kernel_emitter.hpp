@@ -69,8 +69,9 @@ namespace nnfusion
 
                         kernel_info =
                             nnfusion::kernels::AntaresKEImp::get_kernel_info(antares_code);
-
-                        NNFUSION_CHECK(!kernel_info.empty());
+                        NNFUSION_CHECK(!kernel_info.empty())
+                            << "Can not extract kernel info from antares response: \n antares IR: "
+                            << ir << "\n antares response: " << antares_code;
                         process_antares_kernel_info();
                     }
                 }
@@ -86,6 +87,9 @@ namespace nnfusion
             protected:
                 // map tensor names and allocate tmp tensor
                 void process_antares_kernel_info();
+                void find_launch_config(const std::string& str,
+                                        std::map<std::string, std::string>& symbol_expr,
+                                        std::string& block_num);
                 std::string ir, options;
                 std::vector<AntaresKernelInfo::Pointer> kernel_info;
                 std::unordered_map<std::string, std::string>

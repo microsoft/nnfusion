@@ -29,7 +29,7 @@ namespace nnfusion
                 Shape shape{4, 3};
                 auto A = make_shared<op::Parameter>(element::f32, shape);
                 auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
-                auto r = make_shared<op::ArgMin>(0, element::f32);
+                auto r = make_shared<op::ArgMin>(0, 0, 0, element::f32);
                 auto r_gnode = graph->add_node_and_edge(r, {A_gnode});
                 return r_gnode;
             }
@@ -39,7 +39,7 @@ namespace nnfusion
                 Shape shape{2, 2, 5, 5};
                 auto A = make_shared<op::Parameter>(element::f32, shape);
                 auto A_gnode = graph->add_node_and_edge(A, GNodeVector({}));
-                auto r = make_shared<op::ArgMin>(3, element::f32);
+                auto r = make_shared<op::ArgMin>(3, 0, 0, element::f32);
                 auto r_gnode = graph->add_node_and_edge(r, {A_gnode});
                 return r_gnode;
             }

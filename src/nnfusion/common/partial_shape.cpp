@@ -26,6 +26,10 @@ PartialShape::PartialShape(const Shape& shape)
     : PartialShape(true, {})
 {
     m_dimensions.assign(shape.begin(), shape.end());
+    if (shape.is_dynamic())
+    {
+        sym_shape = shape.get_sym_shape();
+    }
 }
 
 bool nnfusion::PartialShape::is_static() const
@@ -71,7 +75,12 @@ std::ostream& nnfusion::operator<<(std::ostream& str, const PartialShape& shape)
             str << d;
             first = false;
         }
-        return (str << "}");
+        (str << "}");
+        if (shape.sym_shape)
+        {
+            str << " sym: " << (*shape.sym_shape);
+        }
+        return str;
     }
     else
     {
@@ -213,7 +222,12 @@ Shape PartialShape::to_shape() const
         throw std::invalid_argument("to_shape was called on a dynamic shape.");
     }
 
-    return Shape(m_dimensions.begin(), m_dimensions.end());
+    Shape ret(m_dimensions.begin(), m_dimensions.end());
+    if (sym_shape)
+    {
+        ret.sym_shape = sym_shape;
+    }
+    return ret;
 }
 
 bool PartialShape::merge_into(PartialShape& dst, const PartialShape& src)

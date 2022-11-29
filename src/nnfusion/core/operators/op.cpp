@@ -22,17 +22,33 @@
 #include <typeinfo>
 
 #include "nnfusion/core/graph/gnode.hpp"
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "op.hpp"
-
 using namespace std;
 using namespace nnfusion::op;
 
 atomic<size_t> Op::m_next_instance_id(0);
+atomic<size_t> Op::m_next_constant_id(0);
+atomic<size_t> Op::m_graph_id(0);
+
+DEFINE_bool(fsymbolic, false, "support symbolic shape");
+
+void Op::reset_next_instance_id()
+{
+    m_next_instance_id = 0;
+    m_next_constant_id = 0;
+}
+
+void Op::increase_graph_id()
+{
+    m_graph_id++;
+}
 
 Op::Op(const std::string& op_type)
     : m_op_type(op_type)
-    , m_instance_id(m_next_instance_id.fetch_add(1))
-    , m_unique_name(get_op_type() + "_" + to_string(m_instance_id))
+    , m_instance_id(op_type == "Constant" ? m_next_constant_id.fetch_add(1)
+                                          : m_next_instance_id.fetch_add(1))
+    , m_unique_name(get_op_type() + "_" + to_string(m_instance_id) + "_" + to_string(m_graph_id))
 {
 }
 
@@ -46,6 +62,67 @@ void Op::constructor_validate_and_infer_types(std::shared_ptr<graph::GNode> gnod
     if (in_transition)
     {
         validate_and_infer_types(gnode);
+    }
+}
+
+void Op::revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
+{
+    //validate_and_infer_types(gnode);
+    if (FLAGS_fsymbolic)
+    {
+        bool has_symbolic_shape = false;
+        for (auto input : gnode->get_inputs())
+        {
+            if (input->get_shape().is_dynamic())
+            {
+                has_symbolic_shape = true;
+                NNFUSION_LOG(INFO)
+                    << gnode->get_op_type()
+                    << " Get Symbolic Input: " << (*input->get_shape().get_sym_shape());
+            }
+        }
+        if (has_symbolic_shape)
+        {
+            const std::unordered_set<std::string> symbolic_infer_ops({"GatherV2",
+                                                                      "Add",
+                                                                      "Subtract",
+                                                                      "Concat",
+                                                                      "Divide",
+                                                                      "Exp",
+                                                                      "Reshape",
+                                                                      "Convert",
+                                                                      "Broadcast",
+                                                                      "BatchMatMul",
+                                                                      "Select",
+                                                                      "Result",
+                                                                      "Softmax",
+                                                                      "Max",
+                                                                      "Sum",
+                                                                      "Dot"});
+            if (std::dynamic_pointer_cast<op::ElementwiseArithmetic>(gnode->get_op_ptr()) ==
+                    nullptr &&
+                symbolic_infer_ops.find(gnode->get_op_type()) == symbolic_infer_ops.end())
+            {
+                NNFUSION_CHECK(false) << "Unsupported op for symbolic input: "
+                                      << gnode->get_op_type();
+            }
+            (*gnode)["symbolic"] = true;
+        }
+    }
+
+    validate_and_infer_types(gnode);
+    if (FLAGS_fsymbolic)
+    {
+        for (auto output : gnode->get_outputs())
+        {
+            if (output->get_shape().is_dynamic())
+            {
+                (*gnode)["symbolic"] = true;
+                NNFUSION_LOG(INFO)
+                    << gnode->get_op_type()
+                    << " Get Symbolic Output: " << (*output->get_shape().get_sym_shape());
+            }
+        }
     }
 }
 
@@ -126,11 +203,11 @@ std::tuple<nnfusion::element::Type, nnfusion::PartialShape>
     {
         for (size_t i = 1; i < input_size; ++i)
         {
-            OP_VALIDATION(this,
-                          nnfusion::element::Type::merge(
-                              element_type, element_type, gnode->get_input_element_type(i)))
-                << "Argument element types are inconsistent: " << element_type << ", "
-                << gnode->get_input_element_type(i);
+            // OP_VALIDATION(this,
+            //               nnfusion::element::Type::merge(
+            //                   element_type, element_type, gnode->get_input_element_type(i)))
+            //     << "Argument element types are inconsistent: " << element_type << ", "
+            //     << gnode->get_input_element_type(i);
 
             OP_VALIDATION(
                 this, nnfusion::PartialShape::merge_into(pshape, gnode->get_input_partial_shape(i)))

@@ -105,7 +105,7 @@ To build from source code, please read the following documents:
 
 ### Speedups on benchmarks
 
-To learn how much performance improvement that NNFusion can acheive on some typical DNN models, please refer to the [README page](https://github.com/microsoft/nnfusion/blob/osdi20_artifact/artifacts/README.md) at our OSDI'20 artifact branch. 
+To learn how much performance improvement that NNFusion can archive on some typical DNN models, please refer to the [README page](https://github.com/microsoft/nnfusion/blob/osdi20_artifact/artifacts/README.md) at our OSDI'20 artifact branch. 
 
 # Contributing
 

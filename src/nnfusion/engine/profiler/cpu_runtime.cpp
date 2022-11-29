@@ -11,6 +11,7 @@
 #include <limits.h>
 
 #include "cpu_runtime.hpp"
+#include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/core/kernels/cpu/cpu_langunit.hpp"
 #include "nnfusion/core/kernels/cpu/reference/reference_common.hpp"
 
@@ -81,33 +82,38 @@ bool ReferenceRuntime::codegen(const ProfilingContext::Pointer& ke)
     writer << "extern \"C\" double " << fu->name_unit->get_code() << "_host(";
     for (size_t i = 0; i + 1 < arg.size(); i++)
     {
-        writer << arg[i]->get_element_type().c_type_string() << "* " << arg[i]->get_name() << ", ";
+        writer << element::get_backend_cstring(arg[i]->get_element_type()) << "* "
+               << arg[i]->get_name() << ", ";
     }
     if (!arg.empty())
     {
-        writer << arg.back()->get_element_type().c_type_string() << "* " << arg.back()->get_name();
+        writer << element::get_backend_cstring(arg.back()->get_element_type()) << "* "
+               << arg.back()->get_name();
         if (!out.empty())
             writer << ", ";
     }
 
     for (size_t i = 0; i + 1 < out.size(); i++)
     {
-        writer << out[i]->get_element_type().c_type_string() << "* " << out[i]->get_name() << ", ";
+        writer << element::get_backend_cstring(out[i]->get_element_type()) << "* "
+               << out[i]->get_name() << ", ";
     }
     if (!out.empty())
     {
-        writer << out.back()->get_element_type().c_type_string() << "* " << out.back()->get_name();
+        writer << element::get_backend_cstring(out.back()->get_element_type()) << "* "
+               << out.back()->get_name();
     }
     writer << ")\n";
 
     auto tensor_declare = [](const shared_ptr<nnfusion::descriptor::Tensor>& t) -> std::string {
-        return t->get_element_type().c_type_string() + "* " + t->get_name() + ";\n";
+        return element::get_backend_cstring(t->get_element_type()) + "* " + t->get_name() + ";\n";
     };
 
     auto tensor_alloc_host = [](const shared_ptr<nnfusion::descriptor::Tensor>& tensor) {
         stringstream s;
-        s << tensor->get_name() << " = new " << tensor->get_element_type().c_type_string() << "["
-          << tensor->size(false) << "];\n";
+        s << tensor->get_name() << " = new "
+          << element::get_backend_cstring(tensor->get_element_type()) << "[" << tensor->size(false)
+          << "];\n";
         return s.str();
     };
 
@@ -167,22 +173,24 @@ bool ReferenceRuntime::codegen(const ProfilingContext::Pointer& ke)
         writer << "return " << fu->name_unit->get_code() << "_host(";
         for (size_t i = 0; i + 1 < arg.size() + out.size(); i++)
         {
-            string type = i < arg.size()
-                              ? arg[i]->get_element_type().c_type_string()
-                              : (i - arg.size() < out.size()
-                                     ? out[i - arg.size()]->get_element_type().c_type_string()
-                                     : "");
+            string type =
+                i < arg.size()
+                    ? element::get_backend_cstring(arg[i]->get_element_type())
+                    : (i - arg.size() < out.size()
+                           ? element::get_backend_cstring(out[i - arg.size()]->get_element_type())
+                           : "");
             writer << "(" << type << "*)" << (i < arg.size() ? "args" : "outputs") << "["
                    << i - (i >= arg.size() ? arg.size() : 0) << "], ";
         }
         if (arg.size() + out.size() > 0)
         {
             int i = arg.size() + out.size() - 1;
-            string type = i < arg.size()
-                              ? arg[i]->get_element_type().c_type_string()
-                              : (i - arg.size() < out.size()
-                                     ? out[i - arg.size()]->get_element_type().c_type_string()
-                                     : "");
+            string type =
+                i < arg.size()
+                    ? element::get_backend_cstring(arg[i]->get_element_type())
+                    : (i - arg.size() < out.size()
+                           ? element::get_backend_cstring(out[i - arg.size()]->get_element_type())
+                           : "");
             writer << "(" << type << "*)" << (out.size() == 0 ? "args" : "outputs") << "["
                    << i - (i >= arg.size() ? arg.size() : 0) << "]";
         }
@@ -209,10 +217,10 @@ bool ReferenceRuntime::compile(const ProfilingContext::Pointer& ke)
     int ret = system(("gcc\t-fPIC\t-shared\t-std=c++11\t" + srcname + "\t-o\t" + objname).c_str());
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
         return false;
@@ -222,30 +230,34 @@ bool ReferenceRuntime::compile(const ProfilingContext::Pointer& ke)
 
 double ReferenceRuntime::invoke(const ProfilingContext::Pointer& ke, void** input, void** output)
 {
-    // Replacing Existed Kernel with Reference Kenel
-    auto& gnode = ke->kernel->m_context->gnode;
-    std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(
-            gnode->get_op_type(), GENERIC_CPU, element::f32);
-    shared_ptr<KernelContext> ctx(new KernelContext(gnode));
-
-    bool has_valid_kernel = false;
-    for (auto kernel_reg : kernel_regs)
+    // Replacing existed kernel with reference kernel if existed kernel is not reference kernel
+    if (std::dynamic_pointer_cast<nnfusion::kernels::cpu::AntaresCpuReferenceKernelEmitter>(
+            ke->kernel) == nullptr)
     {
-        if (kernel_reg->m_tag != "reference")
-            continue;
-        auto kernel = kernel_reg->m_factory(ctx);
-        if (kernel->get_or_emit_source())
+        auto& gnode = ke->kernel->m_context->gnode;
+        std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
+            KernelRegistry::Global()->FindKernelRegistrations(
+                gnode->get_op_type(), GENERIC_CPU, element::f32);
+        shared_ptr<KernelContext> ctx(new KernelContext(gnode));
+
+        bool has_valid_kernel = false;
+        for (auto kernel_reg : kernel_regs)
         {
-            has_valid_kernel = true;
-            NNFUSION_LOG(INFO) << "Replacing with reference kenel.";
-            // Replacing the kernel;
-            ke->kernel = kernel;
+            if (kernel_reg->m_tag != "reference")
+                continue;
+            auto kernel = kernel_reg->m_factory(ctx);
+            if (kernel->get_or_emit_source())
+            {
+                has_valid_kernel = true;
+                NNFUSION_LOG(INFO) << "Replacing with reference kenel.";
+                // Replacing the kernel;
+                ke->kernel = kernel;
+            }
         }
+        if (!has_valid_kernel)
+            return -1.0;
     }
 
-    if (!has_valid_kernel)
-        return -1.0;
     if (codegen(ke) == false)
         return -1.0;
     if (compile(ke) == false)
@@ -612,7 +624,7 @@ add_library(${TARGET_NAME} SHARED ${SOURCE_FILE})
         if (it.second->symbol == "header::cblas")
         {
             lu_cmake << R"(
-set(NNFUSION_THIRDPARTY_FOLDER "~/repo/Thirdparty" CACHE STRING "NNFusion Thirdpary libraries folder location")
+set(NNFUSION_THIRDPARTY_FOLDER "~/repo/Thirdparty" CACHE STRING "NNFusion Thirdparty libraries folder location")
 if(EXISTS "${NNFUSION_THIRDPARTY_FOLDER}")
 else()
 message(SEND_ERROR "NNFUSION_THIRDPARTY_FOLDER not exists." )
@@ -840,10 +852,10 @@ bool CPUDefaultRuntime::compile(const ProfilingContext::Pointer& ke)
     int ret = system((cmd.c_str()));
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
         return false;
@@ -872,7 +884,7 @@ bool CPUDefaultRuntime::general_compile()
     int ret = system((cmd.c_str()));
     if (ret != 0)
         return false;
-    if (!file_exsits(objname))
+    if (!file_exists(objname))
         return false;
 
     status = chdir("../");
@@ -918,7 +930,7 @@ double
 
     std::string objname = working_dir + std::string("libcpu_kernel_prof") + DLIB_SUFFIX;
     auto obj = get_library_handle(objname);
-    auto entry = get_funcion_pointer(
+    auto entry = get_function_pointer(
         ke->kernel->get_or_emit_source()->name_unit->get_code() + "_entry", obj);
     if (entry == nullptr)
     {

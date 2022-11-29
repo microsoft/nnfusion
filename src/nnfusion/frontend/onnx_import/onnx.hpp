@@ -23,7 +23,7 @@
 
 #include <iostream>
 #include <string>
-
+#include "nnfusion/common/symbolic_shape.hpp"
 #include "nnfusion/core/graph/graph.hpp"
 
 namespace nnfusion
@@ -33,6 +33,6 @@ namespace nnfusion
         // Convert an ONNX model to a nnfusion graph
         std::shared_ptr<nnfusion::graph::Graph>
             load_onnx_model(const std::string&,
-                            const std::unordered_map<std::string, size_t>& dim_params = {});
+                            const std::unordered_map<std::string, SymDim>& dim_params = {});
     } // namespace frontend
 } // namespace nnfusion

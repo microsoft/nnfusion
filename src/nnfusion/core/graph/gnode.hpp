@@ -102,7 +102,8 @@ namespace nnfusion
 
             ///  out edges
             std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_out_edges() const;
-            std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_output_users(size_t i);
+            std::vector<std::shared_ptr<nnfusion::graph::Edge>>
+                get_output_users(size_t i, bool include_control_edge = true);
 
             void add_out_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
             void remove_out_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
@@ -170,6 +171,10 @@ namespace nnfusion
 
             void set_implementation(std::string impl) { m_implementation = impl; };
             std::string get_implementation() { return m_implementation; };
+            void add_symbol(SymDim symbol) { m_symbols.insert(symbol); }
+            std::set<SymDim>& get_symbols() { return m_symbols; }
+            static void reset_next_instance_id();
+
         protected:
             int64_t m_id; // m_id is for graph, the index in graph m_nodes
             size_t m_instance_id;
@@ -186,6 +191,8 @@ namespace nnfusion
 
             std::vector<std::shared_ptr<Input>> m_inputs;
             std::vector<std::shared_ptr<Output>> m_outputs;
+
+            std::set<SymDim> m_symbols;
         };
 
         class OpContext

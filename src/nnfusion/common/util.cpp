@@ -60,6 +60,17 @@ std::string nnfusion::tmpnam(int* status)
     return tmp_dir;
 }
 
+std::string nnfusion::replace_sub_str(std::string str, std::string src, std::string dst)
+{
+    size_t start_pos = 0;
+    while ((start_pos = str.find(src, start_pos)) != std::string::npos)
+    {
+        str.replace(start_pos, src.length(), dst);
+        start_pos += dst.length();
+    }
+    return str;
+};
+
 // std::string nnfusion::to_cplusplus_sourcecode_literal(bool val)
 // {
 //     return val ? "true" : "false";
@@ -261,7 +272,7 @@ void nnfusion::aligned_free(void* p)
 //     // are still connected to the bprop graph as parameters
 //     nnfusion::clone_nodes(bprop->get_ops(), *(fprop_cache.node_param_map));
 
-//     // invert the fprop_cache cloned node map for easy back and for acces.
+//     // invert the fprop_cache cloned node map for easy back and for access.
 //     std::unordered_map<std::shared_ptr<Node>, std::shared_ptr<Node>> inverted_node_map;
 //     for (auto kv : fprop_cache.node_param_map->get_node_map())
 //     {

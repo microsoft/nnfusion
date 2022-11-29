@@ -512,7 +512,7 @@ INSERT INTO KernelCache(key_code, key_op, device_type, cost) VALUES(?, ?, ?, ?);
             ///\brief This function will generate a reference kernel for the GNode
             void set_profiling_context(shared_ptr<GNode> gnode, ProfilingContext::Pointer kctx)
             {
-                // Need to check unique_name wether it works.
+                // Need to check unique_name whether it works.
                 if (prof_cache.find(gnode->get_unique_name()) == prof_cache.end())
                 {
                     prof_cache[gnode->get_unique_name()] = kctx;

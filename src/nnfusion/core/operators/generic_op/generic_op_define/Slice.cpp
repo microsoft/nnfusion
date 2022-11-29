@@ -25,9 +25,11 @@ REGISTER_OP(Slice)
         auto op = static_pointer_cast<nnfusion::op::Slice>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
 
-        auto steps = op->get_strides();
+        auto steps = op->get_steps();
         auto starts = op->get_lower_bounds();
         auto ends = op->get_upper_bounds();
+        auto outs = curr->get_output_shape(0);
+
         auto output_layout = op::create_layout_from_dims(curr->get_output_shape(0));
         std::string slice_dims;
         std::vector<std::string> input_layout;
@@ -36,10 +38,30 @@ REGISTER_OP(Slice)
             auto step = steps[d];
             auto start = starts[d];
             auto end = ends[d];
-            auto range = (u_int64_t)ceil((double)(end-start)/(double)step);
-            input_layout.push_back((step == 1? output_layout[d] : output_layout[d] + " * " + to_string(step))  + " + " + to_string(start));
-            slice_dims += (slice_dims.empty() ? "" : " , ") + output_layout[d] +
-                         " in " + to_string(range);
+            auto range = (int64_t)ceil((double)((int64_t)end - (int64_t)start) / step);
+            NNFUSION_CHECK(range == outs[d]);
+            auto start_str = to_string(start);
+            if (starts.get_sym_shape() && starts.get_sym_shape()->at(d).is_dynamic())
+            {
+                auto& dim = starts.get_sym_shape()->at(d);
+                start_str = "alter(`" + dim.expr_to_symbol(dim.sym()) + ":" +
+                            std::to_string(dim.max()) + "`)";
+                curr->add_symbol(dim);
+                (*curr)["symbolic"] = true;
+            }
+            auto range_str = to_string(range);
+            if (outs.get_sym_shape() && outs.get_sym_shape()->at(d).is_dynamic())
+            {
+                auto& dim = outs.get_sym_shape()->at(d);
+                NNFUSION_CHECK(range == dim.max());
+                range_str = dim.expr_to_symbol(dim.sym()) + ":" + std::to_string(dim.max());
+                curr->add_symbol(dim);
+                (*curr)["symbolic"] = true;
+            }
+            input_layout.push_back(
+                (step == 1 ? output_layout[d] : output_layout[d] + " * " + to_string(step)) +
+                " + " + start_str);
+            slice_dims += (slice_dims.empty() ? "" : " , ") + output_layout[d] + " in " + range_str;
         }
 
         auto expression_code = op::create_code_from_template(

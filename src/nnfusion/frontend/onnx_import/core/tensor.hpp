@@ -65,46 +65,7 @@ namespace nnfusion
                     NNFUSION_CHECK(m_tensor_proto->has_data_type())
                         << "tensor has no data type specified.";
 
-                    switch (m_tensor_proto->data_type())
-                    {
-                    case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
-                        return element::boolean;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
-                        return element::f32;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
-                        return element::f16;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
-                        return element::f64;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_INT8: return element::i8;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_INT16:
-                        return element::i16;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_INT32:
-                        return element::i32;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_INT64:
-                        return element::i64;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_UINT8: return element::u8;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_UINT16:
-                        return element::u16;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_UINT32:
-                        return element::u32;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_UINT64:
-                        return element::u64;
-                    case onnx::TensorProto_DataType::TensorProto_DataType_UNDEFINED:
-                        NNFUSION_CHECK_FAIL() << "data type is not defined";
-                        break;
-                    default:
-                        NNFUSION_CHECK_FAIL()
-                            << "unsupported data type: "
-                            << onnx::TensorProto_DataType_Name(
-                                   onnx::TensorProto_DataType(m_tensor_proto->data_type()));
-                        break;
-                    }
-                    return element::f32;
-                }
-
-                operator onnx::TensorProto_DataType() const
-                {
-                    return onnx::TensorProto_DataType(m_tensor_proto->data_type());
+                    return ONNXDataTypeToNNFusionElementType(m_tensor_proto->data_type());
                 }
 
             private:

@@ -40,9 +40,20 @@ namespace nnfusion
                     auto data_index = input_indexes[0];
 
                     Node node(node_proto);
-                    float ratio = node.get_attribute_value<float>("ratio", 0.5);
-                    NNFUSION_CHECK(ratio == 0) << "please set dropout ratio to 0";
-                    return {{node_proto.output(0), data_index}};
+                    int is_test = node.get_attribute_value<int64_t>("is_test", 0);
+                    NNFUSION_CHECK(is_test == 0) << "Dropout only support inference mode";
+
+                    if (node_proto.output_size() == 2)
+                    {
+                        auto mask = std::make_shared<op::Constant>(data_index.get_element_type(),
+                                                                   data_index.get_shape(),
+                                                                   std::vector<std::string>{"1"});
+                        auto mask_gnode = m_graph->add_node_and_edge(mask, GNodeVector({}));
+                        return {{node_proto.output(0), data_index},
+                                {node_proto.output(1), mask_gnode}};
+                    }
+                    else
+                        return {{node_proto.output(0), data_index}};
                 }
 
                 NamedNodeVector
@@ -119,6 +130,106 @@ namespace nnfusion
                     return {{node_proto.output(0), generic_gnode}};
                 }
             } // namespace set_1
+
+            namespace set_6
+            {
+                using set_1::TranslateDropoutOp;
+            } // namespace set_6
+
+            namespace set_7
+            {
+                NamedNodeVector TranslateDropoutOp(const onnx::NodeProto& node_proto,
+                                                   const NodeMap& all_ng_nodes,
+                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+                    auto data_index = input_indexes[0];
+
+                    Node node(node_proto);
+                    float ratio = node.get_attribute_value<float>("ratio", 0.5);
+                    NNFUSION_CHECK(ratio == 0) << "Dropout only support inference mode";
+                    if (node_proto.output_size() == 2)
+                    {
+                        auto mask = std::make_shared<op::Constant>(data_index.get_element_type(),
+                                                                   data_index.get_shape(),
+                                                                   std::vector<std::string>{"1"});
+                        auto mask_gnode = m_graph->add_node_and_edge(mask, GNodeVector({}));
+                        return {{node_proto.output(0), data_index},
+                                {node_proto.output(1), mask_gnode}};
+                    }
+                    else
+                        return {{node_proto.output(0), data_index}};
+                }
+            } // namespace set_7
+
+            namespace set_10
+            {
+                NamedNodeVector TranslateDropoutOp(const onnx::NodeProto& node_proto,
+                                                   const NodeMap& all_ng_nodes,
+                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+                    auto data_index = input_indexes[0];
+
+                    Node node(node_proto);
+                    float ratio = node.get_attribute_value<float>("ratio", 0.5);
+                    NNFUSION_CHECK(ratio == 0) << "Dropout only support inference mode";
+
+                    if (node_proto.output_size() == 2)
+                    {
+                        auto mask = std::make_shared<op::Constant>(element::boolean,
+                                                                   data_index.get_shape(),
+                                                                   std::vector<std::string>{"1"});
+                        auto mask_gnode = m_graph->add_node_and_edge(mask, GNodeVector({}));
+                        return {{node_proto.output(0), data_index},
+                                {node_proto.output(1), mask_gnode}};
+                    }
+                    else
+                        return {{node_proto.output(0), data_index}};
+                }
+            } // namespace set_10
+
+            namespace set_12
+            {
+                NamedNodeVector TranslateDropoutOp(const onnx::NodeProto& node_proto,
+                                                   const NodeMap& all_ng_nodes,
+                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+                    auto data_index = input_indexes[0];
+
+                    bool training_mode = true;
+                    if (input_indexes.size() == 1)
+                    {
+                        training_mode = false;
+                    }
+                    else if (input_indexes.size() == 3)
+                    {
+                        std::vector<char> buffer;
+                        NNFUSION_CHECK(GetValueFromNGraphOp(input_indexes[2].gnode, &buffer));
+                        training_mode = buffer[0];
+                    }
+
+                    NNFUSION_CHECK(training_mode == false)
+                        << "Dropout only support inference mode.";
+                    if (node_proto.output_size() == 2)
+                    {
+                        auto mask = std::make_shared<op::Constant>(element::boolean,
+                                                                   data_index.get_shape(),
+                                                                   std::vector<std::string>{"1"});
+                        auto mask_gnode = m_graph->add_node_and_edge(mask, GNodeVector({}));
+                        return {{node_proto.output(0), data_index},
+                                {node_proto.output(1), mask_gnode}};
+                    }
+                    else
+                        return {{node_proto.output(0), data_index}};
+                }
+            } // namespace set_12
+
+            namespace set_13
+            {
+                using set_12::TranslateDropoutOp;
+            } // namespace set_13
         }     //namespace onnx_import
     }         // namespace frontend
 } // namespace  nnfusion

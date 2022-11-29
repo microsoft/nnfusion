@@ -6,6 +6,7 @@
 #include <sstream>
 #include <utility>
 
+#include "nnfusion/common/util.hpp"
 #include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/kernels/hlsl/hlsl_kernel_emitter.hpp"
@@ -17,19 +18,30 @@ using namespace nnfusion::kernels;
 using namespace nnfusion::pass::graph;
 
 DEFINE_int64(fkernel_tuning_steps, 0, "Enable automatic kernel tuning for maximum N steps.");
+DEFINE_int64(fdump_and_tune_irs, 0, "1 for dump irs, and 2 for load irs to tune");
+DEFINE_double(fretuning_bar,
+              0.0,
+              "retry the tuning if existing kernel latency is higher than the bar (ms)");
 DEFINE_string(ftuning_blocklist,
               "",
               "List of op types that skip kernel tuning pass, e.g., \"Softmax,Add\"");
+DEFINE_string(
+    ftuning_allowlist,
+    "",
+    "List of op types to tune kernel, e.g., \"Softmax,Add\", this will ignore the blocklist");
 DEFINE_string(fantares_perf_file, "./antares_perf.csv", "File to save Antares kernel performance.");
 DEFINE_string(ftuning_platform, "", "Antares platform: e.g., win64, xbox, etc.");
+DEFINE_string(ftuning_agent, "", "Antares tuning agent ip address");
 DECLARE_bool(fantares_mode);
 DECLARE_string(fantares_codegen_server);
 DECLARE_string(fproduct_name);
 DECLARE_string(fdefault_device);
+DECLARE_bool(fsymbolic);
 
-std::string send_tuning_request(std::string& ir, int64_t step)
+std::string KernelTuning::send_tuning_request(std::string& ir, int64_t step, bool symbolic)
 {
-    CurlRequest req(FLAGS_fantares_codegen_server);
+    auto server = symbolic ? m_dynamic_tuning_server : m_static_tuning_server;
+    CurlRequest req(server);
     req.add_custom_header(("COMPUTE_V1: " + ir).c_str());
     req.add_custom_header(("STEP: " + std::to_string(step)).c_str());
 
@@ -112,8 +124,27 @@ void dump_perf(std::string filename,
     out.close();
 }
 
+void dump_tuning_irs(std::string filename,
+                     std::vector<std::shared_ptr<GNode>>& nodes,
+                     std::unordered_map<std::string, size_t> ir_cnt)
+{
+    std::ofstream out(filename);
+    for (auto gnode : nodes)
+    {
+        auto op = gnode->get_op_type();
+        auto name = gnode->get_op_ptr()->get_name();
+        bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
+        auto ir = nnfusion::op::get_translation(gnode);
+        size_t cnt = ir_cnt.at(ir);
+        out << op << "|" << name << "|" << symbolic << "|" << cnt << "|" << ir << endl;
+    }
+    out.close();
+    NNFUSION_LOG(INFO) << "Dump all IRs into file: " << filename;
+}
+
 std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<TuningStatus>>>
     get_tuning_candidates(std::shared_ptr<nnfusion::graph::Graph>& graph,
+                          const std::unordered_set<std::string> allow_list,
                           const std::unordered_set<std::string> block_list,
                           std::unordered_map<std::string, size_t>& ir2cnt)
 {
@@ -131,8 +162,13 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
         auto n_device_type = (*gnode)["DeviceType"].as<NNFusion_DeviceType>();
         NNFUSION_CHECK(n_device_type != UNKNOWN);
 
+        // only tune ops in AllowList
+        if (allow_list.size() > 0 && allow_list.find(gnode->get_op_type()) == allow_list.end())
+        {
+            continue;
+        }
         // filter ops in BlockList
-        if (block_list.find(gnode->get_op_type()) != block_list.end())
+        if (allow_list.size() == 0 && block_list.find(gnode->get_op_type()) != block_list.end())
         {
             continue;
         }
@@ -226,17 +262,35 @@ std::pair<std::vector<std::shared_ptr<GNode>>, std::vector<std::shared_ptr<Tunin
     return std::make_pair(candidates, cached_kernels);
 }
 
-bool KernelTuning::parse_block_list()
+bool KernelTuning::parse_allow_and_block_list()
 {
     auto blocklist_str = FLAGS_ftuning_blocklist;
+    auto allowlist_str = FLAGS_ftuning_allowlist;
+
+    if (allowlist_str.size() > 0)
+    {
+        stringstream ss(allowlist_str);
+        while (ss.good())
+        {
+            string substr;
+            getline(ss, substr, ',');
+            m_allow_list.insert(substr);
+        }
+        if (m_allow_list.size() > 0)
+        {
+            NNFUSION_LOG(INFO) << "Kernel Tuning AllowList: " << join(m_allow_list, ", ");
+            return true;
+        }
+    }
+
     stringstream ss(blocklist_str);
     while (ss.good())
     {
         string substr;
         getline(ss, substr, ',');
-        BlockList.insert(substr);
+        m_block_list.insert(substr);
     }
-    NNFUSION_LOG(INFO) << "Kernel Tuning BlockList: " << join(BlockList, ", ");
+    NNFUSION_LOG(INFO) << "Kernel Tuning BlockList: " << join(m_block_list, ", ");
     return true;
 }
 
@@ -284,19 +338,20 @@ void KernelTuning::submit_tuning_batch_asyc(
         NNFUSION_CHECK(n_device_type != UNKNOWN);
 
         auto ir = nnfusion::op::get_translation(gnode);
-        // NNFUSION_LOG(INFO) << gnode->get_op_type() << ", ir: " << ir;
+        bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
+        NNFUSION_LOG(INFO) << gnode->get_op_type() << " " << gnode->get_name() << ", ir: " << ir;
         if (!ir.empty())
         {
             auto status = std::make_shared<TuningStatus>(gnode);
             status->ir = ir;
-            auto response = send_tuning_request(ir, 0);
+            auto response = send_tuning_request(ir, 0, symbolic);
             extract_tunning_status_from_kernel(response, status);
 
             if (status->status == "" || status->status.empty())
             {
                 // submit a new tuning task
                 NNFUSION_LOG(INFO) << gnode->get_op_type() << ", ir: " << ir;
-                auto response = send_tuning_request(ir, FLAGS_fkernel_tuning_steps);
+                auto response = send_tuning_request(ir, FLAGS_fkernel_tuning_steps, symbolic);
                 status->status = "submitted";
             }
             status->status == "completed" ? tuned_kernels.push_back(status)
@@ -312,22 +367,6 @@ void KernelTuning::submit_tuning_batch_asyc(
             << "There are pending tuning kernels. Please retry the compilation later!";
         exit(0);
     }
-}
-
-std::string get_antares_device_type(NNFusion_DeviceType dt, std::string platform = "")
-{
-    std::string ret;
-    switch (dt)
-    {
-    case CUDA_GPU: ret = "c-cuda"; break;
-    case ROCM_GPU: ret = "c-rocm"; break;
-    case GENERIC_CPU: ret = "c-mcpu"; break;
-    case HLSL: ret = "c-hlsl"; break;
-    case GraphCore: ret = "c-ipu"; break;
-    default: return "unknow";
-    }
-
-    return platform.empty() ? ret : ret + "_" + platform;
 }
 
 void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& nodes,
@@ -359,18 +398,29 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
                 std::string cmd_create_folder = "mkdir -p " + cache_folder;
                 int sys_ret = system(cmd_create_folder.c_str());
             }
+            std::string antares_backend =
+                get_antares_device_type(n_device_type, FLAGS_ftuning_platform);
 
-            std::size_t file_id = std::hash<std::string>{}(ir);
-            auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+            std::string file_id = sha256(ir);
+            auto file_name = cache_folder + "/" + file_id + "." + antares_backend + ".c";
+            bool symbolic = (FLAGS_fsymbolic && (*gnode)["symbolic"].is_valid_as<bool>());
 
-            std::string cmd = "COMMIT=force PROGRESS=1 BACKEND=";
-            cmd += get_antares_device_type(n_device_type, FLAGS_ftuning_platform);
+            std::string cmd = "PROGRESS=1 BACKEND=";
+            cmd += antares_backend;
+            if (symbolic)
+                cmd += " TVM=0";
+            if (FLAGS_ftuning_agent.size() > 0)
+                cmd += (" AGENT_URL=" + FLAGS_ftuning_agent);
             cmd += " COMPUTE_V1='";
             cmd += ir;
             cmd += ("' antares save " + file_name);
 
-            // qurey cached kernel
-            int sys_ret = system(("STEP=0 " + cmd).c_str());
+            if (stat(file_name.c_str(), &stats) != 0)
+            {
+                // generate default kernel
+                int sys_ret = system(("STEP=0 " + cmd).c_str());
+            }
+
             std::ifstream ifs(file_name);
             std::string code((std::istreambuf_iterator<char>(ifs)),
                              (std::istreambuf_iterator<char>()));
@@ -393,8 +443,8 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
                       << ":" << std::endl;
 
             // tuning kernel
-            cmd = ("STEP=" + std::to_string(FLAGS_fkernel_tuning_steps) + " " + cmd);
-            sys_ret = system(cmd.c_str());
+            cmd = ("COMMIT=force STEP=" + std::to_string(FLAGS_fkernel_tuning_steps) + " " + cmd);
+            int sys_ret = system(cmd.c_str());
             {
                 std::ifstream ifs(file_name);
                 std::string code((std::istreambuf_iterator<char>(ifs)),
@@ -406,11 +456,124 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
     }
 }
 
+void load_irs_and_tune_kernels_sync(std::string filename,
+                                    std::vector<std::shared_ptr<TuningStatus>>& tuned_kernels)
+{
+    std::ifstream fin(filename);
+    std::vector<std::string> tuning_irs;
+    if (fin.is_open())
+    {
+        std::string line;
+        while (std::getline(fin, line))
+        {
+            tuning_irs.push_back(line);
+        }
+        fin.close();
+    }
+
+    size_t id = 0;
+    size_t num_kernels = tuning_irs.size();
+    for (auto line : tuning_irs)
+    {
+        auto items = split_string(line, "|");
+        NNFUSION_CHECK(items.size() == 5);
+        auto op = items[0];
+        auto name = items[1];
+        bool symbolic = atoi(items[2].c_str());
+        size_t cnt = atoi(items[3].c_str());
+        auto ir = items[4];
+
+        auto s = std::make_shared<TuningStatus>(op, name, symbolic);
+        s->ir = ir;
+
+        std::string cache_folder = "./kernel_cache";
+        struct stat stats;
+        if (stat(cache_folder.c_str(), &stats) != 0)
+        {
+            std::string cmd_create_folder = "mkdir -p " + cache_folder;
+            int sys_ret = system(cmd_create_folder.c_str());
+        }
+
+        std::string file_id = sha256(ir);
+        auto antares_backend =
+            get_antares_device_type(get_device_type(FLAGS_fdefault_device), FLAGS_ftuning_platform);
+        auto file_name = cache_folder + "/" + file_id + "." + antares_backend + ".c";
+
+        std::string cmd = "PROGRESS=1 BACKEND=";
+        cmd += antares_backend;
+        if (FLAGS_ftuning_agent.size() > 0)
+            cmd += (" AGENT_URL=" + FLAGS_ftuning_agent);
+        if (symbolic)
+            cmd += " TVM=0";
+        cmd += " COMPUTE_V1='";
+        cmd += ir;
+        cmd += ("' antares save " + file_name);
+
+        if (stat(file_name.c_str(), &stats) != 0)
+        {
+            // generate default kernel
+            int sys_ret = system(("STEP=0 " + cmd).c_str());
+        }
+
+        // qurey cached kernel
+
+        std::ifstream ifs(file_name);
+        if (ifs.is_open())
+        {
+            std::string code((std::istreambuf_iterator<char>(ifs)),
+                             (std::istreambuf_iterator<char>()));
+            extract_tunning_status_from_kernel(code, s);
+            ifs.close();
+        }
+
+        if (FLAGS_fretuning_bar > 0)
+        {
+            if (s->best_perf <= FLAGS_fretuning_bar)
+            {
+                std::cout << "\nTuning [" << id++ << "/" << num_kernels
+                          << " ops]: op=" << s->op_type << ", name="
+                          << ((s->op_name.size() > 26) ? (s->op_name.substr(0, 24) + "..")
+                                                       : s->op_name)
+                          << ": Match Retuning Bar: " << s->best_perf << "|" << FLAGS_fretuning_bar
+                          << std::endl;
+                tuned_kernels.push_back(s);
+                continue;
+            }
+        }
+        if (s->status == "completed")
+        {
+            std::cout << "\nTuning [" << id++ << "/" << num_kernels << " ops]: op=" << s->op_type
+                      << ", name="
+                      << ((s->op_name.size() > 26) ? (s->op_name.substr(0, 24) + "..") : s->op_name)
+                      << ": USE CACHE KERNEL." << std::endl;
+            tuned_kernels.push_back(s);
+            continue;
+        }
+
+        std::cout << "\nTuning [" << id++ << "/" << num_kernels << " ops]: op=" << s->op_type
+                  << ", name="
+                  << ((s->op_name.size() > 26) ? (s->op_name.substr(0, 24) + "..") : s->op_name)
+                  << ":" << std::endl;
+
+        // tuning kernel
+        cmd = ("COMMIT=force STEP=" + std::to_string(FLAGS_fkernel_tuning_steps) + " " + cmd);
+        NNFUSION_LOG(INFO) << cmd;
+        auto sys_ret = system(cmd.c_str());
+        {
+            std::ifstream ifs(file_name);
+            std::string code((std::istreambuf_iterator<char>(ifs)),
+                             (std::istreambuf_iterator<char>()));
+            extract_tunning_status_from_kernel(code, s);
+            tuned_kernels.push_back(s);
+        }
+    }
+}
+
 bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
     if (FLAGS_fantares_mode)
     {
-        parse_block_list();
+        parse_allow_and_block_list();
         // register antares kernels anyway here in case kernel selection pass will use them
         register_antares_kernel();
     }
@@ -424,10 +587,39 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
     std::vector<std::shared_ptr<TuningStatus>> tuning_kernels;
     std::unordered_map<std::string, size_t> ir2cnt;
     std::vector<std::shared_ptr<GNode>> nodes;
-    std::tie(nodes, tuned_kernels) = get_tuning_candidates(graph, BlockList, ir2cnt);
+    std::tie(nodes, tuned_kernels) =
+        get_tuning_candidates(graph, m_allow_list, m_block_list, ir2cnt);
+
+    std::string param_str;
+    auto dim_infos = graph->get_dim_params();
+    for (auto pair : dim_infos)
+    {
+        param_str += ("_" + pair.first + pair.second.debug_string());
+    }
+
+    const std::string dump_file = "./antares_irs" + param_str + ".txt";
+    if (FLAGS_fdump_and_tune_irs == 1)
+    {
+        dump_tuning_irs(dump_file, nodes, ir2cnt);
+        //exit(0);
+    }
+
+    if (FLAGS_fdump_and_tune_irs == 2)
+    {
+        load_irs_and_tune_kernels_sync(dump_file, tuned_kernels);
+        exit(0);
+    }
 
     if (FLAGS_fantares_codegen_server.size() > 0)
     {
+        // Note: currently we asume IP:PORT as the static server and IP:PORT+1 as the symbolic server
+        m_static_tuning_server = FLAGS_fantares_codegen_server;
+
+        auto items = split_string(m_static_tuning_server, ":");
+        NNFUSION_CHECK(items.size() == 2) << "Wrong server format: " << m_static_tuning_server;
+        auto port = atoi(items[1].c_str());
+        m_dynamic_tuning_server = items[0] + ":" + std::to_string(port + 1);
+
         submit_tuning_batch_asyc(nodes, tuned_kernels, tuning_kernels);
     }
     else
@@ -435,7 +627,7 @@ bool KernelTuning::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
         tuning_kernels_sync(nodes, tuned_kernels);
     }
     dump_perf(FLAGS_fantares_perf_file, tuned_kernels, ir2cnt);
-    if (FLAGS_fdefault_device == "CUDA")
+    if (FLAGS_fdefault_device == "CUDA" && !FLAGS_fsymbolic)
     {
         insert_to_kernel_cache(nodes);
     }
@@ -489,8 +681,13 @@ bool KernelTuning::register_antares_kernel()
         std::string op_name = pair.first;
         std::vector<NNFusion_DeviceType> devs{CUDA_GPU, GENERIC_CPU, HLSL};
 
+        // skip op not in allow_list
+        if (m_allow_list.size() > 0 && m_allow_list.find(op_name) == m_allow_list.end())
+        {
+            continue;
+        }
         // skip op in BlockList
-        if (BlockList.find(op_name) != BlockList.end())
+        if (m_allow_list.size() == 0 && m_block_list.find(op_name) != m_block_list.end())
         {
             continue;
         }

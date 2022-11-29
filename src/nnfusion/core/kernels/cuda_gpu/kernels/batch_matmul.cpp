@@ -103,8 +103,9 @@ namespace nnfusion
                             @hCublas@, @transA@, @transB@, @m@, @n@, @k@,
                             &alpha, input1, @lda@, @stride_a@, input0, @ldb@, @stride_b@,
                             &beta, output0, @ldc@, @stride_c@, @batch@));
-                    )"  :
-                        R"(
+                    )"
+                                                        :
+                                                        R"(
                         static const float alpha = @alpha@F, beta = @beta@F;
                         // if (!@hCublas@)
                         //     CUBLAS_SAFE_CALL(@api_create@(&@hCublas@));
@@ -116,7 +117,9 @@ namespace nnfusion
                         {
                             {"hCublas", "cublas_handle"},
                             {"api_create", "cublasCreate"},
-                            {"api_exec", dtype == nnfusion::element::f16 ? "cublasHgemmStridedBatched" : "cublasSgemmStridedBatched"},
+                            {"api_exec",
+                             dtype == nnfusion::element::f16 ? "cublasHgemmStridedBatched"
+                                                             : "cublasSgemmStridedBatched"},
                             {"transA", transB ? "CUBLAS_OP_T" : "CUBLAS_OP_N"},
                             {"transB", transA ? "CUBLAS_OP_T" : "CUBLAS_OP_N"},
                             {"alpha", alpha},
@@ -181,7 +184,7 @@ namespace nnfusion
                     {
                         stringstream ss;
                         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-                        // defult name is: "persit0", "persist1" ...
+                        // default name is: "persit0", "persist1" ...
                         ss << m_context->tensors[i]->get_name();
                         params.push_back(ss.str());
                     }

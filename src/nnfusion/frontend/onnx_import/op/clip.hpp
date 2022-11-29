@@ -98,6 +98,26 @@ namespace nnfusion
                     return ret;
                 }
             } // namespace set_1
-        }     //namespace onnx_import
-    }         // namespace frontend
+
+            namespace set_6
+            {
+                using set_1::TranslateClipOp;
+            }
+
+            namespace set_11
+            {
+                using set_1::TranslateClipOp;
+            }
+
+            namespace set_12
+            {
+                using set_1::TranslateClipOp;
+            }
+
+            namespace set_13
+            {
+                using set_1::TranslateClipOp;
+            }
+        } //namespace onnx_import
+    }     // namespace frontend
 } // namespace nnfusion

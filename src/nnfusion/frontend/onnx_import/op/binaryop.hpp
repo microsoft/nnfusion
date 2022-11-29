@@ -106,6 +106,11 @@ namespace nnfusion
                 }
 
             } // namespace set_1
+            namespace set_6
+            {
+                using set_1::TranslateBinaryOp;
+                using set_1::TranslateLegacyBinaryOp;
+            } // namespace set_6
 
             namespace set_7
             {
@@ -130,6 +135,40 @@ namespace nnfusion
                 }
 
             } // namespace set_7
-        }     // namespace onnx_import
-    }         // namespace frontend
-} // namespace ngraph
+
+            namespace set_9
+            {
+                using set_7::TranslateBinaryOp;
+            }
+
+            namespace set_11
+            {
+                using set_7::TranslateBinaryOp;
+            }
+
+            namespace set_12
+            {
+                using set_7::TranslateBinaryOp;
+            }
+
+            namespace set_13
+            {
+                using set_7::TranslateBinaryOp;
+            }
+            namespace set_14
+            {
+                using set_7::TranslateBinaryOp;
+            }
+
+            namespace set_15
+            {
+                using set_7::TranslateBinaryOp;
+            }
+
+            namespace set_16
+            {
+                using set_7::TranslateBinaryOp;
+            }
+        } // namespace onnx_import
+    }     // namespace frontend
+} // namespace nnfusion

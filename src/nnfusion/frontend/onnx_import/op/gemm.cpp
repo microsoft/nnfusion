@@ -32,7 +32,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_7
             {
                 NamedNodeVector TranslateGemmOp(const onnx::NodeProto& node_proto,
                                                 const NodeMap& all_ng_nodes,
@@ -69,7 +69,7 @@ namespace nnfusion
                                                             {result, alpha});
                     }
 
-                    if (std::fabs(beta_value) > 0)
+                    if (std::fabs(beta_value) > 0 && input_indexes.size() >= 3)
                     {
                         auto C = input_indexes[2];
                         auto bias_node = C.gnode;

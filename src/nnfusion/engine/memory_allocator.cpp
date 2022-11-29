@@ -84,6 +84,15 @@ void nnfusion::MemoryAllocator::allocate(shared_ptr<descriptor::Tensor> tensor)
     }
 }
 
+void nnfusion::MemoryAllocator::register_tensor(shared_ptr<descriptor::Tensor> tensor)
+{
+    m_allocated_tensors.push_back(tensor);
+    if (record_trace)
+    {
+        this->record("[register]", tensor);
+    }
+}
+
 void nnfusion::MemoryAllocator::allocate(shared_ptr<descriptor::Tensor> tensor,
                                          shared_ptr<descriptor::Tensor> root_tensor,
                                          size_t offset)
@@ -275,7 +284,8 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_init()
 
         for (auto tensor : m_allocated_tensors)
         {
-            lu << tensor->get_element_type().c_type_string() << "* " << tensor->get_name() << ";\n";
+            lu << element::get_backend_cstring(tensor->get_element_type()) << "* "
+               << tensor->get_name() << ";\n";
         }
     }
     return _lu;
@@ -301,6 +311,14 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
 
         for (auto tensor : m_allocated_tensors)
         {
+            if (tensor->get_shared_tensor())
+            {
+                // this tensor can be shared with the grpah_0's tensor
+                lu << tensor->get_name() << " = ("
+                   << element::get_backend_cstring(tensor->get_element_type())
+                   << "*)(graph_0::" << tensor->get_shared_tensor()->get_name() << ");\n";
+                continue;
+            }
             if (tensor->get_pool_offset() == SIZE_MAX)
             {
                 NNFUSION_LOG(NNFUSION_WARNING)
@@ -309,9 +327,9 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
                 lu << "// ";
             }
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
-            lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
-               << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
-               << ");\n";
+            lu << tensor->get_name() << " = ("
+               << element::get_backend_cstring(tensor->get_element_type()) << "*)("
+               << this->get_name() << "_memory_pool+" << tensor->get_pool_offset() << ");\n";
         }
     }
     return _lu;
@@ -403,9 +421,9 @@ LanguageUnit_p nnfusion::HostMemoryAllocator::emit_memory_alloc()
                     << " may refer an external tensor, nnfusion omits its memory allocation.";
                 lu << "// ";
             }
-            lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
-               << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
-               << ");\n";
+            lu << tensor->get_name() << " = ("
+               << element::get_backend_cstring(tensor->get_element_type()) << "*)("
+               << this->get_name() << "_memory_pool+" << tensor->get_pool_offset() << ");\n";
         }
     }
     return _lu;
@@ -474,6 +492,13 @@ LanguageUnit_p nnfusion::HLSLMemoryAllocator::emit_memory_alloc()
             lu << this->get_name() << "_memory_pool = dxMemAlloc(" << m_max_allocated << ");\n";
         for (auto tensor : m_allocated_tensors)
         {
+            if (tensor->get_shared_tensor())
+            {
+                // this tensor can be shared with the grpah_0's tensor
+                lu << tensor->get_name()
+                   << " = graph_0::" << tensor->get_shared_tensor()->get_name() << ";\n";
+                continue;
+            }
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
             if (tensor->get_pool_offset() == SIZE_MAX)
             {

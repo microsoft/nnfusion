@@ -29,13 +29,28 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_7
             {
                 NamedNodeVector TranslateGemmOp(const onnx::NodeProto& node_proto,
                                                 const NodeMap& all_ng_nodes,
                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph);
 
-            } // namespace set_1
+            } // namespace set_7
+
+            namespace set_9
+            {
+                using set_7::TranslateGemmOp;
+            } // namespace set_9
+
+            namespace set_11
+            {
+                using set_7::TranslateGemmOp;
+            } // namespace set_11
+
+            namespace set_13
+            {
+                using set_7::TranslateGemmOp;
+            } // namespace set_13
 
         } //namespace onnx_import
 

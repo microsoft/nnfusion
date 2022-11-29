@@ -52,7 +52,10 @@ namespace nnfusion
 
                     return {{node_proto.output(0), generic_gnode}};
                 }
+            } // set_1
 
+            namespace set_11
+            {
                 NamedNodeVector TranslateGatherNDOp(const onnx::NodeProto& node_proto,
                                                     const NodeMap& all_ng_nodes,
                                                     std::shared_ptr<nnfusion::graph::Graph> m_graph)
@@ -62,7 +65,11 @@ namespace nnfusion
                     Node node(node_proto);
                     // According to ONNX doc, this attribute name should be "batch_dims"
                     // But in their implementation, this attribute name is "axis"
-                    auto axis = node.get_attribute_value<int64_t>("axis", 0);
+                    auto axis = node.get_attribute_value<int64_t>("batch_dims", 0);
+                    if (axis == 0)
+                    {
+                        auto axis = node.get_attribute_value<int64_t>("axis", 0);
+                    }
                     axis += axis < 0 ? input_indexes[0].get_shape().size() : 0;
 
                     nnfusion::op::OpConfig::any myConfig;
@@ -149,7 +156,7 @@ namespace nnfusion
                     return {{node_proto.output(0), generic_gnode}};
                 }
 
-            } // namespace set_1
+            } // namespace set_11
 
         } //namespace onnx_import
 

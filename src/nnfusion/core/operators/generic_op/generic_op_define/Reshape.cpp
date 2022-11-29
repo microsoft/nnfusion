@@ -154,6 +154,7 @@ REGISTER_OP(Reshape)
                        to_string(output_shape[dim_index]);
             }
 
+            input_layout = input_layout.empty() ? std::vector<std::string>({"0"}) : input_layout;
             expression_code = op::create_code_from_template(
                 expression_template,
                 {{"output0_layout", vector_to_string<std::vector<std::string>>(output_layout)},

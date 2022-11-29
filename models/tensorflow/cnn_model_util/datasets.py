@@ -235,7 +235,7 @@ def create_dataset(data_dir, data_name):
     # When using synthetic data, use synthetic imagenet images by default.
     data_name = 'imagenet'
 
-  # Infere dataset name from data_dir if data_name is not provided.
+  # Infer dataset name from data_dir if data_name is not provided.
   if data_name is None:
     for supported_name in _SUPPORTED_DATASETS:
       if supported_name in data_dir:

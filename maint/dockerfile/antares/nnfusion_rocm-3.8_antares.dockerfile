@@ -26,7 +26,7 @@ ENV PATH $PATH:/opt/rocm/bin:/usr/local/nvidia/lib64/bin
 ENV HSA_USERPTR_FOR_PAGED_MEM=0
 ENV TF_ROCM_FUSION_ENABLE 1
 ENV HIP_IGNORE_HCC_VERSION=1
-RUN env > /etc/environmen
+RUN env > /etc/environment
 
 RUN apt-get update && apt install -y --no-install-recommends git ca-certificates \
     python3-pip python3-wheel python3-setuptools python3-dev python3-pytest \

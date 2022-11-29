@@ -228,6 +228,8 @@ namespace nnfusion
                                 return;
                             }
                             { // check output_shapes of NNFusion and Antares, fallback when shapes mismatch.
+                                // cout << ctx->gnode->get_op_type() << endl;
+                                // cout << ir << endl;
                                 auto antares_output_shapes =
                                     AntaresKEImp::get_output_shapes(info.first);
                                 bool flag_match = true;
@@ -328,10 +330,15 @@ namespace nnfusion
             protected:
                 // map tensor names and allocate tmp tensor
                 void process_antares_kernel_info();
-                void find_launch_config(const std::string& str, dim3& gridDim, dim3& blockDim);
+                void find_launch_config(const std::string& str,
+                                        dim3& gridDim,
+                                        dim3& blockDim,
+                                        std::string& block_num);
                 std::vector<AntaresKernelInfo::Pointer> kernel_info;
                 std::unordered_map<std::string, std::string>
                     tensor_name_map; // antares tensor name : kernel tensor name
+                std::map<std::string, std::string> symbol_expr;
+                std::string m_blockNum;
             };
 
             class CacheCudaEmitter : public CudaEmitter

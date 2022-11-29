@@ -128,6 +128,12 @@ namespace nnfusion
             size_t get_memory_io();
             bool serialize_to_file(const std::string& file_path);
 
+            std::unordered_map<std::string, SymDim>& get_dim_params() { return m_dim_params; }
+            void set_dim_params(std::unordered_map<std::string, SymDim> dim_params)
+            {
+                m_dim_params = dim_params;
+            }
+
         private:
             // Map from node ids to allocated nodes.  nodes_[id] may be nullptr if
             // the node with that id was removed from the graph.
@@ -163,6 +169,8 @@ namespace nnfusion
             const std::string m_unique_name;
 
             size_t m_temporary_pool_size;
+
+            std::unordered_map<std::string, SymDim> m_dim_params;
         };
 
         inline bool Edge::is_control_edge() const

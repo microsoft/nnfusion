@@ -21,6 +21,7 @@
 #include "nnfusion/common/dimension.hpp"
 #include "nnfusion/common/rank.hpp"
 #include "nnfusion/common/shape.hpp"
+#include "nnfusion/common/symbolic_shape.hpp"
 using namespace nnfusion;
 
 namespace nnfusion
@@ -59,6 +60,7 @@ namespace nnfusion
         PartialShape(const std::vector<Dimension>& dimensions)
             : m_rank_is_static(true)
             , m_dimensions(dimensions)
+            , sym_shape(nullptr)
         {
         }
 
@@ -205,11 +207,14 @@ namespace nnfusion
         /// unspecified changes to `dst`.
         static bool merge_into(PartialShape& dst, const PartialShape& src);
 
+        std::shared_ptr<SymShape> sym_shape;
+
     private:
         // Private constructor for PartialShape::dynamic().
         PartialShape(bool rank_is_static, std::vector<Dimension> dimensions)
             : m_rank_is_static(rank_is_static)
             , m_dimensions(dimensions)
+            , sym_shape(nullptr)
         {
         }
 

@@ -74,8 +74,7 @@ vector<string> Constant::get_value_strings() const
 {
     vector<string> rc;
 
-    if (m_element_type == nnfusion::element::boolean ||
-        m_element_type == nnfusion::element::character)
+    if (m_element_type == nnfusion::element::character)
     {
         for (int value : get_vector<char>())
         {
@@ -119,7 +118,8 @@ vector<string> Constant::get_value_strings() const
             rc.push_back(to_string(value));
         }
     }
-    else if (m_element_type == nnfusion::element::i16)
+    else if (m_element_type == nnfusion::element::boolean ||
+             m_element_type == nnfusion::element::i16)
     {
         for (int value : get_vector<int16_t>())
         {

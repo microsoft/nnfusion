@@ -145,12 +145,12 @@ int (*dxEventDestroy)(void* hEvent);
 )");
 
 LU_DEFINE(declaration::dxModuleLaunchAsync, R"(
-int dxModuleLaunchAsync(void* hModule, std::string* kernel_names, void*** args, size_t size)
+int dxModuleLaunchAsync(void* hModule, std::string* kernel_names, void*** args, int* num_blocks, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
         void* shader = dxModuleGetShader(hModule, kernel_names[i].c_str());
-        dxShaderLaunchAsync(shader, args[i], 0);
+        dxShaderLaunchAsyncExt(shader, args[i], num_blocks[i], 0);
     }
     return 0;
 };

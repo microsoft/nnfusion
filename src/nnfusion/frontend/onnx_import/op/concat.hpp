@@ -49,6 +49,20 @@ namespace nnfusion
                     return ret;
                 }
             } // namespace set_1
-        }     //namespace onnx_import
-    }         // namespace frontend
+
+            namespace set_4
+            {
+                using set_1::TranslateConcatOp;
+            }
+            namespace set_11
+            {
+                using set_1::TranslateConcatOp;
+            }
+            namespace set_13
+            {
+                using set_1::TranslateConcatOp;
+            }
+
+        } //namespace onnx_import
+    }     // namespace frontend
 } // namespace nnfusion

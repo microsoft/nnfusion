@@ -278,7 +278,7 @@
 	/// for support of the F16C instruction set, so an appropriate target platform is required when enabling this feature.
 	///
 	/// Unless predefined it will be enabled automatically when the `__F16C__` symbol is defined, which some compilers do on supporting platforms.
-	//  Modified by nnfsuion: ignore this case
+	//  Modified by nnfusion: ignore this case
 	///#define HALF_ENABLE_F16C_INTRINSICS __F16C__
 #endif
 
@@ -1405,7 +1405,7 @@ namespace half_float
 		/// \tparam R `true` to compute signed remainder, `false` for positive remainder
 		/// \param x first operand as positive finite half-precision value
 		/// \param y second operand as positive finite half-precision value
-		/// \param quo adress to store quotient at, `nullptr` if \a Q `false`
+		/// \param quo address to store quotient at, `nullptr` if \a Q `false`
 		/// \return modulus of \a x / \a y
 		template<bool Q,bool R> unsigned int mod(unsigned int x, unsigned int y, int *quo = NULL)
 		{
@@ -4532,7 +4532,7 @@ namespace half_float
 	/// but in that case manual flag management is the only way to raise flags.
 	///
 	/// **See also:** Documentation for [std::fegetexceptflag](https://en.cppreference.com/w/cpp/numeric/fenv/feexceptflag).
-	/// \param flagp adress to store flag state at
+	/// \param flagp address to store flag state at
 	/// \param excepts OR of flags to save
 	/// \retval 0 for success
 	inline int fegetexceptflag(int *flagp, int excepts) { *flagp = detail::errflags() & excepts; return 0; }
@@ -4543,7 +4543,7 @@ namespace half_float
 	/// but in that case manual flag management is the only way to raise flags.
 	///
 	/// **See also:** Documentation for [std::fesetexceptflag](https://en.cppreference.com/w/cpp/numeric/fenv/feexceptflag).
-	/// \param flagp adress to take flag state from
+	/// \param flagp address to take flag state from
 	/// \param excepts OR of flags to restore
 	/// \retval 0 for success
 	inline int fesetexceptflag(const int *flagp, int excepts) { detail::errflags() = (detail::errflags()|(*flagp&excepts)) & (*flagp|~excepts); return 0; }

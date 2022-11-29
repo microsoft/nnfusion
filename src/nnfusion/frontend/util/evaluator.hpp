@@ -8,9 +8,11 @@
 
 #include "nnfusion/core/graph/gnode.hpp"
 #include "nnfusion/core/graph/graph.hpp"
+#include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 #include "nnfusion/engine/profiler/profiler.hpp"
 #include "nnfusion/frontend/frontend_base.hpp"
 DECLARE_bool(fuse_cpuprofiler);
+DECLARE_bool(fantares_mode);
 namespace nnfusion
 {
     namespace frontend
@@ -20,46 +22,10 @@ namespace nnfusion
             std::vector<std::vector<char>>
                 get_node_outputs(std::shared_ptr<GNode> gnode, int depth = 0, int arg_idx = 0)
             {
-                // NNFUSION_CHECK(gnode->get_op_type() != "Parameter");
-                if (gnode->get_op_type() == "Parameter")
-                {
-                    auto data_size = gnode->get_output_tensor(0).size();
-                    std::vector<char> one(data_size);
-                    if (gnode->get_output_tensor(0).get_element_type() == nnfusion::element::i64)
-                    {
-                        vector<int64_t> _data(data_size / sizeof(int64_t), 1);
-                        memcpy(one.data(), _data.data(), one.size());
-                    }
-                    else if (gnode->get_output_tensor(0).get_element_type() ==
-                             nnfusion::element::i32)
-                    {
-                        vector<int32_t> _data(data_size / sizeof(int32_t), 1);
-                        memcpy(one.data(), _data.data(), one.size());
-                    }
-                    else if (gnode->get_output_tensor(0).get_element_type() ==
-                             nnfusion::element::f32)
-                    {
-                        vector<float> _data(data_size / sizeof(float), 1);
-                        memcpy(one.data(), _data.data(), one.size());
-                    }
-                    else if (gnode->get_output_tensor(0).get_element_type() ==
-                             nnfusion::element::f64)
-                    {
-                        vector<double> _data(data_size / sizeof(double), 1);
-                        memcpy(one.data(), _data.data(), one.size());
-                    }
-                    else
-                    {
-                        NNFUSION_CHECK(gnode->get_op_type() != "Parameter");
-                    }
-                    std::vector<vector<char>> it;
-                    it.push_back(std::move(one));
-                    NNFUSION_CHECK(one.size() == 0);
-                    return it;
-                }
-
+                NNFUSION_CHECK(gnode->get_op_type() != "Parameter");
                 NNFUSION_LOG(INFO) << "[" << depth << ":" << arg_idx
-                                   << "] Working for node: " << gnode->get_name();
+                                   << "] Working for node: " << gnode->get_name() << ": "
+                                   << gnode->get_op_type();
                 static std::map<std::shared_ptr<GNode>, std::vector<std::vector<char>>> dict;
                 auto it = dict.find(gnode);
                 if (it != dict.end())
@@ -99,9 +65,30 @@ namespace nnfusion
                 runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
                 if (FLAGS_fuse_cpuprofiler)
                 {
-                    runtime = nnfusion::profiler::CPUDefaultRuntime::Runtime();
-                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        gnode->get_op_type(), GENERIC_CPU, element::f32);
+                    runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
+                    if (FLAGS_fantares_mode)
+                    {
+                        shared_ptr<const KernelRegistration> kernel_reg =
+                            kernels::Name(gnode->get_op_type())
+                                .Device(GENERIC_CPU)
+                                .TypeConstraint(element::f32)
+                                .Tag("reference")
+                                .Priority(0)
+                                .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                                                   -> shared_ptr<kernels::KernelEmitter> {
+                                    return make_shared<
+                                        kernels::cpu::AntaresCpuReferenceKernelEmitter>(context);
+                                })
+                                .Build();
+                        kernel_regs = {kernel_reg};
+                        cpu::AntaresCpuReferenceKernelEmitter::codegen_cpu_reference_kernel_sync(
+                            gnode);
+                    }
+                    else
+                    {
+                        kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                            gnode->get_op_type(), GENERIC_CPU, element::f32);
+                    }
                 }
                 else
                 {
@@ -124,6 +111,8 @@ namespace nnfusion
 
                 bool const_infer_success = false;
                 shared_ptr<KernelContext> ctx(new KernelContext(gnode));
+                NNFUSION_LOG(INFO) << "[" << depth << "] Evaluate node: " << gnode->get_name()
+                                   << ": " << gnode->get_op_type();
                 for (auto& kernel_reg : kernel_regs)
                 {
                     auto kernel = kernel_reg->m_factory(ctx);
@@ -181,7 +170,9 @@ namespace nnfusion
                 if (!gnode->is_constant())
                 {
                     auto outs = get_node_outputs(gnode);
-                    NNFUSION_CHECK(outs.size() == 1);
+                    NNFUSION_CHECK(outs.size() == 1) << "Expect only 1 output for gnode "
+                                                     << gnode->get_name() << ", but " << outs.size()
+                                                     << " found.";
                     auto out_type = gnode->get_output_element_type(0);
                     NNFUSION_LOG(INFO) << "Asking for Constant value from op-type: "
                                        << gnode->get_op_type();
@@ -259,7 +250,7 @@ namespace nnfusion
                 }
                 else if (ng_element_type == nnfusion::element::boolean)
                 {
-                    *values = GetValueFromConstOp<bool, T>(ng_constant_op);
+                    *values = GetValueFromConstOp<int16_t, T>(ng_constant_op);
                 }
                 else if (ng_element_type == nnfusion::element::character)
                 {

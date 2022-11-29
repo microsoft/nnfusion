@@ -23,8 +23,8 @@ LU_DEFINE(header::math_constants, "#include <math_constants.h>\n");
 LU_DEFINE(macro::HALF_MAX,
           R"(#ifndef __HALF_COMPARE_EX__
 #define __HALF_COMPARE_EX__
-inline __device__ half max(half x, half y) { return x > y ? x : y; }
-inline __device__ half min(half x, half y) { return x < y ? x : y; }
+inline __device__ half hmax(half x, half y) { return x > y ? x : y; }
+inline __device__ half hmin(half x, half y) { return x < y ? x : y; }
 #endif
 )");
 
@@ -1723,7 +1723,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward)
+// The code below(from the definition of softmax_warp_forward to the definition of dispatch_softmax_forward) 
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.
@@ -1958,7 +1958,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward)
+// The code below(from the definition of softmax_warp_forward to the definition of dispatch_softmax_forward) 
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.

@@ -2,10 +2,12 @@
 // Licensed under the MIT License.
 
 #include "runtime_const_folding_pass.hpp"
+#include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 
 DEFINE_string(fconst_folding_backend,
-              "CUDA",
+              "",
               "Choose which backend will be used in Constant folding pass. Disable when not set.");
+DECLARE_bool(fantares_mode);
 
 using namespace nnfusion::pass::graph;
 
@@ -47,7 +49,6 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
                         break;
                     }
                 }
-                if (dst->get_op_type() == "Broadcast") inferable = false;
                 if (inferable)
                     down_streams.insert(dst);
             }
@@ -88,84 +89,95 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
             raw_inputs[input_index].resize(length);
             memcpy(raw_inputs[input_index].data(), ptr, length);
         }
-        bool is_memcpy = false;
-        if (it->get_op_type() == "Reshape") {
-            auto reshape = std::dynamic_pointer_cast<op::Reshape>(it->get_op_ptr());
-            if (!reshape->get_is_layout_change()) is_memcpy = true;
-        }
-        if (is_memcpy) {
-            raw_outputs = raw_inputs;
-            const_infer_success = true;
-        } else {
-            // Prepare runtime backend
-            nnfusion::profiler::IProfilingRuntime::Pointer runtime = nullptr;
-            std::vector<shared_ptr<const KernelRegistration>> kernel_regs;
 
-            if (backend == "ROCm")
-            {
-                runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
-                NNFUSION_CHECK(runtime->check_env());
-                kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                    it->get_op_type(), ROCM_GPU, element::f32);
-                if (kernel_regs.size() == 0)
-                    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                        it->get_op_type(), CUDA_GPU, element::f32);
-            }
-            else if (backend == "CUDA")
-            {
-                runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
-                NNFUSION_CHECK(runtime->check_env());
+        // Prepare runtime backend
+        nnfusion::profiler::IProfilingRuntime::Pointer runtime = nullptr;
+        std::vector<shared_ptr<const KernelRegistration>> kernel_regs;
+
+        if (backend == "ROCm")
+        {
+            runtime = nnfusion::profiler::RocmDefaultRuntime::Runtime();
+            NNFUSION_CHECK(runtime->check_env());
+            kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                it->get_op_type(), ROCM_GPU, element::f32);
+            if (kernel_regs.size() == 0)
                 kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
                     it->get_op_type(), CUDA_GPU, element::f32);
-            }
-            else if (backend == "CPU")
+        }
+        else if (backend == "CUDA")
+        {
+            runtime = nnfusion::profiler::CudaDefaultRuntime::Runtime();
+            NNFUSION_CHECK(runtime->check_env());
+            kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                it->get_op_type(), CUDA_GPU, element::f32);
+        }
+        else if (backend == "CPU")
+        {
+            runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
+            NNFUSION_CHECK(runtime->check_env());
+            if (FLAGS_fantares_mode)
             {
-                runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
-                NNFUSION_CHECK(runtime->check_env());
-                kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                    it->get_op_type(), GENERIC_CPU, element::f32);
+                shared_ptr<const KernelRegistration> kernel_reg =
+                    kernels::Name(it->get_op_type())
+                        .Device(GENERIC_CPU)
+                        .TypeConstraint(element::f32)
+                        .Tag("reference")
+                        .Priority(0)
+                        .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                                           -> shared_ptr<kernels::KernelEmitter> {
+                            return make_shared<kernels::cpu::AntaresCpuReferenceKernelEmitter>(
+                                context);
+                        })
+                        .Build();
+                kernel_regs = {kernel_reg};
+                nnfusion::kernels::cpu::AntaresCpuReferenceKernelEmitter::
+                    codegen_cpu_reference_kernel_sync(it);
             }
             else
             {
-                NNFUSION_CHECK_FAIL() << "Cannot Recognize Backend Type: " << backend;
-            }
-
-            // Runtime node output inference
-            shared_ptr<KernelContext> ctx(new KernelContext(it));
-            for (auto& kernel_reg : kernel_regs)
-            {
-                auto kernel = kernel_reg->m_factory(ctx);
-                if (!kernel->get_or_emit_source())
-                    continue;
-                if (!this->fast_debug)
-                {
-                    nnfusion::profiler::ProfilingContext::Pointer pctx =
-                        make_shared<nnfusion::profiler::ProfilingContext>(kernel, false);
-
-                    nnfusion::profiler::Profiler prof(runtime, pctx);
-                    if (!prof.mixed_type_execute(raw_inputs, raw_outputs))
-                        continue;
-                }
-                else
-                {
-                    raw_outputs.resize(it->get_output_size());
-                    for (int i = 0; i < raw_outputs.size(); ++i)
-                    {
-                        auto& shape = it->get_output_shape(i);
-                        auto size = it->get_output_element_type(i).size();
-                        for (auto& it : shape)
-                            size *= it;
-                        raw_outputs[i].resize(size);
-                        memset(raw_outputs[i].data(), 0, raw_outputs[i].size());
-                    }
-                }
-                NNFUSION_LOG(INFO) << "  For node `" << it->get_name()
-                                << "`: get runtime output results of size " << raw_outputs.size();
-                const_infer_success = true;
-                break;
+                kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                    it->get_op_type(), GENERIC_CPU, element::f32);
             }
         }
+        else
+        {
+            NNFUSION_CHECK_FAIL() << "Cannot Recognize Backend Type: " << backend;
+        }
 
+        // Runtime node output inference
+        shared_ptr<KernelContext> ctx(new KernelContext(it));
+        for (auto& kernel_reg : kernel_regs)
+        {
+            auto kernel = kernel_reg->m_factory(ctx);
+            if (!kernel->get_or_emit_source())
+                continue;
+            if (!this->fast_debug)
+            {
+                nnfusion::profiler::ProfilingContext::Pointer pctx =
+                    make_shared<nnfusion::profiler::ProfilingContext>(kernel, false);
+
+                nnfusion::profiler::Profiler prof(runtime, pctx);
+                if (!prof.mixed_type_execute(raw_inputs, raw_outputs))
+                    continue;
+            }
+            else
+            {
+                raw_outputs.resize(it->get_output_size());
+                for (int i = 0; i < raw_outputs.size(); ++i)
+                {
+                    auto& shape = it->get_output_shape(i);
+                    auto size = it->get_output_element_type(i).size();
+                    for (auto& it : shape)
+                        size *= it;
+                    raw_outputs[i].resize(size);
+                    memset(raw_outputs[i].data(), 0, raw_outputs[i].size());
+                }
+            }
+            NNFUSION_LOG(INFO) << "  For node `" << it->get_name()
+                               << "`: get runtime output results of size " << raw_outputs.size();
+            const_infer_success = true;
+            break;
+        }
         if (!const_infer_success)
         {
             NNFUSION_LOG(INFO) << "  For node `" << it->get_name()

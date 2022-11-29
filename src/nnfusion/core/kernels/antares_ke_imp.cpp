@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "antares_ke_imp.hpp"
+#include "nnfusion/common/util.hpp"
 #include "nnfusion/util/curl_request.hpp"
 #define ANTARES_FORMAT_CHECK(cond)                                                                 \
     NNFUSION_CHECK(cond) << "Cannot parse antares response, make sure antare server >= v0.2"
@@ -10,6 +11,8 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DECLARE_string(fantares_codegen_server);
+DECLARE_string(ftuning_platform);
+DECLARE_string(fdefault_device);
 
 std::unordered_map<std::string, std::pair<std::string, bool>> AntaresKEImp::code_cache;
 
@@ -45,7 +48,60 @@ namespace
     };
 } // namespace
 
-std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
+AntaresKEImp::AntaresKEImp()
+{
+    if (FLAGS_fantares_codegen_server.size() > 0)
+    {
+        m_static_tuning_server = FLAGS_fantares_codegen_server;
+        auto items = split_string(m_static_tuning_server, ":");
+        NNFUSION_CHECK(items.size() == 2) << "Wrong server format: " << m_static_tuning_server;
+        auto port = atoi(items[1].c_str());
+        m_dynamic_tuning_server = items[0] + ":" + std::to_string(port + 1);
+    }
+}
+
+bool include_dynamic_shape(std::string expr)
+{
+    auto cur = 0;
+    auto pos = 0;
+    while ((pos = expr.find("shape", cur)) != std::string::npos)
+    {
+        auto left = expr.find("[", pos);
+        auto right = expr.find("]", pos);
+        NNFUSION_CHECK(left != std::string::npos && right != std::string::npos);
+        auto dims = split_string(expr.substr(left + 1, right - left - 1), ",");
+        for (auto dim : dims)
+        {
+            if (dim.find(":") != std::string::npos)
+            {
+                return true;
+            }
+        }
+        cur = right;
+    }
+    if (expr.find("alter(") != std::string::npos)
+    {
+        return true;
+    }
+
+    auto where = 0;
+    auto end = 0;
+    if ((where = expr.find("where")) != std::string::npos)
+    {
+        if ((end = expr.find("\"", where)) != std::string::npos)
+        {
+            auto where_list = expr.substr(where + 6, end - where - 6);
+            if (where_list.find(":") != std::string::npos)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr,
+                                                   const std::string& _tuning_platform)
 {
     auto it = code_cache.find(expr);
     if (it != code_cache.end())
@@ -58,9 +114,26 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
     // fetch from local cache folder
     if (FLAGS_fantares_codegen_server.size() == 0)
     {
-        std::size_t file_id = std::hash<std::string>{}(expr);
+        std::string tuning_platform =
+            _tuning_platform == "" ? get_antares_device_type(get_device_type(FLAGS_fdefault_device),
+                                                             FLAGS_ftuning_platform)
+                                   : _tuning_platform;
+        std::string file_id = sha256(expr);
         std::string cache_folder = "./kernel_cache";
-        auto file_name = cache_folder + "/" + std::to_string(file_id) + ".cpp";
+        auto file_name = cache_folder + "/" + file_id + "." + tuning_platform + ".c";
+        struct stat stats;
+        if (stat(file_name.c_str(), &stats) != 0)
+        {
+            // generate default kernel
+            std::string cmd = "PROGRESS=1 BACKEND=";
+            cmd += tuning_platform;
+            if (include_dynamic_shape(expr))
+                cmd += " TVM=0";
+            cmd += " COMPUTE_V1='";
+            cmd += expr;
+            cmd += ("' antares save " + file_name);
+            int sys_ret = system(("STEP=0 " + cmd).c_str());
+        }
         NNFUSION_LOG(INFO) << "fetch kernel from: " << file_name;
         std::ifstream ifs(file_name);
         std::string code((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
@@ -70,7 +143,9 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
     // fetch from tuning server
     else
     {
-        CurlRequest req(FLAGS_fantares_codegen_server);
+        auto server =
+            include_dynamic_shape(expr) ? m_dynamic_tuning_server : m_static_tuning_server;
+        CurlRequest req(server);
         req.add_custom_header(("COMPUTE_V1: " + expr).c_str());
 
         if (!req.send_request(response))
@@ -160,7 +235,7 @@ std::vector<nnfusion::Shape> AntaresKEImp::get_output_shapes(const std::string& 
     std::vector<nnfusion::Shape> output_shapes;
 
     size_t pos_st = response.find("// GLOBALS:");
-    ANTARES_FORMAT_CHECK(pos_st != std::string::npos);
+    ANTARES_FORMAT_CHECK(pos_st != std::string::npos) << response;
 
     auto sig = get_between(response, "// GLOBALS:", "\n");
     auto outputs = ssplit(sig, "->").at(1);

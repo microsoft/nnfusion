@@ -24,6 +24,14 @@
 #include "onnx.hpp"
 #include "util/graph_convert.hpp"
 
+DEFINE_string(params,
+              "##UNSET##",
+              "-p, Model input shape and type, fot torchscript, it's full shape like "
+              "\"1,1:float;2,3,4,5:double\", for onnx, it's dynamic dim like "
+              "\"dim1_name:4;dim2_name:128\"");
+
+DEFINE_bool(fort_folding, true, "use onnxruntime to do constant folding.");
+
 namespace nnfusion
 {
     namespace frontend
@@ -31,7 +39,7 @@ namespace nnfusion
         std::shared_ptr<nnfusion::graph::Graph>
             load_onnx_model(std::istream& sin,
                             const std::string& model_dir,
-                            const std::unordered_map<std::string, size_t>& dim_params)
+                            const std::unordered_map<std::string, SymDim>& dim_params)
         {
             onnx::ModelProto onnx_graph;
             NNFUSION_CHECK(onnx_graph.ParseFromIstream(&sin))
@@ -49,43 +57,47 @@ namespace nnfusion
 
         std::shared_ptr<nnfusion::graph::Graph>
             load_onnx_model(const std::string& path,
-                            const std::unordered_map<std::string, size_t>& dim_params)
+                            const std::unordered_map<std::string, SymDim>& dim_params)
         {
-            NNFUSION_LOG(INFO) << "Optimizing ONNX Graph with External Tool "
-                                  "(models/pytorch2onnx/ort_run_frozen.py)";
-            string optimized_filename = string(nnfusion::tmpnam(nullptr));
             string m_path = path;
-            string script_path =
-                nnfusion::codegen::get_file_from_templates("onnx/ort_run_frozen.py");
-            string cmd = "python3 " + script_path +
-                         " --graph_optimization_level ORT_ENABLE_BASIC "
-                         "--warmup 1 --iters 0 --file " +
-                         path + " --optimized_model_filepath " + optimized_filename;
-            if (dim_params.size() > 0)
+            std::ifstream opt_fin;
+            string optimized_filename = string(nnfusion::tmpnam(nullptr));
+            if (FLAGS_fort_folding)
             {
-                string dim_params_str = " --symbolic_dims \'{";
-                for (auto& it : dim_params)
+                NNFUSION_LOG(INFO) << "Optimizing ONNX Graph with External Tool "
+                                      "(models/pytorch2onnx/ort_run_frozen.py)";
+                string script_path =
+                    nnfusion::codegen::get_file_from_templates("onnx/ort_run_frozen.py");
+                string cmd = "python3 " + script_path +
+                             " --graph_optimization_level ORT_ENABLE_BASIC "
+                             "--warmup 1 --iters 0 --file " +
+                             path + " --optimized_model_filepath " + optimized_filename;
+                if (dim_params.size() > 0)
                 {
-                    if (dim_params_str != " --symbolic_dims \'{")
+                    string dim_params_str = " --symbolic_dims \'{";
+                    for (auto& it : dim_params)
                     {
-                        dim_params_str += ", ";
+                        if (dim_params_str != " --symbolic_dims \'{")
+                        {
+                            dim_params_str += ", ";
+                        }
+                        dim_params_str += "\"" + it.first + "\": " + to_string(it.second.max());
                     }
-                    dim_params_str += "\"" + it.first + "\": " + to_string(it.second);
+                    dim_params_str += "}\'";
+                    cmd += dim_params_str;
                 }
-                dim_params_str += "}\'";
-                cmd += dim_params_str;
-            }
-            int sys_ret = system(cmd.c_str());
-            std::ifstream opt_fin(optimized_filename.c_str());
-            if (sys_ret == 0 && opt_fin.is_open())
-            {
-                m_path = optimized_filename;
-            }
-            else
-            {
-                NNFUSION_LOG(NNFUSION_WARNING)
-                    << "Failed to optimize ONNX Graph with external tool, please "
-                       "check error messages reported by the tool, fallback";
+                int sys_ret = system(cmd.c_str());
+                opt_fin = std::ifstream(optimized_filename.c_str());
+                if (sys_ret == 0 && opt_fin.is_open())
+                {
+                    m_path = optimized_filename;
+                }
+                else
+                {
+                    NNFUSION_LOG(NNFUSION_WARNING)
+                        << "Failed to optimize ONNX Graph with external tool, please "
+                           "check error messages reported by the tool, fallback";
+                }
             }
 
             std::ifstream ifs{m_path, std::ios::in | std::ios::binary};

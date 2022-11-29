@@ -230,7 +230,10 @@ for (int tidx = thread_idx; tidx < width; tidx += block_size) {
 val = reduceSum(val, thread_idx, block_size, shm);
 if (thread_idx == 0) output0[block_idx] = val;
 )",
-                        {{"width", width}, {"block_size", expected_block_size}, {"warp_size", 32},{"dataType", dtype==nnfusion::element::f16? "half" : "float"}});
+                        {{"width", width},
+                         {"block_size", expected_block_size},
+                         {"warp_size", 32},
+                         {"dataType", dtype == nnfusion::element::f16 ? "half" : "float"}});
 
                     lu << code << "\n";
                     return _lu;
@@ -741,7 +744,7 @@ if (thread_idx == 0) output0[block_idx] = val;
                     {
                         stringstream ss;
                         ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
-                        // defult name is: "persit0", "persist1" ...
+                        // default name is: "persit0", "persist1" ...
                         ss << m_context->tensors[i]->get_name();
                         params.push_back(ss.str());
                     }

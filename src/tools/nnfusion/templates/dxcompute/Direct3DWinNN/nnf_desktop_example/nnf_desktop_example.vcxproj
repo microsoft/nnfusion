@@ -126,15 +126,25 @@ copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y</
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../runtime;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../runtime;../antares;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>antares.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxcompiler.dll" "$(TargetDir)" /Y
-copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y</Command>
+
+copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y
+copy .\para_info.json "$(TargetDir)"
+IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
+FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
+IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
+IF EXIST "$(SolutionDir)\python_wrapper\main.py"  copy "$(SolutionDir)\python_wrapper\main.py"  "$(TargetDir)"
+IF EXIST "$(SolutionDir)\python_wrapper\nnfusion"  xcopy /i /y /e "$(SolutionDir)\python_wrapper\nnfusion"  "$(TargetDir)\nnfusion"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,17 +155,27 @@ copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y</
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../runtime;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../runtime;../antares;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>antares.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxcompiler.dll" "$(TargetDir)" /Y
-copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y</Command>
+
+copy "$(WindowsSdkDir)Redist\D3D\$(PlatformTarget)\dxil.dll" "$(TargetDir)" /Y
+copy .\para_info.json "$(TargetDir)"
+IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
+FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
+IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
+IF EXIST "$(SolutionDir)\python_wrapper\main.py"  copy "$(SolutionDir)\python_wrapper\main.py"  "$(TargetDir)"
+IF EXIST "$(SolutionDir)\python_wrapper\nnfusion"  xcopy /i /y /e "$(SolutionDir)\python_wrapper\nnfusion"  "$(TargetDir)\nnfusion"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

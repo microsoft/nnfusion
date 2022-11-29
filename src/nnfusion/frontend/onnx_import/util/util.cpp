@@ -28,97 +28,65 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            bool ONNXDataTypeToNNFusionElementType(const onnx::TensorProto_DataType onnx_dt,
-                                                   nnfusion::element::Type* nnfusion_et)
+            const nnfusion::element::Type& ONNXDataTypeToNNFusionElementType(int onnx_dt)
             {
                 switch (onnx_dt)
                 {
-                case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
-                    *nnfusion_et = element::boolean;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
-                    *nnfusion_et = element::f32;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
-                    *nnfusion_et = element::f16;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
-                    *nnfusion_et = element::f64;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT8:
-                    *nnfusion_et = element::i8;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT16:
-                    *nnfusion_et = element::i16;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT32:
-                    *nnfusion_et = element::i32;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT64:
-                    *nnfusion_et = element::i64;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT8:
-                    *nnfusion_et = element::u8;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT16:
-                    *nnfusion_et = element::u16;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT32:
-                    *nnfusion_et = element::u32;
-                    break;
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT64:
-                    *nnfusion_et = element::u64;
-                    break;
+                case onnx::TensorProto_DataType::TensorProto_DataType_BOOL: return element::boolean;
+                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT: return element::f32;
+                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16: return element::f16;
+                case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE: return element::f64;
+                case onnx::TensorProto_DataType::TensorProto_DataType_INT8: return element::i8;
+                case onnx::TensorProto_DataType::TensorProto_DataType_INT16: return element::i16;
+                case onnx::TensorProto_DataType::TensorProto_DataType_INT32: return element::i32;
+                case onnx::TensorProto_DataType::TensorProto_DataType_INT64: return element::i64;
+                case onnx::TensorProto_DataType::TensorProto_DataType_UINT8: return element::u8;
+                case onnx::TensorProto_DataType::TensorProto_DataType_UINT16: return element::u16;
+                case onnx::TensorProto_DataType::TensorProto_DataType_UINT32: return element::u32;
+                case onnx::TensorProto_DataType::TensorProto_DataType_UINT64: return element::u64;
                 default:
                     NNFUSION_CHECK_FAIL() << "unsupported onnx element type: "
-                                          << onnx::TensorProto_DataType_Name(onnx_dt);
-                    return false;
+                                          << detail::onnx_type_name(onnx_dt);
                 }
-                return true;
+                return element::f32;
             }
 
-            template <typename T>
-            std::shared_ptr<op::Constant>
-                make_constant_op(const element::Type& type, const Shape shape, const Tensor& tensor)
-            {
-                return std::make_shared<op::Constant>(type, shape, tensor.get_data<T>());
-            }
-
-            std::shared_ptr<op::Constant> make_constant_op(const onnx::TensorProto_DataType onnx_et,
-                                                           const Shape shape,
+            std::shared_ptr<op::Constant> make_constant_op(const element::Type& type,
+                                                           const Shape& shape,
                                                            const Tensor& tensor)
             {
-                switch (onnx_et)
-                {
-                case onnx::TensorProto_DataType::TensorProto_DataType_BOOL:
-                    return make_constant_op<bool>(element::boolean, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT:
-                    return make_constant_op<float>(element::f32, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16:
-                    return make_constant_op<half_float::half>(element::f16, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_DOUBLE:
-                    return make_constant_op<double>(element::f64, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT8:
-                    return make_constant_op<int8_t>(element::i8, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT16:
-                    return make_constant_op<int16_t>(element::i16, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT32:
-                    return make_constant_op<int32_t>(element::i32, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_INT64:
-                    return make_constant_op<int64_t>(element::i64, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT8:
-                    return make_constant_op<uint8_t>(element::u8, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT16:
-                    return make_constant_op<uint16_t>(element::u16, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT32:
-                    return make_constant_op<uint32_t>(element::u32, shape, tensor);
-                case onnx::TensorProto_DataType::TensorProto_DataType_UINT64:
-                    return make_constant_op<uint64_t>(element::u64, shape, tensor);
-                default:
-                    NNFUSION_CHECK_FAIL() << "unsupported value info element type: "
-                                          << onnx::TensorProto_DataType_Name(onnx_et);
-                }
-                return make_constant_op<float>(element::f32, shape, tensor);
+                if (type == element::boolean)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<int16_t>());
+                if (type == element::i8)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<int8_t>());
+                if (type == element::i16)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<int16_t>());
+                if (type == element::i32)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<int32_t>());
+                if (type == element::i64)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<int64_t>());
+                if (type == element::u8)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<uint8_t>());
+                if (type == element::u16)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<uint16_t>());
+                if (type == element::u32)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<uint32_t>());
+                if (type == element::u64)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<uint64_t>());
+                if (type == element::f16)
+                    return std::make_shared<op::Constant>(
+                        type, shape, tensor.get_data<half_float::half>());
+                if (type == element::f32)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<float>());
+                if (type == element::f64)
+                    return std::make_shared<op::Constant>(type, shape, tensor.get_data<double>());
+                NNFUSION_CHECK_FAIL() << "unsupported element type: " << type;
+                return std::make_shared<op::Constant>(type, shape, tensor.get_data<float>());
+            }
+
+            std::shared_ptr<op::Constant> make_constant_op(const Tensor& tensor)
+            {
+                return make_constant_op(tensor.get_ng_type(), tensor.get_shape(), tensor);
             }
 
             std::shared_ptr<graph::GNode> GetInputNode(const NodeMap& all_ng_nodes,
@@ -136,8 +104,7 @@ namespace nnfusion
                     {
                         return nullptr;
                     }
-                    NNFUSION_CHECK_FAIL() << "Input Ngraph op not found for "
-                                          << node.input(input_idx);
+                    NNFUSION_CHECK_FAIL() << "Input op not found for " << node.input(input_idx);
                 }
                 return result;
             }
@@ -158,8 +125,7 @@ namespace nnfusion
                     {
                         return GNodeIndex{nullptr};
                     }
-                    NNFUSION_CHECK_FAIL() << "Input Ngraph op not found for "
-                                          << node.input(input_idx);
+                    NNFUSION_CHECK_FAIL() << "Input op not found for " << node.input(input_idx);
                 }
                 return result;
             }

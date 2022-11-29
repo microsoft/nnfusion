@@ -22,13 +22,18 @@ parser.add_argument('--warmup', type=int, default=5, help='The number of warmup 
 parser.add_argument('--iters', type=int, default=100, help='The number of execution iterations.')
 parser.add_argument('--provider', type=str, default='CPUExecutionProvider', help='The backend provider.')
 parser.add_argument('--logger_severity', type=int, default=2, help='onnxruntime.set_default_logger_severity.')
+parser.add_argument('--device_only', action="store_true", default=False, help='count device time instead of end2end time')
 args = parser.parse_args()
 
 if not os.path.exists(args.file):
     parser.exit(1, 'The specified file does not exist: {}'.format(args.file))
 
-onnx.checker.check_model(args.file)
-print("ONNX model check passed!")
+try:
+    onnx.checker.check_model(args.file)
+except Exception as e:
+    print(e)
+else:
+    print("ONNX model check passed!")
 
 def get_numpy(tensor):
     # ONNX Data Types Doc: https://github.com/onnx/onnx/blob/master/docs/IR.md#standard-data-types
@@ -104,31 +109,41 @@ ort_session = ort.InferenceSession(args.file, sess_options, providers=providers)
 
 print("Execution Providers:", ort_session.get_providers())
 
-# inputs = ort_session.get_inputs()
-# inputs_name = [item.name for item in inputs]
-# ort_inputs = {}
-# for tensor in inputs:
-#     ort_inputs.update({tensor.name: get_numpy(tensor)})
+inputs = ort_session.get_inputs()
+inputs_name = [item.name for item in inputs]
+ort_inputs = {}
+for tensor in inputs:
+    ort_inputs.update({tensor.name: get_numpy(tensor)})
 
-# outputs = ort_session.get_outputs()
-# outputs_name = [item.name for item in outputs]
+outputs = ort_session.get_outputs()
+outputs_name = [item.name for item in outputs]
 
-# for warmup in range(args.warmup):
-#     outputs = ort_session.run(outputs_name, ort_inputs)
-#     for i in range(len(outputs)):
-#         out_flat = outputs[i].flat
-#         if (len(out_flat) > 0):
-#             max_len = min(10, len(out_flat))
-#             print(outputs_name[i])
-#             print(out_flat[:max_len], "...(size=", len(out_flat), "end with", out_flat[-1], ")")
-#             # print_offset = int(len(out_flat) / 3)
-#             # max_len = min(10, len(out_flat) - print_offset)
-#             # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
+for warmup in range(args.warmup):
+    outputs = ort_session.run(outputs_name, ort_inputs)
+    for i in range(len(outputs)):
+        out_flat = outputs[i].flat
+        if (len(out_flat) > 0):
+            max_len = min(10, len(out_flat))
+            print(outputs_name[i])
+            print(out_flat[:max_len], "...(size=", len(out_flat), "end with", out_flat[-1], ")")
+            # print_offset = int(len(out_flat) / 3)
+            # max_len = min(10, len(out_flat) - print_offset)
+            # print(out_flat[print_offset:max_len + print_offset], "offset=", print_offset)
 
-# if args.iters > 0:
-#     print('>> Evalutating Benchmark ...')
-#     t_start = time.time()
-#     for step in range(args.iters):
-#         ort_session.run(outputs_name, ort_inputs)
-#     t_end = time.time()
-#     print('>> Average time for each run: %.4f ms;' % ((t_end - t_start) * 1e3 / args.iters))
+if args.device_only:
+    io_binding = ort_session.io_binding()
+    for key, value in ort_inputs.items():
+        io_binding.bind_ortvalue_input(key, ort.OrtValue.ortvalue_from_numpy(value, 'cuda', 0))
+    for o in outputs_name:
+        io_binding.bind_output(o, 'cuda')
+
+if args.iters > 0:
+    print('>> Evaluating Benchmark ...')
+    t_start = time.time()
+    for step in range(args.iters):
+        if args.device_only:
+            ort_session.run_with_iobinding(io_binding)
+        else:
+            ort_session.run(outputs_name, ort_inputs)
+    t_end = time.time()
+    print('>> Average time for each run: %.4f ms;' % ((t_end - t_start) * 1e3 / args.iters))

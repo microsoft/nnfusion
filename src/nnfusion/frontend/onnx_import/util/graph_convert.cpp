@@ -227,7 +227,7 @@ namespace nnfusion
             }
 
             GraphConvert::GraphConvert(const onnx::ModelProto& model_proto,
-                                       const std::unordered_map<std::string, size_t>& dim_params,
+                                       const std::unordered_map<std::string, SymDim>& dim_params,
                                        const string& model_dir)
                 : onnx_model_proto{&model_proto}
                 , onnx_graph_proto(&(model_proto.graph()))
@@ -337,6 +337,7 @@ namespace nnfusion
                 }
 
                 m_graph = std::make_shared<nnfusion::graph::Graph>();
+                m_graph->set_dim_params(m_dim_params);
 
                 NNFUSION_CHECK(onnx_graph_proto->sparse_initializer_size() == 0)
                     << "sparse_initializer not supported";
@@ -353,9 +354,8 @@ namespace nnfusion
                         move_external_to_rawdata(tensor, model_dir);
                         if (FLAGS_ftraining_mode)
                         {
-                            element::Type type;
-                            ONNXDataTypeToNNFusionElementType(
-                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()), &type);
+                            element::Type type = ONNXDataTypeToNNFusionElementType(
+                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
                             std::shared_ptr<graph::GNode> input_gnode;
                             auto tensor_op = std::make_shared<op::Parameter>(
                                 type,
@@ -369,11 +369,10 @@ namespace nnfusion
                         }
                         else
                         {
-                            auto tensor_op = make_constant_op(
-                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()),
-                                Shape(std::begin(tensor.dims()), std::end(tensor.dims())),
-                                Tensor{tensor});
+                            auto wrapper_tensor = Tensor{tensor};
+                            auto tensor_op = make_constant_op(wrapper_tensor);
                             tensor_op->set_name(tensor.name());
+                            tensor_op->set_global_consistent_name(tensor.name());
                             auto tensor_gnode =
                                 m_graph->add_node_and_edge(tensor_op, graph::GNodeVector({}));
                             m_node_map[tensor.name()] = {GNodeIndex{tensor_gnode}};
@@ -413,6 +412,7 @@ namespace nnfusion
                         auto input_op = std::make_shared<op::Parameter>(
                             input_value_info.get_element_type(), input_value_info.get_shape());
                         input_op->set_name(input_proto.name());
+                        input_op->set_sym_shape(input_value_info.get_sym_shape());
                         input_gnode = m_graph->add_node_and_edge(input_op, graph::GNodeVector({}));
                         m_node_map[input_proto.name()] = {GNodeIndex{input_gnode}};
                         if (m_output_names.find(input_gnode->get_name()) != m_output_names.end())
@@ -479,6 +479,8 @@ namespace nnfusion
 
                 for (const auto& node_proto : onnx_nodes)
                 {
+                    NNFUSION_LOG(INFO) << "Convert Node Type : " << node_proto.op_type();
+
                     auto results = convert_node(node_proto);
                     for (auto& named_gnode : results)
                     {
@@ -519,6 +521,7 @@ namespace nnfusion
                 NNFUSION_LOG(DEBUG) << "convert node: " << node_proto.name();
                 const auto& convert_func =
                     get_convert_func(node_proto.op_type(), node_proto.domain());
+
                 NamedNodeVector ret;
                 if (convert_func)
                 {
@@ -535,8 +538,9 @@ namespace nnfusion
                 }
                 for (int i = 0; i < ret.size(); i++)
                 {
-                    NNFUSION_LOG(DEBUG) << "node " << node_proto.name() << ", output " << ret[i].name
-                                       << ", shape " << ret[i].gnode_index.get_shape();
+                    NNFUSION_LOG(INFO) << "node " << node_proto.name() << ", output " << ret[i].name
+                                       << ", shape " << ret[i].gnode_index.get_shape()
+                                       << ret[i].gnode_index.get_shape().is_dynamic();
                 }
                 return std::move(ret);
             }

@@ -86,18 +86,18 @@ namespace nnfusion
                     dim_params_str += "}\'";
                     cmd += dim_params_str;
                 }
-                int sys_ret = system(cmd.c_str());
-                opt_fin = std::ifstream(optimized_filename.c_str());
-                if (sys_ret == 0 && opt_fin.is_open())
-                {
-                    m_path = optimized_filename;
-                }
-                else
-                {
-                    NNFUSION_LOG(NNFUSION_WARNING)
-                        << "Failed to optimize ONNX Graph with external tool, please "
-                           "check error messages reported by the tool, fallback";
-                }
+                // int sys_ret = system(cmd.c_str());
+                // opt_fin = std::ifstream(optimized_filename.c_str());
+                // if (sys_ret == 0 && opt_fin.is_open())
+                // {
+                //     m_path = optimized_filename;
+                // }
+                // else
+                // {
+                //     NNFUSION_LOG(NNFUSION_WARNING)
+                //         << "Failed to optimize ONNX Graph with external tool, please "
+                //            "check error messages reported by the tool, fallback";
+                // }
             }
 
             std::ifstream ifs{m_path, std::ios::in | std::ios::binary};

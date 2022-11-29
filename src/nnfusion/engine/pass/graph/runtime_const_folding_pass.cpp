@@ -2,10 +2,12 @@
 // Licensed under the MIT License.
 
 #include "runtime_const_folding_pass.hpp"
+#include "nnfusion/core/kernels/cpu/cpu_kernel_emitter.hpp"
 
 DEFINE_string(fconst_folding_backend,
               "",
               "Choose which backend will be used in Constant folding pass. Disable when not set.");
+DECLARE_bool(fantares_mode);
 
 using namespace nnfusion::pass::graph;
 
@@ -113,8 +115,29 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
         {
             runtime = nnfusion::profiler::ReferenceRuntime::Runtime();
             NNFUSION_CHECK(runtime->check_env());
-            kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
-                it->get_op_type(), GENERIC_CPU, element::f32);
+            if (FLAGS_fantares_mode)
+            {
+                shared_ptr<const KernelRegistration> kernel_reg =
+                    kernels::Name(it->get_op_type())
+                        .Device(GENERIC_CPU)
+                        .TypeConstraint(element::f32)
+                        .Tag("reference")
+                        .Priority(0)
+                        .KernelFactory([](shared_ptr<kernels::KernelContext> context)
+                                           -> shared_ptr<kernels::KernelEmitter> {
+                            return make_shared<kernels::cpu::AntaresCpuReferenceKernelEmitter>(
+                                context);
+                        })
+                        .Build();
+                kernel_regs = {kernel_reg};
+                nnfusion::kernels::cpu::AntaresCpuReferenceKernelEmitter::
+                    codegen_cpu_reference_kernel_sync(it);
+            }
+            else
+            {
+                kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+                    it->get_op_type(), GENERIC_CPU, element::f32);
+            }
         }
         else
         {

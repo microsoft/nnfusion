@@ -118,6 +118,9 @@ void Op::revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
             if (output->get_shape().is_dynamic())
             {
                 (*gnode)["symbolic"] = true;
+                NNFUSION_LOG(INFO)
+                    << gnode->get_op_type()
+                    << " Get Symbolic Output: " << (*output->get_shape().get_sym_shape());
             }
         }
     }

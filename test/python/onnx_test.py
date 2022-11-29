@@ -31,7 +31,6 @@ class TestContext:
     antares_url = "127.0.0.1:8880"
     nnfusion_device = "CUDA"
     nnfusion_codegen_dir = "nnfusion_rt/cuda_codegen"
-    data_type_block_list = ["uint"]
 
     def __init__(self, ops) -> None:
         self.nnfusion_argstr = self.nnfusion_argstr.replace("127.0.0.1:8880", self.antares_url).replace("CUDA", self.nnfusion_device)

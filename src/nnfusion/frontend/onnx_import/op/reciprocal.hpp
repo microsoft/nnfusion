@@ -21,24 +21,53 @@
 
 #pragma once
 
-#include "ngraph/node_vector.hpp"
-
 #include "core/node.hpp"
 
-namespace ngraph
+namespace nnfusion
 {
-    namespace onnx_import
+    namespace frontend
     {
-        namespace op
+        namespace onnx_import
         {
             namespace set_1
             {
-                NodeVector reciprocal(const Node& node);
+                NamedNodeVector
+                    TranslateReciprocalOp(const onnx::NodeProto& node_proto,
+                                          const NodeMap& all_ng_nodes,
+                                          std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
+                    auto input_shape = input_gnode->get_shape();
 
+                    auto ones_gnode = m_graph->add_node_and_edge(
+                        std::make_shared<op::Constant>(input_gnode->get_element_type(),
+                                                       Shape{},
+                                                       std::vector<std::string>{"1"}),
+                        GNodeIndexVector{});
+                    nnfusion::AxisSet broadcast_axes;
+                    for (auto i = 0; i < input_shape.size(); i++)
+                    {
+                        broadcast_axes.insert(i);
+                    }
+                    ones_gnode = m_graph->add_node_and_edge(
+                        std::make_shared<op::Broadcast>(input_shape, broadcast_axes), {ones_gnode});
+                    auto ret_gnode = m_graph->add_node_and_edge(std::make_shared<op::Divide>(),
+                                                                {ones_gnode, input_gnode});
+
+                    return {{node_proto.output(0), ret_gnode}};
+                }
             } // namespace set_1
 
-        } //namespace op
+            namespace set_6
+            {
+                using set_1::TranslateReciprocalOp;
+            }
 
-    } // namespace onnx_import
+            namespace set_13
+            {
+                using set_1::TranslateReciprocalOp;
+            }
+        } // namespace onnx_import
 
-} // namespace ngraph
+    } // namespace frontend
+} // namespace nnfusion

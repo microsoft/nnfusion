@@ -107,9 +107,10 @@ namespace {
     struct dx_shader_t
     {
         int block[3], thread[3];
+        std::vector<int> cbuffer_sizes;
         std::vector<dx_tensor_t> inputs, outputs;
         std::string source;
-        std::unordered_map<std::vector<size_t>, ComPtr<ID3D12PipelineState>, VectorHasher> pPSO_ht; // bytecode_ht;
+        ComPtr<ID3D12PipelineState> pPSO_ht;
 
         // Added D3D12 resource ptr.
         ComPtr<ID3D12RootSignature> pRootSignature;
@@ -239,15 +240,9 @@ static std::unordered_map<size_t, std::vector<void*>> unused_buffers;
 static std::unordered_map<void*, size_t> buffer_slots;
 
 inline size_t compute_slotsize(size_t &value) {
-    static const int tab64[64] = {
-        63,  0, 58,  1, 59, 47, 53,  2,
-        60, 39, 48, 27, 54, 33, 42,  3,
-        61, 51, 37, 40, 49, 18, 28, 20,
-        55, 30, 34, 11, 43, 14, 22,  4,
-        62, 57, 46, 52, 38, 26, 32, 41,
-        50, 36, 17, 19, 29, 10, 13, 21,
-        56, 45, 25, 31, 35, 16,  9, 12,
-        44, 24, 15,  8, 23,  7,  6,  5 };
+    static const int tab32[32] = {
+      0,  9,  1, 10, 13, 21,  2, 29, 11, 14, 16, 18, 22, 25,  3, 30,
+      8, 12, 20, 28, 15, 17, 24,  7, 19, 27, 23,  6, 26,  5,  4, 31};
 
     value -= 1;
     value |= value >> 1;
@@ -257,7 +252,11 @@ inline size_t compute_slotsize(size_t &value) {
     value |= value >> 16;
     value |= value >> 32;
 
-    size_t slot_id = tab64[((uint64_t)((value - (value >> 1)) * 0x07EDD5E59A4E28C2LLU)) >> 58];
+    size_t slot_id;
+    if (value > (1LL << 30))
+        slot_id = 32 + (value - (1LL << 30)) / (1LL << 30);
+    else
+        slot_id = tab32[(uint32_t)(value * 0x07C4ACDD) >> 27];
     value += 1;
     return slot_id;
 }
@@ -378,6 +377,17 @@ void* dxShaderLoad_v2(const char* shader_src)
     handle->thread[1] = std::atoi(get_between(source, "// [thread_extent] threadIdx.y = ", "\n", "1").c_str());
     handle->thread[2] = std::atoi(get_between(source, "// [thread_extent] threadIdx.z = ", "\n", "1").c_str());
 
+    handle->cbuffer_sizes = {0};
+    auto cbuffs = ssplit(get_between(source, "// VAMAP: ", "\n", ""), ",");
+    for (auto it : cbuffs) {
+        auto type = ssplit(it, "/")[0];
+        if (type == "double" || type == "int64_t" || type == "llong")
+            handle->cbuffer_sizes.push_back(2);
+        else
+            handle->cbuffer_sizes.push_back(1);
+        handle->cbuffer_sizes[0] += handle->cbuffer_sizes.back();
+    }
+
     assert(INT64(handle->thread[0]) * handle->thread[1] * handle->thread[2] <= 1024);
 
     // Added code to actually create D3D resources needed for shader launch.
@@ -387,30 +397,36 @@ void* dxShaderLoad_v2(const char* shader_src)
 
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC computeRootSignatureDesc;
     std::vector<CD3DX12_ROOT_PARAMETER1> computeRootParameters;
-    CD3DX12_DESCRIPTOR_RANGE1 ranges[2];
 
+    // Prepare Root
+    CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
     if (_USE_DESCRIPTOR_HEAP_)
     {
-        // Prepare Root
-        computeRootParameters.resize(1);
+        computeRootParameters.resize(2);
         // D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE is needed to disable unproper driver optimization.
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, (uint32_t)hd->inputs.size(), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, (uint32_t)hd->outputs.size(), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, (uint32_t)hd->inputs.size());
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, (uint32_t)hd->inputs.size() + hd->outputs.size(), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
+        computeRootParameters[0].InitAsDescriptorTable(1, ranges);
 
-        computeRootParameters[0].InitAsDescriptorTable(2, ranges);
-        computeRootSignatureDesc.Init_1_1((UINT)computeRootParameters.size(),
-            computeRootParameters.data());
+        if (hd->cbuffer_sizes[0] > 0) {
+            computeRootParameters[1].InitAsConstants(hd->cbuffer_sizes[0], 0);
+        } else {
+            computeRootParameters.pop_back();
+        }
     }
     else
     {
-        // Prepare Root
-        computeRootParameters.resize(hd->inputs.size() + hd->outputs.size());
+        computeRootParameters.resize(hd->inputs.size() + hd->outputs.size() + 1);
         for (int i = 0; i < hd->inputs.size(); ++i)
-            computeRootParameters[i].InitAsShaderResourceView(i);
+            computeRootParameters[i].InitAsUnorderedAccessView(i);
         for (int i = 0; i < hd->outputs.size(); ++i)
-            computeRootParameters[hd->inputs.size() + i].InitAsUnorderedAccessView(i);
-        computeRootSignatureDesc.Init_1_1((UINT)computeRootParameters.size(), computeRootParameters.data());
+            computeRootParameters[hd->inputs.size() + i].InitAsUnorderedAccessView(hd->inputs.size() + i);
+
+        if (hd->cbuffer_sizes[0] > 0)
+            computeRootParameters[hd->inputs.size() + hd->outputs.size()].InitAsConstants(hd->cbuffer_sizes[0], 0);
+        else
+            computeRootParameters.pop_back();
     }
+    computeRootSignatureDesc.Init_1_1((UINT)computeRootParameters.size(), computeRootParameters.data());
 
     ComPtr<ID3DBlob> signature;
     ComPtr<ID3DBlob> error;
@@ -637,6 +653,25 @@ int dxMemcpyHtoDAsync(void* dst, void* src, size_t bytes, void *hStream)
     return dxStreamSynchronize(hStream);
 }
 
+void* dxMemHostRegister(void* dptr, unsigned int subres) {
+    auto deviceIter = map_device_ptr(dptr);
+    UINT64 offset = static_cast<char*>(dptr) - static_cast<char*>(deviceIter->first);
+    auto src_buffer = (dx_buffer_t*)(deviceIter->second);
+    void* result = nullptr;
+    D3D12_RANGE range = { 0, static_cast<SIZE_T>(src_buffer->size) };
+    src_buffer->handle->Map(subres, &range, &result);
+    return ((char*)result) + offset;
+}
+
+void dxMemHostUnregister(void* dptr, unsigned int subres) {
+    auto deviceIter = map_device_ptr(dptr);
+    UINT64 offset = static_cast<char*>(dptr) - static_cast<char*>(deviceIter->first);
+    auto src_buffer = (dx_buffer_t*)(deviceIter->second);
+    void* result = nullptr;
+    D3D12_RANGE range = { 0, static_cast<SIZE_T>(src_buffer->size) };
+    src_buffer->handle->Unmap(subres, &range);
+}
+
 int dxMemcpyDtoHAsync(void* dst, void* src, size_t bytes, void* hStream)
 {
     DEBUG_PRINT(__func__);
@@ -685,7 +720,7 @@ int dxModuleSetCompat(const char* compat_name) {
     return 0;
 }
 
-int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, void* hStream)
+int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int blocks, void* hStream)
 {
     DEBUG_PRINT(__func__);
 
@@ -695,16 +730,8 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
     auto pStream = (dx_stream_t*)hStream;
     assert(pStream->state == dx_stream_t::State::INRECORD);
 
-    n -= hd->inputs.size() + hd->outputs.size();
-    n = max(0, n);
-    std::vector<size_t> pargs(n);
-    for (int i = 0, j = hd->inputs.size() + hd->outputs.size(); i < n; ++i, ++j)
-        pargs[i] = (size_t)buffers[j];
-    auto pso_iter = hd->pPSO_ht.find(pargs);
-    if (pso_iter == hd->pPSO_ht.end()) {
+    if (hd->pPSO_ht == nullptr) {
         std::string src = hd->source;
-        for (int i = 0; i < n; ++i)
-            src = ReplaceAll(src, "@" + std::to_string(i) + "@", std::to_string(pargs[i]));
         CD3DX12_SHADER_BYTECODE bytecode;
 #ifdef _USE_DXC_
         // Use cs_6_0 since dxc only supports cs_6_0 or higher shader models.
@@ -721,13 +748,24 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
             IFE(-1);
         }
 
-        ComPtr<ID3D12PipelineState>& m_computeState = hd->pPSO_ht[pargs];
         D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc{};
         computePsoDesc.CS = bytecode;
         computePsoDesc.pRootSignature = hd->pRootSignature.Get();
-        IFE(device->pDevice->CreateComputePipelineState(&computePsoDesc, IID_GRAPHICS_PPV_ARGS(m_computeState.ReleaseAndGetAddressOf())));
-        pso_iter = hd->pPSO_ht.find(pargs);
+        IFE(device->pDevice->CreateComputePipelineState(&computePsoDesc, IID_GRAPHICS_PPV_ARGS(hd->pPSO_ht.ReleaseAndGetAddressOf())));
     }
+
+    std::vector<int> pargs;
+    pargs.reserve(hd->cbuffer_sizes[0]);
+    for (int i = 1, j = hd->inputs.size() + hd->outputs.size(); i < hd->cbuffer_sizes.size(); ++i, ++j) {
+        auto regs = (int64_t)buffers[j];
+        if (hd->cbuffer_sizes[i] == 2) {
+            pargs.push_back(regs);
+            pargs.push_back(regs >> 32);
+        } else {
+            pargs.push_back(regs);
+        }
+    }
+    assert(pargs.size() == hd->cbuffer_sizes[0]);
 
     std::vector<void*> devicePtrs;
     std::vector<UINT64> offsets;
@@ -749,7 +787,7 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
     // Handle state transition.
     for (int i = 0; i < hd->inputs.size(); ++i)
     {
-        ((dx_buffer_t*)devicePtrs[i])->StateTransition(pStream->pCmdList.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        ((dx_buffer_t*)devicePtrs[i])->StateTransition(pStream->pCmdList.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     }
     for (int i = 0; i < hd->outputs.size(); ++i)
     {
@@ -757,8 +795,7 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
     }
 
     pStream->pCmdList->SetComputeRootSignature(hd->pRootSignature.Get());
-    pStream->pCmdList->SetPipelineState(pso_iter->second.Get());
-
+    pStream->pCmdList->SetPipelineState(hd->pPSO_ht.Get());
 
     if (_USE_DESCRIPTOR_HEAP_)
     {
@@ -774,17 +811,15 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
         // A higher performance solution may be pre-create it in CPU desc heaps and then copy the desc to GPU heaps in realtime.
         for (size_t i = 0; i < hd->inputs.size(); ++i)
         {
-            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-            ZeroMemory(&srvDesc, sizeof(srvDesc));
-            srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+            ZeroMemory(&uavDesc, sizeof(uavDesc));
+            uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
             assert(offsets[i] % (uint32_t)hd->inputs[i].TypeSize() == 0);
-            srvDesc.Buffer.FirstElement = offsets[i] / (uint32_t)hd->inputs[i].TypeSize();
-            srvDesc.Buffer.NumElements = (uint32_t)hd->inputs[i].NumElements();
-            srvDesc.Buffer.StructureByteStride = (uint32_t)hd->inputs[i].TypeSize();
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-            device->pDevice->CreateShaderResourceView(((dx_buffer_t*)devicePtrs[i])->handle.Get(), &srvDesc, handleCPU);
+            uavDesc.Buffer.FirstElement = offsets[i] / (uint32_t)hd->inputs[i].TypeSize();
+            uavDesc.Buffer.NumElements = (uint32_t)hd->inputs[i].NumElements();
+            uavDesc.Buffer.StructureByteStride = (uint32_t)hd->inputs[i].TypeSize();
+            device->pDevice->CreateUnorderedAccessView(((dx_buffer_t*)devicePtrs[i])->handle.Get(), nullptr, &uavDesc, handleCPU);
             handleCPU.ptr += nStep;
         }
         for (size_t i = 0; i < hd->outputs.size(); ++i)
@@ -800,16 +835,19 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
             device->pDevice->CreateUnorderedAccessView(((dx_buffer_t*)devicePtrs[hd->inputs.size() + i])->handle.Get(), nullptr, &uavDesc, handleCPU);
             handleCPU.ptr += nStep;
         }
-
         pStream->pCmdList->SetComputeRootDescriptorTable(0, handleGPU);
+        if (hd->cbuffer_sizes.size() > 1)
+            pStream->pCmdList->SetComputeRoot32BitConstants(1, pargs.size(), pargs.data(), 0);
     }
     else
     {
 
         for (uint32_t i = 0; i < hd->inputs.size(); ++i)
-            pStream->pCmdList->SetComputeRootShaderResourceView(i, ((dx_buffer_t*)devicePtrs[i])->handle.Get()->GetGPUVirtualAddress() + offsets[i]);
+            pStream->pCmdList->SetComputeRootUnorderedAccessView(i, ((dx_buffer_t*)devicePtrs[i])->handle.Get()->GetGPUVirtualAddress() + offsets[i]);
         for (uint32_t i = 0; i < hd->outputs.size(); ++i)
             pStream->pCmdList->SetComputeRootUnorderedAccessView((UINT)hd->inputs.size() + i, ((dx_buffer_t*)devicePtrs[hd->inputs.size() + i])->handle.Get()->GetGPUVirtualAddress() + offsets[hd->inputs.size() + i]);
+        if (hd->cbuffer_sizes.size() > 1)
+            pStream->pCmdList->SetComputeRoot32BitConstants(hd->inputs.size() + hd->outputs.size(), pargs.size(), pargs.data(), 0);
     }
 
 #ifdef _USE_GPU_TIMER_
@@ -826,7 +864,7 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
 
 int dxShaderLaunchAsync(void* hShader, void** buffers, void* hStream)
 {
-    return dxShaderLaunchAsyncExt(hShader, buffers, 0, -1, hStream);
+    return dxShaderLaunchAsyncExt(hShader, buffers, -1, hStream);
 }
 
 void* dxEventCreate()

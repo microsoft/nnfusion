@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "../core/node.hpp"
+#include "core/node.hpp"
 
 namespace nnfusion
 {
@@ -31,19 +31,29 @@ namespace nnfusion
         {
             namespace set_1
             {
-                NamedNodeVector TranslateLstmOp(const onnx::NodeProto& node_proto,
+                NamedNodeVector TranslateSizeOp(const onnx::NodeProto& node_proto,
                                                 const NodeMap& all_ng_nodes,
-                                                std::shared_ptr<nnfusion::graph::Graph> m_graph);
-            }
+                                                std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    GNodeIndexVector input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
 
-            namespace set_7
-            {
-                using set_1::TranslateLstmOp;
-            }
+                    auto input = input_indexes[0];
+                    auto input_shape = input.get_shape();
 
-            namespace set_14
+                    int64_t tensor_size = nnfusion::shape_size<nnfusion::Shape>(input_shape);
+
+                    auto size_gnode = m_graph->add_node_and_edge(
+                        std::make_shared<op::Constant>(
+                            element::i64, Shape{}, std::vector<int64_t>{tensor_size}),
+                        graph::GNodeVector({}));
+
+                    return {{node_proto.output(0), size_gnode}};
+                }
+            } // namespace set_1
+
+            namespace set_13
             {
-                using set_1::TranslateLstmOp;
+                using set_1::TranslateSizeOp;
             }
         } // namespace onnx_import
     }     // namespace frontend

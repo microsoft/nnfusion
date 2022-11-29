@@ -11,6 +11,8 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DECLARE_string(fantares_codegen_server);
+DECLARE_string(ftuning_platform);
+DECLARE_string(fdefault_device);
 
 std::unordered_map<std::string, std::pair<std::string, bool>> AntaresKEImp::code_cache;
 
@@ -98,7 +100,8 @@ bool include_dynamic_shape(std::string expr)
     return false;
 }
 
-std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
+std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr,
+                                                   const std::string& _tuning_platform)
 {
     auto it = code_cache.find(expr);
     if (it != code_cache.end())
@@ -111,9 +114,26 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr)
     // fetch from local cache folder
     if (FLAGS_fantares_codegen_server.size() == 0)
     {
+        std::string tuning_platform =
+            _tuning_platform == "" ? get_antares_device_type(get_device_type(FLAGS_fdefault_device),
+                                                             FLAGS_ftuning_platform)
+                                   : _tuning_platform;
         std::string file_id = sha256(expr);
         std::string cache_folder = "./kernel_cache";
-        auto file_name = cache_folder + "/" + file_id + ".c";
+        auto file_name = cache_folder + "/" + file_id + "." + tuning_platform + ".c";
+        struct stat stats;
+        if (stat(file_name.c_str(), &stats) != 0)
+        {
+            // generate default kernel
+            std::string cmd = "PROGRESS=1 BACKEND=";
+            cmd += tuning_platform;
+            if (include_dynamic_shape(expr))
+                cmd += " TVM=0";
+            cmd += " COMPUTE_V1='";
+            cmd += expr;
+            cmd += ("' antares save " + file_name);
+            int sys_ret = system(("STEP=0 " + cmd).c_str());
+        }
         NNFUSION_LOG(INFO) << "fetch kernel from: " << file_name;
         std::ifstream ifs(file_name);
         std::string code((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));

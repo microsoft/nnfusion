@@ -27,7 +27,6 @@
 
 #include "op/adam_optimizer.hpp"
 #include "op/attention.hpp"
-#include "op/averagepool.hpp"
 #include "op/batch_norm.hpp"
 #include "op/bias_gelu.hpp"
 #include "op/binaryop.hpp"
@@ -51,6 +50,7 @@
 #include "op/gru.hpp"
 #include "op/identity.hpp"
 #include "op/index_reduce.hpp"
+#include "op/instance_norm.hpp"
 #include "op/layer_norm.hpp"
 #include "op/leaky_relu.hpp"
 #include "op/log_softmax.hpp"
@@ -64,12 +64,14 @@
 #include "op/pad.hpp"
 #include "op/pool.hpp"
 #include "op/range.hpp"
+#include "op/reciprocal.hpp"
 #include "op/reduce.hpp"
 #include "op/reshape.hpp"
 #include "op/resize.hpp"
 #include "op/roll.hpp"
 #include "op/scatternd.hpp"
 #include "op/shape.hpp"
+#include "op/size.hpp"
 #include "op/slice.hpp"
 #include "op/softmax.hpp"
 #include "op/split.hpp"
@@ -153,17 +155,32 @@ namespace nnfusion
                 REGISTER_OPERATOR("Abs", 1, TranslateUnaryOp<op::Abs>);
                 REGISTER_OPERATOR("Acos", 1, TranslateUnaryOp<op::Acos>);
                 REGISTER_OPERATOR("AveragePool", 1, TranslateAveragePoolOp);
+                REGISTER_OPERATOR("AveragePool", 7, TranslateAveragePoolOp);
+                REGISTER_OPERATOR("AveragePool", 10, TranslateAveragePoolOp);
+                REGISTER_OPERATOR("AveragePool", 11, TranslateAveragePoolOp);
                 REGISTER_OPERATOR("AdamOptimizer", 1, TranslateAdamOptimizerOp);
                 REGISTER_OPERATOR("Add", 1, TranslateLegacyBinaryOp<op::Add>);
                 REGISTER_OPERATOR("Add", 7, TranslateBinaryOp<op::Add>);
                 REGISTER_OPERATOR("And", 1, TranslateBinaryOp<op::And>);
                 REGISTER_OPERATOR("ArgMin", 1, TranslateIndexReductionOp<op::ArgMin>);
-                // REGISTER_OPERATOR("ArgMax", 1, TranslateIndexReductionOp<op::ArgMax>);
+                REGISTER_OPERATOR("ArgMin", 11, TranslateIndexReductionOp<op::ArgMin>);
+                REGISTER_OPERATOR("ArgMin", 12, TranslateIndexReductionOp<op::ArgMin>);
+                REGISTER_OPERATOR("ArgMin", 13, TranslateIndexReductionOp<op::ArgMin>);
+                REGISTER_OPERATOR("ArgMin", 14, TranslateIndexReductionOp<op::ArgMin>);
+                REGISTER_OPERATOR("ArgMax", 1, TranslateIndexReductionOp<op::ArgMax>);
+                REGISTER_OPERATOR("ArgMax", 11, TranslateIndexReductionOp<op::ArgMax>);
+                REGISTER_OPERATOR("ArgMax", 12, TranslateIndexReductionOp<op::ArgMax>);
+                REGISTER_OPERATOR("ArgMax", 13, TranslateIndexReductionOp<op::ArgMax>);
+                REGISTER_OPERATOR("ArgMax", 14, TranslateIndexReductionOp<op::ArgMax>);
                 REGISTER_OPERATOR("Asin", 1, TranslateUnaryOp<op::Asin>);
                 REGISTER_OPERATOR("Atan", 1, TranslateUnaryOp<op::Atan>);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "Attention", 1, TranslateAttentionOp);
-                REGISTER_OPERATOR("AveragePool", 1, TranslatePoolOp<op::AvgPool>);
                 REGISTER_OPERATOR("BatchNormalization", 1, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 6, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 7, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 9, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 14, TranslateBatchNormOp);
+                REGISTER_OPERATOR("BatchNormalization", 15, TranslateBatchNormOp);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "BiasGelu", 1, TranslateBiasGeluOp);
                 REGISTER_OPERATOR("Cast", 1, TranslateCastOp);
                 REGISTER_OPERATOR("Cast", 6, TranslateCastOp);
@@ -232,27 +249,59 @@ namespace nnfusion
                 REGISTER_OPERATOR("GatherND", 13, TranslateGatherNDOp);
                 REGISTER_OPERATOR("GatherNDGrad", 11, TranslateGatherNDGradOp);
                 REGISTER_OPERATOR("Gelu", 1, TranslateUnaryOp<op::Gelu>);
+                REGISTER_OPERATOR("GlobalAveragePool",
+                                  1,
+                                  PACK(TranslateGlobalPoolOp<op::NoOp, op::Sum, op::Divide>));
+                REGISTER_OPERATOR(
+                    "GlobalMaxPool", 1, PACK(TranslateGlobalPoolOp<op::NoOp, op::Max, op::NoOp>));
+                REGISTER_OPERATOR("Greater", 1, TranslateLegacyBinaryOp<op::Greater>);
+                REGISTER_OPERATOR("Greater", 7, TranslateBinaryOp<op::Greater>);
+                REGISTER_OPERATOR("Greater", 9, TranslateBinaryOp<op::Greater>);
+                REGISTER_OPERATOR("Greater", 13, TranslateBinaryOp<op::Greater>);
+                REGISTER_OPERATOR("GreaterOrEqual", 12, TranslateBinaryOp<op::GreaterEq>);
+                REGISTER_OPERATOR("GreaterOrEqual", 16, TranslateBinaryOp<op::GreaterEq>);
                 REGISTER_OPERATOR("Gemm", 7, TranslateGemmOp);
                 REGISTER_OPERATOR("Gemm", 9, TranslateGemmOp);
                 REGISTER_OPERATOR("Gemm", 11, TranslateGemmOp);
                 REGISTER_OPERATOR("Gemm", 13, TranslateGemmOp);
-                REGISTER_OPERATOR("GlobalAveragePool", 1, TranslatePoolOp<op::AvgPool>);
-                REGISTER_OPERATOR("GlobalMaxPool", 1, TranslatePoolOp<op::MaxPool>);
-                REGISTER_OPERATOR("Greater", 1, TranslateBinaryOp<op::Greater>);
                 REGISTER_OPERATOR("GRU", 7, TranslateGRUOp);
                 REGISTER_OPERATOR("GRU", 14, TranslateGRUOp);
                 //REGISTER_OPERATOR("HardSigmoid", 1, hard_sigmoid);
                 REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
-                REGISTER_OPERATOR("LayerNormalization", 1, TranslateLayerNormalizationOp);
+                REGISTER_OPERATOR("Identity", 13, TranslateIdentityOp);
+                REGISTER_OPERATOR("Identity", 14, TranslateIdentityOp);
+                REGISTER_OPERATOR("Identity", 16, TranslateIdentityOp);
+                REGISTER_OPERATOR("InstanceNormalization", 1, TranslateInstanceNormalizationOp);
+                REGISTER_OPERATOR("InstanceNormalization", 6, TranslateInstanceNormalizationOp);
+                REGISTER_OPERATOR("LayerNormalization", 17, TranslateLayerNormalizationOp);
                 REGISTER_OPERATOR("LayerNormalizationGrad", 1, TranslateLayerNormalizationGradOp);
                 REGISTER_OPERATOR("LeakyRelu", 1, TranslateLeakyReluOp);
-                REGISTER_OPERATOR("Less", 1, TranslateBinaryOp<op::Less>);
+                REGISTER_OPERATOR("LeakyRelu", 6, TranslateLeakyReluOp);
+                REGISTER_OPERATOR("LeakyRelu", 16, TranslateLeakyReluOp);
+                REGISTER_OPERATOR("Less", 1, TranslateLegacyBinaryOp<op::Less>);
+                REGISTER_OPERATOR("Less", 7, TranslateBinaryOp<op::Less>);
+                REGISTER_OPERATOR("Less", 9, TranslateBinaryOp<op::Less>);
+                REGISTER_OPERATOR("Less", 13, TranslateBinaryOp<op::Less>);
+                REGISTER_OPERATOR("LessOrEqual", 12, TranslateBinaryOp<op::LessEq>);
+                REGISTER_OPERATOR("LessOrEqual", 16, TranslateBinaryOp<op::LessEq>);
                 REGISTER_OPERATOR("Log", 1, TranslateUnaryOp<op::Log>);
+                REGISTER_OPERATOR("Log", 6, TranslateUnaryOp<op::Log>);
+                REGISTER_OPERATOR("Log", 13, TranslateUnaryOp<op::Log>);
                 REGISTER_OPERATOR("LogSoftmax", 1, TranslateLogSoftmaxOp);
+                REGISTER_OPERATOR("LogSoftmax", 11, TranslateLogSoftmaxOp);
+                REGISTER_OPERATOR("LogSoftmax", 13, TranslateLogSoftmaxOp);
                 //REGISTER_OPERATOR("LRN", 1, lrn);
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
+                REGISTER_OPERATOR("LSTM", 7, TranslateLstmOp);
+                REGISTER_OPERATOR("LSTM", 14, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);
-                REGISTER_OPERATOR("MaxPool", 1, TranslatePoolOp<op::MaxPool>);
+                REGISTER_OPERATOR("MatMul", 9, TranslateMatmulOp);
+                REGISTER_OPERATOR("MatMul", 13, TranslateMatmulOp);
+                REGISTER_OPERATOR("MaxPool", 1, TranslateMaxPoolOp);
+                REGISTER_OPERATOR("MaxPool", 8, TranslateMaxPoolOp);
+                REGISTER_OPERATOR("MaxPool", 10, TranslateMaxPoolOp);
+                REGISTER_OPERATOR("MaxPool", 11, TranslateMaxPoolOp);
+                REGISTER_OPERATOR("MaxPool", 12, TranslateMaxPoolOp);
                 REGISTER_OPERATOR("Max", 1, TranslateMultiElementwiseOp<op::Maximum>);
                 REGISTER_OPERATOR("Max", 6, TranslateMultiElementwiseOp<op::Maximum>);
                 REGISTER_OPERATOR("Max", 8, TranslateMultiElementwiseOp<op::Maximum>);
@@ -291,7 +340,9 @@ namespace nnfusion
                 REGISTER_OPERATOR("Pow", 15, TranslateBinaryOp<op::Power>);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
                 REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
-                //REGISTER_OPERATOR("Reciprocal", 1, reciprocal);
+                REGISTER_OPERATOR("Reciprocal", 1, TranslateReciprocalOp);
+                REGISTER_OPERATOR("Reciprocal", 6, TranslateReciprocalOp);
+                REGISTER_OPERATOR("Reciprocal", 13, TranslateReciprocalOp);
                 REGISTER_OPERATOR(
                     "ReduceL1", 1, PACK(TranslateReduceOp<op::Abs, op::Sum, op::NoOp>));
                 REGISTER_OPERATOR(
@@ -365,6 +416,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("Sin", 1, TranslateUnaryOp<op::Sin>);
                 REGISTER_OPERATOR("Slice", 1, TranslateSliceOp);
                 REGISTER_OPERATOR("Slice", 10, TranslateSliceOp);
+                REGISTER_OPERATOR("Size", 1, TranslateSizeOp);
+                REGISTER_OPERATOR("Size", 13, TranslateSizeOp);
                 REGISTER_DOMAIN_OPERATOR(
                     "com.microsoft", "SkipLayerNormalization", 1, TranslateSkipLayerNormOp);
                 REGISTER_OPERATOR("Softmax", 1, TranslateSoftmaxOp);

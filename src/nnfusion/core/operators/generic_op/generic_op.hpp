@@ -374,8 +374,6 @@ namespace nnfusion
 
             virtual void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override
             {
-                NNFUSION_LOG(INFO) << "======: Infershape with IR: " << gnode->get_name() << " "
-                                   << gnode->get_op_type();
                 bool has_symbolic_shape = false;
                 // for (auto input : gnode->get_inputs())
                 // {
@@ -406,7 +404,6 @@ namespace nnfusion
                     // Infershape with Antares IR (only for Opv2)
                     nnfusion::kernels::AntaresKEImp ke;
                     auto result = ke.autogen(get_translation(gnode));
-                    NNFUSION_LOG(INFO) << "==========DEBUG:" << get_translation(gnode);
                     if (result.first == "")
                         throw std::runtime_error("No infershape or Antares IR found for op type: " +
                                                  gnode->get_op_type());

@@ -45,7 +45,7 @@ REGISTER_OP(OneHot)
         std::string dtype;
         bool ret =
             element::Type::nnfusion_element_type_to_dtype_string(gnode->get_element_type(), dtype);
-        NNFUSION_CHECK(ret) << "Unsupport data type:　" <<gnode->get_element_type();
+        NNFUSION_CHECK(ret) << "Unsupport data type:　" << gnode->get_element_type();
 
         auto input0_layout = op::create_layout_from_dims(gnode->get_input_shape(0));
         auto output_layout = input0_layout;

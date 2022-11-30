@@ -104,6 +104,36 @@ add_dependencies(${TARGET_NAME} CUB)
 include_directories(${CUB_INCLUDE_DIR})
 )");
 
+
+LU_DEFINE(nnfusion::codegen::helper::cuda_half_debug,
+R"(
+extern "C" __global__ void Convert_half_float0(half* input0, float* output0, int bound)
+{
+    if (bound != 0 && threadIdx.x >= bound)
+        return;
+    output0[threadIdx.x] = (float)(input0[threadIdx.x]);
+
+}
+
+extern "C" __global__ void Convert_half_float1(half* input0, float* output0, int blks, int bound)
+{
+    if (bound !=0 && blockIdx.x * blks + threadIdx.x >= bound)
+        return;
+    output0[blockIdx.x * blks + threadIdx.x] = (float)(input0[threadIdx.x]);
+
+}
+
+extern void Convert_half_float_Call0(const dim3 &grids, const dim3 &blocks, unsigned mem, cudaStream_t stream, half* input0, float* output0, int bound) {
+    Convert_half_float0<<<grids, blocks, mem, stream>>>(input0, output0, bound);
+}
+
+extern void Convert_half_float_Call1(const dim3 &grids, const dim3 &blocks, unsigned mem, cudaStream_t stream, half* input0, float* output0, int blks, int bound) {
+    Convert_half_float1<<<grids, blocks, mem, stream>>>(input0, output0, blks, bound);
+}
+
+)"
+)
+
 LU_DEFINE(nnfusion::codegen::helper::debug,
           R"(
 

@@ -46,9 +46,28 @@ namespace nnfusion
                     ng_axes_softmax.insert(axis);
                     if (!FLAGS_fsplit_softmax)
                     {
+                        // element::Type et = input_index.get_element_type();
+                        // auto softmax_input_et = et == element::f16 ? element::f32 : et;
+                        std::shared_ptr<nnfusion::graph::GNode> softmax_input = input_index.gnode;
+                        bool add_convert = false;
+                        if (input_index.gnode->get_element_type() == element::f16)
+                        {
+                            auto cast_f32 = std::make_shared<op::Convert>(element::f32);
+                            cast_f32->set_name(input_index.gnode->get_name() + "_f32");
+                            softmax_input = m_graph->add_node_and_edge(cast_f32, {input_index});
+                            add_convert = true;
+                        }
+                        
                         auto softmax_op = std::make_shared<op::Softmax>(ng_axes_softmax);
                         softmax_op->set_name(node_proto.output(0));
-                        auto softmax_gnode = m_graph->add_node_and_edge(softmax_op, {input_index});
+                        auto softmax_pre = m_graph->add_node_and_edge(softmax_op, {softmax_input});
+                        std::shared_ptr<nnfusion::graph::GNode> softmax_gnode = softmax_pre;
+                        if (add_convert)
+                        {
+                            auto cast_f16 = std::make_shared<op::Convert>(element::f16);
+                            cast_f16->set_name(softmax_gnode->get_name() + "_f16");
+                            softmax_gnode = m_graph->add_node_and_edge(cast_f16, {softmax_pre});
+                        }
                         NamedNodeVector ret{{node_proto.output(0), softmax_gnode}};
                         return ret;
                     }
@@ -189,6 +208,7 @@ namespace nnfusion
                             std::make_shared<op::Constant>(logits_index.get_element_type(),
                                                            label_index.get_shape(),
                                                            std::vector<std::string>{"1.0"});
+                        sample_weight_const->set_name(node_proto.name()  + "_softmaxsamplewieght");
                         sample_weight_gnode =
                             m_graph->add_node_and_edge(sample_weight_const, GNodeIndexVector{});
                     }
@@ -278,6 +298,8 @@ namespace nnfusion
                         auto loss_shape = loss_gnode->get_shape();
                         auto sum_gnode = m_graph->add_node_and_edge(
                             std::make_shared<op::Sum>(get_default_order(loss_shape)), {loss_gnode});
+                        
+
                         auto sum_weight_gnode =
                             m_graph->add_node_and_edge(std::make_shared<op::Sum>(get_default_order(
                                                            sample_weight_gnode->get_shape())),
@@ -365,10 +387,12 @@ namespace nnfusion
                             numpy_broadcast(std::make_pair(loss_index, logits_index), m_graph);
 
                         const auto& et = loss_index.gnode->get_element_type();
+                        element::Type divisor_et = et == element::f16 ? element::f32 : et;
                         auto divisor_const = std::make_shared<op::Constant>(
-                            et,
+                            divisor_et,
                             logits_index.get_shape(),
                             std::vector<std::string>{std::to_string(batch_size)});
+                        divisor_const->set_name(node_proto.name()  + "_softmaxdivisor");
                         auto divisor_gnode =
                             m_graph->add_node_and_edge(divisor_const, GNodeIndexVector{});
                         sample_loss =

@@ -24,6 +24,7 @@
 #include "core/node.hpp"
 #include "nnfusion/core/graph/util/autobroadcast.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#include "nnfusion/frontend/util/evaluator.hpp"
 
 DECLARE_bool(fantares_mode);
 namespace nnfusion
@@ -85,18 +86,45 @@ namespace nnfusion
                     std::vector<size_t> reduction_axes(normalized_rank);
                     std::iota(
                         reduction_axes.begin(), reduction_axes.end(), input_rank - normalized_rank);
+                    std::shared_ptr<GNode> sum_input = input;
+                    bool add_convert = false;
+                    if (input->get_element_type() == element::f16)
+                    {
+                        auto cast_f32 = std::make_shared<op::Convert>(element::f32);
+                        cast_f32->set_name(input->get_name() + "_f32");
+                        sum_input = m_graph->add_node_and_edge(cast_f32, {input});
+                        add_convert = true;
+                    }
+                    
                     auto sum_gnode = m_graph->add_node_and_edge(
-                        std::make_shared<op::Sum>(reduction_axes), {input}); // 2, 128
+                        std::make_shared<op::Sum>(reduction_axes), {sum_input}); // 2, 128
 
                     const auto& et = sum_gnode->get_element_type();
+                    
+                    element::Type divisor_et = et == element::f16 ? element::f32 : et;
                     auto divisor_op = std::make_shared<op::Constant>(
-                        et,
+                        divisor_et,
                         sum_gnode->get_shape(),
                         std::vector<std::string>{std::to_string(num_feature)});
+                    divisor_op->set_name(input->get_name() + "_layernormdivisor");
                     auto divisor_gnode = m_graph->add_node_and_edge(divisor_op, GNodeVector({}));
-
-                    auto mean_gnode = m_graph->add_node_and_edge(
+                    NNFUSION_LOG(INFO) << divisor_op->get_name();
+                    NNFUSION_LOG(INFO) << std::to_string(num_feature);
+                    NNFUSION_LOG(INFO) << et << " " << sum_gnode->get_shape();
+                    std::vector<float> lower_vec;
+                    bool status = GetValueFromNGraphOp<float>(divisor_gnode, &lower_vec);
+                    NNFUSION_CHECK(status);
+                    NNFUSION_LOG(INFO) << nnfusion::join(lower_vec);
+                    auto mean_pre = m_graph->add_node_and_edge(
                         std::make_shared<op::Divide>(), {sum_gnode, divisor_gnode}); // 2, 128
+                    std::shared_ptr<GNode> mean_gnode = mean_pre;
+                    if (add_convert)
+                    {
+                        auto cast_f16 = std::make_shared<op::Convert>(element::f16);
+                        cast_f16->set_name(mean_gnode->get_name() + "_f16");
+                        mean_gnode = m_graph->add_node_and_edge(cast_f16, {mean_pre});
+                    }
+                    
                     // keep dim
                     nnfusion::Shape mean_shape_with_keep(input_rank);
                     for (size_t i = 0; i < input_rank; i++)
@@ -119,14 +147,32 @@ namespace nnfusion
                     // std
                     auto std_power_gnode = m_graph->add_node_and_edge(
                         std::make_shared<op::Multiply>(), {mean_gnode, mean_gnode});
+
+                    std::shared_ptr<GNode> std_sum_input = std_power_gnode;
+                    if (std_power_gnode->get_element_type() == element::f16)
+                    {
+                        auto cast_f32 = std::make_shared<op::Convert>(element::f32);
+                        cast_f32->set_name(std_power_gnode->get_name() + "_f32");
+                        std_sum_input = m_graph->add_node_and_edge(cast_f32, {std_power_gnode});
+                        add_convert = true;
+                    }
                     auto std_sum_gnode = m_graph->add_node_and_edge(
-                        std::make_shared<op::Sum>(reduction_axes), {std_power_gnode});
-                    auto std_mean_gnode = m_graph->add_node_and_edge(
+                        std::make_shared<op::Sum>(reduction_axes), {std_sum_input});
+                    auto std_mean_pre = m_graph->add_node_and_edge(
                         std::make_shared<op::Divide>(), {std_sum_gnode, divisor_gnode});
+
+                    std::shared_ptr<GNode> std_mean_gnode = std_mean_pre;
+                    if (add_convert)
+                    {
+                        auto cast_f16 = std::make_shared<op::Convert>(element::f16);
+                        cast_f16->set_name(std_mean_gnode->get_name() + "_f16");
+                        std_mean_gnode = m_graph->add_node_and_edge(cast_f16, {std_mean_pre});
+                    }
                     auto eps_op = std::make_shared<op::Constant>(
-                        et,
+                        element::f32,
                         std_mean_gnode->get_shape(),
                         std::vector<std::string>{std::to_string(eps)});
+                    eps_op->set_name(input->get_name() + "_layernormeps");
                     auto eps_gnode = m_graph->add_node_and_edge(eps_op, GNodeVector({}));
                     auto std_mean_eps_gnode = m_graph->add_node_and_edge(
                         std::make_shared<op::Add>(), {std_mean_gnode, eps_gnode}); // 2, 128
@@ -138,6 +184,7 @@ namespace nnfusion
                         {std_gnode}); // 2, 128, 1
                     auto one_op = std::make_shared<op::Constant>(
                         et, std_gnode->get_shape(), std::vector<std::string>{"1.0"});
+                    one_op->set_name(input->get_name() + "_layernormone");
                     auto one_gnode = m_graph->add_node_and_edge(one_op, GNodeVector({}));
                     auto inv_std_gnode = m_graph->add_node_and_edge(std::make_shared<op::Divide>(),
                                                                     {one_gnode, std_gnode});
@@ -183,6 +230,7 @@ namespace nnfusion
                                                            weight->get_shape(),
                                                            std::vector<std::string>{"0"}),
                             GNodeIndexVector{});
+                        bias->set_name(input->get_name() + "_layernormbias");
                     }
 
                     Node node(node_proto);
@@ -284,6 +332,7 @@ namespace nnfusion
                     auto three_op = std::make_shared<op::Constant>(nnfusion::element::f32,
                                                                    inv_std_var_index.get_shape(),
                                                                    std::vector<float>{3.0});
+                    three_op->set_name(node_proto.name() + "_layernormthree");
                     auto three_gnode = m_graph->add_node_and_edge(three_op, GNodeVector({}));
                     auto inv_var_pow_gnode =
                         m_graph->add_node_and_edge(std::make_shared<op::Power>(),
@@ -310,6 +359,7 @@ namespace nnfusion
                         {second_part_gnode_temp, xmu_gnode}); // 2, 128, 1024
                     auto divisor_op = std::make_shared<op::Constant>(
                         nnfusion::element::f32, input_shape, std::vector<size_t>{num_feature});
+                    divisor_op->set_name(node_proto.name() + "_layernormdivisor");
                     auto divisor_gnode = m_graph->add_node_and_edge(divisor_op, GNodeVector({}));
                     auto second_part_gnode = m_graph->add_node_and_edge(
                         std::make_shared<op::Divide>(), {second_part_gnode_temp, divisor_gnode});

@@ -24,6 +24,7 @@ namespace nnfusion
         namespace helper
         {
             LU_DECLARE(debug);
+            LU_DECLARE(cuda_half_debug);
         } // namespace helper
     }     // namespace codegen
 } // namespace nnfusion

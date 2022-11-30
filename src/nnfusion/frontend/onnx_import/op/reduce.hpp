@@ -42,10 +42,13 @@ namespace nnfusion
                     {
                         reduced_ele_count *= input_shape.at(i);
                     }
+                    auto et = sum_gnode->get_element_type();
+                    element::Type divisor_et = et == element::f16 ? element::f32 : et;
                     auto divisor_op = std::make_shared<op::Constant>(
-                        sum_gnode->get_element_type(),
+                        divisor_et,
                         Shape{},
                         std::vector<std::string>{std::to_string(reduced_ele_count)});
+                    divisor_op->set_name(input_gnode->get_name() + "_reducedivisor");
                     auto divisor_gnode =
                         m_graph->add_node_and_edge(divisor_op, nnfusion::graph::GNodeVector{});
                     std::tie(sum_gnode, divisor_gnode) =

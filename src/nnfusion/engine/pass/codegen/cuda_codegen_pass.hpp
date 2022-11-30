@@ -76,6 +76,7 @@ namespace nnfusion
             virtual LanguageUnit_p get_h2dcopy(std::shared_ptr<TranslationUnit> tu);
             virtual LanguageUnit_p get_sync();
             virtual void fill_exec_host(std::shared_ptr<TranslationUnit> tu);
+            void compute_best_config(nnfusion::Shape outshape, int& grids, int& blocks, int& bound);
             nnfusion::async::HostAsyncManager* host_async_manager;
             nnfusion::async::DeviceStreamAsyncManager* device_async_manager;
             unordered_set<string> global_required;

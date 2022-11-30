@@ -129,9 +129,19 @@ private:
         // fuse
         if (fused.size() > 1)
         {
+            std::string str;
+            for (auto node : fused)
+            {
+                auto name = node->get_name();
+                str += name + "\t";
+            }
+
             auto fused_op =
                 std::make_shared<nnfusion::op::Fused>("fused_kernel", "Matched_Pattern");
             auto fused_node = std::make_shared<FusedGNode>(fused_op);
+            NNFUSION_LOG(INFO) << fused_node->get_name();
+            NNFUSION_LOG(INFO) << str;
+            NNFUSION_LOG(INFO) << "*******************";
             fused_node->build_fused_node(fused, m_graph, true);
             m_graph->add_node(fused_node);
         }

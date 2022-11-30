@@ -5,6 +5,7 @@
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(ffunction_codegen);
+DECLARE_bool(fcodegen_debug_half);
 
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)
     : m_size{size}
@@ -22,6 +23,7 @@ nnfusion::MemoryAllocator::MemoryAllocator(size_t alignment,
     , m_device_type(device_type)
     , m_device_id(device_id)
     , m_max_allocated{0}
+    , m_max_alloc_unit{0}
     , m_symbol(symbol)
     , m_name(symbol + "_" + get_device_str(device_type) + std::to_string(device_id) + "_allocator")
 {
@@ -45,6 +47,8 @@ void nnfusion::MemoryAllocator::allocate(std::vector<shared_ptr<descriptor::Tens
         total_size += tensor->size();
     }
 
+    if (total_size > m_max_alloc_unit)
+        m_max_alloc_unit = total_size;
     switch (m_scheme)
     {
     case allocation_scheme::FIRST_FIT: rc = first_fit(total_size); break;
@@ -68,6 +72,8 @@ void nnfusion::MemoryAllocator::allocate(shared_ptr<descriptor::Tensor> tensor)
 {
     size_t rc;
     size_t size = tensor->size();
+    if (size > m_max_alloc_unit)
+        m_max_alloc_unit = size;
     switch (m_scheme)
     {
     case allocation_scheme::FIRST_FIT: rc = first_fit(size); break;

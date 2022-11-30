@@ -41,6 +41,7 @@
 #include "op/depth_to_space.hpp"
 #include "op/div_grad.hpp"
 #include "op/dropout.hpp"
+#include "op/einsum.hpp"
 #include "op/embed_layer_norm.hpp"
 #include "op/erf_grad.hpp"
 #include "op/expand.hpp"
@@ -219,6 +220,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Dropout", 12, TranslateDropoutOp);
                 REGISTER_OPERATOR("Dropout", 13, TranslateDropoutOp);
                 //REGISTER_OPERATOR("Elu", 1, elu);
+                REGISTER_OPERATOR("Einsum", 12, TranslateEinsumOp);
                 REGISTER_DOMAIN_OPERATOR(
                     "com.microsoft", "EmbedLayerNormalization", 1, TranslateEmbedLayerNormOp);
                 REGISTER_OPERATOR("Equal", 1, TranslateBinaryOp<op::Equal>);

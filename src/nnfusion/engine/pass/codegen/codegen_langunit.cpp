@@ -119,7 +119,7 @@ extern "C" __global__ void Convert_half_float1(half* input0, float* output0, int
 {
     if (bound !=0 && blockIdx.x * blks + threadIdx.x >= bound)
         return;
-    output0[blockIdx.x * blks + threadIdx.x] = (float)(input0[threadIdx.x]);
+    output0[blockIdx.x * blks + threadIdx.x] = (float)(input0[blockIdx.x * blks + threadIdx.x]);
 
 }
 

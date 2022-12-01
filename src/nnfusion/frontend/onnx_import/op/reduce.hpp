@@ -74,7 +74,14 @@ namespace nnfusion
                 {
                     auto input_index = GetInputIndex(all_ng_nodes, node_proto, 0);
                     auto input_shape = input_index.get_shape();
-
+                    bool add_convert = false;
+                    if (input_index.get_element_type() == element::f16)
+                    {
+                        auto cast_f32 = std::make_shared<op::Convert>(element::f32);
+                        cast_f32->set_name(input_index.gnode->get_name() + "_f32");
+                        input_index.gnode = m_graph->add_node_and_edge(cast_f32, {input_index.gnode});
+                        add_convert = true;
+                    }
                     // get attributes
                     Node node(node_proto);
                     auto keepdims = node.get_attribute_value<int64>("keepdims", 1);
@@ -132,7 +139,12 @@ namespace nnfusion
                         epi_gnode->get_op_ptr()->set_name(node_proto.output(0));
                         ret.push_back({node_proto.output(0), epi_gnode});
                     }
-
+                    if (add_convert)
+                    {
+                        auto cast_f16 = std::make_shared<op::Convert>(element::f16);
+                        cast_f16->set_name(node_proto.output(0) + "_f16");
+                        ret[0].gnode_index.gnode = m_graph->add_node_and_edge(cast_f16, {ret[0].gnode_index.gnode});
+                    }
                     return ret;
                 }
             } // namespace set_1

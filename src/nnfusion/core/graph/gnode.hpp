@@ -89,8 +89,10 @@ namespace nnfusion
             std::shared_ptr<op::Op> get_op_ptr() const { return m_op_ptr; }
             const std::string& get_unique_name() const;
             const std::string& get_name() const;
+            const std::string& get_member_name() const;
 
             void set_name(const std::string& name);
+            void set_member_name(const std::string& name);
             bool has_same_type(std::shared_ptr<const GNode> gnode) const;
 
             /// in edges
@@ -180,6 +182,7 @@ namespace nnfusion
             size_t m_instance_id;
             static std::atomic<size_t> m_next_instance_id;
             std::string m_name;
+            std::string m_member_name;
             const std::string m_unique_name;
             std::string m_implementation;
 

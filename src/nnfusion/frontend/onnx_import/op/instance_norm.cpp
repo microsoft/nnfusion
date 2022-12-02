@@ -55,21 +55,6 @@ namespace nnfusion
                     auto weight = input_gnodes[1]; // 1024
                     auto bias = input_gnodes[2];   // 1024
 
-                    bool add_convert = false;
-                    if (input->get_element_type() == element::f16)
-                    {
-                        auto cast_f321 = std::make_shared<op::Convert>(element::f32);
-                        cast_f321->set_name(input->get_name() + "_f32");
-                        input = m_graph->add_node_and_edge(cast_f321, {input});
-                        add_convert = true;
-                        auto cast_f322 = std::make_shared<op::Convert>(element::f32);
-                        cast_f322->set_name(weight->get_name() + "_f32");
-                        weight = m_graph->add_node_and_edge(cast_f322, {weight});
-                        auto cast_f323 = std::make_shared<op::Convert>(element::f32);
-                        cast_f323->set_name(bias->get_name() + "_f32");
-                        bias = m_graph->add_node_and_edge(cast_f323, {bias});
-                    }
-
                     Node node(node_proto);
                     auto eps = node.get_attribute_value<float>("epsilon", 1e-5f);
                     eps = eps > 0 ? eps : 1e-5f;
@@ -94,17 +79,9 @@ namespace nnfusion
                         {bias});
 
                     auto layernorm_out = LayernormInternal(m_graph, input, weight, bias, axis, eps);
-                    NNFUSION_LOG(INFO) << input->get_element_type() << "--------";
-                    auto out = layernorm_out.at(0);
-                    if (add_convert)
-                    {
-                        auto cast_f324 = std::make_shared<op::Convert>(element::f16);
-                        cast_f324->set_name(input->get_name() + "_f16");
-                        out = m_graph->add_node_and_edge(cast_f324, {out});
-                    }
-                    NNFUSION_LOG(INFO) << "----" << out->get_element_type();
+
                     NamedNodeVector ret;
-                    ret.emplace_back(node_proto.output(0), out);
+                    ret.emplace_back(node_proto.output(0), layernorm_out.at(0));
 
                     return ret;
                 }

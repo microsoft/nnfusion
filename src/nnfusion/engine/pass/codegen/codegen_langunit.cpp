@@ -146,7 +146,7 @@ inline void Debug(std::string name, float* tensor_ptr, std::string inputs, size_
     double sum = 0.0;
     for (size_t i = 0; i < debug_size; i++) sum += host_tensor[i];
     size_t print_size = min((size_t)10, debug_size);
-    printf("%s: ", name.c_str());
+    printf("%s: \n", name.c_str());
     printf("sum=%e; ", sum);
     for (int i = 0; i < print_size; ++i) printf("%e ", host_tensor[i]);
     printf("...(size= %lu end with %e ) :", debug_size, host_tensor[debug_size - 1]);

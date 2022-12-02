@@ -827,7 +827,8 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         lu << "CUDA_SAFE_CALL(cudaStreamSynchronize(" << async_info.execution_stream->get_name()
            << "));\n";
     }
-
+    
+    std::string member_name = gnode ? "(" + gnode->get_member_name() + ")": "";
     if (FLAGS_fcodegen_debug && gnode && kernel && !gnode->get_op_ptr()->is_output())
     {
         for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
@@ -838,7 +839,8 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
                     "half")
                 continue;
             auto out_name = kernel->m_context->output_names[i];
-            lu << "Debug(\"" << node_name << ", " << out_name << "\", " << out_name << ", \""
+            
+            lu << "Debug(\"" << node_name << ", " << out_name << member_name << "\", " << out_name << ", \""
                << join(kernel->m_context->input_names) << "\", "
                << kernel->m_context->outputs[i]->size(false) << ");\n";
         }
@@ -864,8 +866,8 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
                 {
                     lu << "Convert_half_float_Call1(dim3(" << grids << ", 1, 1), dim3(" << blocks <<", 1, 1), 0, 0, " << out_name << ", fp32tensors, " <<blocks << ", "<< bound << ");\n";
                 }
-
-                lu << "Debug(\"" << node_name << ", " << out_name << "_f32\", " << "fp32tensors, \""
+        
+                lu << "Debug(\"" << node_name << ", " << out_name << member_name << "_f32\", " << "fp32tensors, \""
                     << join(kernel->m_context->input_names) << "\", "
                     << kernel->m_context->outputs[i]->size(false) << ");\n";
                 lu << "CUDA_SAFE_CALL(cudaMemset((void*)fp32tensors, 0, "<< " 2239067648));\n";
@@ -873,7 +875,7 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
             else if (element::get_backend_cstring(kernel->m_context->outputs[i]->get_element_type()) ==
                     "float")
             {
-                lu << "Debug(\"" << node_name << ", " << out_name << "\", " << out_name << ", \""
+                lu << "Debug(\"" << node_name << ", " << out_name << member_name << "\", " << out_name << ", \""
                << join(kernel->m_context->input_names) << "\", "
                << kernel->m_context->outputs[i]->size(false) << ");\n";
             }

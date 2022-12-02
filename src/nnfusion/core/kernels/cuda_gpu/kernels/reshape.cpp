@@ -595,6 +595,15 @@ void cuda::ReshapeMemcpyBlock::set_launch_config() {
     m_blockDim = dim3(block_size_x, 1, 1);
 }
 
+bool cuda::ReshapeMemcpyBlock::is_eliminative()
+{
+    if (is_memcpy && m_context->inputs[0]->is_same_address(m_context->outputs[0]))
+        return true;
+    else
+        return false;
+}
+
+
 REGISTER_KERNEL_EMITTER(
     "Reshape",                                                                       // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel_2D").Priority(2), // attrs

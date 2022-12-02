@@ -136,7 +136,7 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
             // }
             // // std::cout << std::endl;
             bool need_barrier = true;
-            if (need_barrier) {
+            if (need_barrier && ins != m_body_instructions->front()) {
                 if (FLAGS_ffast_barrier && std::dynamic_pointer_cast<ControlFlowEmitter>(kernel) != nullptr) {
                     NNFUSION_CHECK_FAIL() << "TODO: skip barrier for control flow kernels";
                 }
@@ -228,7 +228,16 @@ LanguageUnit_p cuda::Loop::emit_function_body()
         lu << "int64_t* i_dev;\n";
         lu << "CUDA_SAFE_CALL(cudaMalloc(&i_dev, sizeof(int64_t)));\n";
         lu << "CUDA_SAFE_CALL(cudaMemset(i_dev, 0, sizeof(int64_t)));\n";
-        lu << "if (iter == 0)";
+        bool need_copy = false;
+        for (auto ins: *m_body_instructions) {
+            std::string func_name = ins->getKernel()->get_function_name();
+            if (func_name.find("ScatterND") != std::string::npos) {
+                need_copy = true;
+                break;
+            }
+        }
+        if (!need_copy)
+            lu << "if (iter == 0)";
         lu.block_begin();
         int grid_dim = 0;
         for (int i = 0; i < m_context->outputs.size(); i++) {
@@ -251,6 +260,10 @@ LanguageUnit_p cuda::Loop::emit_function_body()
         }
         lu << copy_func_name << "<<<" << "dim3(" << grid_dim << ", 1, 1), dim3(" << FLAGS_floop_copy_blockdim << ", 1, 1)" << ">>>(" << join(params_with_type, ", ") << ");\n";
         lu.block_end();
+        if (need_copy) {
+            for (int i = 0; i < m_context->outputs.size(); i++)
+                lu << "input" << i + 2 << " = output" << i << ";\n";
+        }
         lu << "for (int64_t i = 0; i < iter; i++)";
         lu.block_begin();
         generate_subgraph_code(_lu, false);
@@ -273,6 +286,7 @@ LanguageUnit_p cuda::Loop::emit_function_body()
         lu << "Barrier();\n";
         lu << "for (int64_t i = 0; i < *input0; i++)";
         lu.block_begin();
+        lu << "Barrier();\n";
         generate_subgraph_code(_lu, true);
         lu.block_end();
     }

@@ -73,7 +73,7 @@ def codegen(model_path, flags, output_dir):
     with cd(output_dir):
         command = 'bash -c "set -o pipefail; {} {} {} 2>&1 | tee codegen.log"'.format("nnfusion", model_path, flags)
         execute(command)
-        os.system('cat codegen.log')
+        # os.system('cat codegen.log')
 
 
 def modify_nnfusion_rt(rt_dir):

@@ -101,8 +101,32 @@ namespace nnfusion
                 LanguageUnit_p emit_dependency() override
                 {
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+                    LanguageUnit& lu = *_lu;
                     _lu->require(header::cuda);
                     _lu->require(header::stdio);
+
+                    auto iter = CudaElementOpMap.find(m_context->op->get_op_type());
+                    NNFUSION_CHECK(iter != CudaElementOpMap.end())
+                        << "unable find op type: " << m_context->op->get_op_type();
+                    std::string op = iter->second.op;
+
+                    if (m_context->op->get_op_type() == "Convert")
+                    {
+                        lu.require(declaration::cuda_convert_template);
+                        lu.require(header::cublas);
+                    }
+                    else if (iter->second.math_kernel != "")
+                    {
+                        auto math_kernel =
+                            get_math_kernel(op, iter->second.math_kernel, data_types);
+                        NNFUSION_CHECK_NOT_NULLPTR(math_kernel);
+                        lu.require(math_kernel);
+                        if (m_context->op->get_op_type() == "Gelu")
+                        {
+                            math_kernel->require(declaration::math_Gelu);
+                            math_kernel->require(header::cublas);
+                        }
+                    }
 
                     return _lu;
                 }

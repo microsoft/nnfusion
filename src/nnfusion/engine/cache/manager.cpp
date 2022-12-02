@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS KernelCache(
             "Convolution",
             "AvgPool",
             "MaxPool",
-            "Matched_Pattern(Convolution-Add-Relu)",
+            "Matched_Pattern(Convolution-Add-Relu)"
         });
     }
 }
@@ -117,8 +117,8 @@ std::vector<KernelEntry_p> KernelCacheManager::fetch_all(std::string identifier,
                                                          std::string device_type,
                                                          bool must_exist)
 {
-    NNFUSION_LOG(INFO) << "Trying to fetch kernel " << identifier
-                        << " on DeviceType: " << device_type;
+    // NNFUSION_LOG(INFO) << "Trying to fetch kernel " << identifier
+    //                     << " on DeviceType: " << device_type;
     sqlite3_stmt* pStmt;
     const char* fetch = R"(
 SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, Miscs FROM KernelCache WHERE (Identifier = ?) AND (DeviceType = ?);
@@ -193,13 +193,14 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
     }
     else
     {
-        NNFUSION_LOG(INFO) << "Failed to fetch, fallback plan will be uses";
+        // NNFUSION_LOG(INFO) << "Failed to fetch, fallback plan will be uses";
     }
     if (must_exist) {
         NNFUSION_CHECK(fetched.size() > 0);
     }
     std::string kernel_name = identifier.substr(0, identifier.find('['));
     if (FLAGS_fcodegen_unexist_kernel && CodegenOpList.find(kernel_name) != CodegenOpList.end() && fetched.size() == 0) {
+        NNFUSION_LOG(INFO) << "codegen unexist kernel: " << identifier;
         static bool python_init = false;
         if (!python_init) {
             Py_Initialize();
@@ -232,6 +233,7 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
             fprintf(stderr, "Error in python\n");
             exit(1);
         }
+        NNFUSION_CHECK(SQLITE_OK == sqlite3_open(m_path.c_str(), &kernel_cache));
         fetched = fetch_all(identifier, device_type, true);
     }
     return fetched;

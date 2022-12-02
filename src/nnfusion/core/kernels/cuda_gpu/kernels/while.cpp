@@ -80,7 +80,9 @@ LanguageUnit_p cuda::While::emit_function_body()
         lu << "Barrier();\n";
         lu << "while (*cond)";
         lu.block_begin();
+        lu << "Barrier();\n"; // needs a barrier for cond check
         generate_subgraph_code(_lu, true);
+        lu << "Barrier();\n"; // needs a barrier for cond check
         lu.block_end();
     }
     return _lu;

@@ -43,13 +43,13 @@ LanguageUnit_p cuda::BlockSoftmaxLastAxis::emit_function_body()
     auto code = nnfusion::op::create_code_from_template(
         R"(
 int wrap_id = blockIdx.x * @WRAP_PER_BLOCK@ + (threadIdx.x >> 5); 
-if (wrap_id > @NUM_WRAPS@) {
+if (wrap_id >= @NUM_WRAPS@) {
     return;
 }
 int lane_id = threadIdx.x & 31;
 @T@ local[@LOCAL_SIZE@];
 for (int i = 0; i < @LOCAL_SIZE@; i++){
-    local[i] = input0[wrap_id * @STRIDE@ + i];
+    local[i] = input0[wrap_id * @STRIDE@ + i * 32 + lane_id];
 }
 @T@ max_value = local[0];
 for (int i = 1; i < @LOCAL_SIZE@; i++){
@@ -74,7 +74,7 @@ sum += __shfl_xor_sync(0xffffffff, sum, 2);
 sum += __shfl_xor_sync(0xffffffff, sum, 1);
 
 for (int i = 0; i < @LOCAL_SIZE@; i++){
-    output0[wrap_id * @STRIDE@ + i] = local[i] / sum;
+    output0[wrap_id * @STRIDE@ + i * 32 + lane_id] = local[i] / sum;
 }
 )",                     {
                                 {"LOCAL_SIZE", stride / 32},

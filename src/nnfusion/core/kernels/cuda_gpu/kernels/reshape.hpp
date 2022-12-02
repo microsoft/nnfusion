@@ -79,6 +79,7 @@ namespace nnfusion
             {
             public:
                 ReshapeMemcpyBlock(shared_ptr<KernelContext> ctx);
+                bool is_eliminative() override;
 
                 LanguageUnit_p emit_function_body() override;
                 void set_launch_config() override;

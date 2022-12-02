@@ -347,7 +347,9 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             continue;
         }
         else if (type == "GatherV2" &&
-                 !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)))
+                 !subgraph_output_map.count(ins->get_outputs()[0]->get_name(false)) &&
+                 ins->get_inputs()[1]->size(false) == 1
+                 )
         {
             auto index_edge = ins->getGNode()->get_in_edge(1);
             auto index_gnode = index_edge->get_src();

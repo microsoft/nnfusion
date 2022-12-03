@@ -261,6 +261,15 @@ __device__ __forceinline__ int64_t  load(const int64_t*  __restrict__ in, int i=
     }
     return v;
 }
+__device__ __forceinline__ long long  load(const long long*  __restrict__ in, int i=0, bool b=true)
+{
+    long long v = 0;
+    if (b)
+    {
+        v = __ldg(in + i);
+    }
+    return v;
+}
 )");
 
 LU_DEFINE(declaration::cuda_fp16_scale,

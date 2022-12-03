@@ -136,7 +136,7 @@ void Dot::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
         }
         for (size_t j = m_reduction_axes_count; j < size_t(arg1_shape.rank()); j++)
         {
-            size_t idx = m_transpose_B ? size_t(arg0_shape.rank()) - 1 - j : j;
+            size_t idx = m_transpose_B ? size_t(arg1_shape.rank()) - 1 - j : j;
             (*sym_out)[i] = (*sym_b)[idx];
             result_dims[i++] = arg1_shape[idx];
         }

@@ -42,7 +42,7 @@ namespace nnfusion
                 NamedNodeVector TranslateShapeOp(const onnx::NodeProto& node_proto,
                                                  const NodeMap& all_ng_nodes,
                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph);
-            }  // namespace set_15
+            } // namespace set_15
 
         } //namespace op
 

@@ -56,7 +56,6 @@ namespace nnfusion
             void infer_shared_memory(std::shared_ptr<graph::GNode> gnode) override;
             /// \return The slicing steps
             const std::vector<int64_t>& get_steps() const { return m_steps; }
-
         protected:
             void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override;
 

@@ -156,7 +156,8 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr,
         }
     }
 
-    if (strncmp(response.c_str(), "[ERROR]", 7) == 0)
+    if (strncmp(response.c_str(), "[ERROR]", 7) == 0 ||
+        response.find("Error:") != std::string::npos)
     {
         NNFUSION_LOG(ERROR) << expr << "\n" << response;
         return std::make_pair("", tuned);

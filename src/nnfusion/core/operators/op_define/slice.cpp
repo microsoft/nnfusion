@@ -46,18 +46,16 @@ Slice::Slice(const nnfusion::Shape& lower_bounds, const nnfusion::Shape& upper_b
 
 namespace nnfusion
 {
-
-static std::ostream& operator<<(std::ostream& s, const std::vector<int64_t>& steps)
-{
-    s << "Steps{";
-    for(int64_t d : steps)
+    static std::ostream& operator<<(std::ostream& s, const std::vector<int64_t>& steps)
     {
-        s << " " << d;
+        s << "Steps{";
+        for (int64_t d : steps)
+        {
+            s << " " << d;
+        }
+        s << "}";
+        return s;
     }
-    s << "}";
-    return s;
-}
-
 }
 
 void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
@@ -68,7 +66,7 @@ void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
     {
         m_strides = nnfusion::Strides(m_lower_bounds.size(), 1);
     }
-    if(m_steps.size() == 0)
+    if (m_steps.size() == 0)
     {
         m_steps = std::vector<int64_t>(m_lower_bounds.size(), 1);
     }
@@ -114,7 +112,8 @@ void Slice::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
         // size_t result_axis_size = m_upper_bounds[i] - m_lower_bounds[i];
         // result_axis_size =
         //     result_axis_size / m_strides[i] + ((result_axis_size % m_strides[i] == 0) ? 0 : 1);
-        int64_t result_axis_size = (int64_t)ceil(1.0 * ((int64_t)m_upper_bounds[i] - (int64_t)m_lower_bounds[i]) / m_steps[i]);
+        int64_t result_axis_size = (int64_t)ceil(
+            1.0 * ((int64_t)m_upper_bounds[i] - (int64_t)m_lower_bounds[i]) / m_steps[i]);
         result_dims[i] = result_axis_size;
     }
 

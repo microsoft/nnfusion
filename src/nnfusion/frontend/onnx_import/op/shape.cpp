@@ -57,24 +57,26 @@ namespace nnfusion
                     Node node(node_proto);
                     uint64_t rank = data_shape.size();
                     int64_t start = node.get_attribute_value<int64_t>("start", 0);
-                    if(start < 0)
+                    if (start < 0)
                         start += rank;
                     start = (start < 0) ? 0 : (start > rank) ? rank : start;
                     int64_t end = node.get_attribute_value<int64_t>("end", rank);
-                    if(end < 0)
+                    if (end < 0)
                         end += rank;
                     end = (end < 0) ? 0 : (end > rank) ? rank : end;
                     uint64_t dim_value = (end - start) < 0 ? 0 : (end - start);
 
                     auto op = std::make_shared<op::Constant>(
-                        nnfusion::element::i64, Shape{dim_value}, Shape(data_shape.begin() + start, data_shape.begin() + start + dim_value));
+                        nnfusion::element::i64,
+                        Shape{dim_value},
+                        Shape(data_shape.begin() + start, data_shape.begin() + start + dim_value));
                     op->set_name(node_proto.output(0));
                     auto gnode = m_graph->add_node_and_edge(op, nnfusion::graph::GNodeVector{});
                     NamedNodeVector ret{{node_proto.output(0), gnode}};
                     return ret;
                 }
 
-            }  // amespace set_15
+            } // amespace set_15
 
         } //namespace op
 

@@ -49,9 +49,11 @@ namespace nnfusion
                         axis += input_gnode->get_shape().size();
                     }
                     auto keepdims = node.get_attribute_value<int64_t>("keepdims", 1);
-                    auto select_last_index = node.get_attribute_value<int64_t>("select_last_index", 0);
+                    auto select_last_index =
+                        node.get_attribute_value<int64_t>("select_last_index", 0);
 
-                    auto reduce_index_op = std::make_shared<T>(axis, keepdims, select_last_index, element::i64);
+                    auto reduce_index_op =
+                        std::make_shared<T>(axis, keepdims, select_last_index, element::i64);
                     std::shared_ptr<graph::GNode> reduce_index_gnode;
 
                     if (keepdims != 0)
@@ -109,6 +111,6 @@ namespace nnfusion
                 using set_1::TranslateIndexReductionOp;
             }
 
-        }     // namespace onnx_import
-    }         // namespace frontend
+        } // namespace onnx_import
+    }     // namespace frontend
 } // namespace ngraph

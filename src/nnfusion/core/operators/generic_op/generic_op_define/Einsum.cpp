@@ -27,11 +27,12 @@ REGISTER_OP(Einsum).translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::
     };
 
     std::string ir = " ";
-    ir += "output0" + join(output_layout.empty() ? std::vector<std::string>{"NO"} : output_layout);
+    ir +=
+        "@output0@" + join(output_layout.empty() ? std::vector<std::string>{"NO"} : output_layout);
     ir += " +=! ";
     for (size_t i = 0; i < input_layout.size(); i++)
     {
-        ir += "input" + std::to_string(i) + join(input_layout[i]);
+        ir += "@input" + std::to_string(i) + "@" + join(input_layout[i]);
         if (i + 1 < input_layout.size())
         {
             ir += " * ";

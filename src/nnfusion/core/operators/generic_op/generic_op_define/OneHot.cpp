@@ -45,7 +45,7 @@ REGISTER_OP(OneHot)
         std::string dtype;
         bool ret =
             element::Type::nnfusion_element_type_to_dtype_string(gnode->get_element_type(), dtype);
-        NNFUSION_CHECK(ret) << "Unsupport data type:　" << gnode->get_element_type();
+        NNFUSION_CHECK(ret) << "Unsupport data type: " << gnode->get_element_type();
 
         auto input0_layout = op::create_layout_from_dims(gnode->get_input_shape(0));
         auto output_layout = input0_layout;
@@ -55,7 +55,7 @@ REGISTER_OP(OneHot)
         std::string expr =
             "@output0@@output_layout@ = const(@on_value@).when([@input0@@input0_layout@  == "
             "@axis@, @input0@@input0_layout@ + @depth@ == @axis@], @off_value@, "
-            "merge_op=`any`) where @axis@ in @depth@;";
+            "merge_op=`any`).cast(`@dtype@`) where @axis@ in @depth@;";
 
         return op::create_code_from_template(
             expr,
@@ -64,5 +64,6 @@ REGISTER_OP(OneHot)
              {"depth", depth},
              {"on_value", on_value},
              {"off_value", off_value},
-             {"axis", output_layout[axis]}});
+             {"axis", output_layout[axis]},
+             {"dtype", dtype}});
     });

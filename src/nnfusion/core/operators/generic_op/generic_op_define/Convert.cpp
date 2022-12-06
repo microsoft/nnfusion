@@ -38,11 +38,22 @@ REGISTER_OP(Convert)
         NNFUSION_CHECK(ret == true) << "cast type is not supported: "
                                     << op->get_convert_element_type().c_type_string();
         out_dtype = out_dtype == "char" ? "int8" : out_dtype;
-
-        return op::create_code_from_template(
-            "@output0@@data_layout@ = @input0@@data_layout@.cast(`@out_dtype@`);",
-            {{"data_layout",
-              vector_to_string<std::vector<std::string>>(
-                  op::create_layout_from_dims(gnode->get_output_shape(0)))},
-             {"out_dtype", out_dtype}});
+        if (op->get_convert_element_type() == element::boolean)
+        {
+            return op::create_code_from_template(
+                "@output0@@data_layout@ = (@input0@@data_layout@ != 0).cast(`@out_dtype@`);",
+                {{"data_layout",
+                  vector_to_string<std::vector<std::string>>(
+                      op::create_layout_from_dims(gnode->get_output_shape(0)))},
+                 {"out_dtype", out_dtype}});
+        }
+        else
+        {
+            return op::create_code_from_template(
+                "@output0@@data_layout@ = @input0@@data_layout@.cast(`@out_dtype@`);",
+                {{"data_layout",
+                  vector_to_string<std::vector<std::string>>(
+                      op::create_layout_from_dims(gnode->get_output_shape(0)))},
+                 {"out_dtype", out_dtype}});
+        }
     });

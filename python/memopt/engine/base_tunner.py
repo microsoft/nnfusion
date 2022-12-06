@@ -213,7 +213,7 @@ class Tunner(object):
         compile_results = self.generate_code(output_nodes, configs, kernel_name)
         for cpresult in compile_results:
             cpresult.set_io_desc(input_desc, output_desc)
-        compile_and_load_parallel(compile_results, self.arch)
+        compile_and_load_parallel(compile_results, self.arch, timeout=30)
         best = self.select_best(output_nodes, compile_results)
         self.set_cache(signature, best)
         return best

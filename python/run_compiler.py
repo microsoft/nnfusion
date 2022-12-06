@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument('--arch', type=str, default="V100")
     parser.add_argument('--verbose', type=int, default=1)
     parser.add_argument('--check', action="store_true")
+    parser.add_argument('--nofusion', action="store_true")
     args = parser.parse_args()
     memopt.set_log_level(args.verbose)
     assert args.input_file.endswith(".json")
@@ -24,7 +25,10 @@ if __name__ == "__main__":
     tunner = MultiProcTunner(input_file_path=args.input_file,
         arch=arch.__getattribute__(args.arch)(), device="cuda:{}".format(args.device), topk=args.topk, check=args.check)
     engine = Engine(tunner)
-    fusion_groups = engine.run(ordered_nodes)
+    if args.nofusion:
+        fusion_groups = engine.run_no_fusion(ordered_nodes)
+    else:
+        fusion_groups = engine.run(ordered_nodes)
     gain = sum([fg.gain for fg in fusion_groups])
     print("Fusion gain: {}ms".format(gain))
     if args.output_file != "":

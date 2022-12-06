@@ -162,7 +162,17 @@ class DefaultPolicy:
         return factor_ordered[0]
 
     def get_node_reduce_step_candidates(self, node):
-        return {k : get_all_factors(node.raxis[k]) for k in node.raxis}
+        # general idea : use factor first, since it does not require extra boundary check
+        #                for large prime number, which is rare case, use power of 2.
+        results = {}
+        for k in node.raxis:
+            all_factors = get_all_factors(node.raxis[k])
+            if len(all_factors) == 2 and node.raxis[k] > 64:
+                all_factors = [1]
+                while all_factors[-1] * 2 < node.raxis[k]:
+                    all_factors.append(all_factors[-1] * 2)
+            results[k] = all_factors
+        return results
 
     def _assign_reduce_step(self, node):
         if len(node.raxis) == 0:

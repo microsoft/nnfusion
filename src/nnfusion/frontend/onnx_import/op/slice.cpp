@@ -19,8 +19,8 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 #include "../util/util.hpp"
 #include "nnfusion/frontend/util/evaluator.hpp"
@@ -33,10 +33,10 @@ static inline int64_t get_valid_array_idx(int64_t idx, int64_t last_idx)
     return (idx >= 0) ? std::min(idx, last_idx) : std::max<int64_t>(0, last_idx + idx);
 }
 
-static inline void processSliceInputs(const int64_t input_rank, int64_t& start, int64_t& end, int64_t& step)
+static inline void
+    processSliceInputs(const int64_t input_rank, int64_t& start, int64_t& end, int64_t& step)
 {
-    auto clamp = [](int64_t val, int64_t min, int64_t max) -> int64_t
-    {
+    auto clamp = [](int64_t val, int64_t min, int64_t max) -> int64_t {
         return (val < min) ? min : (val > max) ? max : val;
     };
     // process step
@@ -235,8 +235,8 @@ namespace nnfusion
                         }
                     }
 
-                    auto op =
-                        std::make_shared<op::Slice>(lower_bounds, upper_bounds, strides, out_shape, steps_op);
+                    auto op = std::make_shared<op::Slice>(
+                        lower_bounds, upper_bounds, strides, out_shape, steps_op);
                     op->set_name(node_proto.output(0));
                     nnfusion::json stat;
                     stat["starts"] = starts;

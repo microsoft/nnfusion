@@ -86,6 +86,8 @@ add_library(onnx_import STATIC
         op/lstm.cpp
         op/gru.hpp
         op/gru.cpp
+        op/einsum.hpp
+        op/einsum.cpp
         # ${ops_source}
         util/broadcasting.cpp
         util/graph_convert.cpp

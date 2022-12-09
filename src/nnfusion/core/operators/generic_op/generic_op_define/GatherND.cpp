@@ -38,11 +38,11 @@ REGISTER_OP(GatherND)
         NNFUSION_CHECK(ret);
 
         auto index_template =
-            R"( input1@input1_layout@.when(input1@input1_layout@ >= 0, input1@input1_layout@ + const(@shape_dim@).cast(input1@input1_layout@.dtype())) )";
+            R"( @input1@@input1_layout@.when(@input1@@input1_layout@ >= 0, @input1@@input1_layout@ + const(@shape_dim@).cast(@input1@@input1_layout@.dtype())) )";
 
         // output0[B0, B1, I0, I1, S0, S1] = input0[B0, B1, input1[[B0, B1, I0, I1, 0], input1[[B0, B1, I0, I1, 1], S0, S1]
         auto ir_template =
-            R"( output0@output0_layout@ = input0@input0_layout@; )";
+            R"( @output0@@output0_layout@ = @input0@@input0_layout@; )";
 
         std::vector<std::string> input0_layout, input1_layout, output0_layout;
         const nnfusion::Shape& input_shape_0 = curr->get_input_shape(0);

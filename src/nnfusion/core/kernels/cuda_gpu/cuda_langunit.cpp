@@ -18,6 +18,8 @@ LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>\n");
 LU_DEFINE(header::cuda_mma, "#include <mma.h>\n");
 LU_DEFINE(header::cub, "#include <cub/cub.cuh>\n");
 LU_DEFINE(header::math_constants, "#include <math_constants.h>\n");
+LU_DEFINE(header::cutlass, "#include \"cutlass/cutlass.h\"\n");
+LU_DEFINE(header::kernel_forward, "#include \"kernel_forward.h\"\n");
 
 // Macro
 LU_DEFINE(macro::HALF_MAX,
@@ -2247,3 +2249,439 @@ __device__ __forceinline__ T WARP_SHFL_DOWN(T value, unsigned int delta, int wid
 }
 )",
                  "");
+
+LU_DEFINE(declaration::mem_eff_attn, R"(
+
+void mem_eff_attention_1(void* output,
+                   void* query,
+                   void* key,
+                   void* value,
+                   float* accum_ptr,
+                   int64_t* batch_size,
+                   int seq_len,
+                   int seq_len_kv,
+                   int num_heads,
+                   int head_size,
+                   int head_size_v,
+                   float p_dropout,
+                   float softmax_scale,
+                   bool is_causal,
+                   cudaStream_t stream)
+    
+{
+
+    /*
+    problem_sizes0 [b, m, n, k]
+    [head_number * batch_size, m, mkv, k0]
+    [head_number * batch_size, seq_length, seq_length_kv, head_size]
+
+    problem_sizes1
+    [head_number * batch_size, m, k1, mkv]
+    [head_number * batch_size, seq_length, head_size_v, seq_length_kv]
+
+    m = seq_len
+    n = seq_len
+    k = head_size
+
+    Q: B, M, K
+    K: B, N, K
+    P: B, M, N
+    V: B, N, K
+    O: B, M, K
+    output: bs, num_head, seq_len, head_size
+    */
+
+
+    using ArchTag = cutlass::arch::Sm80;
+    constexpr bool kIs64x64 = true;
+    constexpr bool kSingleValueIteration = true;
+
+    // Set grid size
+    constexpr int64_t kQueriesPerBlock = kIs64x64 ? 64 : 32;
+    constexpr int64_t kKeysPerBlock = kIs64x64 ? 64 : 128;
+    if (kIs64x64 && head_size_v > kKeysPerBlock) {
+        std::cerr << "WARNING: you will get better performance with `kIs64x64=false`";
+    }
+    if (kSingleValueIteration && head_size_v > kKeysPerBlock) {
+        std::cerr << "ERROR  : Use kSingleValueIteration to keep output in RF. "         "This requires to have `head_size <= kKeysPerBlock` "         "but head_size_v=" << head_size_v << " and kKeysPerBlock=" << kKeysPerBlock << "";
+        return;
+    }
+    if (!kSingleValueIteration && head_size_v <= kKeysPerBlock) {
+       std::cerr << "WARNING: you will get better performance with `kSingleValueIteration=true'";
+       }
+    
+
+    using Attention = AttentionKernel<
+        cutlass::half_t, // scalar_t
+        ArchTag,
+        true, // memory is aligned
+        kQueriesPerBlock,
+        kKeysPerBlock,
+        kSingleValueIteration
+    >;
+
+    int block_O_size = (*batch_size) * seq_len * num_heads * head_size_v;
+    typename Attention::Params p;
+    {
+        // set parameters
+        p.query_ptr = static_cast<cutlass::half_t*>(query);
+        p.key_ptr = static_cast<cutlass::half_t*>(key);
+        p.value_ptr = static_cast<cutlass::half_t*>(value);
+        p.logsumexp_ptr = nullptr; // Only needed for bw
+        p.output_accum_ptr = nullptr;
+        if (Attention::kNeedsOutputAccumulatorBuffer) {
+          p.output_accum_ptr = accum_ptr;
+        }
+        p.output_ptr = static_cast<cutlass::half_t*>(output);
+
+        p.num_heads = num_heads;
+        p.num_batches = *batch_size;
+        p.head_dim = head_size;
+        p.head_dim_value = head_size_v;
+        p.num_queries = seq_len;
+        p.num_keys = seq_len_kv;
+        p.causal = is_causal;
+
+
+        p.q_strideM = head_size;
+        p.k_strideM = head_size;
+        p.v_strideM = head_size_v;
+
+        p.q_strideH = p.q_strideM * seq_len;
+        p.k_strideH = p.k_strideM * seq_len_kv;
+        p.v_strideH = p.v_strideM * seq_len_kv;
+        p.o_strideH = head_size_v;
+        p.q_strideB = p.q_strideH * num_heads;
+        p.k_strideB = p.k_strideH * num_heads;
+        p.v_strideB = p.v_strideH * num_heads;
+        p.o_strideB = head_size_v * seq_len * num_heads;
+    }
+
+    // launch kernel
+    constexpr auto kernel_fn = attention_kernel_batched_impl<Attention>;
+    int smem_bytes = sizeof(typename Attention::SharedStorage);
+    if (smem_bytes > 0xc000) {
+      cudaFuncSetAttribute(kernel_fn, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_bytes);
+    }
+    if (!Attention::check_supported(p)) {
+      std::cerr << "Kernel does not support these inputs" << std::endl;
+      return;
+    }
+    kernel_fn<<<p.getBlocksGrid(), p.getThreadsGrid(), smem_bytes>>>(p);
+
+    // cudaError_t err = cudaDeviceSynchronize();
+
+    // if (err != cudaSuccess)  {
+    //   std::cerr << "Kernel execution error: " << cudaGetErrorString(err);
+    //   return;
+    // }
+}
+
+
+void mem_eff_attention_2(void* output,
+                   void* query,
+                   void* key,
+                   void* value,
+                   float* accum_ptr,
+                   int64_t* batch_size,
+                   int seq_len,
+                   int seq_len_kv,
+                   int num_heads,
+                   int head_size,
+                   int head_size_v,
+                   float p_dropout,
+                   float softmax_scale,
+                   bool is_causal,
+                   cudaStream_t stream)
+    
+{
+    using ArchTag = cutlass::arch::Sm80;
+    constexpr bool kIs64x64 = true;
+    constexpr bool kSingleValueIteration = false;
+
+    // Set grid size
+    constexpr int64_t kQueriesPerBlock = kIs64x64 ? 64 : 32;
+    constexpr int64_t kKeysPerBlock = kIs64x64 ? 64 : 128;
+    if (kIs64x64 && head_size_v > kKeysPerBlock) {
+        std::cerr << "WARNING: you will get better performance with `kIs64x64=false`";
+    }
+    if (kSingleValueIteration && head_size_v > kKeysPerBlock) {
+        std::cerr << "ERROR  : Use kSingleValueIteration to keep output in RF. "         "This requires to have `head_size <= kKeysPerBlock` "         "but head_size_v=" << head_size_v << " and kKeysPerBlock=" << kKeysPerBlock << "";
+        return;
+    }
+    if (!kSingleValueIteration && head_size_v <= kKeysPerBlock) {
+       std::cerr << "WARNING: you will get better performance with `kSingleValueIteration=true'";
+       }
+    
+
+    using Attention = AttentionKernel<
+        cutlass::half_t, // scalar_t
+        ArchTag,
+        true, // memory is aligned
+        kQueriesPerBlock,
+        kKeysPerBlock,
+        kSingleValueIteration
+    >;
+
+    int block_O_size = (*batch_size) * seq_len * num_heads * head_size_v;
+    typename Attention::Params p;
+    {
+        // set parameters
+        p.query_ptr = static_cast<cutlass::half_t*>(query);
+        p.key_ptr = static_cast<cutlass::half_t*>(key);
+        p.value_ptr = static_cast<cutlass::half_t*>(value);
+        p.logsumexp_ptr = nullptr; // Only needed for bw
+        p.output_accum_ptr = nullptr;
+        if (Attention::kNeedsOutputAccumulatorBuffer) {
+          p.output_accum_ptr = accum_ptr;
+        }
+        p.output_ptr = static_cast<cutlass::half_t*>(output);
+
+        p.num_heads = num_heads;
+        p.num_batches = *batch_size;
+        p.head_dim = head_size;
+        p.head_dim_value = head_size_v;
+        p.num_queries = seq_len;
+        p.num_keys = seq_len_kv;
+        p.causal = is_causal;
+
+
+        p.q_strideM = head_size;
+        p.k_strideM = head_size;
+        p.v_strideM = head_size_v;
+
+        p.q_strideH = p.q_strideM * seq_len;
+        p.k_strideH = p.k_strideM * seq_len_kv;
+        p.v_strideH = p.v_strideM * seq_len_kv;
+        p.o_strideH = head_size_v;
+        p.q_strideB = p.q_strideH * num_heads;
+        p.k_strideB = p.k_strideH * num_heads;
+        p.v_strideB = p.v_strideH * num_heads;
+        p.o_strideB = head_size_v * seq_len * num_heads;
+    }
+
+    // launch kernel
+    constexpr auto kernel_fn = attention_kernel_batched_impl<Attention>;
+    int smem_bytes = sizeof(typename Attention::SharedStorage);
+    if (smem_bytes > 0xc000) {
+      cudaFuncSetAttribute(kernel_fn, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_bytes);
+    }
+    if (!Attention::check_supported(p)) {
+      std::cerr << "Kernel does not support these inputs" << std::endl;
+      return;
+    }
+    kernel_fn<<<p.getBlocksGrid(), p.getThreadsGrid(), smem_bytes>>>(p);
+
+    // cudaError_t err = cudaDeviceSynchronize();
+
+    // if (err != cudaSuccess)  {
+    //   std::cerr << "Kernel execution error: " << cudaGetErrorString(err);
+    //   return;
+    // }
+}
+
+void mem_eff_attention_3(void* output,
+                   void* query,
+                   void* key,
+                   void* value,
+                   float* accum_ptr,
+                   int64_t* batch_size,
+                   int seq_len,
+                   int seq_len_kv,
+                   int num_heads,
+                   int head_size,
+                   int head_size_v,
+                   float p_dropout,
+                   float softmax_scale,
+                   bool is_causal,
+                   cudaStream_t stream)
+    
+{
+    using ArchTag = cutlass::arch::Sm80;
+    constexpr bool kIs64x64 = false;
+    constexpr bool kSingleValueIteration = true;
+
+    // Set grid size
+    constexpr int64_t kQueriesPerBlock = kIs64x64 ? 64 : 32;
+    constexpr int64_t kKeysPerBlock = kIs64x64 ? 64 : 128;
+    if (kIs64x64 && head_size_v > kKeysPerBlock) {
+        std::cerr << "WARNING: you will get better performance with `kIs64x64=false`";
+    }
+    if (kSingleValueIteration && head_size_v > kKeysPerBlock) {
+        std::cerr << "ERROR  : Use kSingleValueIteration to keep output in RF. "         "This requires to have `head_size <= kKeysPerBlock` "         "but head_size_v=" << head_size_v << " and kKeysPerBlock=" << kKeysPerBlock << "";
+        return;
+    }
+    if (!kSingleValueIteration && head_size_v <= kKeysPerBlock) {
+       std::cerr << "WARNING: you will get better performance with `kSingleValueIteration=true'";
+       }
+    
+
+    using Attention = AttentionKernel<
+        cutlass::half_t, // scalar_t
+        ArchTag,
+        true, // memory is aligned
+        kQueriesPerBlock,
+        kKeysPerBlock,
+        kSingleValueIteration
+    >;
+
+    int block_O_size = (*batch_size) * seq_len * num_heads * head_size_v;
+    typename Attention::Params p;
+    {
+        // set parameters
+        p.query_ptr = static_cast<cutlass::half_t*>(query);
+        p.key_ptr = static_cast<cutlass::half_t*>(key);
+        p.value_ptr = static_cast<cutlass::half_t*>(value);
+        p.logsumexp_ptr = nullptr; // Only needed for bw
+        p.output_accum_ptr = nullptr;
+        if (Attention::kNeedsOutputAccumulatorBuffer) {
+          p.output_accum_ptr = accum_ptr;
+        }
+        p.output_ptr = static_cast<cutlass::half_t*>(output);
+
+        p.num_heads = num_heads;
+        p.num_batches = *batch_size;
+        p.head_dim = head_size;
+        p.head_dim_value = head_size_v;
+        p.num_queries = seq_len;
+        p.num_keys = seq_len_kv;
+        p.causal = is_causal;
+
+
+        p.q_strideM = head_size;
+        p.k_strideM = head_size;
+        p.v_strideM = head_size_v;
+
+        p.q_strideH = p.q_strideM * seq_len;
+        p.k_strideH = p.k_strideM * seq_len_kv;
+        p.v_strideH = p.v_strideM * seq_len_kv;
+        p.o_strideH = head_size_v;
+        p.q_strideB = p.q_strideH * num_heads;
+        p.k_strideB = p.k_strideH * num_heads;
+        p.v_strideB = p.v_strideH * num_heads;
+        p.o_strideB = head_size_v * seq_len * num_heads;
+    }
+
+    // launch kernel
+    constexpr auto kernel_fn = attention_kernel_batched_impl<Attention>;
+    int smem_bytes = sizeof(typename Attention::SharedStorage);
+    if (smem_bytes > 0xc000) {
+      cudaFuncSetAttribute(kernel_fn, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_bytes);
+    }
+    if (!Attention::check_supported(p)) {
+      std::cerr << "Kernel does not support these inputs" << std::endl;
+      return;
+    }
+    kernel_fn<<<p.getBlocksGrid(), p.getThreadsGrid(), smem_bytes>>>(p);
+
+    // cudaError_t err = cudaDeviceSynchronize();
+
+    // if (err != cudaSuccess)  {
+    //   std::cerr << "Kernel execution error: " << cudaGetErrorString(err);
+    //   return;
+    // }
+}
+
+void mem_eff_attention_4(void* output,
+                   void* query,
+                   void* key,
+                   void* value,
+                   float* accum_ptr,
+                   int64_t* batch_size,
+                   int seq_len,
+                   int seq_len_kv,
+                   int num_heads,
+                   int head_size,
+                   int head_size_v,
+                   float p_dropout,
+                   float softmax_scale,
+                   bool is_causal,
+                   cudaStream_t stream)
+    
+{
+    using ArchTag = cutlass::arch::Sm80;
+    constexpr bool kIs64x64 = false;
+    constexpr bool kSingleValueIteration = false;
+
+    // Set grid size
+    constexpr int64_t kQueriesPerBlock = kIs64x64 ? 64 : 32;
+    constexpr int64_t kKeysPerBlock = kIs64x64 ? 64 : 128;
+    if (kIs64x64 && head_size_v > kKeysPerBlock) {
+        std::cerr << "WARNING: you will get better performance with `kIs64x64=false`";
+    }
+    if (kSingleValueIteration && head_size_v > kKeysPerBlock) {
+        std::cerr << "ERROR  : Use kSingleValueIteration to keep output in RF. "         "This requires to have `head_size <= kKeysPerBlock` "         "but head_size_v=" << head_size_v << " and kKeysPerBlock=" << kKeysPerBlock << "";
+        return;
+    }
+    if (!kSingleValueIteration && head_size_v <= kKeysPerBlock) {
+       std::cerr << "WARNING: you will get better performance with `kSingleValueIteration=true'";
+       }
+    
+
+    using Attention = AttentionKernel<
+        cutlass::half_t, // scalar_t
+        ArchTag,
+        true, // memory is aligned
+        kQueriesPerBlock,
+        kKeysPerBlock,
+        kSingleValueIteration
+    >;
+
+    int block_O_size = (*batch_size) * seq_len * num_heads * head_size_v;
+    typename Attention::Params p;
+    {
+        // set parameters
+        p.query_ptr = static_cast<cutlass::half_t*>(query);
+        p.key_ptr = static_cast<cutlass::half_t*>(key);
+        p.value_ptr = static_cast<cutlass::half_t*>(value);
+        p.logsumexp_ptr = nullptr; // Only needed for bw
+        p.output_accum_ptr = nullptr;
+        if (Attention::kNeedsOutputAccumulatorBuffer) {
+          p.output_accum_ptr = accum_ptr;
+        }
+        p.output_ptr = static_cast<cutlass::half_t*>(output);
+
+        p.num_heads = num_heads;
+        p.num_batches = *batch_size;
+        p.head_dim = head_size;
+        p.head_dim_value = head_size_v;
+        p.num_queries = seq_len;
+        p.num_keys = seq_len_kv;
+        p.causal = is_causal;
+
+
+        p.q_strideM = head_size;
+        p.k_strideM = head_size;
+        p.v_strideM = head_size_v;
+
+        p.q_strideH = p.q_strideM * seq_len;
+        p.k_strideH = p.k_strideM * seq_len_kv;
+        p.v_strideH = p.v_strideM * seq_len_kv;
+        p.o_strideH = head_size_v;
+        p.q_strideB = p.q_strideH * num_heads;
+        p.k_strideB = p.k_strideH * num_heads;
+        p.v_strideB = p.v_strideH * num_heads;
+        p.o_strideB = head_size_v * seq_len * num_heads;
+    }
+
+    // launch kernel
+    constexpr auto kernel_fn = attention_kernel_batched_impl<Attention>;
+    int smem_bytes = sizeof(typename Attention::SharedStorage);
+    if (smem_bytes > 0xc000) {
+      cudaFuncSetAttribute(kernel_fn, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_bytes);
+    }
+    if (!Attention::check_supported(p)) {
+      std::cerr << "Kernel does not support these inputs" << std::endl;
+      return;
+    }
+    kernel_fn<<<p.getBlocksGrid(), p.getThreadsGrid(), smem_bytes>>>(p);
+
+    // cudaError_t err = cudaDeviceSynchronize();
+
+    // if (err != cudaSuccess)  {
+    //   std::cerr << "Kernel execution error: " << cudaGetErrorString(err);
+    //   return;
+    // }
+}
+
+)");

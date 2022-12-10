@@ -20,6 +20,8 @@ namespace nnfusion
             LU_DECLARE(cuda_mma);
             LU_DECLARE(cub);
             LU_DECLARE(math_constants);
+            LU_DECLARE(cutlass);
+            LU_DECLARE(kernel_forward);
         } // namespace header
 
         namespace macro
@@ -57,6 +59,7 @@ namespace nnfusion
             LU_DECLARE(math_Gelu);
             LU_DECLARE(ort_softmax);
             LU_DECLARE(warp);
+            LU_DECLARE(mem_eff_attn);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

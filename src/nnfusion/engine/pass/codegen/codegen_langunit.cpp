@@ -104,6 +104,12 @@ add_dependencies(${TARGET_NAME} CUB)
 include_directories(${CUB_INCLUDE_DIR})
 )");
 
+LU_DEFINE(nnfusion::codegen::cmake::cutlass, R"(
+include_directories(cutlass/include/)
+include_directories(cutlass/examples/42_fused_multi_head_attention)
+include_directories(cutlass/tools/util/include/)
+)");
+
 
 LU_DEFINE(nnfusion::codegen::helper::cuda_half_debug,
 R"(

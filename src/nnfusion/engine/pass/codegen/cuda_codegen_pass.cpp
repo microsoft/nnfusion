@@ -111,6 +111,12 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         copy_folder.push_back(cub_path);
     }
 
+    if (global_required.count("declaration::mem_eff_attn") > 0)
+    {
+        std::string cutlass_path = std::string(path) + std::string("/cutlass");
+        copy_folder.push_back(cutlass_path);
+    }
+
     // setup main_block
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
@@ -1474,7 +1480,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 find_package(CUDA)
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O3 --prec-sqrt=false --ftz=true --prec-div=false -fmad=true")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O3 --prec-sqrt=false --ftz=true --prec-div=false -fmad=true --use_fast_math")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -cudart shared")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
 )";
@@ -1516,6 +1522,11 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
         if (global_required.count("header::cub") > 0)
         {
             lu << nnfusion::codegen::cmake::cub->get_code();
+        }
+
+        if (global_required.count("declaration::mem_eff_attn") > 0)
+        {
+            lu << nnfusion::codegen::cmake::cutlass->get_code();
         }
     }
 

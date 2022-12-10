@@ -22,10 +22,10 @@
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
 #include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
-#include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
-#include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
-#include "nnfusion/engine/pass/graph/split_softmax_pass.hpp"
 #include "nnfusion/engine/pass/graph/register_fusion_pass.hpp"
+#include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
+#include "nnfusion/engine/pass/graph/split_softmax_pass.hpp"
+#include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
 
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"

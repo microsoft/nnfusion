@@ -8,9 +8,9 @@
 #include "subgraph_fusion_optimizer/gelu_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/layernorm_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/matmuladd_fusion_optimizer.hpp"
+#include "subgraph_fusion_optimizer/mem_eff_attn_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/skiplayernorm_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/subgraph_fusion_optimizer.hpp"
-#include "subgraph_fusion_optimizer/mem_eff_attn_fusion_optimizer.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;

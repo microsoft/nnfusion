@@ -3,8 +3,8 @@
 
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
-
-static string make_layout(const std::set<int>& axes) {
+static string make_layout(const std::set<int>& axes)
+{
     std::string ret = "";
     for (auto ax : axes)
         ret += ", N" + std::to_string(ax);
@@ -37,4 +37,3 @@ REGISTER_OP(Softmax)
             {{"temp_layout", make_layout(output_ax)}, {"input0_layout", make_layout(input_ax)}});
         return expression_code;
     });
-

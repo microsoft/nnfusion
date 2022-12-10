@@ -391,6 +391,7 @@ namespace nnfusion
             {
             public:
                 FusionCudaEmitter(shared_ptr<KernelContext> ctx, json fusion_group);
+
             private:
                 LanguageUnit_p emit_function_signature() override;
                 LanguageUnit_p emit_function_body() override;

@@ -182,7 +182,7 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
     if (std::dynamic_pointer_cast<BlockCudaEmitter>(kernel) == nullptr)
     {
         NNFUSION_LOG(DEBUG) << "Operator " << node->get_name()
-                           << " is not BlockCudaEmitter, skip in BlockFusion";
+                            << " is not BlockCudaEmitter, skip in BlockFusion";
         return false;
     }
 

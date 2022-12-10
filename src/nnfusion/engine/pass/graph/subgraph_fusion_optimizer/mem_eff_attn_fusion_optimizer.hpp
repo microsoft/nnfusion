@@ -5,7 +5,6 @@
 
 #include "subgraph_fusion_optimizer.hpp"
 
-
 namespace nnfusion
 {
     namespace pass

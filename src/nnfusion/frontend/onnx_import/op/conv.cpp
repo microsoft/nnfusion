@@ -212,7 +212,8 @@ namespace nnfusion
                         {
                             // depthwise convolution
                             auto filter_gnode = GetInputNode(all_ng_nodes, node_proto, 1);
-                            if (data_shape.size() == 3) {
+                            if (data_shape.size() == 3)
+                            {
                                 // DWCONV 1D
                                 nnfusion::op::OpConfig::any myConfig;
                                 myConfig["data_format"] = "NCW";
@@ -220,7 +221,8 @@ namespace nnfusion
                                 myConfig["dilations"] = dilations;
                                 myConfig["padding_before"] = padding_below;
                                 myConfig["padding_after"] = padding_above;
-                                if (2 * padding_below[0] - dilations[0] * (filters_shape[2] - 1) == 0)
+                                if (2 * padding_below[0] - dilations[0] * (filters_shape[2] - 1) ==
+                                    0)
                                 {
                                     myConfig["padding_type"] = "SAME";
                                 }
@@ -230,19 +232,23 @@ namespace nnfusion
                                 }
                                 else
                                 {
-                                    NNFUSION_CHECK_FAIL() << "Currently only support SAME and VALID "
-                                                            "padding in DepthwiseConv2dNative";
+                                    NNFUSION_CHECK_FAIL()
+                                        << "Currently only support SAME and VALID "
+                                           "padding in DepthwiseConv2dNative";
                                 }
                                 auto conv_op = std::make_shared<nnfusion::op::GenericOp>(
-                                node_proto.name(), "DepthwiseConv1dNative", myConfig);
-                                conv_node = m_graph->add_node_and_edge(conv_op, {data, GNodeIndex{filter_gnode, 0}});
-                            } else {
+                                    node_proto.name(), "DepthwiseConv1dNative", myConfig);
+                                conv_node = m_graph->add_node_and_edge(
+                                    conv_op, {data, GNodeIndex{filter_gnode, 0}});
+                            }
+                            else
+                            {
                                 auto reshape_filter_op = std::make_shared<nnfusion::op::Reshape>(
                                     nnfusion::AxisVector{2, 3, 0, 1},
                                     nnfusion::Shape({filters_shape[2],
-                                                    filters_shape[3],
-                                                    filters_shape[0],
-                                                    filters_shape[1]}));
+                                                     filters_shape[3],
+                                                     filters_shape[0],
+                                                     filters_shape[1]}));
                                 reshape_filter_op->set_name(filter_gnode->get_name() +
                                                             "_filters_reshape");
                                 auto reshape_filter_gnode =
@@ -257,8 +263,9 @@ namespace nnfusion
                                 myConfig["padding_after"] = padding_above;
 
                                 if ((2 * padding_below[0] - dilations[0] * (filters_shape[2] - 1) ==
-                                    0) &&
-                                    (2 * padding_below[1] - dilations[1] * (filters_shape[3] - 1) == 0))
+                                     0) &&
+                                    (2 * padding_below[1] - dilations[1] * (filters_shape[3] - 1) ==
+                                     0))
                                 {
                                     myConfig["padding_type"] = "SAME";
                                 }
@@ -268,8 +275,9 @@ namespace nnfusion
                                 }
                                 else
                                 {
-                                    NNFUSION_CHECK_FAIL() << "Currently only support SAME and VALID "
-                                                            "padding in DepthwiseConv2dNative";
+                                    NNFUSION_CHECK_FAIL()
+                                        << "Currently only support SAME and VALID "
+                                           "padding in DepthwiseConv2dNative";
                                 }
 
                                 auto conv_op = std::make_shared<nnfusion::op::GenericOp>(

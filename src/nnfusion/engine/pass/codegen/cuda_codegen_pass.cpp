@@ -833,8 +833,8 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
         lu << "CUDA_SAFE_CALL(cudaStreamSynchronize(" << async_info.execution_stream->get_name()
            << "));\n";
     }
-    
-    std::string member_name = gnode ? "(" + gnode->get_member_name() + ")": "";
+
+    std::string member_name = gnode ? "(" + gnode->get_member_name() + ")" : "";
     if (FLAGS_fcodegen_debug && gnode && kernel && !gnode->get_op_ptr()->is_output())
     {
         for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
@@ -845,48 +845,52 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
                     "half")
                 continue;
             auto out_name = kernel->m_context->output_names[i];
-            
-            lu << "Debug(\"" << node_name << ", " << out_name << member_name << "\", " << out_name << ", \""
-               << join(kernel->m_context->input_names) << "\", "
+
+            lu << "Debug(\"" << node_name << ", " << out_name << member_name << "\", " << out_name
+               << ", \"" << join(kernel->m_context->input_names) << "\", "
                << kernel->m_context->outputs[i]->size(false) << ");\n";
         }
         lu.require(codegen::helper::debug);
     }
 
     if (FLAGS_fcodegen_debug_half)
-    {        
+    {
         for (size_t i = 0; i < kernel->m_context->outputs.size(); i++)
         {
             auto outshape = kernel->m_context->outputs[i]->get_shape();
             auto out_name = kernel->m_context->output_names[i];
             if (element::get_backend_cstring(kernel->m_context->outputs[i]->get_element_type()) ==
-                    "half")
+                "half")
             {
                 int grids, blocks, bound;
                 CudaCodegenPass::compute_best_config(outshape, grids, blocks, bound);
                 if (grids == 1)
                 {
-                    lu << "Convert_half_float_Call0(dim3(" << grids << ", 1, 1), dim3(" << blocks <<", 1, 1), 0, 0, " << out_name << ", fp32tensors, " << bound << ");\n";
+                    lu << "Convert_half_float_Call0(dim3(" << grids << ", 1, 1), dim3(" << blocks
+                       << ", 1, 1), 0, 0, " << out_name << ", fp32tensors, " << bound << ");\n";
                 }
                 else
                 {
-                    lu << "Convert_half_float_Call1(dim3(" << grids << ", 1, 1), dim3(" << blocks <<", 1, 1), 0, 0, " << out_name << ", fp32tensors, " <<blocks << ", "<< bound << ");\n";
+                    lu << "Convert_half_float_Call1(dim3(" << grids << ", 1, 1), dim3(" << blocks
+                       << ", 1, 1), 0, 0, " << out_name << ", fp32tensors, " << blocks << ", "
+                       << bound << ");\n";
                 }
-        
-                lu << "Debug(\"" << node_name << ", " << out_name << member_name << "_f32\", " << "fp32tensors, \""
-                    << join(kernel->m_context->input_names) << "\", "
-                    << kernel->m_context->outputs[i]->size(false) << ");\n";
-                lu << "CUDA_SAFE_CALL(cudaMemset((void*)fp32tensors, 0, "<< " 2239067648));\n";
+
+                lu << "Debug(\"" << node_name << ", " << out_name << member_name << "_f32\", "
+                   << "fp32tensors, \"" << join(kernel->m_context->input_names) << "\", "
+                   << kernel->m_context->outputs[i]->size(false) << ");\n";
+                lu << "CUDA_SAFE_CALL(cudaMemset((void*)fp32tensors, 0, "
+                   << " 2239067648));\n";
             }
-            else if (element::get_backend_cstring(kernel->m_context->outputs[i]->get_element_type()) ==
-                    "float")
+            else if (element::get_backend_cstring(
+                         kernel->m_context->outputs[i]->get_element_type()) == "float")
             {
-                lu << "Debug(\"" << node_name << ", " << out_name << member_name << "\", " << out_name << ", \""
-               << join(kernel->m_context->input_names) << "\", "
-               << kernel->m_context->outputs[i]->size(false) << ");\n";
+                lu << "Debug(\"" << node_name << ", " << out_name << member_name << "\", "
+                   << out_name << ", \"" << join(kernel->m_context->input_names) << "\", "
+                   << kernel->m_context->outputs[i]->size(false) << ");\n";
             }
         }
-        
+
         lu.require(codegen::helper::debug);
         lu.require(codegen::helper::cuda_half_debug);
     }
@@ -972,12 +976,15 @@ bool CudaCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
     }
 
     max_tensor_size *= 2;
-    
+
     if (FLAGS_fcodegen_debug_half)
     {
-        LanguageUnit_p fp32tensors = std::make_shared<LanguageUnit>(
-        "fp32tensors", "CUDA_SAFE_CALL(cudaMalloc((void**)&fp32tensors," + std::to_string(max_tensor_size) + "));\n");
-        LanguageUnit_p fp32tensors_decl = std::make_shared<LanguageUnit>("fp32tensors_decl","float* fp32tensors;\n");
+        LanguageUnit_p fp32tensors =
+            std::make_shared<LanguageUnit>("fp32tensors",
+                                           "CUDA_SAFE_CALL(cudaMalloc((void**)&fp32tensors," +
+                                               std::to_string(max_tensor_size) + "));\n");
+        LanguageUnit_p fp32tensors_decl =
+            std::make_shared<LanguageUnit>("fp32tensors_decl", "float* fp32tensors;\n");
         lup_mem_alloc->unit_vec.push_back(fp32tensors);
         lup_mem_alloc->require(fp32tensors_decl);
     }
@@ -1212,7 +1219,8 @@ void CudaCodegenPass::create_header_file(std::shared_ptr<InterpreterContext> ctx
     if (device_type() == CUDA_GPU || device_type() == ROCM_GPU)
         lu_header << header::cuda->get_code();
     // TODO only include this if half is used
-    if (device_type() == CUDA_GPU) {
+    if (device_type() == CUDA_GPU)
+    {
         lu_header << header::cuda_fp16->get_code();
         lu_header << header::cuda_mma->get_code();
     }
@@ -1603,10 +1611,12 @@ void CudaCodegenPass::fill_exec_host(std::shared_ptr<TranslationUnit> tu)
     lu_exec_host_vec.push_back(get_sync());
 }
 
-void CudaCodegenPass::compute_best_config(nnfusion::Shape outshape, int& grids, int& blocks, int& bound)
+void CudaCodegenPass::compute_best_config(nnfusion::Shape outshape,
+                                          int& grids,
+                                          int& blocks,
+                                          int& bound)
 {
-    uint32_t num_ele = static_cast<uint32_t>(
-        nnfusion::shape_size(outshape));
+    uint32_t num_ele = static_cast<uint32_t>(nnfusion::shape_size(outshape));
     for (int i = 512; i >= 64; i >>= 1)
     {
         if (num_ele % i == 0)

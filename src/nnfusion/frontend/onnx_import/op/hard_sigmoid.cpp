@@ -33,10 +33,9 @@ namespace nnfusion
             {
                 NamedNodeVector
                     TranslateHardSigmoidOp(const onnx::NodeProto& node_proto,
-                                            const NodeMap& all_ng_nodes,
-                                            std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                                           const NodeMap& all_ng_nodes,
+                                           std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     NNFUSION_CHECK(input_indexes.size() == 1);
                     Node node{node_proto};
@@ -50,6 +49,6 @@ namespace nnfusion
                     return ret;
                 }
             } // namespace set_1
-        } // namespace onnx_import
-    } // namespace frontend
+        }     // namespace onnx_import
+    }         // namespace frontend
 } // namespace nnfusion

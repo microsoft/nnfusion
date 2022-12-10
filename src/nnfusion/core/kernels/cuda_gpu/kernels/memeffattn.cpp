@@ -25,7 +25,7 @@ cuda::MemEffAttn::MemEffAttn(shared_ptr<KernelContext> ctx)
     is_causal = cfg["is_causal"];
     workspace_tensor = allocate_tensor(v_shape, element::f32);
     bool kIs64x64 = head_size <= 64;
-    bool kSingleValueIteration= head_size <= 128;
+    bool kSingleValueIteration = head_size <= 128;
     if (kIs64x64 && kSingleValueIteration)
         idx = 1;
     else if (kIs64x64 && !kSingleValueIteration)
@@ -65,9 +65,9 @@ mem_eff_attention_@idx@(
          {"num_heads", num_heads},
          {"head_size", head_size},
          {"head_size_v", head_size_v},
-         {"p_dropout", 0},//
+         {"p_dropout", 0}, //
          {"softmax_scale", softmax_scale},
-         {"is_causal",is_causal},
+         {"is_causal", is_causal},
          {"idx", idx},
          {"workspace_ptr", workspace_tensor->get_name()}});
 

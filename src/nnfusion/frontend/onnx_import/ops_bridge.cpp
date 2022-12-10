@@ -49,6 +49,7 @@
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
 #include "op/gru.hpp"
+#include "op/hard_sigmoid.hpp"
 #include "op/identity.hpp"
 #include "op/index_reduce.hpp"
 #include "op/instance_norm.hpp"
@@ -86,7 +87,6 @@
 #include "op/unsqueeze.hpp"
 #include "op/where.hpp"
 #include "ops_bridge.hpp"
-#include "op/hard_sigmoid.hpp"
 
 namespace nnfusion
 {

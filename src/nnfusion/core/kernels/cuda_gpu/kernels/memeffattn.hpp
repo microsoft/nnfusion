@@ -24,7 +24,8 @@ namespace nnfusion
             private:
                 shared_ptr<nnfusion::op::GenericOp> generic_op;
                 element::Type dtype;
-                int batch_size, seq_len, seq_len_kv, num_heads, head_size, head_size_v, hidden_size, workspace_size, idx;
+                int batch_size, seq_len, seq_len_kv, num_heads, head_size, head_size_v, hidden_size,
+                    workspace_size, idx;
                 float p_dropout, softmax_scale;
                 bool is_causal;
                 std::shared_ptr<nnfusion::descriptor::Tensor> workspace_tensor;

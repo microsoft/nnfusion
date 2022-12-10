@@ -856,8 +856,8 @@ cuda::FusionCudaEmitter::FusionCudaEmitter(shared_ptr<KernelContext> ctx, json f
 
     m_body_unitp = make_shared<LanguageUnit>(old_fname, body);
     m_sig_unitp = make_shared<LanguageUnit>(old_fname + "_sig", sig);
-    m_dep_unitp = make_shared<LanguageUnit>(old_fname + "_device_kernel",
-        m_code.substr(0, kernel_sig_start));
+    m_dep_unitp =
+        make_shared<LanguageUnit>(old_fname + "_device_kernel", m_code.substr(0, kernel_sig_start));
     // NNFUSION_LOG(INFO) << m_sig_unitp->get_code() << std::endl;
 }
 
@@ -873,15 +873,18 @@ void cuda::FusionCudaEmitter::set_launch_config()
     grid[1].get_to(m_gridDim.z);
 }
 
-LanguageUnit_p cuda::FusionCudaEmitter::emit_function_signature() {
+LanguageUnit_p cuda::FusionCudaEmitter::emit_function_signature()
+{
     return m_sig_unitp;
 }
 
-LanguageUnit_p cuda::FusionCudaEmitter::emit_function_body() {
+LanguageUnit_p cuda::FusionCudaEmitter::emit_function_body()
+{
     return m_body_unitp;
 }
 
-LanguageUnit_p cuda::FusionCudaEmitter::emit_dependency() {
+LanguageUnit_p cuda::FusionCudaEmitter::emit_dependency()
+{
     auto old_fname = m_fusion_group["name"].get<string>();
     LanguageUnit_p lu(new LanguageUnit(old_fname + "_dep"));
     lu->require(m_dep_unitp);

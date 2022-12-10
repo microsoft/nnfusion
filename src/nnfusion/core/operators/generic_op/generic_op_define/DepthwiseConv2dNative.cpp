@@ -214,7 +214,8 @@ REGISTER_OP(DepthwiseConv1dNative)
         Shape output_shape(Shape({(size_t)batch, (size_t)out_depth, (size_t)out_length}));
 
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
-    }).translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto ir_template =
             R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where LO in @length@, KL in @kernel_l@; )";
 
@@ -242,7 +243,9 @@ REGISTER_OP(DepthwiseConv1dNative)
         std::string pad_cond;
         if (padding)
         {
-            auto pad_template = ".when([" + LO + " >= 0, " + LO + " < @in_length@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
+            auto pad_template =
+                ".when([" + LO + " >= 0, " + LO +
+                " < @in_length@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
             pad_cond = op::create_code_from_template(pad_template, config);
         }
         config["pad_cond"] = pad_cond;

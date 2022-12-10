@@ -68,7 +68,7 @@ namespace nnfusion
                         size_et,
                         nnfusion::Shape(),
                         std::vector<std::string>{std::to_string(input_indexes.size())});
-                    size_op->set_name(node_proto.name()  + "_size");
+                    size_op->set_name(node_proto.name() + "_size");
                     auto size_node = m_graph->add_node_and_edge(size_op, GNodeVector({}));
                     std::tie(ret_node, size_node) =
                         graph::numpy_broadcast(std::make_pair(ret_node, size_node), m_graph);

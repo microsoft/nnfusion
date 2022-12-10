@@ -1155,8 +1155,8 @@ namespace nnfusion
             }
 
             NamedNodeVector TranslateSpaceToDepthOp(const tensorflow::NodeDef& node,
-                                          const NodeMap& all_ng_nodes,
-                                          std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                                                    const NodeMap& all_ng_nodes,
+                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
             {
                 auto input_gnode = GetInputNode(all_ng_nodes, node, 0);
 
@@ -1175,8 +1175,7 @@ namespace nnfusion
                 auto generic_op =
                     std::make_shared<nnfusion::op::GenericOp>(node.name(), node.op(), myConfig);
 
-                auto generic_gnode =
-                    m_graph->add_node_and_edge(generic_op, {input_gnode});
+                auto generic_gnode = m_graph->add_node_and_edge(generic_op, {input_gnode});
                 NamedNodeVector ret{{node.name(), generic_gnode}};
                 return ret;
             }

@@ -82,7 +82,8 @@ REGISTER_OP(Resize)
         auto mode = generic_op->localOpConfig.getRoot()["method"];
         auto no_scale = generic_op->localOpConfig.getRoot()["no_scale"];
         string dtype;
-        NNFUSION_CHECK(element::Type::nnfusion_element_type_to_dtype_string(gnode->get_element_type(), dtype));
+        NNFUSION_CHECK(
+            element::Type::nnfusion_element_type_to_dtype_string(gnode->get_element_type(), dtype));
         if (mode == "NEAREST")
         {
             auto expression_template =
@@ -154,7 +155,8 @@ REGISTER_OP(Resize)
                 "@ow_shape@;"
                 "w_weight[CH] = w_map[CH].call(`remainder`) where CH in "
                 "@ow_shape@;"
-                "@output0@@output0_layout@ = (@input0@@input00_layout@ * (1.0 - h_weight@h_layout@) "
+                "@output0@@output0_layout@ = (@input0@@input00_layout@ * (1.0 - "
+                "h_weight@h_layout@) "
                 "* "
                 "(1.0 - w_weight@w_layout@)"
                 "+ @input0@@input10_layout@ * (h_weight@h_layout@) * (1.0 - w_weight@w_layout@)"

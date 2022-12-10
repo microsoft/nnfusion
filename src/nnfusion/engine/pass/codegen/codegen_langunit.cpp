@@ -110,9 +110,8 @@ include_directories(cutlass/examples/42_fused_multi_head_attention)
 include_directories(cutlass/tools/util/include/)
 )");
 
-
 LU_DEFINE(nnfusion::codegen::helper::cuda_half_debug,
-R"(
+          R"(
 extern "C" __global__ void Convert_half_float0(half* input0, float* output0, int bound)
 {
     if (bound != 0 && threadIdx.x >= bound)
@@ -137,8 +136,7 @@ extern void Convert_half_float_Call1(const dim3 &grids, const dim3 &blocks, unsi
     Convert_half_float1<<<grids, blocks, mem, stream>>>(input0, output0, blks, bound);
 }
 
-)"
-)
+)")
 
 LU_DEFINE(nnfusion::codegen::helper::debug,
           R"(

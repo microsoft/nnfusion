@@ -45,8 +45,8 @@ REGISTER_OP(SpaceToDepth)
         std::string Hfmt = "H0 * @block_size@ + (C0 // @input_channels@) \% @block_size@";
         std::string Wfmt = "W0 * @block_size@ + (C0 // @input_channels@) // @block_size@";
         std::string Cfmt = "C0 \% @input_channels@";
-        std::string input0_layout =
-            is_nhwc ? "[N0, " + Hfmt + ", " + Wfmt + ", "+ Cfmt +"]" : "[N0, " + Cfmt + ", " + Hfmt + ", " + Wfmt + "]";
+        std::string input0_layout = is_nhwc ? "[N0, " + Hfmt + ", " + Wfmt + ", " + Cfmt + "]"
+                                            : "[N0, " + Cfmt + ", " + Hfmt + ", " + Wfmt + "]";
 
         nnfusion::op::OpConfig::any config;
         config["block_size"] = block_size;

@@ -585,7 +585,6 @@ if (thread_idx == 0) output0[block_idx] = val;
                             m_gridDim = dim3(1, 1, 1);
                             m_blockDim = dim3(block_size_x, 1, 1);
                         }
-
                     }
                 }
 

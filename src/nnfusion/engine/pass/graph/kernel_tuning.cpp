@@ -425,6 +425,7 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
             std::string code((std::istreambuf_iterator<char>(ifs)),
                              (std::istreambuf_iterator<char>()));
             extract_tunning_status_from_kernel(code, s);
+            std::cout << "cache: " << ir << ", " << file_name;
 
             if (s->status == "completed")
             {
@@ -436,6 +437,7 @@ void KernelTuning::tuning_kernels_sync(std::vector<std::shared_ptr<GNode>>& node
                 tuned_kernels.push_back(s);
                 continue;
             }
+            std::cout << "Miss cache: " << ir << ", " << file_name << "," << s->status << ", " << s->progress_step;
 
             std::cout << "\nTuning [" << id++ << "/" << num_kernels << " ops]: op=" << s->op_type
                       << ", name="
@@ -528,7 +530,7 @@ void load_irs_and_tune_kernels_sync(std::string filename,
 
         if (FLAGS_fretuning_bar > 0)
         {
-            if (s->best_perf <= FLAGS_fretuning_bar)
+            if (s->best_perf > 0 && s->best_perf <= FLAGS_fretuning_bar)
             {
                 std::cout << "\nTuning [" << id++ << "/" << num_kernels
                           << " ops]: op=" << s->op_type << ", name="

@@ -136,7 +136,7 @@ def _build_dependency(ast, shape_dict):
                 traverse(in_op)
             traverse(op._value['true'])
             traverse(op._value['false'])
-        elif op._op in ['axis', 'const']:
+        elif op._op in ['axis', 'const', 'axis_range']:
             pass
         else:
             raise Exception('Unhandled node type in traverse(): %s' % op._op)

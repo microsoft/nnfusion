@@ -445,6 +445,11 @@ def emit_tvm_body(node, props):
             all_conds) + '), t=' + emit_tvm_body(
                 node._value['true'], props) + ', f=' + emit_tvm_body(
                     node._value['false'], props) + ')'
+    elif node._op == 'axis_range':
+        for x in props['data_axes'] + props['reduce_axes']:
+            if x['name'] == node._value:
+                return 'tir.const(%s, dtype="%s")' % (x['range'], node._dtype)
+        raise Exception('axes_range for %s is not found.' % node._value)
     else:
         raise Exception('Unrecognized node type: %s' % node._op)
 

@@ -1,12 +1,15 @@
 import argparse
+import ctypes
 import os
 import os.path as osp
 import time
 
 import numpy as np
 import torch
+import torch_blade
 from model.pytorch import *
 
+cuda = ctypes.CDLL("libcudart.so")
 
 def tofp16model(in_file_name, out_file_name):
     from onnx import checker, load_model, save_model
@@ -36,21 +39,61 @@ def torch2onnx(prefix, model, inputs, fp16):
     feed_dict = dict(zip(input_names, inputs))
     np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
 
-def run_torch(model, inputs):
-    model = model.cuda()
-    model.eval()
+def run_blade(model, inputs):
     cu_inputs = []
     for item in inputs:
         cu_inputs.append(item.cuda() if isinstance(item, torch.Tensor) else item)
+
+    torch_config = torch_blade.config.Config()
+    torch_config.enable_mlir_amp = False # disable mix-precision
+    model = torch.jit.trace(model, inputs, strict=False).cuda().eval()
+
+    torch._C._jit_pass_inline(model._c.forward.graph)
+    torch._C._jit_pass_remove_dropout(model._c)
+
+    with torch.no_grad(), torch_config:
+        # BladeDISC torch_blade optimize will return an optimized TorchScript
+        model = torch_blade.optimize(model, allow_tracing=True, model_inputs=tuple(cu_inputs))
+
     def get_runtime():
         tic = time.time()
         _ = model(*cu_inputs)
-        torch.cuda.synchronize()
+        cuda.cudaDeviceSynchronize()
         return (time.time() - tic) * 1000
     with torch.no_grad():
         _ = [get_runtime() for i in range(50)] # warmup
         times = [get_runtime() for i in range(100)]
     print("mean: {}ms min: {}ms max: {}ms".format(np.mean(times), np.min(times), np.max(times)))
+    # cuda.cudaProfilerStart()
+    # get_runtime()
+    # cuda.cudaProfilerStop()
+
+
+def run_blade_trt(model, inputs):
+    model = model.cuda().eval()
+    cu_inputs = []
+    for item in inputs:
+        cu_inputs.append(item.cuda() if isinstance(item, torch.Tensor) else item)
+
+    cfg = torch_blade.Config.get_current_context_or_new().clone()
+    cfg.optimization_pipeline = torch_blade.tensorrt.backend_name()
+    cfg.customize_onnx_opset_version = 12
+    cfg.enable_fp16 = args.fp16
+    model = torch.jit.trace(model, cu_inputs, strict=False).cuda().eval()
+    with cfg, torch_blade.logging.logger_level_context('INFO'):
+        model = torch_blade.optimization._static_optimize(model, False, model_inputs=tuple(cu_inputs))
+    def get_runtime():
+        tic = time.time()
+        _ = model(*cu_inputs)
+        cuda.cudaDeviceSynchronize()
+        return (time.time() - tic) * 1000
+    with torch.no_grad():
+        _ = [get_runtime() for i in range(50)] # warmup
+        times = [get_runtime() for i in range(100)]
+    print("mean: {}ms min: {}ms max: {}ms".format(np.mean(times), np.min(times), np.max(times)))
+    cuda.cudaProfilerStart()
+    get_runtime()
+    cuda.cudaProfilerStop()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -69,7 +112,7 @@ if __name__ == "__main__":
         if args.fp16:
             model = model.half()
             inputs = [x.half() if torch.is_floating_point(x) else x for x in inputs]
-        run_torch(model, inputs)
+        run_blade(model, inputs)
     else:
         os.makedirs(args.prefix, exist_ok=True)
         torch2onnx(args.prefix, model, inputs, args.fp16)

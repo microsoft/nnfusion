@@ -81,6 +81,7 @@ namespace nnfusion
             nnfusion::async::DeviceStreamAsyncManager* device_async_manager;
             unordered_set<string> global_required;
             bool superscaler_enable = false;
+            size_t max_tensor_size;
         };
 
         class CudaMultiCodegenPassPre : public CudaCodegenPass

@@ -880,7 +880,7 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
                    << "fp32tensors, \"" << join(kernel->m_context->input_names) << "\", "
                    << kernel->m_context->outputs[i]->size(false) << ");\n";
                 lu << "CUDA_SAFE_CALL(cudaMemset((void*)fp32tensors, 0, "
-                   << " 2239067648));\n";
+                   << max_tensor_size <<"));\n";
             }
             else if (element::get_backend_cstring(
                          kernel->m_context->outputs[i]->get_element_type()) == "float")
@@ -967,7 +967,7 @@ bool CudaCodegenPass::collect_mem(std::shared_ptr<InterpreterContext> ctx,
     auto& allocator_list = tu->memory_allocator_factory->get_allocator_list();
 
     size_t total_alloc = 0;
-    size_t max_tensor_size = 0;
+    max_tensor_size = 0;
     for (const auto& allocator : allocator_list)
     {
         total_alloc += allocator.second->max_allocated();

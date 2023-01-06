@@ -122,18 +122,12 @@ namespace nnfusion
                             std::make_shared<op::Reshape>(axis_order, result_shape_with_keep);
                         reshape_op->set_name(node_proto.output(0));
                         auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {epi_gnode});
-                        // ret.push_back({node_proto.output(0), reshape_gnode});
-                        auto cast16_op = std::make_shared<op::Convert>(element::f16);
-                        auto cast16 = m_graph->add_node_and_edge(cast16_op, {reshape_gnode});
-                        ret.push_back({node_proto.output(0), cast16});
+                        ret.push_back({node_proto.output(0), reshape_gnode});
                     }
                     else
                     {
                         epi_gnode->get_op_ptr()->set_name(node_proto.output(0));
-                        // ret.push_back({node_proto.output(0), epi_gnode});
-                        auto cast16_op = std::make_shared<op::Convert>(element::f16);
-                        auto cast16 = m_graph->add_node_and_edge(cast16_op, {epi_gnode});
-                        ret.push_back({node_proto.output(0), cast16});
+                        ret.push_back({node_proto.output(0), epi_gnode});
                     }
 
                     return ret;

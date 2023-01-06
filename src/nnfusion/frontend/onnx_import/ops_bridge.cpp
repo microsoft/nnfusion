@@ -337,13 +337,11 @@ namespace nnfusion
                 REGISTER_OPERATOR("OneHot", 11, TranslateOneHotOp);
                 REGISTER_OPERATOR("Or", 1, TranslateBinaryOp<op::Or>);
                 REGISTER_OPERATOR("Or", 7, TranslateBinaryOp<op::Or>);
-                // REGISTER_OPERATOR("Pow", 1, TranslateBinaryOp<op::Power>);
-                // REGISTER_OPERATOR("Pow", 7, TranslateBinaryOp<op::Power>);
-                // REGISTER_OPERATOR("Pow", 12, TranslateBinaryOp<op::Power>);
-                // REGISTER_OPERATOR("Pow", 13, TranslateBinaryOp<op::Power>);
-                // REGISTER_OPERATOR("Pow", 15, TranslateBinaryOp<op::Power>);
-                REGISTER_OPERATOR("Pow", 1, TranslatePowerOp);
-                
+                REGISTER_OPERATOR("Pow", 1, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 7, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 12, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 13, TranslateBinaryOp<op::Power>);
+                REGISTER_OPERATOR("Pow", 15, TranslateBinaryOp<op::Power>);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
                 REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
                 REGISTER_OPERATOR("Reciprocal", 1, TranslateReciprocalOp);

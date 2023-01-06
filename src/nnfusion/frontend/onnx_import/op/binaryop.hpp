@@ -43,6 +43,7 @@ namespace nnfusion
                                             std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     // TODO: Fix GetInputNode -> GetInputIndex
+
                     auto lhs_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
                     NNFUSION_CHECK(lhs_gnode != nullptr);
                     auto rhs_gnode = GetInputNode(all_ng_nodes, node_proto, 1);
@@ -69,7 +70,6 @@ namespace nnfusion
                 {
                     auto lhs_index = GetInputIndex(all_ng_nodes, node_proto, 0);
                     auto rhs_index = GetInputIndex(all_ng_nodes, node_proto, 1);
-
                     std::tie(lhs_index, rhs_index) =
                         graph::numpy_broadcast(std::make_pair(lhs_index, rhs_index), m_graph);
 
@@ -100,9 +100,12 @@ namespace nnfusion
                         // special opt for power of 2 case
                         if (power == 2)
                         {
+                            auto cast32_op = std::make_shared<op::Convert>(element::f32);
+                            auto cast32 = m_graph->add_node_and_edge(cast32_op, {lhs_index});
                             auto op = std::make_shared<op::Multiply>();
                             op->set_name(node_proto.output(0));
-                            auto gnode = m_graph->add_node_and_edge(op, {lhs_index, lhs_index});
+                            // auto gnode = m_graph->add_node_and_edge(op, {lhs_index, lhs_index});
+                            auto gnode = m_graph->add_node_and_edge(op, {cast32, cast32});
                             NamedNodeVector ret{{node_proto.output(0), gnode}};
                             return ret;
                         }

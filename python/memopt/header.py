@@ -105,3 +105,87 @@ inline __device__ longlong4 make_int8(int x0, int x1, int x2, int x3, int x4, in
   return make_longlong4(l0, l1, l2, l3);
 }
 """
+
+cutlass_header = """
+#include "cutlass/cutlass.h"
+#include "cutlass/gemm/warp/mma_tensor_op_sm70.h"
+
+namespace cutlass {
+namespace gemm {
+namespace warp {
+
+template <
+  typename Shape,
+  typename SMemLayoutA,
+  typename LayoutA,
+  typename SmemLayoutB,
+  typename LayoutB,
+  typename LayoutC
+>
+class GemmTensorOp {
+public:
+
+  using WarpShape = GemmShape<Shape::kM, Shape::kN, 4>;
+  using Policy = cutlass::gemm::warp::MmaTensorOpPolicy<
+    cutlass::arch::Mma<
+      cutlass::gemm::GemmShape<16, 16, 4>,
+      32,
+      cutlass::half_t,
+      LayoutA,
+      cutlass::half_t,
+      LayoutB,
+      cutlass::half_t,
+      LayoutC,
+      cutlass::arch::OpMultiplyAdd
+    >,
+    cutlass::MatrixShape<1, 1>
+  >;
+
+  using MmaWarp = typename cutlass::gemm::warp::MmaVoltaTensorOp<
+    WarpShape,
+    cutlass::half_t,
+    SMemLayoutA,
+    cutlass::half_t,
+    SmemLayoutB,
+    cutlass::half_t,
+    LayoutC,
+    Policy
+  >;
+  int const kKgroups = (Shape::kK + 3) / 4;
+
+  using TensorRefA = typename MmaWarp::IteratorA::TensorRef;
+  using TensorRefB = typename MmaWarp::IteratorB::TensorRef;
+  MmaWarp mma_op;
+  typename MmaWarp::FragmentA frag_A;
+  typename MmaWarp::FragmentB frag_B;
+public:
+  CUTLASS_HOST_DEVICE
+  GemmTensorOp() {
+    accum.clear();
+  }
+  typename MmaWarp::FragmentC accum;
+  CUTLASS_DEVICE
+  void operator()(TensorRefA ref_A, TensorRefB ref_B, int lane_id) {
+    typename MmaWarp::IteratorA iter_A(ref_A, lane_id);
+    typename MmaWarp::IteratorB iter_B(ref_B, lane_id);
+    CUTLASS_PRAGMA_UNROLL
+    for (int k = 0; k < kKgroups; ++k) {
+      iter_A.load(frag_A);
+      iter_B.load(frag_B);
+      ++iter_A;
+      ++iter_B;
+      mma_op(accum, frag_A, frag_B, accum);
+    }
+  }
+  CUTLASS_DEVICE
+  half& operator[](size_t i) {
+    return ((half*)accum.data())[i];
+  }
+  CUTLASS_DEVICE
+  half* operator+(size_t i) {
+    return (half*)accum.data() + i;
+  }
+};
+
+}}}
+"""

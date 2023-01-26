@@ -72,7 +72,7 @@ extern "C" float profile({}) {{
     return ms / repeats;
 }}
 """.format(def_args, call_str, call_str)
-        header = cuda_default_header
+        header = cuda_default_header + cutlass_header
         if self.use_fp16:
             header += cuda_fp16_header
         profiling_code = header + self.code + "\n" + host_funcs
@@ -84,9 +84,10 @@ extern "C" float profile({}) {{
             src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
             lib_name = src.name.replace(".cu", ".so")
             compute_version = arch.compute_capability
+            cutlass_dir = os.path.expanduser("~/cutlass/include")
             command = ["nvcc", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
-                "-gencode=arch=compute_{},code=compute_{}".format(compute_version, compute_version),
-                "-o", lib_name]
+                f"-gencode=arch=compute_{compute_version},code=compute_{compute_version}",
+                f"-I{cutlass_dir}", "-o", lib_name]
         elif arch.platform == "ROCm":
             profiling_code = self._create_rocm_code_for_profiling()
             src = tempfile.NamedTemporaryFile(mode='w', suffix=".cpp")

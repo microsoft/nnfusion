@@ -23,9 +23,11 @@ class Scope(Dict):
         # indicates output tensor allocation, format {x : bytes for x in self.shared_mem_outputs}
         self.exteral_shared_memroy_size: Dict[int, int] = {}
 
-        self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
-        self._build_analyzer()
-        self._get_grid_block_size()
+        if isinstance(self.schedule, tvm.te.Schedule):
+            self.bounds = tvm.te.schedule.InferBound(self.schedule.normalize())
+            self._build_analyzer()
+            self._get_grid_block_size()
+        self.apply_buffer_layout: Dict[str, callable] = {}
 
     def _build_analyzer(self):
         self.analyzer = tvm.arith.Analyzer()

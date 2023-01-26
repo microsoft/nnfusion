@@ -47,3 +47,18 @@ def get_subgraph_reference_outputs(output_nodes, device="cuda:0", seed=0) -> Lis
         tensor = values[(edge.src_node, edge.src_id)]
         results.append(tensor.numpy())
     return results
+
+def get_reference_output(args, device="cuda:0", seed=0) -> List[np.ndarray]:
+    torch.cuda.set_device(device)
+    torch.random.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    values = []
+    for tensor in args:
+        shape = list(map(int, tensor.shape))
+        arr = get_ref_tensor(shape, device, tensor.dtype)
+        arr = tvm.nd.array(arr.cpu().numpy())
+        values.append(arr)
+    schedule = tvm.te.create_schedule(args[-1].op)
+    mod = tvm.build(schedule, args, target="llvm")
+    mod(*values)
+    return values

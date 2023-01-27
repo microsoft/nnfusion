@@ -1,5 +1,15 @@
 import tvm
+import math
 
+def _xor2x2(i,j):
+    return (i + j) % 2
+
+def _xor4x4(i, j):
+    i0 = i % 2
+    i1 = i // 2
+    j0 = j % 2
+    j1 = j // 2
+    return 2 * _xor2x2(i1, j1) + _xor2x2(i0, j0)
 
 class Layout:
     def __init__(self) -> None:
@@ -14,26 +24,17 @@ class Layout:
     def requires_padding(self) -> bool:
         return False
 
-    def get_access_ptr(self, buffer: tvm.tir.buffer.Buffer, warp_idx: tvm.tir.expr.Var) -> tvm.tir.PrimExpr:
-        return buffer.access_ptr("r")
+    def get_stride(self) -> int:
+        raise NotImplementedError
 
-    def get_param(self, var: tvm.tir.expr.Var) -> tvm.tir.PrimExpr:
-        return var
-
-def _xor2x2(i,j):
-    return (i + j) % 2
-
-def _xor4x4(i, j):
-    i0 = i % 2
-    i1 = i // 2
-    j0 = j % 2
-    j1 = j // 2
-    return 2 * _xor2x2(i1, j1) + _xor2x2(i0, j0)
-
+    def get_vectorize(self) -> int:
+        raise NotImplementedError
 
 class RowMajorLayout(Layout):
-    def __init__(self) -> None:
+    def __init__(self, ldm) -> None:
         super().__init__()
+        self._ldm = ldm
+        self._pad = 0
 
     def __call__(self, offset):
         return offset
@@ -46,6 +47,15 @@ class RowMajorLayout(Layout):
 
     def requires_padding(self) -> bool:
         return True
+
+    def set_pad(self, pad):
+        self._pad = pad
+
+    def get_stride(self) -> int:
+        return self._ldm + self._pad
+
+    def get_vectorize(self) -> int:
+        return math.gcd(math.gcd(8, self.get_stride()), self._ldm)
 
 class ColumnMajorLayout(Layout):
     def __init__(self) -> None:
@@ -92,6 +102,12 @@ class RowMajorVoltaTensorOpMultiplicandBCongruous(Layout):
     def local_layout_name(self):
         return "cutlass::layout::RowMajor"
 
+    def get_vectorize(self) -> int:
+        return 8
+
+    def get_stride(self) -> int:
+        return self._ldm
+
 class RowMajorVoltaTensorOpMultiplicandCongruous(Layout):
     def __init__(self, ldm) -> None:
         super().__init__()
@@ -120,6 +136,12 @@ class RowMajorVoltaTensorOpMultiplicandCongruous(Layout):
 
     def local_layout_name(self):
         return "cutlass::layout::RowMajor"
+
+    def get_vectorize(self) -> int:
+        return 8
+
+    def get_stride(self) -> int:
+        return self._ldm
 
 class RowMajorVoltaTensorOpMultiplicandCrosswise(Layout):
     def __init__(self, mblock, kblock, mwarp) -> None:
@@ -173,14 +195,100 @@ class RowMajorVoltaTensorOpMultiplicandCrosswise(Layout):
     def local_layout_name(self):
         return "cutlass::layout::RowMajor"
 
-    def get_access_ptr(self, buffer: tvm.tir.buffer.Buffer, warp_idx: tvm.tir.expr.Var) -> tvm.tir.PrimExpr:
-        # from memopt.debug import debug
-        # debug(locals())
-        offset = 4 * self._mwarp * warp_idx
-        return buffer.access_ptr("r", offset=-buffer.elem_offset + offset)
+    def get_vectorize(self) -> int:
+        return 4
 
-    def get_param(self, var: tvm.tir.expr.Var) -> tvm.tir.PrimExpr:
+    def get_stride(self) -> int:
         return self._mblock
+
+class RowMajorTensorOpMultiplicandCongruous(Layout):
+    def __init__(self, ldm) -> None:
+        super().__init__()
+        self._ldm = ldm
+        self._access_elements = 8
+        self._tile_shape = (8, 8)
+        self._partition_shape = (4, 4)
+        assert(self._ldm % 64 == 0)
+
+    def __call__(self, offset):
+        i, j = offset // self._ldm, offset % self._ldm
+        vec_contiguous_idx = j // self._access_elements
+        vec_strided_idx = i
+        tile_contiguous_idx = vec_contiguous_idx // self._tile_shape[1]
+        tile_contiguous_residual = vec_contiguous_idx % self._tile_shape[1]
+        tile_strided_residual = vec_strided_idx % self._tile_shape[0]
+
+        partition_contiguous_idx = tile_contiguous_residual // self._partition_shape[1]
+        partition_strided_idx = tile_strided_residual // self._partition_shape[0]
+        partition_contiguous_residual = tile_contiguous_residual % self._partition_shape[1]
+        partition_strided_residual = tile_strided_residual % self._partition_shape[0]
+
+        permuted_vec_contiguous_within_partition = _xor4x4(partition_contiguous_residual, partition_strided_residual)
+        permuted_partition_contiguous_within_tile = _xor2x2(partition_contiguous_idx, partition_strided_idx)
+
+        element_contiguous = self._access_elements * (
+            permuted_vec_contiguous_within_partition + tile_contiguous_idx * self._tile_shape[1] + \
+            permuted_partition_contiguous_within_tile * self._partition_shape[1]
+        ) + j % self._access_elements
+
+        return vec_strided_idx * self._ldm + element_contiguous
+
+    def smem_layout_name(self):
+        return f"cutlass::layout::RowMajorTensorOpMultiplicandCongruous<16, 64>"
+
+    def local_layout_name(self):
+        return "cutlass::layout::RowMajor"
+
+    def get_vectorize(self) -> int:
+        return 8
+
+    def get_stride(self) -> int:
+        return self._ldm
+
+class RowMajorTensorOpMultiplicandCrosswise(Layout):
+    def __init__(self, ldm, factor = 2) -> None:
+        super().__init__()
+        self._ldm = ldm
+        self._kfactor = factor
+        self._access_elements = 8
+        self._tile_shape = (8 // self._kfactor, 8 // self._kfactor)
+        self._partition_shape = (4, 4)
+        assert(self._ldm % 32 == 0)
+
+    def __call__(self, offset):
+        i, j = offset // self._ldm, offset % self._ldm
+        vec_contiguous_idx = j // self._access_elements
+        vec_strided_idx = i // self._kfactor
+        tile_contiguous_idx = vec_contiguous_idx // self._tile_shape[1]
+        tile_contiguous_residual = vec_contiguous_idx % self._tile_shape[1] + (i % self._kfactor) * self._tile_shape[1]
+        tile_strided_residual = vec_strided_idx % self._tile_shape[0]
+
+        partition_contiguous_idx = tile_contiguous_residual // self._partition_shape[1]
+        partition_strided_idx = tile_strided_residual // self._partition_shape[0]
+        partition_contiguous_residual = tile_contiguous_residual % self._partition_shape[1]
+        partition_strided_residual = tile_strided_residual % self._partition_shape[0]
+
+        permuted_vec_contiguous_within_partition = _xor4x4(partition_contiguous_residual, partition_strided_residual)
+        permuted_partition_contiguous_within_tile = _xor2x2(partition_contiguous_idx, partition_strided_idx)
+
+        element_contiguous = self._access_elements * (
+            permuted_vec_contiguous_within_partition + tile_contiguous_idx * self._tile_shape[1] * self._kfactor + \
+            permuted_partition_contiguous_within_tile * self._partition_shape[1]
+        ) + j % self._access_elements
+
+        return vec_strided_idx * self._ldm * self._kfactor + element_contiguous
+
+    def smem_layout_name(self):
+        return f"cutlass::layout::RowMajorTensorOpMultiplicandCrosswise<16, 32>"
+
+    def local_layout_name(self):
+        return "cutlass::layout::RowMajor"
+
+    def get_vectorize(self) -> int:
+        return 8
+
+    def get_stride(self) -> int:
+        return self._ldm
 
 class voltaFragmentCLayout32x32(Layout):
     def __init__(self, m, n) -> None:
@@ -209,7 +317,7 @@ class voltaFragmentCLayout32x32(Layout):
         local_id = offset + (i_block + j_block * (self._m // 32)) * 32
         return [thread_id, local_id]
 
-    def get_vectorize_size(self):
+    def get_vectorize(self) -> int:
         return 4
 
 class FragmentCLayout8x8(Layout):
@@ -239,5 +347,5 @@ class FragmentCLayout8x8(Layout):
         local_id = offset + (i_block + j_block * (self._m // 8)) * 2
         return [thread_id, local_id]
 
-    def get_vectorize_size(self):
+    def get_vectorize(self) -> int:
         return 2

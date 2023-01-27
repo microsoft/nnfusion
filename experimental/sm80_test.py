@@ -19,9 +19,9 @@ def gemm(n, m, k):
 def sche_gemm(sch: tvm.tir.Schedule):
     C = sch.get_block("output")
 
-    block_size_M, block_size_N = 64, 64
-    warp_size_M, warp_size_N = 32, 32
-    chunk_size = 64
+    block_size_M, block_size_N = 128, 128
+    warp_size_M, warp_size_N = 64, 64
+    chunk_size = 32
     warp_size = 32
     num_warp = (block_size_M * block_size_N) // (warp_size_M * warp_size_N)
 
@@ -40,10 +40,8 @@ def sche_gemm(sch: tvm.tir.Schedule):
     warp = sch.fuse(warp_M, warp_N)
     sch.bind(warp, "threadIdx.y")
 
-    # layoutA = RowMajorVoltaTensorOpMultiplicandCrosswise(block_size_M, chunk_size, warp_size_M)
-    # layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(block_size_N)
-    layoutA = RowMajorLayout(chunk_size)
-    layoutB = RowMajorLayout(block_size_N)
+    layoutB = RowMajorTensorOpMultiplicandCongruous(block_size_N)
+    layoutA = RowMajorTensorOpMultiplicandCrosswise(chunk_size)
 
     for idx in [0, 1]:
         layout = layoutA if idx==0 else layoutB
@@ -61,7 +59,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
         sch.vectorize(vec)
         sch.unroll(oo)
 
-    cls_code = register_volta_cutlass_warp_mma(warp_size_M, warp_size_N, chunk_size,
+    cls_code = register_cutlass_warp_mma(warp_size_M, warp_size_N, chunk_size,
         layoutA.smem_layout_name(), layoutA.local_layout_name(),
         layoutB.smem_layout_name(), layoutB.local_layout_name())
     C_warp = sch.cache_write(C, 0, "cutlass.warp.mma")
@@ -69,7 +67,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
 
     sch.decompose_reduction(C, sch.get_loops(C)[2])
     block_init_c = sch.get_block("output_init")
-    layoutC = voltaFragmentCLayout32x32(warp_size_M, warp_size_N)
+    layoutC = FragmentCLayout8x8(warp_size_M, warp_size_N)
 
     sch.blockize(sch.get_loops(C_warp)[-2])
     sch.transform_block_layout(C_warp, layoutC)
@@ -79,7 +77,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
     sch.vectorize(vec)
     sch.unroll(oo)
     sch.tensorize(sch.get_loops(block_init_c)[-2],
-        register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16", layoutC,
+        register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16", layoutC.get(),
         cls_code, "a_shared", "b_shared", layoutA.get_stride(), layoutB.get_stride(), block_size_M // warp_size_M, block_size_N // warp_size_N)
     )
     sch.tensorize(sch.get_loops(C)[-3],
@@ -96,7 +94,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
     return grid, block
 
 
-args = gemm(512, 512, 512)
+args = gemm(8192, 768, 768)
 workload = te.create_prim_func(args)
 ir_module = tvm.IRModule({"main": workload})
 sch = tvm.tir.Schedule(ir_module)
@@ -115,13 +113,13 @@ kernel_code = kernel_code[kernel_code.index('extern "C" __global__ void'):]
 
 print(kernel_code)
 cp = CompileResult(None, kernel_code, block, grid, "default_function_kernel0", args)
-cp.compile_and_load(memopt.arch.V100())
+cp.compile_and_load(memopt.arch.g3090())
 a = cp.get_example_outputs()[0]
 print(a)
 print(cp.profile())
 
-from memopt.reference import get_reference_output
+# from memopt.reference import get_reference_output
 
-oo = get_reference_output(args)[-1].numpy()
-print(oo)
-print(abs(oo - a).max())
+# oo = get_reference_output(args)[-1].numpy()
+# print(oo)
+# print(abs(oo - a).max())

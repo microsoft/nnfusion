@@ -6,6 +6,7 @@ from tvm.runtime import convert
 from tvm.script import tir as T
 from tvm.tir import TensorIntrin
 
+
 def register_cutlass_warp_mma(warp_M, warp_N, warp_K, SMemLayoutA, layoutA, SMemLayoutB, layoutB):
     cls_code = f"""cutlass::gemm::warp::GemmTensorOp<
     cutlass::gemm::GemmShape<{warp_M}, {warp_N}, {warp_K}>,
@@ -29,7 +30,7 @@ def get_fragment_index(buffer, m_dim, n_dim):
     return buffer.elem_offset // frag_size + (buffer.elem_offset % frag_size) // n_dim
 
 def register_cutlass_warp_init_intrin(m_dim: int, n_dim: int, dtype: str, LayoutC,
-    cls_name, buffer_A, buffer_B, stride_A, stride_B, num_warp_m, num_warp_n) -> str:
+    cls_name, num_warp_m, num_warp_n) -> str:
     """Generator of mma intrins"""
     zero = tir.IntImm("int32", 0).astype(dtype)
     warp_size = 32
@@ -65,10 +66,6 @@ def register_cutlass_warp_init_intrin(m_dim: int, n_dim: int, dtype: str, Layout
                 T.cutlass_init_fragment(
                     C.data,
                     cls_name,
-                    buffer_A,
-                    buffer_B,
-                    stride_A,
-                    stride_B,
                     get_warp_idx_m(warp_idx),
                     get_warp_idx_n(warp_idx),
                     dtype="handle",
@@ -78,7 +75,7 @@ def register_cutlass_warp_init_intrin(m_dim: int, n_dim: int, dtype: str, Layout
     return "mma_fill"
 
 def register_gemm_intrin(m_dim: int, n_dim: int, k_dim: int, in_dtype: str, out_dtype: str,
-                         transpose_A: bool, transpose_B: bool, LayoutC) -> str:
+                         transpose_A: bool, transpose_B: bool, layoutA, layoutB, LayoutC) -> str:
     """Generator of cutlass gemm intrins"""
     warp_size = 32
     C_fraglen = m_dim * n_dim // 32
@@ -109,7 +106,9 @@ def register_gemm_intrin(m_dim: int, n_dim: int, k_dim: int, in_dtype: str, out_
                     vii, vjj, vkk = T.axis.remap("SSR", [i, j, k])
                     thread_id_C, local_id_C = C_layout_func(vii, vjj)
                     C[thread_id_C, local_id_C] = C[thread_id_C, local_id_C] + A[vii, vkk] * B[vkk, vjj]
-
+    read_ptr = lambda buffer: buffer.access_ptr("r", offset=-buffer.elem_offset)
+    stride_A = layoutA.get_stride()
+    stride_B = layoutB.get_stride()
     @T.prim_func
     def impl(a: T.handle, b: T.handle, c: T.handle) -> None:
         A = T.match_buffer(
@@ -128,8 +127,10 @@ def register_gemm_intrin(m_dim: int, n_dim: int, k_dim: int, in_dtype: str, out_
             T.evaluate(
                 T.cutlass_warp_mma(
                     C.data,
-                    A.access_ptr("r"),
-                    B.access_ptr("r"),
+                    read_ptr(A),
+                    stride_A,
+                    read_ptr(B),
+                    stride_B,
                     dtype="handle",
                 )
             )

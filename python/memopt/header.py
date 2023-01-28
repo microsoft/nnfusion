@@ -150,7 +150,7 @@ public:
     cutlass::layout::RowMajor,
     Policy
   >;
-  int const kKgroups = (Shape::kK + InstructionShape::kK - 1) / InstructionShape::kK;
+  static int const kKgroups = (Shape::kK + InstructionShape::kK - 1) / InstructionShape::kK;
 
   using TensorRefA = typename MmaWarp::IteratorA::TensorRef;
   using TensorRefB = typename MmaWarp::IteratorB::TensorRef;
@@ -158,19 +158,21 @@ public:
   typename MmaWarp::FragmentA frag_A[2];
   typename MmaWarp::FragmentB frag_B[2];
   typename MmaWarp::FragmentC accum;
-  typename MmaWarp::IteratorA iter_A;
-  typename MmaWarp::IteratorB iter_B;
   MmaWarp mma_op;
+  const int warp_idx_m_, warp_idx_n_, lane_id_;
 public:
   CUTLASS_DEVICE
-  GemmTensorOp(TensorRefA ref_A, TensorRefB ref_B, int warp_idx_m, int warp_idx_n, int lane_id)
-  : iter_A(ref_A, lane_id), iter_B(ref_B, lane_id) {
+  GemmTensorOp(int warp_idx_m, int warp_idx_n, int lane_id)
+  : warp_idx_m_(warp_idx_m), warp_idx_n_(warp_idx_n), lane_id_(lane_id) {
     accum.clear();
-    iter_A.add_tile_offset({warp_idx_m, 0});
-    iter_B.add_tile_offset({0, warp_idx_n});
   }
   CUTLASS_DEVICE
-  void operator()() {
+  void operator()(TensorRefA ref_A, TensorRefB ref_B) {
+    typename MmaWarp::IteratorA iter_A(ref_A, lane_id_);
+    typename MmaWarp::IteratorB iter_B(ref_B, lane_id_);
+    iter_A.add_tile_offset({warp_idx_m_, 0});
+    iter_B.add_tile_offset({0, warp_idx_n_});
+
     iter_A.load(frag_A[0]);
     iter_B.load(frag_B[0]);
     ++iter_A;
@@ -184,8 +186,6 @@ public:
       mma_op(accum, frag_A[k % 2], frag_B[k % 2], accum);
     }
     mma_op(accum, frag_A[(kKgroups - 1) % 2], frag_B[(kKgroups - 1) % 2], accum);
-    iter_A.add_tile_offset({0, -kKgroups});
-    iter_B.add_tile_offset({-kKgroups, 0});
   }
   CUTLASS_DEVICE
   half& operator[](const size_t i) const {
@@ -207,11 +207,11 @@ template <
 >
 class VoltaGemmTensorOp {
 public:
-
-  using WarpShape = GemmShape<Shape::kM, Shape::kN, 4>;
+  using InstructionShape = GemmShape<16, 16, 4>;
+  using WarpShape = GemmShape<Shape::kM, Shape::kN, InstructionShape::kK>;
   using Policy = cutlass::gemm::warp::MmaTensorOpPolicy<
     cutlass::arch::Mma<
-      cutlass::gemm::GemmShape<16, 16, 4>,
+      InstructionShape,
       32,
       cutlass::half_t,
       LayoutA,
@@ -234,27 +234,29 @@ public:
     LayoutC,
     Policy
   >;
-  int const kKgroups = (Shape::kK + 3) / 4;
-
+  static int const kKgroups = (Shape::kK + InstructionShape::kK - 1) / InstructionShape::kK;
   using TensorRefA = typename MmaWarp::IteratorA::TensorRef;
   using TensorRefB = typename MmaWarp::IteratorB::TensorRef;
-  MmaWarp mma_op;
+
   typename MmaWarp::FragmentA frag_A;
   typename MmaWarp::FragmentB frag_B;
   typename MmaWarp::FragmentC accum;
-  typename MmaWarp::IteratorA iter_A;
-  typename MmaWarp::IteratorB iter_B;
+
+  const int warp_idx_m_, warp_idx_n_, lane_id_;
+  MmaWarp mma_op;
 public:
   CUTLASS_DEVICE
-  VoltaGemmTensorOp(TensorRefA ref_A, TensorRefB ref_B, int warp_idx_m, int warp_idx_n, int lane_id)
-  : iter_A(ref_A, lane_id), iter_B(ref_B, lane_id) {
+  VoltaGemmTensorOp(int warp_idx_m, int warp_idx_n, int lane_id)
+  : warp_idx_m_(warp_idx_m), warp_idx_n_(warp_idx_n), lane_id_(lane_id) {
     accum.clear();
-    iter_A.add_tile_offset({warp_idx_m, 0});
-    iter_B.add_tile_offset({0, warp_idx_n});
   }
-  CUTLASS_DEVICE
-  void operator()() {
-    CUTLASS_PRAGMA_UNROLL
+  __device__
+  void operator()(TensorRefA ref_A, TensorRefB ref_B) {
+    typename MmaWarp::IteratorA iter_A(ref_A, lane_id_);
+    typename MmaWarp::IteratorB iter_B(ref_B, lane_id_);
+    iter_A.add_tile_offset({warp_idx_m_, 0});
+    iter_B.add_tile_offset({0, warp_idx_n_});
+
     for (int k = 0; k < kKgroups; ++k) {
       iter_A.load(frag_A);
       iter_B.load(frag_B);
@@ -262,8 +264,6 @@ public:
       ++iter_B;
       mma_op(accum, frag_A, frag_B, accum);
     }
-    iter_A.add_tile_offset({0, -kKgroups});
-    iter_B.add_tile_offset({-kKgroups, 0});
   }
   CUTLASS_DEVICE
   half& operator[](size_t i) const {

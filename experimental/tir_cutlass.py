@@ -19,9 +19,9 @@ def gemm(n, m, k):
 def sche_gemm(sch: tvm.tir.Schedule):
     C = sch.get_block("output")
 
-    block_size_M, block_size_N = 64, 64
-    warp_size_M, warp_size_N = 32, 32
-    chunk_size = 64
+    block_size_M, block_size_N = 256, 128
+    warp_size_M, warp_size_N = 128, 64
+    chunk_size = 32
     warp_size = 32
     num_warp = (block_size_M * block_size_N) // (warp_size_M * warp_size_N)
 
@@ -40,10 +40,10 @@ def sche_gemm(sch: tvm.tir.Schedule):
     warp = sch.fuse(warp_M, warp_N)
     sch.bind(warp, "threadIdx.y")
 
-    # layoutA = RowMajorVoltaTensorOpMultiplicandCrosswise(block_size_M, chunk_size, warp_size_M)
-    # layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(block_size_N)
-    layoutA = RowMajorLayout(chunk_size)
-    layoutB = RowMajorLayout(block_size_N)
+    layoutA = RowMajorVoltaTensorOpMultiplicandCrosswise(block_size_M, chunk_size, warp_size_M)
+    layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(block_size_N)
+    # layoutA = RowMajorLayout(chunk_size)
+    # layoutB = RowMajorLayout(block_size_N)
 
     for idx in [0, 1]:
         layout = layoutA if idx==0 else layoutB
@@ -59,7 +59,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
         sch.bind(idx_x, "threadIdx.x")
         sch.bind(idx_y, "threadIdx.y")
         sch.vectorize(vec)
-        sch.unroll(oo)
+        # sch.unroll(oo)
 
     cls_code = register_volta_cutlass_warp_mma(warp_size_M, warp_size_N, chunk_size,
         layoutA.smem_layout_name(), layoutA.local_layout_name(),
@@ -80,11 +80,12 @@ def sche_gemm(sch: tvm.tir.Schedule):
     sch.unroll(oo)
     sch.tensorize(sch.get_loops(block_init_c)[-2],
         register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16", layoutC,
-        cls_code, "a_shared", "b_shared", layoutA.get_stride(), layoutB.get_stride(), block_size_M // warp_size_M, block_size_N // warp_size_N)
+        cls_code, block_size_M // warp_size_M, block_size_N // warp_size_N)
     )
     sch.tensorize(sch.get_loops(C)[-3],
         register_gemm_intrin(
-            warp_size_M, warp_size_N, chunk_size, "float16", "float16", False, False, layoutC)
+            warp_size_M, warp_size_N, chunk_size, "float16", "float16", False, False,
+            layoutA, layoutB, layoutC)
     )
     memopt.get_scope().apply_buffer_layout["a_shared"] = layoutA
     memopt.get_scope().apply_buffer_layout["b_shared"] = layoutB
@@ -96,7 +97,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
     return grid, block
 
 
-args = gemm(512, 512, 512)
+args = gemm(8192, 8192, 8192)
 workload = te.create_prim_func(args)
 ir_module = tvm.IRModule({"main": workload})
 sch = tvm.tir.Schedule(ir_module)
@@ -120,8 +121,8 @@ a = cp.get_example_outputs()[0]
 print(a)
 print(cp.profile())
 
-from memopt.reference import get_reference_output
+# from memopt.reference import get_reference_output
 
-oo = get_reference_output(args)[-1].numpy()
-print(oo)
-print(abs(oo - a).max())
+# oo = get_reference_output(args)[-1].numpy()
+# print(oo)
+# print(abs(oo - a).max())

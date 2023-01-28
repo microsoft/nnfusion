@@ -19,8 +19,8 @@ def gemm(n, m, k):
 def sche_gemm(sch: tvm.tir.Schedule):
     C = sch.get_block("output")
 
-    block_size_M, block_size_N = 128, 128
-    warp_size_M, warp_size_N = 64, 64
+    block_size_M, block_size_N = 128, 256
+    warp_size_M, warp_size_N = 64, 128
     chunk_size = 32
     warp_size = 32
     num_warp = (block_size_M * block_size_N) // (warp_size_M * warp_size_N)
@@ -78,11 +78,11 @@ def sche_gemm(sch: tvm.tir.Schedule):
     sch.unroll(oo)
     sch.tensorize(sch.get_loops(block_init_c)[-2],
         register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16", layoutC.get(),
-        cls_code, "a_shared", "b_shared", layoutA.get_stride(), layoutB.get_stride(), block_size_M // warp_size_M, block_size_N // warp_size_N)
+        cls_code, block_size_M // warp_size_M, block_size_N // warp_size_N)
     )
     sch.tensorize(sch.get_loops(C)[-3],
         register_gemm_intrin(
-            warp_size_M, warp_size_N, chunk_size, "float16", "float16", False, False, layoutC)
+            warp_size_M, warp_size_N, chunk_size, "float16", "float16", False, False, layoutA, layoutB, layoutC)
     )
     memopt.get_scope().apply_buffer_layout["a_shared"] = layoutA
     memopt.get_scope().apply_buffer_layout["b_shared"] = layoutB
@@ -94,7 +94,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
     return grid, block
 
 
-args = gemm(8192, 768, 768)
+args = gemm(8192, 8192, 8192)
 workload = te.create_prim_func(args)
 ir_module = tvm.IRModule({"main": workload})
 sch = tvm.tir.Schedule(ir_module)

@@ -128,10 +128,11 @@ namespace nnfusion
             std::ifstream ifs{m_path, std::ios::in | std::ios::binary};
             NNFUSION_CHECK(ifs.is_open()) << "failure opening file:" + path;
             string model_dir = "";
-            auto pos = m_path.rfind("/");
+            string weight_path = FLAGS_fincrease_precision ? m_path : path;
+            auto pos = weight_path.rfind("/");
             if (pos != std::string::npos)
             {
-                model_dir = m_path.substr(0, pos);
+                model_dir = weight_path.substr(0, pos);
             }
 
             auto graph = load_onnx_model(ifs, model_dir, dim_params);

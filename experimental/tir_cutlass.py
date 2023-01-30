@@ -71,24 +71,23 @@ def sche_gemm(sch: tvm.tir.Schedule):
     block_init_c = sch.get_block("output_init")
     layoutC = voltaFragmentCLayout32x32(warp_size_M, warp_size_N)
 
-    sch.blockize(sch.get_loops(C_warp)[-2])
-    sch.transform_block_layout(C_warp, layoutC)
-    sch.transform_layout(C_warp, ("read", 0), layoutC)
+    sch.transform_loop(C_warp, 2, layoutC)
     sch.bind(sch.get_loops(C_warp)[-2], "threadIdx.x")
     oo, vec = sch.split(sch.get_loops(C_warp)[-1], factors=[None, layoutC.get_vectorize()])
     sch.vectorize(vec)
     sch.unroll(oo)
     sch.tensorize(sch.get_loops(block_init_c)[-2],
-        register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16", layoutC,
+        register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16",
         cls_code, block_size_M // warp_size_M, block_size_N // warp_size_N)
     )
     sch.tensorize(sch.get_loops(C)[-3],
         register_gemm_intrin(
             warp_size_M, warp_size_N, chunk_size, "float16", "float16", False, False,
-            layoutA, layoutB, layoutC)
+            layoutA, layoutB)
     )
     memopt.get_scope().apply_buffer_layout["a_shared"] = layoutA
     memopt.get_scope().apply_buffer_layout["b_shared"] = layoutB
+    memopt.get_scope().apply_buffer_layout["output_cutlass.warp.mma"] = layoutC.fragment_offset
     # print(sch.mod["main"].script())
     # exit(0)
 
@@ -105,7 +104,6 @@ from memopt.IRpass import *
 
 passes = [
     (1, apply_layout_transform_pass),
-    (1, fragment_access_rewrite_pass),
 ]
 with memopt.Scope(sch):
     grid, block = sche_gemm(sch)

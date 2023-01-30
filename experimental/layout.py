@@ -1,5 +1,5 @@
-import tvm
 import math
+
 
 def _xor2x2(i,j):
     return (i + j) % 2
@@ -305,17 +305,16 @@ class voltaFragmentCLayout32x32(Layout):
         return [thread_id, local_id]
 
     def __call__(self, i, j):
-        if self._m > 32:
-            i_in_block, i_block = i % 32, i // 32
-        else:
-            i_in_block, i_block = i, 0
-        if self._n > 32:
-            j_in_block, j_block = j % 32, j // 32
-        else:
-            j_in_block, j_block = j, 0
-        thread_id , offset = self._map_index_32x32(i_in_block, j_in_block)
-        local_id = offset + (i_block + j_block * (self._m // 32)) * 32
+        i_in_block, i_block = i % 32, i // 32
+        j_in_block, j_block = j % 32, j // 32
+        thread_id, local_id = self._map_index_32x32(i_in_block, j_in_block)
+        local_id += (i_block + j_block * (self._m // 32)) * 32
         return [thread_id, local_id]
+
+    def fragment_offset(self, offset):
+        i, j = offset // self._n, offset % self._n
+        _, local_id = self(i, j)
+        return local_id
 
     def get_vectorize(self) -> int:
         return 4
@@ -335,17 +334,16 @@ class FragmentCLayout8x8(Layout):
         return [thread_id, local_id]
 
     def __call__(self, i, j):
-        if self._m > 8:
-            i_in_block, i_block = i % 8, i // 8
-        else:
-            i_in_block, i_block = i, 0
-        if self._n > 8:
-            j_in_block, j_block = j % 8, j // 8
-        else:
-            j_in_block, j_block = j, 0
-        thread_id, offset = self._map_index_8x8(i_in_block, j_in_block)
-        local_id = offset + (i_block + j_block * (self._m // 8)) * 2
+        i_in_block, i_block = i % 8, i // 8
+        j_in_block, j_block = j % 8, j // 8
+        thread_id, local_id = self._map_index_8x8(i_in_block, j_in_block)
+        local_id += (i_block + j_block * (self._m // 8)) * 2
         return [thread_id, local_id]
+
+    def fragment_offset(self, offset):
+        i, j = offset // self._n, offset % self._n
+        _, local_id = self(i, j)
+        return local_id
 
     def get_vectorize(self) -> int:
         return 2

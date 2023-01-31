@@ -70,9 +70,9 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
             lu_init_begin << "\nvoid hlsl_init()\n{\n";
 
         lu_init_begin << "dxModuleSetCompat(\"cs_6_5\");\n";
-        if (FLAGS_fhlsl_descriptor_heap)
+        if (!FLAGS_fhlsl_descriptor_heap)
         {
-            lu_init_begin << "dxInit(1);\n";
+            lu_init_begin << "dxInit(0);\n";
         }
     }
 

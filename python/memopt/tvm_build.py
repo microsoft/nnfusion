@@ -15,7 +15,7 @@ def get_valid_name(var):
         name = var.name[:var.name.index(".")]
     else:
         name = var.name
-    return name if var.value_index == 0 else name + str(var.value_index)
+    return name if var.value_index == 0 else name + "_" + str(var.value_index)
 
 def get_block_flatten_code(block_size):
     if block_size[1] == 1 and block_size[2] == 1:

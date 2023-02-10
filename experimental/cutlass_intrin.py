@@ -6,19 +6,19 @@ from tvm.script import tir as T
 from tvm.tir import TensorIntrin
 
 
-def register_cutlass_warp_mma(warp_M, warp_N, warp_K, SMemLayoutA, layoutA, SMemLayoutB, layoutB):
+def register_cutlass_warp_mma(warp_M, warp_N, warp_K, layoutA, layoutB):
     cls_code = f"""cutlass::gemm::warp::GemmTensorOp<
     cutlass::gemm::GemmShape<{warp_M}, {warp_N}, {warp_K}>,
-    {SMemLayoutA},
-    {SMemLayoutB}
+    {layoutA.smem_layout_name()},
+    {layoutB.smem_layout_name()}
 >"""
     return cls_code
 
-def register_volta_cutlass_warp_mma(warp_M, warp_N, warp_K, SMemLayoutA, layoutA, SMemLayoutB, layoutB):
+def register_volta_cutlass_warp_mma(warp_M, warp_N, warp_K, layoutA, layoutB):
     cls_code = f"""cutlass::gemm::warp::VoltaGemmTensorOp<
     cutlass::gemm::GemmShape<{warp_M}, {warp_N}, {warp_K}>,
-    {SMemLayoutA}, {layoutA},
-    {SMemLayoutB}, {layoutB},
+    {layoutA.smem_layout_name()}, {layoutA.local_layout_name()},
+    {layoutB.smem_layout_name()}, {layoutB.local_layout_name()},
     cutlass::layout::RowMajor
 >"""
     return cls_code

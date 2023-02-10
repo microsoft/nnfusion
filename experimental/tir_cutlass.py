@@ -40,10 +40,10 @@ def sche_gemm(sch: tvm.tir.Schedule):
     warp = sch.fuse(warp_M, warp_N)
     sch.bind(warp, "threadIdx.y")
 
-    layoutA = RowMajorVoltaTensorOpMultiplicandCrosswise(block_size_M, chunk_size, warp_size_M)
-    layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(block_size_N)
-    # layoutA = RowMajorLayout(chunk_size)
-    # layoutB = RowMajorLayout(block_size_N)
+    layoutA = RowMajorVoltaTensorOpMultiplicandCrosswise(block_size_M, chunk_size)
+    layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(chunk_size, block_size_N)
+    # layoutA = RowMajorLayout(block_size_M, chunk_size)
+    # layoutB = RowMajorLayout(chunk_size, block_size_N)
 
     for idx in [0, 1]:
         layout = layoutA if idx==0 else layoutB
@@ -59,11 +59,10 @@ def sche_gemm(sch: tvm.tir.Schedule):
         sch.bind(idx_x, "threadIdx.x")
         sch.bind(idx_y, "threadIdx.y")
         sch.vectorize(vec)
+        sch.annotate(SS, "tir.manifest_shared_memory_local_stage", 1)
         # sch.unroll(oo)
 
-    cls_code = register_volta_cutlass_warp_mma(warp_size_M, warp_size_N, chunk_size,
-        layoutA.smem_layout_name(), layoutA.local_layout_name(),
-        layoutB.smem_layout_name(), layoutB.local_layout_name())
+    cls_code = register_volta_cutlass_warp_mma(warp_size_M, warp_size_N, chunk_size, layoutA, layoutB)
     C_warp = sch.cache_write(C, 0, "cutlass.warp.mma")
     sch.reverse_compute_at(C_warp, warp)
 
@@ -76,6 +75,8 @@ def sche_gemm(sch: tvm.tir.Schedule):
     oo, vec = sch.split(sch.get_loops(C_warp)[-1], factors=[None, layoutC.get_vectorize()])
     sch.vectorize(vec)
     sch.unroll(oo)
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_stage", [0, 0, 0, 0, 1])
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_order", [0, 3, 1, 4, 2])
     sch.tensorize(sch.get_loops(block_init_c)[-2],
         register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16",
         cls_code, block_size_M // warp_size_M, block_size_N // warp_size_N)
@@ -88,8 +89,6 @@ def sche_gemm(sch: tvm.tir.Schedule):
     memopt.get_scope().apply_buffer_layout["a_shared"] = layoutA
     memopt.get_scope().apply_buffer_layout["b_shared"] = layoutB
     memopt.get_scope().apply_buffer_layout["output_cutlass.warp.mma"] = layoutC.fragment_offset
-    # print(sch.mod["main"].script())
-    # exit(0)
 
     grid = [np.prod(args[-1].shape) // block_size_M // block_size_N, 1, 1]
     block = [warp_size, num_warp, 1]

@@ -238,8 +238,8 @@ public:
   using TensorRefA = typename MmaWarp::IteratorA::TensorRef;
   using TensorRefB = typename MmaWarp::IteratorB::TensorRef;
 
-  typename MmaWarp::FragmentA frag_A;
-  typename MmaWarp::FragmentB frag_B;
+  typename MmaWarp::FragmentA frag_A[2];
+  typename MmaWarp::FragmentB frag_B[2];
   typename MmaWarp::FragmentC accum;
 
   const int warp_idx_m_, warp_idx_n_, lane_id_;
@@ -257,13 +257,19 @@ public:
     iter_A.add_tile_offset({warp_idx_m_, 0});
     iter_B.add_tile_offset({0, warp_idx_n_});
 
-    for (int k = 0; k < kKgroups; ++k) {
-      iter_A.load(frag_A);
-      iter_B.load(frag_B);
+    iter_A.load(frag_A[0]);
+    iter_B.load(frag_B[0]);
+    ++iter_A;
+    ++iter_B;
+    CUTLASS_PRAGMA_UNROLL
+    for (int k = 0; k < kKgroups - 1; ++k) {
+      iter_A.load(frag_A[(k + 1) % 2]);
+      iter_B.load(frag_B[(k + 1) % 2]);
       ++iter_A;
       ++iter_B;
-      mma_op(accum, frag_A, frag_B, accum);
+      mma_op(accum, frag_A[k % 2], frag_B[k % 2], accum);
     }
+    mma_op(accum, frag_A[(kKgroups - 1) % 2], frag_B[(kKgroups - 1) % 2], accum);
   }
   CUTLASS_DEVICE
   half& operator[](size_t i) const {

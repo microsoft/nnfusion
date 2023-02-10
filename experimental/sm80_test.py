@@ -19,8 +19,8 @@ def gemm(n, m, k):
 def sche_gemm(sch: tvm.tir.Schedule):
     C = sch.get_block("output")
 
-    block_size_M, block_size_N = 128, 256
-    warp_size_M, warp_size_N = 64, 128
+    block_size_M, block_size_N = 256, 128
+    warp_size_M, warp_size_N = 128, 64
     chunk_size = 32
     warp_size = 32
     num_warp = (block_size_M * block_size_N) // (warp_size_M * warp_size_N)
@@ -59,9 +59,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
         sch.vectorize(vec)
         sch.unroll(oo)
 
-    cls_code = register_cutlass_warp_mma(warp_size_M, warp_size_N, chunk_size,
-        layoutA.smem_layout_name(), layoutA.local_layout_name(),
-        layoutB.smem_layout_name(), layoutB.local_layout_name())
+    cls_code = register_cutlass_warp_mma(warp_size_M, warp_size_N, chunk_size, layoutA, layoutB)
     C_warp = sch.cache_write(C, 0, "cutlass.warp.mma")
     sch.reverse_compute_at(C_warp, warp)
 

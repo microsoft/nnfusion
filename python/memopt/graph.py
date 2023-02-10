@@ -160,7 +160,6 @@ class IRNode(Node):
             self.set_shape(arg.shape, output_id)
             self.set_dtype(tvm.DataType(arg.dtype), output_id)
         self._extract_axis()
-        self._sche = self.create_schedule()
 
     def infer_dependency(self, shape, rstep={}) -> Dict[int, List[int]]:
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
@@ -173,12 +172,23 @@ class IRNode(Node):
             result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
         return result
 
+    def get_compute_stages(self):
+        cur_stack = self.args.copy()
+        all_stages = set()
+        while len(cur_stack) > 0:
+            tensor = cur_stack.pop(0)
+            if not isinstance(tensor.op, tvm.te.ComputeOp): continue
+            if tensor.op in all_stages: continue
+            all_stages.add(tensor.op)
+            for input_tensor in tensor.op.input_tensors:
+                cur_stack.append(input_tensor)
+        return all_stages
+
     def infer_dependency_reduce_inputs(self, shape, rstep={}) -> Dict[str, List[int]]:
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
         result = {}
-        for op in self._sche.stage_map:
-            if not isinstance(op, tvm.te.ComputeOp):continue
+        for op in self.get_compute_stages():
             if len(op.reduce_axis) > 0:
                 for tensor in op.input_tensors:
                     result[tensor.name] = shapes[tensor.name]
@@ -186,8 +196,7 @@ class IRNode(Node):
 
     def get_reduce_inputs_dtype(self):
         dtype_map = {}
-        for op in self._sche.stage_map:
-            if not isinstance(op, tvm.te.ComputeOp):continue
+        for op in self.get_compute_stages():
             if len(op.reduce_axis) > 0:
                 for tensor in op.input_tensors:
                     dtype_map[tensor.name] = tvm.DataType(tensor.dtype)
@@ -198,10 +207,9 @@ class IRNode(Node):
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
         cached_tensor = set()
-        for op in self._sche.stage_map:
-            if not isinstance(op, tvm.te.ComputeOp):continue
+        for op in self.get_compute_stages():
             for tensor in op.input_tensors:
-                cache = isinstance(self._sche[tensor].op, tvm.te.PlaceholderOp) \
+                cache = isinstance(tensor.op, tvm.te.PlaceholderOp) \
                     and len(op.output(0).shape) > len(tensor.shape) \
                     and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
                 if len(op.reduce_axis) > 0:
@@ -251,10 +259,10 @@ class IRNode(Node):
         result = 0
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
-        for op in self._sche.stage_map:
+        for op in self.get_compute_stages():
             if not isinstance(op, tvm.te.ComputeOp):continue
             for i, tensor in enumerate(op.input_tensors):
-                cache = isinstance(self._sche[tensor].op, tvm.te.PlaceholderOp) \
+                cache = isinstance(tensor.op, tvm.te.PlaceholderOp) \
                     and len(op.output(0).shape) > len(tensor.shape) \
                     and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
                 if len(op.reduce_axis) > 0:
@@ -349,6 +357,11 @@ class IRNode(Node):
     def create_schedule(self) -> tvm.te.Schedule:
         args = self._output_args
         return tvm.te.create_schedule([x.op for x in args])
+
+    def create_tir_schedule(self) -> tvm.tir.Schedule:
+        workload = tvm.te.create_prim_func(self.args)
+        ir_module = tvm.IRModule({"main": workload})
+        return tvm.tir.Schedule(ir_module)
 
     def _process_multiple_output(self):
         layout = ", ".join([ax.var.name for ax in self._output_args[0].op.axis])

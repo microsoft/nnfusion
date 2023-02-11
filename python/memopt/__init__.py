@@ -1,7 +1,7 @@
 import torch
-from .logging import get_log_level, set_log_level
+
+from . import arch
 from .code_generator import CodeGenerator
 from .config import Config
 from .IRpass import *
-from .scheduler import Scheduler
-from . import arch
+from .logging import get_log_level, set_log_level

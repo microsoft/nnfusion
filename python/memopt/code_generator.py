@@ -7,7 +7,7 @@ from .bestfit import BestFit
 from .config import Config
 from .graph import Node, find_topo_sort
 from .IRpass import Scope
-from .scheduler import Scheduler
+from .schedule import schedule
 from .tvm_build import _type_map, tvm_build
 from .utils import CompileResult
 
@@ -102,7 +102,7 @@ class CodeGenerator():
                 if (op.inputs[idx].src_node, op.inputs[idx].src_id) in strides_map:
                     shared_inputs_strides[op.args[idx]] = strides_map[(op.inputs[idx].src_node, op.inputs[idx].src_id)]
 
-            sch = Scheduler().rewrite_schedule(op.create_schedule(), config, shared_inputs=shared_inputs,
+            sch = schedule(op.args, config, shared_inputs=shared_inputs,
                 shared_inputs_strides=shared_inputs_strides, shared_outputs=shared_outputs_idx)
             with Scope(sch) as scope:
                 # Some inputs which will be used later cannot be overwritten by other internal shared memory,
@@ -163,7 +163,7 @@ class CodeGenerator():
         return CompileResult(configs, code, self.block_size, self.grid_size, self.kernel_name, global_args)
 
     def _compile_single_node(self, node: Node, config: Config):
-        sch = Scheduler().rewrite_schedule(node.create_schedule(), config)
+        sch = schedule(node.args, config)
         with Scope(sch) as scope:
             code = tvm_build(sch, node.args, self.target, name=self.kernel_name, global_kernel=True, flatten_block=False)
             self.block_size, self.grid_size = scope.block_size, scope.grid_size

@@ -4,6 +4,7 @@ import tvm
 from tvm import te, tir
 
 from ..config import Config
+from ..IRpass import *
 
 
 def get_compute_ops(args: List[te.Tensor]) -> List[te.ComputeOp]:
@@ -30,8 +31,9 @@ def seperate_reduce_ops(ops: List[te.ComputeOp]) -> Tuple[List[te.ComputeOp], Li
     return reduce_ops, none_reduce_ops
 
 class SchedulerBase:
-    def __init__(self, args: List[te.Tensor]) -> None:
+    def __init__(self, args: List[te.Tensor], config: Config) -> None:
         self.args = args
+        self.config = config
         self.ops = get_compute_ops(self.args)
 
         output_ops = set()
@@ -51,7 +53,10 @@ class SchedulerBase:
         else:
             raise RuntimeError("Can't' schedule Op with multiple reduce stages.")
 
-        self.thread_per_block = [1, 1, 1]
+        self.block_size = [1, 1, 1] # blockDim.xyz
+        self.compute_grid_size()
+        self.sche = self.create_schedule()
+        self.passes = []
 
         self.shared_inputs = []
         self.shared_outputs = []
@@ -62,5 +67,23 @@ class SchedulerBase:
             return True
         return any(map(self._is_from_shared, tensor.op.input_tensors))
 
-    def schedule(self, config: Config) -> Union[te.Schedule, tir.Schedule]:
+    def compute_grid_size(self):
+        tile_shape = self.config.block
+        node_shape = self.output_op.output(0).shape
+        size = 1
+        for t, n in zip(tile_shape, node_shape):
+            size *= (n + t - 1) // t
+        self.grid_size = [int(size), 1, 1]
+
+    def make_passes(self):
+        self.passes.append(RewriteOutputPass(self.shared_outputs, self.config.output_strides, self.config.block).get_pass())
+        self.passes.append(RewriteInputPass(self.shared_inputs).get_pass())
+
+    def create_schedule(self) -> Union[te.Schedule, tir.Schedule]:
+        raise NotImplementedError()
+
+    def build(self, target) -> str:
+        raise NotImplementedError()
+
+    def schedule(self) -> Union[te.Schedule, tir.Schedule]:
         raise NotImplementedError()

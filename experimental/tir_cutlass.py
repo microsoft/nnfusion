@@ -86,13 +86,13 @@ def sche_gemm(sch: tvm.tir.Schedule):
             warp_size_M, warp_size_N, chunk_size, "float16", "float16", False, False,
             layoutA, layoutB)
     )
-    memopt.get_scope().apply_buffer_layout["a_shared"] = layoutA
-    memopt.get_scope().apply_buffer_layout["b_shared"] = layoutB
-    memopt.get_scope().apply_buffer_layout["output_cutlass.warp.mma"] = layoutC.fragment_offset
-
+    layout_pass = ApplyLayoutPass({"a_shared": layoutA, "b_shared": layoutB, "output_cutlass.warp.mma": layoutC.fragment_offset})
+    passes = [
+        layout_pass.get_pass(),
+    ]
     grid = [np.prod(args[-1].shape) // block_size_M // block_size_N, 1, 1]
     block = [warp_size, num_warp, 1]
-    return grid, block
+    return grid, block, passes
 
 
 args = gemm(8192, 8192, 8192)
@@ -101,13 +101,9 @@ ir_module = tvm.IRModule({"main": workload})
 sch = tvm.tir.Schedule(ir_module)
 from memopt.IRpass import *
 
-passes = [
-    (1, apply_layout_transform_pass),
-]
-with memopt.Scope(sch):
-    grid, block = sche_gemm(sch)
-    with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}, disabled_pass=["tir.UnrollLoop"]):
-        mod = tvm.build(sch.mod["main"], target="cuda")
+grid, block, passes = sche_gemm(sch)
+with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}, disabled_pass=["tir.UnrollLoop"]):
+    mod = tvm.build(sch.mod["main"], target="cuda")
 kernel_code = mod.imported_modules[0].get_source()
 kernel_code = kernel_code[kernel_code.index('extern "C" __global__ void'):]
 

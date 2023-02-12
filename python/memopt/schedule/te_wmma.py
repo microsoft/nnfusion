@@ -6,9 +6,8 @@ from .te_base import TESchedulerBase
 
 
 class TEWarpMMAScheduler(TESchedulerBase):
-    def schedule(self, config: Config) -> te.Schedule:
-        assert(self.reduce_op is not None)
-        sch = self.create_te_schedule()
+    def schedule(self) -> te.Schedule:
+        sch, config = self.sche, self.config
         for op in self.ops:
             if op is not self.output_op:
                 sch[op].compute_inline()
@@ -68,10 +67,10 @@ class TEWarpMMAScheduler(TESchedulerBase):
         if A in self.shared_inputs:
             config.tc_extra_conf.AS_shape[A_ax_k] = int(C.op.reduce_axis[-1].dom.extent) + offset
 
-        self.thread_per_block[0] = 32
+        self.block_size[0] = 32
         for blk, warp in zip(config.block, config.warp):
             assert blk % warp == 0
-            self.thread_per_block[1] *= (blk // warp)
+            self.block_size[1] *= (blk // warp)
 
         if use_global:
             blck_axis = []
@@ -105,8 +104,8 @@ class TEWarpMMAScheduler(TESchedulerBase):
             blck_fused = sch[out].fuse(*blck_axis)
             thrd_fused = sch[out].fuse(*thrd_axis)
             thrd_fused, tv = sch[out].split(thrd_fused, factor=8)
-            _t, tx = sch[out].split(thrd_fused, factor=self.thread_per_block[0])
-            _t, ty = sch[out].split(_t, factor=self.thread_per_block[1])
+            _t, tx = sch[out].split(thrd_fused, factor=self.block_size[0])
+            _t, ty = sch[out].split(_t, factor=self.block_size[1])
             sch[out].vectorize(tv)
 
             sch[out].bind(ty, te.thread_axis("threadIdx.y"))
@@ -175,8 +174,8 @@ class TEWarpMMAScheduler(TESchedulerBase):
         vectorize_B = 8 if isinstance(B.op, te.PlaceholderOp) else 4
         if self._is_from_shared(A): vectorize_A = 1
         if self._is_from_shared(B): vectorize_B = 1
-        self.cooperative_fetch(AS, sch, ASstrideDef, vectorize_A)
-        self.cooperative_fetch(BS, sch, BSstrideDef, vectorize_B)
+        self.cooperative_fetch(AS, ASstrideDef, vectorize_A)
+        self.cooperative_fetch(BS, BSstrideDef, vectorize_B)
 
         shape = (wmma_m, wmma_n, wmma_k)
         AL_gemm = te.placeholder(AL_shape, name="AL_gemm", dtype=A.dtype)
@@ -237,7 +236,7 @@ class TEWarpMMAScheduler(TESchedulerBase):
                 strides = self.shared_inputs_strides[tensor]
             else:
                 strides = Stride()
-            self.cooperative_fetch(tensor_shared, sch, strides)
+            self.cooperative_fetch(tensor_shared, strides)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
             consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
             if len(consumers) == 0 or len(self.shared_outputs) == 0: continue

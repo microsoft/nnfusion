@@ -8,6 +8,7 @@ from .te_elementwise import *
 from .te_reduce import *
 from .te_reduce_interthread import *
 from .te_wmma import *
+from .tir_simt import *
 
 
 def schedule(args: List[te.Tensor], config: Config, shared_inputs: List[te.Tensor] = [],
@@ -23,11 +24,14 @@ def schedule(args: List[te.Tensor], config: Config, shared_inputs: List[te.Tenso
     else:
         template = TEReduceScheduler
 
-    scheduler = template(args)
+    scheduler = template(args, config)
 
     scheduler.shared_inputs = shared_inputs
     scheduler.shared_outputs = shared_outputs
     scheduler.shared_inputs_strides = {tensor: Stride() for tensor in shared_inputs}
     scheduler.shared_inputs_strides.update(shared_inputs_strides)
 
-    return scheduler.schedule(config)
+    scheduler.make_passes()
+    scheduler.schedule()
+
+    return scheduler

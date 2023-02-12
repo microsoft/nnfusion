@@ -6,7 +6,6 @@ import numpy as np
 from .bestfit import BestFit
 from .config import Config
 from .graph import Node, find_topo_sort
-from .IRpass import Scope
 from .schedule import schedule
 from .tvm_build import _type_map, tvm_build
 from .utils import CompileResult
@@ -104,54 +103,58 @@ class CodeGenerator():
 
             sch = schedule(op.args, config, shared_inputs=shared_inputs,
                 shared_inputs_strides=shared_inputs_strides, shared_outputs=shared_outputs_idx)
-            with Scope(sch) as scope:
-                # Some inputs which will be used later cannot be overwritten by other internal shared memory,
-                # so we must put these tensor in reuse_disabled_inputs.
-                # Inputs that will be freed after this kernel can be overwritten and reused in this kernel.
-                reuse_disabled_inputs = [op.args[idx] for idx in filter(
-                    lambda idx: not self._can_free(op.inputs[idx].src_node, op.inputs[idx].src_id), shared_inputs_idx)]
-                # generate the kernel code for this node
-                func_name = "_".join([self.kernel_name, str(len(statements)), op.name]) # unique globally
-                kernel_code = tvm_build(sch, op.args, self.target, shared_outputs_idx, shared_inputs, name=func_name, global_kernel=False,
-                    block_reorder=config.block_order, strides=config.output_strides, reuse_disabled_inputs=reuse_disabled_inputs)
-                for idx in config.output_strides:
-                    strides_map[(op, idx-len(op.inputs))] = config.output_strides[idx]
-                kernel_codes.append(kernel_code)
-                if self.block_size is None:
-                    self.block_size, self.grid_size = scope.block_size, scope.grid_size
-                else:
-                    assert(self.block_size == scope.block_size and self.grid_size == scope.grid_size)
-                for idx, tensor in zip(shared_inputs_idx, shared_inputs):
-                    num_bytes = scope.exteral_shared_memroy_size[tensor]
+
+            # Some inputs which will be used later cannot be overwritten by other internal shared memory,
+            # so we must put these tensor in reuse_disabled_inputs.
+            # Inputs that will be freed after this kernel can be overwritten and reused in this kernel.
+            reuse_disabled_inputs = [op.args[idx] for idx in filter(
+                lambda idx: not self._can_free(op.inputs[idx].src_node, op.inputs[idx].src_id), shared_inputs_idx)]
+            # generate the kernel code for this node
+            func_name = "_".join([self.kernel_name, str(len(statements)), op.name]) # unique globally
+            kernel_code, exteral_shared_memroy_size, total_internal_shared_memory = tvm_build(
+                sch, self.target,
+                name=func_name,
+                global_kernel=False,
+                reuse_disabled_inputs=reuse_disabled_inputs,
+            )
+            for idx in config.output_strides:
+                strides_map[(op, idx-len(op.inputs))] = config.output_strides[idx]
+            kernel_codes.append(kernel_code)
+            if self.block_size is None:
+                self.block_size, self.grid_size = sch.block_size, sch.grid_size
+            else:
+                assert(self.block_size == sch.block_size and self.grid_size == sch.grid_size)
+            for idx, tensor in zip(shared_inputs_idx, shared_inputs):
+                num_bytes = exteral_shared_memroy_size[tensor]
+                src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
+                block = block_map[(src_node, src_id)]
+                if block.size() < num_bytes:
+                    raise Exception("Shared memory mismatched", op, tensor, block.size(), num_bytes)
+
+            # make memory plan
+            internal_shared_mem = self.allocator.malloc(total_internal_shared_memory)
+            for idx in shared_inputs_idx:
+                if op.args[idx] not in reuse_disabled_inputs:
                     src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
-                    block = block_map[(src_node, src_id)]
-                    if block.size() < num_bytes:
-                        raise Exception("Shared memory mismatched", op, tensor, block.size(), num_bytes)
+                    self.allocator.free(block_map[(src_node, src_id)])
+            self.allocator.free(internal_shared_mem)
+            for idx in shared_outputs_idx:
+                num_bytes = exteral_shared_memroy_size[idx]
+                block_map[(op, idx-len(op.inputs))] = self.allocator.malloc(num_bytes)
 
-                # make memory plan
-                internal_shared_mem = self.allocator.malloc(scope.total_internal_shared_memory)
-                for idx in shared_inputs_idx:
-                    if op.args[idx] not in reuse_disabled_inputs:
-                        src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
-                        self.allocator.free(block_map[(src_node, src_id)])
-                self.allocator.free(internal_shared_mem)
-                for idx in shared_outputs_idx:
-                    num_bytes = scope.exteral_shared_memroy_size[idx]
-                    block_map[(op, idx-len(op.inputs))] = self.allocator.malloc(num_bytes)
-
-                # generate kernel call statement
-                arg_list = []
-                for idx in range(len(op.args)):
-                    dtype = _type_map[op.args[idx].dtype]
-                    if idx in shared_inputs_idx:
-                        src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
-                        arg_list.append(f"({dtype}*)(shared+{block_map[(src_node, src_id)].start})")
-                    elif idx in shared_outputs_idx:
-                        arg_list.append(f"({dtype}*)(shared+{block_map[(op, idx-len(op.inputs))].start})")
-                    else:
-                        arg_list.append(global_args_name_map[op.args[idx]])
-                arg_list.append(f"shared+{internal_shared_mem.start}")
-                statements.append(func_name + "(" + ", ".join(arg_list) + ");")
+            # generate kernel call statement
+            arg_list = []
+            for idx in range(len(op.args)):
+                dtype = _type_map[op.args[idx].dtype]
+                if idx in shared_inputs_idx:
+                    src_node, src_id = op.inputs[idx].src_node, op.inputs[idx].src_id
+                    arg_list.append(f"({dtype}*)(shared+{block_map[(src_node, src_id)].start})")
+                elif idx in shared_outputs_idx:
+                    arg_list.append(f"({dtype}*)(shared+{block_map[(op, idx-len(op.inputs))].start})")
+                else:
+                    arg_list.append(global_args_name_map[op.args[idx]])
+            arg_list.append(f"shared+{internal_shared_mem.start}")
+            statements.append(func_name + "(" + ", ".join(arg_list) + ");")
 
         code = self._write_code(kernel_codes, statements, global_args_name_map)
 
@@ -164,7 +167,6 @@ class CodeGenerator():
 
     def _compile_single_node(self, node: Node, config: Config):
         sch = schedule(node.args, config)
-        with Scope(sch) as scope:
-            code = tvm_build(sch, node.args, self.target, name=self.kernel_name, global_kernel=True, flatten_block=False)
-            self.block_size, self.grid_size = scope.block_size, scope.grid_size
+        self.block_size, self.grid_size = sch.block_size, sch.grid_size
+        code, _, _ = tvm_build(sch, self.target, name=self.kernel_name, global_kernel=True, flatten_block=False)
         return CompileResult({node: config}, code, self.block_size, self.grid_size, self.kernel_name, node.args)

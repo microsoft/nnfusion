@@ -6,9 +6,8 @@ from .te_base import TESchedulerBase
 
 
 class TEReduceInterThreadScheduler(TESchedulerBase):
-    def schedule(self, config: Config) -> te.Schedule:
-        self.config = config
-        sch = self.create_te_schedule()
+    def schedule(self) -> te.Schedule:
+        sch, config = self.sche, self.config
         for op in self.ops:
             if op is not self.output_op:
                 sch[op].compute_inline()
@@ -16,8 +15,8 @@ class TEReduceInterThreadScheduler(TESchedulerBase):
         assert(self.reduce_op is not None)
         out = self.output_op
         reg_tile = self.reduce_op.output(0)
-        self.thread_per_block[0] = int(np.prod(self.config.reduce_thread))
-        self.thread_per_block[1] = int(np.prod(self.config.thread))
+        self.block_size[0] = int(np.prod(self.config.reduce_thread))
+        self.block_size[1] = int(np.prod(self.config.thread))
 
         # For inter thread reduction case, one thread must only compute one element
         assert self.config.thread == self.config.block
@@ -63,7 +62,7 @@ class TEReduceInterThreadScheduler(TESchedulerBase):
                 vectorize = self.config.vectorize[input_tensor.name]
             else:
                 vectorize = 1
-            self.cooperative_fetch(shared_tensor, sch, strides, vectorize)
+            self.cooperative_fetch(shared_tensor, strides, vectorize)
 
         cache_plan = {}
         for op in self.none_reduce_ops:
@@ -80,7 +79,7 @@ class TEReduceInterThreadScheduler(TESchedulerBase):
                 strides = self.shared_inputs_strides[tensor]
             else:
                 strides = Stride()
-            self.cooperative_fetch(tensor_shared, sch, strides)
+            self.cooperative_fetch(tensor_shared, strides)
             # This is a hack, TVM cannot handle cached_local_read when padding on a shared input
             consumers = list(filter(lambda x: x.output(0) not in self.reduce_op.input_tensors, consumers))
             if len(consumers) == 0 or len(self.shared_outputs) == 0: continue

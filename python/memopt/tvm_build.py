@@ -4,7 +4,7 @@ import numpy as np
 import regex as re
 import tvm
 
-from .IRpass import *
+from .schedule.scheduler_base import SchedulerBase
 
 TVM_DEFAULT_NAME = "default_function_kernel0"
 _type_map = {"float32": "float", "float16": "half", "float64": "double", "int64": "int64_t", "int32": "int", "bool": "int8_t", "int8": "int8_t"}
@@ -48,68 +48,79 @@ def get_block_reorder_code(block_reoder_expr: tvm.tir.PrimExpr) -> str:
     return "  int __bid = blockIdx.x;\n  const dim3 blockIdx({}, 0, 0);\n"\
         .format(_lower_C_simple(block_reoder_expr))
 
-def tvm_build(sch: tvm.te.Schedule, args: List[tvm.te.Tensor], target: tvm.target.Target,
-              sm_outputs: List[int] = [], sm_inputs: List[tvm.te.Tensor] = [], name: str = TVM_DEFAULT_NAME,
-              global_kernel=True, block_reorder=None, strides={}, flatten_block=True, reuse_disabled_inputs=[]) -> str:
-    scope = get_scope()
-    passes = [
-        (0, modify_output_pass),
-        (0, modify_input_pass),
-    ]
-    assert(isinstance(sm_outputs, (tuple, list)))
-    assert(isinstance(sm_inputs, (tuple, list)))
-    func_args = ", ".join(["{}* __restrict__ {}".format(_type_map[var.dtype], get_valid_name(var)) for var in args])
-    with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
-        scope.shared_mem_outputs = sm_outputs
-        scope.shared_mem_inputs = sm_inputs
-        scope.reuse_disabled_inputs = reuse_disabled_inputs
-        scope.strides = strides
-        old_entry = tvm.get_global_func("tvm_callback_cuda_compile")
-        tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
-        mod = tvm.build(sch, args, target=target)
-        tvm.register_func("tvm_callback_cuda_compile", override=True)(old_entry)
+def tvm_build(sch: SchedulerBase, target: tvm.target.Target, name: str = TVM_DEFAULT_NAME,
+              global_kernel=True, flatten_block=True, reuse_disabled_inputs=[]) -> str:
+    func_args = ", ".join(["{}* __restrict__ {}".format(_type_map[var.dtype], get_valid_name(var)) for var in sch.args])
 
-        src = mod.imported_modules[0].get_source()
-        index = src.rindex(TVM_DEFAULT_NAME)
-        index = src.index("{", index)
-        if flatten_block:
-            flat_block_code = get_block_flatten_code(scope.block_size)
-            scope.block_size = [int(np.prod(scope.block_size)), 1, 1]
-            src = src[:index+2] + flat_block_code + src[index+2:]
-        if block_reorder is not None:
-            block_reorder_code = get_block_reorder_code(block_reorder)
-            src = src[:index+2] + block_reorder_code + src[index+2:]
-        if global_kernel:
-            prefix = "__global__ void __launch_bounds__(%d) " % np.prod(scope.block_size)
+    def is_independent_alloc(tensor_name):
+        if tensor_name.endswith(".wmma.accumulator.shared") and len(sch.shared_outputs) > 0:
+            return True
+        return tensor_name in  [x.name + ".shared" for x in sch.shared_inputs]
+
+    def is_reuse_disabled(tensor_name):
+        return tensor_name in [x.name + ".shared" for x in reuse_disabled_inputs]
+
+    tvm._ffi.register_func("memopt.is_independent_alloc", is_independent_alloc, override=True)
+    tvm._ffi.register_func("memopt.is_reuse_disabled", is_reuse_disabled, override=True)
+
+    old_entry = tvm.get_global_func("tvm_callback_cuda_compile")
+    tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
+    src = sch.build(target)
+    tvm.register_func("tvm_callback_cuda_compile", override=True)(old_entry)
+    tvm._ffi.register_func("memopt.is_independent_alloc", lambda x:False, override=True)
+    tvm._ffi.register_func("memopt.is_reuse_disabled", lambda x:False, override=True)
+
+    exteral_shared_memroy_size = {}
+    total_internal_shared_memory = 0
+    for idx in sch.shared_outputs:
+        tile_shape = sch.config.block
+        dtype_bytes = (tvm.DataType(sch.args[idx].dtype).bits + 7) // 8
+        if idx in sch.config.output_strides:
+            strides = sch.config.output_strides[idx].compute_strides_from_shape(tile_shape)
+            exteral_shared_memroy_size[idx] = tile_shape[0] * strides[0] * dtype_bytes
         else:
-            prefix = "__device__ void "
-            func_args += ", char* shared"
-        src = prefix + name + "({}) ".format(func_args) + src[index:]
-        # removing shared memory allocation
-        # check wmma accumulator shared
-        if len(sm_outputs) > 0:
-            reuse_output_name = get_valid_name(args[sm_outputs[0]])
-            src = re.sub(r"__shared__ (\w+) (\w+wmma_accumulator_shared)\[\d+\];", r"\1* \2 = {};".format(reuse_output_name), src, 1)
-        for tensor in scope.shared_mem_inputs:
-            shared_var_name = tensor.name + "_shared"
-            matched = re.findall(r"__shared__ ((?:signed |unsigned )?\w+) {}\[(\d+)\];".format(shared_var_name), src)
-            assert len(matched) == 1
-            dtype, size = matched[0]
-            scope.exteral_shared_memroy_size[tensor] = int(size) * _type_bytes[dtype]
-            src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(shared_var_name), r"\1* {} = {};".format(shared_var_name, tensor.name), src, 1)
-        if not global_kernel:
-            pattern = r"__shared__ ((?:signed |unsigned )?\w+) (\w+)\[(\d+)\];"
-            offset = 0
-            for dtype, var, size in re.findall(pattern, src):
-                src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
-                buffer_len = int(size) * _type_bytes[dtype]
-                buffer_len = (buffer_len + 31) // 32 * 32
-                offset += buffer_len
-            scope.total_internal_shared_memory = offset
-        if global_kernel:
-            pattern = r"__shared__ ((?:signed |unsigned )?\w+) (\w+)\[(\d+)\];"
-            for dtype, var, size in re.findall(pattern, src):
-                buffer_len = int(size) * _type_bytes[dtype]
-                buffer_len = (buffer_len + 31) // 32 * 32
-                src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(var), r"__shared__ \1 {}[{}];".format(var, buffer_len // _type_bytes[dtype]), src, 1)
-    return src
+            exteral_shared_memroy_size[idx] = int(np.prod(tile_shape)) * dtype_bytes
+
+    index = src.rindex(TVM_DEFAULT_NAME)
+    index = src.index("{", index)
+    if flatten_block:
+        flat_block_code = get_block_flatten_code(sch.block_size)
+        sch.block_size = [int(np.prod(sch.block_size)), 1, 1]
+        src = src[:index+2] + flat_block_code + src[index+2:]
+    if sch.config.block_order is not None:
+        block_reorder_code = get_block_reorder_code(sch.config.block_order)
+        src = src[:index+2] + block_reorder_code + src[index+2:]
+    if global_kernel:
+        prefix = "__global__ void __launch_bounds__(%d) " % np.prod(sch.block_size)
+    else:
+        prefix = "__device__ void "
+        func_args += ", char* shared"
+    src = prefix + name + "({}) ".format(func_args) + src[index:]
+    # removing shared memory allocation
+    # check wmma accumulator shared
+    if len(sch.shared_outputs) > 0:
+        reuse_output_name = get_valid_name(sch.args[sch.shared_outputs[0]])
+        src = re.sub(r"__shared__ (\w+) (\w+wmma_accumulator_shared)\[\d+\];", r"\1* \2 = {};".format(reuse_output_name), src, 1)
+    for tensor in sch.shared_inputs:
+        shared_var_name = tensor.name + "_shared"
+        matched = re.findall(r"__shared__ ((?:signed |unsigned )?\w+) {}\[(\d+)\];".format(shared_var_name), src)
+        assert len(matched) == 1
+        dtype, size = matched[0]
+        exteral_shared_memroy_size[tensor] = int(size) * _type_bytes[dtype]
+        src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(shared_var_name), r"\1* {} = {};".format(shared_var_name, tensor.name), src, 1)
+    if not global_kernel:
+        pattern = r"__shared__ ((?:signed |unsigned )?\w+) (\w+)\[(\d+)\];"
+        offset = 0
+        for dtype, var, size in re.findall(pattern, src):
+            src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
+            buffer_len = int(size) * _type_bytes[dtype]
+            buffer_len = (buffer_len + 31) // 32 * 32
+            offset += buffer_len
+        total_internal_shared_memory = offset
+    if global_kernel:
+        pattern = r"__shared__ ((?:signed |unsigned )?\w+) (\w+)\[(\d+)\];"
+        for dtype, var, size in re.findall(pattern, src):
+            buffer_len = int(size) * _type_bytes[dtype]
+            buffer_len = (buffer_len + 31) // 32 * 32
+            src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(var), r"__shared__ \1 {}[{}];".format(var, buffer_len // _type_bytes[dtype]), src, 1)
+    return src, exteral_shared_memroy_size, total_internal_shared_memory

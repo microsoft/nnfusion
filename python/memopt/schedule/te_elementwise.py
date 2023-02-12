@@ -6,14 +6,13 @@ from .te_base import TESchedulerBase
 
 
 class TEElementWiseScheduler(TESchedulerBase):
-    def schedule(self, config: Config) -> te.Schedule:
-        assert(self.reduce_op is None)
-        sch = self.create_te_schedule()
+    def schedule(self) -> te.Schedule:
+        sch, config = self.sche, self.config
         for op in self.ops:
             if op is not self.output_op:
                 sch[op].compute_inline()
         out = self.output_op
-        self.thread_per_block[0] = int(np.prod(config.thread))
+        self.block_size[0] = int(np.prod(config.thread))
 
         blck_axis = []
         vthd_axis = []
@@ -54,7 +53,7 @@ class TEElementWiseScheduler(TESchedulerBase):
                 strides = self.shared_inputs_strides[tensor]
             else:
                 strides = Stride()
-            self.cooperative_fetch(tensor_shared, sch, strides)
+            self.cooperative_fetch(tensor_shared, strides)
             if len(self.shared_outputs) == 0: continue
             tensor_local = sch.cache_read(tensor_shared, "local", consumers)
             sch[tensor_local].compute_at(sch[out], thrd_fused)

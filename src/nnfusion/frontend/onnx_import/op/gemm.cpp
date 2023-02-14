@@ -39,7 +39,6 @@ namespace nnfusion
                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
-
                     auto A = input_indexes[0];
                     auto B = input_indexes[1];
 
@@ -86,7 +85,6 @@ namespace nnfusion
                             bias_node = m_graph->add_node_and_edge(std::make_shared<op::Multiply>(),
                                                                    {C, GNodeIndex{beta, 0}});
                         }
-
                         std::tie(result, bias_node) =
                             numpy_broadcast(std::make_pair(result, bias_node), m_graph);
                         result = m_graph->add_node_and_edge(std::make_shared<op::Add>(),

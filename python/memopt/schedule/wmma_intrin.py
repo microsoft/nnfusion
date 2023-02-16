@@ -32,7 +32,10 @@ def intrin_wmma_load_matrix_A(strides_dst, strides_from, shape, layout, A_shape,
         BA = ins[0]
         BC = outs[0]
         row = wmma_m * wmma_k
-        warp_index = BC.elem_offset // row + BC.elem_offset % row // wmma_k
+        if layout == "row_major":
+            warp_index = BC.elem_offset // row + BC.elem_offset % row // wmma_k
+        else:
+            warp_index = BC.elem_offset // row + BC.elem_offset % row // wmma_m
         ib.emit(
             tvm.tir.call_intrin(
                 "handle",
@@ -81,7 +84,10 @@ def intrin_wmma_load_matrix_W(strides_dst, strides_from, shape, layout, A_shape,
         BA = ins[0]
         BC = outs[0]
         row = wmma_n * wmma_k
-        warp_index = BC.elem_offset // row + BC.elem_offset % row // wmma_n
+        if layout == "row_major":
+            warp_index = BC.elem_offset // row + BC.elem_offset % row // wmma_n
+        else:
+            warp_index = BC.elem_offset // row + BC.elem_offset % row // wmma_k
         ib.emit(
             tvm.tir.call_intrin(
                 "handle",
@@ -150,7 +156,7 @@ def intrin_wmma_store_matrix(strides_dst, strides_from, shape, out_dtype, A_shap
     return te.decl_tensor_intrin(C.op, intrin_func, binds={A: BA, C: BC})
 
 
-def intrin_wmma_gemm(AL_gemm, WL_gemm, CL_compute, strides_A, strides_W, strides_Conv, shape):
+def intrin_wmma_gemm(AL_gemm, WL_gemm, CL_compute, strides_A, strides_W, strides_Conv, shape, layoutA, layoutB):
     """Intrin for wmma fill_fragment and mma_sync
 
     Parameters
@@ -203,8 +209,14 @@ def intrin_wmma_gemm(AL_gemm, WL_gemm, CL_compute, strides_A, strides_W, strides
             row = row * col
             return offset // row + offset % row // col
 
-        warp_index_A = warp_idnex(BA.elem_offset, wmma_m, wmma_k)
-        warp_index_B = warp_idnex(BB.elem_offset, wmma_k, wmma_n)
+        if layoutA == "row_major":
+            warp_index_A = warp_idnex(BA.elem_offset, wmma_m, wmma_k)
+        else:
+            warp_index_A = warp_idnex(BA.elem_offset, wmma_k, wmma_m)
+        if layoutB == "row_major":
+            warp_index_B = warp_idnex(BB.elem_offset, wmma_k, wmma_n)
+        else:
+            warp_index_B = warp_idnex(BB.elem_offset, wmma_n, wmma_k)
         warp_index_C = warp_idnex(BC.elem_offset, wmma_m, wmma_n)
 
         def init():

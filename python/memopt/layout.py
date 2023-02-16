@@ -103,10 +103,11 @@ class RowMajorVoltaTensorOpMultiplicandBCongruous(Layout):
     def get_stride(self) -> int:
         return self._ldm
 
-class RowMajorVoltaTensorOpMultiplicandCongruous(Layout):
+class ColumnMajorVoltaTensorOpMultiplicandCongruous(Layout):
     def __init__(self, stride, continuous) -> None:
         super().__init__()
         self._ldm = continuous
+        self._stride = stride
         self._num_element = stride * continuous
         assert(stride % 4 == 0)
         assert(continuous % 64 == 0) # 64 half = full 32 banks
@@ -131,10 +132,10 @@ class RowMajorVoltaTensorOpMultiplicandCongruous(Layout):
         return element_strided * self._ldm + element_contiguous + self._num_element * stage_idx
 
     def smem_layout_name(self):
-        return "cutlass::layout::RowMajorVoltaTensorOpMultiplicandCongruous<16>"
+        return "cutlass::layout::ColumnMajorVoltaTensorOpMultiplicandCongruous<16>"
 
     def local_layout_name(self):
-        return "cutlass::layout::RowMajor"
+        return "cutlass::layout::ColumnMajor"
 
     def get_vectorize(self) -> int:
         return 8
@@ -183,6 +184,13 @@ class RowMajorVoltaTensorOpMultiplicandCrosswise(Layout):
 
     def get_stride(self) -> int:
         return self._mblock
+
+class ColumnMajorVoltaTensorOpMultiplicandCrosswise(RowMajorVoltaTensorOpMultiplicandCrosswise):
+    def smem_layout_name(self):
+        return f"cutlass::layout::ColumnMajorVoltaTensorOpMultiplicandCrosswise<16, {self._kblock}>"
+
+    def local_layout_name(self):
+        return "cutlass::layout::ColumnMajor"
 
 # used for Ampere/Turing fp16/bf16
 class TensorOpMultiplicand:
@@ -288,6 +296,7 @@ class voltaFragmentCLayout32x32(Layout):
         thread_id, local_id = self._map_index_32x32(i_in_block, j_in_block)
         local_id += (i_block + j_block * (self._m // 32)) * 32
         return [thread_id, local_id]
+
 
     def fragment_offset(self, offset):
         i, j = offset // self._n, offset % self._n

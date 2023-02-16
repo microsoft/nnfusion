@@ -212,7 +212,7 @@ class TEWarpMMAScheduler(TESchedulerBase):
             ),
         )
         sch[CF].tensorize(
-            CF_inner_axis[0], intrin_wmma_gemm(AL_gemm, BL_gemm, CL_compute, AF_stride, BF_stride, CF_stride, shape)
+            CF_inner_axis[0], intrin_wmma_gemm(AL_gemm, BL_gemm, CL_compute, AF_stride, BF_stride, CF_stride, shape, AF_layout, BF_layout)
         )
         sch[CS].tensorize(
             CS_inner_axis[0],

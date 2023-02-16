@@ -52,7 +52,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
         if layout.requires_padding():
             pad_size = 4 if idx == 0 else 8 # m8n8k4
             layout.set_pad(pad_size)
-            sch.storage_align(SS, 0, axis=-2, factor=32, offset=pad_size)
+            sch.storage_align(SS, 0, axis=-2, factor=2*pad_size, offset=pad_size)
         fused = sch.fuse(*sch.get_loops(SS)[-2:])
         vectorize_size = layout.get_vectorize()
         oo, idx_y, idx_x, vec = sch.split(fused, [None, num_warp, warp_size, vectorize_size])

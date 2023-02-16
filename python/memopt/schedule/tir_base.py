@@ -37,12 +37,8 @@ class TIRSchedulerBase(SchedulerBase):
             self.sche.vectorize(tv)
         else:
             self.sche.unroll(tv)
-        self.sche.unroll(oo)
         self.sche.bind(tx, "threadIdx.x")
         self.sche.bind(ty, "threadIdx.y")
-
-    def plan_cache(self):
-        pass
 
     def build(self, target) -> str:
         with tvm.transform.PassContext(config={"tir.add_lower_pass": self.passes}):

@@ -31,6 +31,7 @@
 #include "op/bias_gelu.hpp"
 #include "op/binaryop.hpp"
 #include "op/cast.hpp"
+#include "op/cast_like.hpp"
 #include "op/clip.hpp"
 #include "op/concat.hpp"
 #include "op/const_of_shape.hpp"
@@ -187,6 +188,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Cast", 6, TranslateCastOp);
                 REGISTER_OPERATOR("Cast", 9, TranslateCastOp);
                 REGISTER_OPERATOR("Cast", 13, TranslateCastOp);
+                REGISTER_OPERATOR("CastLike", 15, TranslateCastLikeOp);
                 REGISTER_OPERATOR("Ceil", 1, TranslateUnaryOp<op::Ceiling>);
                 REGISTER_OPERATOR("Ceil", 6, TranslateUnaryOp<op::Ceiling>);
                 REGISTER_OPERATOR("Ceil", 13, TranslateUnaryOp<op::Ceiling>);
@@ -352,11 +354,15 @@ namespace nnfusion
                 REGISTER_OPERATOR(
                     "ReduceL1", 13, PACK(TranslateReduceOp<op::Abs, op::Sum, op::NoOp>));
                 REGISTER_OPERATOR(
+                    "ReduceL1", 18, PACK(TranslateReduceOp<op::Abs, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
                     "ReduceL2", 1, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
                 REGISTER_OPERATOR(
                     "ReduceL2", 11, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
                 REGISTER_OPERATOR(
                     "ReduceL2", 13, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
+                REGISTER_OPERATOR(
+                    "ReduceL2", 18, PACK(TranslateReduceOp<op::Square, op::Sum, op::Sqrt>));
                 REGISTER_OPERATOR(
                     "ReduceLogSum", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
@@ -364,11 +370,15 @@ namespace nnfusion
                 REGISTER_OPERATOR(
                     "ReduceLogSum", 13, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
+                    "ReduceLogSum", 18, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Log>));
+                REGISTER_OPERATOR(
                     "ReduceLogSumExp", 1, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
                     "ReduceLogSumExp", 11, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
                     "ReduceLogSumExp", 13, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
+                REGISTER_OPERATOR(
+                    "ReduceLogSumExp", 18, PACK(TranslateReduceOp<op::Exp, op::Sum, op::Log>));
                 REGISTER_OPERATOR(
                     "ReduceMax", 1, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
                 REGISTER_OPERATOR(
@@ -378,11 +388,15 @@ namespace nnfusion
                 REGISTER_OPERATOR(
                     "ReduceMax", 13, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
                 REGISTER_OPERATOR(
+                    "ReduceMax", 18, PACK(TranslateReduceOp<op::NoOp, op::Max, op::NoOp>));
+                REGISTER_OPERATOR(
                     "ReduceMean", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Divide>));
                 REGISTER_OPERATOR(
                     "ReduceMean", 11, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Divide>));
                 REGISTER_OPERATOR(
                     "ReduceMean", 13, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Divide>));
+                REGISTER_OPERATOR(
+                    "ReduceMean", 18, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::Divide>));
                 REGISTER_OPERATOR(
                     "ReduceMin", 1, PACK(TranslateReduceOp<op::NoOp, op::Min, op::NoOp>));
                 REGISTER_OPERATOR(
@@ -392,11 +406,15 @@ namespace nnfusion
                 REGISTER_OPERATOR(
                     "ReduceMin", 13, PACK(TranslateReduceOp<op::NoOp, op::Min, op::NoOp>));
                 REGISTER_OPERATOR(
+                    "ReduceMin", 18, PACK(TranslateReduceOp<op::NoOp, op::Min, op::NoOp>));
+                REGISTER_OPERATOR(
                     "ReduceProd", 1, PACK(TranslateReduceOp<op::NoOp, op::Product, op::NoOp>));
                 REGISTER_OPERATOR(
                     "ReduceProd", 11, PACK(TranslateReduceOp<op::NoOp, op::Product, op::NoOp>));
                 REGISTER_OPERATOR(
                     "ReduceProd", 13, PACK(TranslateReduceOp<op::NoOp, op::Product, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceProd", 18, PACK(TranslateReduceOp<op::NoOp, op::Product, op::NoOp>));
                 REGISTER_OPERATOR(
                     "ReduceSum", 1, PACK(TranslateReduceOp<op::NoOp, op::Sum, op::NoOp>));
                 REGISTER_OPERATOR(
@@ -408,6 +426,8 @@ namespace nnfusion
                     "ReduceSumSquare", 11, PACK(TranslateReduceOp<op::Square, op::Sum, op::NoOp>));
                 REGISTER_OPERATOR(
                     "ReduceSumSquare", 13, PACK(TranslateReduceOp<op::Square, op::Sum, op::NoOp>));
+                REGISTER_OPERATOR(
+                    "ReduceSumSquare", 18, PACK(TranslateReduceOp<op::Square, op::Sum, op::NoOp>));
                 REGISTER_OPERATOR("Relu", 1, TranslateUnaryOp<op::Relu>);
                 REGISTER_OPERATOR("Reshape", 1, TranslateReshapeOp);
                 REGISTER_OPERATOR("ReshapeGrad", 1, TranslateReshapeGradOp);

@@ -122,12 +122,11 @@ def intrin_wmma_store_matrix(strides_dst, strides_from, shape, out_dtype, A_shap
         A.dtype,
         scope="wmma.accumulator",
         strides=strides_from,
-        data_alignment=32,
-        offset_factor=8,
+        elem_offset=te.var(),
     )
     C = te.compute(C_shape, lambda *i: A(*i), name="C")
     BC = tvm.tir.decl_buffer(
-        C.shape, C.dtype, scope=scope, strides=strides_dst, data_alignment=32, offset_factor=8
+        C.shape, C.dtype, scope=scope, strides=[te.var() for _ in C_shape], elem_offset=te.var()
     )
 
     def intrin_func(ins, outs):

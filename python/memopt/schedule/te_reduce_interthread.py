@@ -60,6 +60,8 @@ class TEReduceInterThreadScheduler(TESchedulerBase):
                 strides = Stride()
             if input_tensor.name in self.config.vectorize and not self._is_from_shared(input_tensor):
                 vectorize = self.config.vectorize[input_tensor.name]
+                if input_tensor not in self.args:
+                    vectorize = min(4 , vectorize) # tvm not supporting ramp for 8 elements
             else:
                 vectorize = 1
             self.cooperative_fetch(shared_tensor, strides, vectorize)

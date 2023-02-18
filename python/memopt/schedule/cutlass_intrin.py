@@ -1,7 +1,7 @@
 from typing import Callable, List
 
 import tvm
-from tvm import tir
+from tvm import te, tir
 from tvm.script import tir as T
 from tvm.tir import TensorIntrin
 
@@ -84,10 +84,10 @@ def register_gemm_intrin(m_dim: int, n_dim: int, k_dim: int, in_dtype: str, out_
     @T.prim_func
     def desc(a: T.handle, b: T.handle, c: T.handle) -> None:
         A = T.match_buffer(
-            a, (A_shape_0, A_shape_1), in_dtype, offset_factor=16, scope="shared"
+            a, (A_shape_0, A_shape_1), in_dtype, elem_offset=te.var(), scope="shared"
         )
         B = T.match_buffer(
-            b, (B_shape_0, B_shape_1), in_dtype, offset_factor=16, scope="shared",
+            b, (B_shape_0, B_shape_1), in_dtype, elem_offset=te.var(), scope="shared",
         )
         C = T.match_buffer(
             c, (m_dim, n_dim), out_dtype, scope="cutlass.warp.mma"
@@ -108,10 +108,10 @@ def register_gemm_intrin(m_dim: int, n_dim: int, k_dim: int, in_dtype: str, out_
     @T.prim_func
     def impl(a: T.handle, b: T.handle, c: T.handle) -> None:
         A = T.match_buffer(
-            a, (A_shape_0, A_shape_1), in_dtype, offset_factor=16, scope="shared"
+            a, (A_shape_0, A_shape_1), in_dtype, elem_offset=te.var(), scope="shared"
         )
         B = T.match_buffer(
-            b, (B_shape_0, B_shape_1), in_dtype, offset_factor=16, scope="shared"
+            b, (B_shape_0, B_shape_1), in_dtype, elem_offset=te.var(), scope="shared"
         )
         C = T.match_buffer(
             c, (m_dim, n_dim), out_dtype, scope="cutlass.warp.mma"

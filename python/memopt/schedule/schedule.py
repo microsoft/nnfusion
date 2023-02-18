@@ -21,7 +21,7 @@ def schedule(args: List[te.Tensor], config: Config, shared_inputs: List[te.Tenso
     elif config.use_tc:
         A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n = config.tc_extra_conf.tc_axis
         if config.warp[C_ax_m]%32==0 and config.warp[C_ax_n]%32==0:
-            template = TIRCutlassMMAScheduler
+            template = TEWarpMMAScheduler
         else:
             template = TEWarpMMAScheduler
     elif any([t > 1 for t in config.reduce_thread]):

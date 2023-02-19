@@ -140,7 +140,7 @@ class TCPolicy(DefaultPolicy):
             warp_tile[dim_order[0]] *= factor
 
         codegen_dict = Config()
-        codegen_dict.use_tc = True
+        codegen_dict.use_tc = self.arch.compute_capability
         codegen_dict.block = tile
         codegen_dict.warp = warp_tile
         codegen_dict.rstep = [int(rsteps[ax]) for ax in node.raxis]

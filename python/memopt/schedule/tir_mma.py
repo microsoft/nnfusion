@@ -51,14 +51,24 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
 
         # ------------------------ Shared memory layout for multiplicand A and B ------------------------
         try:
-            if transpose_A:
-                layoutA = ColumnMajorVoltaTensorOpMultiplicandCongruous(chunk_size, block_tile_M)
-            else:
-                layoutA = RowMajorVoltaTensorOpMultiplicandCrosswise(block_tile_M, chunk_size)
-            if transpose_B:
-                layoutB = ColumnMajorVoltaTensorOpMultiplicandCrosswise(block_tile_N, chunk_size)
-            else:
-                layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(chunk_size, block_tile_N)
+            if config.use_tc >= "80":
+                if transpose_A:
+                    layoutA = ColumnMajorTensorOpMultiplicandCongruous(chunk_size, block_tile_M)
+                else:
+                    layoutA = RowMajorTensorOpMultiplicandCrosswise(block_tile_M, chunk_size)
+                if transpose_B:
+                    layoutB = ColumnMajorTensorOpMultiplicandCrosswise(block_tile_N, chunk_size)
+                else:
+                    layoutB = RowMajorTensorOpMultiplicandCongruous(chunk_size, block_tile_N)
+            elif config.use_tc >= "70":
+                if transpose_A:
+                    layoutA = ColumnMajorVoltaTensorOpMultiplicandCongruous(chunk_size, block_tile_M)
+                else:
+                    layoutA = RowMajorVoltaTensorOpMultiplicandCrosswise(block_tile_M, chunk_size)
+                if transpose_B:
+                    layoutB = ColumnMajorVoltaTensorOpMultiplicandCrosswise(block_tile_N, chunk_size)
+                else:
+                    layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(chunk_size, block_tile_N)
         except AssertionError:
             if transpose_A:
                 layoutA = ColumnMajorLayout(chunk_size, block_tile_M)
@@ -90,7 +100,10 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
         self.cooperative_fetch(BS, 3, B_stride, inner_step=layoutB.get_vectorize())
 
         # ------------------------ Schedule output fragment layout ------------------------
-
+        if config.use_tc >= "80":
+            layoutC = FragmentCLayout8x8(warp_tile_M, warp_tile_N)
+        elif config.use_tc >= "70":
+            layoutC = voltaFragmentCLayout32x32(warp_tile_M, warp_tile_N)
         C_warp = sch.cache_write(C, 0, "cutlass.warp.mma")
         sch.reverse_compute_at(C_warp, warp_fused)
         block_init_c = sch.decompose_reduction(C, sch.get_loops(C)[2])
@@ -117,10 +130,16 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
                 layoutA, layoutB)
         )
 
-        sch.annotate(AS, "tir.manifest_shared_memory_local_stage", 1)
-        sch.annotate(BS, "tir.manifest_shared_memory_local_stage", 1)
-        sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 0, 0, 1])
-        sch.annotate(K_outer, "software_pipeline_order", [0, 3, 1, 4, 2])
+        if config.use_tc >= "80":
+            sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 1])
+            sch.annotate(K_outer, "software_pipeline_order", [0, 1, 2])
+            sch.annotate(K_outer, "software_pipeline_async_stages", [0])
+            self.passes.append((3, tvm.tir.transform.InjectPTXAsyncCopy()))
+        elif config.use_tc >= "70":
+            sch.annotate(AS, "tir.manifest_shared_memory_local_stage", 1)
+            sch.annotate(BS, "tir.manifest_shared_memory_local_stage", 1)
+            sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 0, 0, 1])
+            sch.annotate(K_outer, "software_pipeline_order", [0, 3, 1, 4, 2])
 
         layout_pass = ApplyLayoutPass({
             self.reduce_op.input_tensors[0].name+"_shared": layoutA,

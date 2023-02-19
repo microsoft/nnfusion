@@ -14,7 +14,7 @@ def intrin_wmma_load_matrix_A(strides_dst, strides_from, shape, layout, A_shape,
 
     A = te.placeholder(A_shape, name="A", dtype=in_dtype)
     BA = tvm.tir.decl_buffer(
-        A.shape, A.dtype, scope="shared", strides=strides_from, data_alignment=32, offset_factor=8
+        A.shape, A.dtype, scope="shared", strides=strides_from, elem_offset=te.var(),
     )
     C = te.compute(C_shape, lambda *i: A(*i), name="C")
     BC = tvm.tir.decl_buffer(
@@ -22,8 +22,7 @@ def intrin_wmma_load_matrix_A(strides_dst, strides_from, shape, layout, A_shape,
         C.dtype,
         scope="wmma.matrix_a",
         strides=strides_dst,
-        data_alignment=32,
-        offset_factor=8,
+        elem_offset=te.var(),
     )
 
     def intrin_func(ins, outs):
@@ -66,7 +65,7 @@ def intrin_wmma_load_matrix_W(strides_dst, strides_from, shape, layout, A_shape,
 
     A = te.placeholder(A_shape, name="A", dtype=in_dtype)
     BA = tvm.tir.decl_buffer(
-        A.shape, A.dtype, scope="shared", strides=strides_from, data_alignment=32, offset_factor=8
+        A.shape, A.dtype, scope="shared", strides=strides_from, elem_offset=te.var(),
     )
     C = te.compute(C_shape, lambda *i: A(*i), name="C")
     BC = tvm.tir.decl_buffer(
@@ -74,8 +73,7 @@ def intrin_wmma_load_matrix_W(strides_dst, strides_from, shape, layout, A_shape,
         C.dtype,
         scope="wmma.matrix_b",
         strides=strides_dst,
-        data_alignment=32,
-        offset_factor=8,
+        elem_offset=te.var(),
     )
 
     def intrin_func(ins, outs):
@@ -177,8 +175,7 @@ def intrin_wmma_gemm(AL_gemm, WL_gemm, CL_compute, strides_A, strides_W, strides
         A.dtype,
         name="BA",
         scope="wmma.matrix_a",
-        data_alignment=32,
-        offset_factor=8,
+        elem_offset=te.var(),
         strides=strides_A,
     )
     BB = tvm.tir.decl_buffer(
@@ -186,8 +183,7 @@ def intrin_wmma_gemm(AL_gemm, WL_gemm, CL_compute, strides_A, strides_W, strides
         B.dtype,
         name="BB",
         scope="wmma.matrix_b",
-        data_alignment=32,
-        offset_factor=8,
+        elem_offset=te.var(),
         strides=strides_W,
     )
     BC = tvm.tir.decl_buffer(
@@ -195,8 +191,7 @@ def intrin_wmma_gemm(AL_gemm, WL_gemm, CL_compute, strides_A, strides_W, strides
         C.dtype,
         name="BC",
         scope="wmma.accumulator",
-        data_alignment=32,
-        offset_factor=8,
+        elem_offset=te.var(),
         strides=strides_Conv,
     )
 

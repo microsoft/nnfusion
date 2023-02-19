@@ -238,7 +238,7 @@ class RowMajorTensorOpMultiplicandCongruous(Layout):
         return self.base(offset)
 
     def smem_layout_name(self):
-        return f"cutlass::layout::RowMajorTensorOpMultiplicandCongruous<16, 64>"
+        return "cutlass::layout::RowMajorTensorOpMultiplicandCongruous<16, 64>"
 
     def local_layout_name(self):
         return "cutlass::layout::RowMajor"
@@ -259,7 +259,7 @@ class RowMajorTensorOpMultiplicandCrosswise(Layout):
         return self.base(offset)
 
     def smem_layout_name(self):
-        return f"cutlass::layout::RowMajorTensorOpMultiplicandCrosswise<16, 32>"
+        return "cutlass::layout::RowMajorTensorOpMultiplicandCrosswise<16, 32>"
 
     def local_layout_name(self):
         return "cutlass::layout::RowMajor"
@@ -269,6 +269,20 @@ class RowMajorTensorOpMultiplicandCrosswise(Layout):
 
     def get_stride(self) -> int:
         return self.base._ldm
+
+class ColumnMajorTensorOpMultiplicandCongruous(RowMajorTensorOpMultiplicandCongruous):
+    def smem_layout_name(self):
+        return "cutlass::layout::ColumnMajorTensorOpMultiplicandCongruous<16, 64>"
+
+    def local_layout_name(self):
+        return "cutlass::layout::ColumnMajor"
+
+class ColumnMajorTensorOpMultiplicandCrosswise(RowMajorTensorOpMultiplicandCrosswise):
+    def smem_layout_name(self):
+        return "cutlass::layout::ColumnMajorTensorOpMultiplicandCrosswise<16, 32>"
+
+    def local_layout_name(self):
+        return "cutlass::layout::ColumnMajor"
 
 class voltaFragmentCLayout32x32(Layout):
     def __init__(self, m, n) -> None:

@@ -9,3 +9,4 @@ class Arch:
         self.max_smem_usage = 0
         self.bandwidth = [0, 0]
         self.platform = "unknown"
+        self.compute_capability = "unknown"

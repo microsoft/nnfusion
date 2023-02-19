@@ -75,7 +75,7 @@ class TileDict:
 
 class Config:
     def __init__(self) -> None:
-        self.use_tc = False
+        self.use_tc = None
         # spacial axes tiling info
         self.block = []
         self.thread = []
@@ -109,7 +109,7 @@ class Config:
         if self.block_order is not None:
             dic["block_order"] = self.block_order
         if self.use_tc:
-            dic["use_tc"] = True
+            dic["use_tc"] = self.use_tc
         if self.output_strides:
             dic["strides"] = {}
             for k, stride in self.output_strides.items():

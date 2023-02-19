@@ -1,8 +1,8 @@
 import memopt
 import numpy as np
 import tvm
-from memopt.schedule.cutlass_intrin import *
 from memopt.layout import *
+from memopt.schedule.cutlass_intrin import *
 from memopt.utils import CompileResult
 from tvm import te
 
@@ -75,6 +75,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
     oo, vec = sch.split(sch.get_loops(C_warp)[-1], factors=[None, layoutC.get_vectorize()])
     sch.vectorize(vec)
     sch.unroll(oo)
+    sch.annotate(oo, "pragma_unroll_explicit", False)
     sch.annotate(sch.get_loops(C)[2], "software_pipeline_stage", [0, 0, 0, 0, 1, 1, 1])
     sch.annotate(sch.get_loops(C)[2], "software_pipeline_order", [0, 5, 1, 6, 2, 3, 4])
     sch.tensorize(sch.get_loops(block_init_c)[-2],
@@ -102,7 +103,7 @@ sch = tvm.tir.Schedule(ir_module)
 from memopt.IRpass import *
 
 grid, block, passes = sche_gemm(sch)
-with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}, disabled_pass=["tir.UnrollLoop"]):
+with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
     mod = tvm.build(sch.mod["main"], target="cuda")
 kernel_code = mod.imported_modules[0].get_source()
 kernel_code = kernel_code[kernel_code.index('extern "C" __global__ void'):]

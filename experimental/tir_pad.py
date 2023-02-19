@@ -1,8 +1,8 @@
 import memopt
 import numpy as np
 import tvm
-from cutlass_intrin import *
-from layout import *
+from memopt.schedule.cutlass_intrin import *
+from memopt.layout import *
 from memopt.utils import CompileResult
 from tvm import te
 

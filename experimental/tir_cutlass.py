@@ -1,8 +1,8 @@
 import memopt
 import numpy as np
 import tvm
-from cutlass_intrin import *
-from layout import *
+from memopt.schedule.cutlass_intrin import *
+from memopt.layout import *
 from memopt.utils import CompileResult
 from tvm import te
 
@@ -75,8 +75,8 @@ def sche_gemm(sch: tvm.tir.Schedule):
     oo, vec = sch.split(sch.get_loops(C_warp)[-1], factors=[None, layoutC.get_vectorize()])
     sch.vectorize(vec)
     sch.unroll(oo)
-    sch.annotate(sch.get_loops(C)[2], "software_pipeline_stage", [0, 0, 0, 0, 1])
-    sch.annotate(sch.get_loops(C)[2], "software_pipeline_order", [0, 3, 1, 4, 2])
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_stage", [0, 0, 0, 0, 1, 1, 1])
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_order", [0, 5, 1, 6, 2, 3, 4])
     sch.tensorize(sch.get_loops(block_init_c)[-2],
         register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16",
         cls_code, block_size_M // warp_size_M, block_size_N // warp_size_N)

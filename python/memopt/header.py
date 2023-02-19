@@ -159,24 +159,28 @@ public:
   typename MmaWarp::FragmentB frag_B[2];
   typename MmaWarp::FragmentC accum;
   MmaWarp mma_op;
+  typename MmaWarp::IteratorA iter_A;
+  typename MmaWarp::IteratorB iter_B;
   const int warp_idx_m_, warp_idx_n_, lane_id_;
 public:
   CUTLASS_DEVICE
   GemmTensorOp(int warp_idx_m, int warp_idx_n, int lane_id)
-  : warp_idx_m_(warp_idx_m), warp_idx_n_(warp_idx_n), lane_id_(lane_id) {
+  : warp_idx_m_(warp_idx_m), warp_idx_n_(warp_idx_n), lane_id_(lane_id), iter_A({nullptr, 0}, 0), iter_B({nullptr, 0}, 0) {
     accum.clear();
   }
   CUTLASS_DEVICE
-  void operator()(TensorRefA ref_A, TensorRefB ref_B) {
-    typename MmaWarp::IteratorA iter_A(ref_A, lane_id_);
-    typename MmaWarp::IteratorB iter_B(ref_B, lane_id_);
+  void prologue(const TensorRefA &ref_A, const TensorRefB &ref_B) {
+    iter_A = typename MmaWarp::IteratorA(ref_A, lane_id_);
+    iter_B = typename MmaWarp::IteratorB(ref_B, lane_id_);
     iter_A.add_tile_offset({warp_idx_m_, 0});
     iter_B.add_tile_offset({0, warp_idx_n_});
-
     iter_A.load(frag_A[0]);
     iter_B.load(frag_B[0]);
     ++iter_A;
     ++iter_B;
+  }
+  CUTLASS_DEVICE
+  void body() {
     CUTLASS_PRAGMA_UNROLL
     for (int k = 0; k < kKgroups - 1; ++k) {
       iter_A.load(frag_A[(k + 1) % 2]);
@@ -185,6 +189,10 @@ public:
       ++iter_B;
       mma_op(accum, frag_A[k % 2], frag_B[k % 2], accum);
     }
+    __threadfence_block();
+  }
+  CUTLASS_DEVICE
+  void epilogue() {
     mma_op(accum, frag_A[(kKgroups - 1) % 2], frag_B[(kKgroups - 1) % 2], accum);
   }
   CUTLASS_DEVICE
@@ -250,8 +258,8 @@ public:
   : warp_idx_m_(warp_idx_m), warp_idx_n_(warp_idx_n), lane_id_(lane_id) {
     accum.clear();
   }
-  __device__
-  void operator()(TensorRefA ref_A, TensorRefB ref_B) {
+  CUTLASS_DEVICE
+  void prologue(TensorRefA ref_A, TensorRefB ref_B) {
     typename MmaWarp::IteratorA iter_A(ref_A, lane_id_);
     typename MmaWarp::IteratorB iter_B(ref_B, lane_id_);
     iter_A.add_tile_offset({warp_idx_m_, 0});
@@ -270,6 +278,12 @@ public:
       mma_op(accum, frag_A[k % 2], frag_B[k % 2], accum);
     }
     mma_op(accum, frag_A[(kKgroups - 1) % 2], frag_B[(kKgroups - 1) % 2], accum);
+  }
+  CUTLASS_DEVICE
+  void body() {
+  }
+  CUTLASS_DEVICE
+  void epilogue() {
   }
   CUTLASS_DEVICE
   half& operator[](size_t i) const {

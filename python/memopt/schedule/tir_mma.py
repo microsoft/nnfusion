@@ -102,22 +102,23 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
         # ------------------------ Schedule output fragment layout ------------------------
         if config.use_tc >= "80":
             layoutC = FragmentCLayout8x8(warp_tile_M, warp_tile_N)
+            cls_code = register_cutlass_warp_mma(warp_tile_M, warp_tile_N, chunk_size, layoutA, layoutB)
         elif config.use_tc >= "70":
             layoutC = voltaFragmentCLayout32x32(warp_tile_M, warp_tile_N)
+            cls_code = register_volta_cutlass_warp_mma(warp_tile_M, warp_tile_N, chunk_size, layoutA, layoutB)
         C_warp = sch.cache_write(C, 0, "cutlass.warp.mma")
         sch.reverse_compute_at(C_warp, warp_fused)
         block_init_c = sch.decompose_reduction(C, sch.get_loops(C)[2])
-        layoutC = voltaFragmentCLayout32x32(warp_tile_M, warp_tile_N)
         sch.transform_loop(C_warp, 2, layoutC)
         sch.bind(sch.get_loops(C_warp)[-2], "threadIdx.x")
         oo, vec = sch.split(sch.get_loops(C_warp)[-1], factors=[None, layoutC.get_vectorize()])
         sch.vectorize(vec)
         sch.unroll(oo)
+        sch.annotate(oo, "pragma_unroll_explicit", False)
         self.schedule_compute_inline()
 
         # ------------------------ Tensorize and Pipelining -------------------------
 
-        cls_code = register_volta_cutlass_warp_mma(warp_tile_M, warp_tile_N, chunk_size, layoutA, layoutB)
         sch.tensorize(sch.get_loops(block_init_c)[-2],
             register_cutlass_warp_init_intrin(warp_tile_M, warp_tile_N, out_dtype,
             cls_code, block_tile_M // warp_tile_M, block_tile_N // warp_tile_N)
@@ -131,15 +132,15 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
         )
 
         if config.use_tc >= "80":
-            sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 1])
-            sch.annotate(K_outer, "software_pipeline_order", [0, 1, 2])
+            sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 1, 1, 2])
+            sch.annotate(K_outer, "software_pipeline_order", [0, 1, 2, 4, 3])
             sch.annotate(K_outer, "software_pipeline_async_stages", [0])
             self.passes.append((3, tvm.tir.transform.InjectPTXAsyncCopy()))
         elif config.use_tc >= "70":
             sch.annotate(AS, "tir.manifest_shared_memory_local_stage", 1)
             sch.annotate(BS, "tir.manifest_shared_memory_local_stage", 1)
-            sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 0, 0, 1])
-            sch.annotate(K_outer, "software_pipeline_order", [0, 3, 1, 4, 2])
+            sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 0, 0, 1, 1, 1])
+            sch.annotate(K_outer, "software_pipeline_order", [0, 5, 1, 6, 2, 3, 4])
 
         layout_pass = ApplyLayoutPass({
             self.reduce_op.input_tensors[0].name+"_shared": layoutA,
@@ -147,12 +148,4 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
             self.reduce_op.name + "_cutlass.warp.mma": layoutC.fragment_offset})
         self.passes.append(layout_pass.get_pass())
 
-        # self.debug_schedule()
-        # exit(0)
-
         return sch.mod["main"]
-
-    def build(self, target) -> str:
-        with tvm.transform.PassContext(config={"tir.add_lower_pass": self.passes}, disabled_pass=["tir.UnrollLoop"]):
-            mod = tvm.build(self.sche.mod["main"], self.args, target)
-        return mod.imported_modules[0].get_source()

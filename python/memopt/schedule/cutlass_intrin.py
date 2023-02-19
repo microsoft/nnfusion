@@ -123,12 +123,19 @@ def register_gemm_intrin(m_dim: int, n_dim: int, k_dim: int, in_dtype: str, out_
             T.evaluate(
                 T.cutlass_warp_mma(
                     C.data,
+                    "prologue",
                     read_ptr(A),
                     stride_A,
                     read_ptr(B),
                     stride_B,
                     dtype="handle",
                 )
+            )
+            T.evaluate(
+                T.cutlass_warp_mma(C.data, "body", read_ptr(A), read_ptr(B), dtype="handle")
+            )
+            T.evaluate(
+                T.cutlass_warp_mma(C.data, "epilogue", dtype="handle")
             )
     TensorIntrin.register("mma_sync", desc, impl, override=True)
     return "mma_sync"

@@ -1,8 +1,8 @@
 import memopt
 import numpy as np
 import tvm
-from cutlass_intrin import *
-from layout import *
+from memopt.schedule.cutlass_intrin import *
+from memopt.layout import *
 from memopt.utils import CompileResult
 from tvm import te
 
@@ -26,10 +26,10 @@ def sche_gemm(sch: tvm.tir.Schedule):
     num_warp = (block_size_M * block_size_N) // (warp_size_M * warp_size_N)
 
     ax_M, ax_N, ax_K = sch.get_loops(C)
-    grid_M, block_M = sch.split(ax_M, factors=[None, block_size_M])
-    grid_N, block_N = sch.split(ax_N, factors=[None, block_size_N])
-    sch.reorder(grid_M, grid_N, block_M, block_N)
-    grid = sch.fuse(grid_M, grid_N)
+    grid_M, tm, block_M = sch.split(ax_M, factors=[None, 4, block_size_M])
+    grid_N, tn, block_N = sch.split(ax_N, factors=[None, 8, block_size_N])
+    sch.reorder(grid_M, grid_N, tm, tn, block_M, block_N)
+    grid = sch.fuse(grid_M, grid_N, tm, tn)
     sch.bind(grid, "blockIdx.x")
 
     grid, ax_M, ax_N, ax_K = sch.get_loops(C)
@@ -40,8 +40,8 @@ def sche_gemm(sch: tvm.tir.Schedule):
     warp = sch.fuse(warp_M, warp_N)
     sch.bind(warp, "threadIdx.y")
 
-    layoutB = RowMajorTensorOpMultiplicandCongruous(block_size_N)
-    layoutA = RowMajorTensorOpMultiplicandCrosswise(chunk_size)
+    layoutA = RowMajorTensorOpMultiplicandCrosswise(block_size_M, chunk_size)
+    layoutB = RowMajorTensorOpMultiplicandCongruous(chunk_size, block_size_N)
 
     for idx in [0, 1]:
         layout = layoutA if idx==0 else layoutB
@@ -57,7 +57,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
         sch.bind(idx_x, "threadIdx.x")
         sch.bind(idx_y, "threadIdx.y")
         sch.vectorize(vec)
-        sch.unroll(oo)
+        # sch.unroll(oo)
 
     cls_code = register_cutlass_warp_mma(warp_size_M, warp_size_N, chunk_size, layoutA, layoutB)
     C_warp = sch.cache_write(C, 0, "cutlass.warp.mma")
@@ -71,7 +71,13 @@ def sche_gemm(sch: tvm.tir.Schedule):
     sch.bind(sch.get_loops(C_warp)[-2], "threadIdx.x")
     oo, vec = sch.split(sch.get_loops(C_warp)[-1], factors=[None, layoutC.get_vectorize()])
     sch.vectorize(vec)
+    sch.annotate(oo, "pragma_unroll_explicit", False)
     sch.unroll(oo)
+
+
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_stage", [0, 0, 1, 1, 2])
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_order", [0, 1, 2, 4, 3])
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_async_stages", [0])
     sch.tensorize(sch.get_loops(block_init_c)[-2],
         register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16",
         cls_code, block_size_M // warp_size_M, block_size_N // warp_size_N)
@@ -83,6 +89,7 @@ def sche_gemm(sch: tvm.tir.Schedule):
     layout_pass = ApplyLayoutPass({"a_shared": layoutA, "b_shared": layoutB, "output_cutlass.warp.mma": layoutC.fragment_offset})
     passes = [
         layout_pass.get_pass(),
+        (3, tvm.tir.transform.InjectPTXAsyncCopy()),
     ]
     # print(sch.mod["main"].script())
     # exit(0)
@@ -99,7 +106,7 @@ sch = tvm.tir.Schedule(ir_module)
 from memopt.IRpass import *
 
 grid, block, passes = sche_gemm(sch)
-with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}, disabled_pass=["tir.UnrollLoop"]):
+with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
     mod = tvm.build(sch.mod["main"], target="cuda")
 kernel_code = mod.imported_modules[0].get_source()
 kernel_code = kernel_code[kernel_code.index('extern "C" __global__ void'):]

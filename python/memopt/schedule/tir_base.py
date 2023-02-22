@@ -4,6 +4,7 @@ import tvm
 from tvm import te, tir
 
 from ..config import Stride
+from ..IRpass import *
 from .scheduler_base import SchedulerBase
 
 
@@ -39,8 +40,16 @@ class TIRSchedulerBase(SchedulerBase):
             self.sche.unroll(tv)
         self.sche.bind(tx, "threadIdx.x")
         self.sche.bind(ty, "threadIdx.y")
+        self.sche.unroll(oo)
+        self.sche.annotate(oo, "pragma_unroll_explicit", False)
 
     def build(self, target) -> str:
         with tvm.transform.PassContext(config={"tir.add_lower_pass": self.passes}):
             mod = tvm.build(self.sche.mod["main"], self.args, target=target)
         return mod.imported_modules[0].get_source()
+
+    def make_passes(self) -> None:
+        self.passes.append(RewriteOutputPass(self.shared_outputs, self.config.output_strides,
+                                             (self.config.block, self.output_op.output(0).shape), False).get_pass())
+        self.passes.append(RewriteInputPass(self.shared_inputs, False).get_pass())
+        self.passes.append(FixCudaCastPass().get_pass())

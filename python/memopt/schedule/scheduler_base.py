@@ -75,9 +75,8 @@ class SchedulerBase:
             size *= (n + t - 1) // t
         self.grid_size = [int(size), 1, 1]
 
-    def make_passes(self):
-        self.passes.append(RewriteOutputPass(self.shared_outputs, self.config.output_strides, self.config.block).get_pass())
-        self.passes.append(RewriteInputPass(self.shared_inputs).get_pass())
+    def make_passes(self) -> None:
+        return
 
     def create_schedule(self) -> Union[te.Schedule, tir.Schedule]:
         raise NotImplementedError()

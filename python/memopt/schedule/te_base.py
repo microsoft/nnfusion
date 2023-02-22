@@ -5,6 +5,7 @@ import tvm
 from tvm import te
 
 from ..config import Stride
+from ..IRpass import *
 from .scheduler_base import SchedulerBase
 
 
@@ -53,3 +54,8 @@ class TESchedulerBase(SchedulerBase):
         with tvm.transform.PassContext(config={"tir.add_lower_pass": self.passes}):
             mod = tvm.build(self.sche, self.args, target=target)
         return mod.imported_modules[0].get_source()
+
+    def make_passes(self) -> None:
+        self.passes.append(RewriteOutputPass(self.shared_outputs, self.config.output_strides, self.config.block, True).get_pass())
+        self.passes.append(RewriteInputPass(self.shared_inputs, True).get_pass())
+        self.passes.append(FixCudaCastPass().get_pass())

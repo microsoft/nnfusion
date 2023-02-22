@@ -28,8 +28,12 @@ def schedule(args: List[te.Tensor], config: Config, shared_inputs: List[te.Tenso
             raise ValueError(config.use_tc)
         use_cutlass_warp_mma = True
         use_cutlass_warp_mma &= config.warp[C_ax_m]%arch_m==0 and config.warp[C_ax_n]%arch_n==0
+        # cutlass_warp_mma currently don't support shared inputs as it uses pipeline approaches
         use_cutlass_warp_mma &= len(shared_inputs)==0
-        template = TIRCutlassMMAScheduler if use_cutlass_warp_mma else TEWarpMMAScheduler
+        # cutlass_warp_mma don't support batched mm inside a block
+        for idx, value in enumerate(config.block):
+            if idx not in [C_ax_m, C_ax_n]: use_cutlass_warp_mma &= value==1
+        template = TEWarpMMAScheduler if use_cutlass_warp_mma else TEWarpMMAScheduler
     elif any([t > 1 for t in config.reduce_thread]):
         template = TEReduceInterThreadScheduler
     else:

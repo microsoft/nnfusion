@@ -7,8 +7,9 @@ from .pass_base import PassBase
 
 
 class RewriteInputPass(PassBase):
-    def __init__(self, shared_inputs: List[te.Tensor]) -> None:
+    def __init__(self, shared_inputs: List[te.Tensor], from_legacy_te: bool) -> None:
         self.shared_inputs = shared_inputs
+        self.from_legacy_te = from_legacy_te
         super().__init__()
 
     def remove_blockIdx(self, expr: tir.Stmt) -> tir.Stmt:
@@ -39,4 +40,4 @@ class RewriteInputPass(PassBase):
         return f.with_body(new_body)
 
     def insert_place(self) -> int:
-        return 0
+        return 0 if self.from_legacy_te else 1

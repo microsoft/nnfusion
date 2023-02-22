@@ -15,8 +15,6 @@ __device__ half min(half a, half b)
   return __hlt(__half(a), __half(b)) ? a : b;
 }
 
-typedef long long _ll;
-#define int64_t _ll
 #define __int8_t_defined
 
 #define CUDA_UNSUPPORTED_HALF_MATH_BINARY(HALF_MATH_NAME, FP32_MATH_NAME) \

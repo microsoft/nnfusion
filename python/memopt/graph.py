@@ -6,7 +6,8 @@ import tvm
 from tvm import arith
 
 from .config import Stride
-from .lang import get_analyzer_by_ir, translate_ir_to_tvm
+from .lang import translate_ir_to_tvm
+from .shape_inference import *
 
 
 class Edge:
@@ -140,6 +141,7 @@ class IRNode(Node):
         self.ir = antares_ir
         self._input_args, self._output_args = translate_ir_to_tvm(self.ir)
         self._output_names = [arg.name for arg in self._output_args]
+        self.ana = get_analyzer_by_te(self._input_args + self._output_args)
         if len(self._output_args) > 1:
             self._process_multiple_output()
         if len(self._input_args) < len(self.inputs):
@@ -152,7 +154,6 @@ class IRNode(Node):
                 new_input_edges.append(input_edge)
             self._in_edges = new_input_edges
         self.args = self._input_args + self._output_args
-        self.ana = get_analyzer_by_ir(self.ir)
         for edge, arg in zip(self.inputs, self.args):
             edge.src_node.set_shape(arg.shape, edge.src_id)
             edge.src_node.set_dtype(tvm.DataType(arg.dtype), edge.src_id)

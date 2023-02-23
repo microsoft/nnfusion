@@ -33,20 +33,22 @@ def load_model(fname: str) -> List[Node]:
                 # result node connect to placeholder, simply ignore
                 continue
         else:
-            node = IRNode(input_list, ir, get_node_name(node_id, op_type))
+            option_kv = {}
             for option in options:
                 index = option.find("=")
                 if index > 0:
-                    key = option[0:index]
-                    value = eval(option[index+1:])
+                    option_kv[option[0:index]] = eval(option[index+1:])
                 else:
-                    key = option
-                    value = True
-                node.add_tag(key, value)
+                    option_kv[option] = True
+            if "skip" in option_kv and option_kv["skip"] == True:
+                ir = None
+            node = IRNode(input_list, ir, get_node_name(node_id, op_type))
+            for k, v in option_kv.items(): node.add_tag(k, v)
         node_map[node_id] = node
         ordered_nodes.append(node)
     # check for tensorCore shapes
     for node in ordered_nodes:
+        if node.get_tag("skip"): continue
         if node.get_tag("tensorCoreConfig"):
             C_ax_m, C_ax_n = node.get_tag("tensorCoreConfig")
             shape = node.get_shape()

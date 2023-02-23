@@ -3,11 +3,11 @@ from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import tvm
-from tvm import arith
+from tvm import arith, te
 
 from .config import Stride
 from .lang import translate_ir_to_tvm
-from .shape_inference import *
+from .shape_inference import get_analyzer_by_te
 
 
 class Edge:
@@ -136,9 +136,10 @@ class OutputNode(Node):
         return True
 
 class IRNode(Node):
-    def __init__(self, inputs, antares_ir: str, name="Compute") -> None:
+    def __init__(self, inputs, antares_ir: Union[str, List[te.Tensor], None], name="Compute") -> None:
         super().__init__(inputs, name)
         self.ir = antares_ir
+        if self.ir is None: return
         self._input_args, self._output_args = translate_ir_to_tvm(self.ir)
         self._output_names = [arg.name for arg in self._output_args]
         self.ana = get_analyzer_by_te(self._input_args + self._output_args)

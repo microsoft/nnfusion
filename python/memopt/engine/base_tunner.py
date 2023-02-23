@@ -186,6 +186,8 @@ class Tunner(object):
         return None
 
     def tune(self, nodes, kernel_name="Fused"):
+        if any([node.get_tag("skip") for node in nodes]):
+            return None
         self.current_nodes = nodes
         if get_log_level() >= 1:
             print("Tuning", [node.name for node in self.current_nodes])
@@ -203,8 +205,6 @@ class Tunner(object):
             result.set_io_desc(input_desc, output_desc)
             result.origin = cached
             return result
-        if any([node.get_tag("skip") for node in self.current_nodes]):
-            return None
 
         policy_list = self.get_policy_list()
         configs = self.generate_configs(policy_list, output_nodes)

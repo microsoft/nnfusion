@@ -431,7 +431,7 @@ def emit_tvm_body(node, props):
             node._value["inputs"][0], props), node._dtype)
     elif node._op == 'call':
         f_map = {"max": "tir.Max", "min": "tir.Min", "exp": "tir.exp", "ceil": "tir.ceil", "erf" : "te.erf", "pow" : "te.power",
-            "tanh": "te.tanh", "tan": "te.tan", "sqrt": "te.sqrt"}
+            "tanh": "te.tanh", "tan": "te.tan", "sqrt": "te.sqrt", "log": "te.log"}
         if node._value['name'] in f_map:
             return '%s(%s)' % (f_map[node._value['name']], ', '.join(
                     [emit_tvm_body(x, props) for x in node._value["inputs"]]))

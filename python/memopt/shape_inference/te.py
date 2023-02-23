@@ -32,6 +32,8 @@ def walk_indice(expr):
         return expr
     elif isinstance(expr, tir.ProducerLoad):
         return None
+    elif isinstance(expr, (tir.Call, tir.Cast)):
+        return None
     else:
         raise Exception('Unhandled node type in walk_indice(): %s' % expr)
 

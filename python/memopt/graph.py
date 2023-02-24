@@ -12,26 +12,10 @@ from .shape_inference import get_analyzer_by_te
 
 class Edge:
     def __init__(self, src_node: 'Node', dst_node: 'Node', src_id: int, dst_id: int):
-        self._src_node = src_node
-        self._dst_node = dst_node
-        self._src_id = src_id
-        self._dst_id = dst_id
-
-    @property
-    def src_node(self) -> 'Node':
-        return self._src_node
-
-    @property
-    def dst_node(self) -> 'Node':
-        return self._dst_node
-
-    @property
-    def src_id(self) -> int:
-        return self._src_id
-
-    @property
-    def dst_id(self) -> int:
-        return self._dst_id
+        self.src_node = src_node
+        self.dst_node = dst_node
+        self.src_id = src_id
+        self.dst_id = dst_id
 
 class Node:
     def __init__(self, inputs: List[Union[Tuple['Node', int], 'Node', None]], name: str):
@@ -44,7 +28,7 @@ class Node:
 
         for i, node in enumerate(inputs):
             if node is None:
-                inputs[i] = PlaceHolderNode("input" + str(i))
+                inputs[i] = PlaceHolderNode()
 
         for dst_id, n in enumerate(inputs):
             if isinstance(n, Node):
@@ -117,7 +101,7 @@ class Node:
         return "<Node, " + self.name + ">"
 
 class PlaceHolderNode(Node):
-    def __init__(self, name):
+    def __init__(self, name=""):
         super().__init__([], "PlaceHolder " + name)
 
     def is_placeholder(self):
@@ -150,8 +134,9 @@ class IRNode(Node):
             new_input_edges = []
             for arg in self._input_args:
                 name = arg.name
-                assert name.startswith('input')
+                assert name.startswith("input")
                 input_edge = self.inputs[int(name[5:])]
+                input_edge.dst_id = len(new_input_edges)
                 new_input_edges.append(input_edge)
             self._in_edges = new_input_edges
         self.args = self._input_args + self._output_args
@@ -219,9 +204,9 @@ class IRNode(Node):
                 if cache:
                     cached_tensor.add(tensor)
         for tensor in cached_tensor:
-            if tensor.name.startswith("input"):
-                input_id = [arg.name for arg in self._input_args].index(tensor.name)
-                assert(input_id >= 0)
+            assert (tensor in self.args) == tensor.name.startswith("input")
+            if tensor in self.args:
+                input_id = self.args.index(tensor)
                 src_node = self.inputs[input_id].src_node
                 if not src_node.is_placeholder():
                     continue
@@ -269,9 +254,8 @@ class IRNode(Node):
                     and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
                 if len(op.reduce_axis) > 0:
                     cache = True
-                if tensor.name.startswith("input"):
-                    input_id = [arg.name for arg in self._input_args].index(tensor.name)
-                    assert(input_id >= 0)
+                if tensor in self.args:
+                    input_id = self.args.index(tensor)
                     src_node = self.inputs[input_id].src_node
                     if not src_node.is_placeholder():
                         cache = False

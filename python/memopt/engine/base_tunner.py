@@ -68,17 +68,16 @@ def _extract_subgraph(nodes):
     # get subgraph inputs and outputs mapping to the original nodes
     # this should get the same results as final code generation
     ordered_nodes = find_topo_sort(output_nodes)
-    new2old = {v: k for k, v in node_map.items()}
     input_desc, output_desc = [], []
     for node in ordered_nodes:
         if node.is_placeholder():
-            origin_node = new2old[node.outputs[0].dst_node]
-            x = origin_node.args[node.outputs[0].dst_id].name
+            dst_node = node.outputs[0].dst_node
+            x = dst_node.args[node.outputs[0].dst_id].name
             assert(x.startswith("input"))
             dst_id = int(x[5:]) # node.outputs[0].dst_id is not the same with dst_id, since some inputs might be unused and removed
-            input_desc.append([origin_node.name, dst_id])
+            input_desc.append([dst_node.name, dst_id])
         elif node.is_output():
-            output_desc.append([new2old[node.inputs[0].src_node].name, node.inputs[0].src_id])
+            output_desc.append([node.inputs[0].src_node.name, node.inputs[0].src_id])
 
     return output_nodes, input_desc, output_desc
 

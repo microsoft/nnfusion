@@ -50,7 +50,18 @@ class TCPolicy(DefaultPolicy):
 
         assert len(block_map) == 0
         return allocator.limit
-
+    
+    def _assign_reduce_step(self, node):
+        if not node.get_tag("tensorCoreConfig"):
+            return super()._assign_reduce_step(node)
+        result = {}
+        for k in node.raxis:
+            if node.raxis[k] % 32 == 0:
+                result[k] = 32
+            else:
+                return super()._assign_reduce_step(node)
+        return result
+    
     def get_node_reduce_step_candidates(self, node):
         if not node.get_tag("tensorCoreConfig"):
             return super().get_node_reduce_step_candidates(node)

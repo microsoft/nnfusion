@@ -33,7 +33,10 @@ def schedule(args: List[te.Tensor], config: Config, shared_inputs: List[te.Tenso
         # cutlass_warp_mma don't support batched mm inside a block
         for idx, value in enumerate(config.block):
             if idx not in [C_ax_m, C_ax_n]: use_cutlass_warp_mma &= value==1
-        template = TEWarpMMAScheduler if use_cutlass_warp_mma else TEWarpMMAScheduler
+        # use pipeline for large reduce ops
+        reduce_size = np.prod([int(ax.dom.extent) for ax in reduces_ops[0].reduce_axis])
+        use_cutlass_warp_mma &= reduce_size > 64
+        template = TIRCutlassMMAScheduler if use_cutlass_warp_mma else TEWarpMMAScheduler
     elif any([t > 1 for t in config.reduce_thread]):
         template = TEReduceInterThreadScheduler
     else:

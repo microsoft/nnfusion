@@ -1,8 +1,9 @@
 import tvm
 
+
 class V100:
     def __init__(self):
-        self.reg_cap = 32768
+        self.reg_cap = 65536
         self.smem_cap = 49152
         self.compute_max_core = 80
         self.warp_size = 32

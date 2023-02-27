@@ -387,6 +387,23 @@ namespace nnfusion
                 nnfusion::cache::KernelEntry kernel_entry;
             };
 
+            class FusionCudaEmitter : public CudaEmitter
+            {
+            public:
+                FusionCudaEmitter(shared_ptr<KernelContext> ctx, json fusion_group);
+
+            private:
+                LanguageUnit_p emit_function_signature() override;
+                LanguageUnit_p emit_function_body() override;
+                LanguageUnit_p emit_dependency() override;
+                void set_launch_config() override;
+
+            private:
+                json m_fusion_group;
+                string m_code;
+                LanguageUnit_p m_body_unitp, m_sig_unitp, m_dep_unitp;
+            };
+
             class CustomCudaKernelEmitter : public BlockCudaEmitter
             {
             public:

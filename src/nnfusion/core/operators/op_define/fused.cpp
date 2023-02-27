@@ -80,6 +80,12 @@ std::string retarget_expr_mediates(std::string expr,
 void Fused::register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes,
                          std::shared_ptr<graph::GNode> fused_node)
 {
+    std::string names;
+    for (auto n : gnodes)
+    {
+        names += n->get_name() + ",";
+    }
+    fused_node->set_member_name(names);
     // DEBUG: Preprint the IR list of all gnodes
     // NNFUSION_LOG(INFO) << "Fusion IR list";
     // for (auto& m_node : gnodes)

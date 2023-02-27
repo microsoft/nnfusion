@@ -68,6 +68,7 @@ namespace nnfusion
         std::list<node>::const_iterator end() const { return m_node_list.cend(); }
         const std::list<node>& get_node_list() const { return m_node_list; }
         size_t max_allocated() const { return m_max_allocated; }
+        size_t max_alloc_unit() const { return m_max_alloc_unit; }
         size_t cur_allocated() const;
         size_t memory_in_use() const;
         void set_alloc_scheme(allocation_scheme alloc_schem) { m_scheme = alloc_schem; }
@@ -94,6 +95,7 @@ namespace nnfusion
         bool record_trace = FLAGS_fmem_trace;
         std::string m_symbol;
         std::string m_name;
+        size_t m_max_alloc_unit;
         MemoryAllocator(size_t alignment = 1,
                         bool disable_reuse = false,
                         NNFusion_DeviceType device_type = CUDA_GPU,

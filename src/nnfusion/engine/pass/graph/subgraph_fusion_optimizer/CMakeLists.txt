@@ -11,6 +11,7 @@ set(SRC
    layernorm_fusion_optimizer.cpp
    matmuladd_fusion_optimizer.cpp
    skiplayernorm_fusion_optimizer.cpp
+   mem_eff_attn_fusion_optimizer.cpp
   
 )
 

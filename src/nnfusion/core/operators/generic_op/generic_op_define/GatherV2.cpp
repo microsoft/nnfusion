@@ -74,7 +74,7 @@ REGISTER_OP(GatherV2)
         NNFUSION_CHECK(ret);
 
         auto ir_template =
-            R"( @output0@@output0_layout@ = @input0@[@input0_layout_left@@input1@@input1_layout@.when(@input1@@input1_layout@ >= 0, @input1@@input1_layout@ + const(@gather_dim@).cast(@input1@@input1_layout@.dtype()))@input0_layout_right@] @where@; )";
+            R"( @output0@@output0_layout@ = @input0@[@input0_layout_left@@input1@@input1_layout@.when(@input1@@input1_layout@ >= 0, @input1@@input1_layout@ + const(@gather_dim@).cast(@input1@@input1_layout@.dtype()))@input0_layout_right@]; )";
 
         auto output0_shape = curr->get_output_shape(0);
         auto output0_layout = op::create_layout_from_dims(output0_shape);
@@ -98,40 +98,14 @@ REGISTER_OP(GatherV2)
             input0_layout_right += ", " + output0_layout[d];
         }
 
-        //input1_layout = input1_layout.empty() ? std::vector<std::string>({"N0"}) : input1_layout;
-        //output0_layout = (output0_layout.empty() ? std::vector<std::string>({"N0"}) : output0_layout;
-        std::string where = "";
-        if (output0_layout.empty())
-        {
-            output0_layout = std::vector<std::string>({"N0"});
-            where = "where N0 in 1";
-        }
+        input1_layout = input1_layout.empty() ? std::vector<std::string>({"0"}) : input1_layout;
+        output0_layout = output0_layout.empty() ? std::vector<std::string>({"N0"}) : output0_layout;
         op::OpConfig::any op_config;
         op_config["output0_layout"] = vector_to_string<std::vector<std::string>>(output0_layout);
         op_config["input0_layout_left"] = input0_layout_left;
         op_config["input1_layout"] = vector_to_string<std::vector<std::string>>(input1_layout);
         op_config["input0_layout_right"] = input0_layout_right;
         op_config["gather_dim"] = std::to_string(input0_shape[axis]);
-        op_config["where"] = where;
-
-        if (input1_layout.empty())
-        {
-            auto ng_op = curr->get_in_edge(1)->get_src();
-            NNFUSION_CHECK(ng_op->is_constant())
-                << "The GatherV2 scalar mode only support \"indices\" as Constant";
-            ir_template =
-                R"( @output0@@output0_layout@ = @input0@[@input0_layout_left@@input1@@input1_layout@@input0_layout_right@] @where@; )";
-
-            auto index =
-                *((int64_t*)std::dynamic_pointer_cast<nnfusion::op::Constant>(ng_op->get_op_ptr())
-                      ->get_data_ptr());
-            if (index < 0)
-            {
-                index = input0_shape[axis] + index;
-            }
-            op_config["input1"] = to_string(index);
-            op_config["input1_layout"] = "";
-        }
 
         return op::create_code_from_template(ir_template, op_config);
     });

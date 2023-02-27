@@ -81,7 +81,9 @@ REGISTER_OP(Resize)
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
         auto mode = generic_op->localOpConfig.getRoot()["method"];
         auto no_scale = generic_op->localOpConfig.getRoot()["no_scale"];
-
+        string dtype;
+        NNFUSION_CHECK(
+            element::Type::nnfusion_element_type_to_dtype_string(gnode->get_element_type(), dtype));
         if (mode == "NEAREST")
         {
             auto expression_template =
@@ -153,14 +155,15 @@ REGISTER_OP(Resize)
                 "@ow_shape@;"
                 "w_weight[CH] = w_map[CH].call(`remainder`) where CH in "
                 "@ow_shape@;"
-                "@output0@@output0_layout@ = @input0@@input00_layout@ * (1.0 - h_weight@h_layout@) "
+                "@output0@@output0_layout@ = (@input0@@input00_layout@ * (1.0 - "
+                "h_weight@h_layout@) "
                 "* "
                 "(1.0 - w_weight@w_layout@)"
                 "+ @input0@@input10_layout@ * (h_weight@h_layout@) * (1.0 - w_weight@w_layout@)"
                 "+ @input0@@input01_layout@ * (1.0 - h_weight@h_layout@) * (w_weight@w_layout@)"
                 "+ @input0@@input11_layout@ * (h_weight@h_layout@) * ("
                 "w_weight@w_layout@)"
-                " where @con@;";
+                ").cast(`@dtype@`) where @con@;";
             ;
 
             std::string cond;
@@ -202,6 +205,7 @@ REGISTER_OP(Resize)
                                                {"input11_layout", vector_to_string(input11_layout)},
                                                {"w_layout", vector_to_string(w_layout)},
                                                {"h_layout", vector_to_string(h_layout)},
+                                               {"dtype", dtype},
                                                {"con", cond}});
             return expr;
         }
@@ -236,14 +240,14 @@ REGISTER_OP(Resize)
             auto expression_template =
                 "h_map[CH] = (CH * @h_scale@) where CH in @oh_shape@;"
                 "w_map[CH] = (CH * @w_scale@) where CH in @ow_shape@;"
-                "@output0@@output0_layout@ = (1.0 - h_map[@N3@].call(`remainder`)) * (1.0 - "
+                "@output0@@output0_layout@ = ((1.0 - h_map[@N3@].call(`remainder`)) * (1.0 - "
                 "w_map[@N4@].call(`remainder`)) * @input0@@input00_layout@ +"
                 "(h_map[@N3@].call(`remainder`)) * (1.0 - w_map[@N4@].call(`remainder`)) * "
                 "@input0@@input10_layout@ +"
                 "(1.0 - h_map[@N3@].call(`remainder`)) * (w_map[@N4@].call(`remainder`)) * "
                 "@input0@@input01_layout@ +"
                 "(h_map[@N3@].call(`remainder`)) * (w_map[@N4@].call(`remainder`)) * "
-                "@input0@@input11_layout@ where @con@;";
+                "@input0@@input11_layout@).cast(`@dtype@`) where @con@;";
 
             std::string cond;
             for (int d = 0; d < output_layout.size(); ++d)
@@ -286,6 +290,7 @@ REGISTER_OP(Resize)
                  {"h_layout", vector_to_string(h_layout)},
                  {"N3", output_layout[2]},
                  {"N4", output_layout[3]},
+                 {"dtype", dtype},
                  {"con", cond}});
             return expr;
         }

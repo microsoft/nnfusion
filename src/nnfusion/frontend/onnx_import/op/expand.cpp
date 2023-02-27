@@ -50,6 +50,7 @@ namespace nnfusion
                         element::i32,
                         Shape(expand_shape.begin(), expand_shape.end()),
                         std::vector<int>({1}));
+                    expand_shape_op->set_name(node_proto.name() + "_shape");
                     auto expand_shape_gnode =
                         m_graph->add_node_and_edge(expand_shape_op, GNodeVector({}));
 

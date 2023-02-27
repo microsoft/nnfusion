@@ -182,9 +182,9 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 {
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
     register_custom_kernel(gnode->get_op_type(), devtype);
-    std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
-        KernelRegistry::Global()->FindKernelRegistrations(
-            gnode->get_op_type(), devtype, element::f32);
+    std::vector<shared_ptr<const KernelRegistration>> kernel_regs;
+    kernel_regs = KernelRegistry::Global()->FindKernelRegistrations(
+        gnode->get_op_type(), devtype, element::f32);
 
     if (devtype == ROCM_GPU)
     {
@@ -269,7 +269,8 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 
     NNFUSION_LOG(ERROR) << "No valid kernel found:" << gnode->get_name()
                         << "(op type: " << gnode->get_op_type()
-                        << ", dev type: " << nnfusion::get_device_str(devtype) << ")";
+                        << ", dev type: " << nnfusion::get_device_str(devtype)
+                        << ", dtype: " << gnode->get_element_type() << ")";
     return std::make_pair(devtype, nullptr);
 }
 

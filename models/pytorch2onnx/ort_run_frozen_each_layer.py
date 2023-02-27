@@ -80,6 +80,12 @@ for node_id in range(len(model.graph.node)):
         model.graph.output.append(debug_tensor)
         node_name_dict.update({debug_tensor.name: model.graph.node[node_id].name+'_'+str(output_id)})
 
+node_inits = model.graph.initializer
+for init_id in range(len(node_inits)):
+    debug_tensor = onnx.helper.ValueInfoProto()
+    debug_tensor.name = node_inits[init_id].name
+    model.graph.output.append(debug_tensor)
+
 print("Importing ONNX model into ONNX Runtime...")
 ort.set_default_logger_severity(args.logger_severity)
 
@@ -99,7 +105,7 @@ providers = args.provider.split(",")
 if "CPUExecutionProvider" not in providers:
     providers.append("CPUExecutionProvider")
 
-ort_session = ort.InferenceSession(args.file, sess_options, providers=providers)
+ort_session = ort.InferenceSession(model.SerializeToString(), sess_options, providers=providers)
 
 if args.provider != '':
     ort_session.set_providers([args.provider])
@@ -120,7 +126,11 @@ for step in range(1):
     for i in range(len(outputs)):
         out_flat = outputs[i].flat
         if (len(out_flat) > 0):
+
             max_len = min(10, len(out_flat))
+            # if (outputs_name[i] == "onnx::MatMul_8354"):
+            #     print (','.join([str(i) for i in out_flat]))
+
             print(outputs_name[i])
             print(out_flat[:max_len], f"...(size = {len(out_flat)} end with {out_flat[-1]}, sum = {np.sum(out_flat)})")
             # print_offset = int(len(out_flat) / 3)

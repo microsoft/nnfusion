@@ -102,6 +102,8 @@ if "CPUExecutionProvider" not in providers:
     providers.append("CPUExecutionProvider")
 if 'CUDAExecutionProvider' in ort.get_available_providers() and 'CUDAExecutionProvider' not in providers:
     providers = ['CUDAExecutionProvider'] + providers
+if 'ROCMExecutionProvider' in ort.get_available_providers() and 'ROCMExecutionProvider' not in providers:
+    providers = ['ROCMExecutionProvider'] + providers
 
 ort_session = ort.InferenceSession(args.file, sess_options, providers=providers)
 

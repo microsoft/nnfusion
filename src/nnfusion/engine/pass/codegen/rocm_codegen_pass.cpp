@@ -126,6 +126,7 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
+    projgen->lup_codegen->require(macro::TVM_PACK_VALUES);
     projgen->lup_codegen->require(codegen_device_type());
     projgen->lup_codegen->require(codegen_workspace_size(tu));
 
@@ -149,7 +150,7 @@ SET(SRC "nnfusion_rt.cpp" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
 
 set(CMAKE_CXX_COMPILER /opt/rocm/bin/hipcc)
-set(CMAKE_CXX_FLAGS "-O2 -Wno-ignored-attributes -Wno-duplicate-decl-specifier")
+set(CMAKE_CXX_FLAGS "-O2 -ffast-math -Wno-ignored-attributes -Wno-duplicate-decl-specifier")
 )";
     if (FLAGS_fkernels_as_files)
     {
@@ -177,7 +178,7 @@ set(CMAKE_CXX_FLAGS "-O2 -Wno-ignored-attributes -Wno-duplicate-decl-specifier")
 
     lu << R"(
 add_executable(main_test main_test.cpp)
-target_link_libraries(main_test ${TARGET_NAME}) 
+target_link_libraries(main_test ${TARGET_NAME})
 )";
     return;
 }

@@ -10,8 +10,8 @@
 #undef __HIP_PLATFORM_NVCC__
 
 #include <hip/hip_runtime.h>
-#include <hip/hcc_detail/hip_fp16.h>
-#include <rocblas.h>
+#define ROCM_USE_FLOAT16
+#include <rocblas/rocblas.h>
 // #include <hipsparse.h>
 // #include <hiprand/hiprand.h>
 // #include <hiprand_kernel.h>
@@ -21,6 +21,20 @@
 
 #include <unordered_map>
 #include <vector>
+
+#include <hip/hcc_detail/hip_fp16_math_fwd.h>
+#define half _Float16
+#define htanh tanhf
+#define htan tanf
+#define hatan atanf
+#define herf erff
+#define hpow __ocml_pown_f16
+#define hsqrt __ocml_sqrt_f16
+#define hexp __ocml_exp_f16
+#define __float2half_rn(x) _Float16(x)
+
+#define __ll2half_rn(x) _Float16(x)
+#define __half2ll_rn(x) int64_t(x)
 
 #define ensure_cmd(x)  ((x) || (printf("ensure_cmdion Error %s(L-%d): %s\n", __FILE__, __LINE__, #x), abort(), false))
 
@@ -177,6 +191,7 @@ inline CUresult cuEventCreate(CUevent *event, int flags = 0) {
 #define CUBLAS_POINTER_MODE_DEVICE rocblas_pointer_mode_device
 
 #define cublasSgemm rocblas_sgemm
+#define cublasHgemm rocblas_hgemm
 #define cublasSaxpy rocblas_saxpy
 #define cublasSscal rocblas_sscal
 #define cublasSgemmStridedBatched rocblas_sgemm_strided_batched
@@ -234,7 +249,6 @@ inline CUresult cuEventCreate(CUevent *event, int flags = 0) {
 #define cublasDaxpy USING(hipblasDaxpy)
 #define cublasHaxpy USING(hipblasHaxpy)
 #define cublasDgemm USING(hipblasDgemm)
-#define cublasHgemm USING(hipblasHgemm)
 #define cublasSasum USING(hipblasSasum)
 #define cublasDasum USING(hipblasDasum)
 #define cublasHasum USING(hipblasHasum)
@@ -298,7 +312,7 @@ typedef enum {
         ((desc) = (op_t), (dtype) == miopenFloat ? miopenStatusSuccess : miopenStatusNotImplemented)
 #define CUDNN_OP_TENSOR_ADD miopenTensorOpAdd
 #define CUDNN_OP_TENSOR_MUL miopenTensorOpMul
-#define CUDNN_OP_TENSOR_MIN miopenTensorOpMin 
+#define CUDNN_OP_TENSOR_MIN miopenTensorOpMin
 #define CUDNN_OP_TENSOR_MAX miopenTensorOpMax
 #define CUDNN_OP_TENSOR_SQRT ((cudnnOpTensorOp_t)-1)
 #define CUDNN_OP_TENSOR_NOT ((cudnnOpTensorOp_t)-2)
@@ -665,7 +679,6 @@ UN_IMPLEMENTED(cudnnGetRNNLinLayerBiasParams, cudnnStatus_t)
 #if MIOPEN_VERSION_MINOR <= 8
 #define cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)  __cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)
 #else
-#error "BUG from MIOpen 1.8.0"
 #define cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)  miopenTransformTensor(hd, a, x, d_x, b, y, d_y)
 #endif
 

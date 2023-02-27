@@ -104,6 +104,40 @@ add_dependencies(${TARGET_NAME} CUB)
 include_directories(${CUB_INCLUDE_DIR})
 )");
 
+LU_DEFINE(nnfusion::codegen::cmake::cutlass, R"(
+include_directories(cutlass/include/)
+include_directories(cutlass/examples/42_fused_multi_head_attention)
+include_directories(cutlass/tools/util/include/)
+)");
+
+LU_DEFINE(nnfusion::codegen::helper::cuda_half_debug,
+          R"(
+extern "C" __global__ void Convert_half_float0(half* input0, float* output0, int bound)
+{
+    if (bound != 0 && threadIdx.x >= bound)
+        return;
+    output0[threadIdx.x] = (float)(input0[threadIdx.x]);
+
+}
+
+extern "C" __global__ void Convert_half_float1(half* input0, float* output0, int blks, int bound)
+{
+    if (bound !=0 && blockIdx.x * blks + threadIdx.x >= bound)
+        return;
+    output0[blockIdx.x * blks + threadIdx.x] = (float)(input0[blockIdx.x * blks + threadIdx.x]);
+
+}
+
+extern void Convert_half_float_Call0(const dim3 &grids, const dim3 &blocks, unsigned mem, cudaStream_t stream, half* input0, float* output0, int bound) {
+    Convert_half_float0<<<grids, blocks, mem, stream>>>(input0, output0, bound);
+}
+
+extern void Convert_half_float_Call1(const dim3 &grids, const dim3 &blocks, unsigned mem, cudaStream_t stream, half* input0, float* output0, int blks, int bound) {
+    Convert_half_float1<<<grids, blocks, mem, stream>>>(input0, output0, blks, bound);
+}
+
+)")
+
 LU_DEFINE(nnfusion::codegen::helper::debug,
           R"(
 
@@ -116,7 +150,7 @@ inline void Debug(std::string name, float* tensor_ptr, std::string inputs, size_
     double sum = 0.0;
     for (size_t i = 0; i < debug_size; i++) sum += host_tensor[i];
     size_t print_size = min((size_t)10, debug_size);
-    printf("%s: ", name.c_str());
+    printf("%s: \n", name.c_str());
     printf("sum=%e; ", sum);
     for (int i = 0; i < print_size; ++i) printf("%e ", host_tensor[i]);
     printf("...(size= %lu end with %e ) :", debug_size, host_tensor[debug_size - 1]);

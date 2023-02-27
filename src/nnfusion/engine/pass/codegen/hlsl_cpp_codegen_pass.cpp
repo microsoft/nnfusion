@@ -24,7 +24,7 @@ DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(fhost_entry);
 DECLARE_string(fantares_perf_file);
 DECLARE_bool(ffunction_codegen);
-DEFINE_bool(fhlsl_descriptor_heap, false, "enable DirectX descriptor heap");
+DEFINE_bool(fhlsl_descriptor_heap, true, "enable DirectX descriptor heap");
 DEFINE_bool(fhlsl_free_memory, false, "free host memory after coping to device");
 
 void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
@@ -69,10 +69,10 @@ void HLSLCPPCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         else
             lu_init_begin << "\nvoid hlsl_init()\n{\n";
 
-        lu_init_begin << "dxModuleSetCompat(\"cs_6_2\");\n";
-        if (FLAGS_fhlsl_descriptor_heap)
+        lu_init_begin << "dxModuleSetCompat(\"cs_6_5\");\n";
+        if (!FLAGS_fhlsl_descriptor_heap)
         {
-            lu_init_begin << "dxInit(1);\n";
+            lu_init_begin << "dxInit(0);\n";
         }
     }
 

@@ -57,6 +57,7 @@ namespace nnfusion
                     {
                         auto alpha_op = std::make_shared<op::Constant>(
                             element::f32, result->get_shape(), std::vector<float>({alpha_value}));
+                        alpha_op->set_name(node_proto.name() + "_alpha");
                         auto alpha = m_graph->add_node_and_edge(alpha_op, graph::GNodeVector({}));
                         if (alpha->get_element_type() != result->get_element_type())
                         {
@@ -76,6 +77,7 @@ namespace nnfusion
                         {
                             auto beta_op = std::make_shared<op::Constant>(
                                 element::f32, C.get_shape(), std::vector<float>({beta_value}));
+                            beta_op->set_name(node_proto.name() + "_beta");
                             auto beta = m_graph->add_node_and_edge(beta_op, graph::GNodeVector({}));
                             if (beta->get_element_type() != C.get_element_type())
                             {

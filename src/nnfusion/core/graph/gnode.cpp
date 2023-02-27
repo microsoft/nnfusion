@@ -160,6 +160,11 @@ const std::string& GNode::get_name() const
     return m_name;
 }
 
+const std::string& GNode::get_member_name() const
+{
+    return m_member_name;
+}
+
 const std::string& GNode::get_unique_name() const
 {
     return m_unique_name;
@@ -168,6 +173,11 @@ const std::string& GNode::get_unique_name() const
 void GNode::set_name(const string& name)
 {
     m_name = name;
+}
+
+void GNode::set_member_name(const string& name)
+{
+    m_member_name = name;
 }
 
 GNode::~GNode()

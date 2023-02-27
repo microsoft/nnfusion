@@ -17,6 +17,7 @@ class Config(MutableMapping):
                  ir_based_fusion=False,
                  kernel_fusion_level=0,
                  kernel_tuning_steps=1000,
+                 cuda_set_device=False,
                  **kwargs):
         locals_ = locals()
 

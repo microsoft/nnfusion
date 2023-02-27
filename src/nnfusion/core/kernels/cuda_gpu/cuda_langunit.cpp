@@ -2257,7 +2257,7 @@ void mem_eff_attention_1(void* output,
                    void* key,
                    void* value,
                    float* accum_ptr,
-                   int64_t* batch_size,
+                   long long* batch_size,
                    int seq_len,
                    int seq_len_kv,
                    int num_heads,
@@ -2297,8 +2297,8 @@ void mem_eff_attention_1(void* output,
     constexpr bool kSingleValueIteration = true;
 
     // Set grid size
-    constexpr int64_t kQueriesPerBlock = kIs64x64 ? 64 : 32;
-    constexpr int64_t kKeysPerBlock = kIs64x64 ? 64 : 128;
+    constexpr long long kQueriesPerBlock = kIs64x64 ? 64 : 32;
+    constexpr long long kKeysPerBlock = kIs64x64 ? 64 : 128;
     if (kIs64x64 && head_size_v > kKeysPerBlock) {
         std::cerr << "WARNING: you will get better performance with `kIs64x64=false`";
     }
@@ -2383,7 +2383,7 @@ void mem_eff_attention_2(void* output,
                    void* key,
                    void* value,
                    float* accum_ptr,
-                   int64_t* batch_size,
+                   long long* batch_size,
                    int seq_len,
                    int seq_len_kv,
                    int num_heads,
@@ -2400,8 +2400,8 @@ void mem_eff_attention_2(void* output,
     constexpr bool kSingleValueIteration = false;
 
     // Set grid size
-    constexpr int64_t kQueriesPerBlock = kIs64x64 ? 64 : 32;
-    constexpr int64_t kKeysPerBlock = kIs64x64 ? 64 : 128;
+    constexpr long long kQueriesPerBlock = kIs64x64 ? 64 : 32;
+    constexpr long long kKeysPerBlock = kIs64x64 ? 64 : 128;
     if (kIs64x64 && head_size_v > kKeysPerBlock) {
         std::cerr << "WARNING: you will get better performance with `kIs64x64=false`";
     }
@@ -2485,7 +2485,7 @@ void mem_eff_attention_3(void* output,
                    void* key,
                    void* value,
                    float* accum_ptr,
-                   int64_t* batch_size,
+                   long long* batch_size,
                    int seq_len,
                    int seq_len_kv,
                    int num_heads,
@@ -2502,8 +2502,8 @@ void mem_eff_attention_3(void* output,
     constexpr bool kSingleValueIteration = true;
 
     // Set grid size
-    constexpr int64_t kQueriesPerBlock = kIs64x64 ? 64 : 32;
-    constexpr int64_t kKeysPerBlock = kIs64x64 ? 64 : 128;
+    constexpr long long kQueriesPerBlock = kIs64x64 ? 64 : 32;
+    constexpr long long kKeysPerBlock = kIs64x64 ? 64 : 128;
     if (kIs64x64 && head_size_v > kKeysPerBlock) {
         std::cerr << "WARNING: you will get better performance with `kIs64x64=false`";
     }
@@ -2587,7 +2587,7 @@ void mem_eff_attention_4(void* output,
                    void* key,
                    void* value,
                    float* accum_ptr,
-                   int64_t* batch_size,
+                   long long* batch_size,
                    int seq_len,
                    int seq_len_kv,
                    int num_heads,
@@ -2604,8 +2604,8 @@ void mem_eff_attention_4(void* output,
     constexpr bool kSingleValueIteration = false;
 
     // Set grid size
-    constexpr int64_t kQueriesPerBlock = kIs64x64 ? 64 : 32;
-    constexpr int64_t kKeysPerBlock = kIs64x64 ? 64 : 128;
+    constexpr long long kQueriesPerBlock = kIs64x64 ? 64 : 32;
+    constexpr long long kKeysPerBlock = kIs64x64 ? 64 : 128;
     if (kIs64x64 && head_size_v > kKeysPerBlock) {
         std::cerr << "WARNING: you will get better performance with `kIs64x64=false`";
     }

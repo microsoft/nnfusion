@@ -51,7 +51,8 @@ class NNFusionRT:
                               input_names=input_names,
                               output_names=output_names,
                               export_params=False,
-                              )  # , opset_version=11)
+                              do_constant_folding=False,
+                              )
 
         def check_if_need_build():
             """

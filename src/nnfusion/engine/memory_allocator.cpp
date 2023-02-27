@@ -6,6 +6,7 @@ DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(ffunction_codegen);
 DECLARE_bool(fcodegen_debug_half);
+DEFINE_bool(fcuda_set_device, true, "Emit cudaSetDevice call");
 
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)
     : m_size{size}
@@ -306,7 +307,10 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
     auto& lu = *_lu;
     if (m_max_allocated > 0)
     {
-        lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
+        if (FLAGS_fcuda_set_device)
+        {
+            lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
+        }
         if (!FLAGS_ffunction_codegen)
         {
             lu << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << this->get_name() << "_memory_pool,"

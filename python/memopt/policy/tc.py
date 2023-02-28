@@ -12,6 +12,7 @@ from .default import DefaultPolicy
 class TCPolicy(DefaultPolicy):
     def __init__(self, output_nodes: List[Node], arch: Arch) -> None:
         super().__init__(output_nodes, arch)
+        self.wmma_k = 16
 
     def _compute_tc_strides(self, node: IRNode, tile: List[int], rstep: Dict[str, int]={}) -> Tuple[Stride, Stride, Stride]:
         shapes = node.infer_dependency_reduce_inputs(tile, rstep)
@@ -28,10 +29,41 @@ class TCPolicy(DefaultPolicy):
         C_stride = Stride(stride=np.prod(CS_shape[C_high_ax+1:]) + offset, ax=C_high_ax)
         return A_stride, B_stride, C_stride
 
+    def _use_cutlass_mma(self, node: IRNode, td: TileDict):
+        A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n = node.infer_tensorcore_axis()
+        tile = td.get_tile(node)
+        use_cutlass_warp_mma = True
+        use_cutlass_warp_mma &= tile[C_ax_m] % self.arch.cutlass_mma[0] == 0
+        use_cutlass_warp_mma &= tile[C_ax_n] % self.arch.cutlass_mma[1] == 0
+        # cutlass_warp_mma currently don't support shared inputs as it uses pipeline approaches
+        use_cutlass_warp_mma &= all([edge.src_node.is_placeholder() for edge in node.inputs])
+        # use pipeline for large reduce ops
+        use_cutlass_warp_mma &= all([x > 64 for x in node.raxis.values()])
+        # cutlass_warp_mma don't support batched mm inside a block
+        for idx, value in enumerate(tile):
+            if idx not in [C_ax_m, C_ax_n]: use_cutlass_warp_mma &= value==1
+        return use_cutlass_warp_mma
+
+    def _can_implement_layout(self, node: IRNode, td: TileDict):
+        A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n = node.infer_tensorcore_axis()
+        tile = td.get_tile(node)
+        tile_M, tile_N = tile[C_ax_m], tile[C_ax_n]
+        tile_K = list(td.get_rstep(node).values())[0]
+        cond = True
+        if A_ax_m > A_ax_k: # MxK
+            cond &= tile_K % 32 == 0 and tile_M % 32 == 0
+        else: # KxM
+            cond &= tile_M % 64 == 0
+        if B_ax_n > B_ax_k: # NxK
+            cond &= tile_K % 32 == 0 and tile_N % 32 == 0
+        else: # KxM
+            cond &= tile_N % 64 == 0
+        return cond
+
     def infer_node_smem_usage(self, td: TileDict, node: IRNode):
         value = super().infer_node_smem_usage(td, node)
         if node.get_tag("tensorCoreConfig"):
-            use_double_buffer = self.arch.compute_capability >= "80"
+            use_double_buffer = td.use_cutlass_mma[node] and self.arch.compute_capability >= "80"
             if use_double_buffer: value *= 2
         return value
 
@@ -68,11 +100,15 @@ class TCPolicy(DefaultPolicy):
     def compute_node_stride_map(self, node: IRNode, td: TileDict):
         if not node.get_tag("tensorCoreConfig"):
             return super().compute_node_stride_map(node, td)
+        td.use_cutlass_mma[node] = self._use_cutlass_mma(node, td)
         AS_stride, BS_stride, C_stride = self._compute_tc_strides(node, td.get_tile(node), td.get_rstep(node))
         A_stride, B_stride, _ = self._compute_tc_strides(node, td.get_tile(node))
         output_strides = {int(edge.src_id + len(node.inputs)): C_stride for edge in node.outputs}
         tensor_strides = {node.reduce_op.input_tensors[0].name : AS_stride,
                           node.reduce_op.input_tensors[1].name : BS_stride}
+        if td.use_cutlass_mma[node] and self._can_implement_layout(node, td):
+            # if we can implement congruous and crosswise layout, we don't need to pad on A and B
+            return output_strides, {}
         # when connected to shared input, should use full stride without rstep
         for name, stride_full in zip(tensor_strides, (A_stride, B_stride)):
             arg_names = [arg.name for arg in node.args]
@@ -86,15 +122,18 @@ class TCPolicy(DefaultPolicy):
 
         return output_strides, tensor_strides
 
-    def _assign_block_size(self, node: Node, tile, rsteps, block_size):
+    def _assign_block_size(self, node: Node, td: TileDict, block_size: int):
         if not node.get_tag("tensorCoreConfig"):
-            return super()._assign_block_size(node, tile, rsteps, block_size)
+            return super()._assign_block_size(node, td, block_size)
         ax_m, ax_n = node.get_tag("tensorCoreConfig")
         if block_size % self.arch.warp_size != 0:
             return None
+        tile, rsteps = td.get_tile(node), td.get_rstep(node)
         warps = block_size // self.arch.warp_size
         ndim = len(tile)
-        if tile[ax_m] > tile[ax_n]:
+        if td.use_cutlass_mma[node]:
+            wmma = self.arch.cutlass_mma
+        elif tile[ax_m] > tile[ax_n]:
             wmma = [32, 8, 16]
         elif tile[ax_m] < tile[ax_n]:
             wmma = [8, 32, 16]
@@ -138,5 +177,6 @@ class TCPolicy(DefaultPolicy):
         codegen_dict.warp = warp_tile
         codegen_dict.rstep = [int(rsteps[ax]) for ax in node.raxis]
         codegen_dict.wmma = wmma
+        codegen_dict.use_cutlass = td.use_cutlass_mma[node]
         codegen_dict.complete_config(node)
         return codegen_dict

@@ -400,7 +400,7 @@ class DefaultPolicy:
             result = {}
             failed = False
             for node in self.ordered_nodes:
-                result[node] = self._assign_block_size(node, td.get_tile(node), td.get_rstep(node), block_size)
+                result[node] = self._assign_block_size(node, td, block_size)
                 if result[node] is None:
                     failed = True
                     break
@@ -435,7 +435,8 @@ class DefaultPolicy:
                         result[edge.src_node] = deps[i]
         return result
 
-    def _assign_block_size(self, node: IRNode, tile, rsteps, block_size):
+    def _assign_block_size(self, node: IRNode, td: TileDict, block_size: int):
+        tile, rsteps = td.get_tile(node), td.get_rstep(node)
         factors = factorize(block_size)
         cur_threads = [1 for _ in tile]
         reduce_thread = {k : 1 for k in rsteps}

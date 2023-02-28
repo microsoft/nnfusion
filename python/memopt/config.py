@@ -65,6 +65,8 @@ class TileDict:
         self.num_wave = -1
         self.valid = True
 
+        self.use_cutlass_mma = {}
+
     def get_tile(self, node) -> List[int]:
         return self.tile_map[node]
 
@@ -95,6 +97,7 @@ class Config:
         self._raxis_order = []
         self._step = []
         self.vectorize : Dict[str, int] = {}
+        self.use_cutlass = False
 
     def to_dict(self) -> Dict:
         dic = {}
@@ -102,6 +105,7 @@ class Config:
         if self.use_tc:
             dic["warp"] = self.warp
             dic["wmma"] = self.wmma
+            dic["use_cutlass"] = self.use_cutlass
         else:
             dic["thread"] = self.thread
         dic["rstep"] = self.rstep
@@ -134,6 +138,7 @@ class Config:
         if self.use_tc:
             self.warp = dic["warp"]
             self.wmma = dic["wmma"]
+            self.use_cutlass = dic["use_cutlass"]
         else:
             self.thread = dic["thread"]
         self.rstep = dic["rstep"]

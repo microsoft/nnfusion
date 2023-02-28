@@ -3,7 +3,7 @@ from typing import Dict, List
 from tvm import te
 
 from ..config import Config, Stride
-from .scheduler_base import get_compute_ops, seperate_reduce_ops
+from ..te_utils import get_compute_ops, seperate_reduce_ops
 from .te_elementwise import *
 from .te_reduce import *
 from .te_reduce_interthread import *

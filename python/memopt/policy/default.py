@@ -39,7 +39,7 @@ class DefaultPolicy:
                 # handle cases where block is not ordinal (e.g. transpose)
                 for node, block_order in block_orders.items():
                     codegen_dicts[node].block_order = block_order
-                for node, strides in td.stride_map.items():
+                for node, strides in td.output_strides_map.items():
                     codegen_dicts[node].output_strides = strides
                 results.append(codegen_dicts)
                 if len(results) >= topk:break
@@ -291,7 +291,11 @@ class DefaultPolicy:
             footprint += coalesced_tensor_shape(tile_map[node], node.get_shape(), write_transaction_elements)
         return footprint, tile_map
 
+    def infer_node_smem_usage(self, td: TileDict, node: IRNode):
+        return node.infer_smem_usage(td.get_tile(node), td.get_rstep(node), td.tensor_strides_map[node])
+
     def _compute_shared_memory_usage(self, td: TileDict):
+        self._compute_stride_map(td)
         allocator = BestFit()
         block_map = {}
         processed = set()
@@ -301,7 +305,7 @@ class DefaultPolicy:
                     return False
             return True
         for node in self.ordered_nodes:
-            node_internal_bytes = node.infer_smem_usage(td.get_tile(node), td.get_rstep(node))
+            node_internal_bytes = self.infer_node_smem_usage(td, node)
             block = allocator.malloc(node_internal_bytes)
             allocator.free(block)
             # free inputs
@@ -313,26 +317,39 @@ class DefaultPolicy:
             for edge in node.outputs:
                 if not edge.dst_node.is_output() and (node, edge.src_id) not in block_map:
                     dtype_bytes = (node.get_dtype(edge.src_id).bits + 7) // 8
-                    stride = td.stride_map[node][len(node.inputs) + edge.src_id]
+                    stride = td.output_strides_map[node][len(node.inputs) + edge.src_id]
                     output_elem = stride.compute_elements_from_shape(td.get_tile(node))
                     block_map[(node, edge.src_id)] = allocator.malloc(output_elem * dtype_bytes)
 
         assert len(block_map) == 0
         return allocator.limit
 
-    def compute_stride_map(self, td: TileDict):
-        stride_map = {}
+    def compute_node_stride_map(self, node: IRNode, td: TileDict):
+        output_strides = {int(edge.src_id + len(node.inputs)): Stride() for edge in node.outputs}
+        tensor_strides = {}
+        return output_strides, tensor_strides
+
+    def _compute_stride_map(self, td: TileDict):
+        output_strides_map = {}
+        tensor_strides_map = {}
         for node in self.ordered_nodes:
-            stride_map[node] = {}
-            for edge in node.outputs:
-                stride_map[node][int(edge.src_id + len(node.inputs))] = Stride()
-        td.stride_map = stride_map
+            output_strides_map[node], tensor_strides_map[node] = self.compute_node_stride_map(node, td)
+            for name, stride in tensor_strides_map[node].items():
+                arg_names = [arg.name for arg in node.args]
+                if name in arg_names:
+                    input_id = arg_names.index(name)
+                else:
+                    continue  # don't need to propogate internal strides
+                src_id, src_node = node.inputs[input_id].src_id, node.inputs[input_id].src_node
+                if not src_node.is_placeholder():
+                    output_strides_map[src_node][int(src_id + len(src_node.inputs))] = stride
+
+        td.output_strides_map, td.tensor_strides_map = output_strides_map, tensor_strides_map
 
     def compute_tile_dict(self, output_tile: List[int], rstep_map) -> TileDict:
         td = TileDict(output_tile)
         td.rstep_map = rstep_map
         td.footprint, td.tile_map = self._compute_memory_footprint(output_tile)
-        self.compute_stride_map(td)
         td.smem_cost = self._compute_shared_memory_usage(td)
         if td.smem_cost > self.arch.smem_cap:
             td.valid = False

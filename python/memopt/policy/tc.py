@@ -1,11 +1,10 @@
-from typing import List
+from typing import Dict, List, Tuple
 
 import numpy as np
 
 from ..arch import Arch
-from ..bestfit import BestFit
-from ..config import Config, TileDict
-from ..graph import Node
+from ..config import Config, Stride, TileDict
+from ..graph import IRNode, Node
 from .common import factorize, get_all_factors
 from .default import DefaultPolicy
 
@@ -13,44 +12,29 @@ from .default import DefaultPolicy
 class TCPolicy(DefaultPolicy):
     def __init__(self, output_nodes: List[Node], arch: Arch) -> None:
         super().__init__(output_nodes, arch)
-        self.wmma_k = 16
-        tc_nodes = list(filter(lambda node: node.get_tag("tensorCoreConfig"), self.ordered_nodes))
-        for node in tc_nodes:
-            for k in node.raxis:
-                assert node.raxis[k] % self.wmma_k == 0
 
-    def _compute_shared_memory_usage(self, td):
-        allocator = BestFit()
-        block_map = {}
-        processed = set()
-        def can_free(node, out_id):
-            for edge in node.outputs:
-                if edge.src_id == out_id and edge.dst_node not in processed:
-                    return False
-            return True
-        for node in self.ordered_nodes:
-            if node.get_tag("tensorCoreConfig"):
-                node_internal_bytes = node.infer_smem_usage_TensorCore(td.get_tile(node), td.get_rstep(node))
-            else:
-                node_internal_bytes = node.infer_smem_usage(td.get_tile(node), td.get_rstep(node))
-            block = allocator.malloc(node_internal_bytes)
-            allocator.free(block)
-            # free inputs
-            processed.add(node)
-            for edge in node.inputs:
-                if not edge.src_node.is_placeholder() and can_free(edge.src_node, edge.src_id):
-                    allocator.free(block_map.pop((edge.src_node, edge.src_id)))
-            # alloc outputs
-            for edge in node.outputs:
-                if not edge.dst_node.is_output() and (node, edge.src_id) not in block_map:
-                    dtype_bytes = (node.get_dtype(edge.src_id).bits + 7) // 8
-                    stride = td.stride_map[node][len(node.inputs) + edge.src_id]
-                    output_elem = stride.compute_elements_from_shape(td.get_tile(node))
-                    block_map[(node, edge.src_id)] = allocator.malloc(output_elem * dtype_bytes)
+    def _compute_tc_strides(self, node: IRNode, tile: List[int], rstep: Dict[str, int]={}) -> Tuple[Stride, Stride, Stride]:
+        shapes = node.infer_dependency_reduce_inputs(tile, rstep)
+        AS_shape, BS_shape = shapes.values()
+        CS_shape = tile
+        A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n = node.infer_tensorcore_axis()
+        # applying strides
+        offset = 8
+        A_high_ax = min(A_ax_m, A_ax_k)
+        B_high_ax = min(B_ax_n, B_ax_k)
+        C_high_ax = min(C_ax_m, C_ax_n)
+        A_stride = Stride(stride=np.prod(AS_shape[A_high_ax+1:]) + offset, ax=A_high_ax)
+        B_stride = Stride(stride=np.prod(BS_shape[B_high_ax+1:]) + offset, ax=B_high_ax)
+        C_stride = Stride(stride=np.prod(CS_shape[C_high_ax+1:]) + offset, ax=C_high_ax)
+        return A_stride, B_stride, C_stride
 
-        assert len(block_map) == 0
-        return allocator.limit
-    
+    def infer_node_smem_usage(self, td: TileDict, node: IRNode):
+        value = super().infer_node_smem_usage(td, node)
+        if node.get_tag("tensorCoreConfig"):
+            use_double_buffer = self.arch.compute_capability >= "80"
+            if use_double_buffer: value *= 2
+        return value
+
     def _assign_reduce_step(self, node):
         if not node.get_tag("tensorCoreConfig"):
             return super()._assign_reduce_step(node)
@@ -61,7 +45,7 @@ class TCPolicy(DefaultPolicy):
             else:
                 return super()._assign_reduce_step(node)
         return result
-    
+
     def get_node_reduce_step_candidates(self, node):
         if not node.get_tag("tensorCoreConfig"):
             return super().get_node_reduce_step_candidates(node)
@@ -70,44 +54,42 @@ class TCPolicy(DefaultPolicy):
             return {k : [x * self.wmma_k for x in get_all_factors(node.raxis[k] // self.wmma_k)] for k in node.raxis}
 
     def check_tile_shape_isvalid(self, td: TileDict):
-        out_node = self.output_nodes[0]
-        grid_size = np.prod([np.ceil(y / x) for x, y in zip(td.output_tile, out_node.get_shape())])
         for node in self.ordered_nodes:
-            node_grid_size = np.prod([np.ceil(y / x) for x, y in zip(td.tile_map[node], node.get_shape())])
-            if node_grid_size != grid_size:
-                return False
             if node.get_tag("tensorCoreConfig"):
                 ax_m, ax_n = node.get_tag("tensorCoreConfig")
-                CS_m = td.tile_map[node][ax_m]
-                CS_n = td.tile_map[node][ax_n]
-                wmma_invalid = [CS_m % wmma_m or CS_n % wmma_n for wmma_m, wmma_n in [(16, 16), (8, 32), (32, 8)]]
+                block_m, block_n = td.tile_map[node][ax_m], td.tile_map[node][ax_n]
+                wmma_invalid = [block_m % wmma_m or block_n % wmma_n for wmma_m, wmma_n in [(16, 16), (8, 32), (32, 8)]]
                 if all(wmma_invalid):
                     return False
                 if any([y % x for x, y in zip(td.tile_map[node], node.get_shape())]):
                     return False
-        return True
+        return super().check_tile_shape_isvalid(td)
 
-    def compute_stride_map(self, td: TileDict):
-        super().compute_stride_map(td)
-        for node in self.ordered_nodes:
-            if not node.get_tag("tensorCoreConfig"): continue
-            A_stride, B_stride, C_stride = node.infer_strides_TensorCore(td.get_tile(node))
-            for edge in node.outputs:
-                td.stride_map[node][edge.src_id+len(node.inputs)] = C_stride
-            deps = node.infer_dependency_reduce_inputs(td.get_tile(node))
-            for name, stride in zip(deps.keys(), [A_stride, B_stride]):
-                if name.startswith("input"):
-                    input_id = [arg.name for arg in node._input_args].index(name)
-                    assert(input_id >= 0)
-                    src_id, src_node = node.inputs[input_id].src_id, node.inputs[input_id].src_node
-                    if not src_node.is_placeholder():
-                        td.stride_map[src_node][int(src_id + len(src_node.inputs))] = stride
+    def compute_node_stride_map(self, node: IRNode, td: TileDict):
+        if not node.get_tag("tensorCoreConfig"):
+            return super().compute_node_stride_map(node, td)
+        AS_stride, BS_stride, C_stride = self._compute_tc_strides(node, td.get_tile(node), td.get_rstep(node))
+        A_stride, B_stride, _ = self._compute_tc_strides(node, td.get_tile(node))
+        output_strides = {int(edge.src_id + len(node.inputs)): C_stride for edge in node.outputs}
+        tensor_strides = {node.reduce_op.input_tensors[0].name : AS_stride,
+                          node.reduce_op.input_tensors[1].name : BS_stride}
+        # when connected to shared input, should use full stride without rstep
+        for name, stride_full in zip(tensor_strides, (A_stride, B_stride)):
+            arg_names = [arg.name for arg in node.args]
+            if name in arg_names:
+                input_id = arg_names.index(name)
+            else:
+                continue  # don't need to propogate internal strides
+            src_node = node.inputs[input_id].src_node
+            if not src_node.is_placeholder():
+                tensor_strides[name] = stride_full
+
+        return output_strides, tensor_strides
 
     def _assign_block_size(self, node: Node, tile, rsteps, block_size):
         if not node.get_tag("tensorCoreConfig"):
             return super()._assign_block_size(node, tile, rsteps, block_size)
         ax_m, ax_n = node.get_tag("tensorCoreConfig")
-        assert ax_m is not None and ax_n is not None
         if block_size % self.arch.warp_size != 0:
             return None
         warps = block_size // self.arch.warp_size

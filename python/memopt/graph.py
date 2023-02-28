@@ -8,6 +8,7 @@ from tvm import arith, te
 from .config import Stride
 from .lang import translate_ir_to_tvm
 from .shape_inference import get_analyzer_by_te
+from .te_utils import *
 
 
 class Edge:
@@ -132,21 +133,40 @@ class IRNode(Node):
         if len(self._input_args) < len(self.inputs):
             # some placeholders are extra info that might not be used in tensor computation
             new_input_edges = []
-            for arg in self._input_args:
+            for idx, arg in enumerate(self._input_args):
                 name = arg.name
                 assert name.startswith("input")
                 input_edge = self.inputs[int(name[5:])]
-                input_edge.dst_id = len(new_input_edges)
+                input_edge.dst_id = idx
                 new_input_edges.append(input_edge)
             self._in_edges = new_input_edges
         self.args = self._input_args + self._output_args
+
+        # set input shapes and dtypes
         for edge, arg in zip(self.inputs, self.args):
             edge.src_node.set_shape(arg.shape, edge.src_id)
             edge.src_node.set_dtype(tvm.DataType(arg.dtype), edge.src_id)
         for output_id, arg in enumerate(self._output_args):
             self.set_shape(arg.shape, output_id)
             self.set_dtype(tvm.DataType(arg.dtype), output_id)
-        self._extract_axis()
+
+        # process all axis search space
+        self.compute_ops = get_compute_ops(self.args)
+        reduce_ops, _ = seperate_reduce_ops(self.compute_ops)
+        if len(reduce_ops) > 0:
+            self.reduce_op = reduce_ops[0]
+            self.raxis = {str(axis.var.name): int(axis.dom.extent) for axis in self.reduce_op.reduce_axis}
+            if len(self.raxis) != len(self.reduce_op.reduce_axis):
+                raise Exception("Reduce axis should have unique names.")
+        else:
+            self.reduce_op = None
+            self.raxis = {}
+
+        self.saxis = {}
+        for axis in self._output_args[0].op.axis:
+            assert(str(axis.var.name) not in self.saxis), axis.var.name
+            assert(str(axis.var.name) not in self.raxis), axis.var.name
+            self.saxis[str(axis.var.name)] = int(axis.dom.extent)
 
     def infer_dependency(self, shape, rstep={}) -> Dict[int, List[int]]:
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
@@ -159,117 +179,49 @@ class IRNode(Node):
             result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
         return result
 
-    def get_compute_stages(self):
-        cur_stack = self.args.copy()
-        all_stages = set()
-        while len(cur_stack) > 0:
-            tensor = cur_stack.pop(0)
-            if not isinstance(tensor.op, tvm.te.ComputeOp): continue
-            if tensor.op in all_stages: continue
-            all_stages.add(tensor.op)
-            for input_tensor in tensor.op.input_tensors:
-                cur_stack.append(input_tensor)
-        return all_stages
-
     def infer_dependency_reduce_inputs(self, shape, rstep={}) -> Dict[str, List[int]]:
+        if self.reduce_op is None:
+            return {}
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
-        result = {}
-        for op in self.get_compute_stages():
-            if len(op.reduce_axis) > 0:
-                for tensor in op.input_tensors:
-                    result[tensor.name] = shapes[tensor.name]
-        return result
+        return {t.name: shapes[t.name] for t in self.reduce_op.input_tensors}
 
     def get_reduce_inputs_dtype(self):
-        dtype_map = {}
-        for op in self.get_compute_stages():
-            if len(op.reduce_axis) > 0:
-                for tensor in op.input_tensors:
-                    dtype_map[tensor.name] = tvm.DataType(tensor.dtype)
-        return dtype_map
+        if self.reduce_op is None:
+            return {}
+        return {t.name: tvm.DataType(t.dtype) for t in self.reduce_op.input_tensors}
 
-    def infer_smem_usage(self, shape, rstep) -> int:
+    def infer_smem_usage(self, shape, rstep, stride_map={}) -> int:
         result = 0
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
         shapes = self.ana.infer(shape, rstep)
-        cached_tensor = set()
-        for op in self.get_compute_stages():
-            for tensor in op.input_tensors:
-                cache = isinstance(tensor.op, tvm.te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) \
-                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-                if len(op.reduce_axis) > 0:
-                    cache = True
-                if cache:
-                    cached_tensor.add(tensor)
+
+        # compute cached stages
+        if self.reduce_op is not None:
+            cached_tensor = self.reduce_op.input_tensors
+        else:
+            cached_tensor = set()
+            for op in self.compute_ops:
+                for tensor in op.input_tensors:
+                    # detect broadcast pattern
+                    if isinstance(tensor.op, tvm.te.PlaceholderOp) \
+                        and len(op.output(0).shape) > len(tensor.shape) \
+                        and np.prod(op.output(0).shape) > np.prod(tensor.shape):
+                        cached_tensor.add(tensor)
+
         for tensor in cached_tensor:
-            assert (tensor in self.args) == tensor.name.startswith("input")
             if tensor in self.args:
                 input_id = self.args.index(tensor)
                 src_node = self.inputs[input_id].src_node
                 if not src_node.is_placeholder():
                     continue
-            buffer_len = np.prod(shapes[tensor.name]) * int((tvm.DataType(tensor.dtype).bits + 7) // 8)
+            if tensor.name in stride_map:
+                num_elem = stride_map[tensor.name].compute_elements_from_shape(shapes[tensor.name])
+            else:
+                num_elem = np.prod(shapes[tensor.name])
+            buffer_len = num_elem * int((tvm.DataType(tensor.dtype).bits + 7) // 8)
             buffer_len = (buffer_len + 31) // 32 * 32
             result += buffer_len
-        return result
-
-    def infer_strides_TensorCore(self, shape, rstep={}) -> Tuple[Stride, Stride, Stride]:
-        assert self.get_tag("tensorCoreConfig")
-        shapes = self.infer_dependency_reduce_inputs(shape, rstep)
-        AS_shape, BS_shape = shapes.values()
-        CS_shape = shape
-        A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n = self.infer_tensorcore_axis()
-        # applying strides
-        offset = 8
-        A_high_ax = min(A_ax_m, A_ax_k)
-        B_high_ax = min(B_ax_n, B_ax_k)
-        C_high_ax = min(C_ax_m, C_ax_n)
-        A_stride = Stride(stride=np.prod(AS_shape[A_high_ax+1:]) + offset, ax=A_high_ax)
-        B_stride = Stride(stride=np.prod(BS_shape[B_high_ax+1:]) + offset, ax=B_high_ax)
-        C_stride = Stride(stride=np.prod(CS_shape[C_high_ax+1:]) + offset, ax=C_high_ax)
-        return A_stride, B_stride, C_stride
-
-    def infer_smem_usage_TensorCore(self, shape, rstep) -> int:
-        # returns internal memory usage and output memory usage (if dump to shared)
-        assert self.get_tag("tensorCoreConfig")
-        shapes = self.infer_dependency_reduce_inputs(shape, rstep)
-        AS_shape, BS_shape = shapes.values()
-        A_stride, B_stride, C_stride = self.infer_strides_TensorCore(shape, rstep)
-        AS_elem = A_stride.compute_elements_from_shape(AS_shape)
-        BS_elem = B_stride.compute_elements_from_shape(BS_shape)
-        # TODO: consider TVM's allocation of CS_elem?
-        # CS_elem = C_stride.compute_elements_from_shape(shape)
-
-        # running the same as infer_smem_usage
-        result = 0
-        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
-        shapes = self.ana.infer(shape, rstep)
-        for op in self.get_compute_stages():
-            if not isinstance(op, tvm.te.ComputeOp):continue
-            for i, tensor in enumerate(op.input_tensors):
-                cache = isinstance(tensor.op, tvm.te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) \
-                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-                if len(op.reduce_axis) > 0:
-                    cache = True
-                if tensor in self.args:
-                    input_id = self.args.index(tensor)
-                    src_node = self.inputs[input_id].src_node
-                    if not src_node.is_placeholder():
-                        cache = False
-                if cache:
-                    num_elem = np.prod(shapes[tensor.name])
-                    if len(op.reduce_axis) > 0:
-                        assert i < 2
-                        if i == 0:
-                            num_elem = AS_elem
-                        else:
-                            num_elem = BS_elem
-                    buffer_len = num_elem * int((tvm.DataType(tensor.dtype).bits + 7) // 8)
-                    buffer_len = (buffer_len + 31) // 32 * 32
-                    result += buffer_len
         return result
 
     @functools.lru_cache()
@@ -317,37 +269,9 @@ class IRNode(Node):
             result[i] = ana.simplify(block_expr)
         return result
 
-    # axis name -> axis length
-    def _extract_axis(self):
-        queue = self._output_args.copy()
-        self.raxis = {}
-        visited = {item : True for item in queue}
-        while len(queue) > 0:
-            t = queue.pop(0)
-            if isinstance(t.op, tvm.te.PlaceholderOp):
-                continue
-            for axis in t.op.reduce_axis:
-                assert(str(axis.var.name) not in self.raxis), axis.var.name
-                self.raxis[str(axis.var.name)] = int(axis.dom.extent)
-            for it in t.op.input_tensors:
-                if not it in visited:
-                    visited[it] = True
-                    queue.append(it)
-
-        self.saxis = {}
-        for axis in self._output_args[0].op.axis:
-            assert(str(axis.var.name) not in self.saxis), axis.var.name
-            assert(str(axis.var.name) not in self.raxis), axis.var.name
-            self.saxis[str(axis.var.name)] = int(axis.dom.extent)
-
     def create_schedule(self) -> tvm.te.Schedule:
         args = self._output_args
         return tvm.te.create_schedule([x.op for x in args])
-
-    def create_tir_schedule(self) -> tvm.tir.Schedule:
-        workload = tvm.te.create_prim_func(self.args)
-        ir_module = tvm.IRModule({"main": workload})
-        return tvm.tir.Schedule(ir_module)
 
     def _process_multiple_output(self):
         layout = ", ".join([ax.var.name for ax in self._output_args[0].op.axis])

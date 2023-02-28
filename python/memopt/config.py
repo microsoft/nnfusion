@@ -57,7 +57,8 @@ class TileDict:
         self.output_tile = output_tile
         self.tile_map = {}
         self.rstep_map = {}
-        self.stride_map = {}
+        self.output_strides_map = {}
+        self.tensor_strides_map = {}
         self.footprint = -1
         self.smem_cost = -1
         self.block_per_SM = -1

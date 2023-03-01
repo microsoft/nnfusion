@@ -13,6 +13,6 @@ class g3090:
         self.bandwidth = [750, 12080]
         self.platform = "CUDA"
         self.compute_capability = "86"
-        self.target = tvm.target.cuda(model="V100", arch="sm_86")
+        self.target = tvm.target.cuda(model="3090", arch="sm_86")
 
         self.cutlass_mma = [16, 8, 16]

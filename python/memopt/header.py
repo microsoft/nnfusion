@@ -148,7 +148,8 @@ public:
     cutlass::layout::RowMajor,
     Policy
   >;
-  static int const kKgroups = (Shape::kK + InstructionShape::kK - 1) / InstructionShape::kK;
+  static_assert(Shape::kK % InstructionShape::kK == 0);
+  static int const kKgroups = Shape::kK / InstructionShape::kK;
 
   using TensorRefA = typename MmaWarp::IteratorA::TensorRef;
   using TensorRefB = typename MmaWarp::IteratorB::TensorRef;
@@ -240,7 +241,8 @@ public:
     LayoutC,
     Policy
   >;
-  static int const kKgroups = (Shape::kK + InstructionShape::kK - 1) / InstructionShape::kK;
+  static_assert(Shape::kK % InstructionShape::kK == 0);
+  static int const kKgroups = Shape::kK / InstructionShape::kK;
   using TensorRefA = typename MmaWarp::IteratorA::TensorRef;
   using TensorRefB = typename MmaWarp::IteratorB::TensorRef;
 

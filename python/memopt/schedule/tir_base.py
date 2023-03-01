@@ -27,17 +27,15 @@ class TIRSchedulerBase(SchedulerBase):
             block = self.sche.get_block(self.output_op.name)
             self.sche.reverse_compute_inline(block)
 
-    def cooperative_fetch(self, SS: tir.Block, dim_offset: int, strides: Stride = Stride(), inner_step: int = 1, vectorize_inner=True):
+    def cooperative_fetch(self, SS: tir.Block, dim_offset: int, strides: Stride = Stride(), inner_step: int = 1):
         assert self.block_size[2] == 1
         axes = self.sche.get_loops(SS)[dim_offset:]
         if strides.is_valid():
             self.sche.storage_align(SS, 0, strides.ax, strides.stride - 1, strides.stride)
         fused = self.sche.fuse(*axes)
-        oo, ty, tx, tv = self.sche.split(fused, factors=[None, self.block_size[1], self.block_size[0], inner_step])
-        if vectorize_inner:
-            self.sche.vectorize(tv)
-        else:
-            self.sche.unroll(tv)
+        fused, tv = self.sche.split(fused, factors=[None, inner_step])
+        self.sche.vectorize(tv)
+        oo, ty, tx = self.sche.split(fused, factors=[None, self.block_size[1], self.block_size[0]])
         self.sche.bind(tx, "threadIdx.x")
         self.sche.bind(ty, "threadIdx.y")
         self.sche.unroll(oo)

@@ -87,14 +87,21 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
         A_stride, B_stride = Stride(), Stride()
         if layoutA.requires_padding():
             A_high_ax = min(A_ax_m, A_ax_k)
-            padA = 8 if transpose_A else 4
+            if config.use_tc >= "80" or transpose_A:
+                padA = 8
+            else:
+                padA = 4
             layoutA.set_pad(padA)
             A_stride = Stride(int(np.prod(config.tc_extra_conf.AS_shape[A_high_ax+1:])) + padA, A_high_ax)
         if layoutB.requires_padding():
             B_high_ax = min(B_ax_n, B_ax_k)
-            padB = 4 if transpose_B else 8
+            if config.use_tc >= "80" or not transpose_B:
+                padB = 8
+            else:
+                padB = 4
             layoutB.set_pad(padB)
             B_stride = Stride(int(np.prod(config.tc_extra_conf.BS_shape[B_high_ax+1:])) + padB, B_high_ax)
+
         # dim_offset = 3 (block_fused, warp_fused, K_outer)
         self.cooperative_fetch(AS, 3, A_stride, inner_step=layoutA.get_vectorize())
         self.cooperative_fetch(BS, 3, B_stride, inner_step=layoutB.get_vectorize())
@@ -132,8 +139,12 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
         )
 
         if config.use_tc >= "80":
-            sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 1, 1, 2])
-            sch.annotate(K_outer, "software_pipeline_order", [0, 1, 2, 4, 3])
+            if chunk_size % 32 != 0:
+                sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 1, 1, 1])
+                sch.annotate(K_outer, "software_pipeline_order", [0, 1, 2, 3, 4])
+            else:
+                sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 1, 1, 2])
+                sch.annotate(K_outer, "software_pipeline_order", [0, 1, 2, 4, 3])
             sch.annotate(K_outer, "software_pipeline_async_stages", [0])
             self.passes.append((3, tvm.tir.transform.InjectPTXAsyncCopy()))
         elif config.use_tc >= "70":

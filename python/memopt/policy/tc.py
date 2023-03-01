@@ -50,11 +50,11 @@ class TCPolicy(DefaultPolicy):
         tile_M, tile_N = tile[C_ax_m], tile[C_ax_n]
         tile_K = list(td.get_rstep(node).values())[0]
         cond = True
-        if A_ax_m > A_ax_k: # MxK
+        if A_ax_m < A_ax_k: # MxK
             cond &= tile_K % 32 == 0 and tile_M % 32 == 0
         else: # KxM
             cond &= tile_M % 64 == 0
-        if B_ax_n > B_ax_k: # NxK
+        if B_ax_n < B_ax_k: # NxK
             cond &= tile_K % 32 == 0 and tile_N % 32 == 0
         else: # KxM
             cond &= tile_N % 64 == 0

@@ -72,7 +72,6 @@ DataBuffer Constant::get_buffer() const
 
 vector<string> Constant::get_value_strings() const
 {
-    NNFUSION_LOG(INFO) << m_element_type;
     vector<string> rc;
 
     if (m_element_type == nnfusion::element::character)

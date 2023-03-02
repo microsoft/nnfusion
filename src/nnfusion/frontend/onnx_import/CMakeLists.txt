@@ -64,6 +64,8 @@ add_library(onnx_import STATIC
         op/shape.cpp
         op/conv_trans.hpp
         op/conv_trans.cpp
+        op/hard_sigmoid.hpp
+        op/hard_sigmoid.cpp
         op/where.hpp
         op/where.cpp
         op/embed_layer_norm.hpp

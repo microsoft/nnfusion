@@ -3,16 +3,17 @@
 
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
+static string make_layout(const std::set<int>& axes)
+{
+    std::string ret = "";
+    for (auto ax : axes)
+        ret += ", N" + std::to_string(ax);
+    return "[" + (axes.empty() ? "N" : ret.substr(2)) + "]";
+};
+
 REGISTER_OP(Softmax)
     .infershape(nnfusion::op::infershape::copy_shape_from_inputs)
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
-        auto make_layout = [](const std::set<int>& axes) -> std::string {
-            std::string ret = "";
-            for (auto ax : axes)
-                ret += ", N" + std::to_string(ax);
-            return "[" + (axes.empty() ? "N" : ret.substr(2)) + "]";
-        };
 
         auto op = static_pointer_cast<nnfusion::op::Softmax>(curr->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(op) << "Node type is not " << curr->get_op_ptr()->get_op_type();

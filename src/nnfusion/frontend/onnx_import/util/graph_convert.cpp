@@ -219,6 +219,9 @@ namespace nnfusion
                             << "no external data location provided";
                         string raw_data =
                             readfile_with_offset_length(const_file_path, offset, length);
+                        NNFUSION_LOG(INFO) << "============";
+                        NNFUSION_LOG(INFO) << tensor.name();
+                        NNFUSION_LOG(INFO) << tensor.data_type();
                         tensor.clear_data_location();
                         tensor.clear_external_data();
                         tensor.set_raw_data(raw_data);
@@ -518,7 +521,7 @@ namespace nnfusion
 
             NamedNodeVector GraphConvert::convert_node(const onnx::NodeProto& node_proto)
             {
-                NNFUSION_LOG(INFO) << "convert node: " << node_proto.name();
+                NNFUSION_LOG(DEBUG) << "convert node: " << node_proto.name();
                 const auto& convert_func =
                     get_convert_func(node_proto.op_type(), node_proto.domain());
 

@@ -213,7 +213,7 @@ int RuntimeConstantFoldingPass::runtime_const_folding_iterate_once(
             // 1. create new constant node
             std::shared_ptr<op::Constant> new_constant_op;
             new_constant_op = std::make_shared<op::Constant>(dtype, shape, raw_outputs[i].data());
-            //new_constant_op->set_name("Constant_" + it->get_name()); // not working?
+            new_constant_op->set_name("Constant_" + it->get_name()); // not working?
             auto new_constant_gnode =
                 std::make_shared<nnfusion::graph::GNode>(new_constant_op, GNodeVector());
 

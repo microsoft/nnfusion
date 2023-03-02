@@ -62,10 +62,13 @@ namespace nnfusion
                         lhs_index = GNodeIndex(ret_node);
                     }
 
+                    auto et = ret_node->get_element_type();
+                    element::Type size_et = et == element::f16 ? element::f32 : et;
                     auto size_op = std::make_shared<op::Constant>(
-                        ret_node->get_element_type(),
+                        size_et,
                         nnfusion::Shape(),
                         std::vector<std::string>{std::to_string(input_indexes.size())});
+                    size_op->set_name(node_proto.name() + "_size");
                     auto size_node = m_graph->add_node_and_edge(size_op, GNodeVector({}));
                     std::tie(ret_node, size_node) =
                         graph::numpy_broadcast(std::make_pair(ret_node, size_node), m_graph);

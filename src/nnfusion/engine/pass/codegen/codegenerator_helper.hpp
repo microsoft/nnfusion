@@ -5,7 +5,7 @@
 #include "nnfusion/common/languageunit.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
 
-#define __USING_HOST_CALL_FORMAT___
+// #define __USING_HOST_CALL_FORMAT___
 
 namespace nnfusion
 {

@@ -131,8 +131,8 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
     }
 
     auto data_layout = op::create_layout_from_dims(node->get_output_shape(0));
-    NNFUSION_LOG(INFO) << op::create_code_from_template(
-        expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
+    // NNFUSION_LOG(INFO) << op::create_code_from_template(
+    //     expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
     return op::create_code_from_template(
         expr, {{"data_layout", vector_to_string<std::vector<std::string>>(data_layout)}});
 };

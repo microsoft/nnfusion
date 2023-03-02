@@ -21,19 +21,20 @@
 
 #pragma once
 
-#include "ngraph/node_vector.hpp"
-
 #include "core/node.hpp"
 
-namespace ngraph
+namespace nnfusion
 {
-    namespace onnx_import
+    namespace frontend
     {
-        namespace op
+        namespace onnx_import
         {
             namespace set_1
             {
-                NodeVector hard_sigmoid(const Node& node);
+                NamedNodeVector
+                    TranslateHardSigmoidOp(const onnx::NodeProto& node_proto,
+                                           const NodeMap& all_ng_nodes,
+                                           std::shared_ptr<nnfusion::graph::Graph> m_graph);
 
             } // namespace set_1
 

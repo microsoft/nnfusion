@@ -45,6 +45,7 @@ namespace nnfusion
                     auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
                     Shape input_shape = input_gnode->get_shape();
                     Node node(node_proto);
+                    bool reshaped = false;
 
                     NNFUSION_CHECK(input_shape.size() >= 3)
                         << "The input of GlobalPool should have at least 3 dimensions";

@@ -1154,6 +1154,32 @@ namespace nnfusion
                 return ret;
             }
 
+            NamedNodeVector TranslateSpaceToDepthOp(const tensorflow::NodeDef& node,
+                                                    const NodeMap& all_ng_nodes,
+                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
+            {
+                auto input_gnode = GetInputNode(all_ng_nodes, node, 0);
+
+                std::string tf_data_format;
+                int tf_block_size;
+                bool status;
+                status = GetNodeAttr(node.attr(), "block_size", tf_block_size);
+                NNFUSION_CHECK(status);
+                status = GetNodeAttr(node.attr(), "data_format", tf_data_format);
+                NNFUSION_CHECK(status);
+
+                nnfusion::op::OpConfig::any myConfig;
+                myConfig["block_size"] = tf_block_size;
+                myConfig["data_format"] = tf_data_format;
+
+                auto generic_op =
+                    std::make_shared<nnfusion::op::GenericOp>(node.name(), node.op(), myConfig);
+
+                auto generic_gnode = m_graph->add_node_and_edge(generic_op, {input_gnode});
+                NamedNodeVector ret{{node.name(), generic_gnode}};
+                return ret;
+            }
+
             NamedNodeVector
                 TranslateFusedBatchNormOp(const tensorflow::NodeDef& node,
                                           const NodeMap& all_ng_nodes,
@@ -3407,6 +3433,8 @@ namespace nnfusion
                 {"FloorDiv", TranslateFloorDivOp},
                 {"FusedBatchNorm", TranslateFusedBatchNormOp},
                 {"FusedBatchNormV2", TranslateFusedBatchNormOp},
+                {"FusedBatchNormV3", TranslateFusedBatchNormOp},
+                {"SpaceToDepth", TranslateSpaceToDepthOp},
                 {"GatherV2", TranslateGatherV2Op},
                 {"Greater", TranslateBinaryOp<op::Greater>},
                 {"Identity", TranslateIdentityOp},

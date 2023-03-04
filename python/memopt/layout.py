@@ -231,6 +231,7 @@ class TensorOpMultiplicand:
 class RowMajorTensorOpMultiplicandCongruous(Layout):
     def __init__(self, stride, continuous) -> None:
         super().__init__()
+        assert(stride % 16 == 0)
         assert(continuous % 64 == 0)
         self.base = TensorOpMultiplicand(stride, continuous, 1)
 
@@ -252,6 +253,7 @@ class RowMajorTensorOpMultiplicandCongruous(Layout):
 class RowMajorTensorOpMultiplicandCrosswise(Layout):
     def __init__(self, stride, continuous) -> None:
         super().__init__()
+        assert(stride % 16 == 0)
         assert(continuous % 32 == 0)
         self.base = TensorOpMultiplicand(stride, continuous, 2)
 

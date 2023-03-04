@@ -56,24 +56,30 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
                     layoutA = ColumnMajorTensorOpMultiplicandCongruous(chunk_size, block_tile_M)
                 else:
                     layoutA = RowMajorTensorOpMultiplicandCrosswise(block_tile_M, chunk_size)
-                if transpose_B:
-                    layoutB = ColumnMajorTensorOpMultiplicandCrosswise(block_tile_N, chunk_size)
-                else:
-                    layoutB = RowMajorTensorOpMultiplicandCongruous(chunk_size, block_tile_N)
             elif config.use_tc >= "70":
                 if transpose_A:
                     layoutA = ColumnMajorVoltaTensorOpMultiplicandCongruous(chunk_size, block_tile_M)
                 else:
                     layoutA = RowMajorVoltaTensorOpMultiplicandCrosswise(block_tile_M, chunk_size)
-                if transpose_B:
-                    layoutB = ColumnMajorVoltaTensorOpMultiplicandCrosswise(block_tile_N, chunk_size)
-                else:
-                    layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(chunk_size, block_tile_N)
         except AssertionError:
             if transpose_A:
                 layoutA = ColumnMajorLayout(chunk_size, block_tile_M)
             else:
                 layoutA = RowMajorLayout(block_tile_M, chunk_size)
+        try:
+            if config.use_tc >= "80":
+                # using ldmatrix 16x16
+                assert warp_tile_N % 16 == 0
+                if transpose_B:
+                    layoutB = ColumnMajorTensorOpMultiplicandCrosswise(block_tile_N, chunk_size)
+                else:
+                    layoutB = RowMajorTensorOpMultiplicandCongruous(chunk_size, block_tile_N)
+            elif config.use_tc >= "70":
+                if transpose_B:
+                    layoutB = ColumnMajorVoltaTensorOpMultiplicandCrosswise(block_tile_N, chunk_size)
+                else:
+                    layoutB = RowMajorVoltaTensorOpMultiplicandBCongruous(chunk_size, block_tile_N)
+        except AssertionError:
             if transpose_B:
                 layoutB = ColumnMajorLayout(block_tile_N, chunk_size)
             else:

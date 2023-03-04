@@ -35,6 +35,7 @@ class TIRSchedulerBase(SchedulerBase):
         fused = self.sche.fuse(*axes)
         fused, tv = self.sche.split(fused, factors=[None, inner_step])
         self.sche.vectorize(tv)
+        self.sche.annotate(tv, "check_vector_load", True)
         oo, ty, tx = self.sche.split(fused, factors=[None, self.block_size[1], self.block_size[0]])
         self.sche.bind(tx, "threadIdx.x")
         self.sche.bind(ty, "threadIdx.y")
@@ -51,3 +52,4 @@ class TIRSchedulerBase(SchedulerBase):
                                              (self.config.block, self.output_op.output(0).shape), False).get_pass())
         self.passes.append(RewriteInputPass(self.shared_inputs, False).get_pass())
         self.passes.append(FixCudaCastPass().get_pass())
+        self.passes.append(CheckVectorLoadPass().get_pass())

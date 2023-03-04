@@ -49,16 +49,16 @@ class TCPolicy(DefaultPolicy):
         tile = td.get_tile(node)
         tile_M, tile_N = tile[C_ax_m], tile[C_ax_n]
         tile_K = list(td.get_rstep(node).values())[0]
-        cond = True
+        condA, condB = True, True
         if A_ax_m < A_ax_k: # MxK
-            cond &= tile_K % 32 == 0 and tile_M % 32 == 0
+            condA &= tile_K % 32 == 0 and tile_M % 32 == 0
         else: # KxM
-            cond &= tile_M % 64 == 0
+            condA &= tile_M % 64 == 0
         if B_ax_n < B_ax_k: # NxK
-            cond &= tile_K % 32 == 0 and tile_N % 32 == 0
+            condB &= tile_K % 32 == 0 and tile_N % 32 == 0
         else: # KxM
-            cond &= tile_N % 64 == 0
-        return cond
+            condB &= tile_N % 64 == 0
+        return condA, condB
 
     def infer_node_smem_usage(self, td: TileDict, node: IRNode):
         value = super().infer_node_smem_usage(td, node)
@@ -101,24 +101,23 @@ class TCPolicy(DefaultPolicy):
         if not node.get_tag("tensorCoreConfig"):
             return super().compute_node_stride_map(node, td)
         td.use_cutlass_mma[node] = self._use_cutlass_mma(node, td)
+        use_layout = self._can_implement_layout(node, td)
         AS_stride, BS_stride, C_stride = self._compute_tc_strides(node, td.get_tile(node), td.get_rstep(node))
         A_stride, B_stride, _ = self._compute_tc_strides(node, td.get_tile(node))
         output_strides = {int(edge.src_id + len(node.inputs)): C_stride for edge in node.outputs}
-        tensor_strides = {node.reduce_op.input_tensors[0].name : AS_stride,
-                          node.reduce_op.input_tensors[1].name : BS_stride}
-        if td.use_cutlass_mma[node] and self._can_implement_layout(node, td):
-            # if we can implement congruous and crosswise layout, we don't need to pad on A and B
-            return output_strides, {}
+        tensor_strides = {}
         # when connected to shared input, should use full stride without rstep
-        for name, stride_full in zip(tensor_strides, (A_stride, B_stride)):
+        for i, (stride, stride_full) in enumerate(zip([AS_stride, BS_stride], [A_stride, B_stride])):
+            if use_layout[i]: continue
+            name = node.reduce_op.input_tensors[i].name
+            tensor_strides[name] = stride
+
             arg_names = [arg.name for arg in node.args]
             if name in arg_names:
                 input_id = arg_names.index(name)
-            else:
-                continue  # don't need to propogate internal strides
-            src_node = node.inputs[input_id].src_node
-            if not src_node.is_placeholder():
-                tensor_strides[name] = stride_full
+                src_node = node.inputs[input_id].src_node
+                if not src_node.is_placeholder():
+                    tensor_strides[name] = stride_full
 
         return output_strides, tensor_strides
 

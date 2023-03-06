@@ -5,23 +5,25 @@ from tvm import te, tir
 
 from ..config import Config
 from ..IRpass import *
-from ..te_utils import get_compute_ops, seperate_reduce_ops
+from ..te_utils import (create_proxy_output, get_compute_ops,
+                        seperate_reduce_ops)
 
 
 class SchedulerBase:
     def __init__(self, args: List[te.Tensor], config: Config) -> None:
-        self.args = args
+        input_args, output_args = [], []
+        for arg in args:
+            if isinstance(arg.op, te.PlaceholderOp):
+                input_args.append(arg)
+            else:
+                output_args.append(arg)
+
+        if len(output_args) > 1:
+            output_args = create_proxy_output(output_args)
+        self.args = input_args + output_args
         self.config = config
         self.ops = get_compute_ops(self.args)
-
-        output_ops = set()
-        for arg in self.args:
-            if arg.op in self.ops:
-                output_ops.add(arg.op)
-        assert(len(output_ops) > 0)
-        if len(output_ops) > 1:
-            raise RuntimeError("Op with multiple output stages should create a proxy output.")
-        self.output_op = output_ops.pop()
+        self.output_op = output_args[0].op
 
         reduce_ops, self.none_reduce_ops = seperate_reduce_ops(self.ops)
         if len(reduce_ops) == 0:

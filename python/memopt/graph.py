@@ -98,6 +98,9 @@ class Node:
             return 0
         return max([e.src_id for e in self.outputs]) + 1
 
+    def get_ir(self) -> str:
+        raise NotImplementedError()
+
     def __repr__(self) -> str:
         return "<Node, " + self.name + ">"
 
@@ -107,6 +110,9 @@ class PlaceHolderNode(Node):
 
     def is_placeholder(self):
         return True
+
+    def get_ir(self) -> str:
+        return f"placeholder({self.get_shape()}, {self.get_dtype()})"
 
 class OutputNode(Node):
     def __init__(self, node, id=0):
@@ -120,33 +126,41 @@ class OutputNode(Node):
     def is_output(self):
         return True
 
+    def get_ir(self) -> str:
+        return "output"
+
 class IRNode(Node):
-    def __init__(self, inputs, antares_ir: Union[str, List[te.Tensor], None], name="Compute") -> None:
+    def __init__(self, inputs, compute: Union[str, List[te.Tensor], None], name="Compute") -> None:
         super().__init__(inputs, name)
-        self.ir = antares_ir
-        if self.ir is None: return
-        self._input_args, self._output_args = translate_ir_to_tvm(self.ir)
-        self._output_names = [arg.name for arg in self._output_args]
-        self.ana = get_analyzer_by_te(self._input_args + self._output_args)
-        if len(self._output_args) > 1:
-            self._process_multiple_output()
-        if len(self._input_args) < len(self.inputs):
+        if compute is None: return
+        if isinstance(compute, str):
+            input_args, output_args = translate_ir_to_tvm(compute)
+        elif isinstance(compute, list):
+            input_args, output_args = [], []
+            for arg in compute:
+                if isinstance(arg.op, te.PlaceholderOp):
+                    input_args.append(arg)
+                else:
+                    output_args.append(arg)
+        self._output_names = [arg.name for arg in output_args]
+        self.ana = get_analyzer_by_te(input_args + output_args)
+        if len(input_args) < len(self.inputs):
             # some placeholders are extra info that might not be used in tensor computation
             new_input_edges = []
-            for idx, arg in enumerate(self._input_args):
+            for idx, arg in enumerate(input_args):
                 name = arg.name
                 assert name.startswith("input")
                 input_edge = self.inputs[int(name[5:])]
                 input_edge.dst_id = idx
                 new_input_edges.append(input_edge)
             self._in_edges = new_input_edges
-        self.args = self._input_args + self._output_args
+        self.args = input_args + output_args
 
         # set input shapes and dtypes
         for edge, arg in zip(self.inputs, self.args):
             edge.src_node.set_shape(arg.shape, edge.src_id)
             edge.src_node.set_dtype(tvm.DataType(arg.dtype), edge.src_id)
-        for output_id, arg in enumerate(self._output_args):
+        for output_id, arg in enumerate(output_args):
             self.set_shape(arg.shape, output_id)
             self.set_dtype(tvm.DataType(arg.dtype), output_id)
 
@@ -163,7 +177,7 @@ class IRNode(Node):
             self.raxis = {}
 
         self.saxis = {}
-        for axis in self._output_args[0].op.axis:
+        for axis in output_args[0].op.axis:
             assert(str(axis.var.name) not in self.saxis), axis.var.name
             assert(str(axis.var.name) not in self.raxis), axis.var.name
             self.saxis[str(axis.var.name)] = int(axis.dom.extent)
@@ -173,7 +187,7 @@ class IRNode(Node):
         shapes = self.ana.infer(shape, rstep)
         result = {}
         for i in range(len(self.inputs)):
-            name = self._input_args[i].name
+            name = self.args[i].name
             shape = shapes[name]
             # should not exceed original shape
             result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
@@ -263,30 +277,20 @@ class IRNode(Node):
             inode = self.inputs[i].src_node
             if isinstance(inode, PlaceHolderNode):
                 continue
-            for expr, ax_len, tile_len in zip(input_exprs[self._input_args[i].name], inode.get_shape(), tile_map[inode]):
+            for expr, ax_len, tile_len in zip(input_exprs[self.args[i].name], inode.get_shape(), tile_map[inode]):
                 num_block = int(np.ceil(ax_len / tile_len))
                 block_expr = block_expr * num_block + tvm.te.max(expr // tile_len, 0)
             result[i] = ana.simplify(block_expr)
         return result
 
-    def create_schedule(self) -> tvm.te.Schedule:
-        args = self._output_args
-        return tvm.te.create_schedule([x.op for x in args])
-
-    def _process_multiple_output(self):
-        layout = ", ".join([ax.var.name for ax in self._output_args[0].op.axis])
-        sandbox = {"args" : self._output_args}
-        exec("func=lambda {}: [op[{}] for op in args]".format(layout, layout), sandbox)
-        args = tvm.te.compute(self._output_args[0].shape, sandbox["func"], name="output_proxy")
-        self._output_args = list(args)
-        self.args = self._input_args + self._output_args
-
     def clone(self, inputs) -> 'IRNode':
-        new_node = IRNode(inputs, self.ir, self.name)
+        new_node = IRNode(inputs, self.args, self.name)
         for k, v in self._tag.items():
             new_node.add_tag(k, v)
         return new_node
 
+    def get_ir(self) -> str:
+        return "\n".join([str(op) for op in self.compute_ops])
 
 def topo_order(list_of_nodes) -> List[Node]:
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}

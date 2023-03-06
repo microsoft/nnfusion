@@ -22,7 +22,12 @@ class CheckVectorLoadPass(PassBase):
         analyzer = arith.Analyzer()
         analyzer.bind(var, 0)
         can_vector_load = True
-        possible_vec_set = {2, 4}
+        if lanes == 8:
+            possible_vec_set = {2, 4}
+        elif lanes == 4:
+            possible_vec_set = {2}
+        else:
+            possible_vec_set = {}
 
         def functor(op):
             if isinstance(op, tir.BufferLoad):

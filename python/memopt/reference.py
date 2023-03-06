@@ -31,7 +31,8 @@ def get_subgraph_reference_outputs(output_nodes, device="cuda:0", seed=0) -> Lis
         find_topo_sort(output_nodes)
     ))
     for node in ordered_nodes:
-        schedule = node.create_schedule()
+        # create a default CPU schedule for reference
+        schedule = tvm.te.create_schedule([tensor.op for tensor in node.args])
         mod = tvm.build(schedule, node.args, target="llvm")
         args = []
         for edge in node.inputs:

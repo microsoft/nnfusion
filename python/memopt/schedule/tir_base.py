@@ -33,9 +33,10 @@ class TIRSchedulerBase(SchedulerBase):
         if strides.is_valid():
             self.sche.storage_align(SS, 0, strides.ax, strides.stride - 1, strides.stride)
         fused = self.sche.fuse(*axes)
-        fused, tv = self.sche.split(fused, factors=[None, inner_step])
-        self.sche.vectorize(tv)
-        self.sche.annotate(tv, "check_vector_load", True)
+        if inner_step > 1:
+            fused, tv = self.sche.split(fused, factors=[None, inner_step])
+            self.sche.vectorize(tv)
+            self.sche.annotate(tv, "check_vector_load", True)
         oo, ty, tx = self.sche.split(fused, factors=[None, self.block_size[1], self.block_size[0]])
         self.sche.bind(tx, "threadIdx.x")
         self.sche.bind(ty, "threadIdx.y")

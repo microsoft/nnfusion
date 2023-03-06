@@ -33,13 +33,8 @@ def subgraph_hash(output_nodes):
     node_hash, edge_hash = [], []
     node_idx = {node : i for i, node in enumerate(nodes)}
     for node in nodes:
-        if node.is_placeholder():
-            value = "placeholder"
-        elif node.is_output():
-            value = "output"
-        else:
-            value = node.ir
-        hex = hashlib.sha1(bytes(value, encoding="utf-8")).hexdigest()
+        code = node.get_ir()
+        hex = hashlib.sha1(bytes(code, encoding="utf-8")).hexdigest()
         node_hash.append(int(hex, 16))
         for edge in node.outputs:
             sig = (node_idx[edge.src_node], node_idx[edge.dst_node], edge.src_id, edge.dst_id)

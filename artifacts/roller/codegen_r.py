@@ -169,7 +169,6 @@ class CodeGeneratorR:
       space_iters = list(set(all_iters) - set(reduce_iters))
       self.calc_grid(reduce_iters, space_iters)
       # print("Target: {}\nSpace Iters: {}\nReduce Iters: {}\n".format(out, space_iters, reduce_iters))
-
       smem_tensor = []
       reg_tensor = []
       reg_tile = None
@@ -271,6 +270,11 @@ class CodeGeneratorR:
       # print(tvm.lower(self.sche, input_tensors + output_tensors, simple_mode=True))
       # func = tvm.build(self.sche, input_tensors + output_tensors, 'cuda')
       # print(func.imported_modules[0].get_source())
+
+    # print("x========================================================================")
+    # print(tvm.lower(self.sche, [A, B, out]))
+    # print("========================================================================")
+   
 
     for info in align_info:
       idx, factor, offset = info

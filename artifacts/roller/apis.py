@@ -22,7 +22,7 @@ def get_config_space(op, device_name, use_tc):
   setting = {
       'smem_tiling': True,
       'reg_tiling': True,
-      'padding_threshold_cap': 4.0,
+      'padding_threshold_cap': 1,
       'fuse': False,
       'schedule_fuse': False,
       'st_align': False,
@@ -45,16 +45,32 @@ def get_config_space(op, device_name, use_tc):
 
   print('[debug] is IODependent: {}'.format(is_IODependent))
 
-  if is_IODependent and len(roller_op.RAxis()) > 0:
-    policy = PolicyRT(roller_op, roller_arch, setting['smem_tiling'],
-                      setting['reg_tiling'], setting['st_align'],
-                      setting['padding_threshold_cap'],
-                      not setting['keep_tiny'])
-  else:
-    policy = PolicyPlainRT(roller_op, roller_arch, setting['smem_tiling'],
+  # if is_IODependent and len(roller_op.RAxis()) > 0:
+  #   policy = PolicyRTV2(roller_op, roller_arch, setting['smem_tiling'],
+  #                 setting['reg_tiling'], setting['st_align'],
+  #                 setting['padding_threshold_cap'],
+  #                 not setting['keep_tiny'])
+  # else:
+  #   policy = PolicyPlainRTV2(roller_op, roller_arch, setting['smem_tiling'],
+  #                          setting['reg_tiling'], setting['st_align'],
+  #                          setting['padding_threshold_cap'])
+  # rprogs = policy.emit_config_without_trails(20)
+
+  if len(roller_op.RAxis()) > 0:
+    rprogs1 = PolicyRTV2(roller_op, roller_arch, setting['smem_tiling'],
+                  setting['reg_tiling'], setting['st_align'],
+                  setting['padding_threshold_cap'],
+                  not setting['keep_tiny']).emit_config_without_trails(10)
+    rprogs2 = PolicyPlainRTV2(roller_op, roller_arch, setting['smem_tiling'],
                            setting['reg_tiling'], setting['st_align'],
-                           setting['padding_threshold_cap'])
-  rprogs = policy.emit_config_without_trails(10)
+                           setting['padding_threshold_cap']).emit_config_without_trails(10)
+    rprogs = rprogs1 + rprogs2
+  else:
+    rprogs = PolicyPlainRTV2(roller_op, roller_arch, setting['smem_tiling'],
+                           setting['reg_tiling'], setting['st_align'],
+                           setting['padding_threshold_cap']).emit_config_without_trails(10)
+
+
   candidates = []
   for rprog in rprogs:
     candidates.append((rprog.Dump(), json.dumps(setting), is_IODependent))
@@ -86,9 +102,8 @@ def apply_config(op, sched, config, device_name):
   roller_arch = dispatch_arch(device_name)
 
   rprog = build_rprog4str(rprog_str, roller_op, roller_arch)
-
   if is_IODependent and len(roller_op.RAxis()) > 0:
-    policy = PolicyRT(roller_op, roller_arch, setting['smem_tiling'],
+    policy = PolicyRTV2(roller_op, roller_arch, setting['smem_tiling'],
                       setting['reg_tiling'], setting['st_align'],
                       setting['padding_threshold_cap'],
                       not setting['keep_tiny'])

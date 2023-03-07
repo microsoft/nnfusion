@@ -120,8 +120,13 @@ std::pair<std::string, bool> AntaresKEImp::autogen(const std::string& expr,
                                    : _tuning_platform;
         std::string file_id = sha256(expr);
         std::string cache_folder = "./kernel_cache";
-        auto file_name = cache_folder + "/" + file_id + "." + tuning_platform + ".c";
         struct stat stats;
+        if (stat(cache_folder.c_str(), &stats) != 0)
+        {
+            std::string cmd_create_folder = "mkdir -p " + cache_folder;
+            int sys_ret = system(cmd_create_folder.c_str());
+        }
+        auto file_name = cache_folder + "/" + file_id + "." + tuning_platform + ".c";
         if (stat(file_name.c_str(), &stats) != 0)
         {
             // generate default kernel

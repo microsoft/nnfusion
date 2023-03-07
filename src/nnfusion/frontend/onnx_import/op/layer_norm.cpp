@@ -123,15 +123,15 @@ namespace nnfusion
                         std::make_shared<op::Sum>(reduction_axes), {std_power_gnode});
                     auto std_mean_gnode = m_graph->add_node_and_edge(
                         std::make_shared<op::Divide>(), {std_sum_gnode, divisor_gnode});
-                    auto std_sqrt_gnode =
-                        m_graph->add_node_and_edge(std::make_shared<op::Sqrt>(), {std_mean_gnode});
                     auto eps_op = std::make_shared<op::Constant>(
                         et,
-                        std_sqrt_gnode->get_shape(),
+                        std_mean_gnode->get_shape(),
                         std::vector<std::string>{std::to_string(eps)});
                     auto eps_gnode = m_graph->add_node_and_edge(eps_op, GNodeVector({}));
-                    auto std_gnode = m_graph->add_node_and_edge(
-                        std::make_shared<op::Add>(), {std_sqrt_gnode, eps_gnode}); // 2, 128
+                    auto std_mean_eps_gnode = m_graph->add_node_and_edge(
+                        std::make_shared<op::Add>(), {std_mean_gnode, eps_gnode}); // 2, 128
+                    auto std_gnode = m_graph->add_node_and_edge(std::make_shared<op::Sqrt>(),
+                                                                {std_mean_eps_gnode});
                     // keep dim
                     std_gnode = m_graph->add_node_and_edge(
                         std::make_shared<op::Reshape>(ng_axis_order, mean_shape_with_keep),
@@ -171,7 +171,19 @@ namespace nnfusion
 
                     auto input = input_gnodes[0];  // 2, 128, 1024
                     auto weight = input_gnodes[1]; // 1024
-                    auto bias = input_gnodes[2];   // 1024
+                    std::shared_ptr<nnfusion::graph::GNode> bias = nullptr;
+                    if (input_gnodes.size() >= 3)
+                    {
+                        bias = input_gnodes[2]; // 1024
+                    }
+                    if (!bias)
+                    {
+                        bias = m_graph->add_node_and_edge(
+                            std::make_shared<op::Constant>(weight->get_element_type(),
+                                                           weight->get_shape(),
+                                                           std::vector<std::string>{"0"}),
+                            GNodeIndexVector{});
+                    }
 
                     Node node(node_proto);
                     auto axis = node.get_attribute_value<int64_t>("axis", -1);

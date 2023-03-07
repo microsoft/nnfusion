@@ -29,12 +29,17 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_8
             {
                 NamedNodeVector TranslateExpandOp(const onnx::NodeProto& node_proto,
                                                   const NodeMap& all_ng_nodes,
                                                   std::shared_ptr<nnfusion::graph::Graph> m_graph);
-            } // namespace set_1
+            } // namespace set_8
+
+            namespace set_13
+            {
+                using set_8::TranslateExpandOp;
+            } // namespace set_13
 
         } //namespace onnx_import
 

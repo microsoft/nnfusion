@@ -17,12 +17,16 @@
 #include <cmath>
 #include <iostream>
 
+#include "nnfusion/common/common.hpp"
 #include "nnfusion/common/type/element_type.hpp"
+DECLARE_bool(fantares_mode);
+DECLARE_string(fdefault_device);
 
 using namespace nnfusion;
 
 const element::Type element::dynamic(0, false, false, false, "dynamic");
-const element::Type element::boolean(8, false, true, false, "char");
+// mapping boolean to int16 is a workaround for hlsl since there is no 8-bit type
+const element::Type element::boolean(16, false, true, false, "int16_t");
 const element::Type element::character(8, false, false, false, "char");
 const element::Type element::bf16(16, true, true, false, "bfloat16");
 const element::Type element::f16(16, true, true, false, "half");
@@ -41,7 +45,7 @@ std::vector<const element::Type*> element::Type::get_known_types()
 {
     std::vector<const element::Type*> rc = {&element::boolean,
                                             &element::character,
-                                            &element::bf16,
+                                            &element::f16,
                                             &element::f32,
                                             &element::f64,
                                             &element::i8,
@@ -59,7 +63,7 @@ bool element::Type::nnfusion_element_type_to_dtype_string(const element::Type& n
                                                           std::string& dtype)
 {
     if (ng_et == element::boolean)
-        dtype = "int";
+        dtype = "int16";
     else if (ng_et == element::character)
         dtype = "char";
     else if (ng_et == element::f16)
@@ -321,4 +325,20 @@ bool element::Type::merge(element::Type& dst, const element::Type& t1, const ele
     {
         return false;
     }
+}
+
+std::string element::get_backend_cstring(const element::Type& type)
+{
+    if (FLAGS_fantares_mode && FLAGS_fdefault_device != "HLSL")
+    {
+        if (type.c_type_string() == "int64_t")
+        {
+            return "long long";
+        }
+        if (type.c_type_string() == "uint64_t")
+        {
+            return "unsigned long long";
+        }
+    }
+    return type.c_type_string();
 }

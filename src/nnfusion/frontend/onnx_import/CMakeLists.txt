@@ -64,12 +64,16 @@ add_library(onnx_import STATIC
         op/shape.cpp
         op/conv_trans.hpp
         op/conv_trans.cpp
+        op/hard_sigmoid.hpp
+        op/hard_sigmoid.cpp
         op/where.hpp
         op/where.cpp
         op/embed_layer_norm.hpp
         op/embed_layer_norm.cpp
         op/layer_norm.hpp
         op/layer_norm.cpp
+        op/instance_norm.hpp
+        op/instance_norm.cpp
         op/attention.hpp
         op/attention.cpp
         op/scatternd.hpp
@@ -78,8 +82,12 @@ add_library(onnx_import STATIC
         op/depth_to_space.cpp
         op/roll.hpp
         op/roll.cpp
+        op/lstm.hpp
+        op/lstm.cpp
         op/gru.hpp
         op/gru.cpp
+        op/einsum.hpp
+        op/einsum.cpp
         # ${ops_source}
         util/broadcasting.cpp
         util/graph_convert.cpp

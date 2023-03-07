@@ -49,8 +49,13 @@ namespace nnfusion
                     auto data_shape = data.get_shape();
 
                     Node node(node_proto);
-                    auto axes = node.get_attribute_value<std::vector<std::size_t>>("axes", {});
+                    auto axes = node.get_attribute_value<std::vector<int64_t>>("axes", {});
                     AxisVector input_order{reshape::get_default_axis_vector(data_shape.size())};
+
+                    for (auto& axis : axes)
+                    {
+                        axis += axis < 0 ? data_shape.size() : 0;
+                    }
 
                     // Prepare set of unique axes marked to be removed from input data.
                     if (axes.empty())

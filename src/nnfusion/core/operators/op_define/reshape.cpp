@@ -129,30 +129,106 @@ void Reshape::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
     if (in_shape.get_sym_shape())
     {
         auto out_sym_shape = std::make_shared<SymShape>();
-        auto j = 0;
-        for (auto i = 0; i < m_output_shape.size(); i++)
+        auto i = 0, j = 0;
+        while (i < m_output_shape.size() && j < in_shape.size())
         {
+            // Warning, cannot handle sym reshape like shape(sym, 4)->shape(2*sym, 2)
             if (m_output_shape[i] == in_shape[m_input_order[j]])
             {
                 out_sym_shape->push_back(in_shape.get_sym_shape()->at(m_input_order[j]));
+                i++;
                 j++;
             }
             else if (in_shape[m_input_order[j]] == 1)
             {
                 j++;
-                continue;
             }
             else if (m_output_shape[i] == 1)
             {
                 out_sym_shape->push_back(1);
+                i++;
             }
             else
             {
-                NNFUSION_CHECK(false)
+                size_t in_size = in_shape[m_input_order[j]];
+                size_t out_size = m_output_shape[i];
+                out_sym_shape->push_back(m_output_shape[i]);
+                i++, j++;
+                while ((i < m_output_shape.size() || j < in_shape.size()) && in_size != out_size)
+                {
+                    if (in_size < out_size)
+                    {
+                        in_size *= in_shape[m_input_order[j]];
+                        j++;
+                    }
+                    else
+                    {
+                        out_size *= m_output_shape[i];
+                        out_sym_shape->push_back(m_output_shape[i]);
+                        i++;
+                    }
+                }
+
+                NNFUSION_CHECK(in_size == out_size)
                     << "Non-transpose symbolic reshape error: input=" << input_shape
-                    << ", output=" << m_output_shape;
+                    << ", output=" << m_output_shape << ", input_order=" << m_input_order;
             }
         }
+
+        // drain the tail of 1s
+        while (i < m_output_shape.size())
+        {
+            NNFUSION_CHECK(m_output_shape[i] == 1);
+            out_sym_shape->push_back(m_output_shape[i]);
+            i++;
+        }
+        while (j < in_shape.size())
+        {
+            NNFUSION_CHECK(in_shape[j] == 1);
+            j++;
+        }
+
+        // for (auto i = 0; i < m_output_shape.size(); i++)
+        // {
+        //     if (m_output_shape[i] == in_shape[m_input_order[j]])
+        //     {
+        //         out_sym_shape->push_back(in_shape.get_sym_shape()->at(m_input_order[j]));
+        //         j++;
+        //     }
+        //     else if (in_shape[m_input_order[j]] == 1)
+        //     {
+        //         j++;
+        //         continue;
+        //     }
+        //     else if (m_output_shape[i] == 1)
+        //     {
+        //         out_sym_shape->push_back(1);
+        //     }
+        //     else
+        //     {
+        //         size_t in_size = in_shape[m_input_order[j]];
+        //         size_t out_size = m_output_shape[i];
+        //         out_sym_shape->push_back(m_output_shape[i]);
+        //         while (i < in_shape.size() && j < m_output_shape.size() && in_size != out_size)
+        //         {
+        //             if (in_size < out_size)
+        //             {
+        //                 j++;
+        //                 in_size *= in_shape[m_input_order[j]];
+        //             }
+        //             else
+        //             {
+        //                 i++;
+        //                 out_size *= m_output_shape[i];
+        //                 out_sym_shape->push_back(m_output_shape[i]);
+        //             }
+        //         }
+
+        //         NNFUSION_CHECK(in_size == out_size)
+        //             << "Non-transpose symbolic reshape error: input=" << input_shape
+        //             << ", output=" << m_output_shape << ", input_order=" << m_input_order;
+        //     }
+        // }
         m_output_shape.set_sym_shape(out_sym_shape);
     }
 

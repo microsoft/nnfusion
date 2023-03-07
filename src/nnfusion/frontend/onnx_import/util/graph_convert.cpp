@@ -219,6 +219,9 @@ namespace nnfusion
                             << "no external data location provided";
                         string raw_data =
                             readfile_with_offset_length(const_file_path, offset, length);
+                        NNFUSION_LOG(INFO) << "============";
+                        NNFUSION_LOG(INFO) << tensor.name();
+                        NNFUSION_LOG(INFO) << tensor.data_type();
                         tensor.clear_data_location();
                         tensor.clear_external_data();
                         tensor.set_raw_data(raw_data);
@@ -354,9 +357,8 @@ namespace nnfusion
                         move_external_to_rawdata(tensor, model_dir);
                         if (FLAGS_ftraining_mode)
                         {
-                            element::Type type;
-                            ONNXDataTypeToNNFusionElementType(
-                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()), &type);
+                            element::Type type = ONNXDataTypeToNNFusionElementType(
+                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
                             std::shared_ptr<graph::GNode> input_gnode;
                             auto tensor_op = std::make_shared<op::Parameter>(
                                 type,
@@ -370,10 +372,8 @@ namespace nnfusion
                         }
                         else
                         {
-                            auto tensor_op = make_constant_op(
-                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()),
-                                Shape(std::begin(tensor.dims()), std::end(tensor.dims())),
-                                Tensor{tensor});
+                            auto wrapper_tensor = Tensor{tensor};
+                            auto tensor_op = make_constant_op(wrapper_tensor);
                             tensor_op->set_name(tensor.name());
                             tensor_op->set_global_consistent_name(tensor.name());
                             auto tensor_gnode =
@@ -482,6 +482,8 @@ namespace nnfusion
 
                 for (const auto& node_proto : onnx_nodes)
                 {
+                    NNFUSION_LOG(INFO) << "Convert Node Type : " << node_proto.op_type();
+
                     auto results = convert_node(node_proto);
                     for (auto& named_gnode : results)
                     {
@@ -519,9 +521,10 @@ namespace nnfusion
 
             NamedNodeVector GraphConvert::convert_node(const onnx::NodeProto& node_proto)
             {
-                NNFUSION_LOG(INFO) << "convert node: " << node_proto.name();
+                NNFUSION_LOG(DEBUG) << "convert node: " << node_proto.name();
                 const auto& convert_func =
                     get_convert_func(node_proto.op_type(), node_proto.domain());
+
                 NamedNodeVector ret;
                 if (convert_func)
                 {

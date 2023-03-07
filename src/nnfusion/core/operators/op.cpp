@@ -97,8 +97,11 @@ void Op::revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
                                                                       "Result",
                                                                       "Softmax",
                                                                       "Max",
-                                                                      "Sum"});
-            if (symbolic_infer_ops.find(gnode->get_op_type()) == symbolic_infer_ops.end())
+                                                                      "Sum",
+                                                                      "Dot"});
+            if (std::dynamic_pointer_cast<op::ElementwiseArithmetic>(gnode->get_op_ptr()) ==
+                    nullptr &&
+                symbolic_infer_ops.find(gnode->get_op_type()) == symbolic_infer_ops.end())
             {
                 NNFUSION_CHECK(false) << "Unsupported op for symbolic input: "
                                       << gnode->get_op_type();
@@ -115,6 +118,9 @@ void Op::revalidate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
             if (output->get_shape().is_dynamic())
             {
                 (*gnode)["symbolic"] = true;
+                NNFUSION_LOG(INFO)
+                    << gnode->get_op_type()
+                    << " Get Symbolic Output: " << (*output->get_shape().get_sym_shape());
             }
         }
     }
@@ -197,11 +203,11 @@ std::tuple<nnfusion::element::Type, nnfusion::PartialShape>
     {
         for (size_t i = 1; i < input_size; ++i)
         {
-            OP_VALIDATION(this,
-                          nnfusion::element::Type::merge(
-                              element_type, element_type, gnode->get_input_element_type(i)))
-                << "Argument element types are inconsistent: " << element_type << ", "
-                << gnode->get_input_element_type(i);
+            // OP_VALIDATION(this,
+            //               nnfusion::element::Type::merge(
+            //                   element_type, element_type, gnode->get_input_element_type(i)))
+            //     << "Argument element types are inconsistent: " << element_type << ", "
+            //     << gnode->get_input_element_type(i);
 
             OP_VALIDATION(
                 this, nnfusion::PartialShape::merge_into(pshape, gnode->get_input_partial_shape(i)))

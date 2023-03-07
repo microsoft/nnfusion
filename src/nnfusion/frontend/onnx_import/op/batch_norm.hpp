@@ -74,6 +74,26 @@ namespace nnfusion
                     return ret;
                 }
             } // namespace set_1
-        }     //namespace onnx_import
-    }         // namespace frontend
+            namespace set_6
+            {
+                using set_1::TranslateBatchNormOp;
+            }
+            namespace set_7
+            {
+                using set_1::TranslateBatchNormOp;
+            }
+            namespace set_9
+            {
+                using set_1::TranslateBatchNormOp;
+            }
+            namespace set_14
+            {
+                using set_1::TranslateBatchNormOp;
+            }
+            namespace set_15
+            {
+                using set_1::TranslateBatchNormOp;
+            }
+        } //namespace onnx_import
+    }     // namespace frontend
 } // namespace  nnfusion

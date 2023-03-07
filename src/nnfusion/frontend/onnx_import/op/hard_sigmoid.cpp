@@ -19,65 +19,36 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
-#include <memory>
-
-#include "ngraph/node.hpp"
-
-#include "nnfusion/core/operators/add.hpp"
-#include "nnfusion/core/operators/constant.hpp"
-#include "nnfusion/core/operators/maximum.hpp"
-#include "nnfusion/core/operators/minimum.hpp"
-#include "nnfusion/core/operators/multiply.hpp"
-
-#include "core/node.hpp"
-#include "utils/broadcasting.hpp"
-
 #include "hard_sigmoid.hpp"
+#include "nnfusion/core/operators/generic_op/generic_op.hpp"
+#include "nnfusion/frontend/onnx_import/util/util.hpp"
 
-namespace ngraph
+namespace nnfusion
 {
-    namespace onnx_import
+    namespace frontend
     {
-        namespace op
+        namespace onnx_import
         {
             namespace set_1
             {
-                NodeVector hard_sigmoid(const Node& node)
+                NamedNodeVector
+                    TranslateHardSigmoidOp(const onnx::NodeProto& node_proto,
+                                           const NodeMap& all_ng_nodes,
+                                           std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                    auto data = node.get_ng_inputs().at(0);
-
-                    double alpha = node.get_attribute_value<double>("alpha", 0.2);
-                    double beta = node.get_attribute_value<double>("beta", 0.5);
-
-                    std::shared_ptr<ngraph::Node> alpha_node =
-                        std::make_shared<ngraph::op::Constant>(
-                            data->get_element_type(), ngraph::Shape{}, std::vector<double>{alpha});
-                    alpha_node = make_broadcast_node(alpha_node, data->get_shape());
-
-                    std::shared_ptr<ngraph::Node> beta_node =
-                        std::make_shared<ngraph::op::Constant>(
-                            data->get_element_type(), ngraph::Shape{}, std::vector<double>{beta});
-                    beta_node = make_broadcast_node(beta_node, data->get_shape());
-
-                    std::shared_ptr<ngraph::Node> one_node = std::make_shared<ngraph::op::Constant>(
-                        data->get_element_type(), Shape{}, std::vector<double>{1});
-                    one_node = make_broadcast_node(one_node, data->get_shape());
-
-                    std::shared_ptr<ngraph::Node> zero_node =
-                        std::make_shared<ngraph::op::Constant>(
-                            data->get_element_type(), Shape{}, std::vector<double>{0});
-                    zero_node = make_broadcast_node(zero_node, data->get_shape());
-
-                    return {std::make_shared<ngraph::op::Maximum>(
-                        zero_node,
-                        std::make_shared<ngraph::op::Minimum>(one_node,
-                                                              alpha_node * data + beta_node))};
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+                    NNFUSION_CHECK(input_indexes.size() == 1);
+                    Node node{node_proto};
+                    nnfusion::op::OpConfig::any myConfig;
+                    myConfig["alpha"] = node.get_attribute_value<float>("alpha", 0.2);
+                    myConfig["beta"] = node.get_attribute_value<float>("beta", 0.5);
+                    auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
+                        node_proto.name(), "HardSigmoid", myConfig);
+                    auto generic_gnode = m_graph->add_node_and_edge(generic_op, input_indexes);
+                    NamedNodeVector ret{{node_proto.output(0), generic_gnode}};
+                    return ret;
                 }
-
             } // namespace set_1
-
-        } //namespace op
-
-    } // namespace onnx_import
-
-} // namespace ngraph
+        }     // namespace onnx_import
+    }         // namespace frontend
+} // namespace nnfusion

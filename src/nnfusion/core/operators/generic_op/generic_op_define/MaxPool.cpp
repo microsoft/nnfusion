@@ -37,7 +37,6 @@ REGISTER_OP(MaxPool)
         auto& strides = _op->get_window_shape();
         auto& padding_below = _op->get_padding_below();
         auto& padding_above = _op->get_padding_above();
-
         if (!(padding_below.size() == padding_above.size()))
         {
             return std::string();
@@ -46,12 +45,9 @@ REGISTER_OP(MaxPool)
         {
             return std::string();
         }
-        if (!is_1d)
+        if (!is_nchw)
         {
-            if (!(padding_below.size() == 2))
-            {
-                return std::string();
-            }
+            return std::string();
         }
 
         auto expression_template =
@@ -63,46 +59,15 @@ REGISTER_OP(MaxPool)
 
         auto output_layout = std::vector<std::string>{"N"};
         auto input_layout = std::vector<std::string>{"N"};
-        if (is_nchw)
+
+        if (!is_nchw)
         {
-            output_layout.push_back("C");
-            input_layout.push_back("C");
-            output_layout.push_back("HO");
-            input_layout.push_back("HO * " + to_string(m_strides[0]) + " + KH - " +
-                                   to_string(padding_below[0]));
-            if (padding_below[0] > 0)
+            // NHWC only support 1D and 2D
+            if (!(output_shape.size() == 3 && output_shape.size() == 4))
             {
-                when_condition += (when_condition.empty() ? "" : " , ") + input_layout[2] + " >=0";
+                return std::string();
             }
-            if (padding_above[0] > 0)
-            {
-                when_condition += (when_condition.empty() ? "" : " , ") + input_layout[2] + " < " +
-                                  to_string(input_shape[2]);
-            }
-            where_condition += (where_condition.empty() ? "" : " , ") + output_layout[2] + " in " +
-                               to_string(output_shape[2]) + ", KH in " + to_string(strides[0]);
-            if (!is_1d)
-            {
-                output_layout.push_back("WO");
-                input_layout.push_back("WO * " + to_string(m_strides[1]) + " + KW - " +
-                                       to_string(padding_below[1]));
-                if (padding_below[0] > 0)
-                {
-                    when_condition +=
-                        (when_condition.empty() ? "" : " , ") + input_layout[3] + " >=0";
-                }
-                if (padding_above[0] > 0)
-                {
-                    when_condition += (when_condition.empty() ? "" : " , ") + input_layout[3] +
-                                      " < " + to_string(input_shape[3]);
-                }
-                where_condition += (where_condition.empty() ? "" : " , ") + output_layout[3] +
-                                   " in " + to_string(output_shape[3]) + ", KW in " +
-                                   to_string(strides[1]);
-            }
-        }
-        else
-        {
+
             output_layout.push_back("HO");
             input_layout.push_back("HO * " + to_string(m_strides[0]) + " + KH - " +
                                    to_string(padding_below[0]));
@@ -139,17 +104,60 @@ REGISTER_OP(MaxPool)
             output_layout.push_back("C");
             input_layout.push_back("C");
         }
+        else
+        {
+            output_layout.push_back("C");
+            input_layout.push_back("C");
+
+            for (int i = 0; i < input_shape.size() - 2; i++)
+            {
+                std::string axis_name = "D" + to_string(i);
+                std::string kernel_axis_name = "K" + to_string(i);
+                output_layout.push_back(axis_name);
+                input_layout.push_back(axis_name + " * " + to_string(m_strides[i]) + " + " +
+                                       kernel_axis_name + " - " + to_string(padding_below[i]));
+                if (padding_below[0] > 0)
+                {
+                    when_condition +=
+                        (when_condition.empty() ? "" : " , ") + input_layout[i + 2] + " >=0";
+                }
+                if (padding_above[0] > 0)
+                {
+                    when_condition += (when_condition.empty() ? "" : " , ") + input_layout[i + 2] +
+                                      " < " + to_string(input_shape[i + 2]);
+                }
+                where_condition += (where_condition.empty() ? "" : " , ") + output_layout[i + 2] +
+                                   " in " + to_string(output_shape[i + 2]) + ", " +
+                                   kernel_axis_name + " in " + to_string(strides[i]);
+            }
+        }
 
         if (!when_condition.empty())
         {
             std::string min_value;
-            if (dtype == nnfusion::element::f32)
+            if (dtype == nnfusion::element::f64)
+            {
+                min_value = "-1.7e308";
+            }
+            else if (dtype == nnfusion::element::f32)
             {
                 min_value = "-3.4e38";
             }
             else if (dtype == nnfusion::element::f16)
             {
                 min_value = "-6.55e4";
+            }
+            else if (dtype == nnfusion::element::i64)
+            {
+                min_value = "-9223372036854775808";
+            }
+            else if (dtype == nnfusion::element::i32)
+            {
+                min_value = "-2147483648";
+            }
+            else if (dtype == nnfusion::element::i16)
+            {
+                min_value = "-32768";
             }
             else if (dtype == nnfusion::element::i8)
             {
@@ -178,4 +186,163 @@ REGISTER_OP(MaxPool)
 
         auto expression_code = op::create_code_from_template(expression_template, config);
         return expression_code;
+
+        // { // previous version
+        //     auto _op = static_pointer_cast<nnfusion::op::MaxPool>(curr->get_op_ptr());
+        //     auto& input_shape = curr->get_input_shape(0);
+        //     auto& output_shape = curr->get_output_shape(0);
+        //     auto& dtype = curr->get_element_type();
+        //     bool is_1d = (output_shape.size() == 3);
+        //     const bool is_nchw = _op->get_data_format() == "NCHW" ? true : false;
+        //     auto& m_strides = _op->get_window_movement_strides();
+        //     auto& strides = _op->get_window_shape();
+        //     auto& padding_below = _op->get_padding_below();
+        //     auto& padding_above = _op->get_padding_above();
+
+        //     if (!(padding_below.size() == padding_above.size()))
+        //     {
+        //         return std::string();
+        //     }
+        //     if (!(padding_below.size() >= 1))
+        //     {
+        //         return std::string();
+        //     }
+        //     if (!is_1d)
+        //     {
+        //         if (!(padding_below.size() == 2))
+        //         {
+        //             return std::string();
+        //         }
+        //     }
+
+        //     auto expression_template =
+        //         R"( @output0@@output0_layout@ >=! @input0@@input0_layout@@conditions@; )";
+
+        //     std::string conditions;
+        //     std::string when_condition;
+        //     std::string where_condition;
+
+        //     auto output_layout = std::vector<std::string>{"N"};
+        //     auto input_layout = std::vector<std::string>{"N"};
+        //     if (is_nchw)
+        //     {
+        //         output_layout.push_back("C");
+        //         input_layout.push_back("C");
+        //         output_layout.push_back("HO");
+        //         input_layout.push_back("HO * " + to_string(m_strides[0]) + " + KH - " +
+        //                                to_string(padding_below[0]));
+        //         if (padding_below[0] > 0)
+        //         {
+        //             when_condition +=
+        //                 (when_condition.empty() ? "" : " , ") + input_layout[2] + " >=0";
+        //         }
+        //         if (padding_above[0] > 0)
+        //         {
+        //             when_condition += (when_condition.empty() ? "" : " , ") + input_layout[2] +
+        //                               " < " + to_string(input_shape[2]);
+        //         }
+        //         where_condition += (where_condition.empty() ? "" : " , ") + output_layout[2] +
+        //                            " in " + to_string(output_shape[2]) + ", KH in " +
+        //                            to_string(strides[0]);
+        //         if (!is_1d)
+        //         {
+        //             output_layout.push_back("WO");
+        //             input_layout.push_back("WO * " + to_string(m_strides[1]) + " + KW - " +
+        //                                    to_string(padding_below[1]));
+        //             if (padding_below[0] > 0)
+        //             {
+        //                 when_condition +=
+        //                     (when_condition.empty() ? "" : " , ") + input_layout[3] + " >=0";
+        //             }
+        //             if (padding_above[0] > 0)
+        //             {
+        //                 when_condition += (when_condition.empty() ? "" : " , ") +
+        //                                   input_layout[3] + " < " + to_string(input_shape[3]);
+        //             }
+        //             where_condition += (where_condition.empty() ? "" : " , ") +
+        //                                output_layout[3] + " in " + to_string(output_shape[3]) +
+        //                                ", KW in " + to_string(strides[1]);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         output_layout.push_back("HO");
+        //         input_layout.push_back("HO * " + to_string(m_strides[0]) + " + KH - " +
+        //                                to_string(padding_below[0]));
+        //         if (padding_below[0] > 0)
+        //         {
+        //             when_condition +=
+        //                 (when_condition.empty() ? "" : " , ") + input_layout[1] + " >=0";
+        //         }
+        //         if (padding_above[0] > 0)
+        //         {
+        //             when_condition += (when_condition.empty() ? "" : " , ") + input_layout[1] +
+        //                               " < " + to_string(input_shape[1]);
+        //         }
+        //         where_condition += (where_condition.empty() ? "" : " , ") + output_layout[1] +
+        //                            " in " + to_string(output_shape[1]) + ", KH in " +
+        //                            to_string(strides[0]);
+        //         if (!is_1d)
+        //         {
+        //             output_layout.push_back("WO");
+        //             input_layout.push_back("WO * " + to_string(m_strides[1]) + " + KW - " +
+        //                                    to_string(padding_below[1]));
+        //             if (padding_below[0] > 0)
+        //             {
+        //                 when_condition +=
+        //                     (when_condition.empty() ? "" : " , ") + input_layout[2] + " >=0";
+        //             }
+        //             if (padding_above[0] > 0)
+        //             {
+        //                 when_condition += (when_condition.empty() ? "" : " , ") +
+        //                                   input_layout[2] + " < " + to_string(input_shape[2]);
+        //             }
+        //             where_condition += (where_condition.empty() ? "" : " , ") +
+        //                                output_layout[2] + " in " + to_string(output_shape[2]) +
+        //                                ", KW in " + to_string(strides[1]);
+        //         }
+        //         output_layout.push_back("C");
+        //         input_layout.push_back("C");
+        //     }
+
+        //     if (!when_condition.empty())
+        //     {
+        //         std::string min_value;
+        //         if (dtype == nnfusion::element::f32)
+        //         {
+        //             min_value = "-3.4e38";
+        //         }
+        //         else if (dtype == nnfusion::element::f16)
+        //         {
+        //             min_value = "-6.55e4";
+        //         }
+        //         else if (dtype == nnfusion::element::i8)
+        //         {
+        //             min_value = "-128";
+        //         }
+        //         else
+        //         {
+        //             NNFUSION_LOG(INFO)
+        //                 << "not support padding with data type " << dtype << " yet, fallback";
+        //             return std::string();
+        //         }
+        //         when_condition = ".when([" + when_condition + "], const(" + min_value +
+        //                          ").cast(@input0@.dtype()))";
+        //     }
+        //     if (!where_condition.empty())
+        //     {
+        //         where_condition = " where " + where_condition;
+        //     }
+
+        //     conditions = when_condition + where_condition;
+
+        //     op::OpConfig::any config;
+        //     config["conditions"] = conditions;
+        //     config["output0_layout"] =
+        //         vector_to_string<std::vector<std::string>>(output_layout);
+        //     config["input0_layout"] = vector_to_string<std::vector<std::string>>(input_layout);
+
+        //     auto expression_code = op::create_code_from_template(expression_template, config);
+        //     return expression_code;
+        // }
     });

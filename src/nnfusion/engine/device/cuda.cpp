@@ -27,9 +27,12 @@
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
 #include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
+#include "nnfusion/engine/pass/graph/register_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
+#include "nnfusion/engine/pass/graph/split_softmax_pass.hpp"
 #include "nnfusion/engine/pass/graph/subgraph_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/superscaler_dataparallelism_pass.hpp"
+#include "nnfusion/engine/pass/graph/tensor_core_rewrite_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
 #include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
 #include "nnfusion/engine/pass/tensor/liveness_analysis.hpp"
@@ -71,6 +74,9 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<IRBasedFusionPass>());
 
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
+    g_passes->push_back(make_shared<SplitSoftmaxPass>());
+    g_passes->push_back(make_shared<TensorCoreRewritePass>());
+    g_passes->push_back(make_shared<RegisterFusionPass>());
 
     // Kernel selection
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
@@ -399,7 +405,7 @@ std::string CudaMultiEngine::get_kernel_entry_paras(std::shared_ptr<TranslationU
     for (int i = 0; i < tu->arg.size(); i++)
     {
         auto tv = tu->arg[i];
-        string type = tv->get_element_type().c_type_string();
+        string type = element::get_backend_cstring(tv->get_element_type());
         stringstream ss;
         ss << type << "* " << tv->get_name();
         if (is_host)
@@ -413,7 +419,7 @@ std::string CudaMultiEngine::get_kernel_entry_paras(std::shared_ptr<TranslationU
     for (int i = 0; i < tu->out.size(); i++)
     {
         auto tv = tu->out[i];
-        string type = tv->get_element_type().c_type_string();
+        string type = element::get_backend_cstring(tv->get_element_type());
         stringstream ss;
         if (FLAGS_fextern_result_memory || FLAGS_fhost_entry)
             ss << type << "* " << tv->get_name();

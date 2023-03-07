@@ -281,16 +281,16 @@ TEST(nnfusion_onnx_import, asin_op)
         EXPECT_TRUE(test::all_close_f(expected_outputs[i], outputs[i]));
     }
 }
-/* no kernel implemented for argmax and argmin
-TEST(nnfusion_onnx_import, argmax_int32_op)
+
+// todo : no kernel implemented for argmax and argmin
+TEST(nnfusion_onnx_import, argmax_float32_op)
 {
-    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/argmax_int32.onnx"));
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/argmax_float32_no_keep_dims.onnx"));
 
-    vector<vector<int32_t>> inputs{
-        vector<int32_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+    vector<vector<int32_t>> inputs{vector<int32_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
 
-    vector<vector<int64_t>> expected_outputs{
-        vector<int64_t>{1, 1, 1, 1, 1, 1}};
+    vector<vector<int64_t>> expected_outputs{vector<int64_t>{1, 1, 1, 1, 1, 1}};
 
     vector<vector<int64_t>> outputs{execute<int32_t, int64_t>(model, inputs, "NNFusion")};
     EXPECT_EQ(outputs.size(), expected_outputs.size());
@@ -302,10 +302,10 @@ TEST(nnfusion_onnx_import, argmax_int32_op)
 
 TEST(nnfusion_onnx_import, argmin_int32_op)
 {
-    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/argmin_int32.onnx"));
+    auto model =
+        frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/argmin_int32.onnx"));
 
-    vector<vector<int32_t>> inputs{
-        vector<int32_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+    vector<vector<int32_t>> inputs{vector<int32_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
 
     vector<vector<int64_t>> expected_outputs{vector<int64_t>{0, 0, 0, 0}};
 
@@ -319,7 +319,8 @@ TEST(nnfusion_onnx_import, argmin_int32_op)
 
 TEST(nnfusion_onnx_import, argmin_no_keepdims)
 {
-    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/argmin_no_keepdims.onnx"));
+    auto model = frontend::load_onnx_model(
+        file_util::path_join(SERIALIZED_ZOO, "onnx/argmin_no_keepdims.onnx"));
 
     Inputs inputs{{2, 1, 3, 10}};
     Outputs expected_outputs{{1, 0}};
@@ -331,7 +332,7 @@ TEST(nnfusion_onnx_import, argmin_no_keepdims)
         EXPECT_TRUE(test::all_close_f(expected_outputs[i], outputs[i]));
     }
 }
-*/
+
 TEST(nnfusion_onnx_import, atan_op)
 {
     auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/atan.onnx"));

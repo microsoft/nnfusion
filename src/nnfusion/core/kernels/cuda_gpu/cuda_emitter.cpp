@@ -42,7 +42,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->inputs[i]->get_element_type()) << "* ";
         ss << "input" << i;
         params.push_back(ss.str());
     }
@@ -50,7 +50,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->outputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->outputs[i]->get_element_type()) << "* ";
         ss << "output" << i;
         params.push_back(ss.str());
     }
@@ -106,7 +106,7 @@ LanguageUnit_p cuda::BlockCudaEmitter::emit_device_function_signature()
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->inputs[i]->get_element_type()) << "* ";
         ss << "input" << i;
         params.push_back(ss.str());
     }
@@ -114,7 +114,7 @@ LanguageUnit_p cuda::BlockCudaEmitter::emit_device_function_signature()
     for (size_t i = 0; i < m_context->outputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->outputs[i]->get_element_type()) << "* ";
         ss << "output" << i;
         params.push_back(ss.str());
     }
@@ -233,6 +233,8 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
             pos = antares_code.find(start, pos + start.size());
         }
         NNFUSION_CHECK(kernels_pos.size() == kernel_info.size());
+        size_t idx = 0;
+        std::unordered_map<string, string> mediate_map;
         for (size_t i = 0; i < kernels_pos.size(); i++)
         {
             std::string kernel;
@@ -263,8 +265,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_body()
             auto ki = kernel_info[i];
             // map mediate name
             std::vector<string> input_names, output_names;
-            size_t idx = 0;
-            std::unordered_map<string, string> mediate_map;
+
             for (auto name : ki->input_names)
             {
                 if (mediate_map.find(name) == mediate_map.end())
@@ -403,7 +404,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->inputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->inputs[i]->get_element_type()) << "* ";
         if (inplace_input.find(i) == inplace_input.end())
         {
             ss << "__restrict__ ";
@@ -415,7 +416,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->outputs.size(); i++)
     {
         stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->outputs[i]->get_element_type()) << "* ";
         if (inplace_output.find(i) == inplace_output.end())
         {
             ss << "__restrict__ ";
@@ -427,7 +428,7 @@ LanguageUnit_p cuda::AntaresCudaKernelEmitter::emit_function_signature()
     for (size_t i = 0; i < m_context->tensors.size(); i++)
     {
         stringstream ss;
-        ss << m_context->tensors[i]->get_element_type().c_type_string() << "* ";
+        ss << element::get_backend_cstring(m_context->tensors[i]->get_element_type()) << "* ";
         ss << "__restrict__ ";
         ss << "mediate" << i;
         params.push_back(ss.str());
@@ -831,4 +832,61 @@ void cuda::CacheBlockCudaEmitter::set_launch_config()
     auto func = kernel_entry.function;
     m_gridDim = dim3(func["grid_dim"][0], func["grid_dim"][1], func["grid_dim"][2]);
     m_blockDim = dim3(func["block_dim"][0], func["block_dim"][1], func["block_dim"][2]);
+}
+
+cuda::FusionCudaEmitter::FusionCudaEmitter(shared_ptr<KernelContext> ctx, json fusion_group)
+    : cuda::CudaEmitter(ctx)
+{
+    m_fusion_group = fusion_group;
+    m_fusion_group["code"].get_to(m_code);
+
+    int kernel_sig_start = m_code.find("__global__");
+    NNFUSION_CHECK(kernel_sig_start != string::npos);
+    int kernel_sig_end = m_code.find("{", kernel_sig_start);
+    NNFUSION_CHECK(kernel_sig_end != string::npos);
+    auto sig = m_code.substr(kernel_sig_start, kernel_sig_end - kernel_sig_start);
+    // auto old_fname = "Group"+to_string(m_fusion_group["group_id"].get<int>());
+    auto old_fname = m_fusion_group["name"].get<string>();
+    NNFUSION_CHECK(sig.find(old_fname) != string::npos) << sig << old_fname;
+    sig = sig.erase(sig.find(old_fname), old_fname.size());
+
+    int kernel_body_start = kernel_sig_end + 1;
+    int kernel_body_end = m_code.rfind("}") - 1;
+    auto body = m_code.substr(kernel_body_start, kernel_body_end - kernel_body_start);
+
+    m_body_unitp = make_shared<LanguageUnit>(old_fname, body);
+    m_sig_unitp = make_shared<LanguageUnit>(old_fname + "_sig", sig);
+    m_dep_unitp =
+        make_shared<LanguageUnit>(old_fname + "_device_kernel", m_code.substr(0, kernel_sig_start));
+    // NNFUSION_LOG(INFO) << m_sig_unitp->get_code() << std::endl;
+}
+
+void cuda::FusionCudaEmitter::set_launch_config()
+{
+    auto block = m_fusion_group["block_size"];
+    auto grid = m_fusion_group["grid_size"];
+    block[0].get_to(m_blockDim.x);
+    block[1].get_to(m_blockDim.y);
+    block[2].get_to(m_blockDim.z);
+    grid[0].get_to(m_gridDim.x);
+    grid[1].get_to(m_gridDim.y);
+    grid[1].get_to(m_gridDim.z);
+}
+
+LanguageUnit_p cuda::FusionCudaEmitter::emit_function_signature()
+{
+    return m_sig_unitp;
+}
+
+LanguageUnit_p cuda::FusionCudaEmitter::emit_function_body()
+{
+    return m_body_unitp;
+}
+
+LanguageUnit_p cuda::FusionCudaEmitter::emit_dependency()
+{
+    auto old_fname = m_fusion_group["name"].get<string>();
+    LanguageUnit_p lu(new LanguageUnit(old_fname + "_dep"));
+    lu->require(m_dep_unitp);
+    return lu;
 }

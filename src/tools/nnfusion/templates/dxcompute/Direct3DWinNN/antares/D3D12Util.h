@@ -52,7 +52,8 @@ using namespace Microsoft::WRL;
 
 string error_string(HRESULT x, string FILE, int LINE)
 {
-    string e_str = "Error-line: (" + FILE + ") " + std::to_string(LINE) + "\n\n";
+    static string e_str;
+    e_str = "Error-line: (" + FILE + ") " + std::to_string(LINE) + "\n\n";
     if (x == D3D12_ERROR_ADAPTER_NOT_FOUND) e_str += "Reason: The specified cached PSO was created on a different adapter and cannot be reused on the current adapter.\n";
     else if (x == D3D12_ERROR_DRIVER_VERSION_MISMATCH) e_str += "Reason: The specified cached PSO was created on a different driver version and cannot be reused on the current adapter.\n";
     else if (x == DXGI_ERROR_INVALID_CALL) e_str += "Reason: The method call is invalid. For example, a method's parameter may not be a valid pointer.\n";
@@ -73,7 +74,7 @@ string error_string(HRESULT x, string FILE, int LINE)
     return e_str;
 }
 
-#define IFE(x)  ((FAILED(x)) ? (printf(error_string(x, __FILE__, __LINE__).c_str()), abort(), 0): 1)
+#define IFE(x)  ((FAILED(x)) ? (fprintf(stderr, error_string(x, __FILE__, __LINE__).c_str()), abort(), 0): 1)
 
 namespace {
 
@@ -688,9 +689,6 @@ namespace antares {
 
     struct D3DDevice
     {
-#ifndef _GAMING_XBOX_SCARLETT
-        ComPtr<IDXGIFactory5> pDxgiFactory;
-#endif
         ComPtr<ID3D12Device1> pDevice;
         ComPtr<ID3D12CommandQueue> pCommandQueue;
         ComPtr<ID3D12CommandAllocator> pCommandAllocator;
@@ -720,16 +718,37 @@ namespace antares {
             bEnableDebugLayer = EnableDebugLayer;
             bEnableGPUValidation = EnableGPUValidation;
         }
-        void InitD3DDevice()
+
+#ifndef _GAMING_XBOX_SCARLETT
+        bool GetHardwareAdapter(int adapterIndex, IDXGIFactory4* pFactory, IDXGIAdapter1** ppAdapter)
+        {
+            *ppAdapter = nullptr;
+            {
+                IDXGIAdapter1* pAdapter = nullptr;
+                HRESULT hr = pFactory->EnumAdapters1(adapterIndex, &pAdapter);
+                if (hr == DXGI_ERROR_NOT_FOUND)
+                  IFE(hr);
+
+                if (SUCCEEDED(
+                    D3D12CreateDevice(pAdapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&pDevice))))
+                {
+                    *ppAdapter = pAdapter;
+                    return true;
+                }
+                pAdapter->Release();
+            }
+            return false;
+        }
+#endif
+
+        void InitD3DDevice(int ord)
         {
 #ifndef _GAMING_XBOX_SCARLETT
-            IFE(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
-
-            if (D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&pDevice)))
-            {
-                ComPtr<IDXGIAdapter3> pAdapter;
-                IFE(pDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pAdapter)));
-                IFE(D3D12CreateDevice(pAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&pDevice)));
+            ComPtr<IDXGIFactory4> factory;
+            ComPtr<IDXGIAdapter1> hardwareAdapter;
+            IFE(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
+            if (!GetHardwareAdapter(ord, factory.Get(), &hardwareAdapter)) {
+                IFE(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&pDevice)));
             }
 #else
             // Create the DX12 API device object.
@@ -751,7 +770,7 @@ namespace antares {
 #endif
         }
 
-        void Init()
+        void Init(int ord)
         {
 #ifndef _GAMING_XBOX_SCARLETT
             // Enable debug layer
@@ -768,7 +787,7 @@ namespace antares {
             }
 #endif
 
-            InitD3DDevice();
+            InitD3DDevice(ord);
 
             // Create a command queue
             D3D12_COMMAND_QUEUE_DESC commandQueueDesc = D3D12CommandQueueDesc(CommandListType);
@@ -1121,11 +1140,14 @@ namespace antares {
                 args_i.push_back(args[i].c_str());
             }
 #endif
-            if (std::wstring(profile) != std::wstring(L"cs_6_0"))
+            if (std::wstring(profile) > std::wstring(L"cs_6_0"))
                 args_i.push_back(L"-enable-16bit-types");
+            if (std::wstring(profile) >= std::wstring(L"cs_6_5"))
+                args_i.push_back(L"-enable-templates");
+            args_i.push_back(L"-D__HLSL_SHADER_COMPUTE=1");
+            // args_i.push_back(L"-O3");
             args_i.push_back(NULL);
-            // Just set a random name "ShaderFile"
-            // const WCHAR* args[] = { L"-enable-templates", L"-enable-16bit-types", NULL }; // TODO: will be supported in HLSL 2021 & cs_6_2
+
             std::string errStr;
             if (SUCCEEDED(m_pCompiler->Compile(pSrcBlob.Get(), L"ShaderFile", entryName, profile, args_i.data(), args_i.size() - 1, NULL, 0, NULL, &pResult)))
             {

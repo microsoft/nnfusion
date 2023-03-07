@@ -19,40 +19,35 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
-#include <memory>
-#include <vector>
+#pragma once
 
-#include "ngraph/shape.hpp"
-#include "nnfusion/core/operators/constant.hpp"
-#include "nnfusion/core/operators/divide.hpp"
+#include "../util/util.hpp"
+#include "core/node.hpp"
 
-#include "utils/broadcasting.hpp"
-
-#include "reciprocal.hpp"
-
-namespace ngraph
+namespace nnfusion
 {
-    namespace onnx_import
+    namespace frontend
     {
-        namespace op
+        namespace onnx_import
         {
-            namespace set_1
+            namespace set_15
             {
-                NodeVector reciprocal(const Node& node)
+                NamedNodeVector TranslateCastLikeOp(const onnx::NodeProto& node_proto,
+                                                    const NodeMap& all_ng_nodes,
+                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
-                    auto data = node.get_ng_inputs().at(0);
+                    auto input_gnode = GetInputNode(all_ng_nodes, node_proto, 0);
+                    auto type_gnode = GetInputNode(all_ng_nodes, node_proto, 1);
+                    Node node(node_proto);
+                    element::Type et_type = type_gnode->get_element_type();
 
-                    std::shared_ptr<ngraph::Node> one_node = std::make_shared<ngraph::op::Constant>(
-                        data->get_element_type(), Shape{}, std::vector<double>{1});
-                    one_node = make_broadcast_node(one_node, data->get_shape());
-
-                    return {one_node / data};
+                    auto op = std::make_shared<op::Convert>(et_type);
+                    op->set_name(node_proto.output(0));
+                    auto gnode = m_graph->add_node_and_edge(op, {input_gnode});
+                    NamedNodeVector ret{{node_proto.output(0), gnode}};
+                    return ret;
                 }
-
-            } // namespace set_1
-
-        } //namespace op
-
-    } // namespace onnx_import
-
-} // namespace ngraph
+            } // namespace set_15
+        }     //namespace onnx_import
+    }         // namespace frontend
+} // namespace nnfusion

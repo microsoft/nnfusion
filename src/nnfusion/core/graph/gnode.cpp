@@ -160,6 +160,11 @@ const std::string& GNode::get_name() const
     return m_name;
 }
 
+const std::string& GNode::get_member_name() const
+{
+    return m_member_name;
+}
+
 const std::string& GNode::get_unique_name() const
 {
     return m_unique_name;
@@ -168,6 +173,11 @@ const std::string& GNode::get_unique_name() const
 void GNode::set_name(const string& name)
 {
     m_name = name;
+}
+
+void GNode::set_member_name(const string& name)
+{
+    m_member_name = name;
 }
 
 GNode::~GNode()
@@ -239,7 +249,8 @@ std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_out_edges() const
     return ret;
 };
 
-std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_output_users(size_t i)
+std::vector<std::shared_ptr<nnfusion::graph::Edge>>
+    GNode::get_output_users(size_t i, bool include_control_edge)
 {
     NNFUSION_CHECK(i < m_outputs.size()) << "Output index " << i
                                          << " is out of range. GNode only has " << m_outputs.size()
@@ -251,7 +262,8 @@ std::vector<std::shared_ptr<nnfusion::graph::Edge>> GNode::get_output_users(size
     {
         if (edge->get_src_output() == i)
         {
-            output_users.push_back(edge);
+            if (include_control_edge || !edge->is_control_edge())
+                output_users.push_back(edge);
         }
     }
     return output_users;

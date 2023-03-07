@@ -31,7 +31,7 @@ namespace nnfusion
     {
         namespace onnx_import
         {
-            namespace set_1
+            namespace set_11
             {
                 NamedNodeVector TranslateCumSumOp(const onnx::NodeProto& node_proto,
                                                   const NodeMap& all_ng_nodes,
@@ -61,6 +61,10 @@ namespace nnfusion
 
             } // namespace set_1
 
+            namespace set_14
+            {
+                using set_11::TranslateCumSumOp;
+            }
         } //namespace onnx_import
 
     } // namespace frontend

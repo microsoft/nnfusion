@@ -19,39 +19,29 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //----------------------------------------------------------------------------------------------
 
-#include "nnfusion/core/operators/add.hpp"
-#include "nnfusion/core/operators/constant.hpp"
-#include "nnfusion/core/operators/divide.hpp"
+#pragma once
 
-#include "mean.hpp"
-#include "utils/variadic.hpp"
+#include "core/node.hpp"
 
-namespace ngraph
+namespace nnfusion
 {
-    namespace onnx_import
+    namespace frontend
     {
-        namespace op
+        namespace onnx_import
         {
             namespace set_1
             {
-                NodeVector mean(const Node& node)
-                {
-                    auto sum = variadic::make_ng_variadic_op<ngraph::op::Add>(node).front();
-                    auto shape = sum->get_shape();
-
-                    // Create a Constant representing the number of inputs with the same shape as sum
-                    auto count = ngraph::op::Constant::create(
-                        sum->get_element_type(),
-                        shape,
-                        std::vector<int>(shape_size(shape), node.get_ng_inputs().size()));
-
-                    return {sum / count};
-                }
+                NamedNodeVector TranslateInstanceNormalizationOp(
+                    const onnx::NodeProto& node_proto,
+                    const NodeMap& all_ng_nodes,
+                    std::shared_ptr<nnfusion::graph::Graph> m_graph);
 
             } // namespace set_1
 
-        } //namespace op
-
-    } // namespace onnx_import
-
-} // namespace ngraph
+            namespace set_6
+            {
+                using set_1::TranslateInstanceNormalizationOp;
+            }
+        } //namespace onnx_import
+    }     // namespace frontend
+} // namespace  nnfusion

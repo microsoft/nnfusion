@@ -62,16 +62,13 @@ std::string nnfusion::tmpnam(int* status)
 
 std::string nnfusion::replace_sub_str(std::string str, std::string src, std::string dst)
 {
-    int cur_pos = 0;
-    while (true)
+    size_t start_pos = 0;
+    while ((start_pos = str.find(src, start_pos)) != std::string::npos)
     {
-        int pos = str.find(src, cur_pos);
-        if (pos == std::string::npos || cur_pos == std::string::npos)
-            break;
-        cur_pos = pos + src.size();
-        str = str.substr(0, pos) + dst + str.substr(cur_pos);
+        str.replace(start_pos, src.length(), dst);
+        start_pos += dst.length();
     }
-    return std::move(str);
+    return str;
 };
 
 // std::string nnfusion::to_cplusplus_sourcecode_literal(bool val)

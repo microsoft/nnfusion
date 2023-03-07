@@ -1,0 +1,2 @@
+python test/python/test_userlist_compare.py -t test_snapshot -g test/python/ground_truth/user_failed_list.csv -s FAILED
+python test/python/test_userlist_compare.py -t test_snapshot -g test/python/ground_truth/user_pass_list.csv -s PASS

@@ -32,10 +32,13 @@ namespace nnfusion
             ///
             /// \param axis The axis along which to compute an index for maximum
             /// \param index_element_type produce indices. Currently, only int64 or int32 are supported
-            ArgMax(size_t axis, const nnfusion::element::Type& index_element_type)
-                : IndexReduction("ArgMax", axis, index_element_type)
+            ArgMax(size_t axis,
+                   size_t keep_dims,
+                   size_t select_last_index,
+                   const nnfusion::element::Type& index_element_type)
+                : IndexReduction("ArgMax", axis, keep_dims, select_last_index, index_element_type)
             {
             }
         };
-    }
-}
+    } // namespace op
+} // namespace nnfusion

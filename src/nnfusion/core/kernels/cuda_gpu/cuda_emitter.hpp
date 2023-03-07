@@ -229,6 +229,8 @@ namespace nnfusion
                             }
 
                             { // check output_shapes of NNFusion and Antares, fallback when shapes mismatch.
+                                // cout << ctx->gnode->get_op_type() << endl;
+                                // cout << ir << endl;
                                 auto antares_output_shapes =
                                     AntaresKEImp::get_output_shapes(info.first);
                                 bool flag_match = true;
@@ -384,6 +386,23 @@ namespace nnfusion
 
             private:
                 nnfusion::cache::KernelEntry kernel_entry;
+            };
+
+            class FusionCudaEmitter : public CudaEmitter
+            {
+            public:
+                FusionCudaEmitter(shared_ptr<KernelContext> ctx, json fusion_group);
+
+            private:
+                LanguageUnit_p emit_function_signature() override;
+                LanguageUnit_p emit_function_body() override;
+                LanguageUnit_p emit_dependency() override;
+                void set_launch_config() override;
+
+            private:
+                json m_fusion_group;
+                string m_code;
+                LanguageUnit_p m_body_unitp, m_sig_unitp, m_dep_unitp;
             };
 
             class CustomCudaKernelEmitter : public BlockCudaEmitter

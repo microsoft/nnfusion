@@ -279,14 +279,31 @@ namespace nnfusion
         {
             alias_name = alias_name.empty() ? input_name : alias_name;
             config[alias_name] = input_name;
+            // mapping from nnfusion type to antares type
             auto d_type = tensor->get_element_type();
-            if (d_type == element::f32)
+            if (d_type == element::f16)
+            {
+                config[alias_name + "_dtype"] = "float16";
+            }
+            else if (d_type == element::f32)
             {
                 config[alias_name + "_dtype"] = "float32";
             }
             else if (d_type == element::f64)
             {
                 config[alias_name + "_dtype"] = "float64";
+            }
+            else if (d_type == element::boolean)
+            {
+                config[alias_name + "_dtype"] = "int16";
+            }
+            else if (d_type == element::i8)
+            {
+                config[alias_name + "_dtype"] = "int8";
+            }
+            else if (d_type == element::i16)
+            {
+                config[alias_name + "_dtype"] = "int16";
             }
             else if (d_type == element::i32)
             {
@@ -296,17 +313,11 @@ namespace nnfusion
             {
                 config[alias_name + "_dtype"] = "int64";
             }
-            else if (d_type == element::f16)
-            {
-                config[alias_name + "_dtype"] = "float16";
-            }
-            else if (d_type == element::boolean)
-            {
-                config[alias_name + "_dtype"] = "int8";
-            }
             else
             {
-                NNFUSION_CHECK_FAIL() << "Unhandled type: " << d_type;
+                NNFUSION_CHECK_FAIL()
+                    << "Unhandled type: " << d_type
+                    << ", antares currently supports int8/16/32/64, float16/32/64";
             }
             auto shape = tensor->get_shape();
             if (shape.size() == 0)
@@ -363,8 +374,6 @@ namespace nnfusion
 
             virtual void validate_and_infer_types(std::shared_ptr<graph::GNode> gnode) override
             {
-                NNFUSION_LOG(INFO) << "======: Infershape with IR: " << gnode->get_name() << " "
-                                   << gnode->get_op_type();
                 bool has_symbolic_shape = false;
                 // for (auto input : gnode->get_inputs())
                 // {
@@ -395,7 +404,6 @@ namespace nnfusion
                     // Infershape with Antares IR (only for Opv2)
                     nnfusion::kernels::AntaresKEImp ke;
                     auto result = ke.autogen(get_translation(gnode));
-                    NNFUSION_LOG(INFO) << "==========DEBUG:" << get_translation(gnode);
                     if (result.first == "")
                         throw std::runtime_error("No infershape or Antares IR found for op type: " +
                                                  gnode->get_op_type());
@@ -451,7 +459,7 @@ namespace nnfusion
                             antares2nnfusion{{"float16", nnfusion::element::f16},
                                              {"float32", nnfusion::element::f32},
                                              {"float64", nnfusion::element::f64},
-                                             {"int8", nnfusion::element::boolean},
+                                             {"int16", nnfusion::element::boolean},
                                              {"int32", nnfusion::element::i32},
                                              {"int64", nnfusion::element::i64}};
                         auto it = antares2nnfusion.find(type_str);

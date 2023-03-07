@@ -5,6 +5,8 @@
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fcustomized_mem_imp);
 DECLARE_bool(ffunction_codegen);
+DECLARE_bool(fcodegen_debug_half);
+DEFINE_bool(fcuda_set_device, true, "Emit cudaSetDevice call");
 
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)
     : m_size{size}
@@ -22,6 +24,7 @@ nnfusion::MemoryAllocator::MemoryAllocator(size_t alignment,
     , m_device_type(device_type)
     , m_device_id(device_id)
     , m_max_allocated{0}
+    , m_max_alloc_unit{0}
     , m_symbol(symbol)
     , m_name(symbol + "_" + get_device_str(device_type) + std::to_string(device_id) + "_allocator")
 {
@@ -45,6 +48,8 @@ void nnfusion::MemoryAllocator::allocate(std::vector<shared_ptr<descriptor::Tens
         total_size += tensor->size();
     }
 
+    if (total_size > m_max_alloc_unit)
+        m_max_alloc_unit = total_size;
     switch (m_scheme)
     {
     case allocation_scheme::FIRST_FIT: rc = first_fit(total_size); break;
@@ -68,6 +73,8 @@ void nnfusion::MemoryAllocator::allocate(shared_ptr<descriptor::Tensor> tensor)
 {
     size_t rc;
     size_t size = tensor->size();
+    if (size > m_max_alloc_unit)
+        m_max_alloc_unit = size;
     switch (m_scheme)
     {
     case allocation_scheme::FIRST_FIT: rc = first_fit(size); break;
@@ -284,7 +291,8 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_init()
 
         for (auto tensor : m_allocated_tensors)
         {
-            lu << tensor->get_element_type().c_type_string() << "* " << tensor->get_name() << ";\n";
+            lu << element::get_backend_cstring(tensor->get_element_type()) << "* "
+               << tensor->get_name() << ";\n";
         }
     }
     return _lu;
@@ -299,7 +307,10 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
     auto& lu = *_lu;
     if (m_max_allocated > 0)
     {
-        lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
+        if (FLAGS_fcuda_set_device)
+        {
+            lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
+        }
         if (!FLAGS_ffunction_codegen)
         {
             lu << "CUDA_SAFE_CALL(cudaMalloc((void**)&" << this->get_name() << "_memory_pool,"
@@ -313,7 +324,8 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
             if (tensor->get_shared_tensor())
             {
                 // this tensor can be shared with the grpah_0's tensor
-                lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
+                lu << tensor->get_name() << " = ("
+                   << element::get_backend_cstring(tensor->get_element_type())
                    << "*)(graph_0::" << tensor->get_shared_tensor()->get_name() << ");\n";
                 continue;
             }
@@ -325,9 +337,9 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
                 lu << "// ";
             }
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
-            lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
-               << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
-               << ");\n";
+            lu << tensor->get_name() << " = ("
+               << element::get_backend_cstring(tensor->get_element_type()) << "*)("
+               << this->get_name() << "_memory_pool+" << tensor->get_pool_offset() << ");\n";
         }
     }
     return _lu;
@@ -419,9 +431,9 @@ LanguageUnit_p nnfusion::HostMemoryAllocator::emit_memory_alloc()
                     << " may refer an external tensor, nnfusion omits its memory allocation.";
                 lu << "// ";
             }
-            lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
-               << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
-               << ");\n";
+            lu << tensor->get_name() << " = ("
+               << element::get_backend_cstring(tensor->get_element_type()) << "*)("
+               << this->get_name() << "_memory_pool+" << tensor->get_pool_offset() << ");\n";
         }
     }
     return _lu;

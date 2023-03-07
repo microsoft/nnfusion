@@ -207,9 +207,15 @@
     </ClCompile>
     <PostBuildEvent>
       <Command>copy .\para_info.json "$(TargetDir)"
+
 IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
+
 FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
+
 IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
+
+IF EXIST "$(SolutionDir)\python_wrapper\main.py"  copy "$(SolutionDir)\python_wrapper\main.py"  "$(TargetDir)"
+IF EXIST "$(SolutionDir)\python_wrapper\nnfusion"  xcopy /i /y /e "$(SolutionDir)\python_wrapper\nnfusion"  "$(TargetDir)\nnfusion"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -255,9 +261,15 @@ IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
     </ClCompile>
     <PostBuildEvent>
       <Command>copy .\para_info.json "$(TargetDir)"
+
 IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
+
 FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
+
 IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
+
+IF EXIST "$(SolutionDir)\python_wrapper\main.py"  copy "$(SolutionDir)\python_wrapper\main.py"  "$(TargetDir)"
+IF EXIST "$(SolutionDir)\python_wrapper\nnfusion"  xcopy /i /y /e "$(SolutionDir)\python_wrapper\nnfusion"  "$(TargetDir)\nnfusion"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -297,9 +309,15 @@ IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
     </ClCompile>
     <PostBuildEvent>
       <Command>copy .\para_info.json "$(TargetDir)"
+
 IF EXIST .\antares_perf.csv copy .\antares_perf.csv "$(TargetDir)"
+
 FOR /D %%f in (HLSL*) do xcopy /i /y /e ".\%%f" "$(TargetDir)\%%f"
+
 IF EXIST .\Constant  xcopy /i /y /e .\Constant  "$(TargetDir)\Constant"
+
+IF EXIST "$(SolutionDir)\python_wrapper\main.py"  copy "$(SolutionDir)\python_wrapper\main.py"  "$(TargetDir)"
+IF EXIST "$(SolutionDir)\python_wrapper\nnfusion"  xcopy /i /y /e "$(SolutionDir)\python_wrapper\nnfusion"  "$(TargetDir)\nnfusion"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

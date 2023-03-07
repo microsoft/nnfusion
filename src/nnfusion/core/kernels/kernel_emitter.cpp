@@ -11,6 +11,8 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DECLARE_bool(fextern_result_memory);
+DECLARE_bool(fantares_mode);
+DECLARE_string(fdefault_device);
 
 KernelContext::KernelContext(shared_ptr<graph::GNode> gnode)
     : gnode(gnode)
@@ -253,9 +255,31 @@ FunctionUnit_p KernelEmitter::emit_source()
         return fu;
     }
 
+    // a hack way to map int64 to long long
+    auto replace_cstring = [](LanguageUnit_p lp) {
+        if (lp && FLAGS_fantares_mode && FLAGS_fdefault_device != "HLSL")
+        {
+            auto lp_str = lp->get_code();
+            // avoid modify naming string
+            lp_str = replace_sub_str(lp_str, "_uint64_t", "@underline_unsigned_integer@");
+            lp_str = replace_sub_str(lp_str, "_int64_t", "@underline_integer@");
+            lp_str = replace_sub_str(lp_str, "uint64_t_", "@unsigned_integer_underline@");
+            lp_str = replace_sub_str(lp_str, "int64_t_", "@integer_underline@");
+
+            lp_str = replace_sub_str(lp_str, "uint64_t", "unsigned long long");
+            lp_str = replace_sub_str(lp_str, "int64_t", "long long");
+
+            lp_str = replace_sub_str(lp_str, "@underline_unsigned_integer@", "_uint64_t");
+            lp_str = replace_sub_str(lp_str, "@underline_integer@", "_int64_t");
+            lp_str = replace_sub_str(lp_str, "@unsigned_integer_underline@", "uint64_t_");
+            lp_str = replace_sub_str(lp_str, "@integer_underline@", "int64_t_");
+            lp->modify_code(lp_str);
+        }
+        return lp;
+    };
     // emit function units
-    NNFUSION_CHECK_NOT_NULLPTR(fu->signature_unit = emit_function_signature());
-    fu->body_unit = emit_function_body();
+    NNFUSION_CHECK_NOT_NULLPTR(fu->signature_unit = replace_cstring(emit_function_signature()));
+    fu->body_unit = replace_cstring(emit_function_body());
     if (!fu->body_unit)
     {
         return nullptr;

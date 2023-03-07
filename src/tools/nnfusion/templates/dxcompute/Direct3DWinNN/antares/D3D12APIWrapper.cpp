@@ -25,8 +25,102 @@
 #define DEBUG_PRINT(msg)
 #endif
 
+namespace base64 {
+    static const std::string base64_chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789+/";
+    typedef unsigned char BYTE;
+
+    static inline bool is_base64(BYTE c) {
+        return (isalnum(c) || (c == '+') || (c == '/'));
+    }
+
+    std::string encode(BYTE* buf, unsigned int bufLen) {
+        std::string ret;
+        int i = 0;
+        int j = 0;
+        BYTE char_array_3[3];
+        BYTE char_array_4[4];
+
+        while (bufLen--) {
+            char_array_3[i++] = *(buf++);
+            if (i == 3) {
+                char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+                char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+                char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+                char_array_4[3] = char_array_3[2] & 0x3f;
+
+                for (i = 0; (i < 4); i++)
+                    ret += base64_chars[char_array_4[i]];
+                i = 0;
+            }
+        }
+
+        if (i)
+        {
+            for (j = i; j < 3; j++)
+                char_array_3[j] = '\0';
+
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+
+            for (j = 0; (j < i + 1); j++)
+                ret += base64_chars[char_array_4[j]];
+
+            while ((i++ < 3))
+                ret += '=';
+        }
+
+        return ret;
+    }
+
+    std::vector<BYTE> decode(std::string const& encoded_string) {
+        int in_len = encoded_string.size();
+        int i = 0;
+        int j = 0;
+        int in_ = 0;
+        BYTE char_array_4[4], char_array_3[3];
+        std::vector<BYTE> ret;
+
+        while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
+            char_array_4[i++] = encoded_string[in_]; in_++;
+            if (i == 4) {
+                for (i = 0; i < 4; i++)
+                    char_array_4[i] = base64_chars.find(char_array_4[i]);
+
+                char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+                char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+                char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+                for (i = 0; (i < 3); i++)
+                    ret.push_back(char_array_3[i]);
+                i = 0;
+            }
+        }
+
+        if (i) {
+            for (j = i; j < 4; j++)
+                char_array_4[j] = 0;
+
+            for (j = 0; j < 4; j++)
+                char_array_4[j] = base64_chars.find(char_array_4[j]);
+
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+            for (j = 0; (j < i - 1); j++) ret.push_back(char_array_3[j]);
+        }
+
+        return ret;
+    }
+}
+
 namespace {
-    static bool _USE_DESCRIPTOR_HEAP_ = false;
+    static int _USE_DESCRIPTOR_HEAP_ = 0;
 
     struct dx_buffer_t
     {
@@ -106,12 +200,14 @@ namespace {
 
     struct dx_shader_t
     {
-        int block[3], thread[3];
+        unsigned block[3];
+        std::vector<int> cbuffer_sizes;
         std::vector<dx_tensor_t> inputs, outputs;
         std::string source;
-        std::unordered_map<std::vector<size_t>, ComPtr<ID3D12PipelineState>, VectorHasher> pPSO_ht; // bytecode_ht;
+        std::vector<base64::BYTE> bytecode;
 
         // Added D3D12 resource ptr.
+        ComPtr<ID3D12PipelineState> pPSO_ht;
         ComPtr<ID3D12RootSignature> pRootSignature;
     };
 
@@ -197,8 +293,7 @@ namespace {
     }
 }
 
-
-int dxInit(int flags)
+int dxInit(int flags = 1, int ord = 0)
 {
     DEBUG_PRINT(__func__);
 
@@ -208,19 +303,23 @@ int dxInit(int flags)
 #else
         device = std::make_shared<antares::D3DDevice>(false, false);
 #endif
-    }
+        device->Init(ord);
 
-    if (!defaultStream)
-    {
-        // flags = 1: enable descriptor heap, no logging
-        // flags = 0: disable descriptor heap, no logging
-        // flags = -1: enable descriptor heap, with logging
-
-        if (flags == -1)
-            fprintf(stderr, "[INFO] D3D12: Descriptor heap is to be enabled.\n\n"), flags = 1;
+        // flags = -1: MODE-0 for xbox and MODE-1 for others
+        // flags = 0: MODE-0 - disable descriptor heap
+        // flags = 1: MODE-1 - enable descriptor heap for concrete shape (by default)
+        // flags = 2: MODE-2 - enable descriptor heap, with maximum address boundary setting
+        if (flags == -1) {
+#ifdef _GAMING_XBOX_SCARLETT
+            flags = 0;
+#else
+            flags = 1;
+#endif
+        }
         _USE_DESCRIPTOR_HEAP_ = flags;
 
-        device->Init();
+        if (defaultStream != nullptr)
+            throw std::runtime_error("Unexpected initialization of defaultStream.");
         defaultStream = (void*)1LU;
         defaultStream = dxStreamCreate();
     }
@@ -239,15 +338,9 @@ static std::unordered_map<size_t, std::vector<void*>> unused_buffers;
 static std::unordered_map<void*, size_t> buffer_slots;
 
 inline size_t compute_slotsize(size_t &value) {
-    static const int tab64[64] = {
-        63,  0, 58,  1, 59, 47, 53,  2,
-        60, 39, 48, 27, 54, 33, 42,  3,
-        61, 51, 37, 40, 49, 18, 28, 20,
-        55, 30, 34, 11, 43, 14, 22,  4,
-        62, 57, 46, 52, 38, 26, 32, 41,
-        50, 36, 17, 19, 29, 10, 13, 21,
-        56, 45, 25, 31, 35, 16,  9, 12,
-        44, 24, 15,  8, 23,  7,  6,  5 };
+    static const int tab32[32] = {
+      0,  9,  1, 10, 13, 21,  2, 29, 11, 14, 16, 18, 22, 25,  3, 30,
+      8, 12, 20, 28, 15, 17, 24,  7, 19, 27, 23,  6, 26,  5,  4, 31};
 
     value -= 1;
     value |= value >> 1;
@@ -257,7 +350,11 @@ inline size_t compute_slotsize(size_t &value) {
     value |= value >> 16;
     value |= value >> 32;
 
-    size_t slot_id = tab64[((uint64_t)((value - (value >> 1)) * 0x07EDD5E59A4E28C2LLU)) >> 58];
+    size_t slot_id;
+    if (value > (1LL << 30))
+        slot_id = 32 + (value - (1LL << 30)) / (1LL << 30);
+    else
+        slot_id = tab32[(uint32_t)(value * 0x07C4ACDD) >> 27];
     value += 1;
     return slot_id;
 }
@@ -266,7 +363,7 @@ void* dxMemAlloc(size_t bytes)
 {
     DEBUG_PRINT(__func__);
 
-    if (dxInit(0) != 0)
+    if (dxInit() != 0)
         return nullptr;
 
     auto slot_id = compute_slotsize(bytes);
@@ -305,38 +402,39 @@ int dxMemFree(void* virtualPtr)
     return 0;
 }
 
-void* dxShaderLoad_v2(const char* shader_src)
+static std::wstring default_compat = L"cs_6_0";
+
+int dxModuleSetCompat(const char* compat_name) {
+    if (*compat_name == '*') {
+#ifdef _GAMING_XBOX_SCARLETT
+        ::default_compat = L"cs_6_6";
+#else
+        ::default_compat = L"cs_6_5";
+#endif
+        return 0;
+    }
+
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    ::default_compat = converter.from_bytes(compat_name);
+    return 0;
+}
+
+void* dxShaderLoad_v3(const char* shader_src)
 {
     DEBUG_PRINT(__func__);
 
-    if (dxInit(0) != 0)
+    if (dxInit() != 0)
         return nullptr;
 
-    std::string source = shader_src;
-    const char proto[] = "file://";
-    if (strncmp(source.c_str(), proto, sizeof(proto) - 1) == 0) {
-        std::ifstream t(source.c_str() + sizeof(proto) - 1, ios_base::binary);
-        if (t.fail())
-            return nullptr;
-        std::string _((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        source = std::move(_);
-    }
+    auto source = shader_src;
 
     dx_shader_t* handle = new dx_shader_t;
     handle->source = source;
 
     std::string str_params;
     std::vector<std::string> arr_params, in_params, out_params;
-    bool legacy_format = (source.size() >= 3 && source.substr(0, 3) == "///");
 
-    if (legacy_format) {
-        str_params = get_between(source, "///", "\n");
-        arr_params = ssplit(str_params, ":", true);
-        assert(arr_params.size() == 2);
-        in_params = ssplit(arr_params[0], ",");
-        out_params = ssplit(arr_params[1], ",");
-    }
-    else {
+    {
         str_params = get_between(source, " -- ", "\n");
         arr_params = ssplit(str_params, " -> ", true);
         assert(arr_params.size() == 2);
@@ -348,15 +446,6 @@ void* dxShaderLoad_v2(const char* shader_src)
 
     auto parse_tensor = [&](const std::string & param) -> dx_tensor_t {
         dx_tensor_t ret;
-        if (legacy_format) {
-            auto parts = ssplit(param, "/");
-            assert(parts.size() == 3);
-            ret.dtype = parts[1];
-            ret.name = parts[2];
-            for (auto it : ssplit(parts[0], "-"))
-                ret.shape.push_back(std::atoi(it.c_str()));
-            return ret;
-        }
         auto parts = ssplit(param, ":");
         ret.name = parts[0];
         parts = ssplit(parts[1], "[");
@@ -371,12 +460,23 @@ void* dxShaderLoad_v2(const char* shader_src)
     for (int i = 0; i < out_params.size(); ++i)
         handle->outputs.push_back(parse_tensor(out_params[i]));
 
-    handle->block[0] = std::atoi(get_between(source, "// [thread_extent] blockIdx.x = ", "\n", "1").c_str());
-    handle->block[1] = std::atoi(get_between(source, "// [thread_extent] blockIdx.y = ", "\n", "1").c_str());
-    handle->block[2] = std::atoi(get_between(source, "// [thread_extent] blockIdx.z = ", "\n", "1").c_str());
-    handle->thread[0] = std::atoi(get_between(source, "// [thread_extent] threadIdx.x = ", "\n", "1").c_str());
-    handle->thread[1] = std::atoi(get_between(source, "// [thread_extent] threadIdx.y = ", "\n", "1").c_str());
-    handle->thread[2] = std::atoi(get_between(source, "// [thread_extent] threadIdx.z = ", "\n", "1").c_str());
+    auto sections = ssplit(get_between(source, "\n\n@@PACK:", "\n"), "@@", true); // bx, by, bz, vamap, binary
+
+    handle->block[0] = std::atoll(sections[0].c_str());
+    handle->block[1] = std::atoll(sections[1].c_str());
+    handle->block[2] = std::atoll(sections[2].c_str());
+    // fprintf(stderr, "%lld %lld %lld [%s]\n", handle->block[0], handle->block[1], handle->block[2], sections[2].c_str());
+
+    handle->cbuffer_sizes = {0};
+    auto cbuffs = ssplit(sections[3], ",");
+    for (auto it : cbuffs) {
+        auto type = ssplit(it, "/")[0];
+        if (type == "double" || type == "int64_t" || type == "llong")
+            handle->cbuffer_sizes.push_back(2);
+        else
+            handle->cbuffer_sizes.push_back(1);
+        handle->cbuffer_sizes[0] += handle->cbuffer_sizes.back();
+    }
 
     assert(INT64(handle->thread[0]) * handle->thread[1] * handle->thread[2] <= 1024);
 
@@ -387,36 +487,44 @@ void* dxShaderLoad_v2(const char* shader_src)
 
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC computeRootSignatureDesc;
     std::vector<CD3DX12_ROOT_PARAMETER1> computeRootParameters;
-    CD3DX12_DESCRIPTOR_RANGE1 ranges[2];
 
+    // Prepare Root
+    CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
     if (_USE_DESCRIPTOR_HEAP_)
     {
-        // Prepare Root
-        computeRootParameters.resize(1);
+        computeRootParameters.resize(2);
         // D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE is needed to disable unproper driver optimization.
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, (uint32_t)hd->inputs.size(), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, (uint32_t)hd->outputs.size(), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, (uint32_t)hd->inputs.size());
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, (uint32_t)hd->inputs.size() + hd->outputs.size(), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
+        computeRootParameters[0].InitAsDescriptorTable(1, ranges);
 
-        computeRootParameters[0].InitAsDescriptorTable(2, ranges);
-        computeRootSignatureDesc.Init_1_1((UINT)computeRootParameters.size(),
-            computeRootParameters.data());
+        if (hd->cbuffer_sizes[0] > 0) {
+            computeRootParameters[1].InitAsConstants(hd->cbuffer_sizes[0], 0);
+        } else {
+            computeRootParameters.pop_back();
+        }
     }
     else
     {
-        // Prepare Root
-        computeRootParameters.resize(hd->inputs.size() + hd->outputs.size());
+        computeRootParameters.resize(hd->inputs.size() + hd->outputs.size() + 1);
         for (int i = 0; i < hd->inputs.size(); ++i)
-            computeRootParameters[i].InitAsShaderResourceView(i);
+            computeRootParameters[i].InitAsUnorderedAccessView(i);
         for (int i = 0; i < hd->outputs.size(); ++i)
-            computeRootParameters[hd->inputs.size() + i].InitAsUnorderedAccessView(i);
-        computeRootSignatureDesc.Init_1_1((UINT)computeRootParameters.size(), computeRootParameters.data());
+            computeRootParameters[hd->inputs.size() + i].InitAsUnorderedAccessView(hd->inputs.size() + i);
+
+        if (hd->cbuffer_sizes[0] > 0)
+            computeRootParameters[hd->inputs.size() + hd->outputs.size()].InitAsConstants(hd->cbuffer_sizes[0], 0);
+        else
+            computeRootParameters.pop_back();
     }
+    computeRootSignatureDesc.Init_1_1((UINT)computeRootParameters.size(), computeRootParameters.data());
 
     ComPtr<ID3DBlob> signature;
     ComPtr<ID3DBlob> error;
 
     IFE(D3DX12SerializeVersionedRootSignature(&computeRootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_1, &signature, &error));
     IFE(device->pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_GRAPHICS_PPV_ARGS(m_computeRootSignature.ReleaseAndGetAddressOf())));
+
+    hd->bytecode = base64::decode(sections[4]);
     return handle;
 }
 
@@ -427,34 +535,93 @@ void dxShaderUnload(void* hShader)
     free(hShader);
 }
 
+#define ACCEPT_VERSION "@VER__1|"
+
+const char* dxModuleCompile(const char* module_src, size_t* out_size)
+{
+    DEBUG_PRINT(__func__);
+
+    // Ensure code instead of file path
+    std::string source = module_src;
+    const char proto[] = "file://";
+    if (strncmp(module_src, proto, sizeof(proto) - 1) == 0) {
+        std::ifstream t(module_src + sizeof(proto) - 1, ios_base::binary);
+        if (t.fail()) {
+            fprintf(stderr, "[Error] Failed to read module file: %s\n", module_src + sizeof(proto) - 1);
+            IFE(-1);
+        }
+        std::string _((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+        source = std::move(_);
+    }
+    module_src = source.c_str();
+
+    static std::string module_buff;
+    module_buff = source;
+    // Compile if code is not binary
+    if (*module_src != '@') {
+        source = ReplaceAll(source, "\r", ""), module_src = source.c_str();
+        module_buff = ACCEPT_VERSION;
+        int curr = 0, next = source.find("\n// --------", curr);
+        while (~next) {
+            next = source.find("\n\n", next + 1);
+            auto meta = source.substr(curr, next - curr);
+            module_buff += meta;
+            int tail = source.find("\n// --------", next);
+            auto body = source.substr(next, tail - next);
+
+            size_t bx = std::atoi(get_between(body, "// [thread_extent] blockIdx.x = ", "\n", "1").c_str());
+            size_t by = std::atoi(get_between(body, "// [thread_extent] blockIdx.y = ", "\n", "1").c_str());
+            size_t bz = std::atoi(get_between(body, "// [thread_extent] blockIdx.z = ", "\n", "1").c_str());
+            auto vamap = get_between(body, "// VAMAP: ", "\n", "");
+
+#ifdef _USE_DXC_
+            // Use cs_6_0 since dxc only supports cs_6_0 or higher shader models.
+            auto computeShader = antares::DXCompiler::Get()->Compile(body.data(), (uint32_t)body.size(), L"CSMain", default_compat.c_str());
+#else
+            ComPtr<ID3DBlob> computeShader = nullptr, errMsg = nullptr;
+            D3DCompile(source.data(), source.size(), NULL, NULL, NULL, "CSMain", "cs_5_1", 0, 0, &computeShader, &errMsg);
+#endif
+            if (computeShader == nullptr) {
+                auto fname = get_between(meta, "// LOCAL: ", " -- ");
+                fprintf(stderr, "[Error] Failed to compile shader function with name: %s\n", fname.c_str());
+                IFE(-1);
+            }
+
+            module_buff += "\n\n@@PACK:" + std::to_string(bx) + "@@" + std::to_string(by) + "@@" + std::to_string(bz) + "@@" + vamap + "@@";
+            module_buff += base64::encode((base64::BYTE*)(computeShader->GetBufferPointer()), computeShader->GetBufferSize());
+            module_buff += "\n";
+
+            curr = next = tail;
+        }
+    }
+
+    if (out_size != nullptr)
+        *out_size = module_buff.size();
+    return (char*)module_buff.data();
+}
+
 void* dxModuleLoad(const char* module_src)
 {
     DEBUG_PRINT(__func__);
 
-    std::string source;
-    const char proto[] = "file://";
-    if (strncmp(module_src, proto, sizeof(proto) - 1) == 0) {
-        std::ifstream t(module_src + sizeof(proto) - 1, ios_base::binary);
-        if (t.fail())
-            return nullptr;
-        std::string _((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        source = std::move(_);
-        if (source.find('\r') != std::string::npos)
-        {
-            std::string res = source;
-            std::string::iterator end_pos = std::remove(res.begin(), res.end(), '\r');
-            res.erase(end_pos, res.end());
-            source = std::move(res);
-        }
-        module_src = source.c_str();
+    std::string out_buffer = dxModuleCompile(module_src, nullptr);
+    module_src = out_buffer.data();
+    // fprintf(stderr, "%s\n", module_src);
+
+    if (strncmp(module_src, ACCEPT_VERSION, sizeof(ACCEPT_VERSION) - 1) != 0) {
+        fprintf(stderr, "[Error] The version of compiled module isn't compatible.\n");
+        IFE(-1);
     }
 
     auto& hShaderDict = *(new std::unordered_map<std::string, void*>);
 
+    int curr = out_buffer.find("-------\n"), next;
+    curr = out_buffer.find('\n', curr) + 1, next = out_buffer.find("\n\n", curr) + 2;
+
     auto kernel_slices = ssplit(module_src, "-------\n");
     for (int i = 1; i < kernel_slices.size(); ++i) {
         auto name = get_between(kernel_slices[i], "// LOCAL: ", " -- ");
-        hShaderDict[name] = dxShaderLoad_v2(kernel_slices[i].c_str());
+        hShaderDict[name] = dxShaderLoad_v3(kernel_slices[i].c_str());
     }
     return &hShaderDict;
 }
@@ -482,7 +649,7 @@ void* dxStreamCreate()
 {
     DEBUG_PRINT(__func__);
 
-    if (dxInit(0) != 0)
+    if (dxInit() != 0)
         return nullptr;
 
     dx_stream_t* pStream = new dx_stream_t;
@@ -637,6 +804,25 @@ int dxMemcpyHtoDAsync(void* dst, void* src, size_t bytes, void *hStream)
     return dxStreamSynchronize(hStream);
 }
 
+void* dxMemHostRegister(void* dptr, unsigned int subres) {
+    auto deviceIter = map_device_ptr(dptr);
+    UINT64 offset = static_cast<char*>(dptr) - static_cast<char*>(deviceIter->first);
+    auto src_buffer = (dx_buffer_t*)(deviceIter->second);
+    void* result = nullptr;
+    D3D12_RANGE range = { 0, static_cast<SIZE_T>(src_buffer->size) };
+    src_buffer->handle->Map(subres, &range, &result);
+    return ((char*)result) + offset;
+}
+
+void dxMemHostUnregister(void* dptr, unsigned int subres) {
+    auto deviceIter = map_device_ptr(dptr);
+    UINT64 offset = static_cast<char*>(dptr) - static_cast<char*>(deviceIter->first);
+    auto src_buffer = (dx_buffer_t*)(deviceIter->second);
+    void* result = nullptr;
+    D3D12_RANGE range = { 0, static_cast<SIZE_T>(src_buffer->size) };
+    src_buffer->handle->Unmap(subres, &range);
+}
+
 int dxMemcpyDtoHAsync(void* dst, void* src, size_t bytes, void* hStream)
 {
     DEBUG_PRINT(__func__);
@@ -677,15 +863,7 @@ int dxMemcpyDtoHAsync(void* dst, void* src, size_t bytes, void* hStream)
     return dxStreamSynchronize(hStream);
 }
 
-static std::wstring default_compat = L"cs_6_0";
-
-int dxModuleSetCompat(const char* compat_name) {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-    ::default_compat = converter.from_bytes(compat_name);
-    return 0;
-}
-
-int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, void* hStream)
+int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int blocks, void* hStream)
 {
     DEBUG_PRINT(__func__);
 
@@ -695,39 +873,26 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
     auto pStream = (dx_stream_t*)hStream;
     assert(pStream->state == dx_stream_t::State::INRECORD);
 
-    n -= hd->inputs.size() + hd->outputs.size();
-    n = max(0, n);
-    std::vector<size_t> pargs(n);
-    for (int i = 0, j = hd->inputs.size() + hd->outputs.size(); i < n; ++i, ++j)
-        pargs[i] = (size_t)buffers[j];
-    auto pso_iter = hd->pPSO_ht.find(pargs);
-    if (pso_iter == hd->pPSO_ht.end()) {
-        std::string src = hd->source;
-        for (int i = 0; i < n; ++i)
-            src = ReplaceAll(src, "@" + std::to_string(i) + "@", std::to_string(pargs[i]));
-        CD3DX12_SHADER_BYTECODE bytecode;
-#ifdef _USE_DXC_
-        // Use cs_6_0 since dxc only supports cs_6_0 or higher shader models.
-        auto computeShader = antares::DXCompiler::Get()->Compile(src.data(), (uint32_t)src.size(), L"CSMain", default_compat.c_str());
-        if (computeShader != nullptr)
-            bytecode = CD3DX12_SHADER_BYTECODE(computeShader->GetBufferPointer(), computeShader->GetBufferSize());
-#else
-        ComPtr<ID3DBlob> computeShader = nullptr, errMsg = nullptr;
-        if (D3DCompile(source.data(), source.size(), NULL, NULL, NULL, "CSMain", "cs_5_1", 0, 0, &computeShader, &errMsg) >= 0 && computeShader != nullptr)
-            bytecode = CD3DX12_SHADER_BYTECODE(computeShader.Get());
-#endif
-        if (computeShader == nullptr) {
-            //delete handle;
-            IFE(-1);
-        }
-
-        ComPtr<ID3D12PipelineState>& m_computeState = hd->pPSO_ht[pargs];
+    if (hd->pPSO_ht == nullptr) {
         D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc{};
+        CD3DX12_SHADER_BYTECODE bytecode(hd->bytecode.data(), hd->bytecode.size());
         computePsoDesc.CS = bytecode;
         computePsoDesc.pRootSignature = hd->pRootSignature.Get();
-        IFE(device->pDevice->CreateComputePipelineState(&computePsoDesc, IID_GRAPHICS_PPV_ARGS(m_computeState.ReleaseAndGetAddressOf())));
-        pso_iter = hd->pPSO_ht.find(pargs);
+        IFE(device->pDevice->CreateComputePipelineState(&computePsoDesc, IID_GRAPHICS_PPV_ARGS(hd->pPSO_ht.ReleaseAndGetAddressOf())));
     }
+
+    std::vector<int> pargs;
+    pargs.reserve(hd->cbuffer_sizes[0]);
+    for (int i = 1, j = hd->inputs.size() + hd->outputs.size(); i < hd->cbuffer_sizes.size(); ++i, ++j) {
+        auto regs = (int64_t)buffers[j];
+        if (hd->cbuffer_sizes[i] == 2) {
+            pargs.push_back(regs);
+            pargs.push_back(regs >> 32);
+        } else {
+            pargs.push_back(regs);
+        }
+    }
+    assert(pargs.size() == hd->cbuffer_sizes[0]);
 
     std::vector<void*> devicePtrs;
     std::vector<UINT64> offsets;
@@ -749,7 +914,7 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
     // Handle state transition.
     for (int i = 0; i < hd->inputs.size(); ++i)
     {
-        ((dx_buffer_t*)devicePtrs[i])->StateTransition(pStream->pCmdList.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        ((dx_buffer_t*)devicePtrs[i])->StateTransition(pStream->pCmdList.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     }
     for (int i = 0; i < hd->outputs.size(); ++i)
     {
@@ -757,8 +922,7 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
     }
 
     pStream->pCmdList->SetComputeRootSignature(hd->pRootSignature.Get());
-    pStream->pCmdList->SetPipelineState(pso_iter->second.Get());
-
+    pStream->pCmdList->SetPipelineState(hd->pPSO_ht.Get());
 
     if (_USE_DESCRIPTOR_HEAP_)
     {
@@ -774,17 +938,18 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
         // A higher performance solution may be pre-create it in CPU desc heaps and then copy the desc to GPU heaps in realtime.
         for (size_t i = 0; i < hd->inputs.size(); ++i)
         {
-            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-            ZeroMemory(&srvDesc, sizeof(srvDesc));
-            srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+            ZeroMemory(&uavDesc, sizeof(uavDesc));
+            uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
             assert(offsets[i] % (uint32_t)hd->inputs[i].TypeSize() == 0);
-            srvDesc.Buffer.FirstElement = offsets[i] / (uint32_t)hd->inputs[i].TypeSize();
-            srvDesc.Buffer.NumElements = (uint32_t)hd->inputs[i].NumElements();
-            srvDesc.Buffer.StructureByteStride = (uint32_t)hd->inputs[i].TypeSize();
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-            device->pDevice->CreateShaderResourceView(((dx_buffer_t*)devicePtrs[i])->handle.Get(), &srvDesc, handleCPU);
+            uavDesc.Buffer.FirstElement = offsets[i] / (uint32_t)hd->inputs[i].TypeSize();
+            if (_USE_DESCRIPTOR_HEAP_ != 2)
+                uavDesc.Buffer.NumElements = hd->inputs[i].NumElements();
+            else
+                uavDesc.Buffer.NumElements = ((dx_buffer_t*)devicePtrs[i])->size / (uint32_t)hd->inputs[i].TypeSize() - uavDesc.Buffer.FirstElement;
+            uavDesc.Buffer.StructureByteStride = (uint32_t)hd->inputs[i].TypeSize();
+            device->pDevice->CreateUnorderedAccessView(((dx_buffer_t*)devicePtrs[i])->handle.Get(), nullptr, &uavDesc, handleCPU);
             handleCPU.ptr += nStep;
         }
         for (size_t i = 0; i < hd->outputs.size(); ++i)
@@ -795,21 +960,27 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
             assert(offsets[hd->inputs.size() + i] % (uint32_t)hd->outputs[i].TypeSize() == 0);
             uavDesc.Buffer.FirstElement = offsets[hd->inputs.size() + i] / (uint32_t)hd->outputs[i].TypeSize();
-            uavDesc.Buffer.NumElements = (uint32_t)hd->outputs[i].NumElements();
+            if (_USE_DESCRIPTOR_HEAP_ != 2)
+                uavDesc.Buffer.NumElements = (uint32_t)hd->outputs[i].NumElements();
+            else
+                uavDesc.Buffer.NumElements = ((dx_buffer_t*)devicePtrs[hd->inputs.size() + i])->size / (uint32_t)hd->outputs[i].TypeSize() - uavDesc.Buffer.FirstElement;
             uavDesc.Buffer.StructureByteStride = (uint32_t)hd->outputs[i].TypeSize();
             device->pDevice->CreateUnorderedAccessView(((dx_buffer_t*)devicePtrs[hd->inputs.size() + i])->handle.Get(), nullptr, &uavDesc, handleCPU);
             handleCPU.ptr += nStep;
         }
-
         pStream->pCmdList->SetComputeRootDescriptorTable(0, handleGPU);
+        if (hd->cbuffer_sizes.size() > 1)
+            pStream->pCmdList->SetComputeRoot32BitConstants(1, pargs.size(), pargs.data(), 0);
     }
     else
     {
 
         for (uint32_t i = 0; i < hd->inputs.size(); ++i)
-            pStream->pCmdList->SetComputeRootShaderResourceView(i, ((dx_buffer_t*)devicePtrs[i])->handle.Get()->GetGPUVirtualAddress() + offsets[i]);
+            pStream->pCmdList->SetComputeRootUnorderedAccessView(i, ((dx_buffer_t*)devicePtrs[i])->handle.Get()->GetGPUVirtualAddress() + offsets[i]);
         for (uint32_t i = 0; i < hd->outputs.size(); ++i)
             pStream->pCmdList->SetComputeRootUnorderedAccessView((UINT)hd->inputs.size() + i, ((dx_buffer_t*)devicePtrs[hd->inputs.size() + i])->handle.Get()->GetGPUVirtualAddress() + offsets[hd->inputs.size() + i]);
+        if (hd->cbuffer_sizes.size() > 1)
+            pStream->pCmdList->SetComputeRoot32BitConstants(hd->inputs.size() + hd->outputs.size(), pargs.size(), pargs.data(), 0);
     }
 
 #ifdef _USE_GPU_TIMER_
@@ -826,14 +997,14 @@ int dxShaderLaunchAsyncExt(void* hShader, void** buffers, int n, int blocks, voi
 
 int dxShaderLaunchAsync(void* hShader, void** buffers, void* hStream)
 {
-    return dxShaderLaunchAsyncExt(hShader, buffers, 0, -1, hStream);
+    return dxShaderLaunchAsyncExt(hShader, buffers, -1, hStream);
 }
 
 void* dxEventCreate()
 {
     DEBUG_PRINT(__func__);
 
-    if (dxInit(0) != 0)
+    if (dxInit() != 0)
         return nullptr;
 
     // Return available query slots.

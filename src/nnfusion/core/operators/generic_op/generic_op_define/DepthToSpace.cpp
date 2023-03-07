@@ -52,7 +52,7 @@ REGISTER_OP(DepthToSpace)
         else
         {
             input0_c_str = op::create_code_from_template(
-                "HS * @block_size@ * @block_size@ + WS * @block_size@ + C",
+                "HS * @block_size@ * @c_stride@ + WS * @c_stride@ + C",
                 {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});
         }
         // auto input0_c_str = op::create_code_from_template("C * @c_stride@ * @block_size@ + HS * @c_stride@ + WS", {{"c_stride", to_string(c_stride)}, {"block_size", to_string(block_size)}});

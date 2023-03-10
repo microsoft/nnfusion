@@ -11,7 +11,7 @@ set(SRC
    layernorm_fusion_optimizer.cpp
    matmuladd_fusion_optimizer.cpp
    skiplayernorm_fusion_optimizer.cpp
-  
+   transposematmul_fusion_optimizer.cpp
 )
 
 add_library(nnfusion_engine_pass_graph_subgraph_fusion STATIC ${SRC})

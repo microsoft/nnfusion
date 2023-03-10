@@ -10,6 +10,7 @@
 #include "subgraph_fusion_optimizer/matmuladd_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/skiplayernorm_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/subgraph_fusion_optimizer.hpp"
+#include "subgraph_fusion_optimizer/transposematmul_fusion_optimizer.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;
@@ -23,6 +24,7 @@ DEFINE_bool(fembedlayernorm_fusion, false, "");
 DEFINE_bool(fskiplayernorm_fusion, false, "");
 DEFINE_bool(fgelu_fusion, false, "");
 DEFINE_bool(fmatmuladd_fusion, false, "");
+DEFINE_bool(ftransposematmul_fusion, false, "");
 
 bool SubGraphFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
@@ -40,6 +42,7 @@ bool SubGraphFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
         (FLAGS_fgelu_fusion || FLAGS_fenable_all_bert_fusion || FLAGS_fenable_all_subgraph_fusion);
     bool enable_matmuladd_fusion = (FLAGS_fmatmuladd_fusion || FLAGS_fenable_all_subgraph_fusion);
     bool enable_conv_elem_fusion = (FLAGS_fconv_elem_fusion || FLAGS_fenable_all_subgraph_fusion);
+    bool enable_transposematmul_fusion = FLAGS_ftransposematmul_fusion;
 
     if (enable_embedlayernorm_fusion || enable_skiplayernorm_fusion)
         enable_layernorm_fusion = true;
@@ -107,6 +110,19 @@ bool SubGraphFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
         else
         {
             NNFUSION_LOG(INFO) << "GeluFusion Optimization Done.";
+        }
+    }
+
+    if (enable_transposematmul_fusion)
+    {
+        auto optimizer = std::make_shared<TransposeMatMulFusionOptimizer>(graph);
+        if (!optimizer->Optimize())
+        {
+            NNFUSION_LOG(NNFUSION_WARNING) << "TransposeMatMulFusion Optimization failed.";
+        }
+        else
+        {
+            NNFUSION_LOG(INFO) << "TransposeMatMulFusion Optimization Done.";
         }
     }
 

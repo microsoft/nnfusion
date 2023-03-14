@@ -193,6 +193,10 @@ class IRNode(Node):
             result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
         return result
 
+    def infer_reverse(self, shape, rstep={}) -> Dict[int, List[int]]:
+        _, bound = self.ana.infer_reverse(self.reduce_op.name, [arith.ConstIntBound(0, val - 1) for val in shape])
+        return bound
+
     def infer_dependency_reduce_inputs(self, shape, rstep={}) -> Dict[str, List[int]]:
         if self.reduce_op is None:
             return {}
@@ -211,17 +215,17 @@ class IRNode(Node):
         shapes = self.ana.infer(shape, rstep)
 
         # compute cached stages
+        cached_tensor = set()
+        for op in self.compute_ops:
+            for tensor in op.input_tensors:
+                # detect broadcast pattern
+                if isinstance(tensor.op, tvm.te.PlaceholderOp) \
+                    and len(op.output(0).shape) > len(tensor.shape) \
+                    and np.prod(op.output(0).shape) > np.prod(tensor.shape):
+                    cached_tensor.add(tensor)
         if self.reduce_op is not None:
-            cached_tensor = self.reduce_op.input_tensors
-        else:
-            cached_tensor = set()
-            for op in self.compute_ops:
-                for tensor in op.input_tensors:
-                    # detect broadcast pattern
-                    if isinstance(tensor.op, tvm.te.PlaceholderOp) \
-                        and len(op.output(0).shape) > len(tensor.shape) \
-                        and np.prod(op.output(0).shape) > np.prod(tensor.shape):
-                        cached_tensor.add(tensor)
+            for tensor in self.reduce_op.input_tensors:
+                cached_tensor.add(tensor)
 
         for tensor in cached_tensor:
             if tensor in self.args:

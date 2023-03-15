@@ -109,8 +109,8 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
             B_stride = Stride(int(np.prod(config.tc_extra_conf.BS_shape[B_high_ax+1:])) + padB, B_high_ax)
 
         # dim_offset = 3 (block_fused, warp_fused, K_outer)
-        self.cooperative_fetch(AS, 3, A_stride, inner_step=layoutA.get_vectorize())
-        self.cooperative_fetch(BS, 3, B_stride, inner_step=layoutB.get_vectorize())
+        self.cooperative_fetch(AS, 3, A_stride, vector_load=layoutA.get_vectorize(), use_pragma_unroll=True)
+        self.cooperative_fetch(BS, 3, B_stride, vector_load=layoutB.get_vectorize(), use_pragma_unroll=True)
 
         # ------------------------ Schedule output fragment layout ------------------------
         if config.use_tc >= "80":

@@ -38,6 +38,9 @@
 #include "nnfusion/engine/pass/tensor/tensor_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_memory_layout.hpp"
 #include "nnfusion/frontend/util/parameter.hpp"
+#include "nnfusion/engine/pass/graph/dot_algo_select_pass.hpp"
+#include "nnfusion/engine/pass/graph/remove_redundant_ops.hpp"
+
 
 using namespace nnfusion;
 using namespace nnfusion::engine;
@@ -72,6 +75,9 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
     g_passes->push_back(make_shared<SplitSoftmaxPass>());
     g_passes->push_back(make_shared<TensorCoreRewritePass>());
+    // g_passes->push_back(make_shared<DotAlgoSelectPass>());
+    g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
+    g_passes->push_back(make_shared<RemoveRedundantOpsPass>());
     g_passes->push_back(make_shared<RegisterFusionPass>());
 
     // Kernel selection

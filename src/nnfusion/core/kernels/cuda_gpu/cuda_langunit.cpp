@@ -11,6 +11,8 @@ using namespace nnfusion::kernels;
 LU_DEFINE(header::cuda, "#include <cuda.h>\n#include <cuda_runtime.h>\n");
 LU_DEFINE(header::cublas, "#include <cublas_v2.h>\n");
 LU_DEFINE(header::cudnn, "#include <cudnn.h>\n");
+LU_DEFINE(header::welder_cuda, "#include \"welder_cuda.h\"\n");
+LU_DEFINE(header::welder_rocm, "#include \"welder_rocm.h\"\n");
 LU_DEFINE(header::superscaler, "#include \"superscaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
@@ -20,16 +22,6 @@ LU_DEFINE(header::cub, "#include <cub/cub.cuh>\n");
 LU_DEFINE(header::math_constants, "#include <math_constants.h>\n");
 LU_DEFINE(header::cutlass, "#include \"cutlass/cutlass.h\"\n");
 LU_DEFINE(header::kernel_forward, "#include \"kernel_forward.h\"\n");
-
-// Macro
-LU_DEFINE(macro::HALF_MAX,
-          R"(#ifndef __HALF_COMPARE_EX__
-#define __HALF_COMPARE_EX__
-inline __device__ half hmax(half x, half y) { return x > y ? x : y; }
-inline __device__ half hmin(half x, half y) { return x < y ? x : y; }
-#endif
-)");
-
 LU_DEFINE(macro::CUDA_HALF_OPERATIONS,
           R"(
 #define CUDA_UNSUPPORTED_HALF_MATH_BINARY(HALF_MATH_NAME, FP32_MATH_NAME) \
@@ -39,20 +31,17 @@ inline __device__ half HALF_MATH_NAME(half x, half y) {                   \
   float result = FP32_MATH_NAME(tmp_x, tmp_y);                            \
   return __float2half(result);                                            \
 }
-
 #define CUDA_UNSUPPORTED_HALF_MATH_UNARY(HALF_MATH_NAME, FP32_MATH_NAME) \
 inline __device__ half HALF_MATH_NAME(half x) {                          \
   float tmp_x = __half2float(x);                                         \
   float result = FP32_MATH_NAME(tmp_x);                                  \
   return __float2half(result);                                           \
 }
-
 CUDA_UNSUPPORTED_HALF_MATH_BINARY(hpow, powf)
 CUDA_UNSUPPORTED_HALF_MATH_UNARY(htanh, tanhf)
 CUDA_UNSUPPORTED_HALF_MATH_UNARY(htan, tanf)
 CUDA_UNSUPPORTED_HALF_MATH_UNARY(hatan, atanf)
 CUDA_UNSUPPORTED_HALF_MATH_UNARY(herf, erf)
-
 #undef CUDA_UNSUPPORTED_HALF_MATH_BINARY
 #undef CUDA_UNSUPPORTED_HALF_MATH_UNARY
 )");
@@ -70,7 +59,6 @@ inline __device__ longlong4 make_int8(int x0, int x1, int x2, int x3, int x4, in
   long long l3 = *(long long*)&i3;
   return make_longlong4(l0, l1, l2, l3);
 }
-
 inline __device__ __host__ unsigned
 __pack_half2(const half x, const half y) {
   unsigned v0 = *((unsigned short *)&x);
@@ -78,6 +66,15 @@ __pack_half2(const half x, const half y) {
   return (v1 << 16) | v0;
 }
 )");
+// Macro
+LU_DEFINE(macro::HALF_MAX,
+          R"(#ifndef __HALF_COMPARE_EX__
+#define __HALF_COMPARE_EX__
+inline __device__ half hmax(half x, half y) { return x > y ? x : y; }
+inline __device__ half hmin(half x, half y) { return x < y ? x : y; }
+#endif
+)");
+
 
 LU_DEFINE(
     macro::CUDA_SAFE_CALL_NO_THROW,

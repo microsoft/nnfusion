@@ -126,7 +126,7 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
-    projgen->lup_codegen->require(macro::TVM_PACK_VALUES);
+    projgen->lup_codegen->require(header::welder_rocm);
     projgen->lup_codegen->require(codegen_device_type());
     projgen->lup_codegen->require(codegen_workspace_size(tu));
 

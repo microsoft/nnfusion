@@ -13,6 +13,8 @@ namespace nnfusion
             LU_DECLARE(cuda);
             LU_DECLARE(cublas);
             LU_DECLARE(cudnn);
+            LU_DECLARE(welder_cuda);
+            LU_DECLARE(welder_rocm);
             LU_DECLARE(superscaler);
             LU_DECLARE(cupti);
             LU_DECLARE(cuda_prof_api);
@@ -27,6 +29,8 @@ namespace nnfusion
         namespace macro
         {
             LU_DECLARE(HALF_MAX);
+            LU_DECLARE(CUDA_HALF_OPERATIONS);
+            LU_DECLARE(TVM_PACK_VALUES);
             LU_DECLARE(CUDA_HALF_OPERATIONS);
             LU_DECLARE(TVM_PACK_VALUES);
             LU_DECLARE(CUDA_SAFE_CALL_NO_THROW);

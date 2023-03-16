@@ -17,8 +17,7 @@ DEFINE_bool(ftc_rewrite, true, "Enable expression rewrites for TensorCore e.g. I
 namespace
 {
     std::unordered_set<std::string> skip_ops = {};
-    void parse_skip_ops()
-    {
+    void parse_skip_ops() {
         stringstream ss(FLAGS_ffusion_skiplist);
         while (ss.good())
         {
@@ -29,27 +28,29 @@ namespace
     }
 }
 
-static bool rewrite_conv1d(std::shared_ptr<Graph>& graph, std::shared_ptr<GNode>& node)
-{
+static bool rewrite_conv1d(std::shared_ptr<Graph>& graph, std::shared_ptr<GNode>& node) {
     auto op = std::dynamic_pointer_cast<op::Convolution>(node->get_op_ptr());
     auto out_shape = node->get_output_shape(0);
     size_t N = out_shape[0], C = out_shape[1], L = out_shape[2];
     size_t in_channel = node->get_input_shape(0)[1];
-    if (C % 8 > 0 || N * L % 8 > 0 || N * C * L % 256 > 0 || in_channel % 16 > 0)
+    size_t KL = node->get_input_shape(1)[2];
+    if (C % 8 > 0 || N * L % 8 > 0 || N * C * L % 256 > 0 || in_channel * KL % 16 > 0)
         return false;
     op::OpConfig::any config, config2;
     config["N"] = N, config["C"] = C, config["L"] = L;
     config["S"] = op->get_window_movement_strides()[0];
     config["D"] = op->get_window_dilation_strides()[0];
     config["P"] = op->get_padding_below()[0];
+    config["KL"] = KL;
     auto op0 = make_shared<op::GenericOp>(node->get_name() + ".tc", "Conv1DImplicitGemm", config);
     auto op1 = make_shared<op::GenericOp>(node->get_name() + ".reshape", "CNW2NCW", config);
+    auto weight_reshape_op = make_shared<op::Reshape>(nnfusion::get_default_order(3), Shape{C, in_channel * KL});
     auto data = node->get_in_edge(0)->get_src();
     auto weight = node->get_in_edge(1)->get_src();
-    auto node0 = graph->add_node_and_edge(op0, {data, weight});
+    auto weight_reshape = graph->add_node_and_edge(weight_reshape_op, {weight});
+    auto node0 = graph->add_node_and_edge(op0, {data, weight_reshape});
     auto node1 = graph->add_node_and_edge(op1, {node0});
-    for (auto& edge : node->get_out_edges())
-    {
+    for (auto& edge : node->get_out_edges()) {
         if (edge->is_control_edge())
             graph->add_control_edge(node1, edge->get_dst());
         else
@@ -65,27 +66,24 @@ bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
     parse_skip_ops();
     if (FLAGS_ftune_output_file == "" || !FLAGS_ftc_rewrite)
         return true;
-    for (auto node : graph->get_ordered_ops())
-    {
-        if (node->get_op_type() == "Convolution" && node->get_element_type() == element::f16)
-        {
-            if (skip_ops.count("Convolution"))
-                continue;
+    for (auto node : graph->get_ordered_ops()) {
+        if (node->get_op_type() == "Convolution" && node->get_element_type() == element::f16) {
+            if (skip_ops.count("Convolution")) continue;
             auto op = std::dynamic_pointer_cast<op::Convolution>(node->get_op_ptr());
-            if (op->get_data_format() == "NCW")
-            {
+            if (op->get_data_format() == "NCW") {
                 rewrite_conv1d(graph, node);
                 continue;
             }
-            if (op->get_data_format() != "NCHW")
-                continue;
+            if (op->get_data_format() != "NCHW") continue;
             auto out_shape = node->get_output_shape(0);
             size_t N = out_shape[0], C = out_shape[1], H = out_shape[2], W = out_shape[2];
             size_t in_channel = node->get_input_shape(0)[1];
-            if (C % 8 > 0 || N * H * W % 8 > 0 || N * C * H * W % 256 > 0 || in_channel % 16 > 0)
+            size_t KH = node->get_input_shape(1)[2], KW = node->get_input_shape(1)[3];
+            if (C % 8 > 0 || N * H * W % 8 > 0 || N * C * H * W % 256 > 0 || in_channel * KW * KH % 16 > 0)
                 continue;
             op::OpConfig::any config, config2;
             config["N"] = N, config["C"] = C, config["H"] = H, config["W"] = W;
+            config["KH"] = KH, config["KW"] = KW;
             const auto& stride_h = op->get_window_movement_strides()[0];
             const auto& stride_w = op->get_window_movement_strides()[1];
             const auto& padding_below = op->get_padding_below();
@@ -101,14 +99,15 @@ bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
             config["D"] = dilation_h;
             config["P"] = padding_h;
             auto op0 = make_shared<op::GenericOp>(node->get_name() + ".tc", "ImplicitGemm", config);
-            auto op1 =
-                make_shared<op::GenericOp>(node->get_name() + ".reshape", "CNHW2NCHW", config);
+            auto weight_reshape_op = make_shared<op::Reshape>(nnfusion::get_default_order(4),
+                Shape{C, in_channel * KH * KW});
+            auto op1 = make_shared<op::GenericOp>(node->get_name() + ".reshape", "CNHW2NCHW", config);
             auto data = node->get_in_edge(0)->get_src();
             auto weight = node->get_in_edge(1)->get_src();
-            auto node0 = graph->add_node_and_edge(op0, {data, weight});
+            auto weight_reshape = graph->add_node_and_edge(weight_reshape_op, {weight});
+            auto node0 = graph->add_node_and_edge(op0, {data, weight_reshape});
             auto node1 = graph->add_node_and_edge(op1, {node0});
-            for (auto& edge : node->get_out_edges())
-            {
+            for (auto& edge : node->get_out_edges()) {
                 if (edge->is_control_edge())
                     graph->add_control_edge(node1, edge->get_dst());
                 else
@@ -116,10 +115,8 @@ bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
             }
             graph->remove_node(node);
         }
-        else if (node->get_op_type() == "Dot" && node->get_element_type() == element::f16)
-        {
-            if (skip_ops.count("Dot"))
-                continue;
+        else if (node->get_op_type() == "Dot" && node->get_element_type() == element::f16) {
+            if (skip_ops.count("Dot")) continue;
             auto op = std::dynamic_pointer_cast<op::Dot>(node->get_op_ptr());
             auto out_shape = node->get_output_shape(0);
             auto input0_shape = node->get_input_shape(0);
@@ -128,21 +125,17 @@ bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
             size_t K = op->get_transpose_A() ? input0_shape[dim - 2] : input0_shape[dim - 1];
             size_t N = out_shape[dim - 1];
             size_t M = 1;
-            for (int i = 0; i <= dim - 2; i++)
-                M *= out_shape[i];
-            if (dim == 2 || M == out_shape[dim - 2] || op->get_transpose_A())
-                continue; // not necessary
+            for (int i = 0; i <= dim - 2; i++) M *= out_shape[i];
+            if (dim == 2 || M == out_shape[dim - 2] || op->get_transpose_A()) continue; // not necessary
             if (N % 8 > 0 || M % 8 > 0 || N * M % 256 > 0 || K % 16 > 0)
                 continue;
-            auto op0 =
-                make_shared<op::Reshape>(nnfusion::get_default_order(input0_shape), Shape{M, K});
+            auto op0 = make_shared<op::Reshape>(nnfusion::get_default_order(input0_shape), Shape{M, K});
             auto op1 = make_shared<op::Dot>();
             auto op2 = make_shared<op::Reshape>(nnfusion::get_default_order(2), out_shape);
             auto node0 = graph->add_node_and_edge(op0, {node->get_in_edge(0)->get_src()});
             auto node1 = graph->add_node_and_edge(op1, {node0, node->get_in_edge(1)->get_src()});
             auto node2 = graph->add_node_and_edge(op2, {node1});
-            for (auto& edge : node->get_out_edges())
-            {
+            for (auto& edge : node->get_out_edges()) {
                 if (edge->is_control_edge())
                     graph->add_control_edge(node2, edge->get_dst());
                 else

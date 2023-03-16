@@ -311,6 +311,7 @@ namespace nnfusion
                         }
                         nnfusion::AxisVector axis_order(epi_gnode->get_shape().size());
                         std::iota(axis_order.begin(), axis_order.end(), 0);
+                        NNFUSION_LOG(INFO) << axis_order;
                         auto reshape_op =
                             std::make_shared<op::Reshape>(axis_order, result_shape_with_keep);
                         reshape_op->set_name(node_proto.output(0));

@@ -25,7 +25,9 @@ set(SRC
     batchnorm_inference_folding_pass.cpp
     autodiff_pass.cpp
     dot_transpose_pass.cpp
+    dot_algo_select_pass.cpp
     reduce_fusion_pass.cpp
+    remove_redundant_ops.cpp
     register_fusion_pass.cpp
     split_softmax_pass.cpp
     superscaler_dataparallelism_pass.cpp

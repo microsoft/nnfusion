@@ -77,6 +77,7 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     copy_templates.emplace_back("image_tests/image_test.cpp", "./image_tests/image_test.cpp");
     copy_templates.emplace_back("image_tests/CMakeLists_cuda.txt", "./image_tests/CMakeLists.txt");
+    copy_templates.emplace_back("welder/welder_cuda.h", "./welder_cuda.h");
     //copy folder
     auto& copy_folder = projgen->lup_codegen->copy_folder;
     char exe_path[PATH_MAX];
@@ -249,8 +250,7 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
     if (!FLAGS_fcodegen_pybind)
         projgen->lup_codegen->require(macro::HALF_MAX);
-    projgen->lup_codegen->require(macro::CUDA_HALF_OPERATIONS);
-    projgen->lup_codegen->require(macro::TVM_PACK_VALUES);
+    projgen->lup_codegen->require(header::welder_cuda);
     projgen->lup_codegen->require(codegen_device_type());
     projgen->lup_codegen->require(codegen_workspace_size(tu));
     return;

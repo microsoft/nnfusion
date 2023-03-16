@@ -30,6 +30,7 @@ Reshape::Reshape(const nnfusion::AxisVector& input_order, const nnfusion::Shape&
     , m_input_order(input_order)
     , m_output_shape(output_shape)
 {
+    NNFUSION_CHECK(!input_order.empty()) << output_shape;
 }
 
 void Reshape::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)

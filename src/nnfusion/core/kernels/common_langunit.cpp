@@ -32,4 +32,16 @@ LU_DEFINE(macro::NNFUSION_DEBUG, "#define NNFUSION_DEBUG\n");
 LU_DEFINE(macro::MIN, "#define MIN(a,b) ((a)>(b)?(b):(a))\n");
 
 // Declaration
-LU_DEFINE(declaration::typedef_int, "#include <stdint.h>\n");
+// LU_DEFINE(declaration::typedef_int, "#include <stdint.h>\n");
+LU_DEFINE(declaration::typedef_int,
+          R"(
+typedef signed char int8_t;
+typedef signed short int16_t;
+typedef signed int int32_t;
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long int uint64_t;
+typedef signed long int int64_t;
+#define __int8_t_defined
+)");

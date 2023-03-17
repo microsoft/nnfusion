@@ -54,6 +54,7 @@ namespace nnfusion
                             input_gnode->get_element_type(),
                             nnfusion::Shape{},
                             std::vector<std::string>{std::to_string(min_value)});
+                        min_value_op->set_name(node_proto.name() + "_min");
                         min_value_gnode =
                             m_graph->add_node_and_edge(min_value_op, graph::GNodeVector({}));
                     }
@@ -80,6 +81,7 @@ namespace nnfusion
                             input_gnode->get_element_type(),
                             nnfusion::Shape{},
                             std::vector<std::string>{std::to_string(max_value)});
+                        max_value_op->set_name(node_proto.name() + "_max");
                         max_value_gnode =
                             m_graph->add_node_and_edge(max_value_op, graph::GNodeVector({}));
                     }

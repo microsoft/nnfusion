@@ -46,7 +46,7 @@ namespace nnfusion
                         std::make_shared<op::Constant>(
                             element::i64, Shape{}, std::vector<int64_t>{tensor_size}),
                         graph::GNodeVector({}));
-
+                    size_gnode->set_name(node_proto.name());
                     return {{node_proto.output(0), size_gnode}};
                 }
             } // namespace set_1

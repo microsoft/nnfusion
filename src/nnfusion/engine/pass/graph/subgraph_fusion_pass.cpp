@@ -8,6 +8,7 @@
 #include "subgraph_fusion_optimizer/gelu_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/layernorm_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/matmuladd_fusion_optimizer.hpp"
+#include "subgraph_fusion_optimizer/mem_eff_attn_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/skiplayernorm_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/subgraph_fusion_optimizer.hpp"
 #include "subgraph_fusion_optimizer/transposematmul_fusion_optimizer.hpp"
@@ -25,6 +26,7 @@ DEFINE_bool(fskiplayernorm_fusion, false, "");
 DEFINE_bool(fgelu_fusion, false, "");
 DEFINE_bool(fmatmuladd_fusion, false, "");
 DEFINE_bool(ftransposematmul_fusion, false, "");
+DEFINE_bool(fmem_eff_attn_fusion, false, "");
 
 bool SubGraphFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
@@ -71,6 +73,19 @@ bool SubGraphFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
         else
         {
             NNFUSION_LOG(INFO) << "AttentionFusion Optimization Done.";
+        }
+    }
+
+    if (FLAGS_fmem_eff_attn_fusion)
+    {
+        auto optimizer = std::make_shared<MemEffAttnFusionOptimizer>(graph);
+        if (!optimizer->Optimize())
+        {
+            NNFUSION_LOG(NNFUSION_WARNING) << "MemEffAttentionFusion Optimization failed.";
+        }
+        else
+        {
+            NNFUSION_LOG(INFO) << "MemEffAttentionFusion Optimization Done.";
         }
     }
 

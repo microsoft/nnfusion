@@ -82,6 +82,34 @@ namespace nnfusion
                     return ret;
                 }
 
+                NamedNodeVector TranslatePowerOp(const onnx::NodeProto& node_proto,
+                                                 const NodeMap& all_ng_nodes,
+                                                 std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto lhs_index = GetInputIndex(all_ng_nodes, node_proto, 0);
+                    auto rhs_index = GetInputIndex(all_ng_nodes, node_proto, 1);
+                    if (rhs_index.gnode->get_op_type() == "Constant")
+                    {
+                        auto rhs =
+                            dynamic_pointer_cast<op::Constant>(rhs_index.gnode->get_op_ptr());
+                        float power;
+                        if (rhs->get_type() == element::f16)
+                            power = rhs->get_float16_vector()[0];
+                        else
+                            power = rhs->get_vector<float>()[0];
+                        // special opt for power of 2 case
+                        if (power == 2)
+                        {
+                            auto op = std::make_shared<op::Multiply>();
+                            op->set_name(node_proto.output(0));
+                            auto gnode = m_graph->add_node_and_edge(op, {lhs_index, lhs_index});
+                            NamedNodeVector ret{{node_proto.output(0), gnode}};
+                            return ret;
+                        }
+                    }
+                    return TranslateBinaryOp<op::Power>(node_proto, all_ng_nodes, m_graph);
+                }
+
             } // namespace set_1
             namespace set_6
             {

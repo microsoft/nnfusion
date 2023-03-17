@@ -233,6 +233,101 @@ namespace nnfusion
 
             } // namespace set_13
 
+            namespace set_18
+            {
+                // Opset18 has move the axes to input
+                template <typename PrologueOp, typename ReduceOp, typename EpilogueOp>
+                NamedNodeVector TranslateReduceOp(const onnx::NodeProto& node_proto,
+                                                  const NodeMap& all_ng_nodes,
+                                                  std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indexs = GetAllInputIndex(all_ng_nodes, node_proto);
+                    NNFUSION_CHECK(input_indexs.size() > 0);
+                    auto input_index = input_indexs[0];
+                    auto input_shape = input_index.get_shape();
+
+                    Node node(node_proto);
+                    auto keepdims = node.get_attribute_value<int64>("keepdims", 1);
+
+                    std::vector<int64> axes;
+                    if (input_indexs.size() == 2)
+                    {
+                        GetValueFromNGraphOp<int64>(input_indexs[1].gnode, &axes);
+                    }
+
+                    if (axes.empty())
+                    {
+                        // no axes input
+                        auto noop_with_empty_axes =
+                            node.get_attribute_value<int64>("noop_with_empty_axes", 0);
+                        // When this attribute is true, the output tensor would be equivalent
+                        // to input tensor.
+                        if (noop_with_empty_axes)
+                        {
+                            NamedNodeVector ret;
+                            ret.push_back({node_proto.output(0), input_index.gnode});
+                            return ret;
+                        }
+                    }
+
+                    nnfusion::AxisSet reduction_axes;
+                    {
+                        if (axes.empty())
+                        {
+                            auto axes_uint = get_default_order(input_shape);
+                            std::copy(axes_uint.begin(),
+                                      axes_uint.end(),
+                                      std::inserter(reduction_axes, reduction_axes.end()));
+                        }
+                        else
+                        {
+                            for (auto axis : axes)
+                            {
+                                reduction_axes.insert(axis += axis < 0 ? input_shape.size() : 0);
+                            }
+                        }
+                    }
+
+                    // Add prologue op
+                    auto pro_gnode = set_1::AddPrologueOrEpilogueOp<PrologueOp>(
+                        m_graph, input_index.gnode, reduction_axes);
+
+                    auto sum_op = std::make_shared<ReduceOp>(reduction_axes);
+                    auto sum_gnode = m_graph->add_node_and_edge(sum_op, {pro_gnode});
+
+                    // Add epilogue op
+                    auto epi_gnode = set_1::AddPrologueOrEpilogueOp<EpilogueOp>(
+                        m_graph, sum_gnode, reduction_axes);
+
+                    NamedNodeVector ret;
+                    if (keepdims)
+                    {
+                        nnfusion::Shape result_shape_with_keep(input_shape.size());
+
+                        for (size_t i = 0; i < input_shape.size(); i++)
+                        {
+                            result_shape_with_keep[i] =
+                                reduction_axes.count(i) == 0 ? input_shape[i] : 1;
+                        }
+                        nnfusion::AxisVector axis_order(epi_gnode->get_shape().size());
+                        std::iota(axis_order.begin(), axis_order.end(), 0);
+                        auto reshape_op =
+                            std::make_shared<op::Reshape>(axis_order, result_shape_with_keep);
+                        reshape_op->set_name(node_proto.output(0));
+                        auto reshape_gnode = m_graph->add_node_and_edge(reshape_op, {epi_gnode});
+                        ret.push_back({node_proto.output(0), reshape_gnode});
+                    }
+                    else
+                    {
+                        epi_gnode->get_op_ptr()->set_name(node_proto.output(0));
+                        ret.push_back({node_proto.output(0), epi_gnode});
+                    }
+
+                    return ret;
+                }
+
+            } // namespace set_18
+
         } // namespace onnx_import
 
     } // namespace frontend

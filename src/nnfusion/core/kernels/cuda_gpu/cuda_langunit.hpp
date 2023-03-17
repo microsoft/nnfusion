@@ -17,13 +17,18 @@ namespace nnfusion
             LU_DECLARE(cupti);
             LU_DECLARE(cuda_prof_api);
             LU_DECLARE(cuda_fp16);
+            LU_DECLARE(cuda_mma);
             LU_DECLARE(cub);
             LU_DECLARE(math_constants);
+            LU_DECLARE(cutlass);
+            LU_DECLARE(kernel_forward);
         } // namespace header
 
         namespace macro
         {
             LU_DECLARE(HALF_MAX);
+            LU_DECLARE(CUDA_HALF_OPERATIONS);
+            LU_DECLARE(TVM_PACK_VALUES);
             LU_DECLARE(CUDA_SAFE_CALL_NO_THROW);
             LU_DECLARE(CUDA_SAFE_CALL);
             LU_DECLARE(CUDNN_SAFE_CALL_NO_THROW);
@@ -54,6 +59,7 @@ namespace nnfusion
             LU_DECLARE(math_Gelu);
             LU_DECLARE(ort_softmax);
             LU_DECLARE(warp);
+            LU_DECLARE(mem_eff_attn);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

@@ -78,6 +78,10 @@ namespace nnfusion
 
                     auto axes = node.get_attribute_value<std::vector<int64_t>>(
                         "axes", get_monotonic_range<int64_t>(data_shape.size()));
+                    for (auto i = 0; i < axes.size(); i++)
+                    {
+                        axes[i] += axes[i] < 0 ? data.get_shape().size() : 0;
+                    }
 
                     Shape lower_bounds(data_shape.size());
                     Shape upper_bounds = data_shape;
@@ -126,6 +130,10 @@ namespace nnfusion
                     if (inputs.size() > 3)
                     {
                         NNFUSION_CHECK(GetValueFromNGraphOp(inputs[3].gnode, &axes));
+                        for (auto i = 0; i < axes.size(); i++)
+                        {
+                            axes[i] += axes[i] < 0 ? data.get_shape().size() : 0;
+                        }
                     }
                     else
                     {

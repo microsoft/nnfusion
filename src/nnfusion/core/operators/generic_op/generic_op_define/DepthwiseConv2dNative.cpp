@@ -180,3 +180,74 @@ REGISTER_OP(DepthwiseConv2dNative)
 
         op->set_shared_memory(shared_memory);
     });
+
+REGISTER_OP(DepthwiseConv1dNative)
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        NNFUSION_CHECK(gnode->get_input_size() == 2);
+        auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+
+        // [ batch, dim, length ]
+        const Shape& input_shape = gnode->get_input_shape(0);
+
+        // [in_depth, depth_multiplier, filter_length]
+        const Shape& filter_shape = gnode->get_input_shape(1);
+
+        const int64_t in_depth = input_shape[1];
+        NNFUSION_CHECK(in_depth == filter_shape[0]);
+        const int64_t depth_multiplier = filter_shape[1];
+        const int64_t out_depth = in_depth * depth_multiplier;
+        const int64_t input_length = input_shape[2];
+        const int64_t filter_length = filter_shape[2];
+        const int64_t batch = input_shape[0];
+        auto padding_before = op->localOpConfig.getRoot()["padding_before"];
+        auto padding_after = op->localOpConfig.getRoot()["padding_after"];
+        const int64_t padding = padding_before[0];
+        const int64_t dilation = op->localOpConfig.getRoot()["dilations"][0];
+
+        std::vector<int64_t> strides = op->localOpConfig.getRoot()["strides"];
+        NNFUSION_CHECK(strides.size() == 1);
+        const int64_t out_length =
+            (int64_t)((float)(input_length + 2 * padding - dilation * (filter_length - 1) - 1) /
+                          (float)strides[0] +
+                      1);
+
+        Shape output_shape(Shape({(size_t)batch, (size_t)out_depth, (size_t)out_length}));
+
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        auto ir_template =
+            R"( @output0@@output0_layout@ +=! @input0@@input0_layout@@pad_cond@ * @input1@@input1_layout@ where LO in @length@, KL in @kernel_l@; )";
+
+        auto _op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(_op) << "Node type is not " << curr->get_op_ptr()->get_op_type();
+
+        const auto& dilation = int64_t(_op->localOpConfig.getRoot()["dilations"][0]);
+        const auto& stride = int64_t(_op->localOpConfig.getRoot()["strides"][0]);
+        const auto& padding = int64_t(_op->localOpConfig.getRoot()["padding_before"][0]);
+        const auto& kernel_size = curr->get_input_shape(1)[2];
+        const auto& in_shape = curr->get_input_shape(0);
+        const auto& out_shape = curr->get_output_shape(0);
+        NNFUSION_CHECK(dilation == 1) << "Not support other dilation yet.";
+        nnfusion::op::OpConfig::any config;
+        config["input1_layout"] = "[C, 0, KL]";
+        config["output0_layout"] = "[N, C, LO]";
+        config["length"] = out_shape[2];
+        config["in_length"] = in_shape[2];
+        config["pad_0"] = to_string(padding);
+        config["kernel_l"] = to_string(kernel_size);
+        std::string LO = "-@pad_0@ + KL + LO * " + to_string(stride);
+        std::string shape_template = "[N, C, " + LO + "]";
+        config["input0_layout"] = op::create_code_from_template(shape_template, config);
+
+        std::string pad_cond;
+        if (padding)
+        {
+            auto pad_template =
+                ".when([" + LO + " >= 0, " + LO +
+                " < @in_length@], const(0.0).cast(@input0@@input0_layout@.dtype()))";
+            pad_cond = op::create_code_from_template(pad_template, config);
+        }
+        config["pad_cond"] = pad_cond;
+        return op::create_code_from_template(ir_template, config);
+    });

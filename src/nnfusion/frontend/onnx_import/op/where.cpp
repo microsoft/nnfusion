@@ -21,6 +21,7 @@
 
 #include "where.hpp"
 #include "nnfusion/core/graph/util/autobroadcast.hpp"
+#include "nnfusion/core/graph/util/autobroadcast.hpp"
 #include "nnfusion/core/graph/util/numpy_transpose.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
@@ -49,7 +50,11 @@ namespace nnfusion
 
                     auto node_name = node_proto.output(0);
                     nnfusion::op::OpConfig::any op_config;
-
+                    if (x_gnode.get_shape() != y_gnode.get_shape())
+                    {
+                        std::tie(x_gnode, y_gnode) =
+                            graph::numpy_broadcast(std::make_pair(x_gnode, y_gnode), m_graph);
+                    }
                     auto where_op = std::make_shared<op::GenericOp>(node_name, "Select", op_config);
                     auto where_gnode =
                         m_graph->add_node_and_edge(where_op, {cond_gnode, x_gnode, y_gnode});

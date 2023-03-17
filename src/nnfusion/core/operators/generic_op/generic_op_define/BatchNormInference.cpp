@@ -22,8 +22,10 @@ REGISTER_OP(BatchNormInference)
         NNFUSION_CHECK(input_shape_0[0] == input_shape_2[1]);
 
         auto op = static_pointer_cast<nnfusion::op::BatchNormInference>(curr->get_op_ptr());
-        auto epsilon = std::to_string(op->get_eps_value());
-
+        string dtype;
+        NNFUSION_CHECK(
+            element::Type::nnfusion_element_type_to_dtype_string(curr->get_element_type(), dtype));
+        auto epsilon = "const(" + std::to_string(op->get_eps_value()) + ").cast(`" + dtype + "`)";
         auto expression =
             "@output0@[N, C, H, W] = @input1@[C] + @input0@[C] * (@input2@[N, C, H, W] - "
             "@input3@[C]) / (" +

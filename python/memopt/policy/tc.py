@@ -108,7 +108,7 @@ class TCPolicy(DefaultPolicy):
         tensor_strides = {}
         # when connected to shared input, should use full stride without rstep
         for i, (stride, stride_full) in enumerate(zip([AS_stride, BS_stride], [A_stride, B_stride])):
-            if use_layout[i]: continue
+            if td.use_cutlass_mma[node] and use_layout[i]: continue
             name = node.reduce_op.input_tensors[i].name
             tensor_strides[name] = stride
 

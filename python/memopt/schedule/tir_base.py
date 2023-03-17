@@ -41,6 +41,7 @@ class TIRSchedulerBase(SchedulerBase):
             ax, tv = self.sche.split(ax, factors=[None, vector_load])
             self.sche.vectorize(tv)
             self.sche.annotate(tv, "check_vector_load", True)
+            self.sche.annotate(tv, "remove_vector_condition", True)
         if self.block_size[0] > 1:
             ax, tx = self.sche.split(ax, factors=[None, self.block_size[0]])
             self.sche.bind(tx, "threadIdx.x")
@@ -65,6 +66,7 @@ class TIRSchedulerBase(SchedulerBase):
         self.passes.append(RewriteInputPass(self.shared_inputs, False).get_pass())
         self.passes.append(FixCudaCastPass().get_pass())
         self.passes.append(CheckVectorLoadPass().get_pass())
+        self.passes.append(RemoveConditionInVectorizePass().get_pass())
 
     def detect_op_inputs(self, consumer_ops):
         op_input_map = {op : set() for op in consumer_ops}

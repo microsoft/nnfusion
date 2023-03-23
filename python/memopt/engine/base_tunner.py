@@ -203,6 +203,7 @@ class Tunner(object):
         policy_list = self.get_policy_list()
         configs = self.generate_configs(policy_list, output_nodes)
         if len(configs) == 0:
+            self.set_cache(signature, None)
             return None
         compile_results = self.generate_code(output_nodes, configs, kernel_name)
         for cpresult in compile_results:

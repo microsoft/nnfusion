@@ -142,7 +142,7 @@ class IRNode(Node):
                     input_args.append(arg)
                 else:
                     output_args.append(arg)
-        self._output_names = [arg.name for arg in output_args]
+
         self.ana = get_analyzer_by_te(input_args + output_args)
         if len(input_args) < len(self.inputs):
             # some placeholders are extra info that might not be used in tensor computation
@@ -176,11 +176,22 @@ class IRNode(Node):
             self.reduce_op = None
             self.raxis = {}
 
-        self.saxis = {}
-        for axis in output_args[0].op.axis:
-            assert(str(axis.var.name) not in self.saxis), axis.var.name
-            assert(str(axis.var.name) not in self.raxis), axis.var.name
-            self.saxis[str(axis.var.name)] = int(axis.dom.extent)
+        # topo output op names
+        self._output_names = set()
+        for op in self.compute_ops:
+            self._output_names.add(op.name)
+            for t in op.input_tensors:
+                if t.op.name in self._output_names:
+                    self._output_names.remove(t.op.name)
+
+        self.schedule_stage = self.args[-1].op
+
+    @functools.lru_cache()
+    def get_space_dim(self):
+        dim_size = []
+        for axis in self.schedule_stage.axis:
+            dim_size.append(int(axis.dom.extent))
+        return dim_size
 
     def infer_dependency(self, shape, rstep={}) -> Dict[int, List[int]]:
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
@@ -192,10 +203,6 @@ class IRNode(Node):
             # should not exceed original shape
             result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
         return result
-
-    def infer_reverse(self, shape, rstep={}) -> Dict[int, List[int]]:
-        _, bound = self.ana.infer_reverse(self.reduce_op.name, [arith.ConstIntBound(0, val - 1) for val in shape])
-        return bound
 
     def infer_dependency_reduce_inputs(self, shape, rstep={}) -> Dict[str, List[int]]:
         if self.reduce_op is None:
@@ -248,15 +255,16 @@ class IRNode(Node):
         assert self.get_tag("tensorCoreConfig")
         C_ax_m, C_ax_n = self.get_tag("tensorCoreConfig")
         wmma_m, wmma_n, wmma_k = [16, 16, 16] # just for testing, any number is ok
-        CL_shape = [1 for _ in self.saxis]
+        CL_shape = [1] * len(self.get_space_dim())
         CL_shape[C_ax_m] = wmma_m
         CL_shape[C_ax_n] = wmma_n
-
         shapes = self.infer_dependency_reduce_inputs(CL_shape, {x : 1 for x in self.raxis})
         A_deps, B_deps = shapes.values()
         A_ax_m = A_deps.index(wmma_m)
         B_ax_n = B_deps.index(wmma_n)
-        shapes = self.infer_dependency_reduce_inputs([1 for _ in self.saxis], {x : wmma_k for x in self.raxis})
+
+        CL_shape = [1] * len(self.get_space_dim())
+        shapes = self.infer_dependency_reduce_inputs(CL_shape, {x : wmma_k for x in self.raxis})
         A_deps, B_deps = shapes.values()
         A_ax_k = A_deps.index(wmma_k)
         B_ax_k = B_deps.index(wmma_k)
@@ -271,7 +279,7 @@ class IRNode(Node):
             grid_size *= num_block
             space_expr.append(block_expr % num_block * tile_len)
             block_expr = block_expr // num_block
-        output_exprs = {name : reversed(space_expr) for name in self._output_names}
+        output_exprs = {name : list(reversed(space_expr)) for name in self._output_names}
         input_exprs = self.ana.get_input_exprs(output_exprs)
         result = {}
         ana = arith.Analyzer()

@@ -21,7 +21,15 @@ class DefaultPolicy:
             lambda n: not n.is_placeholder() and not n.is_output(),
             find_topo_sort(output_nodes)
         ))
-        self.output_nodes = output_nodes
+
+        self.output_nodes = []
+        for node in self.ordered_nodes:
+            is_topo_output = True
+            for edge in node.outputs:
+                if not edge.dst_node.is_output():
+                    is_topo_output = False
+            if is_topo_output:
+                self.output_nodes.append(node)
 
     def emit_config(self, topk: int) -> List[Dict[Node, Config]]:
         base_tile = self.get_base_tile()
@@ -33,8 +41,10 @@ class DefaultPolicy:
         for td in smem_tile_condidates:
             if not self.check_tile_shape_isvalid(td):
                 continue
-            self._expand_reduce_axis(td)
             block_orders = self._assign_block_order(td)
+            if block_orders is False:
+                continue
+            self._expand_reduce_axis(td)
             for codegen_dicts in self.assign_block_size(td):
                 # handle cases where block is not ordinal (e.g. transpose)
                 for node, block_order in block_orders.items():
@@ -47,7 +57,7 @@ class DefaultPolicy:
         return results
 
     def DFS_smem_tile(self, init_tile, topk, rstep_map) -> Iterable[TileDict]:
-        _steps = [get_all_factors(n) for n in self.output_nodes[0].get_shape()]
+        _steps = [get_all_factors(n) for n in self.output_nodes[0].get_space_dim()]
         steps = [step[step.index(t):] for step, t in zip(_steps, init_tile)]
         for i in range(len(steps)):
             added = list(filter(lambda s:s < steps[i][-1] and s > steps[i][0] and s not in steps[i], [2, 4, 8, 16, 32]))
@@ -81,15 +91,14 @@ class DefaultPolicy:
 
     # get the minimum tile that could satisfy no redundancy computation
     def get_base_tile(self):
-        if len(set([len(node.get_shape()) for node in self.output_nodes])) > 1:
+        if len(set([len(node.get_space_dim()) for node in self.output_nodes])) > 1:
             # If output dim sizes are not same, don't know how to handle them
             return None
         out_node = self.output_nodes[0]
-        shape = out_node.get_shape()
+        shape = out_node.get_space_dim()
         base_tile = [1 for _ in shape]
         wpi = self.compute_workload_per_item(base_tile)
         for dim, n in enumerate(shape):
-            # factors = get_all_factors(n)
             factors = [n]
             for factor in factors:
                 if factor == base_tile[dim]:continue
@@ -101,9 +110,6 @@ class DefaultPolicy:
                 else:
                     break
 
-        if self._check_basic_tile(base_tile):
-            return None
-
         return base_tile
 
     # handles multiple output cases
@@ -111,43 +117,20 @@ class DefaultPolicy:
         tile_map = {}
         for node in self.output_nodes:
             tile_map[node] = [
-                tile[i] * node.get_shape()[i] // self.output_nodes[0].get_shape()[i] for i in range(len(tile))]
+                tile[i] * node.get_space_dim()[i] // self.output_nodes[0].get_space_dim()[i] for i in range(len(tile))]
         return tile_map
 
     def compute_workload_per_item(self, output_tile) -> float:
-        output_node = self.output_nodes[0]
-        queue = [(output_node, output_tile)]
-        compute = 0
-        while len(queue) > 0:
-            node, tile = queue.pop(0)
-            dep = node.infer_dependency(tile)
-            for i, edge in enumerate(node.inputs):
-                if not edge.src_node.is_placeholder():
-                    subtensor_shape = dep[i]
-                    compute += np.prod(subtensor_shape)
-                    queue.append((edge.src_node, subtensor_shape))
-        return float(compute / np.prod(output_tile))
-
-    def _check_basic_tile(self, output_tile):
         op_tile_map = self._get_output_tile_map(output_tile)
-        out_shape = self.output_nodes[0].get_shape()
-        queue = list(op_tile_map.items())
-        while len(queue) > 0:
-            node, tile = queue.pop(0)
+        compute = 0
+        num_item = int(np.prod(output_tile))
+        for node in reversed(self.ordered_nodes):
+            tile = op_tile_map[node]
             dep = node.infer_dependency(tile)
+            compute += int(np.prod(tile))
             for i, edge in enumerate(node.inputs):
-                if not edge.src_node.is_placeholder():
-                    subtensor_shape = dep[i]
-                    shape = edge.src_node.get_shape()
-                    if np.prod(subtensor_shape) / np.prod(shape) != np.prod(output_tile) / np.prod(out_shape):
-                        # print(subtensor_shape, shape, output_tile, out_shape)
-                        return True
-                    if edge.src_node in op_tile_map:
-                        assert op_tile_map[edge.src_node] == subtensor_shape
-                    else:
-                        op_tile_map[edge.src_node] = subtensor_shape
-                        queue.append((edge.src_node, subtensor_shape))
-        return False
+                op_tile_map[edge.src_node] = dep[i]
+        return float(compute / num_item)
 
     def score_block_size(self, n):
         num_wrap = (n + self.arch.warp_size - 1) // self.arch.warp_size
@@ -174,11 +157,11 @@ class DefaultPolicy:
             results[k] = all_factors
         return results
 
-    def _assign_reduce_step(self, node):
+    def _assign_reduce_step(self, node: IRNode):
         if len(node.raxis) == 0:
             return {}
         raxis = node.raxis
-        tile = [1 for _ in node.get_shape()]
+        tile = [1] * len(node.get_space_dim())
         all_steps = self.get_node_reduce_step_candidates(node)
         def sim(a, b):
             return  (2 * a * b) / (a * a + b * b)
@@ -243,14 +226,13 @@ class DefaultPolicy:
                     r[ax] += 1
                     candidates.append((r, _score(r)))
                 if len(candidates) == 0:
-                    return (None, None)
-                return max(candidates, key=lambda x:x[1])
+                    return None
+                return max(candidates, key=lambda x:x[1])[0]
 
             cur_rstep_id = {k : all_steps[k].index(rstep[k]) for k in node.raxis}
-            cur_score = _score(cur_rstep_id)
             new_rstep_map = rstep_map.copy()
             while True:
-                new_rstep_id, new_score = _enlarge(cur_rstep_id)
+                new_rstep_id = _enlarge(cur_rstep_id)
                 if new_rstep_id is None:
                     break
                 new_rstep_map[node] = {k : all_steps[k][new_rstep_id[k]] for k in node.raxis}
@@ -261,7 +243,7 @@ class DefaultPolicy:
                 if invalid:
                     break
                 else:
-                    cur_rstep_id, cur_score = new_rstep_id, new_score
+                    cur_rstep_id = new_rstep_id
             rstep = {k : all_steps[k][cur_rstep_id[k]] for k in node.raxis}
             return rstep
 
@@ -272,24 +254,23 @@ class DefaultPolicy:
         td.rstep_map = rstep_map
         td.smem_cost = self._compute_shared_memory_usage(td)
 
-    def _compute_memory_footprint(self, tile):
-        tile_map = self._get_output_tile_map(tile)
-        queue = [node for node in self.output_nodes]
+    def _compute_memory_footprint(self, output_tile):
+        op_tile_map = self._get_output_tile_map(output_tile)
         footprint = 0
-        while len(queue) > 0:
-            node = queue.pop(0)
-            dep = node.infer_dependency(tile_map[node])
+        for node in reversed(self.ordered_nodes):
+            tile = op_tile_map[node]
+            dep = node.infer_dependency(tile)
             for i, edge in enumerate(node.inputs):
+                op_tile_map[edge.src_node] = dep[i]
                 if edge.src_node.is_placeholder():
                     read_transaction_elements = self.arch.transaction_size[1] // ((edge.src_node.get_dtype().bits + 7) // 8)
-                    footprint += coalesced_tensor_shape(dep[i], edge.src_node.get_shape(), read_transaction_elements)
-                elif edge.src_node not in tile_map:
-                    tile_map[edge.src_node] = dep[i]
-                    queue.append(edge.src_node)
-        for node in self.output_nodes:
-            write_transaction_elements = self.arch.transaction_size[0] // ((edge.src_node.get_dtype().bits + 7) // 8)
-            footprint += coalesced_tensor_shape(tile_map[node], node.get_shape(), write_transaction_elements)
-        return footprint, tile_map
+                    footprint += coalesced_tensor_shape(dep[i], edge.src_node.get_shape(edge.src_id), read_transaction_elements)
+            for edge in node.outputs:
+                if edge.dst_node.is_output():
+                    write_transaction_elements = self.arch.transaction_size[0] // ((edge.src_node.get_dtype().bits + 7) // 8)
+                    footprint += coalesced_tensor_shape(tile, node.get_shape(edge.src_id), write_transaction_elements)
+                    # TODO: fix tile issue
+        return footprint, op_tile_map
 
     def infer_node_smem_usage(self, td: TileDict, node: IRNode):
         return node.infer_smem_usage(td.get_tile(node), td.get_rstep(node), td.tensor_strides_map[node])
@@ -354,8 +335,8 @@ class DefaultPolicy:
         if td.smem_cost > self.arch.smem_cap:
             td.valid = False
             return td
-        output_shape = self.output_nodes[0].get_shape()
-        grid_size = int(np.prod([np.ceil(y / x) for x, y in zip(output_tile, output_shape)]))
+        output_shape = self.output_nodes[0].get_space_dim()
+        grid_size = int(np.prod([(y + x - 1) // x for x, y in zip(output_tile, output_shape)]))
         # estimated reg usage
         reg_usage = int(2 * max([np.prod(td.get_tile(node)) * node.get_dtype().bits / 32 for node in self.ordered_nodes]))
         if reg_usage > self.arch.reg_cap:
@@ -367,9 +348,9 @@ class DefaultPolicy:
 
     def check_tile_shape_isvalid(self, td: TileDict):
         out_node = self.output_nodes[0]
-        grid_size = np.prod([np.ceil(y / x) for x, y in zip(td.output_tile, out_node.get_shape())])
+        grid_size = np.prod([(y + x - 1) // x for x, y in zip(td.output_tile, out_node.get_space_dim())])
         for node in self.ordered_nodes:
-            node_grid_size = np.prod([np.ceil(y / x) for x, y in zip(td.get_tile(node), node.get_shape())])
+            node_grid_size = np.prod([(y + x - 1) // x for x, y in zip(td.get_tile(node), node.get_space_dim())])
             if node_grid_size != grid_size:
                 return False
         return True
@@ -413,26 +394,21 @@ class DefaultPolicy:
                     break
 
     def _assign_block_order(self, td: TileDict):
-        queue = [node for node in self.output_nodes]
         block_idx = tvm.te.var("block_idx")
-        block_idx_map = {node : block_idx for node in self.output_nodes}
+        expr_map = {node : block_idx for node in self.output_nodes}
         result = {}
-        while len(queue) > 0:
-            node = queue.pop(0)
-            if node.is_output():
-                block_idx_map[node.inputs[0].src_node] = block_idx_map[node]
-                queue.append(node.inputs[0].src_node)
-                continue
-
-            deps = node.block_infer(td.tile_map, block_idx_map[node], block_idx)
+        for node in reversed(self.ordered_nodes):
+            expr = expr_map[node]
+            if not (expr.same_as(block_idx) or isinstance(expr, tvm.tir.expr.ConstExpr)):
+                result[node] = expr
+            deps = node.block_infer(td.tile_map, expr, block_idx)
             for i, edge in enumerate(node.inputs):
-                if edge.src_node.is_placeholder():
-                    continue
-                elif edge.src_node not in block_idx_map:
-                    block_idx_map[edge.src_node] = deps[i]
-                    queue.append(edge.src_node)
-                    if not (deps[i].same_as(block_idx) or isinstance(deps[i], tvm.tir.expr.ConstExpr)):
-                        result[edge.src_node] = deps[i]
+                if edge.src_node.is_placeholder(): continue
+                if edge.src_node in expr_map:
+                    if not deps[i].same_as(expr_map[edge.src_node]):
+                        return False
+                else:
+                    expr_map[edge.src_node] = deps[i]
         return result
 
     def _assign_block_size(self, node: IRNode, td: TileDict, block_size: int):
@@ -449,7 +425,7 @@ class DefaultPolicy:
             for edge in node.inputs:
                 score += np.prod(shape[edge.dst_id]) / self.arch.bandwidth[1]
             for edge in node.outputs:
-                if edge.dst_node in self.output_nodes: # write to global
+                if edge.dst_node.is_output(): # write to global
                     score += coalesced_tensor_shape(thread, node.get_shape(), 8) / self.arch.bandwidth[0]
             return score
         for factor in reversed(factors):

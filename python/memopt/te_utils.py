@@ -62,6 +62,10 @@ def connect_tensor_graph(a: List[te.Tensor], b: List[te.Tensor], connection):
     input_idx, output_idx, mid_idx = 0, 0, 0
 
     def functor(tensor: te.Tensor):
+        if tensor in connection.keys():
+            tensor_map[tensor] = tensor_map[connection[tensor]]
+            return
+
         nonlocal input_idx, output_idx, mid_idx
         is_input = isinstance(tensor.op, te.PlaceholderOp) and tensor not in connection.keys()
         is_output = not isinstance(tensor.op, te.PlaceholderOp) and tensor in a + b and tensor not in connection.values()
@@ -76,12 +80,7 @@ def connect_tensor_graph(a: List[te.Tensor], b: List[te.Tensor], connection):
             name = "mediate" + str(mid_idx)
             mid_idx += 1
 
-        rmap = {}
-        for it in tensor.op.input_tensors:
-            dst = connection[it] if it in connection else it
-            rmap[it] = tensor_map[dst]
-
-        replaced = tensor_replace_input(tensor, name, rmap)
+        replaced = tensor_replace_input(tensor, name, tensor_map)
         tensor_map[tensor] = replaced
 
         if is_input:
@@ -90,6 +89,7 @@ def connect_tensor_graph(a: List[te.Tensor], b: List[te.Tensor], connection):
         elif is_output:
             return_args.append(replaced)
 
-    pre_order_traverse(a + b, functor)
+    pre_order_traverse(a, functor)
+    pre_order_traverse(b, functor)
 
     return return_args

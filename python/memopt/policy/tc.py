@@ -93,7 +93,7 @@ class TCPolicy(DefaultPolicy):
                 wmma_invalid = [block_m % wmma_m or block_n % wmma_n for wmma_m, wmma_n in [(16, 16), (8, 32), (32, 8)]]
                 if all(wmma_invalid):
                     return False
-                if any([y % x for x, y in zip(td.tile_map[node], node.get_shape())]):
+                if any([y % x for x, y in zip(td.tile_map[node], node.get_space_dim())]):
                     return False
         return super().check_tile_shape_isvalid(td)
 

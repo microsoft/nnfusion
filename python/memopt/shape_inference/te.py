@@ -27,7 +27,13 @@ class Statement():
         if len(iter_map_result.errors) > 0:
             return None
         results = arith.iter_affine_map.inverse_affine_iter_map(iter_map_result.indices, input_iter)
-        output_indices = [results[ax.var] for ax in self.op.axis]
+        output_indices = []
+        for ax in self.op.axis:
+            if ax.var in results:
+                output_indices.append(results[ax.var])
+            else:
+                # not Bijective mapping case
+                output_indices.append(te.var("undefined") % ax.dom.extent)
         return output_indices
 
 def _merge_two_bounds(x: arith.ConstIntBound, y: arith.ConstIntBound):

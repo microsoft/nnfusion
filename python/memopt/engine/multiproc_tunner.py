@@ -1,6 +1,6 @@
 import os
-import tvm
 
+import tvm
 from tvm.contrib.popen_pool import PopenPoolExecutor
 
 from ..code_generator import CodeGenerator
@@ -8,6 +8,7 @@ from ..graph import find_topo_sort
 from ..utils import CompileResult
 from .base_tunner import Tunner, _extract_subgraph, eliminate_memcpy
 from .load_model import load_model
+from .utils import insert_local_connections
 
 
 class _save:
@@ -17,10 +18,11 @@ def init_server(path):
     ordered_nodes = load_model(path)
     _save.node_map = {node.name: node for node in ordered_nodes}
 
-def call_build(node_names, send_config, kernel_name, target_str):
+def call_build(node_names, connections, send_config, kernel_name, target_str):
     cgen = CodeGenerator()
     nodes = [_save.node_map[name] for name in node_names]
     output_nodes, _, _ = _extract_subgraph(nodes)
+    insert_local_connections(output_nodes, connections)
     eliminate_memcpy(output_nodes)
     config = {}
     for node in find_topo_sort(output_nodes):
@@ -45,7 +47,7 @@ class MultiProcTunner(Tunner):
         futures = []
         for config in configs:
             send_config = {node.name : config[node] for node in config}
-            futures.append(self.pool.submit(call_build, node_names, send_config, kernel_name, str(self.arch.target)))
+            futures.append(self.pool.submit(call_build, node_names, self.local_connections, send_config, kernel_name, str(self.arch.target)))
         for future, config in zip(futures, configs):
             result = future.result()
             if isinstance(result, Exception):

@@ -176,14 +176,6 @@ class IRNode(Node):
             self.reduce_op = None
             self.raxis = {}
 
-        # topo output op names
-        self._output_names = set()
-        for op in self.compute_ops:
-            self._output_names.add(op.name)
-            for t in op.input_tensors:
-                if t.op.name in self._output_names:
-                    self._output_names.remove(t.op.name)
-
         self.schedule_stage = self.args[-1].op
 
     @functools.lru_cache()
@@ -193,9 +185,12 @@ class IRNode(Node):
             dim_size.append(int(axis.dom.extent))
         return dim_size
 
+    def propogate(self, tile, rstep={}):
+        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in tile] for name in [self.schedule_stage.name]}
+        return self.ana.infer(shape, rstep)
+
     def infer_dependency(self, shape, rstep={}) -> Dict[int, List[int]]:
-        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
-        shapes = self.ana.infer(shape, rstep)
+        shapes = self.propogate(shape, rstep)
         result = {}
         for i in range(len(self.inputs)):
             name = self.args[i].name
@@ -207,8 +202,7 @@ class IRNode(Node):
     def infer_dependency_reduce_inputs(self, shape, rstep={}) -> Dict[str, List[int]]:
         if self.reduce_op is None:
             return {}
-        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
-        shapes = self.ana.infer(shape, rstep)
+        shapes = self.propogate(shape, rstep)
         return {t.name: shapes[t.name] for t in self.reduce_op.input_tensors}
 
     def get_reduce_inputs_dtype(self):
@@ -216,10 +210,9 @@ class IRNode(Node):
             return {}
         return {t.name: tvm.DataType(t.dtype) for t in self.reduce_op.input_tensors}
 
-    def infer_smem_usage(self, shape, rstep, stride_map={}) -> int:
+    def footprint(self, shape, rstep, stride_map={}) -> int:
         result = 0
-        shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in shape] for name in self._output_names}
-        shapes = self.ana.infer(shape, rstep)
+        shapes = self.propogate(shape, rstep)
 
         # compute cached stages
         cached_tensor = set()
@@ -279,7 +272,7 @@ class IRNode(Node):
             grid_size *= num_block
             space_expr.append(block_expr % num_block * tile_len)
             block_expr = block_expr // num_block
-        output_exprs = {name : list(reversed(space_expr)) for name in self._output_names}
+        output_exprs = {name : list(reversed(space_expr)) for name in [self.schedule_stage.name]}
         input_exprs = self.ana.get_input_exprs(output_exprs)
         result = {}
         ana = arith.Analyzer()

@@ -273,7 +273,7 @@ class DefaultPolicy:
         return footprint, op_tile_map
 
     def infer_node_smem_usage(self, td: TileDict, node: IRNode):
-        return node.infer_smem_usage(td.get_tile(node), td.get_rstep(node), td.tensor_strides_map[node])
+        return node.footprint(td.get_tile(node), td.get_rstep(node), td.tensor_strides_map[node])
 
     def _compute_shared_memory_usage(self, td: TileDict):
         self._compute_stride_map(td)
@@ -464,6 +464,10 @@ class DefaultPolicy:
                     codegen_dict._step[i] = 2
                     break
         # Plan vectorize
+        codegen_dict.vectorize = self._plan_vectorize(node, td, block_size)
+        return codegen_dict
+
+    def _plan_vectorize(self, node: IRNode, td: TileDict, block_size: int):
         def is_cont(shape, vec):
             if len(shape) == 0: return vec == 1
             last = shape[-1]
@@ -477,10 +481,11 @@ class DefaultPolicy:
             return dtype.bits * vec <= 128
         vectorize_sizes = [8, 4, 2]
         dtypes = node.get_reduce_inputs_dtype()
-        shapes = node.infer_dependency_reduce_inputs(tile, rsteps)
+        shapes = node.infer_dependency_reduce_inputs(td.get_tile(node), td.get_rstep(node))
+        vectorize_result = {}
         for tensor, shape in shapes.items():
             for v in vectorize_sizes:
                 if is_shape_aligned(shape, block_size * v) and is_cont(shape, v) and is_type_allowed(dtypes[tensor], v):
-                    codegen_dict.vectorize[tensor] = v
+                    vectorize_result[tensor] = v
                     break
-        return codegen_dict
+        return vectorize_result

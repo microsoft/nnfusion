@@ -10,6 +10,7 @@ from ..logging import get_log_level
 from ..policy import DefaultPolicy, TCPolicy
 from ..reference import get_subgraph_reference_outputs
 from ..utils import CompileResult, compile_and_load_parallel
+from .utils import insert_local_connections
 
 
 def get_max_diff(tensor_list_a, tensor_list_b):
@@ -179,13 +180,15 @@ class Tunner(object):
             return best
         return None
 
-    def tune(self, nodes, kernel_name="Fused"):
+    def tune(self, nodes, local_connections=[], kernel_name="Fused"):
         if any([node.get_tag("skip") for node in nodes]):
             return None
         self.current_nodes = nodes
+        self.local_connections = local_connections
         if get_log_level() >= 1:
             print("Tuning", [node.name for node in self.current_nodes])
         output_nodes, input_desc, output_desc = _extract_subgraph(self.current_nodes)
+        insert_local_connections(output_nodes, self.local_connections)
         eliminate_memcpy(output_nodes)
         signature = subgraph_hash(output_nodes)
         if self.count_cache(signature):

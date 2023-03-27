@@ -49,7 +49,10 @@ class SchedulerBase:
 
     def compute_grid_size(self):
         tile_shape = self.config.block
-        node_shape = self.output_op.output(0).shape
+        if self.reduce_op:
+            node_shape = self.reduce_op.output(0).shape
+        else:
+            node_shape = self.output_op.output(0).shape
         size = 1
         for t, n in zip(tile_shape, node_shape):
             size *= (n + t - 1) // t

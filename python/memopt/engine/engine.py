@@ -103,6 +103,13 @@ class Engine:
 
             new_group = sorted(new_group, key=lambda n:self.node_topo_id[n])
             result = self.tunner.tune(new_group, kernel_name="Group"+str(cur_group_id))
+            # try experimental local fuse
+            if len(fusing_nodes) == 1 and len(cur_group) == 1:
+                if fusing_nodes[0].reduce_op is None and cur_group[0].reduce_op is not None:
+                    connection = [[cur_group[0].name, fusing_nodes[0].name]]
+                    result_local = self.tunner.tune(new_group, connection, kernel_name="Group"+str(cur_group_id))
+                    if result_local and (result is None or result_local.latency < result.latency):
+                        result = result_local
             if result is None:
                 continue
             gain = self.compute_gain(new_group, result)

@@ -71,7 +71,7 @@ class Executor(object):
     """
     device_type_map = {
         0: ("cuda_init", "cuda_free"),  # CUDA_GPU
-        1: ("rocm_init", "rocm_free"),  # ROCM_GPU
+        1: ("cuda_init", "cuda_free"),  # ROCM_GPU
         2: ("cpu_init", "cpu_free"),  # GENERIC_CPU
         3: ("hlsl_init", "hlsl_free"),  # HLSL
         4: ("graphcore_init", "graphcore_free"),  # GraphCore

@@ -276,10 +276,10 @@ LanguageUnit_p cuda::Softmax::emit_function_signature()
     return _lu;
 }
 
-REGISTER_KERNEL_EMITTER(
-    "Softmax",                                                                     // op_name
-    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
-    cuda::Softmax)                                                                 // constructor
+// REGISTER_KERNEL_EMITTER(
+//     "Softmax",                                                                     // op_name
+//     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
+//     cuda::Softmax)                                                                 // constructor
 
 cuda::SoftmaxGrad::SoftmaxGrad(shared_ptr<KernelContext> ctx)
     : CudaLibEmitter(ctx)
@@ -410,7 +410,7 @@ LanguageUnit_p cuda::SoftmaxGrad::emit_function_signature()
     return _lu;
 }
 
-REGISTER_KERNEL_EMITTER(
-    "SoftmaxGrad",                                                                 // op_name
-    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
-    cuda::SoftmaxGrad)
+// REGISTER_KERNEL_EMITTER(
+//     "SoftmaxGrad",                                                                 // op_name
+//     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cudnn_kernel").Priority(2), // attrs
+//     cuda::SoftmaxGrad)

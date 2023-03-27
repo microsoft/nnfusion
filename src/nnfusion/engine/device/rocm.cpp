@@ -10,6 +10,7 @@
 #include "nnfusion/engine/pass/graph/batchnorm_inference_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/blockfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/common_subexpression_elimination_pass.hpp"
+#include "nnfusion/engine/pass/graph/control_flow_pass.hpp"
 #include "nnfusion/engine/pass/graph/dot_transpose_pass.hpp"
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
@@ -24,6 +25,10 @@
 #include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
+#include "nnfusion/engine/pass/graph/subgraph_fusion_pass.hpp"
+#include "nnfusion/engine/pass/graph/conv_layout_pass.hpp"
+#include "nnfusion/engine/pass/graph/subgraph_op_move.hpp"
+#include "nnfusion/engine/pass/graph/to_cpu_pass.hpp"
 
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
@@ -41,6 +46,9 @@ using namespace nnfusion::pass;
 ROCmEngine::ROCmEngine()
     : Engine()
 {
+    t_passes->push_back(make_shared<ConvLayoutPass>());
+    t_passes->push_back(make_shared<SubGraphOpMovePass>());
+    g_passes->push_back(make_shared<ControlFlowPass>());
     g_passes->push_back(make_shared<CSEPass>());
     g_passes->push_back(make_shared<AutodiffPass>());
     g_passes->push_back(make_shared<GradientWeightMappingPass>());
@@ -49,16 +57,20 @@ ROCmEngine::ROCmEngine()
     g_passes->push_back(make_shared<VectorDotTransposePass>());
     g_passes->push_back(make_shared<GemmFusionPass>());
     g_passes->push_back(make_shared<BatchNormInferenceFoldingPass>());
+    g_passes->push_back(make_shared<SubGraphFusionPass>());
     g_passes->push_back(make_shared<AssignLayoutPass>());
+
     g_passes->push_back(make_shared<OpInplacePass>());
     g_passes->push_back(make_shared<ReduceFusionPass>());
 
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
+    g_passes->push_back(make_shared<ToCPUPass>());
 
     // Kernel selection
     g_passes->push_back(make_shared<DefaultGNodeDeviceDispatcher>());
     g_passes->push_back(make_shared<KernelFusionPass>());
     g_passes->push_back(make_shared<KernelTuning>());
+    g_passes->push_back(make_shared<CPUOpSelector>());
     g_passes->push_back(make_shared<ProfilingBasedKernelSelector>());
     g_passes->push_back(make_shared<FetchBasedSelector>());
     g_passes->push_back(make_shared<DefaultKernelSelector>());
@@ -83,7 +95,7 @@ ROCmEngine::ROCmEngine()
     m_passes->push_back(make_shared<TensorDeviceDispatcher>());
     m_passes->push_back(make_shared<TensorLivenessAnalysis>());
     m_passes->push_back(make_shared<InplaceTensorAnalysis>());
-    m_passes->push_back(make_shared<AssignTensorMemoryLayout>(64, false));
+    m_passes->push_back(make_shared<AssignTensorMemoryLayout>(64, true));
 
     // Do codegen
     m_passes->push_back(make_shared<RocmCodegenPass>());

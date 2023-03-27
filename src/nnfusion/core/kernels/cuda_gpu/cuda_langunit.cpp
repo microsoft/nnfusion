@@ -14,7 +14,7 @@ LU_DEFINE(header::cudnn, "#include <cudnn.h>\n");
 LU_DEFINE(header::superscaler, "#include \"superscaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
-LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>\n");
+LU_DEFINE(header::cuda_fp16, "// #include <cuda_fp16.h>\n");
 LU_DEFINE(header::cub, "#include <cub/cub.cuh>\n");
 LU_DEFINE(header::math_constants, "#include <math_constants.h>\n");
 
@@ -2249,6 +2249,39 @@ __device__ void Barrier() {
 }
 )");
 
+LU_DEFINE(declaration::manual_barrier,
+          R"(
+__device__ void Barrier() {
+    // __device__ static volatile uint64_t global_state_in[1024] = {0};
+    // __device__ static volatile uint64_t global_state_out[1024] = {0};
+    __device__ static volatile uint8_t global_state_in[1024] = {0};
+    __device__ static volatile uint8_t global_state_out[1024] = {0};
+    const int BLOCK_NUM = gridDim.x * gridDim.y;
+    const int thread_idx_in_block = blockDim.x * threadIdx.y + threadIdx.x;
+    const int block_idx = gridDim.x * blockIdx.y + blockIdx.x;
+    if (thread_idx_in_block == 0) {
+        global_state_in[block_idx] = 1;
+    }
+    if (block_idx == 0) {
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            while (global_state_in[i] != 1) {
+            }
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            global_state_in[i] = 0;
+        __syncthreads();
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            global_state_out[i] = 1;
+    }
+    if (thread_idx_in_block == 0) {
+        while (global_state_out[block_idx] != 1) {
+        };
+        global_state_out[block_idx] = 0;
+    }
+    __syncthreads();
+    __threadfence();
+}
+)");
+
 LU_DEFINE(declaration::inc_iter,
           R"(
 __global__ void inc_iter(int64_t* i) {
@@ -2270,8 +2303,8 @@ __device__ __forceinline__ void BlockFusion_step_to_device_function(volatile int
 LU_DEFINE(declaration::block_barrier,
           R"(
 __device__ void block_Barrier(int local_block_id, int block_num) {
-    static volatile uint64_t global_state_in[1024] = {0};
-    static volatile uint64_t global_state_out[1024] = {0};
+    __device__ static volatile uint64_t global_state_in[1024] = {0};
+    __device__ static volatile uint64_t global_state_out[1024] = {0};
     int block_start = blockIdx.x - local_block_id;
     int to_be = block_num;
     __threadfence();

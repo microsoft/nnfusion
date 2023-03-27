@@ -79,8 +79,12 @@ def codegen(model_path, flags, output_dir):
 def modify_nnfusion_rt(rt_dir):
     with cd(rt_dir):
         # remove cudaDevice reset in cuda_init()
-        command = "sed -i '/cudaDeviceReset()/s:^://:'" + " " + "nnfusion_rt.cu"
-        execute(command)
+        if os.path.exists("nnfusion_rt.cu"):
+            command = "sed -i '/cudaDeviceReset()/s:^://:'" + " " + "nnfusion_rt.cu"
+            execute(command)
+        if os.path.exists("nnfusion_rt.cpp"):
+            command = "sed -i '/hipDeviceReset()/s:^://:'" + " " + "nnfusion_rt.cpp"
+            execute(command)
 
 
 def build(rt_dir):

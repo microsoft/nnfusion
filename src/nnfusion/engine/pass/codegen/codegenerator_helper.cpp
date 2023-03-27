@@ -13,6 +13,7 @@ using namespace nnfusion::kernels;
 using namespace nnfusion::async;
 
 DECLARE_string(fhlsl_codegen_type);
+DECLARE_string(fdefault_device);
 
 LanguageUnit_p extern_function(LanguageUnit_p lu)
 {
@@ -163,7 +164,7 @@ FunctionFile_p FunctionFile::convert_from(std::shared_ptr<nnfusion::kernels::Ker
         args[args.size() - 1] = ',';
 
         pos = body_unit.find("Barrier();");
-        if (pos > 0 || gnode->get_op_type() == "Recursion") {
+        if ((pos > 0 || gnode->get_op_type() == "Recursion") && nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::CUDA_GPU) {
             std::vector<std::string> params;
             for (int i = 0, j; j = args.find(',', i), j >= 0; i = j + 1)
             {

@@ -56,6 +56,7 @@ namespace nnfusion
         bool require(shared_ptr<LanguageUnit> lu);
         bool remove(shared_ptr<LanguageUnit> lu);
         bool replace(shared_ptr<LanguageUnit> a, shared_ptr<LanguageUnit> b);
+        void copy_require_from(const LanguageUnit& lu);
         string get_symbol() { return symbol; }
         string collect_code();
         string collect_required_code();

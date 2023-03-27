@@ -15,6 +15,7 @@ DEFINE_bool(fif_launch_then_else_naive, false, "launch kernels in both then bran
 DEFINE_bool(fif_launch_d2h, false, "launch kernels in both then branch and else branch");
 DEFINE_int32(ffused_max_grid, 512, "max griddim in fused kernels");
 DECLARE_bool(ffast_barrier);
+DECLARE_string(fdefault_device);
 
 cuda::If::If(shared_ptr<KernelContext> ctx)
     : ControlFlowEmitter(ctx)
@@ -381,7 +382,7 @@ void cuda::If::emit_kernel_wrapper(std::shared_ptr<ir::Instruction> ins, Languag
         params.push_back(m_param_map[tensor]);
     lu << wrapper_func_name;
     lu << "<<<dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), dim3("
-    << block_dim.x << ", " << block_dim.y << ", " << block_dim.z << ")>>>(" << join(params, ", ") << ");\n";
+    << block_dim.x << ", " << block_dim.y << ", " << block_dim.z << "), 0, 0>>>(" << join(params, ", ") << ");\n";
 }
 
 void cuda::If::emit_branch_wrapper(int then_start_id, int then_end_id, int else_start_id, int else_end_id, LanguageUnit &lu, bool emit_all_args) {
@@ -401,31 +402,49 @@ void cuda::If::emit_branch_wrapper(int then_start_id, int then_end_id, int else_
     grid_x = min(grid_x, get_max_grid_dim(then_start_id, then_end_id, else_start_id, else_end_id));
     cuda::dim3 grid_dim = dim3(grid_x, 1, 1);
     cuda::dim3 block_dim = dim3(block_x, 1, 1);
-    if (emit_all_args) {
+    if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::CUDA_GPU) {
+        if (emit_all_args) {
+            std::vector<string> params;
+            for (size_t i = 0; i < m_context->inputs.size(); i++)
+            {
+                stringstream ss;
+                ss << "&input" << i;
+                params.push_back(ss.str());
+            }
+            for (size_t i = 0; i < m_context->outputs.size(); i++)
+            {
+                stringstream ss;
+                ss << "&output" << i;
+                params.push_back(ss.str());
+            }
+            lu << "void* args[] = {" << join(params, ", ") << "};\n";
+        }
+        if (then_start_id + 1 >= then_end_id && else_start_id + 1 >= else_end_id) {
+            lu << "CUDA_SAFE_CALL(cudaLaunchKernel(" ;
+        } else {
+            lu << "CUDA_SAFE_CALL(cudaLaunchCooperativeKernel(";
+        }
+        lu << "(const void*) " << func_name << ", "
+        << "dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), "
+        << "dim3(" << block_dim.x << "," << block_dim.y << ", " << block_dim.z << "), "
+        << "args, (size_t) 0, (cudaStream_t)0));\n";
+    } else if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::ROCM_GPU) {
         std::vector<string> params;
         for (size_t i = 0; i < m_context->inputs.size(); i++)
         {
             stringstream ss;
-            ss << "&input" << i;
+            ss << "input" << i;
             params.push_back(ss.str());
         }
         for (size_t i = 0; i < m_context->outputs.size(); i++)
         {
             stringstream ss;
-            ss << "&output" << i;
+            ss << "output" << i;
             params.push_back(ss.str());
         }
-        lu << "void* args[] = {" << join(params, ", ") << "};\n";
+        lu << func_name << "<<<dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), dim3("
+        << block_dim.x << ", " << block_dim.y << ", " << block_dim.z << "), 0, 0>>>(" << join(params, ", ") << ");\n";
     }
-    if (then_start_id + 1 >= then_end_id && else_start_id + 1 >= else_end_id) {
-        lu << "CUDA_SAFE_CALL(cudaLaunchKernel(" ;
-    } else {
-        lu << "CUDA_SAFE_CALL(cudaLaunchCooperativeKernel(";
-    }
-    lu << "(const void*) " << func_name << ", "
-       << "dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), "
-       << "dim3(" << block_dim.x << "," << block_dim.y << ", " << block_dim.z << "), "
-       << "args, (size_t) 0, (cudaStream_t)0));\n";
 }
 
 LanguageUnit_p cuda::If::emit_function_body()
@@ -555,7 +574,11 @@ LanguageUnit_p cuda::If::emit_dependency()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
-    _lu->require(declaration::barrier);
+    if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::CUDA_GPU)
+        _lu->require(declaration::barrier);
+    else if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::ROCM_GPU)
+        _lu->require(declaration::manual_barrier);
+    else NNFUSION_CHECK_FAIL() << "Unknown device type: " << FLAGS_fdefault_device;
     if (FLAGS_ffast_barrier) _lu->require(declaration::step_to_device);
     auto op = static_pointer_cast<op::If>(m_context->gnode->get_op_ptr());
     m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));

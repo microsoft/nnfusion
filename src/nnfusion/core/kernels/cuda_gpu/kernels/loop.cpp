@@ -15,6 +15,7 @@ DEFINE_bool(floop_in_c, false, "loop in c");
 DECLARE_int32(ffused_max_grid);
 DEFINE_int32(floop_copy_blockdim, 256, "");
 DECLARE_bool(ffast_barrier);
+DECLARE_string(fdefault_device);
 
 cuda::Loop::Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory, int input_output_index_bias)
     : ControlFlowEmitter(ctx), m_input_output_index_bias(input_output_index_bias)
@@ -47,7 +48,7 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory, int input
                     nnfusion::PartialShape(
                         {(size_t)m_gridDim.x * (size_t)m_gridDim.y * (size_t)m_gridDim.z}),
                         get_function_name() + "_be_state_buffer",
-                    nnfusion::NNFusion_DeviceType::CUDA_GPU);
+                        nnfusion::get_device_type(FLAGS_fdefault_device));
         m_sync_tensor->set_memset(true, 0);
         m_sync_tensor->set_persistent(true);
         m_context->tensors.push_back(m_sync_tensor);
@@ -185,18 +186,28 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
                     std::vector<std::string> param_pointers;
                     dim3 grid_dim = control_flow_kernel->get_grid_dim();
                     dim3 block_dim = control_flow_kernel->get_block_dim();
-                    std::string hashed_func_name = "tmp_" + std::to_string(std::hash<std::string>{}(func_name));
-                    int param_id = 0;
-                    for (auto param: params) {
-                        lu << "void* " << hashed_func_name << "_" << std::to_string(param_id) << " = " << param << ";\n";
-                        param_pointers.push_back("&" + hashed_func_name + "_" + std::to_string(param_id));
-                        param_id ++;
+                    if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::CUDA_GPU) {
+                        std::string hashed_func_name = "tmp_" + std::to_string(std::hash<std::string>{}(func_name));
+                        int param_id = 0;
+                        for (auto param: params) {
+                            lu << "void* " << hashed_func_name << "_" << std::to_string(param_id) << " = " << param << ";\n";
+                            param_pointers.push_back("&" + hashed_func_name + "_" + std::to_string(param_id));
+                            param_id ++;
+                        }
+                        lu << "void* " << func_name << "_param[] = {" << join(param_pointers, ", ") << "};\n";
+                        lu << "cudaLaunchCooperativeKernel((const void*)" << func_name << ", " 
+                        << "dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), "
+                        << "dim3(" << block_dim.x << "," << block_dim.y << ", " << block_dim.z << "), "
+                        << func_name << "_param, (size_t) 0, (cudaStream_t) 0);\n";
+
+                    } else if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::ROCM_GPU) {
+                        lu << "void* " << func_name << "_param[] = {" << join(param_pointers, ", ") << "};\n";
+                        lu << func_name;
+                        lu << "<<<dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), dim3("
+                        << block_dim.x << ", " << block_dim.y << ", " << block_dim.z << "), 0, 0>>>(" << join(params, ", ") << ");\n";
+                    } else {
+                        NNFUSION_CHECK_FAIL() << "Unsupported device: " << FLAGS_fdefault_device;
                     }
-                    lu << "void* " << func_name << "_param[] = {" << join(param_pointers, ", ") << "};\n";
-                    lu << "cudaLaunchCooperativeKernel((const void*)" << func_name << ", " 
-                       << "dim3(" << grid_dim.x << ", " << grid_dim.y << ", " << grid_dim.z << "), "
-                       << "dim3(" << block_dim.x << "," << block_dim.y << ", " << block_dim.z << "), "
-                       << func_name << "_param, (size_t) 0, (cudaStream_t) 0);\n";
                 } else {
                     lu << kernel->get_function_name() << kernel->emit_function_call(params)->get_code();
                 }
@@ -226,7 +237,7 @@ LanguageUnit_p cuda::Loop::emit_function_body()
         lu << "CUDA_SAFE_CALL(cudaMemcpy(&iter, input0, sizeof(int64_t), cudaMemcpyDeviceToHost));\n";
         lu << "CUDA_SAFE_CALL(cudaMemcpy(&iter, input0, sizeof(int64_t), cudaMemcpyDeviceToHost));\n";
         lu << "int64_t* i_dev;\n";
-        lu << "CUDA_SAFE_CALL(cudaMalloc(&i_dev, sizeof(int64_t)));\n";
+        lu << "CUDA_SAFE_CALL(cudaMalloc((void**)&i_dev, sizeof(int64_t)));\n";
         lu << "CUDA_SAFE_CALL(cudaMemset(i_dev, 0, sizeof(int64_t)));\n";
         bool need_copy = false;
         for (auto ins: *m_body_instructions) {
@@ -258,7 +269,7 @@ LanguageUnit_p cuda::Loop::emit_function_body()
             ss << "output" << i;
             params_with_type.push_back(ss.str());
         }
-        lu << copy_func_name << "<<<" << "dim3(" << grid_dim << ", 1, 1), dim3(" << FLAGS_floop_copy_blockdim << ", 1, 1)" << ">>>(" << join(params_with_type, ", ") << ");\n";
+        lu << copy_func_name << "<<<" << "dim3(" << grid_dim << ", 1, 1), dim3(" << FLAGS_floop_copy_blockdim << ", 1, 1)" << ", 0, 0>>>(" << join(params_with_type, ", ") << ");\n";
         lu.block_end();
         if (need_copy) {
             for (int i = 0; i < m_context->outputs.size(); i++)
@@ -267,7 +278,7 @@ LanguageUnit_p cuda::Loop::emit_function_body()
         lu << "for (int64_t i = 0; i < iter; i++)";
         lu.block_begin();
         generate_subgraph_code(_lu, false);
-        lu << "inc_iter<<<dim3(1, 1, 1), dim3(1, 1, 1)>>>(i_dev);\n";
+        lu << "inc_iter<<<dim3(1, 1, 1), dim3(1, 1, 1), 0, 0>>>(i_dev);\n";
         for (int i = 0; i < m_context->outputs.size(); i++)
             lu << "input" << i + 2 << " = output" << i << ";\n";
         lu.block_end();
@@ -305,7 +316,11 @@ LanguageUnit_p cuda::Loop::emit_dependency()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
-    _lu->require(declaration::barrier);
+    if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::CUDA_GPU)
+        _lu->require(declaration::barrier);
+    else if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::ROCM_GPU)
+        _lu->require(declaration::manual_barrier);
+    else NNFUSION_CHECK_FAIL() << "Unknown device type: " << FLAGS_fdefault_device;
     if (FLAGS_ffast_barrier) _lu->require(declaration::step_to_device);
     for (auto ins : *m_body_instructions)
     {
@@ -363,9 +378,11 @@ LanguageUnit_p cuda::Loop::emit_dependency()
             }
 
             k.block_begin();
-            k << kernel->emit_function_body()->get_code();
+            auto func_body = kernel->emit_function_body();
+            k << func_body->get_code();
             k.block_end();
             _k->require(kernel->emit_comments());
+            _k->copy_require_from(*func_body);
             _k->require(kernel->emit_dependency());
             _lu->require(_k);
             _lu->require(declaration::inc_iter);

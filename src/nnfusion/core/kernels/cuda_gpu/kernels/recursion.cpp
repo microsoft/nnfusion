@@ -18,6 +18,7 @@ DEFINE_int32(fparallel_recursion_min, -1, "parallel recursion min");
 DEFINE_int32(fparallel_recursion_grid, -1, "parallel recursion grid");
 DEFINE_int32(frecursive_max_depth, 32, "manual stack size");
 DECLARE_bool(ffast_barrier);
+DECLARE_string(fdefault_device);
 
 cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
     : ControlFlowEmitter(ctx)
@@ -473,7 +474,11 @@ LanguageUnit_p cuda::Recursion::emit_dependency()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
     _lu->require(header::cuda);
-    _lu->require(declaration::barrier);
+    if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::CUDA_GPU)
+        _lu->require(declaration::barrier);
+    else if (nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::ROCM_GPU)
+        _lu->require(declaration::manual_barrier);
+    else NNFUSION_CHECK_FAIL() << "Unknown device type: " << FLAGS_fdefault_device;
     if (FLAGS_fparallel_recursion) _lu->require(declaration::block_barrier);
     if (FLAGS_ffast_barrier) _lu->require(declaration::step_to_device);
     auto saved = m_kernel_name;

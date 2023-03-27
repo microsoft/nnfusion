@@ -48,6 +48,15 @@ bool LanguageUnit::require(const string required)
     return true;
 }
 
+void LanguageUnit::copy_require_from(const LanguageUnit& lu)
+{
+    for (auto& r : lu.required)
+    {
+        NNFUSION_LOG(INFO) << "copy require " << r;
+        this->required.insert(r);
+    }
+}
+
 bool LanguageUnit::require(shared_ptr<LanguageUnit> lu)
 {
     NNFUSION_CHECK_NOT_NULLPTR(lu);

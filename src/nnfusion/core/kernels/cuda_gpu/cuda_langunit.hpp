@@ -57,6 +57,7 @@ namespace nnfusion
             LU_DECLARE(ort_softmax);
             LU_DECLARE(warp);
             LU_DECLARE(barrier);
+            LU_DECLARE(manual_barrier);
             LU_DECLARE(inc_iter);
             LU_DECLARE(step_to_device);
             LU_DECLARE(block_barrier);

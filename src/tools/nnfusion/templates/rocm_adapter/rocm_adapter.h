@@ -10,7 +10,7 @@
 #undef __HIP_PLATFORM_NVCC__
 
 #include <hip/hip_runtime.h>
-#include <hip/hcc_detail/hip_fp16.h>
+// #include <hip/hcc_detail/hip_fp16.h>
 #include <rocblas.h>
 // #include <hipsparse.h>
 // #include <hiprand/hiprand.h>
@@ -636,96 +636,6 @@ inline cudnnStatus_t CUDNNWINAPI cudnnSetConvolutionNdDescriptor(cudnnConvolutio
   return miopenInitConvolutionDescriptor(convDesc, mode,
     padA[0], padA[1], filterStrideA[0], filterStrideA[1], dilationA[0], dilationA[1]);
 }
-
-
-//////////////////////////////////////
-// CUDNN_RNN: not tested
-#define CUDNN_LINEAR_INPUT miopenRNNlinear
-#define CUDNN_RNN_ALGO_STANDARD miopenRNNdefault
-#define CUDNN_BIDIRECTIONAL miopenRNNbidirection
-#define CUDNN_UNIDIRECTIONAL miopenRNNunidirection
-#define CUDNN_LSTM miopenLSTM
-#define CUDNN_GRU miopenGRU
-#define cudnnDirectionMode_t miopenRNNDirectionMode_t
-
-#define CUDNN_RNN_RELU miopenRNNRELU
-#define CUDNN_RNN_TANH miopenRNNTANH
-#define cudnnCreateRNNDescriptor miopenCreateRNNDescriptor
-#define cudnnDestroyRNNDescriptor miopenDestroyRNNDescriptor
-#define cudnnRNNDescriptor_t miopenRNNDescriptor_t
-#define cudnnRNNMode_t miopenRNNMode_t
-#define cudnnGetRNNWorkspaceSize miopenGetRNNWorkspaceSize
-
-UN_IMPLEMENTED(cudnnSetRNNDescriptor, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnRNNForwardInference, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnGetRNNLinLayerMatrixParams, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnGetRNNLinLayerBiasParams, cudnnStatus_t)
-
-
-#if MIOPEN_VERSION_MINOR <= 8
-#define cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)  __cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)
-#else
-#error "BUG from MIOpen 1.8.0"
-#define cudnnTransformTensor(hd, a, x, d_x, b, y, d_y)  miopenTransformTensor(hd, a, x, d_x, b, y, d_y)
-#endif
-
-// LRN: MIOpen 1.7.1 not exactly mapped
-#define CUDNN_LRN_MIN_N 1
-#define CUDNN_LRN_MAX_N 16
-#define CUDNN_LRN_MIN_K 1e-5
-#define CUDNN_LRN_MIN_BETA 0.01
-
-#define cudnnLRNDescriptor_t miopenLRNDescriptor_t
-#define CUDNN_LRN_CROSS_CHANNEL_DIM1 miopenLRNCrossChannel
-#define cudnnLRNMode_t miopenLRNMode_t
-#define cudnnCreateLRNDescriptor miopenCreateLRNDescriptor
-#define cudnnDestroyLRNDescriptor miopenDestroyLRNDescriptor
-#define cudnnLRNCrossChannelForward(hd, lrn, mode, a, x, d_x, b, y, d_y) \
-          miopenLRNForward(hd, lrn, a, x, d_x, b, y, d_y, false, NULL)
-#define cudnnSetLRNDescriptor(d, n, a, b, k) \
-          miopenSetLRNDescriptor(d, miopenLRNCrossChannel, n, a, b, k)
-// #define cudnnLRNCrossChannelBackward(hd, lrn, mode, a, y, d_y, dy, d_dy, x, d_x, b, dx, d_dx) miopenLRNBackward(hd, lrn, a, y, d_y, dy, d_dy, x, d_x, b, dx, d_dx, NULL) // FIXME
-UN_IMPLEMENTED(cudnnLRNCrossChannelBackward, cudnnStatus_t)
-
-
-// Dropout: MIOpen 1.7.1 unsupported
-#define cudnnDropoutDescriptor_t void*
-
-UN_IMPLEMENTED(cudnnRestoreDropoutDescriptor, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnDropoutForward, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnDropoutBackward, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnCreateDropoutDescriptor, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnDestroyDropoutDescriptor, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnSetDropoutDescriptor, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnDropoutGetStatesSize, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnDropoutGetReserveSpaceSize, cudnnStatus_t)
-
-// Reduce: MIOpen 1.7.1 unsupported
-#define cudnnReduceTensorOp_t int
-#define cudnnReduceTensorIndices_t int
-#define cudnnReduceTensorDescriptor_t void*
-
-#define CUDNN_32BIT_INDICES 0
-#define CUDNN_REDUCE_TENSOR_AMAX 0
-#define CUDNN_REDUCE_TENSOR_AVG 0
-#define CUDNN_REDUCE_TENSOR_NORM2 0
-#define CUDNN_REDUCE_TENSOR_MAX 0
-#define CUDNN_REDUCE_TENSOR_MIN 0
-#define CUDNN_REDUCE_TENSOR_MUL 0
-#define CUDNN_REDUCE_TENSOR_ADD 0
-#define CUDNN_REDUCE_TENSOR_FLATTENED_INDICES 0
-#define CUDNN_REDUCE_TENSOR_NORM1 0
-#define CUDNN_REDUCE_TENSOR_NO_INDICES 0
-
-UN_IMPLEMENTED(cudnnCreateReduceTensorDescriptor, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnDestroyReduceTensorDescriptor, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnGetReductionIndicesSize, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnSetReduceTensorDescriptor, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnGetReductionWorkspaceSize, cudnnStatus_t)
-UN_IMPLEMENTED(cudnnReduceTensor, cudnnStatus_t)
-
-
-/////////////////////////////////////////////////////////////////
 
 template<class T> static inline T& getVariable(const void *key) {
   static std::unordered_map<const void*, void*>* __root = NULL;

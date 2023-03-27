@@ -312,14 +312,14 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
 
     std::string identifier = ctx->generate_identifier();
     // Todo: platform interface to be coordinated with nnfusion devtype
-    const std::vector<std::string> SUPPORT_PLATFORM = {"CUDA_GPU"};
+    const std::vector<std::string> SUPPORT_PLATFORM = {"CUDA_GPU", "ROCM_GPU"};
 
     if (identifier != "" &&
         find(SUPPORT_PLATFORM.begin(), SUPPORT_PLATFORM.end(), get_device_str(devtype)) !=
             SUPPORT_PLATFORM.end())
     {
         // fetch all available kernel entries from kernel cache DB
-        auto fetched = cache_manager->fetch_all(identifier, get_device_str(devtype));
+        auto fetched = cache_manager->fetch_all(identifier, "CUDA_GPU");
 
         // emit External kernels
         {

@@ -14,6 +14,16 @@ namespace nnfusion
         class Edge
         {
         public:
+            Edge() = default;
+            Edge(std::shared_ptr<GNode> src,
+                 std::shared_ptr<GNode> dst,
+                 size_t id,
+                 int src_output,
+                 int dst_input) : m_src(src),
+                                  m_dst(dst),
+                                  m_id(id),
+                                  m_src_output(src_output),
+                                  m_dst_input(dst_input) {}
             std::shared_ptr<GNode> get_src() const { return m_src; }
             std::shared_ptr<GNode> get_dst() const { return m_dst; }
             size_t get_id() const { return m_id; }

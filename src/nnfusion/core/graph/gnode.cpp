@@ -211,6 +211,10 @@ const std::shared_ptr<nnfusion::graph::Edge> GNode::get_in_edge(size_t i) const
     return found_in_edge;
 }
 
+void GNode::clear_in_edges() {
+    m_in_edges.clear();
+}
+
 void GNode::add_in_edge(std::shared_ptr<Edge> edge)
 {
     m_in_edges.insert(edge);

@@ -102,7 +102,6 @@ namespace nnfusion
                 }
                 static const std::unordered_map<std::string, size_t> size_of_str_type;
 
-                size_t get_shared_memory_size() { return shared_memory_size; }
                 FunctionUnit_p get_or_emit_source(bool emit_func_call = false) override
                 {
                     if (!m_is_emitted)
@@ -175,14 +174,18 @@ namespace nnfusion
 
                 virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
                     shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr) override;
-
-            public:
+                
                 struct SharedMemoryLog
                 {
                     std::vector<std::string> symbol;
                     std::vector<std::string> dtype;
                     std::vector<size_t> size;
                 };
+                size_t get_num_local_thread_sync() { return num_local_thread_sync; }
+                size_t get_shared_memory_size() { return shared_memory_size; }
+
+                void set_num_local_thread_sync(size_t num) { num_local_thread_sync = num; }
+                void set_shared_memory_size(size_t size) { shared_memory_size = size; }
 
             protected:
                 size_t num_local_thread_sync;
@@ -374,7 +377,6 @@ namespace nnfusion
                     NNFUSION_CHECK(!kernel_entry.function.is_null());
                 }
 
-            private:
                 LanguageUnit_p emit_function_signature() override;
                 LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;
@@ -397,7 +399,6 @@ namespace nnfusion
                     NNFUSION_CHECK(!kernel_entry.function.is_null());
                 }
 
-            private:
                 LanguageUnit_p emit_function_signature() override;
                 LanguageUnit_p emit_function_body() override;
                 LanguageUnit_p emit_dependency() override;

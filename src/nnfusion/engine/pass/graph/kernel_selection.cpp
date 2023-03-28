@@ -8,6 +8,7 @@
 #include "nnfusion/core/kernels/cuda_gpu/cuda_emitter.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cpu_op_emitter.hpp"
 #include "nnfusion/core/kernels/hlsl/hlsl_kernel_emitter.hpp"
+#include "nnfusion/core/operators/op_define/if_single.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;
@@ -181,6 +182,14 @@ bool DefaultKernelSelector::register_custom_kernel(std::string op, NNFusion_Devi
 pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
     DefaultKernelSelector::pick_first(shared_ptr<GNode> gnode, NNFusion_DeviceType devtype)
 {
+    if (gnode->get_op_type() == "IfSingle") {
+        auto inner_fake_node = std::dynamic_pointer_cast<op::IfSingle>(gnode->get_op_ptr())->get_inner_fake_node(gnode);
+        if (!(*inner_fake_node)["Kernel_Selection_Result"].is_valid()) {
+            auto ans = pick_first(inner_fake_node, devtype);
+            if (ans.second != nullptr)
+                (*inner_fake_node)["Kernel_Selection_Result"] = ans;
+        }
+    }
     shared_ptr<KernelContext> ctx(new KernelContext(gnode));
     register_custom_kernel(gnode->get_op_type(), devtype);
     std::vector<shared_ptr<const KernelRegistration>> kernel_regs =
@@ -404,22 +413,28 @@ bool FetchBasedSelector::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
     std::vector<std::shared_ptr<GNode>> nodes = graph->get_nodes();
     for (auto it : nodes)
     {
-        if (!(*it)["Kernel_Selection_Result"].is_valid())
+        std::shared_ptr<GNode> node = it;
+        while (node->get_op_type() == "IfSingle") {
+            auto inner_node = std::dynamic_pointer_cast<op::IfSingle>(node->get_op_ptr())->get_inner_fake_node(node);
+            (*inner_node)["DeviceType"] = (*node)["DeviceType"].as<NNFusion_DeviceType>();
+            NNFUSION_LOG(INFO) << "IfSingle node: " << node->get_name() << "(" << (*node)["DeviceType"].is_valid() << ") inner node: " << inner_node->get_name() << "(" << (*inner_node)["DeviceType"].is_valid() << ")";
+            node = inner_node;
+        }
+        if (!(*node)["Kernel_Selection_Result"].is_valid())
         {
-            if (!(*it)["DeviceType"].is_valid())
+            if (!(*node)["DeviceType"].is_valid())
             {
-                NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass："
-                                      << it->get_name();
+                NNFUSION_CHECK_FAIL() << "GNode DeviceType should be assigned before this pass:"
+                                      << node->get_name();
             }
-            auto n_device_type = (*it)["DeviceType"].as<NNFusion_DeviceType>();
+            auto n_device_type = (*node)["DeviceType"].as<NNFusion_DeviceType>();
             NNFUSION_CHECK(n_device_type != UNKNOWN);
-            auto ans = fetch_inventory(cache_manager, it, n_device_type);
+            auto ans = fetch_inventory(cache_manager, node, n_device_type);
 
             if (ans.second != nullptr)
-                (*it)["Kernel_Selection_Result"] = ans;
+                (*node)["Kernel_Selection_Result"] = ans;
         }
     }
-
     return true;
 }
 

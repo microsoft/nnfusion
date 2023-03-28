@@ -97,7 +97,6 @@ namespace nnfusion
             virtual shared_ptr<nnfusion::cache::KernelEntry> get_kernel_cache_entry(
                 shared_ptr<nnfusion::cache::KernelEntry> kernel_entry = nullptr);
 
-        protected:
             // Generate function name for this kernel, the default name is:
             // "op_name + args_shapes + data_type + device + custom_tag"
             virtual LanguageUnit_p emit_function_name();
@@ -123,6 +122,7 @@ namespace nnfusion
             // Emit comments
             virtual LanguageUnit_p emit_comments();
 
+        protected:
             // Allocate persistant tensor, this could be used for trainning
             virtual const shared_ptr<nnfusion::descriptor::Tensor>
                 allocate_tensor(Shape shape,

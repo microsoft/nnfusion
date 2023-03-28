@@ -98,6 +98,7 @@ namespace nnfusion
 
             void add_in_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
             void remove_in_edge(std::shared_ptr<nnfusion::graph::Edge> edge);
+            void clear_in_edges();
 
             ///  out edges
             std::vector<std::shared_ptr<nnfusion::graph::Edge>> get_out_edges() const;

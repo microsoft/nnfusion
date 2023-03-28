@@ -1,5 +1,6 @@
 #include "subgraph_op_move.hpp"
 #include "nnfusion/core/operators/op_define/if.hpp"
+#include "nnfusion/core/operators/op_define/if_single.hpp"
 
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
@@ -11,7 +12,8 @@ const int move_thres = 128;
 void SubGraphOpMovePass::find_and_move_small_op_out(
     std::shared_ptr<nnfusion::graph::Graph> full_graph,
     std::shared_ptr<nnfusion::graph::Graph> sub_graph,
-    std::shared_ptr<nnfusion::graph::GNode> if_node) {
+    std::shared_ptr<nnfusion::graph::GNode> if_node,
+    bool is_then_branch) {
     std::map<std::string, bool> moved;
     auto gnodes = sub_graph->get_ordered_ops();
     GNodeVector to_move;
@@ -49,14 +51,21 @@ void SubGraphOpMovePass::find_and_move_small_op_out(
     }
     std::cout << "---------------------\n";
 
-    move_out(to_move, if_node, full_graph, sub_graph);
+    move_out(to_move, if_node, full_graph, sub_graph, is_then_branch);
 }
 
-void SubGraphOpMovePass::move_out(GNodeVector to_move, std::shared_ptr<GNode> if_node, std::shared_ptr<Graph> full_graph, std::shared_ptr<Graph> sub_graph) {
+void SubGraphOpMovePass::move_out(GNodeVector to_move, std::shared_ptr<GNode> if_node, std::shared_ptr<Graph> full_graph, std::shared_ptr<Graph> sub_graph, bool is_then_branch) {
     std::map<std::string, std::shared_ptr<GNode>> moved_gnodes;
     // create gnode in full_graph for each gnode in to_move
     for (auto gnode: to_move) {
         GNodeVector new_inputs;
+        std::shared_ptr<op::Op> new_op;
+        if (gnode->get_op_type() == "Reshape" && !dynamic_pointer_cast<op::Reshape>(gnode->get_op_ptr())->get_is_layout_change()) {
+            new_op = gnode->get_op_ptr();
+        } else {
+            new_op = std::make_shared<op::IfSingle>(gnode->get_op_ptr(), is_then_branch);
+            new_inputs.push_back(if_node->get_in_edge(0)->get_src());
+        }
         for (auto in_edge: gnode->get_in_edges()) {
             auto in_gnode = in_edge->get_src();
             if (in_gnode->get_op_type() == "Parameter") {
@@ -73,7 +82,7 @@ void SubGraphOpMovePass::move_out(GNodeVector to_move, std::shared_ptr<GNode> if
                 NNFUSION_CHECK_FAIL() << "unreachable!";
             }
         }
-        auto new_node = full_graph->add_node_and_edge(gnode->get_op_ptr(), new_inputs); // op is used by two gnodes now, but the one in inner graph will be deleted later
+        auto new_node = full_graph->add_node_and_edge(new_op, new_inputs); // op is used by two gnodes now, but the one in inner graph will be deleted later
         moved_gnodes[gnode->get_unique_name()] = new_node;
     }
 
@@ -119,8 +128,8 @@ bool SubGraphOpMovePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
     for (auto& gnode: graph->get_ordered_ops()) {
         if (gnode->get_op_type() == "If") {
             auto if_op = dynamic_pointer_cast<op::If>(gnode->get_op_ptr());
-            find_and_move_small_op_out(graph, if_op->get_then_branch_graph(), gnode);
-            find_and_move_small_op_out(graph, if_op->get_else_branch_graph(), gnode);
+            find_and_move_small_op_out(graph, if_op->get_then_branch_graph(), gnode, true);
+            find_and_move_small_op_out(graph, if_op->get_else_branch_graph(), gnode, false);
         }
     }
     return true;

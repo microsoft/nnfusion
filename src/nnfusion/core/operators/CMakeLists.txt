@@ -95,6 +95,7 @@ set(SRC
     op_define/variable.cpp
     op_define/fused.cpp
     op_define/while.cpp
+    op_define/if_single.cpp
     ${generic_op_define}
 )
 

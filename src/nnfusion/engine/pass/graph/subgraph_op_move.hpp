@@ -21,12 +21,14 @@ namespace nnfusion
                     nnfusion::graph::GNodeVector gnodes,
                     std::shared_ptr<nnfusion::graph::GNode> if_node,
                     std::shared_ptr<nnfusion::graph::Graph> full_graph,
-                    std::shared_ptr<nnfusion::graph::Graph> graph
+                    std::shared_ptr<nnfusion::graph::Graph> graph,
+                    bool is_then_branch
                 );
                 void find_and_move_small_op_out(
                     std::shared_ptr<nnfusion::graph::Graph> graph,
                     std::shared_ptr<nnfusion::graph::Graph> sub_graph,
-                    std::shared_ptr<nnfusion::graph::GNode> if_node
+                    std::shared_ptr<nnfusion::graph::GNode> if_node,
+                    bool is_then_branch
                 );
                 bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) override;
             };

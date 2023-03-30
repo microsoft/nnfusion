@@ -8,7 +8,7 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 using namespace nnfusion::kernels::cuda;
 
-DEFINE_int32(fmax_block_dim, 256, "Max blockDim for cuda kernel");
+DECLARE_int32(fmax_block_dim);
 
 int ElementWiseFused::unique_func_id = 0;
 

@@ -7,7 +7,7 @@ using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 
 DEFINE_bool(fenable_cpu, false, "Run small ops on CPU");
-DECLARE_bool(fif_launch_d2h);
+DECLARE_bool(fcf_level);
 const int cpu_thres = 64;
 
 /*
@@ -126,7 +126,7 @@ bool can_eliminate_copy(std::shared_ptr<Edge> edge) {
     auto dst = edge->get_dst();
     bool src_on_cpu = src->Get<int>(stage_cpu_tag) & 1;
     bool dst_on_cpu = dst->Get<int>(stage_cpu_tag) & 1;
-    if (dst->get_op_type() == "If" && FLAGS_fif_launch_d2h && edge->get_dst_input() == 0) {
+    if (dst->get_op_type() == "If" && FLAGS_fcf_level == 2 && edge->get_dst_input() == 0) {
         auto if_op = std::dynamic_pointer_cast<op::If>(dst->get_op_ptr());
         bool cond_not_used = true;
         auto then_graph = if_op->get_then_branch_graph();

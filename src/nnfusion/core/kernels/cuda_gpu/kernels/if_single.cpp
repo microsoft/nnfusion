@@ -38,6 +38,17 @@ namespace nnfusion
                     for (size_t i = 0; i < m_kernel_ctx->outputs.size(); i++) {
                         output_names.push_back("output" + to_string(i));
                     }
+                    if (!is_emitting_block_kernel) {
+                        size_t shared_memory_size = get_shared_memory_size();
+                        if (shared_memory_size > 0) {
+                            lu << "__shared__ char shared_buffer[" << std::to_string(shared_memory_size) << "];"
+                               << "\n";
+                        } else {
+                            lu << "char* shared_buffer = nullptr;\n";
+                        }
+                        lu << "int thread_id = threadIdx.x;\n";
+                        lu << "int block_id = blockIdx.x;\n";
+                    }
                     lu << "if ((*input0) == " << m_op->get_is_then_branch()  << ")\n";
                     lu.block_begin();
                     lu << m_inner_kernel_emitter->get_function_name() << "_block_kernel(" << join(input_names, ", ") << ", " << join(output_names, ", ") << ", thread_id, block_id, shared_buffer);\n";

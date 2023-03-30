@@ -10,9 +10,9 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 
 DECLARE_int32(floop_copy_blockdim);
-DECLARE_bool(floop_in_c);
+DECLARE_int32(fcf_level);
 DECLARE_bool(ffast_barrier);
-DECLARE_int32(ffused_max_grid);
+DECLARE_int32(fmax_grid_dim);
 
 cuda::While::While(shared_ptr<KernelContext> ctx)
     : Loop(ctx, 256, 1)
@@ -27,7 +27,7 @@ LanguageUnit_p cuda::While::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
-    if (FLAGS_floop_in_c) {
+    if (FLAGS_fcf_level == 2) {
         // NNFUSION_LOG(INFO) << "not implemented"; exit(1);
         lu << "char cond_host;\n";
         lu << "static char* cond = nullptr;\n";

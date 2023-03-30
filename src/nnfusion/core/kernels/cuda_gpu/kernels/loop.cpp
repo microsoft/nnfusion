@@ -11,8 +11,9 @@
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
-DEFINE_bool(floop_in_c, false, "loop in c");
-DECLARE_int32(ffused_max_grid);
+
+DECLARE_int32(fcf_level);
+DECLARE_int32(fmax_grid_dim);
 DEFINE_int32(floop_copy_blockdim, 256, "");
 DECLARE_bool(ffast_barrier);
 DECLARE_string(fdefault_device);
@@ -40,7 +41,7 @@ cuda::Loop::Loop(shared_ptr<KernelContext> ctx, size_t reserve_memory, int input
     m_shared_memory_size = get_subgraph_shared_memory(m_loop_body_tu->program);
     for (auto& item : output_map)
         item.second--;
-    m_body_instructions = create_param_map(m_loop_body_tu->program, output_map, !FLAGS_floop_in_c);
+    m_body_instructions = create_param_map(m_loop_body_tu->program, output_map, FLAGS_fcf_level==1);
     if (FLAGS_ffast_barrier) {
         set_launch_config();
         m_sync_tensor = std::make_shared<nnfusion::descriptor::Tensor>(
@@ -69,11 +70,11 @@ void fetch_dependent(const std::set<int64_t>& emitted, std::vector<std::shared_p
 }
 
 bool cuda::Loop::is_host_kernel_launch() {
-    return !FLAGS_floop_in_c;
+    return FLAGS_fcf_level == 1;
 }
 
 LanguageUnit_p cuda::Loop::emit_function_signature() {
-    if (FLAGS_floop_in_c) {
+    if (FLAGS_fcf_level == 2) {
         LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
         auto& lu = *_lu;
 
@@ -164,7 +165,7 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
             cuda::dim3 grid = kernel->get_grid_dim();
             std::string launch_bound = get_launch_bound(ins);
             std::string kernel_call = kernel->emit_block_kernel_call(params)->get_code();
-            if (grid.x > FLAGS_ffused_max_grid) {
+            if (grid.x > FLAGS_fmax_grid_dim) {
                 kernel_call = replace_one(kernel_call, "blockIdx.x", "blockIdx.x + start_block");
                 launch_bound = replace_one(launch_bound, "blockIdx.x", "blockIdx.x + start_block");
                 lu << "for (int start_block = 0; start_block < " << grid.x << "; start_block += gridDim.x)\n";
@@ -221,7 +222,7 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
 
 LanguageUnit_p cuda::Loop::emit_function_call()
 {
-    if (!FLAGS_floop_in_c) {
+    if (FLAGS_fcf_level == 1) {
         return CudaEmitter::emit_function_call();
     } else {
         return KernelEmitter::emit_function_call();
@@ -232,7 +233,7 @@ LanguageUnit_p cuda::Loop::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
-    if (FLAGS_floop_in_c) {
+    if (FLAGS_fcf_level == 2) {
         lu << "int64_t iter = 0;\n";
         lu << "CUDA_SAFE_CALL(cudaMemcpy(&iter, input0, sizeof(int64_t), cudaMemcpyDeviceToHost));\n";
         lu << "CUDA_SAFE_CALL(cudaMemcpy(&iter, input0, sizeof(int64_t), cudaMemcpyDeviceToHost));\n";
@@ -309,7 +310,7 @@ void cuda::Loop::set_launch_config()
     auto cfg0 = get_subgraph_launch_config(m_body_instructions);
     m_blockDim = cfg0.first;
     m_gridDim = cfg0.second;
-    m_gridDim.x = min(m_gridDim.x, FLAGS_ffused_max_grid);
+    m_gridDim.x = min(m_gridDim.x, FLAGS_fmax_grid_dim);
 }
 
 LanguageUnit_p cuda::Loop::emit_dependency()
@@ -326,7 +327,7 @@ LanguageUnit_p cuda::Loop::emit_dependency()
     {
         auto kernel = static_pointer_cast<cuda::CudaEmitter>(ins->getKernel());
         auto body = kernel->get_or_emit_source();
-        if (FLAGS_floop_in_c) {
+        if (FLAGS_fcf_level == 2) {
             LanguageUnit_p _k(new LanguageUnit(kernel->get_function_name() + "_loop"));
             auto& k = *_k;
             if (std::dynamic_pointer_cast<cuda::ControlFlowEmitter>(kernel)) {
@@ -392,7 +393,7 @@ LanguageUnit_p cuda::Loop::emit_dependency()
             _lu->require(block_kernel);
         }
     }
-    if (FLAGS_floop_in_c) {
+    if (FLAGS_fcf_level == 2) {
         std::string copy_func_name = get_function_name() + "_copy_kernel";
         vector<string> params_with_type;
         for (size_t i = 0; i < m_context->outputs.size(); i++)

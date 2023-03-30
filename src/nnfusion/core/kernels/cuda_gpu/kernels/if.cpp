@@ -10,17 +10,16 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
-DEFINE_bool(fif_launch_then_else, false, "launch kernels in both then branch and else branch");
-DEFINE_bool(fif_launch_then_else_naive, false, "launch kernels in both then branch and else branch without fusion");
-DEFINE_bool(fif_launch_d2h, false, "launch kernels in both then branch and else branch");
-DEFINE_int32(ffused_max_grid, 512, "max griddim in fused kernels");
+DEFINE_bool(fbranch_fine_grained, false, "launch kernels in both then branch and else branch");
+DEFINE_bool(fbranch_fine_grained_naive, false, "launch kernels in both then branch and else branch without fusion");
+DECLARE_int32(fmax_grid_dim);
+DECLARE_int32(fcf_level);
 DECLARE_bool(ffast_barrier);
 DECLARE_string(fdefault_device);
 
 cuda::If::If(shared_ptr<KernelContext> ctx)
     : ControlFlowEmitter(ctx)
 {
-    NNFUSION_CHECK((!FLAGS_fif_launch_d2h) || !(FLAGS_fif_launch_then_else));
     std::stringstream tag;
     tag << "_IfOP";
     custom_tag = tag.str();
@@ -46,9 +45,9 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
     m_shared_memory_size = max(get_subgraph_shared_memory(m_then_branch_tu->program),
                                get_subgraph_shared_memory(m_else_branch_tu->program));
     m_pool_offset = then_branch_pool_offset;
-    m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
+    m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), FLAGS_fcf_level == 1 && !FLAGS_fbranch_fine_grained);
     m_pool_offset = else_branch_pool_offset;
-    m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
+    m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map(), FLAGS_fcf_level == 1 && !FLAGS_fbranch_fine_grained);
     if (FLAGS_ffast_barrier) {
         set_launch_config();
         m_sync_tensor = std::make_shared<nnfusion::descriptor::Tensor>(
@@ -114,14 +113,14 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
         printf("\n");
     }
     m_kernel_groups.clear();
-    if (FLAGS_fif_launch_d2h || (FLAGS_fif_launch_then_else && FLAGS_fif_launch_then_else_naive)) {
+    if (FLAGS_fcf_level == 2 || (FLAGS_fbranch_fine_grained && FLAGS_fbranch_fine_grained_naive)) {
         for (auto group: then_kernel_groups) {
             m_kernel_groups.push_back(make_pair(group, std::vector<int>()));
         }
         for (auto group: else_kernel_groups) {
             m_kernel_groups.push_back(make_pair(std::vector<int>(), group));
         }
-    } else if (FLAGS_fif_launch_then_else) {
+    } else if (FLAGS_fbranch_fine_grained) {
         int then_group_p = 0, else_group_p = 0;
         while (then_group_p < then_kernel_groups.size() || else_group_p < else_kernel_groups.size()) {
             if (then_group_p >= then_kernel_groups.size()) {
@@ -171,7 +170,7 @@ cuda::If::If(shared_ptr<KernelContext> ctx)
         for (auto x: group.second) printf("%d ", x);
         printf("\n");
     }
-    if (FLAGS_fif_launch_then_else) {
+    if (FLAGS_fbranch_fine_grained) {
         m_outer_control_then = "if (*input0)";
         m_outer_control_else = "if (!(*input0))";
     } else {
@@ -189,7 +188,7 @@ bool cuda::If::is_dense_op_group(ir::BasicBlock::Pointer instructions, std::vect
 }
 
 bool cuda::If::is_host_kernel_launch() {
-    return !FLAGS_fif_launch_d2h && !FLAGS_fif_launch_then_else;
+    return FLAGS_fcf_level == 1 && !FLAGS_fbranch_fine_grained;
 }
 
 void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::Pointer instructions, int max_grid_dim, int start_id, int end_id)
@@ -318,7 +317,7 @@ std::string cuda::If::get_wrapper_func_name(int then_start_id, int then_end_id, 
 
 int cuda::If::get_max_grid_dim(int then_start_id, int then_end_id, int else_start_id, int else_end_id) {
     bool has_barrier = (then_end_id - then_start_id > 1) || (else_end_id - else_start_id > 1);
-    return has_barrier ? FLAGS_ffused_max_grid : INT32_MAX;
+    return has_barrier ? FLAGS_fmax_grid_dim : INT32_MAX;
 }
 
 LanguageUnit_p cuda::If::generate_branch_fused_function(int then_start_id, int then_end_id, int else_start_id, int else_end_id) {
@@ -450,9 +449,9 @@ void cuda::If::emit_branch_wrapper(int then_start_id, int then_end_id, int else_
 LanguageUnit_p cuda::If::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
-    if (FLAGS_fif_launch_then_else || FLAGS_fif_launch_d2h) {
+    if (FLAGS_fbranch_fine_grained || FLAGS_fcf_level == 2) {
         auto& lu = *_lu;
-        if (FLAGS_fif_launch_d2h) {
+        if (FLAGS_fcf_level == 2) {
             bool cond_on_cpu = false;
             auto node = m_context->gnode;
             if (node->hasAttribute("cpu_tensor")) {
@@ -522,18 +521,18 @@ LanguageUnit_p cuda::If::emit_function_body()
         allocate_shared_memory(_lu);
         lu << "if (*input0) ";
         lu.block_begin();
-        generate_branch_fused_kernel(_lu, m_then_branch_instructions, FLAGS_ffused_max_grid);
+        generate_branch_fused_kernel(_lu, m_then_branch_instructions, FLAGS_fmax_grid_dim);
         lu.block_end();
         lu << "else ";
         lu.block_begin();
-        generate_branch_fused_kernel(_lu, m_else_branch_instructions, FLAGS_ffused_max_grid);
+        generate_branch_fused_kernel(_lu, m_else_branch_instructions, FLAGS_fmax_grid_dim);
         lu.block_end();
     }
     return _lu;
 }
 
 LanguageUnit_p cuda::If::emit_function_call(std::vector<std::string> names) {
-    if (!FLAGS_fif_launch_then_else && !FLAGS_fif_launch_d2h) {
+    if (!FLAGS_fbranch_fine_grained && FLAGS_fcf_level == 1) {
         // NNFUSION_CHECK_FAIL() << "should not reach here";
         // branch in cuda
         return ControlFlowEmitter::emit_function_call(names);
@@ -567,7 +566,7 @@ void cuda::If::set_launch_config()
     m_gridDim = maxdim3(cfg0.second, cfg1.second);
     NNFUSION_CHECK(m_gridDim.y == 1);
     NNFUSION_CHECK(m_gridDim.z == 1);
-    m_gridDim.x = min(m_gridDim.x, FLAGS_ffused_max_grid);
+    m_gridDim.x = min(m_gridDim.x, FLAGS_fmax_grid_dim);
 }
 
 LanguageUnit_p cuda::If::emit_dependency()
@@ -581,11 +580,11 @@ LanguageUnit_p cuda::If::emit_dependency()
     else NNFUSION_CHECK_FAIL() << "Unknown device type: " << FLAGS_fdefault_device;
     if (FLAGS_ffast_barrier) _lu->require(declaration::step_to_device);
     auto op = static_pointer_cast<op::If>(m_context->gnode->get_op_ptr());
-    m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
-    m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map(), !(FLAGS_fif_launch_d2h || FLAGS_fif_launch_then_else));
+    m_then_branch_instructions = create_param_map(m_then_branch_tu->program, op->get_output_map(), FLAGS_fcf_level == 1 && !FLAGS_fbranch_fine_grained);
+    m_else_branch_instructions = create_param_map(m_else_branch_tu->program, op->get_output_map(), FLAGS_fcf_level == 1 && !FLAGS_fbranch_fine_grained);
 
-    if (FLAGS_fif_launch_then_else || FLAGS_fif_launch_d2h) {
-        // std::string outer_control = FLAGS_fif_launch_then_else ? "if (*input0)" : "";
+    if (FLAGS_fbranch_fine_grained || FLAGS_fcf_level == 2) {
+        // std::string outer_control = FLAGS_fbranch_fine_grained ? "if (*input0)" : "";
         for (auto& group: m_kernel_groups) {
             if ((group.first.size() > 0 && group.second.size() > 0) || group.first.size() > 1 || group.second.size() > 1) {
                 auto group_kernel = generate_branch_fused_function(
@@ -659,7 +658,7 @@ LanguageUnit_p cuda::If::emit_dependency()
 
 LanguageUnit_p cuda::If::emit_function_signature()
 {
-    if (!FLAGS_fif_launch_then_else && !FLAGS_fif_launch_d2h) return ControlFlowEmitter::emit_function_signature();
+    if (FLAGS_fcf_level == 1 && !FLAGS_fbranch_fine_grained) return ControlFlowEmitter::emit_function_signature();
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_sig"));
     auto& lu = *_lu;
 

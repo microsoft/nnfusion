@@ -5,7 +5,7 @@
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 
-DEFINE_bool(fif_move_out, false, "Move small ops of if branch out");
+DEFINE_bool(fbranch_split, false, "Move small ops of if branch out");
 
 const int move_thres = 128;
 
@@ -124,7 +124,7 @@ void SubGraphOpMovePass::move_out(GNodeVector to_move, std::shared_ptr<GNode> if
 
 bool SubGraphOpMovePass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph)
 {
-    if (!FLAGS_fif_move_out) return true;
+    if (!FLAGS_fbranch_split) return true;
     for (auto& gnode: graph->get_ordered_ops()) {
         if (gnode->get_op_type() == "If") {
             auto if_op = dynamic_pointer_cast<op::If>(gnode->get_op_ptr());

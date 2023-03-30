@@ -7,6 +7,9 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 using namespace nnfusion::async;
 
+DEFINE_int32(fmax_block_dim, 256, "Max blockDim for cuda kernel");
+DEFINE_int32(fmax_grid_dim, 256, "Max blockDim for cuda kernel");
+
 LanguageUnit_p cuda::CudaEmitter::emit_function_call()
 {
     vector<string> names;

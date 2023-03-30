@@ -37,7 +37,7 @@ DECLARE_string(fantares_perf_file);
 DECLARE_bool(fcodegen_pybind);
 DEFINE_bool(fcheck_result, false, "Check result with external inputs and outputs");
 DEFINE_string(fcheck_prefix_name, "", "prefix for saving external inputs and outputs");
-DECLARE_bool(fif_launch_then_else);
+DECLARE_bool(fbranch_fine_grained);
 DEFINE_int32(fstack_size, -1, "cudaLimitStackSize");
 DECLARE_bool(fenable_extern_result_inline);
 

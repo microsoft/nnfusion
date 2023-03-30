@@ -5,7 +5,7 @@ using namespace nnfusion;
 using namespace kernels;
 using namespace nnfusion::async;
 
-DECLARE_bool(floop_in_c);
+DEFINE_int32(fcf_level, 1, "control flow codegen level");
 DEFINE_bool(ffast_barrier, false, "Use Rammer's fast barrier in control flow codegen");
 
 LanguageUnit_p cuda::ControlFlowEmitter::emit_function_call(std::vector<std::string> names)
@@ -310,7 +310,7 @@ ir::BasicBlock::Pointer cuda::ControlFlowEmitter::create_param_map(
             NNFUSION_CHECK(mapping.is_valid());
             auto index = mapping.as<int>();
             if (index == -1) {
-                if (FLAGS_floop_in_c) {
+                if (FLAGS_fcf_level == 2) {
                     m_param_map[ins->get_outputs()[0]] = "i_dev"; // only defined for loop
                     scalar_map[ins->get_outputs()[0]] = "i";
                 } else {

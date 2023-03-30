@@ -140,15 +140,12 @@ public:
                 fuse_from_node(tnode, true);
             }
         }
-        NNFUSION_LOG(INFO) << "_________________________";
         inline_lightweighted_ops();
-        NNFUSION_LOG(INFO) << "______________________2___";
         auto groups = extract_fusion_group();
         if (!FLAGS_fnofuse)
             for (auto group: groups) {
                 insert_fuse_group(group);
             }
-        NNFUSION_LOG(INFO) << "____________________3_____";
         auto nodes = nlohmann::json().array();
         for (auto& node : find_topo_sort_priority(m_graph)) {
             if (node->get_op_ptr()->is_tensor_op()) continue;
@@ -168,7 +165,6 @@ public:
             if (op_type == "Matched_Pattern") op_type = node->get_name();
             nodes.push_back({node->get_id(), str, op_type, edge});
         }
-        NNFUSION_LOG(INFO) << "________________4_________";
         auto file = std::ofstream(FLAGS_ftune_output_file);
         file << nodes.dump(/*indent=*/ 2);
         file.close();
@@ -192,15 +188,11 @@ private:
     }
 
     bool is_lightweighted_op(const shared_ptr<GNode> &node) {
-        NNFUSION_CHECK_NOT_NULLPTR(node);
         auto type = node->get_op_type();
-        NNFUSION_LOG(INFO) << type << node->get_name();
         if (type == "Slice" || type == "Broadcast") return true;
         if (type == "Reshape") {
             auto op = std::dynamic_pointer_cast<op::Reshape>(node->get_op_ptr());
-            NNFUSION_LOG(INFO) <<"~~~~~" << op->get_output_shape();
             auto order = op->get_input_order();
-            NNFUSION_LOG(INFO) << order;
             if (order.empty())
                 return true;
 
@@ -219,8 +211,6 @@ private:
         unordered_map<int, shared_ptr<FuseGroup>> map;
         vector<shared_ptr<FuseGroup>> groups;
         for (auto& tnode : node_list_) {
-            NNFUSION_CHECK_NOT_NULLPTR(tnode->node_);
-            NNFUSION_CHECK_NOT_NULLPTR(tnode->node_->get_op_ptr());
             if (tnode->node_->get_op_ptr()->is_tensor_op()) continue;
             if (tnode->group_id_ < 0) {
                 auto f = make_shared<FuseGroup>();
@@ -233,37 +223,26 @@ private:
                 map[tnode->group_id_]->nodes.insert(tnode->node_);
             }
         }
-        NNFUSION_LOG(INFO) <<"-------777--------";
         for (auto &kv: map) groups.push_back(kv.second);
 
         for (auto &group : groups) {
             bool group_is_lightweighted = true;
             unordered_set<shared_ptr<GNode>> group_outputs;
             for (auto &node: group->nodes) {
-                NNFUSION_LOG(INFO) <<"-------aa11--------";
                 group_is_lightweighted &= is_lightweighted_op(node);
-                NNFUSION_LOG(INFO) <<"-------aa--------" << node->get_name() << node->get_out_edges().size();
                 for (auto &edge: node->get_out_edges())
                 {
-                    NNFUSION_LOG(INFO) << "#####";
-                    NNFUSION_CHECK_NOT_NULLPTR(edge->get_dst());
-                    NNFUSION_CHECK_NOT_NULLPTR(group);
-                    NNFUSION_LOG(INFO) << "#####1";
                     if (!group->nodes.count(edge->get_dst())) 
                             group_outputs.insert(edge->get_dst());
-                    NNFUSION_LOG(INFO) << "#####2";
 
                 }
             }
-            NNFUSION_LOG(INFO) <<"-------bb--------";
             if (group_outputs.size() == 0) continue;
             auto &output_node = *group_outputs.begin();
             auto &tag_output_node = node_map_[output_node];
             bool op_skip = skip_ops.count(output_node->get_op_type());
-            NNFUSION_LOG(INFO) <<"-------cc--------";
             for (auto &node: group->nodes)
                 op_skip |= skip_ops.count(node->get_op_type());
-            NNFUSION_LOG(INFO) <<"-------dd--------";
             if (group_is_lightweighted && !op_skip && group_outputs.size() == 1) {
                 if (tag_output_node->group_id_ < 0) tag_output_node->group_id_ = cur_group_++;
                 for (auto &node: group->nodes)
@@ -472,7 +451,6 @@ bool RegisterFusionPass::run_on_graph(std::shared_ptr<Graph>& graph)
     parse_skip_ops();
     auto optimizer = RegisterFusionOptimizer(graph);
     if (!optimizer.Optimize()) return false;
-    NNFUSION_LOG(INFO) <<"~~~~~~~~~~~~~~~~~~~~";
     auto applier = ApplyFusionResult(graph);
     if (FLAGS_ftune_input_file == "")
         exit(0);

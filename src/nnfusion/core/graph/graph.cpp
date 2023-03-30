@@ -114,10 +114,6 @@ void Graph::add_gnode_and_edge(const std::shared_ptr<GNode> gnode,
 
 void Graph::remove_node(std::shared_ptr<GNode> node)
 {
-    //TF_DCHECK_OK(IsValidNode(node)) << node->DebugString();
-    //NNFUSION_DCHECK(!node->IsSource());
-    //NNFUSION_DCHECK(!node->IsSink());
-
     // Remove any edges involving this node.
     while (!node->get_in_edges().empty())
     {

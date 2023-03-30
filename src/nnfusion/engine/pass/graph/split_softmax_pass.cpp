@@ -15,6 +15,7 @@ bool SplitSoftmaxPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
     if (FLAGS_ftune_output_file == "")
         return true;
+    NNFUSION_LOG(INFO) << "split softmax pass starts";
     for (auto node : graph->get_ordered_ops())
     {
         if (node->get_op_type() != "Softmax")
@@ -47,5 +48,6 @@ bool SplitSoftmaxPass::run_on_graph(std::shared_ptr<Graph>& graph)
         }
         graph->remove_node(node);
     }
+    NNFUSION_LOG(INFO) << "split softmax pass ends";
     return true;
 }

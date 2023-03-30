@@ -29,6 +29,7 @@
 #include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/vector_dot_transpose_pass.hpp"
+#include "nnfusion/engine/pass/graph/nchw2nhwc_pass.hpp"
 
 #include "nnfusion/engine/pass/extract_graph_signature.hpp"
 #include "nnfusion/engine/pass/tensor/inplace_tensor_analysis.hpp"
@@ -50,6 +51,7 @@ HLSLEngine::HLSLEngine()
     if (FLAGS_fhlsl_codegen_type == "csharp")
     {
         g_passes->push_back(make_shared<CSEPass>());
+        g_passes->push_back(make_shared<NCHW2NHWCPass>());
         g_passes->push_back(make_shared<AutodiffPass>());
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
         g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());
@@ -91,6 +93,7 @@ HLSLEngine::HLSLEngine()
     else if (FLAGS_fhlsl_codegen_type == "cpp")
     {
         g_passes->push_back(make_shared<CSEPass>());
+        g_passes->push_back(make_shared<NCHW2NHWCPass>());
         g_passes->push_back(make_shared<AutodiffPass>());
         g_passes->push_back(make_shared<GradientWeightMappingPass>());
         g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());

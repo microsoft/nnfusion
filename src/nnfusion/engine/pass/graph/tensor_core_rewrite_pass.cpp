@@ -115,6 +115,52 @@ bool TensorCoreRewritePass::run_on_graph(std::shared_ptr<Graph>& graph)
             }
             graph->remove_node(node);
         }
+        else if (node->get_op_type() == "NhwcConv" && node->get_element_type() == element::f16)
+        {
+            if (skip_ops.count("NhwcConv")) continue;
+            // NNFUSION_LOG(INFO) << "convert NhwcConv";
+            auto op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(node->get_op_ptr());
+            auto out_shape = node->get_output_shape(0);
+            size_t N = out_shape[0], H = out_shape[1], W = out_shape[2], C = out_shape[3];
+            size_t in_channel = node->get_input_shape(0)[3];
+            size_t KH = node->get_input_shape(1)[1], KW = node->get_input_shape(1)[2];
+            if (C % 8 > 0 || N * H * W % 8 > 0 || N * C * H * W % 256 > 0 || in_channel * KW * KH % 16 > 0)
+                continue;
+            op::OpConfig::any config;
+            auto convconfig = op->localOpConfig.getRoot();
+            config["N"] = N, config["C"] = C, config["H"] = H, config["W"] = W;
+            config["KH"] = KH, config["KW"] = KW;
+            config["data_format"] = "NHWC";
+            const auto& stride_h = convconfig["strides"][0];
+            const auto& stride_w = convconfig["strides"][1];
+            const auto& padding_h = convconfig["pads"][0];
+            const auto& padding_w = convconfig["pads"][1];
+            const auto& dilation_h = convconfig["dilations"][0];
+            const auto& dilation_w = convconfig["dilations"][1];
+            NNFUSION_CHECK(padding_h == padding_w);
+            NNFUSION_CHECK(stride_h == stride_w);
+            NNFUSION_CHECK(dilation_h == dilation_w);
+            config["S"] = stride_h;
+            config["D"] = dilation_h;
+            config["P"] = padding_h;
+            auto op0 = make_shared<op::GenericOp>(node->get_name() + ".tc", "ImplicitGemm", config);
+            auto weight_reshape_op = make_shared<op::Reshape>(nnfusion::get_default_order(4),
+                Shape{C,  KH * KW * in_channel});
+            auto op1 = make_shared<op::Reshape>(nnfusion::get_default_order(2), out_shape);
+            auto data = node->get_in_edge(0)->get_src();
+            auto weight = node->get_in_edge(1)->get_src();
+            auto weight_reshape = graph->add_node_and_edge(weight_reshape_op, {weight});
+            auto node0 = graph->add_node_and_edge(op0, {data, weight_reshape});
+            auto node1 = graph->add_node_and_edge(op1, {node0});
+            for (auto& edge : node->get_out_edges()) {
+                if (edge->is_control_edge())
+                    graph->add_control_edge(node1, edge->get_dst());
+                else
+                    graph->add_edge(node1, 0, edge->get_dst(), edge->get_dst_input());
+            }
+            graph->remove_node(node);
+        
+        }
         else if (node->get_op_type() == "Dot" && node->get_element_type() == element::f16) {
             if (skip_ops.count("Dot")) continue;
             auto op = std::dynamic_pointer_cast<op::Dot>(node->get_op_ptr());

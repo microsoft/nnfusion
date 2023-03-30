@@ -21,6 +21,7 @@ using namespace nnfusion::pass::graph;
 
 bool OpInplacePass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
+    NNFUSION_LOG(INFO) << "op inplace pass starts";
     for (auto node : graph->get_nodes())
     {
         if (auto op = std::dynamic_pointer_cast<Result>(node->get_op_ptr()))
@@ -105,5 +106,6 @@ bool OpInplacePass::run_on_graph(std::shared_ptr<Graph>& graph)
             AddInplace(op, 0, 0, false);
         }
     }
+    NNFUSION_LOG(INFO) << "op inplace pass ends";
     return true;
 }

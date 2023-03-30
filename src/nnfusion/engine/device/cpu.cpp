@@ -29,6 +29,7 @@
 #include "nnfusion/engine/pass/tensor/liveness_analysis.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_memory_layout.hpp"
+#include "nnfusion/engine/pass/graph/nchw2nhwc_pass.hpp"
 
 #include "nnfusion/engine/pass/codegen/cpu_codegen_pass.hpp"
 
@@ -41,6 +42,7 @@ CpuEngine::CpuEngine()
     : Engine()
 {
     g_passes->push_back(make_shared<CSEPass>());
+    g_passes->push_back(make_shared<NCHW2NHWCPass>());
     g_passes->push_back(make_shared<AutodiffPass>());
     g_passes->push_back(make_shared<GradientWeightMappingPass>());
     g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());

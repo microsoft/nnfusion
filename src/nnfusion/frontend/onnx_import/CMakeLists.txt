@@ -60,6 +60,8 @@ add_library(onnx_import STATIC
         op/resize.cpp
         op/conv.hpp
         op/conv.cpp
+        op/nhwcconv.hpp
+        op/nhwcconv.cpp
         op/shape.hpp
         op/shape.cpp
         op/conv_trans.hpp

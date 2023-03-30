@@ -51,8 +51,7 @@ cuda::Gather1D::Gather1D(shared_ptr<KernelContext> ctx)
 LanguageUnit_p cuda::Gather1D::emit_function_body()
 {
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
-    auto& lu = *_lu;
-
+    auto& lu = *_lu; 
     // function signature:
     // extern "C" __global__ void kernel(m_context->dtypes[0]* input0, m_context->dtypes[0]* input1, m_context->dtypes[2]* output0)
     lu << m_context->dtypes[0] << "* params = input0;\n";
@@ -79,8 +78,8 @@ LanguageUnit_p cuda::Gather1D::emit_function_body()
                << "indices_i = batch_indices_i - batch_i * " << indices_size << ";\n"
                << "slice_i = i - batch_indices_i * " << slice_size << ";\n";
         }
-
-        lu << "uint32_t gather_i = __ldg(indices + indices_i);\n";
+        lu << "int64_t gather_i = __ldg(indices + indices_i);\n";
+        lu << "if (gather_i < 0) gather_i += " << gather_dim_size <<";\n";   
         lu << "if (gather_i >= " << gather_dim_size << ")\n"
            << "   out[i] = 0;\n"
            << "else\n";

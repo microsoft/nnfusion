@@ -40,6 +40,7 @@
 #include "nnfusion/frontend/util/parameter.hpp"
 #include "nnfusion/engine/pass/graph/dot_algo_select_pass.hpp"
 #include "nnfusion/engine/pass/graph/remove_redundant_ops.hpp"
+#include "nnfusion/engine/pass/graph/nchw2nhwc_pass.hpp"
 
 
 using namespace nnfusion;
@@ -55,6 +56,7 @@ CudaEngine::CudaEngine()
     : Engine()
 {
     g_passes->push_back(make_shared<CSEPass>());
+    g_passes->push_back(make_shared<NCHW2NHWCPass>());
     g_passes->push_back(make_shared<SubGraphFusionPass>());
     g_passes->push_back(make_shared<AutodiffPass>());
     g_passes->push_back(make_shared<GradientWeightMappingPass>());

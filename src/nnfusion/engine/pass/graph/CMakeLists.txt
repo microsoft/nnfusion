@@ -34,6 +34,7 @@ set(SRC
     tensor_core_rewrite_pass.cpp
     ir_based_fusion_pass.cpp
     subgraph_fusion_pass.cpp
+    nchw2nhwc_pass.cpp
 
 )
 

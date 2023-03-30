@@ -291,7 +291,7 @@ bool MemEffAttnFusionOptimizer::fuse_subgraph(SubGraphRecord::Pointer subgraph_r
         if (add_const)
             nodes_to_remove.insert(add_const);
     }
-    NNFUSION_LOG(INFO) << attention_gnode->get_name();
+    // NNFUSION_LOG(INFO) << attention_gnode->get_name();
     if (!RemoveNodes(nodes_to_remove, attention_gnode))
     {
         NNFUSION_LOG(NNFUSION_WARNING) << "remove nodes failed.";

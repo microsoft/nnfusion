@@ -57,12 +57,12 @@ namespace nnfusion
                 std::shared_ptr<nnfusion::graph::GNode>
                     attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
                                       std::shared_ptr<nnfusion::graph::GNode> conv_node,
-                                      std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                                      std::shared_ptr<nnfusion::graph::Graph> m_graph, size_t index)
                 {
                     auto bc_op = std::make_shared<op::Broadcast>(
                         conv_node->get_shape(),
                         nnfusion::frontend::onnx_import::calculate_broadcast_axes(
-                            conv_node->get_shape(), bias_index.get_shape(), 1));
+                            conv_node->get_shape(), bias_index.get_shape(), index));
                     auto broadcasted_bias = m_graph->add_node_and_edge(bc_op, {bias_index});
                     auto bias_node = m_graph->add_node_and_edge(std::make_shared<op::Add>(),
                                                                 {conv_node, broadcasted_bias});
@@ -339,6 +339,7 @@ namespace nnfusion
                     if (input_indexes.size() == 3)
                         conv_node = attach_bias_gnode(input_indexes[2], conv_node, m_graph);
 
+                    conv_node->set_name(node_proto.name());
                     return {{node_proto.output(0), GNodeIndex(conv_node)}};
                 }
             } // namespace set_1

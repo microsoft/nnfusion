@@ -55,17 +55,21 @@ class Stride:
 class TileDict:
     def __init__(self, output_tile) -> None:
         self.output_tile = output_tile
+        # schedule config
         self.tile_map = {}
         self.rstep_map = {}
+        self.cached_tensors_map = {}
         self.output_strides_map = {}
         self.tensor_strides_map = {}
-        self.footprint = -1
+        self.use_cutlass_mma = {}
+
+        # analysis
+        self.traffic = -1
         self.smem_cost = -1
         self.block_per_SM = -1
         self.num_wave = -1
+        self.grid_size = -1
         self.valid = True
-
-        self.use_cutlass_mma = {}
 
     def get_tile(self, node) -> List[int]:
         return self.tile_map[node]
@@ -90,6 +94,7 @@ class Config:
         self.rstep = []
         self.reduce_thread = []
 
+        self.cached_tensors = []
         self.block_order = None
         self.output_strides = {}
 
@@ -180,10 +185,10 @@ class Config:
 
         tc_axis = node.infer_tensorcore_axis()
 
-        shapes = node.infer_dependency_reduce_inputs(self.block, {x : self.rstep[0] for x in node.raxis})
+        shapes = node.propogate_reduction_inputs(self.block, {x : self.rstep[0] for x in node.raxis})
         AS_shape, BS_shape = shapes.values()
 
-        shapes = node.infer_dependency_reduce_inputs(self.warp, {x : wmma_k for x in node.raxis})
+        shapes = node.propogate_reduction_inputs(self.warp, {x : wmma_k for x in node.raxis})
         AF_shape, BF_shape = shapes.values()
 
         self.tc_extra_conf = TensorCoreExtraConfig(AS_shape, BS_shape, AF_shape, BF_shape, tc_axis)

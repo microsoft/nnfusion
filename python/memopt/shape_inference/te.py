@@ -48,44 +48,6 @@ class InputShapeInference():
             for ax in dep.op.reduce_axis:
                 self.reduce_axes.append(ax)
 
-    def infer_old(self, shape: Dict[str, List[arith.ConstIntBound]], rstep: Dict[str, int]={}):
-        shape = shape.copy()
-        ana = arith.Analyzer()
-        for dep in reversed(self.deps):
-            for ax, bound in zip(dep.op.axis, shape[dep.op.name]):
-                ana.update(ax.var, bound)
-            for ax in dep.op.reduce_axis:
-                bound = arith.ConstIntBound(int(ax.dom.min), int(ax.dom.min + ax.dom.extent - 1))
-                if ax.var.name in rstep:
-                    bound = arith.ConstIntBound(int(ax.dom.min), int(ax.dom.min + min(ax.dom.extent, rstep[ax.var.name]) - 1))
-                ana.update(ax.var, bound)
-            for name, regions in dep.dependent_region.items():
-                for region in regions:
-                    bounds = [ana.const_int_bound(index) for index in region]
-                    if name in shape: # simply merge two bounds
-                        bounds = [_merge_two_bounds(x, y) for x, y in zip(shape[name], bounds)]
-                    shape[name] = bounds
-
-        for name, bounds in shape.items():
-            shape[name] = [c.max_value - c.min_value + 1 for c in bounds]
-        return shape
-
-    def get_input_exprs_old(self, output_exprs):
-        result = output_exprs.copy()
-        ana = arith.Analyzer()
-        for dep in reversed(self.deps):
-            for ax, expr in zip(dep.op.axis, result[dep.op.name]):
-                ana.bind(ax.var, expr)
-            for ax in dep.op.reduce_axis:
-                ana.bind(ax.var, 0)
-            for name, regions in dep.dependent_region.items():
-                if name in result:
-                    continue
-                region = regions[0]
-                input_expr = [ana.simplify(index) for index in region]
-                result[name] = input_expr
-        return result
-
     def construct_dependency_target(self, targets: Tuple[str]):
         if targets in self.target_mapping:
             return self.target_mapping[targets]
@@ -125,9 +87,8 @@ class InputShapeInference():
         self.target_mapping[targets] = input_vars, mapping
         return input_vars, mapping
 
-    def infer(self, shape: Dict[str, List[arith.ConstIntBound]], rstep: Dict[str, int]={}):
-        targets = tuple(shape.keys())
-        input_vars, mapping = self.construct_dependency_target(targets)
+    def infer(self, shape: Dict[str, List[arith.ConstIntBound]], rstep: Dict[str, int]={}, targets=None):
+        input_vars, mapping = self.construct_dependency_target(tuple(shape.keys()))
         ana = arith.Analyzer()
         results = {}
         for vars, bounds in zip(input_vars, shape.values()):
@@ -141,6 +102,8 @@ class InputShapeInference():
             ana.update(ax.var, bound, True)
 
         for name, regions in mapping.items():
+            if targets is not None and name not in targets:
+                continue
             for region in regions:
                 bound = [ana.const_int_bound(indice) for indice in region]
                 if name in results: # simply merge two bounds
@@ -152,8 +115,7 @@ class InputShapeInference():
         return results
 
     def get_input_exprs(self, output_exprs):
-        targets = tuple(output_exprs.keys())
-        input_vars, mapping = self.construct_dependency_target(targets)
+        input_vars, mapping = self.construct_dependency_target(tuple(output_exprs.keys()))
         ana = arith.Analyzer()
         for ax in self.reduce_axes:
             ana.bind(ax.var, 0)

@@ -15,7 +15,7 @@ class TCPolicy(DefaultPolicy):
         self.wmma_k = 16
 
     def _compute_tc_strides(self, node: IRNode, tile: List[int], rstep: Dict[str, int]={}) -> Tuple[Stride, Stride, Stride]:
-        shapes = node.infer_dependency_reduce_inputs(tile, rstep)
+        shapes = node.propogate_reduction_inputs(tile, rstep)
         AS_shape, BS_shape = shapes.values()
         CS_shape = tile
         A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n = node.infer_tensorcore_axis()
@@ -61,11 +61,11 @@ class TCPolicy(DefaultPolicy):
         return condA, condB
 
     def infer_node_smem_usage(self, td: TileDict, node: IRNode):
-        value = super().infer_node_smem_usage(td, node)
+        value, cached_tensors = super().infer_node_smem_usage(td, node)
         if node.get_tag("tensorCoreConfig"):
             use_double_buffer = td.use_cutlass_mma[node] and self.arch.compute_capability >= "80"
             if use_double_buffer: value *= 2
-        return value
+        return value, cached_tensors
 
     def _assign_reduce_step(self, node):
         if not node.get_tag("tensorCoreConfig"):
@@ -151,7 +151,7 @@ class TCPolicy(DefaultPolicy):
         def _score(node, thread): # small is better
             score = 0
             block_tile = [int(np.ceil(tile[i] / thread[i])) for i in range(ndim)]
-            shape = node.infer_dependency(block_tile)
+            shape = node.propogate_inputs(block_tile)
             for edge in node.inputs:
                 score += np.prod(shape[edge.dst_id]) / self.arch.bandwidth[1]
             return score
@@ -175,6 +175,7 @@ class TCPolicy(DefaultPolicy):
         codegen_dict.block = tile
         codegen_dict.warp = warp_tile
         codegen_dict.rstep = [int(rsteps[ax]) for ax in node.raxis]
+        codegen_dict.cached_tensors = td.cached_tensors_map[node]
         codegen_dict.wmma = wmma
         codegen_dict.use_cutlass = td.use_cutlass_mma[node]
         codegen_dict.complete_config(node)

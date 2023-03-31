@@ -32,10 +32,7 @@ class TESchedulerBase(SchedulerBase):
         assert tensor in op.input_tensors
         if tensor in self.shared_inputs:
             return True
-        cache = isinstance(tensor.op, te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) \
-                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-        return cache
+        return tensor.name in self.config.cached_tensors
 
     def create_schedule(self) -> te.Schedule:
         sche = te.create_schedule([self.output_op])

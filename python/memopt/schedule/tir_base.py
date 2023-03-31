@@ -82,10 +82,9 @@ class TIRSchedulerBase(SchedulerBase):
 
     def requires_cache(self, tensor, op):
         assert tensor in op.input_tensors
-        cache = isinstance(tensor.op, te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) \
-                    and np.prod(op.output(0).shape) > np.prod(tensor.shape) # is broadcast
-        return cache
+        if tensor in self.shared_inputs:
+            return True
+        return tensor.name in self.config.cached_tensors
 
     def make_cache_plan(self):
         cache_plan = {}

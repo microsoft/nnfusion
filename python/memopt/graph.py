@@ -120,9 +120,6 @@ class OutputNode(Node):
         self.set_shape(node.get_shape(id))
         self.set_dtype(node.get_dtype(id))
 
-    def infer_dependency(self, shape, rstep={}):
-        return {0 : shape}
-
     def is_output(self):
         return True
 
@@ -185,25 +182,38 @@ class IRNode(Node):
             dim_size.append(int(axis.dom.extent))
         return dim_size
 
-    def propogate(self, tile, rstep={}):
+    def propogate(self, tile, rstep={}, targets=None):
         shape = {name: [tvm.arith.ConstIntBound(0, val - 1) for val in tile] for name in [self.schedule_stage.name]}
-        return self.ana.infer(shape, rstep)
+        return self.ana.infer(shape, rstep, targets)
 
-    def infer_dependency(self, shape, rstep={}) -> Dict[int, List[int]]:
-        shapes = self.propogate(shape, rstep)
-        result = {}
-        for i in range(len(self.inputs)):
-            name = self.args[i].name
-            shape = shapes[name]
+    def propogate_inputs(self, tile, rstep={}) -> List[List[int]]:
+        read_idx_offset = len(self.inputs)
+        targets = [t.name for t in self.args[:read_idx_offset]]
+        shapes = self.propogate(tile, rstep, targets)
+        results = []
+        for i, arg in enumerate(self.args[:read_idx_offset]):
             # should not exceed original shape
-            result[i] = list(map(min, zip(shape, self.inputs[i].src_node.get_shape())))
-        return result
+            trimmed_shape = list(map(min, zip(shapes[arg.name], self.inputs[i].src_node.get_shape())))
+            results.append(trimmed_shape)
+        return results
 
-    def infer_dependency_reduce_inputs(self, shape, rstep={}) -> Dict[str, List[int]]:
+    def propogate_outputs(self, tile, rstep={}):
+        read_idx_offset = len(self.inputs)
+        targets = [t.name for t in self.args[read_idx_offset:]]
+        shapes = self.propogate(tile, rstep, targets)
+        results = []
+        for i, arg in enumerate(self.args[read_idx_offset:]):
+            # should not exceed original shape
+            trimmed_shape = list(map(min, zip(shapes[arg.name], self.get_shape(i))))
+            results.append(trimmed_shape)
+        return results
+
+    def propogate_reduction_inputs(self, shape, rstep={}) -> Dict[str, List[int]]:
         if self.reduce_op is None:
             return {}
-        shapes = self.propogate(shape, rstep)
-        return {t.name: shapes[t.name] for t in self.reduce_op.input_tensors}
+        targets = [t.name for t in self.reduce_op.input_tensors]
+        results = self.propogate(shape, rstep, targets)
+        return results
 
     def get_reduce_inputs_dtype(self):
         if self.reduce_op is None:
@@ -220,8 +230,8 @@ class IRNode(Node):
             for tensor in op.input_tensors:
                 # detect broadcast pattern
                 if isinstance(tensor.op, tvm.te.PlaceholderOp) \
-                    and len(op.output(0).shape) > len(tensor.shape) \
-                    and np.prod(op.output(0).shape) > np.prod(tensor.shape):
+                    and len(shapes[op.name]) > len(shapes[tensor.name]) \
+                    and np.prod(shapes[op.name]) > np.prod(shapes[tensor.name]):
                     cached_tensor.add(tensor)
         if self.reduce_op is not None:
             for tensor in self.reduce_op.input_tensors:
@@ -240,7 +250,8 @@ class IRNode(Node):
             buffer_len = num_elem * int((tvm.DataType(tensor.dtype).bits + 7) // 8)
             buffer_len = (buffer_len + 31) // 32 * 32
             result += buffer_len
-        return result
+        cached_tensor = [t.name for t in cached_tensor]
+        return result, cached_tensor
 
     @functools.lru_cache()
     def infer_tensorcore_axis(self) -> Tuple[int]:
@@ -251,41 +262,38 @@ class IRNode(Node):
         CL_shape = [1] * len(self.get_space_dim())
         CL_shape[C_ax_m] = wmma_m
         CL_shape[C_ax_n] = wmma_n
-        shapes = self.infer_dependency_reduce_inputs(CL_shape, {x : 1 for x in self.raxis})
+        shapes = self.propogate_reduction_inputs(CL_shape, {x : 1 for x in self.raxis})
         A_deps, B_deps = shapes.values()
         A_ax_m = A_deps.index(wmma_m)
         B_ax_n = B_deps.index(wmma_n)
 
         CL_shape = [1] * len(self.get_space_dim())
-        shapes = self.infer_dependency_reduce_inputs(CL_shape, {x : wmma_k for x in self.raxis})
+        shapes = self.propogate_reduction_inputs(CL_shape, {x : wmma_k for x in self.raxis})
         A_deps, B_deps = shapes.values()
         A_ax_k = A_deps.index(wmma_k)
         B_ax_k = B_deps.index(wmma_k)
         tc_axis = (A_ax_m, A_ax_k, B_ax_k, B_ax_n, C_ax_m, C_ax_n)
         return tc_axis
 
-    def block_infer(self, tile_map, block_expr, block_idx) -> Dict[int, tvm.tir.PrimExpr]:
+    def block_infer(self, tile_map, block_expr) -> List[tvm.tir.PrimExpr]:
         space_expr = []
-        grid_size = 1
         for ax_len, tile_len in zip(reversed(self.get_shape()), reversed(tile_map[self])):
-            num_block = int(np.ceil(ax_len / tile_len))
-            grid_size *= num_block
+            num_block = (ax_len + tile_len - 1) // tile_len
             space_expr.append(block_expr % num_block * tile_len)
             block_expr = block_expr // num_block
-        output_exprs = {name : list(reversed(space_expr)) for name in [self.schedule_stage.name]}
+        output_exprs = {self.schedule_stage.name : list(reversed(space_expr))}
         input_exprs = self.ana.get_input_exprs(output_exprs)
-        result = {}
-        ana = arith.Analyzer()
-        ana.update(block_idx, arith.ConstIntBound(0, grid_size - 1))
+        result = []
         for i in range(len(self.inputs)):
-            block_expr = 0
             inode = self.inputs[i].src_node
             if isinstance(inode, PlaceHolderNode):
+                result.append(None)
                 continue
+            block_expr = 0
             for expr, ax_len, tile_len in zip(input_exprs[self.args[i].name], inode.get_shape(), tile_map[inode]):
-                num_block = int(np.ceil(ax_len / tile_len))
-                block_expr = block_expr * num_block + tvm.te.max(expr // tile_len, 0)
-            result[i] = ana.simplify(block_expr)
+                num_block = (ax_len + tile_len - 1) // tile_len
+                block_expr = block_expr * num_block + te.max(expr // tile_len, 0)
+            result.append(block_expr)
         return result
 
     def clone(self, inputs) -> 'IRNode':

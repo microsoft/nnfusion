@@ -165,4 +165,19 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
             self.reduce_op.name + "_cutlass.warp.mma": layoutC.fragment_offset})
         self.passes.append(layout_pass.get_pass())
 
+        # ------------------------ Cache small tensors -------------------------------
+        cache_plan = self.make_cache_plan()
+        if len(self.shared_outputs) > 0:
+            cache_plan.clear() # supports writing to global for now
+        consumer_ops = {t.op for t in self.reduce_op.input_tensors}
+        consumer_ops.add(self.output_op)
+        op_input_map = self.detect_op_inputs(consumer_ops)
+        for tensor in cache_plan:
+            if tensor.op not in op_input_map[self.output_op]:
+                continue
+            tensor_shared = sch.cache_read(C_warp, tensor.name, "shared")
+            sch.compute_at(tensor_shared, warp_fused)
+            dim_offset = 2 # outer loops are: blck_fused thrd_fused
+            self.cooperative_fetch(tensor_shared, dim_offset)
+
         return sch.mod["main"]

@@ -21,8 +21,7 @@ def init_server(path):
 def call_build(node_names, connections, send_config, kernel_name, target_str):
     cgen = CodeGenerator()
     nodes = [_save.node_map[name] for name in node_names]
-    output_nodes, _, _ = _extract_subgraph(nodes)
-    insert_local_connections(output_nodes, connections)
+    output_nodes, _, _ = _extract_subgraph(nodes, connections)
     eliminate_memcpy(output_nodes)
     config = {}
     for node in find_topo_sort(output_nodes):

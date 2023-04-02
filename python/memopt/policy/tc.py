@@ -82,8 +82,13 @@ class TCPolicy(DefaultPolicy):
         if not node.get_tag("tensorCoreConfig"):
             return super().get_node_reduce_step_candidates(node)
         else:
-            # must be a a multiple of wmma_k
-            return {k : [x * self.wmma_k for x in get_all_factors(node.raxis[k] // self.wmma_k)] for k in node.raxis}
+            result = {}
+            for k in node.raxis:
+                if node.raxis[k] % 32 == 0:
+                    result[k] = [x * 32 for x in get_all_factors(node.raxis[k] // 32)]
+                else:
+                    result[k] = [x * self.wmma_k for x in get_all_factors(node.raxis[k] // self.wmma_k)]
+            return result
 
     def check_tile_shape_isvalid(self, td: TileDict):
         for node in self.ordered_nodes:
@@ -178,5 +183,6 @@ class TCPolicy(DefaultPolicy):
         codegen_dict.cached_tensors = td.cached_tensors_map[node]
         codegen_dict.wmma = wmma
         codegen_dict.use_cutlass = td.use_cutlass_mma[node]
+        codegen_dict.schedule_stage = node.schedule_stage.name
         codegen_dict.complete_config(node)
         return codegen_dict

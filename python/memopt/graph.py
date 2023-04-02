@@ -224,33 +224,41 @@ class IRNode(Node):
         result = 0
         shapes = self.propogate(shape, rstep)
 
+        def is_broadcast_pattern(tensor, op):
+            return isinstance(tensor.op, tvm.te.PlaceholderOp) \
+                and len(shapes[op.name]) > len(shapes[tensor.name]) \
+                and np.prod(shapes[op.name]) > np.prod(shapes[tensor.name])
+
+        def is_after_reduce_stage(op):
+            if not self.reduce_op: return False
+            reduce_dependent_ops = getattr(self, "reduce_dependent_ops", None)
+            if reduce_dependent_ops is None:
+                reduce_dependent_ops = set()
+                pre_order_traverse([self.reduce_op.output(0)], lambda t: reduce_dependent_ops.add(t.op))
+                self.reduce_dependent_ops = reduce_dependent_ops
+            return op not in reduce_dependent_ops
+
         # compute cached stages
-        cached_tensor = set()
+        cached_tensor = []
         for op in self.compute_ops:
             for tensor in op.input_tensors:
-                # detect broadcast pattern
-                if isinstance(tensor.op, tvm.te.PlaceholderOp) \
-                    and len(shapes[op.name]) > len(shapes[tensor.name]) \
-                    and np.prod(shapes[op.name]) > np.prod(shapes[tensor.name]):
-                    cached_tensor.add(tensor)
-        if self.reduce_op is not None:
-            for tensor in self.reduce_op.input_tensors:
-                cached_tensor.add(tensor)
-
-        for tensor in cached_tensor:
-            if tensor in self.args:
-                input_id = self.args.index(tensor)
-                src_node = self.inputs[input_id].src_node
-                if not src_node.is_placeholder():
-                    continue
-            if tensor.name in stride_map:
-                num_elem = stride_map[tensor.name].compute_elements_from_shape(shapes[tensor.name])
-            else:
-                num_elem = np.prod(shapes[tensor.name])
-            buffer_len = num_elem * int((tvm.DataType(tensor.dtype).bits + 7) // 8)
-            buffer_len = (buffer_len + 31) // 32 * 32
-            result += buffer_len
-        cached_tensor = [t.name for t in cached_tensor]
+                cache = tensor.name not in cached_tensor and (is_broadcast_pattern(tensor, op) or op is self.reduce_op)
+                if not cache: continue
+                cached_tensor.append(tensor.name)
+                if is_after_reduce_stage(op):
+                    continue # cache after reduce op can often reuse buffer in reduce stage
+                if tensor in self.args:
+                    input_id = self.args.index(tensor)
+                    src_node = self.inputs[input_id].src_node
+                    if not src_node.is_placeholder():
+                        continue # allocated by previous node, not counted here
+                if tensor.name in stride_map:
+                    num_elem = stride_map[tensor.name].compute_elements_from_shape(shapes[tensor.name])
+                else:
+                    num_elem = np.prod(shapes[tensor.name])
+                buffer_len = num_elem * int((tvm.DataType(tensor.dtype).bits + 7) // 8)
+                buffer_len = (buffer_len + 31) // 32 * 32
+                result += buffer_len
         return result, cached_tensor
 
     @functools.lru_cache()

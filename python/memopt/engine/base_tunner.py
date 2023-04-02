@@ -43,7 +43,7 @@ def subgraph_hash(output_nodes):
     graph_sig = hash(tuple(node_hash + edge_hash))
     return graph_sig
 
-def _extract_subgraph(nodes):
+def _extract_subgraph(nodes, connections=[]):
     node_map = {}
     output_nodes = []
     for node in nodes:
@@ -74,6 +74,17 @@ def _extract_subgraph(nodes):
             input_desc.append([dst_node.name, dst_id])
         elif node.is_output():
             output_desc.append([node.inputs[0].src_node.name, node.inputs[0].src_id])
+
+    insert_local_connections(output_nodes, connections)
+
+    # sort input_desc and output_desc by new_ordered_nodes
+    new_ordered_nodes = find_topo_sort(output_nodes)
+    nodes_old = list(filter(lambda n: n.is_placeholder(), ordered_nodes))
+    nodes_new = list(filter(lambda n: n.is_placeholder(), new_ordered_nodes))
+    input_desc = [input_desc[nodes_old.index(nodes_new[i])] for i in range(len(input_desc))]
+    nodes_old = list(filter(lambda n: n.is_output(), ordered_nodes))
+    nodes_new = list(filter(lambda n: n.is_output(), new_ordered_nodes))
+    output_desc = [output_desc[nodes_old.index(nodes_new[i])] for i in range(len(output_desc))]
 
     return output_nodes, input_desc, output_desc
 
@@ -187,8 +198,7 @@ class Tunner(object):
         self.local_connections = local_connections
         if get_log_level() >= 1:
             print("Tuning", [node.name for node in self.current_nodes])
-        output_nodes, input_desc, output_desc = _extract_subgraph(self.current_nodes)
-        insert_local_connections(output_nodes, self.local_connections)
+        output_nodes, input_desc, output_desc = _extract_subgraph(self.current_nodes, self.local_connections)
         eliminate_memcpy(output_nodes)
         signature = subgraph_hash(output_nodes)
         if self.count_cache(signature):

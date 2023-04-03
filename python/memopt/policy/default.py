@@ -32,7 +32,10 @@ class DefaultPolicy:
                 self.output_nodes.append(node)
 
     def emit_config(self, topk: int) -> List[Dict[Node, Config]]:
-        base_tile = self.get_base_tile()
+        try:
+            base_tile = self.get_base_tile()
+        except Exception:
+            return []
         if base_tile is None:
             return []
         rstep_map = {node : self._assign_reduce_step(node) for node in self.ordered_nodes}

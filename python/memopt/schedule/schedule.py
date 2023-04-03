@@ -30,6 +30,7 @@ def schedule(args: List[te.Tensor], config: Config, shared_inputs: List[te.Tenso
         template = TEReduceInterThreadScheduler
     else:
         if schedule_on_inner_stage:
+            raise NotImplementedError("Schedule not implemented")
             template = TIRSIMTScheduler
         else:
             template = TEReduceScheduler

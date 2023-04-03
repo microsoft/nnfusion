@@ -131,9 +131,14 @@ class InputShapeInference():
         return result
 
 def region_exist_in_list(a, list) -> bool:
+    def expr_is_same(a, b) -> bool:
+        if isinstance(a, tir.IntImm) and isinstance(b, tir.IntImm):
+            return a.value == b.value
+        return a.same_as(b)
+
     def region_is_same(a, b) -> bool:
         for indice_a, indice_b in zip(a, b):
-            if not indice_a.same_as(indice_b):
+            if not expr_is_same(indice_a, indice_b):
                 return False
         return True
     return any([region_is_same(a, x) for x in list])

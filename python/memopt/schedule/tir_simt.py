@@ -20,6 +20,8 @@ class TIRSIMTScheduler(TIRSchedulerBase):
         thrd_axis = []
         tile_axis = []
         for i, loop in enumerate(space_loops):
+            if self.reduce_op.axis[i].dom.extent % config.block[i]:
+                raise NotImplementedError("Undivisible block in TIR schedule is still buggy.")
             bx, _t = sch.split(loop, factors=[None, config.block[i]])
             blck_axis.append(bx)
             if config.step[i] > 1:

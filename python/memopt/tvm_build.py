@@ -112,6 +112,7 @@ def tvm_build(sch: SchedulerBase, target: tvm.target.Target, name: str = TVM_DEF
         pattern = r"__shared__ ((?:signed |unsigned )?\w+) (\w+)\[(\d+)\];"
         offset = 0
         for dtype, var, size in re.findall(pattern, src):
+            if var.startswith("red_buf"): continue
             src = re.sub(r"__shared__ ((?:signed |unsigned )?\w+) {}\[\d+\];".format(var), r"\1* {} = (\1*)(shared+{});".format(var, offset), src, 1)
             buffer_len = int(size) * _type_bytes[dtype]
             buffer_len = (buffer_len + 31) // 32 * 32

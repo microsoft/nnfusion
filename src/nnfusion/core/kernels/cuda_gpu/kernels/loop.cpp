@@ -369,6 +369,7 @@ LanguageUnit_p cuda::Loop::emit_dependency()
                     k << "void " << func_name << "(" << join(params_with_type, ", ") << ")";
                 }
             } else {
+                k.require(body->dep_unit);
                 LanguageUnit_p sig = kernel->emit_function_signature();
                 std::string sig_code = sig->get_code();
                 size_t param_start = sig_code.find("void (") + 6;

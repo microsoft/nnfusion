@@ -19,6 +19,7 @@ DEFINE_string(fproduct_name,
               "default",
               "Device product name, like 'GeForce GTX 1080 Ti', 'Tesla V100-PCIE-16GB'");
 DEFINE_bool(fcodegen_unexist_kernel, false, "Generate a kernel with roller and insert to db if not found");
+DEFINE_string(flog_kerneldb_request, "#", "Save request to a file");
 
 using namespace nnfusion::cache;
 
@@ -117,6 +118,21 @@ std::vector<KernelEntry_p> KernelCacheManager::fetch_all(std::string identifier,
                                                          std::string device_type,
                                                          bool must_exist)
 {
+    if (FLAGS_flog_kerneldb_request != "#")
+    {
+        static bool first = true;
+        if (first)
+        {
+            std::ofstream log_file(FLAGS_flog_kerneldb_request, std::ios::trunc);
+            log_file << identifier << ":::" << device_type << std::endl;
+            log_file.close();
+            first = false;
+        } else {
+            std::ofstream log_file(FLAGS_flog_kerneldb_request, std::ios::app);
+            log_file << identifier << ":::" << device_type << std::endl;
+            log_file.close();
+        }
+    }
     // NNFUSION_LOG(INFO) << "Trying to fetch kernel " << identifier
     //                     << " on DeviceType: " << device_type;
     sqlite3_stmt* pStmt;

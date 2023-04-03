@@ -120,7 +120,6 @@ void CudaCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
         if (superscaler_enable)
         {
             lu_init_begin << "\nextern \"C\" void cuda_init(const char* resource_dir)\n{\n";
-            lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
             lu_init_begin <<
                 R"(int device_id;
 int host_id;
@@ -134,7 +133,6 @@ CUDA_SAFE_CALL(cudaSetDevice(device_id));
         else
         {
             lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
-            lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
         }
         if (FLAGS_fstack_size != -1)
         {

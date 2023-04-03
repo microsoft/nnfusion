@@ -63,7 +63,6 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
         lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
-        lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
     }
     if (FLAGS_fstack_size != -1)
     {

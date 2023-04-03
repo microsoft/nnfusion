@@ -44,6 +44,7 @@ namespace nnfusion
                 TranslationUnit::Pointer m_loop_body_tu;
                 ir::BasicBlock::Pointer m_body_instructions;
                 std::unordered_map<std::string, size_t> m_param_offset;
+                int unroll_width;
             };
         } // namespace cuda
     }     // namespace kernels

@@ -1,12 +1,15 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.recursive_unroll_depth
 // Licensed under the MIT License.
 
 #include "recursion.hpp"
 #include "../cuda_cudnn.hpp"
 #include "convolution.hpp"
+#include "nnfusion/core/operators/op_define/loop.hpp"
+#include "nnfusion/core/operators/op_define/if.hpp"
 #include "nnfusion/core/operators/op_define/recursion.hpp"
 #include "nnfusion/engine/pass/graph/blockfusion/blockfusion_codegen.hpp"
 #include <regex>
+#include <queue>
 
 using namespace nnfusion;
 using namespace nnfusion::kernels;
@@ -18,8 +21,6 @@ DEFINE_int32(frecursive_unroll_depth, 0, "unroll depth");
 DECLARE_int32(fmax_grid_dim);
 DECLARE_bool(ffast_barrier);
 DECLARE_string(fdefault_device);
-
-const int unroll_width = 2; // hardcode yet
 
 cuda::FuncForward::FuncForward(shared_ptr<KernelContext> ctx)
     : ControlFlowEmitter(ctx)
@@ -79,6 +80,53 @@ void cuda::FuncForward::update_context_from_gnode(std::shared_ptr<nnfusion::grap
     m_context->input_names.push_back(m_workspace->get_name());
 }
 
+int get_unroll_width(std::shared_ptr<nnfusion::graph::Graph> graph) {
+    int unroll_width = 1;
+    std::vector<std::shared_ptr<nnfusion::graph::GNode>> func_forward_nodes;
+    for (auto node: graph->get_ordered_ops()) {
+        if (node->get_op_type() == "Loop") {
+            int body_unroll_width = get_unroll_width(dynamic_pointer_cast<op::Loop>(node->get_op_ptr())->get_loop_body_graph());
+            unroll_width = max(unroll_width, body_unroll_width);
+        } else if (node->get_op_type() == "If") {
+            int then_unroll_width = get_unroll_width(dynamic_pointer_cast<op::If>(node->get_op_ptr())->get_then_branch_graph());
+            int else_unroll_width = get_unroll_width(dynamic_pointer_cast<op::If>(node->get_op_ptr())->get_else_branch_graph());
+            unroll_width = max(unroll_width, max(then_unroll_width, else_unroll_width));
+        } else if (node->get_op_type() == "Recursion") {
+            int body_unroll_width = get_unroll_width(dynamic_pointer_cast<op::Recursion>(node->get_op_ptr())->get_body_graph());
+            unroll_width = max(unroll_width, body_unroll_width);
+        } else if (node->get_op_type() == "FuncForward") {
+            func_forward_nodes.push_back(node);
+        }
+    }
+    if (func_forward_nodes.empty()) return unroll_width;
+    std::set<int64_t> deps;
+    std::queue<std::shared_ptr<nnfusion::graph::GNode>> q;
+    for (auto node: func_forward_nodes) {
+        q.push(node);
+    }
+    while (!q.empty()) {
+        auto node = q.front();
+        q.pop();
+        for (auto in_edge: node->get_in_edges()) {
+            auto in_node = in_edge->get_src();
+            if (deps.find(in_node->get_id()) == deps.end()) {
+                q.push(in_node);
+                deps.insert(in_node->get_id());
+            }
+        }
+    }
+    bool has_dep = false;
+    for (auto node: func_forward_nodes) {
+        if (deps.find(node->get_id()) != deps.end()) {
+            has_dep = true;
+            break;
+        }
+    }
+    if (has_dep) return 1;
+    return max(unroll_width, (int)func_forward_nodes.size());
+}
+
+
 cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
     : ControlFlowEmitter(ctx)
 {
@@ -117,8 +165,11 @@ cuda::Recursion::Recursion(shared_ptr<KernelContext> ctx)
         return ret;
     };
     if (FLAGS_frecursive_unroll_depth > 0) {
+        unroll_width = get_unroll_width(op->get_body_graph());
+        NNFUSION_CHECK(unroll_width > 1) << "no need to unroll";
         m_workspace = allocate_tensor(Shape{m_workspace_size * FLAGS_frecursive_max_depth * powi(unroll_width, FLAGS_frecursive_unroll_depth)}, nnfusion::element::character);
     } else {
+        unroll_width = 1;
         m_workspace = allocate_tensor(Shape{m_workspace_size * FLAGS_frecursive_max_depth}, nnfusion::element::character);
     }
     m_context->inputs.push_back(m_workspace);

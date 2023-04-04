@@ -105,7 +105,8 @@ class Engine:
             result = self.tunner.tune(new_group, kernel_name="Group"+str(cur_group_id))
             # try experimental local fuse
             if len(fusing_nodes) == 1 and len(cur_group) == 1:
-                if fusing_nodes[0].reduce_op is None and cur_group[0].reduce_op is not None:
+                if not fusing_nodes[0].get_tag("skip") and not cur_group[0].get_tag("skip") and \
+                    fusing_nodes[0].reduce_op is None and cur_group[0].reduce_op is not None:
                     connection = [[cur_group[0].name, fusing_nodes[0].name]]
                     result_local = self.tunner.tune(new_group, connection, kernel_name="Group"+str(cur_group_id))
                     if result_local and (result is None or result_local.latency < result.latency):

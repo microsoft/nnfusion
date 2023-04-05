@@ -139,7 +139,7 @@ class Engine:
                     continue
                 result = self.tunner.tune([node], kernel_name=node.name)
                 if result is None:
-                    latency = 10000
+                    latency = 1e8
                 else:
                     latency = result.latency
                 node.add_tag("latency", latency)

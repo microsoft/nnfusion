@@ -22,6 +22,7 @@ class CompileResult:
         self.args = args
         self.name = name
         self.lib = None
+        self.lib_name = None
         self.latency = None
         self.origin = self
         self.use_fp16 = any([x.dtype == 'float16' for x in self.args])
@@ -78,7 +79,7 @@ extern "C" float profile({}) {{
         profiling_code = header + self.code + "\n" + host_funcs
         return profiling_code
 
-    def compile_and_load(self, arch, timeout: float = None) -> ctypes.CDLL:
+    def compile(self, arch, timeout: float=None):
         if arch.platform == "CUDA":
             profiling_code = self._create_code_for_profiling()
             src = tempfile.NamedTemporaryFile(mode='w', suffix=".cu")
@@ -105,9 +106,21 @@ extern "C" float profile({}) {{
             return None
         if ret.returncode != 0:
             return None
-        self.lib = ctypes.CDLL(lib_name)
+        self.lib_name = lib_name
+
+    def load_lib(self):
+        self.lib = ctypes.CDLL(self.lib_name)
         self.lib.profile.restype = ctypes.c_float
-        subprocess.run(["rm", lib_name], check=True)
+
+    def remove_lib(self):
+        if self.lib_name:
+            subprocess.run(["rm", self.lib_name], check=True)
+        self.lib_name = None
+
+    def compile_and_load(self, arch, timeout: float = None) -> ctypes.CDLL:
+        self.compile(arch, timeout)
+        self.load_lib()
+        self.remove_lib()
         return self.lib
 
     def _create_rocm_code_for_profiling(self) -> str:
@@ -169,7 +182,7 @@ extern "C" float profile({}) {{
             torch_arrs.append(arr)
         latency = self.lib.profile(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_arrs])
         if latency < 0:
-            self.latency = 10000
+            self.latency = 1e8
             return self.latency
         self.latency = latency
         return self.latency
@@ -207,4 +220,9 @@ extern "C" float profile({}) {{
 def compile_and_load_parallel(cpresults, arch, timeout : float = None):
     with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
         libs = executor.map(CompileResult.compile_and_load, cpresults, [arch for _ in cpresults], [timeout for _ in cpresults])
+    return list(libs)
+
+def compile_parallel(cpresults, arch, timeout : float = None):
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        libs = executor.map(CompileResult.compile, cpresults, [arch for _ in cpresults], [timeout for _ in cpresults])
     return list(libs)

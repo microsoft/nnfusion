@@ -9,8 +9,10 @@ from ..graph import Edge, OutputNode, find_topo_sort
 from ..logging import get_log_level
 from ..policy import DefaultPolicy, TCPolicy
 from ..reference import get_subgraph_reference_outputs
-from ..utils import CompileResult, compile_and_load_parallel
+from ..utils import CompileResult, compile_parallel
 from .utils import insert_local_connections
+from . import profiler
+from tvm.contrib.popen_pool import PopenPoolExecutor
 
 
 def get_max_diff(tensor_list_a, tensor_list_b):
@@ -120,6 +122,7 @@ class Tunner(object):
         self.check = check
         self.topk = topk
         self.arch = arch
+        self.profiler = PopenPoolExecutor(max_workers=1, timeout=None, initializer=profiler.init_server, initargs=[arch])
 
     def get_cache(self, sig):
         return self._cache[sig]
@@ -160,16 +163,20 @@ class Tunner(object):
         return compile_results
 
     def select_best(self, output_nodes, compile_results):
-        values = []
         for cpresult in compile_results:
             if get_log_level() >= 2: print(cpresult.config)
-            if cpresult.lib is None:
-                cpresult.latency = 10000
+            if cpresult.lib_name is None:
+                cpresult.latency = 1e8
             else:
-                cpresult.latency = cpresult.profile(self.device)
-            values.append(cpresult.latency)
+                future = self.profiler.submit(profiler.call_profile, cpresult.lib_name, cpresult.args, self.device)
+                try:
+                    cpresult.latency = future.result()
+                except ChildProcessError:
+                    cpresult.latency = 1e8
+                finally:
+                    cpresult.remove_lib()
             if get_log_level() >= 2: print(cpresult.latency)
-        compile_results = list(filter(lambda x:x.latency<10000, compile_results))
+        compile_results = list(filter(lambda x:x.latency<1e8, compile_results))
         compile_results = sorted(compile_results, key=lambda x:x.latency)
         if len(compile_results) == 0:
             return None
@@ -177,7 +184,7 @@ class Tunner(object):
         if get_log_level() >= 2:
             print("Best Config:", compile_results[0].config)
         if get_log_level() >= 1:
-            print("result: {}".format(min(values)), flush=True)
+            print("result: {}".format(compile_results[0].latency), flush=True)
         if not self.check:
             return compile_results[0]
 
@@ -221,7 +228,7 @@ class Tunner(object):
         compile_results = self.generate_code(output_nodes, configs, kernel_name)
         for cpresult in compile_results:
             cpresult.set_io_desc(input_desc, output_desc)
-        compile_and_load_parallel(compile_results, self.arch, timeout=30)
+        compile_parallel(compile_results, self.arch, timeout=30)
         best = self.select_best(output_nodes, compile_results)
         self.set_cache(signature, best)
         return best

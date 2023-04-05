@@ -1,8 +1,22 @@
 ## Requirements
-TVM https://github.com/nox-410/tvm/tree/memfusion
-NNFUSION https://github.com/nox-410/nnfusion/tree/smem_fuse
+TVM https://github.com/nox-410/tvm/tree/welder
+NNFUSION https://github.com/nox-410/nnfusion/tree/welder
+CUTLASS https://github.com/nox-410/cutlass/tree/welder
 
-python==3.7
+```bash
+git clone https://github.com/nox-410/tvm --recursive -b welder
+# Fill in USE_CUDA and USE_LLVM in tvm/cmake/config.cmake
+# You need to install LLVM first if you don't have one.
+mkdir -p tvm/build && cd tvm/build && cp ../cmake/config.cmake . && cmake .. && make -j && cd -
+export PYTHONPATH="$PYTHONPATH:$PWD/tvm/python"
+
+git clone https://github.com/nox-410/nnfusion -b welder
+mkdir -p nnfusion/build && cd nnfusion/build && cmake .. && make -j && cd -
+export PATH="$PATH:$PWD/nnfusion/build/src/tools/nnfusion"
+
+git clone https://github.com/nox-410/cutlass -b welder
+export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:$PWD/cutlass/include"
+```
 
 pip:
 - pytorch==1.12.0

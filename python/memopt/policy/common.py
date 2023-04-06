@@ -28,5 +28,6 @@ def coalesced_factor(subtensor: List[int], tensor: List[int]) -> int:
 
 def coalesced_tensor_shape(subtensor: List[int], tensor: List[int], transaction_size: int) -> int:
     bytes = int(np.prod(subtensor))
+    if bytes == 0: return 0
     factor = coalesced_factor(subtensor, tensor)
     return transaction_size * bytes / min(transaction_size, factor)

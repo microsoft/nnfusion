@@ -352,6 +352,7 @@ class DefaultPolicy:
 
     def check_tile_shape_isvalid(self, td: TileDict):
         for node in self.ordered_nodes:
+            if np.prod(td.get_tile(node)) == 0: return False
             node_grid_size = np.prod([(y + x - 1) // x for x, y in zip(td.get_tile(node), node.get_space_dim())])
             if node_grid_size != td.grid_size:
                 return False

@@ -15,7 +15,7 @@ def run_nimble(model, inputs):
         cu_inputs.append(item.cuda() if isinstance(item, torch.Tensor) else item)
     with torch.no_grad():
         nimble_model = torch.cuda.Nimble(model)
-        nimble_model.prepare(*cu_inputs, training=False, use_multi_stream=True)
+        nimble_model.prepare(cu_inputs, training=False, use_multi_stream=True)
 
     def get_runtime():
         tic = time.time()

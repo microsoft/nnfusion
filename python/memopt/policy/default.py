@@ -209,6 +209,8 @@ class DefaultPolicy:
         rstep_map = td.rstep_map.copy()
         def _optimize(node, rstep):
             all_steps = self.get_node_reduce_step_candidates(node)
+            for k in all_steps:
+                all_steps[k] = list(filter(lambda x: x % rstep[k] == 0, all_steps[k]))
 
             def _score(rstep_id):
                 rstep = {k : all_steps[k][rstep_id[k]] for k in node.raxis}

@@ -82,13 +82,8 @@ class TCPolicy(DefaultPolicy):
         if not node.get_tag("tensorCoreConfig"):
             return super().get_node_reduce_step_candidates(node)
         else:
-            result = {}
-            for k in node.raxis:
-                if node.raxis[k] % 32 == 0:
-                    result[k] = [x * 32 for x in get_all_factors(node.raxis[k] // 32)]
-                else:
-                    result[k] = [x * self.wmma_k for x in get_all_factors(node.raxis[k] // self.wmma_k)]
-            return result
+            # must be a a multiple of wmma_k
+            return {k : [x * self.wmma_k for x in get_all_factors(node.raxis[k] // self.wmma_k)] for k in node.raxis}
 
     def check_tile_shape_isvalid(self, td: TileDict):
         for node in self.ordered_nodes:

@@ -1,11 +1,11 @@
-import memopt
 import tvm
-from memopt.utils import CompileResult
+import welder
 from tvm import te
 from tvm.tir.tensor_intrin.cuda import (WMMA_FILL_16x16x16_F16_INTRIN,
                                         WMMA_STORE_16x16x16_F16_GLOBAL_INTRIN,
                                         WMMA_STORE_16x16x16_F16_SHARED_INTRIN,
                                         WMMA_SYNC_16x16x16_f16f16f16_INTRIN)
+from welder.utils import CompileResult
 
 tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
 
@@ -223,11 +223,11 @@ kernel_code = mod.imported_modules[0].get_source()
 kernel_code = kernel_code[kernel_code.index('extern "C" __global__ void'):]
 print(kernel_code)
 cp = CompileResult(None, kernel_code, [32, 4, 1], [64, 1, 1], "default_function_kernel0", args)
-cp.compile_and_load(memopt.arch.V100())
+cp.compile_and_load(welder.arch.V100())
 a = cp.get_example_outputs()
 print(cp.profile())
 print(a)
 
-# from memopt.reference import get_reference_output
+# from welder.reference import get_reference_output
 # oo = get_reference_output(args)
 # print(oo[-1])

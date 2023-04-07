@@ -1,6 +1,5 @@
-import memopt
 import tvm
-from memopt.utils import CompileResult
+import welder
 from tvm import te
 from tvm.tir.tensor_intrin.cuda import (LDMATRIX_16x16_A_INTRIN,
                                         LDMATRIX_16x16_B_INTRIN,
@@ -8,6 +7,7 @@ from tvm.tir.tensor_intrin.cuda import (LDMATRIX_16x16_A_INTRIN,
                                         MMA_fill_16x16_f16_INTRIN,
                                         MMA_store_16x16_f16_global_INTRIN,
                                         shared_16x16_to_ldmatrix_32x8_layout)
+from welder.utils import CompileResult
 
 tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
 
@@ -98,7 +98,7 @@ kernel_code = mod.imported_modules[0].get_source()
 kernel_code = kernel_code[kernel_code.index('extern "C" __global__ void'):]
 print(kernel_code)
 # cp = CompileResult(None, kernel_code, [32, 4, 1], [64, 1, 1], "default_function_kernel0", args)
-# cp.compile_and_load(memopt.arch.V100())
+# cp.compile_and_load(welder.arch.V100())
 # a = cp.get_example_outputs()
 # print(cp.profile())
 # print(a)

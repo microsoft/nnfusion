@@ -1,11 +1,10 @@
-import memopt
 import numpy as np
-from memopt.arch import *
-from memopt.graph import IRNode, OutputNode
-from memopt.policy import DefaultPolicy
-from memopt.reference import get_subgraph_reference_outputs
-
+import welder
 from ops import *
+from welder.arch import *
+from welder.graph import IRNode, OutputNode
+from welder.policy import DefaultPolicy
+from welder.reference import get_subgraph_reference_outputs
 
 arch = V100()
 
@@ -17,11 +16,11 @@ def test_policy(ir, input_dict, name="test", check=False):
     configs = policy.emit_config(10)
 
     compile_results = []
-    cgen = memopt.CodeGenerator()
+    cgen = welder.CodeGenerator()
     for config in configs:
         cpresult = cgen.compile(output_nodes, config, "cuda", kernel_name="Fused")
         compile_results.append(cpresult)
-    memopt.utils.compile_and_load_parallel(compile_results, arch)
+    welder.utils.compile_and_load_parallel(compile_results, arch)
     best_latency = 10000
     best = None
     values = []

@@ -1,7 +1,7 @@
-import memopt
 import tvm
-from memopt.utils import CompileResult
+import welder
 from tvm import te
+from welder.utils import CompileResult
 
 tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
 
@@ -71,11 +71,11 @@ mod = tvm.build(sch.mod["main"], target="cuda")
 kernel_code = mod.imported_modules[0].get_source()
 
 cp = CompileResult(None, kernel_code, [128, 1, 1], [64, 1, 1], "default_function_kernel0", args)
-cp.compile_and_load(memopt.arch.V100())
+cp.compile_and_load(welder.arch.V100())
 a = cp.get_example_outputs()
 print(cp.profile())
 print(a)
-from memopt.reference import get_reference_output
+from welder.reference import get_reference_output
 
 oo = get_reference_output(args)
 print(oo[-1])

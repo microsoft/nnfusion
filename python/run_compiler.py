@@ -1,9 +1,9 @@
 import argparse
 import time
 
-import memopt
-from memopt import arch
-from memopt.engine import (Engine, MultiProcTunner, Tunner, load_model,
+import welder
+from welder import arch
+from welder.engine import (Engine, MultiProcTunner, Tunner, load_model,
                            save_results)
 
 if __name__ == "__main__":
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument('--check', action="store_true")
     parser.add_argument('--nofusion', action="store_true")
     args = parser.parse_args()
-    memopt.set_log_level(args.verbose)
+    welder.set_log_level(args.verbose)
     assert args.input_file.endswith(".json")
     start_time = time.time()
     ordered_nodes = load_model(args.input_file)

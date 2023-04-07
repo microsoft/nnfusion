@@ -1,10 +1,10 @@
-import memopt
 import numpy as np
 import tvm
-from memopt.schedule.cutlass_intrin import *
-from memopt.layout import *
-from memopt.utils import CompileResult
+import welder
 from tvm import te
+from welder.layout import *
+from welder.schedule.cutlass_intrin import *
+from welder.utils import CompileResult
 
 tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
 
@@ -103,7 +103,7 @@ args = gemm(8192, 8192, 8192)
 workload = te.create_prim_func(args)
 ir_module = tvm.IRModule({"main": workload})
 sch = tvm.tir.Schedule(ir_module)
-from memopt.IRpass import *
+from welder.IRpass import *
 
 grid, block, passes = sche_gemm(sch)
 with tvm.transform.PassContext(config={"tir.add_lower_pass": passes}):
@@ -113,12 +113,12 @@ kernel_code = kernel_code[kernel_code.index('extern "C" __global__ void'):]
 
 print(kernel_code)
 cp = CompileResult(None, kernel_code, block, grid, "default_function_kernel0", args)
-cp.compile_and_load(memopt.arch.g3090())
+cp.compile_and_load(welder.arch.g3090())
 a = cp.get_example_outputs()[0]
 print(a)
 print(cp.profile())
 
-# from memopt.reference import get_reference_output
+# from welder.reference import get_reference_output
 
 # oo = get_reference_output(args)[-1].numpy()
 # print(oo)

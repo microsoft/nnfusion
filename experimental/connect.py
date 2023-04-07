@@ -1,12 +1,12 @@
-import memopt
 import numpy as np
 import tvm
-from memopt.graph import IRNode
-from memopt.layout import *
-from memopt.schedule.cutlass_intrin import *
-from memopt.te_utils import *
-from memopt.utils import CompileResult
+import welder
 from tvm import te
+from welder.graph import IRNode
+from welder.layout import *
+from welder.schedule.cutlass_intrin import *
+from welder.te_utils import *
+from welder.utils import CompileResult
 
 tvm.register_func("tvm_callback_cuda_compile", override=True)(lambda x:"")
 
@@ -33,8 +33,8 @@ args = connect_tensor_graph(arg1, arg2, {arg2[0]:arg1[2]})
 
 node = IRNode([None for _ in range(3)], args)
 print(node.infer_reverse([64, 128]))
-# from memopt.config import Config
-# from memopt.schedule.te_reduce import TEReduceScheduler as Scheduler
+# from welder.config import Config
+# from welder.schedule.te_reduce import TEReduceScheduler as Scheduler
 
 # config = Config().from_dict({'block': [128, 64], 'thread': [8, 16], 'rstep': [32]})
 

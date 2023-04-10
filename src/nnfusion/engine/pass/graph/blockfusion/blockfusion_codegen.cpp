@@ -523,9 +523,11 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_block_executor(int be_id)
     LanguageUnit& lu = *_lu;
 
     auto be = block_executor_program.block_executor_instructions[be_id];
-
+    bool is_first = true;
     for (auto be_instruction : be)
     {
+        if (!is_first) lu << "__syncthreads();\n";
+        is_first = false;
         lu << emit_block_executor_instruction(be_instruction)->get_code();
     }
 
@@ -608,6 +610,7 @@ LanguageUnit_p BlockFusionCudaCodegen::emit_range_block_executor(int be_st_id, i
                 params.push_back("shared_buffer");
             }
 
+            if (ins_idx != 0) lu << "__syncthreads();\n";
             lu << deduped_kernel_emitter->get_function_name() << "_block_kernel"
                << "(" << join(params, ", ") << ");"
                << "\n";

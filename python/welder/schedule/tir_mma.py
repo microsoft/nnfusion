@@ -154,10 +154,14 @@ class TIRCutlassMMAScheduler(TIRSchedulerBase):
             sch.annotate(K_outer, "software_pipeline_async_stages", [0])
             self.passes.append((3, tvm.tir.transform.InjectPTXAsyncCopy()))
         elif config.use_tc >= "70":
+            if chunk_size % 8 != 0:
+                sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 0, 0, 1, 1, 1])
+                sch.annotate(K_outer, "software_pipeline_order", [0, 5, 1, 6, 2, 3, 4])
+            else:
+                sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 0, 0, 1, 1, 2])
+                sch.annotate(K_outer, "software_pipeline_order", [0, 5, 1, 6, 2, 4, 3])
             sch.annotate(AS, "tir.manifest_shared_memory_local_stage", 1)
             sch.annotate(BS, "tir.manifest_shared_memory_local_stage", 1)
-            sch.annotate(K_outer, "software_pipeline_stage", [0, 0, 0, 0, 1, 1, 1])
-            sch.annotate(K_outer, "software_pipeline_order", [0, 5, 1, 6, 2, 3, 4])
 
         layout_pass = ApplyLayoutPass({
             self.reduce_op.input_tensors[0].name+"_shared": layoutA,

@@ -76,8 +76,8 @@ def sche_gemm(sch: tvm.tir.Schedule):
     sch.vectorize(vec)
     sch.unroll(oo)
     sch.annotate(oo, "pragma_unroll_explicit", False)
-    sch.annotate(sch.get_loops(C)[2], "software_pipeline_stage", [0, 0, 0, 0, 1, 1, 1])
-    sch.annotate(sch.get_loops(C)[2], "software_pipeline_order", [0, 5, 1, 6, 2, 3, 4])
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_stage", [0, 0, 0, 0, 1, 1, 2])
+    sch.annotate(sch.get_loops(C)[2], "software_pipeline_order", [0, 5, 1, 6, 2, 4, 3])
     sch.tensorize(sch.get_loops(block_init_c)[-2],
         register_cutlass_warp_init_intrin(warp_size_M, warp_size_N, "float16",
         cls_code, block_size_M // warp_size_M, block_size_N // warp_size_N)

@@ -425,7 +425,7 @@ public:
                 for (auto out_edge : out_edges) {
                     auto out_node = out_edge->get_dst();
                     if (node_set.count(out_node)) continue;
-                    m_graph->add_edge(fused_node, out_id, out_node, out_edge->get_dst_input());
+                    m_graph->add_edge(fused_node, i, out_node, out_edge->get_dst_input());
                 }
             }
             // cleanup

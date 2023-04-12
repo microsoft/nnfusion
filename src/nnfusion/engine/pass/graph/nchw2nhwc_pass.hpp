@@ -17,9 +17,12 @@ namespace nnfusion
                 bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) override;
 
             private:
-                std::shared_ptr<nnfusion::graph::GNode> add_transpose(std::shared_ptr<nnfusion::graph::Graph>& graph,
-                    std::shared_ptr<nnfusion::graph::GNode> node, bool to_nhwc);
-                void remove_node(std::shared_ptr<nnfusion::graph::Graph>& graph, std::shared_ptr<nnfusion::graph::GNode> node);
+                std::shared_ptr<nnfusion::graph::GNode>
+                    add_transpose(std::shared_ptr<nnfusion::graph::Graph>& graph,
+                                  std::shared_ptr<nnfusion::graph::GNode> node,
+                                  bool to_nhwc);
+                void remove_node(std::shared_ptr<nnfusion::graph::Graph>& graph,
+                                 std::shared_ptr<nnfusion::graph::GNode> node);
             };
         }
     }

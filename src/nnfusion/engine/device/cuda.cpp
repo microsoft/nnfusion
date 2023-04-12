@@ -12,6 +12,7 @@
 #include "nnfusion/engine/pass/graph/batchnorm_inference_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/blockfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/common_subexpression_elimination_pass.hpp"
+#include "nnfusion/engine/pass/graph/dot_algo_select_pass.hpp"
 #include "nnfusion/engine/pass/graph/dot_transpose_pass.hpp"
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
@@ -23,10 +24,12 @@
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
 #include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
 #include "nnfusion/engine/pass/graph/multi_reshape_folding_pass.hpp"
+#include "nnfusion/engine/pass/graph/nchw2nhwc_pass.hpp"
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
 #include "nnfusion/engine/pass/graph/reduce_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/register_fusion_pass.hpp"
+#include "nnfusion/engine/pass/graph/remove_redundant_ops.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
 #include "nnfusion/engine/pass/graph/split_softmax_pass.hpp"
 #include "nnfusion/engine/pass/graph/subgraph_fusion_pass.hpp"
@@ -38,10 +41,6 @@
 #include "nnfusion/engine/pass/tensor/tensor_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_memory_layout.hpp"
 #include "nnfusion/frontend/util/parameter.hpp"
-#include "nnfusion/engine/pass/graph/dot_algo_select_pass.hpp"
-#include "nnfusion/engine/pass/graph/remove_redundant_ops.hpp"
-#include "nnfusion/engine/pass/graph/nchw2nhwc_pass.hpp"
-
 
 using namespace nnfusion;
 using namespace nnfusion::engine;

@@ -879,8 +879,8 @@ nnfusion::LanguageUnit_p CudaCodegenPass::func_call_codegen(nnfusion::ir::Instru
                 lu << "Debug(\"" << node_name << ", " << out_name << member_name << "_f32\", "
                    << "fp32tensors, \"" << join(kernel->m_context->input_names) << "\", "
                    << kernel->m_context->outputs[i]->size(false) << ");\n";
-                lu << "CUDA_SAFE_CALL(cudaMemset((void*)fp32tensors, 0, "
-                   << max_tensor_size <<"));\n";
+                lu << "CUDA_SAFE_CALL(cudaMemset((void*)fp32tensors, 0, " << max_tensor_size
+                   << "));\n";
             }
             else if (element::get_backend_cstring(
                          kernel->m_context->outputs[i]->get_element_type()) == "float")

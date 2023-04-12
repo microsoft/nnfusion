@@ -19,7 +19,9 @@ DEFINE_bool(fuse_cpuprofiler, false, "");
 DEFINE_bool(fcodegen_pybind, false, "");
 DEFINE_bool(ffunction_codegen, false, "");
 DEFINE_bool(fmulti_shape, false, "");
-DEFINE_int64(fnchw2nhwc_level, 0, "nchw2nhwc level: 0: not convert; 1: convert conv op; 2: convert whole graph");
+DEFINE_int64(fnchw2nhwc_level,
+             0,
+             "nchw2nhwc level: 0: not convert; 1: convert conv op");
 
 using namespace nnfusion;
 

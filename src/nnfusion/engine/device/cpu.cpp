@@ -21,6 +21,7 @@
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
 #include "nnfusion/engine/pass/graph/kernel_tuning.hpp"
 #include "nnfusion/engine/pass/graph/multi_reshape_folding_pass.hpp"
+#include "nnfusion/engine/pass/graph/nchw2nhwc_pass.hpp"
 #include "nnfusion/engine/pass/graph/op_inplace_pass.hpp"
 #include "nnfusion/engine/pass/graph/pattern_substitution.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
@@ -29,7 +30,6 @@
 #include "nnfusion/engine/pass/tensor/liveness_analysis.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/tensor/tensor_memory_layout.hpp"
-#include "nnfusion/engine/pass/graph/nchw2nhwc_pass.hpp"
 
 #include "nnfusion/engine/pass/codegen/cpu_codegen_pass.hpp"
 

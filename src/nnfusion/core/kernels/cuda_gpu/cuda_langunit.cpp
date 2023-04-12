@@ -75,7 +75,6 @@ inline __device__ half hmin(half x, half y) { return x < y ? x : y; }
 #endif
 )");
 
-
 LU_DEFINE(
     macro::CUDA_SAFE_CALL_NO_THROW,
     R"(#define CUDA_SAFE_CALL_NO_THROW(x)                                                                 \

@@ -20,8 +20,8 @@
 //----------------------------------------------------------------------------------------------
 
 #include "nhwcconv.hpp"
-#include "conv.hpp"
 #include <unordered_map>
+#include "conv.hpp"
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 #include "nnfusion/frontend/onnx_import/util/broadcasting.hpp"
 
@@ -34,8 +34,8 @@ namespace nnfusion
             namespace set_1
             {
                 NamedNodeVector TranslateNhwcConvOp(const onnx::NodeProto& node_proto,
-                                                const NodeMap& all_ng_nodes,
-                                                std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                                                    const NodeMap& all_ng_nodes,
+                                                    std::shared_ptr<nnfusion::graph::Graph> m_graph)
                 {
                     auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
                     NNFUSION_CHECK(input_indexes.size() <= 3);
@@ -52,21 +52,23 @@ namespace nnfusion
                         << "incorrect value of 'group' attribute: " << groups;
                     auto conv_attrs = extract_conv_attrs(node, filters_shape);
 
-                    Shape kernel_shape =
-                        Shape({filters_shape[1], filters_shape[2]});
+                    Shape kernel_shape = Shape({filters_shape[1], filters_shape[2]});
                     Strides strides =
                         Strides(conv_attrs["strides"].begin(), conv_attrs["strides"].end());
                     Strides dilations =
                         Strides(conv_attrs["dilations"].begin(), conv_attrs["dilations"].end());
                     Strides pads =
-                        Strides(conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2, conv_attrs["pads"].end());
+                        Strides(conv_attrs["pads"].begin() + conv_attrs["pads"].size() / 2,
+                                conv_attrs["pads"].end());
 
                     op::OpConfig::any config;
                     config["strides"] = strides;
                     config["dilations"] = dilations;
                     config["pads"] = pads;
-                    auto conv_op = std::make_shared<op::GenericOp>(node_proto.name(), "NhwcConv", config);
-                    std::shared_ptr<nnfusion::graph::GNode>  conv_node = m_graph->add_node_and_edge(conv_op, {data, filters});
+                    auto conv_op =
+                        std::make_shared<op::GenericOp>(node_proto.name(), "NhwcConv", config);
+                    std::shared_ptr<nnfusion::graph::GNode> conv_node =
+                        m_graph->add_node_and_edge(conv_op, {data, filters});
                     // add bias
                     if (input_indexes.size() == 3)
                         conv_node = attach_bias_gnode(input_indexes[2], conv_node, m_graph, 3);

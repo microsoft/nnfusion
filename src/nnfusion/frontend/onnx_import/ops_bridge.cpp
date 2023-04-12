@@ -62,6 +62,7 @@
 #include "op/mean.hpp"
 #include "op/memory_copy.hpp"
 #include "op/multi_elementwise.hpp"
+#include "op/nhwcconv.hpp"
 #include "op/non_zero.hpp"
 #include "op/one_hot.hpp"
 #include "op/pad.hpp"
@@ -87,7 +88,6 @@
 #include "op/unaryop.hpp"
 #include "op/unsqueeze.hpp"
 #include "op/where.hpp"
-#include "op/nhwcconv.hpp"
 #include "ops_bridge.hpp"
 
 namespace nnfusion
@@ -480,8 +480,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("TrainableDropout", 1, TranslateTrainableDropoutOp);
                 REGISTER_DOMAIN_OPERATOR(
                     "com.microsoft", "TrainableDropoutGrad", 1, TranslateTrainableDropoutGradOp);
-                REGISTER_DOMAIN_OPERATOR(
-                    "com.microsoft", "NhwcConv", 1, TranslateNhwcConvOp);
+                REGISTER_DOMAIN_OPERATOR("com.microsoft", "NhwcConv", 1, TranslateNhwcConvOp);
                 REGISTER_OPERATOR("Transpose", 1, TranslateTransposeOp);
                 REGISTER_OPERATOR("Transpose", 13, TranslateTransposeOp);
                 REGISTER_DOMAIN_OPERATOR("com.microsoft", "TransposeMatMul", 1, TranslateMatmulOp);

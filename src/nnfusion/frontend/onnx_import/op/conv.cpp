@@ -57,7 +57,8 @@ namespace nnfusion
                 std::shared_ptr<nnfusion::graph::GNode>
                     attach_bias_gnode(nnfusion::frontend::onnx_import::GNodeIndex bias_index,
                                       std::shared_ptr<nnfusion::graph::GNode> conv_node,
-                                      std::shared_ptr<nnfusion::graph::Graph> m_graph, size_t index)
+                                      std::shared_ptr<nnfusion::graph::Graph> m_graph,
+                                      size_t index)
                 {
                     auto bc_op = std::make_shared<op::Broadcast>(
                         conv_node->get_shape(),

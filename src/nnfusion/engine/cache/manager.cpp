@@ -4,7 +4,9 @@
 #include "manager.hpp"
 #include <limits>
 #include <pwd.h>
+#ifdef PYTHON_INTERPRETER
 #include <Python.h> 
+#endif
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cuda_common_ops.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
@@ -216,6 +218,7 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
     }
     std::string kernel_name = identifier.substr(0, identifier.find('['));
     if (FLAGS_fcodegen_unexist_kernel && CodegenOpList.find(kernel_name) != CodegenOpList.end() && fetched.size() == 0) {
+#ifdef PYTHON_INTERPRETER
         NNFUSION_LOG(INFO) << "codegen unexist kernel: " << identifier;
         static bool python_init = false;
         if (!python_init) {
@@ -251,6 +254,11 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
         }
         NNFUSION_CHECK(SQLITE_OK == sqlite3_open(m_path.c_str(), &kernel_cache));
         fetched = fetch_all(identifier, device_type, true);
+#else
+        NNFUSION_LOG(ERROR) << "python interpreter not found, skip codegen unexist kernel: " << identifier;
+        exit(1);
+#endif
+
     }
     return fetched;
 }

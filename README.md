@@ -17,7 +17,7 @@ export PATH="$PATH:$PWD/nnfusion/build/src/tools/nnfusion"
 git clone https://github.com/nox-410/cutlass -b welder
 export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:$PWD/cutlass/include"
 
-pip install onnx==1.12 onnxruntime==1.12 onnxruntime-gpu==1.12
+pip install onnx==1.12 onnxruntime-gpu==1.12 onnxconverter_common==1.12
 pip install pytorch==1.12 torchvision==0.13 timm==0.5.4
 pip install attrs cloudpickle decorator psutil synr tornado xgboost
 ```

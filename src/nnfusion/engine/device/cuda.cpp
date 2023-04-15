@@ -13,6 +13,7 @@
 #include "nnfusion/engine/pass/graph/blockfusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/common_subexpression_elimination_pass.hpp"
 #include "nnfusion/engine/pass/graph/dot_transpose_pass.hpp"
+#include "nnfusion/engine/pass/graph/dot_permutation_pass.hpp"
 #include "nnfusion/engine/pass/graph/gemm_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/gnode_device_dispatcher.hpp"
 #include "nnfusion/engine/pass/graph/gradient_weight_mapping_pass.hpp"
@@ -72,6 +73,7 @@ CudaEngine::CudaEngine()
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
     g_passes->push_back(make_shared<SplitSoftmaxPass>());
     g_passes->push_back(make_shared<TensorCoreRewritePass>());
+    g_passes->push_back(make_shared<DotPermutationPass>());
     g_passes->push_back(make_shared<RegisterFusionPass>());
 
     // Kernel selection

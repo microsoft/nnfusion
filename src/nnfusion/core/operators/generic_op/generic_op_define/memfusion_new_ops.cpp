@@ -353,3 +353,349 @@ REGISTER_OP(HardSigmoid)
 
         return op::create_code_from_template(ir_template, op_config);
     });
+
+REGISTER_OP(Permutate)
+    .attr<int>("type", 0)
+    .attr<int>("inner_i", 16)
+    .attr<int>("inner_j", 16)
+    .infershape(
+        [](std::shared_ptr<graph::GNode> gnode) -> void
+        {
+            NNFUSION_CHECK(1 == gnode->get_input_size());
+            gnode->set_output_type_and_shape(
+                0, gnode->get_input_element_type(0), gnode->get_input_shape(0));
+        })
+    .translate_v2(
+        [](std::shared_ptr<graph::GNode> curr) -> std::string
+        {
+            // create expression `mediate0[N0, N1] = input0[N0 // 512 , N0 % 512, N1] where N0 in 16384;output0[N0, N1, N2, N3] = mediate0[(N0 * 16 + N2) // 16 * 16 + (N0 * 16 + N2)  % 8 * 2 + (N1 * 16 + N3) % 16 // 8, (N1 * 16 + N3) // 16 * 16 + (N0 * 16 + N2)  % 16 // 8 * 8 + (N1 * 16 + N3) % 8] where N0 in 1024, N1 in 256, N2 in 16, N3 in 16;`
+            auto generic_op =
+                std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+            auto input0_shape = nnfusion::Shape(curr->get_input_shape(0));
+            auto input0_type = curr->get_input_element_type(0);
+            NNFUSION_CHECK(input0_shape.size() == 2 || input0_shape.size() == 3)
+                << "Currently only support 2D or 3D input";
+            int type = generic_op->localOpConfig.getRoot()["type"];
+            string expression_template;
+            string expression_code;
+            if (input0_shape.size() == 2)
+            {
+                if (type == 0)
+                {
+                    expression_template =
+                        R"(@output0@[N0, N1, N2, N3] = @input0@[(N0 * 16 + N2) // 16 * 16 + (N0 * 16 + N2)  % 8 * 2 + (N1 * 16 + N3) % 16 // 8, (N1 * 16 + N3) // 16 * 16 + (N0 * 16 + N2)  % 16 // 8 * 8 + (N1 * 16 + N3) % 8] where N0 in @N0@, N1 in @N1@, N2 in @N2@, N3 in @N3@;)";
+                }
+                else
+                {
+                    NNFUSION_CHECK_FAIL() << "Permutate type not supported";
+                }
+                nnfusion::json config;
+                config["N0"] = input0_shape[0] /
+                               static_cast<int>(generic_op->localOpConfig.getRoot()["inner_i"]);
+                config["N1"] = input0_shape[1] /
+                               static_cast<int>(generic_op->localOpConfig.getRoot()["inner_j"]);
+                config["N2"] = generic_op->localOpConfig.getRoot()["inner_i"];
+                config["N3"] = generic_op->localOpConfig.getRoot()["inner_j"];
+                expression_code = op::create_code_from_template(expression_template, config);
+            }
+            else if (input0_shape.size() == 3)
+            {
+                if (type == 0)
+                {
+                    expression_template =
+                        R"( mediate0[N0, N1] = @input0@[N0 // 512 , N0 % 512, N1] where N0 in @M@;@output0@[N0, N1, N2, N3] = mediate0[(N0 * 16 + N2) // 16 * 16 + (N0 * 16 + N2)  % 8 * 2 + (N1 * 16 + N3) % 16 // 8, (N1 * 16 + N3) // 16 * 16 + (N0 * 16 + N2)  % 16 // 8 * 8 + (N1 * 16 + N3) % 8] where N0 in @N0@, N1 in @N1@, N2 in @N2@, N3 in @N3@;)";
+                }
+                else
+                {
+                    NNFUSION_CHECK_FAIL() << "Permutate type not supported";
+                }
+
+                nnfusion::json config;
+                config["M"] = input0_shape[0] * input0_shape[1];
+                config["N0"] = (input0_shape[0] * input0_shape[1]) /
+                               static_cast<int>(generic_op->localOpConfig.getRoot()["inner_i"]);
+                config["N1"] = input0_shape[2] /
+                               static_cast<int>(generic_op->localOpConfig.getRoot()["inner_j"]);
+                config["N2"] = generic_op->localOpConfig.getRoot()["inner_i"];
+                config["N3"] = generic_op->localOpConfig.getRoot()["inner_j"];
+                expression_code = op::create_code_from_template(expression_template, config);
+            }
+            return expression_code;
+        });
+
+REGISTER_OP(BatchPermutate)
+    .attr<int>("batch_dims", 2)
+    .attr<int>("type", 0)
+    .attr<int>("inner_i", 16)
+    .attr<int>("inner_j", 16)
+    .infershape(
+        [](std::shared_ptr<graph::GNode> gnode) -> void
+        {
+            NNFUSION_CHECK(1 == gnode->get_input_size());
+            gnode->set_output_type_and_shape(
+                0, gnode->get_input_element_type(0), gnode->get_input_shape(0));
+        })
+    .translate_v2(
+        [](std::shared_ptr<graph::GNode> curr) -> std::string
+        {
+            // create expression `mediate0[N0, N1] = input0[N0 // 512 , N0 % 512, N1] where N0 in 16384;output0[N0, N1, N2, N3] = mediate0[(N0 * 16 + N2) // 16 * 16 + (N0 * 16 + N2)  % 8 * 2 + (N1 * 16 + N3) % 16 // 8, (N1 * 16 + N3) // 16 * 16 + (N0 * 16 + N2)  % 16 // 8 * 8 + (N1 * 16 + N3) % 8] where N0 in 1024, N1 in 256, N2 in 16, N3 in 16;`
+            auto generic_op =
+                std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+            auto input0_shape = nnfusion::Shape(curr->get_input_shape(0));
+            auto input0_type = curr->get_input_element_type(0);
+            NNFUSION_CHECK(input0_shape.size() == 3 || input0_shape.size() == 4)
+                << "Currently only support 3D or 4D input";
+            int type = generic_op->localOpConfig.getRoot()["type"];
+            string expression_template;
+            string expression_code;
+            if (input0_shape.size() == 3){
+                if (type == 0)
+                {
+                    expression_template =
+                        R"(@output0@[B0, N0, N1, N2, N3] = @input0@[B0, (N0 * 16 + N2) // 16 * 16 + (N0 * 16 + N2)  % 8 * 2 + (N1 * 16 + N3) % 16 // 8, (N1 * 16 + N3) // 16 * 16 + (N0 * 16 + N2)  % 16 // 8 * 8 + (N1 * 16 + N3) % 8] where N0 in @N0@, N1 in @N1@, N2 in @N2@, N3 in @N3@;)";
+                }
+                else if (type == 1)
+                {
+                    // B[vi // 16, vj // 16, vi % 16, vj % 16] = A[vi // 8 * 8 + vi % 4 * 2 + vj % 16 // 8, vj // 16 * 16 + vi % 8 // 4 * 8 + vj % 8]
+                    expression_template =
+                        R"(@output0@[B0, N0, N1, N2, N3] = @input0@[B0, (N0 * 16 + N2) // 8 * 8 + (N0 * 16 + N2)  % 4 * 2 + (N1 * 16 + N3) % 16 // 8, (N1 * 16 + N3) // 16 * 16 + (N0 * 16 + N2)  % 8 // 4 * 8 + (N1 * 16 + N3) % 8] where N0 in @N0@, N1 in @N1@, N2 in @N2@, N3 in @N3@;)";
+                }
+                else
+                {
+                    NNFUSION_CHECK_FAIL() << "Permutate type not supported";
+                }
+                nnfusion::json config;
+                config["N0"] = input0_shape[1] /
+                               static_cast<int>(generic_op->localOpConfig.getRoot()["inner_i"]);
+                config["N1"] = input0_shape[2] /
+                               static_cast<int>(generic_op->localOpConfig.getRoot()["inner_j"]);
+                config["N2"] = generic_op->localOpConfig.getRoot()["inner_i"];
+                config["N3"] = generic_op->localOpConfig.getRoot()["inner_j"];
+                expression_code = op::create_code_from_template(expression_template, config);
+            }
+            else if (input0_shape.size() == 4)
+            {
+                if (type == 0)
+                {
+                    expression_template =
+                        R"(@output0@[B0, B1, N0, N1, N2, N3] = @input0@[B0, B1, (N0 * 16 + N2) // 16 * 16 + (N0 * 16 + N2)  % 8 * 2 + (N1 * 16 + N3) % 16 // 8, (N1 * 16 + N3) // 16 * 16 + (N0 * 16 + N2)  % 16 // 8 * 8 + (N1 * 16 + N3) % 8] where N0 in @N0@, N1 in @N1@, N2 in @N2@, N3 in @N3@;)";
+                }
+                else if (type == 1)
+                {
+                    // B[vi // 16, vj // 16, vi % 16, vj % 16] = A[vi // 8 * 8 + vi % 4 * 2 + vj % 16 // 8, vj // 16 * 16 + vi % 8 // 4 * 8 + vj % 8]
+                    expression_template =
+                        R"(@output0@[B0, B1, N0, N1, N2, N3] = @input0@[B0, B1, (N0 * 16 + N2) // 8 * 8 + (N0 * 16 + N2)  % 4 * 2 + (N1 * 16 + N3) % 16 // 8, (N1 * 16 + N3) // 16 * 16 + (N0 * 16 + N2)  % 8 // 4 * 8 + (N1 * 16 + N3) % 8] where N0 in @N0@, N1 in @N1@, N2 in @N2@, N3 in @N3@;)";
+                }
+                else
+                {
+                    NNFUSION_CHECK_FAIL() << "Permutate type not supported";
+                }
+                nnfusion::json config;
+                config["N0"] = input0_shape[2] /
+                               static_cast<int>(generic_op->localOpConfig.getRoot()["inner_i"]);
+                config["N1"] = input0_shape[3] /
+                               static_cast<int>(generic_op->localOpConfig.getRoot()["inner_j"]);
+                config["N2"] = generic_op->localOpConfig.getRoot()["inner_i"];
+                config["N3"] = generic_op->localOpConfig.getRoot()["inner_j"];
+                expression_code = op::create_code_from_template(expression_template, config);
+            }
+
+            return expression_code;
+        });
+
+REGISTER_OP(LayoutDot)
+    .attr<size_t>("inner_i")
+    .attr<size_t>("inner_j")
+    .attr<int>("output_layout")
+    .infershape(
+        [](std::shared_ptr<graph::GNode> gnode) -> void
+        {
+            //TODO(leiwang1999):currently only support for NT Layout
+            NNFUSION_CHECK(2 == gnode->get_input_size());
+            // input 0 shape is B, S, K, input 1 is K, N
+            // output sahpe is B, S, N
+            auto input0_shape = nnfusion::Shape(gnode->get_input_shape(0));
+            auto input1_shape = nnfusion::Shape(gnode->get_input_shape(1));
+            NNFUSION_CHECK(input0_shape.size() == 2 || input0_shape.size() == 3 ||
+                           input1_shape.size() == 2);
+            if (input0_shape.size() == 2)
+            {
+                nnfusion::Shape output_shape{input0_shape[0], input1_shape[1]};
+                gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+            }
+            else
+            {
+                nnfusion::Shape output_shape{input0_shape[0], input0_shape[1], input1_shape[1]};
+                gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+            }
+        })
+    .translate_v2(
+        [](std::shared_ptr<graph::GNode> curr) -> std::string
+        {
+            auto generic_op =
+                std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+            string fuse_template =
+                R"( temp0@A_fused_layout@ +=! @input0@@A_layout@ where M in @M@;)";
+            string compute_template =
+                R"( @output0@[M, N] +=! temp0@A_fused_layout@ * @input1@@B_layout@; )";
+            string ir_template = fuse_template + compute_template;
+            op::OpConfig::any op_config;
+            op_config["M"] = 16384;
+            op_config["A_fused_layout"] = "[M, K]";
+            op_config["B_layout"] = "[N, K]";
+            int output_layout = generic_op->localOpConfig.getRoot()["output_layout"];
+            auto A_shape = curr->get_input_shape(0);
+            int raxis = A_shape.size() - 1;
+            string A_layout;
+            size_t stride = 16384;
+            for (int i = 0; i < A_shape.size(); i++)
+            {
+                if (i > 0)
+                    A_layout += ", ";
+                if (i == raxis)
+                    A_layout += "K";
+                else
+                {
+                    stride /= A_shape[i];
+                    A_layout += "M//" + to_string(stride) + "%" + to_string(A_shape[i]);
+                }
+            }
+            op_config["A_layout"] = "[" + A_layout + "]";
+
+            auto ir = op::create_code_from_template(ir_template, op_config);
+
+            if (curr->get_output_element_type(0) == nnfusion::element::f16)
+            {
+                ir += "## @: output_layout=" + to_string(output_layout);
+            }
+            return ir;
+        });
+
+REGISTER_OP(LayoutBMM)
+    .attr<nnfusion::op::OpConfig::any>("adj_x", {{"b", false}})
+    .attr<nnfusion::op::OpConfig::any>("adj_y", {{"b", false}})
+    .attr<size_t>("inner_i", 16)
+    .attr<size_t>("inner_j", 16)
+    .attr<int>("output_layout", 0)
+    .constrait(
+        [](const nnfusion::op::OpConfig::any& config) -> bool
+        {
+            if (!config["adj_x"]["b"].is_boolean())
+                return false;
+            if (!config["adj_y"]["b"].is_boolean())
+                return false;
+            return true;
+        })
+    .infershape(
+        [](std::shared_ptr<graph::GNode> gnode) -> void
+        {
+            NNFUSION_CHECK(gnode->get_input_size() == 2);
+            const nnfusion::Shape& input_shape_0 = gnode->get_input_shape(0);
+            const nnfusion::Shape& input_shape_1 = gnode->get_input_shape(1);
+            nnfusion::Shape output_shape_0;
+
+            NNFUSION_CHECK(input_shape_0.size() == input_shape_1.size());
+            NNFUSION_CHECK(gnode->get_input_element_type(0) == gnode->get_input_element_type(1));
+
+            for (int i = 0; i < input_shape_0.size() - 2; i++)
+            {
+                NNFUSION_CHECK(input_shape_0[i] == input_shape_1[i]);
+                output_shape_0.push_back(input_shape_0[i]);
+            }
+
+            int m0 = input_shape_0[input_shape_0.size() - 2],
+                n0 = input_shape_0[input_shape_0.size() - 1];
+            int m1 = input_shape_1[input_shape_1.size() - 2],
+                n1 = input_shape_1[input_shape_1.size() - 1];
+
+            auto generic_op =
+                std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+            bool trans_A = generic_op->localOpConfig.getRoot()["adj_x"]["b"];
+            bool trans_B = generic_op->localOpConfig.getRoot()["adj_y"]["b"];
+
+            if (!trans_A && !trans_B)
+                NNFUSION_CHECK(m1 == n0), output_shape_0.push_back(m0),
+                    output_shape_0.push_back(n1);
+            else if (!trans_A && trans_B)
+                NNFUSION_CHECK(n0 == n1), output_shape_0.push_back(m0),
+                    output_shape_0.push_back(m1);
+            else if (trans_A && !trans_B)
+                NNFUSION_CHECK(m0 == m1), output_shape_0.push_back(n0),
+                    output_shape_0.push_back(n1);
+            else // trans_A && trans_B
+                NNFUSION_CHECK(m0 == n1), output_shape_0.push_back(n0),
+                    output_shape_0.push_back(m1);
+            gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape_0);
+        })
+    .translate_v2(
+        [](std::shared_ptr<graph::GNode> curr) -> std::string
+        {
+            NNFUSION_CHECK(curr->get_input_size() == 2);
+
+            const nnfusion::Shape& input_shape_0 = curr->get_input_shape(0);
+            const nnfusion::Shape& input_shape_1 = curr->get_input_shape(1);
+            nnfusion::Shape output_shape_0 = curr->get_output_shape(0);
+
+            NNFUSION_CHECK(input_shape_0.size() == input_shape_1.size());
+            NNFUSION_CHECK(curr->get_input_element_type(0) == curr->get_input_element_type(1));
+
+            auto generic_op =
+                std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+            bool trans_A = generic_op->localOpConfig.getRoot()["adj_x"]["b"];
+            bool trans_B = generic_op->localOpConfig.getRoot()["adj_y"]["b"];
+
+            auto ir_template =
+                R"( @output0@@output0_layout@ +=! @input0@@input0_layout@ * @input1@@input1_layout@; )";
+
+            std::vector<std::string> output0_layout;
+            std::vector<std::string> input0_layout;
+            std::vector<std::string> input1_layout;
+
+            for (size_t i = 0; i < output_shape_0.size() - 2; ++i)
+            {
+                std::string batch_dim = "B" + to_string(i);
+                output0_layout.push_back(batch_dim);
+                input0_layout.push_back(batch_dim);
+                input1_layout.push_back(batch_dim);
+            }
+
+            output0_layout.push_back("N");
+            output0_layout.push_back("M");
+
+            if (trans_A)
+            {
+                input0_layout.push_back("K");
+                input0_layout.push_back("N");
+            }
+            else
+            {
+                input0_layout.push_back("N");
+                input0_layout.push_back("K");
+            }
+
+            if (trans_B)
+            {
+                input1_layout.push_back("M");
+                input1_layout.push_back("K");
+            }
+            else
+            {
+                input1_layout.push_back("K");
+                input1_layout.push_back("M");
+            }
+
+            op::OpConfig::any op_config;
+            op_config["input0_layout"] = vector_to_string<std::vector<std::string>>(input0_layout);
+            op_config["input1_layout"] = vector_to_string<std::vector<std::string>>(input1_layout);
+            op_config["output0_layout"] =
+                vector_to_string<std::vector<std::string>>(output0_layout);
+
+            auto ir = op::create_code_from_template(ir_template, op_config);
+
+            int output_layout = generic_op->localOpConfig.getRoot()["output_layout"];
+            if (curr->get_output_element_type(0) == nnfusion::element::f16)
+            {
+                ir += "## @: output_layout=" + to_string(output_layout);
+            }
+            return ir;
+        });

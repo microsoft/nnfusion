@@ -504,12 +504,19 @@ REGISTER_OP(BatchPermutate)
         });
 
 REGISTER_OP(LayoutDot)
+    .attr<bool>("transpose_A")
+    .attr<bool>("transpose_B")
     .attr<size_t>("inner_i")
     .attr<size_t>("inner_j")
     .attr<int>("output_layout")
     .infershape(
         [](std::shared_ptr<graph::GNode> gnode) -> void
         {
+            auto generic_op =
+                std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+            bool trans_a = generic_op->localOpConfig.getRoot()["transpose_A"];
+            bool trans_b = generic_op->localOpConfig.getRoot()["transpose_B"];
+
             //TODO(leiwang1999):currently only support for NT Layout
             NNFUSION_CHECK(2 == gnode->get_input_size());
             // input 0 shape is B, S, K, input 1 is K, N
@@ -520,20 +527,35 @@ REGISTER_OP(LayoutDot)
                            input1_shape.size() == 2);
             if (input0_shape.size() == 2)
             {
-                nnfusion::Shape output_shape{input0_shape[0], input1_shape[1]};
+                nnfusion::Shape output_shape{trans_a ? input0_shape[1]: input0_shape[0],
+                                             trans_b ? input1_shape[0]: input1_shape[1] };
                 gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
             }
-            else
+            else if (input0_shape.size() == 3)
             {
-                nnfusion::Shape output_shape{input0_shape[0], input0_shape[1], input1_shape[1]};
+                nnfusion::Shape output_shape{input0_shape[0],
+                                             trans_a ? input0_shape[2] : input0_shape[1],
+                                             trans_b ? input1_shape[0] : input1_shape[1] 
+                                            };
                 gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
             }
+            // print trans_a and trans_b
+            NNFUSION_LOG(INFO) << "transa, b is " << trans_a << " " << trans_b;
+            // print input0 shape and input1 shape
+            NNFUSION_LOG(INFO) << "input0 shape is " << gnode->get_input_shape(0);
+            NNFUSION_LOG(INFO) << "input1 shape is " << gnode->get_input_shape(1);
+            NNFUSION_LOG(INFO) << "output shape is " << gnode->get_output_shape(0);
         })
     .translate_v2(
         [](std::shared_ptr<graph::GNode> curr) -> std::string
         {
+            // todo(leiwang1999): apply correct experession.
             auto generic_op =
                 std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+            int output_layout = generic_op->localOpConfig.getRoot()["output_layout"];
+            bool trans_a = generic_op->localOpConfig.getRoot()["transpose_A"];
+            bool trans_b = generic_op->localOpConfig.getRoot()["transpose_B"];
+
             string fuse_template =
                 R"( temp0@A_fused_layout@ +=! @input0@@A_layout@ where M in @M@;)";
             string compute_template =
@@ -541,9 +563,9 @@ REGISTER_OP(LayoutDot)
             string ir_template = fuse_template + compute_template;
             op::OpConfig::any op_config;
             op_config["M"] = 16384;
-            op_config["A_fused_layout"] = "[M, K]";
-            op_config["B_layout"] = "[N, K]";
-            int output_layout = generic_op->localOpConfig.getRoot()["output_layout"];
+            op_config["A_fused_layout"] = trans_a? "[K, M]" : "[M, K]";
+            op_config["B_layout"] = trans_b? "[N, K]" : "[K, N]";
+
             auto A_shape = curr->get_input_shape(0);
             int raxis = A_shape.size() - 1;
             string A_layout;

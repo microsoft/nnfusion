@@ -65,6 +65,7 @@ bool DotPermutationPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
             auto it_op = static_pointer_cast<nnfusion::op::Dot>(it->get_op_ptr());
             auto trans_a = it_op->get_transpose_A();
             auto trans_b = it_op->get_transpose_B();
+            NNFUSION_LOG(INFO) << "trans_a " << trans_a << " trans_b " << trans_b;
             // get the input nodes
             auto input_node = it->get_in_edge(0)->get_src();
             auto weight_node = it->get_in_edge(1)->get_src();
@@ -92,6 +93,8 @@ bool DotPermutationPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& g
             layoutDotConfig["output_type"] = 0;
             layoutDotConfig["inner_i"] = kernel_i;
             layoutDotConfig["inner_j"] = kernel_j;
+            layoutDotConfig["transpose_A"] = trans_a;
+            layoutDotConfig["transpose_B"] = trans_b;
             auto layoutDot_op = std::make_shared<nnfusion::op::GenericOp>(
                 "LayoutDot", "LayoutDot", layoutDotConfig);
             NNFUSION_LOG(INFO) << "Create layoutDot node";

@@ -225,6 +225,7 @@ void cuda::If::generate_branch_fused_kernel(LanguageUnit_p _lu, ir::BasicBlock::
             lu << launch_bound;
             lu.block_begin();
             lu << kernel_call;
+            lu << "__syncthreads();\n";
             lu.block_end();
             lu.block_end();
         } else {

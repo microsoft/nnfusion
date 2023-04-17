@@ -173,6 +173,7 @@ void cuda::Loop::generate_subgraph_code(LanguageUnit_p _lu, bool in_cuda)
                 lu << launch_bound;
                 lu.block_begin();
                 lu << kernel_call;
+                lu << "__syncthreads();\n";
                 lu.block_end();
                 lu.block_end();
             } else {

@@ -49,9 +49,15 @@ def ref_output(onnx_model_path, device):
         tic = time.monotonic_ns()
         ort_session.run_with_iobinding(io_binding)
         return (time.monotonic_ns() - tic) / 1e6
-    _ = [get_runtime() for i in range(50)] # warmup
+    print("Warming up ...")
+    st = time.time()
+    while time.time() - st < 1.0:
+        get_runtime() # warmup
     times = [get_runtime() for i in range(100)]
-    print(np.mean(times), np.min(times), np.max(times))
+    print(f"avg: {np.mean(times)} ms")
+    print(f"min: {np.min(times)} ms")
+    print(f"max: {np.max(times)} ms")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

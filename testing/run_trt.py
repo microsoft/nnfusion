@@ -41,13 +41,18 @@ def run_trt(prefix, use_fp16=False):
     context = engine.create_execution_context()
     buffer = [tensor.data_ptr() for tensor in tensors]
     def get_runtime():
-        tic = time.time()
-        context.execute(1, buffer)
-        return (time.time() - tic) * 1000
-    _ = [get_runtime() for i in range(50)] # warmup
+        tic = time.monotonic_ns()
+        context.execute_v2(buffer)
+        return (time.monotonic_ns() - tic) / 1e6
+
+    print("Warming up ...")
+    st = time.time()
+    while time.time() - st < 1.0:
+        get_runtime() # warmup
     times = [get_runtime() for i in range(100)]
-    print(np.mean(times), np.min(times), np.max(times))
-    # print(tensors[1])
+    print(f"avg: {np.mean(times)} ms")
+    print(f"min: {np.min(times)} ms")
+    print(f"max: {np.max(times)} ms")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -45,11 +45,11 @@ REGISTER_OP(MemEffAttnBasic)
         size_t head_size = generic_op->localOpConfig.getRoot()["head_size"];
 
         nnfusion::Shape output_shape;
-        if (stage == 0 || stage == 3)
+        if (stage == 0 || stage == 2)
         {
             output_shape = {batch_size, num_heads, seq_len, block_size};
         }
-        else if (stage == 6 || stage == 9)
+        else if (stage == 4 || stage == 6)
         {
             output_shape = {batch_size, num_heads, seq_len, head_size};
         }
@@ -76,52 +76,41 @@ REGISTER_OP(MemEffAttnBasic)
         else if (stage == 1)
         {
             // qk -> max
+            //max, lse_i -> m_ij
+            //m_ij->m_i
+
+            // qk, lse_i -> m_ij
             expression_template =
-                R"( @output0@[B, H, Q] >=! @input0@[B, H, Q, Kc]; )";
+                R"( mediate0[B, H, Q] >=! @input0@[B, H, Q, Kc]; @output0@[B, H, Q] = (mediate0[B, H, Q] * const(@softmax_scale@).cast(input0[0].dtype())).call(`max`, [@input1@[B, H, Q]]);)";
         }
         else if (stage == 2)
         {
-            //max, lse_i -> m_ij
+            //m_ij, qk -> p
             expression_template =
-                R"( @output0@[B, H, Q] = (@input0@[B, H, Q] * const(@softmax_scale@).cast(input0[0].dtype())).call(`max`, [@input1@[B, H, Q]]); )";
+                R"( mediate0[B, H, Q, Kc] = @input0@[B, H, Q] where Kc in @block_size@; @output0@[B, H, Q, Kc] = (@input1@[B, H, Q, Kc] * const(@softmax_scale@).cast(input0[0].dtype()) - mediate0[B, H, Q, Kc]).call(`exp`);)";
         }
         else if (stage == 3)
         {
-            //m_ij, qk -> p
+            //p-> l_ij
             expression_template =
-                R"( mediate0[B, H, Q, Kc] = @input0@[B, H, Q] where Kc in @block_size@; @output0@[B, H, Q, Kc] = (@input1@[B, H, Q, Kc] * const(@softmax_scale@).cast(input0[0].dtype()) - mediate0[B, H, Q, Kc]).call(`exp`); )";
+                R"(@output0@[B, H, Q] +=! @input0@[B, H, Q, Kc];)";
         }
         else if (stage == 4)
         {
-            //p-> l_ij
+            //m_i, m_ij -> acc_o_scale
+            // acc_o_scale, acc_o, p, v -> acc_o
+
+            // m_i, m_ij, acc_o, p, v->acc_o
             expression_template =
-                R"( @output0@[B, H, Q] += @input0@[B, H, Q, Kc];  )";
+                R"( mediate0[B, H, Q] = (@input0@[B, H, Q] - @input1@[B, H, Q]).call(`exp`); mediate1[B, H, Q, D] = mediate0[B, H, Q] where D in @head_size@; mediate2[B, H, Q, D] = @input2@[B, H, Q, D] * mediate1[B, H, Q, D]; mediate3[B, H, Q, D] +=! @input3@[B, H, Q, Kc] * @input4@[B, H, Kc, D]; @output0@[B, H, Q, D] = mediate2[B, H, Q, D] + mediate3[B, H, Q, D];)";
         }
         else if (stage == 5)
-        {
-            //m_i, m_ij -> acc_o_scale
-            expression_template =
-                R"( @output0@[B, H, Q] = (@input0@[B, H, Q] - @input1@[B, H, Q]).call(`exp`); )";
-        }
-        else if (stage == 6)
-        {
-            // acc_o_scale, acc_o, p, v -> acc_o
-            expression_template =
-                R"( mediate0[B, H, Q, D] = @input0@[B, H, Q] where D in @head_size@; mediate1[B, H, Q, D] = @input1@[B, H, Q, D] * mediate0[B, H, Q, D]; mediate2[B, H, Q, D] +=! @input2@[B, H, Q, Kc] * @input3@[B, H, Kc, D]; @output0@[B, H, Q, D] = mediate1[B, H, Q, D] + mediate2[B, H, Q, D];)";
-        }
-        else if (stage == 7)
-        {
-            // m_ij -> m_i
-            expression_template =
-                R"( @output0@[B, H, Q] = @input0@[B, H, Q]; )";
-        }
-        else if (stage == 8)
         {
             // m_ij, lse_i, l_ij -> lse_i
             expression_template =
                 R"( @output0@[B, H, Q] = @input0@[B, H, Q] + ((@input1@[B, H, Q] - @input0@[B, H, Q]).call(`exp`) + @input2@[B, H, Q]).call(`log`); )";
         }
-        else if (stage == 9)
+        else if (stage == 6)
         {
             // m_i, lse_i, acc_o-> out
             expression_template =
@@ -136,5 +125,10 @@ REGISTER_OP(MemEffAttnBasic)
                                           {{"softmax_scale", softmax_scale},
                                            {"head_size", head_size},
                                            {"block_size", block_size}});
+
+         if (stage == 0 || stage == 4)
+        {
+            expression_code += "## @: tensorCoreConfig=(2, 3)";
+        }
         return expression_code;
     });

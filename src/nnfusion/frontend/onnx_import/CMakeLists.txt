@@ -78,6 +78,8 @@ add_library(onnx_import STATIC
         op/instance_norm.cpp
         op/attention.hpp
         op/attention.cpp
+        op/memeffattn.hpp
+        op/memeffattn.cpp
         op/scatternd.hpp
         op/scatternd.cpp
         op/depth_to_space.hpp

@@ -60,6 +60,7 @@
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
 #include "op/mean.hpp"
+#include "op/memeffattn.hpp"
 #include "op/memory_copy.hpp"
 #include "op/multi_elementwise.hpp"
 #include "op/nhwcconv.hpp"
@@ -320,6 +321,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Mean", 13, TranslateMeanOp);
                 REGISTER_OPERATOR("MemcpyFromHost", 1, TranslateMemcpyFromHostOp);
                 REGISTER_OPERATOR("MemcpyToHost", 1, TranslateMemcpyToHostOp);
+                REGISTER_OPERATOR("MemEffAttn", 1, TranslateMemEffAttnOp);
                 REGISTER_OPERATOR("Min", 1, TranslateMultiElementwiseOp<op::Minimum>);
                 REGISTER_OPERATOR("Min", 6, TranslateMultiElementwiseOp<op::Minimum>);
                 REGISTER_OPERATOR("Min", 8, TranslateMultiElementwiseOp<op::Minimum>);

@@ -31,6 +31,7 @@
 #include "nnfusion/engine/pass/graph/register_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/remove_redundant_ops.hpp"
 #include "nnfusion/engine/pass/graph/runtime_const_folding_pass.hpp"
+#include "nnfusion/engine/pass/graph/split_memeffattn_pass.hpp"
 #include "nnfusion/engine/pass/graph/split_softmax_pass.hpp"
 #include "nnfusion/engine/pass/graph/subgraph_fusion_pass.hpp"
 #include "nnfusion/engine/pass/graph/superscaler_dataparallelism_pass.hpp"
@@ -75,6 +76,7 @@ CudaEngine::CudaEngine()
 
     g_passes->push_back(make_shared<PatternSubstitutionPass>());
     g_passes->push_back(make_shared<SplitSoftmaxPass>());
+    g_passes->push_back(make_shared<SplitMemEffAttnPass>());
     g_passes->push_back(make_shared<TensorCoreRewritePass>());
     // g_passes->push_back(make_shared<DotAlgoSelectPass>());
     g_passes->push_back(make_shared<RuntimeConstantFoldingPass>());

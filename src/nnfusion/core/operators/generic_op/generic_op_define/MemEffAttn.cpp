@@ -4,27 +4,137 @@
 #include "nnfusion/core/operators/generic_op/generic_op.hpp"
 
 REGISTER_OP(MemEffAttn)
-    .attr<int>("batch_size")
-    .attr<int>("num_heads")
-    .attr<int>("seq_len")
-    .attr<int>("seq_len_kv")
-    .attr<int>("head_size")
-    .attr<int>("head_size_v")
+    .attr<size_t>("batch_size")
+    .attr<size_t>("num_heads")
+    .attr<size_t>("seq_len")
+    .attr<size_t>("seq_len_kv")
+    .attr<size_t>("head_size")
+    .attr<size_t>("head_size_v")
     .attr<float>("softmax_scale", 0.1580810546875)
     .attr<float>("p_dropout", 0)
     .attr<bool>("is_causal", false) // Whether every token can only attend to previous tokens
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        // q: [b, h, q, d], k & v : [b, h, k, d]
         NNFUSION_CHECK(gnode->get_in_edges().size() == 3);
 
         auto in_shape = gnode->get_input_shape(0);
         NNFUSION_CHECK(in_shape.size() == 4);
-        nnfusion::Shape outshape{in_shape[0], in_shape[2], in_shape[1], in_shape[3]};
+        nnfusion::Shape outshape{in_shape[0], in_shape[1], in_shape[2], in_shape[3]};
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), outshape);
     })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string { return ""; });
+REGISTER_OP(MemEffAttnBasic)
+    .attr<size_t>("batch_size")
+    .attr<size_t>("num_heads")
+    .attr<size_t>("seq_len")
+    .attr<size_t>("seq_len_kv")
+    .attr<size_t>("head_size")
+    .attr<float>("p_dropout", 0)
+    .attr<int>("stage")
+    .attr<float>("softmax_scale", 0.1580810546875)
+    .attr<bool>("is_causal", false) // Whether every token can only attend to previous tokens
+    .attr<size_t>("block_size", 128)
+
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        size_t batch_size = generic_op->localOpConfig.getRoot()["batch_size"];
+        size_t num_heads = generic_op->localOpConfig.getRoot()["num_heads"];
+        size_t seq_len = generic_op->localOpConfig.getRoot()["seq_len"];
+        int stage = generic_op->localOpConfig.getRoot()["stage"];
+        size_t block_size = generic_op->localOpConfig.getRoot()["block_size"];
+        size_t head_size = generic_op->localOpConfig.getRoot()["head_size"];
+
+        nnfusion::Shape output_shape;
+        if (stage == 0 || stage == 3)
+        {
+            output_shape = {batch_size, num_heads, seq_len, block_size};
+        }
+        else if (stage == 6 || stage == 9)
+        {
+            output_shape = {batch_size, num_heads, seq_len, head_size};
+        }
+        else
+        {
+            output_shape = {batch_size, num_heads, seq_len};
+        }
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+    })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-        // adhoc: to be fixed
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+        float softmax_scale = generic_op->localOpConfig.getRoot()["softmax_scale"];
+        int stage = generic_op->localOpConfig.getRoot()["stage"];
+        int block_size = generic_op->localOpConfig.getRoot()["block_size"];
+        int head_size = generic_op->localOpConfig.getRoot()["head_size"];
+        bool s = stage == 0;
+        string expression_template;
+        if (stage == 0)
+        {
+            //q, k -> qk
+            expression_template =
+                R"( @output0@[B, H, Q, Kc] +=! @input0@[B, H, Q, D] * @input1@[B, H, Kc, D];  )";
+        }
+        else if (stage == 1)
+        {
+            // qk -> max
+            expression_template =
+                R"( @output0@[B, H, Q] >=! @input0@[B, H, Q, Kc]; )";
+        }
+        else if (stage == 2)
+        {
+            //max, lse_i -> m_ij
+            expression_template =
+                R"( @output0@[B, H, Q] = (@input0@[B, H, Q] * const(@softmax_scale@).cast(input0[0].dtype())).call(`max`, [@input1@[B, H, Q]]); )";
+        }
+        else if (stage == 3)
+        {
+            //m_ij, qk -> p
+            expression_template =
+                R"( mediate0[B, H, Q, Kc] = @input0@[B, H, Q] where Kc in @block_size@; @output0@[B, H, Q, Kc] = (@input1@[B, H, Q, Kc] * const(@softmax_scale@).cast(input0[0].dtype()) - mediate0[B, H, Q, Kc]).call(`exp`); )";
+        }
+        else if (stage == 4)
+        {
+            //p-> l_ij
+            expression_template =
+                R"( @output0@[B, H, Q] += @input0@[B, H, Q, Kc];  )";
+        }
+        else if (stage == 5)
+        {
+            //m_i, m_ij -> acc_o_scale
+            expression_template =
+                R"( @output0@[B, H, Q] = (@input0@[B, H, Q] - @input1@[B, H, Q]).call(`exp`); )";
+        }
+        else if (stage == 6)
+        {
+            // acc_o_scale, acc_o, p, v -> acc_o
+            expression_template =
+                R"( mediate0[B, H, Q, D] = @input0@[B, H, Q] where D in @head_size@; mediate1[B, H, Q, D] = @input1@[B, H, Q, D] * mediate0[B, H, Q, D]; mediate2[B, H, Q, D] +=! @input2@[B, H, Q, Kc] * @input3@[B, H, Kc, D]; @output0@[B, H, Q, D] = mediate1[B, H, Q, D] + mediate2[B, H, Q, D];)";
+        }
+        else if (stage == 7)
+        {
+            // m_ij -> m_i
+            expression_template =
+                R"( @output0@[B, H, Q] = @input0@[B, H, Q]; )";
+        }
+        else if (stage == 8)
+        {
+            // m_ij, lse_i, l_ij -> lse_i
+            expression_template =
+                R"( @output0@[B, H, Q] = @input0@[B, H, Q] + ((@input1@[B, H, Q] - @input0@[B, H, Q]).call(`exp`) + @input2@[B, H, Q]).call(`log`); )";
+        }
+        else if (stage == 9)
+        {
+            // m_i, lse_i, acc_o-> out
+            expression_template =
+                R"( mediate0[B, H, Q, D] = (@input0@[B, H, Q] - @input1@[B, H, Q]).call(`exp`) where D in @head_size@; @output0@[B, H, Q, D] = @input2@[B, H, Q, D] * mediate0[B, H, Q, D];)";
+        }
+        else
+        {
+            NNFUSION_CHECK_FAIL() << "Incorrect Stage ID: " << stage;
+        }
         std::string expression_code =
-            "@output0@[N0, N1, N2, N3] = @input0@[N0, N2, N1, N3] + @input1@[N0, N2, 0, N3] + "
-            "@input2@[N0, N2, 0, N3];";
+            op::create_code_from_template(expression_template,
+                                          {{"softmax_scale", softmax_scale},
+                                           {"head_size", head_size},
+                                           {"block_size", block_size}});
         return expression_code;
     });

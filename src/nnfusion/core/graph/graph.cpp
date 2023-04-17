@@ -69,9 +69,7 @@ std::shared_ptr<GNode> Graph::add_node_and_edge(const std::shared_ptr<nnfusion::
                                                 const size_t output_size)
 {
     auto gnode = std::make_shared<GNode>(op, input_gnodes, output_size);
-
     add_node(gnode);
-
     for (size_t i = 0; i < input_gnodes.size(); i++)
     {
         add_edge(input_gnodes[i], 0, gnode, i);
@@ -86,9 +84,7 @@ std::shared_ptr<GNode> Graph::add_node_and_edge(const std::shared_ptr<nnfusion::
                                                 const size_t output_size)
 {
     auto gnode = std::make_shared<GNode>(op, input_gnodes, output_size);
-
     add_node(gnode);
-
     for (size_t i = 0; i < input_gnodes.size(); i++)
     {
         add_edge(input_gnodes[i].gnode, input_gnodes[i].index, gnode, i);

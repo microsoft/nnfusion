@@ -30,6 +30,7 @@ set(SRC
     remove_redundant_ops.cpp
     register_fusion_pass.cpp
     split_softmax_pass.cpp
+    split_memeffattn_pass.cpp
     superscaler_dataparallelism_pass.cpp
     tensor_core_rewrite_pass.cpp
     ir_based_fusion_pass.cpp

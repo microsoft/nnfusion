@@ -1,0 +1,5 @@
+from rocm/pytorch:rocm4.3.1_ubuntu18.04_py3.6_pytorch_1.10.0
+COPY env /root/env
+WORKDIR /root
+RUN apt-get update && apt-get install -y libgflags-dev libsqlite3-dev libcurl4-openssl-dev curl libcurl4-openssl-dev
+RUN pip install -r env/requirements_pytorch_rocm.txt

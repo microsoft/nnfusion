@@ -1,0 +1,51 @@
+{
+    "input": {
+        "k_1": {
+            "id": "((float*)(inputs[1]))",
+            "name": "Parameter_1_0",
+            "shape": [
+                64,
+                12,
+                64,
+                64
+            ]
+        },
+        "v_1": {
+            "id": "((float*)(inputs[0]))",
+            "name": "Parameter_0_0",
+            "shape": [
+                64,
+                12,
+                64,
+                64
+            ]
+        }
+    },
+    "output": {
+        "gen_id_0": {
+            "id": "((int64_t*)(outputs[0]))",
+            "name": "Result_12_0",
+            "shape": []
+        },
+        "k_0": {
+            "id": "((float*)(outputs[2]))",
+            "name": "Result_14_0",
+            "shape": [
+                64,
+                12,
+                64,
+                64
+            ]
+        },
+        "v_0": {
+            "id": "((float*)(outputs[1]))",
+            "name": "Result_13_0",
+            "shape": [
+                64,
+                12,
+                64,
+                64
+            ]
+        }
+    }
+}

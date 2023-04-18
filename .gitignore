@@ -53,3 +53,5 @@ doc/doxygen/html/*
 nnfusion_rt/
 models/frozenmodels/
 
+artifacts/data
+artifacts/reproduce_results

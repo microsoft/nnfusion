@@ -1,0 +1,76 @@
+{
+    "input": {
+        "gen_id_0": {
+            "id": "((int64_t*)(inputs[0]))",
+            "name": "Parameter_4_0",
+            "shape": []
+        },
+        "k_0": {
+            "id": "((float*)(inputs[1]))",
+            "name": "Parameter_5_0",
+            "shape": [
+                1,
+                12,
+                64,
+                64
+            ]
+        },
+        "v_0": {
+            "id": "((float*)(inputs[3]))",
+            "name": "Parameter_7_0",
+            "shape": [
+                1,
+                12,
+                64,
+                64
+            ]
+        },
+        "x_0": {
+            "id": "((float*)(inputs[2]))",
+            "name": "Parameter_6_0",
+            "shape": [
+                1,
+                12,
+                1,
+                64
+            ]
+        }
+    },
+    "output": {
+        "@tmp_13": {
+            "id": "((float*)(outputs[3]))",
+            "name": "Result_56_0",
+            "shape": [
+                1,
+                12,
+                64,
+                64
+            ]
+        },
+        "@tmp_6": {
+            "id": "((float*)(outputs[1]))",
+            "name": "Result_54_0",
+            "shape": [
+                1,
+                12,
+                64,
+                64
+            ]
+        },
+        "gen_id_1": {
+            "id": "((int64_t*)(outputs[0]))",
+            "name": "Result_53_0",
+            "shape": []
+        },
+        "x_2": {
+            "id": "((float*)(outputs[2]))",
+            "name": "Result_55_0",
+            "shape": [
+                1,
+                12,
+                1,
+                64
+            ]
+        }
+    }
+}

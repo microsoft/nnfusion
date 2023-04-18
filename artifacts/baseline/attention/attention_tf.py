@@ -33,9 +33,9 @@ def load_model(batch_size, platform, unroll=False):
         import onnx
         from onnx_tf.backend import prepare
         if unroll:
-            model_path = f"attention.b{batch_size}.unroll.onnx"
+            model_path = f"onnx/attention.b{batch_size}.unroll.onnx"
         else:
-            model_path = f"attention.b{batch_size}.onnx"
+            model_path = f"onnx/attention.b{batch_size}.onnx"
         model = onnx.load(model_path)
         tf_model = prepare(model)
         return tf_model.graph.as_graph_def()

@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 import numpy as np
+import os
 
 device = torch.device('cuda')
 n_warmup = 100
@@ -511,7 +512,8 @@ def run(batch_size):
     profile_stop(platform)
     timer.report()
     mask = masks[:, 0: batch_size].contiguous()
-    # torch.onnx.export(script_model, (encoder_output, mask, h, c), f"seq2seq.b{batch_size}.onnx", opset_version=12)
+    os.system("mkdir -p onnx")
+    torch.onnx.export(script_model, (encoder_output, mask, h, c), f"onnx/seq2seq.b{batch_size}.onnx", opset_version=12)
 
 
 def run_fix_policy(batch_size, unroll):
@@ -554,8 +556,9 @@ def run_fix_policy(batch_size, unroll):
         timer.log()
     profile_stop(platform)
     timer.report()
+    os.system("mkdir -p onnx")
     unroll_tag = "unroll" if unroll else "fix"
-    # torch.onnx.export(script_model, args, f"seq2seq.b{batch_size}.{unroll_tag}.onnx", opset_version=12)
+    torch.onnx.export(script_model, args, f"onnx/seq2seq.b{batch_size}.{unroll_tag}.onnx", opset_version=12)
 
 
 if __name__ == '__main__':

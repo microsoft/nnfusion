@@ -1,11 +1,23 @@
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, NullLocator, MaxNLocator
 from common import *
+import os
+
+figure_id = 2
 
 sys = ['trace', 'with control flow']
-seq2seq = [0.4784, 0.5103]
-blockdrop = [0.511, 0.7848]
-rae = [0.4726, 26.5715]
+seq2seq = [
+    parse_time('../reproduce_results/Figure15/jax/seq2seq.unroll.log'),
+    parse_time('../reproduce_results/Figure15/jax/seq2seq.fix.log'),
+]
+blockdrop = [
+    parse_time('../reproduce_results/Figure16/jax/blockdrop.unroll.log'),
+    parse_time('../reproduce_results/Figure16/jax/blockdrop.fix.log'),
+]
+rae = [
+    parse_time('../reproduce_results/Figure18/jax/rae.unroll.log'),
+    parse_time('../reproduce_results/Figure18/jax/rae.fix.log'),
+]
 
 colors = [color_def[1], color_def[2]]
 hatch_def = ['//', '\\\\']
@@ -51,4 +63,4 @@ fig.legend(lines, labels, loc = 'upper center', ncol=len(sys), bbox_to_anchor=(0
 fig.add_subplot(111, frameon=False)
 # hide tick and tick label of the big axis
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-plt.savefig(f"figures/overhead_jax.pdf", bbox_inches='tight')
+plt.savefig(f"{os.path.join(plot_dir, f'figure{figure_id}.overhead_jax.pdf')}", bbox_inches='tight')

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from time import time
 from attention_pytorch_unroll import AttentionUnroll
+import os
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -98,10 +99,11 @@ def test_model(enable_torch, batch_size, unroll):
     profile_stop(platform)
     timer.report()
 
-    # if unroll:
-    #     torch.onnx.export(model, (x, k, v), f'attention.b{batch_size}.unroll.onnx', verbose=True, opset_version=11)
-    # else:
-    #     torch.onnx.export(model, (x, k, v), f'attention.b{batch_size}.onnx', verbose=True, opset_version=11)
+    os.system("mkdir -p onnx")
+    if unroll:
+        torch.onnx.export(model, (x, k, v), f'onnx/attention.b{batch_size}.unroll.onnx', verbose=True, opset_version=11)
+    else:
+        torch.onnx.export(model, (x, k, v), f'onnx/attention.b{batch_size}.onnx', verbose=True, opset_version=11)
 
 
 if __name__ == '__main__':

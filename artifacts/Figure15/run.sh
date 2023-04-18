@@ -2,6 +2,10 @@
 
 source ~/miniconda3/etc/profile.d/conda.sh
 
+conda activate grinder
+./run_pytorch.sh
+conda deactivate
+
 conda activate baseline_tf1
 ./run_tf.sh
 conda deactivate
@@ -11,6 +15,5 @@ conda activate baseline_jax
 conda deactivate
 
 conda activate grinder
-./run_pytorch.sh
 ./run_grinder.sh
 conda deactivate

@@ -2251,7 +2251,7 @@ torch.manual_seed(2333)
 len_dataset = 6400
 
 def run_sys(model):
-    inp = torch.load(f"tmp/skipnet-in/input-imagenet.{args.bs}.pt").cuda()
+    inp = torch.load(f"../data/skipnet/input-imagenet.{args.bs}.pt").cuda()
     ch = torch.zeros((1, args.bs, model.hidden_dim), device='cuda')
     cc = torch.zeros((1, args.bs, model.hidden_dim), device='cuda')
 

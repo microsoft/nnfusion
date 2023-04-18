@@ -36,9 +36,9 @@ def load_model(batch_size, backend, unroll):
         import onnx
         from onnx_tf.backend import prepare
         if unroll:
-            model_path = f"seq2seq.b{batch_size}.unroll.onnx"
+            model_path = f"onnx/seq2seq.b{batch_size}.unroll.onnx"
         else:
-            model_path = f"seq2seq.b{batch_size}.onnx"
+            model_path = f"onnx/seq2seq.b{batch_size}.onnx"
         model = onnx.load(model_path)
         # op = onnx.OperatorSetIdProto()
         # Sigmoid version 13 is not implemented.
@@ -168,9 +168,9 @@ def test_fix_policy(batch_size, unroll):
     import onnx
     from onnx_tf.backend import prepare
     if unroll:
-        model = onnx.load(f'seq2seq.b1.unroll.onnx')
+        model = onnx.load(f'onnx/seq2seq.b1.unroll.onnx')
     else:
-        model = onnx.load(f'seq2seq.b1.fix.onnx')
+        model = onnx.load(f'onnx/seq2seq.b1.fix.onnx')
     
     session_conf = tf.ConfigProto(
         allow_soft_placement=True,

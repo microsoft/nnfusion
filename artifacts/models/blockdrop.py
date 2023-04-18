@@ -1020,7 +1020,7 @@ def preprocess():
             inputs_all[batch_idx * 64: batch_idx * 64 + bs] = inputs.cpu()
             probs_all[batch_idx * 64: batch_idx * 64 + bs] = probs.cpu()
             outputs_all[batch_idx * 64: batch_idx * 64 + bs] = out.cpu()
-        prefix = "../artifacts/data/blockdrop/"
+        prefix = "../data/blockdrop/"
         with open(os.path.join(prefix, "inputs.shape"), "w") as f: f.write(" ".join(x for x in inputs_all.shape))
         with open(os.path.join(prefix, "probs.shape"), "w") as f: f.write(" ".join(x for x in probs_all.shape))
         with open(os.path.join(prefix, "outputs.shape"), "w") as f: f.write(" ".join(x for x in outputs_all.shape))
@@ -1154,7 +1154,7 @@ def test_model_with_fix_data():
     rnet.eval().cuda()
     agent.eval().cuda()
     torch.manual_seed(0)
-    load_checkpoint(rnet, agent, '../artifacts/data/blockdrop/ckpt_E_730_A_0.913_R_2.73E-01_S_6.92_#_53.t7')
+    load_checkpoint(rnet, agent, '../data/blockdrop/ckpt_E_730_A_0.913_R_2.73E-01_S_6.92_#_53.t7')
     model = BlockDrop(rnet, agent)
     model = model.cuda().eval()
     inp = torch.randn((args.bs, 3, 32, 32)).cuda()
@@ -1223,13 +1223,13 @@ if __name__ == '__main__':
     rnet.eval().cuda()
     agent.eval().cuda()
     torch.manual_seed(0)
-    load_checkpoint(rnet, agent, '../artifacts/data/blockdrop/ckpt_E_730_A_0.913_R_2.73E-01_S_6.92_#_53.t7')
+    load_checkpoint(rnet, agent, '../data/blockdrop/ckpt_E_730_A_0.913_R_2.73E-01_S_6.92_#_53.t7')
     model = BlockDrop(rnet, agent).eval()
     # preprocess(model)
     with torch.no_grad():
         len_dataset = 10000
         inputs = torch.randn(args.bs, 3, 32, 32).cuda()
-        probs = torch.load("../artifacts/data/blockdrop/probs.pt")[:args.bs]
+        probs = torch.load("../data/blockdrop/probs.pt")[:args.bs]
         if args.run_pytorch:
             test_torch_eval(model, (inputs[:args.bs].contiguous(), probs[:args.bs].contiguous()), args.profile)
         if args.run_sys:
@@ -1282,7 +1282,7 @@ if __name__ == '__main__':
             n_warmup = 100
             n_run = 100
             # warmup
-            prefix = "../artifacts/data/blockdrop"
+            prefix = "../data/blockdrop"
             inputs_all = read_bin(os.path.join(prefix, "inputs")).cuda()
             probs_all = read_bin(os.path.join(prefix, "probs")).cuda()
             outputs_all = read_bin(os.path.join(prefix, "outputs")).cuda()

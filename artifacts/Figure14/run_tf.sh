@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure14/tf
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../baseline
+cd ${ARTIFACT_ROOT}/baseline
 cd lstm
 python3 lstm_tf.py --platform V100 --bs 1 2>&1 | tee ${LOG_DIR}/lstm.b1.log
 python3 lstm_tf.py --platform V100 --bs 64 2>&1 | tee ${LOG_DIR}/lstm.b64.log

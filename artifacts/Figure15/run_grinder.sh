@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure15/grinder
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../models
+cd ${ARTIFACT_ROOT}/models
 
 python3 lstm-unroll.py --measure 2>&1 | tee $LOG_DIR/lstm.unroll.log
 nvprof --profile-from-start off python3 lstm-unroll.py --measure 2>&1 | tee $LOG_DIR/lstm.unroll.nvprof.log

@@ -8,7 +8,7 @@ import time
 
 num_iter = 100
 warmup = 100
-prefix = "../../artifacts/data/seq2seq"
+prefix = "../../data/seq2seq"
 MAX_LENGTH = 50
 OUTPUT_SIZE = 3797
 HIDDEN_SIZE = 256
@@ -72,7 +72,7 @@ def gen_mask_from_sequence(std):
     mask = np.transpose(mask, axes=(1, 0, 2))
     return mask
 
-tokens = read_bin('../../artifacts/data/tatoeba-eng-fra/tokens', dtype=np.int64)
+tokens = read_bin('../../data/tatoeba-eng-fra/tokens', dtype=np.int64)
 masks = gen_mask_from_sequence(tokens)
 
 def export_model(batch_size, unroll):

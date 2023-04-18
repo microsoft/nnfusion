@@ -118,7 +118,7 @@ class GenModel(torch.autograd.Function):
         return output_tensors
 
 
-prefix = "../artifacts/data/seq2seq"
+prefix = "../data/seq2seq"
 MAX_LENGTH = 50
 OUTPUT_SIZE = 3797
 HIDDEN_SIZE = 256
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         n_warmup = 100
         n_run = 100
         len_dataset = 6400
-        tokens = read_bin('../../../artifacts/data/tatoeba-eng-fra/tokens', dtype=np.int64).cuda()
+        tokens = read_bin('../../../data/tatoeba-eng-fra/tokens', dtype=np.int64).cuda()
         masks = gen_mask_from_sequence(tokens)
         for i in range(0, len_dataset, batch_size):
             if i >= n_warmup * batch_size: break

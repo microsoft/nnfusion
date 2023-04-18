@@ -45,7 +45,7 @@ def load_model(batch_size):
 #     return tensor
 
 
-# prefix = "../../artifacts/data/blockdrop/"
+# prefix = "../../data/blockdrop/"
 # inputs_all = read_bin(os.path.join(prefix, "inputs"))
 # probs_all = read_bin(os.path.join(prefix, "probs"))
 # outputs_all = read_bin(os.path.join(prefix, "outputs"))

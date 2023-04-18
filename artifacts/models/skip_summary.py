@@ -15,11 +15,11 @@ def analyze_skip(tensor, bs, name):
     
 
 
-skipnet_actions = read_bin("../artifacts/data/skipnet/actions")
+skipnet_actions = read_bin("../data/skipnet/actions")
 analyze_skip(skipnet_actions, 1, "skipnet")
 analyze_skip(skipnet_actions, 64, "skipnet")
 
-blockdrop_probs = read_bin("../artifacts/data/blockdrop/probs")
+blockdrop_probs = read_bin("../data/blockdrop/probs")
 blockdrop_cond = blockdrop_probs > 0.5
 analyze_skip(blockdrop_cond, 1, "blockdrop")
 analyze_skip(blockdrop_cond, 64, "blockdrop")

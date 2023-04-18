@@ -575,8 +575,8 @@ def read_bin(s, dtype=np.float32):
 
 if arguments.real_weight:
     import torch
-    torch_params = torch.load(os.path.expanduser(os.path.expanduser("../../artifacts/data/skipnet/resnet-101-rnn-imagenet.pth.tar")), map_location=torch.device('cpu'))['state_dict']
-prefix = "../../artifacts/data/skipnet/"
+    torch_params = torch.load(os.path.expanduser(os.path.expanduser("../../data/skipnet/resnet-101-rnn-imagenet.pth.tar")), map_location=torch.device('cpu'))['state_dict']
+prefix = "../../data/skipnet/"
 inputs_all = read_bin(os.path.join(prefix, "inputs"))
 actions_all = read_bin(os.path.join(prefix, "actions"))
 

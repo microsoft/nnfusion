@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure17/grinder
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../models
+cd ${ARTIFACT_ROOT}/models
 
 rates=(0 25 50 75 100)
 

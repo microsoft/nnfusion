@@ -3,7 +3,7 @@
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate grinder
 
-cd ${ARTIFACT_ROOT}/../models
+cd ${ARTIFACT_ROOT}/models
 
 mkdir -p ${ARTIFACT_ROOT}/reproduce_results/Figure20
 cp -r ${ARTIFACT_ROOT}/reproduce_results/Figure14/base ${ARTIFACT_ROOT}/reproduce_results/Figure20

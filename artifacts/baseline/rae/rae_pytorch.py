@@ -127,7 +127,7 @@ def read_bin(s, dtype=np.float32):
 
 
 def load_trees():
-    prefix = '../../artifacts/data/sst/'
+    prefix = '../../data/sst/'
     left_tensor = read_bin(prefix + 'left', np.int64)
     right_tensor = read_bin(prefix + 'right', np.int64)
     is_leaf_tensor = read_bin(prefix + 'is_leaf', np.bool)

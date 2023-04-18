@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure17/tf
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../baseline
+cd ${ARTIFACT_ROOT}/baseline
 
 rates=(0 25 50 75 100)
 

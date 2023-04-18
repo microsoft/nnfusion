@@ -329,7 +329,7 @@ def read_bin(s, dtype=np.float32):
     tensor = jnp.array(np.fromfile(s + ".bin", dtype=dtype)).reshape(shape)
     return tensor
 
-prefix = "../../artifacts/data/blockdrop/"
+prefix = "../../data/blockdrop/"
 
 if arguments.real_weight:
     import torch

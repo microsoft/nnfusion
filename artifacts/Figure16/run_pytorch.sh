@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure16/pytorch
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../baseline
+cd ${ARTIFACT_ROOT}/baseline
 
 cd resnet18
 python3 resnet18_pytorch.py --bs 1 --platform V100 2>&1 | tee ${LOG_DIR}/blockdrop.noskip.log

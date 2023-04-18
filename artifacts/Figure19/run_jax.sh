@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure19/jax
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../baseline
+cd ${ARTIFACT_ROOT}/baseline
 cd lstm
 python3 lstm_jax.py --platform MI100 --bs 1 2>&1 | tee ${LOG_DIR}/lstm.b1.log
 cd ..

@@ -1022,7 +1022,7 @@ def preprocess(model):
             inputs_all[batch_idx * 64: batch_idx * 64 + bs] = inputs.cpu()
             probs_all[batch_idx * 64: batch_idx * 64 + bs] = probs.cpu()
             outputs_all[batch_idx * 64: batch_idx * 64 + bs] = out.cpu()
-        prefix = "../../artifacts/data/blockdrop/"
+        prefix = "../../data/blockdrop/"
         with open(os.path.join(prefix, "inputs.shape"), "w") as f: f.write(" ".join(x for x in inputs_all.shape))
         with open(os.path.join(prefix, "probs.shape"), "w") as f: f.write(" ".join(x for x in probs_all.shape))
         with open(os.path.join(prefix, "outputs.shape"), "w") as f: f.write(" ".join(x for x in outputs_all.shape))
@@ -1041,11 +1041,11 @@ agent = Policy32([1,1,1], num_blocks=15)
 rnet.eval().cuda()
 agent.eval().cuda()
 torch.manual_seed(0)
-load_checkpoint(rnet, agent, os.path.expanduser('../../artifacts/data/blockdrop/ckpt_E_730_A_0.913_R_2.73E-01_S_6.92_#_53.t7'))
+load_checkpoint(rnet, agent, os.path.expanduser('../../data/blockdrop/ckpt_E_730_A_0.913_R_2.73E-01_S_6.92_#_53.t7'))
 model = BlockDrop(rnet, agent).eval()
 # preprocess(model)
 len_dataset = 10000
-prefix = "../../artifacts/data/blockdrop/"
+prefix = "../../data/blockdrop/"
 inputs_all = read_bin(os.path.join(prefix, "inputs")).cuda()
 probs_all = read_bin(os.path.join(prefix, "probs")).cuda()
 outputs_all = read_bin(os.path.join(prefix, "outputs")).cuda()

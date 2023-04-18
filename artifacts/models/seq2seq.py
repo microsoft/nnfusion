@@ -18,7 +18,7 @@ args = parser.parse_args()
 
 device = torch.device('cuda')
 
-prefix = "../artifacts/data/seq2seq"
+prefix = "../data/seq2seq"
 MAX_LENGTH = 50
 OUTPUT_SIZE = 3797
 HIDDEN_SIZE = 256
@@ -548,7 +548,7 @@ if __name__ == '__main__':
                 # workflow_fix_flag(model, f'seq2seq_bs{args.bs}', (encoder_output, mask, h, c), args.platform, time_measure=False, enable_control_flow=args.cf, run_unroll=True)
                 if not args.measure: exit(0)
                 len_dataset = 6400
-                tokens = read_bin('../artifacts/data/tatoeba-eng-fra/tokens', dtype=np.int64).cuda()
+                tokens = read_bin('../data/tatoeba-eng-fra/tokens', dtype=np.int64).cuda()
                 masks = gen_mask_from_sequence(tokens)
                 for i in range(0, len_dataset, args.bs):
                     if i >= n_warmup * args.bs: break
@@ -585,7 +585,7 @@ if __name__ == '__main__':
                 print("std=", std)
                 mask = gen_mask_from_sequence(std)
                 encoder_output = torch.randn(MAX_LENGTH, batch_size, HIDDEN_SIZE, device=device)
-                # fixed_data_prefix = '../artifacts/data/seq2seq/fix_test'
+                # fixed_data_prefix = '../data/seq2seq/fix_test'
                 # torch.save(model.state_dict(), f"{fixed_data_prefix}/seq2seq.pt")
                 # save_bin(mask, f"{fixed_data_prefix}/mask")
                 # save_bin(encoder_output, f"{fixed_data_prefix}/encoder_output")

@@ -126,11 +126,11 @@ def gen_mask_from_sequence(std):
     mask = np.transpose(mask, axes=(1, 0, 2))
     return mask
 
-tokens = read_bin('../../artifacts/data/tatoeba-eng-fra/tokens', dtype=np.int64)
+tokens = read_bin('../../data/tatoeba-eng-fra/tokens', dtype=np.int64)
 # print(tokens[0])
 masks = gen_mask_from_sequence(tokens)
 masks = jnp.array(masks)
-fixed_data_prefix = '../../artifacts/data/seq2seq/fix_test'
+fixed_data_prefix = '../../data/seq2seq/fix_test'
 
 def test_model(enable_jit, enable_while, batch_size, weights):
     key = random.PRNGKey(233)

@@ -29,7 +29,7 @@ enable_profile(platform)
 n_warmup = 100
 n_run = 100
 cuda_device = torch.device("cuda:0")
-weight_prefix = "../../artifacts/data/lstm"
+weight_prefix = "../../data/lstm"
 
 def load_tensor_bin(path, dtype=np.float32, device='cuda'):
     with open(f"{path}.shape", "r") as f:

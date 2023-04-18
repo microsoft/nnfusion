@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure15/jax
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../baseline
+cd ${ARTIFACT_ROOT}/baseline
 
 cd lstm
 python3 lstm_jax.py --bs 1 --platform V100 --overhead_test --unroll 2>&1 | tee ${LOG_DIR}/lstm.unroll.log

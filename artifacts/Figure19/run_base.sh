@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure19/base
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../models
+cd ${ARTIFACT_ROOT}/models
 
 # build modified models
 DIR_MAP=(
@@ -20,7 +20,7 @@ for pair in ${DIR_MAP[@]}; do
         cd $workdir
         cp -r ${ARTIFACT_ROOT}/data/$datadir Constant
         cmake . && make -j
-        cd ${ARTIFACT_ROOT}/../models
+        cd ${ARTIFACT_ROOT}/models
     fi
 done
 

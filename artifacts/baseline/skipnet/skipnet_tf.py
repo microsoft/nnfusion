@@ -49,7 +49,7 @@ def read_bin(s):
     return tensor
 
 
-prefix = "../../artifacts/data/skipnet/"
+prefix = "../../data/skipnet/"
 inputs_all = read_bin(os.path.join(prefix, "inputs"))
 outputs_all = read_bin(os.path.join(prefix, "outputs"))
 ch_all = read_bin(os.path.join(prefix, "ch"))

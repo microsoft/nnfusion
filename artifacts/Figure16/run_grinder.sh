@@ -2,7 +2,7 @@
 
 LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure16/grinder
 mkdir -p ${LOG_DIR}
-cd ${ARTIFACT_ROOT}/../models
+cd ${ARTIFACT_ROOT}/models
 
 python3 resnet18.py --platform V100 --bs 1 --no-torch --measure 2>&1 | tee ${LOG_DIR}/blockdrop.noskip.log
 nvprof --profile-from-start off python3 resnet18.py --platform V100 --bs 1 --no-torch --measure 2>&1 | tee ${LOG_DIR}/blockdrop.noskip.nvprof.log

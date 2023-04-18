@@ -2129,7 +2129,7 @@ def load_checkpoint():
     model = RecurrentGatedRLResNet(Bottleneck, [3, 4, 23, 3], embed_dim=10,
                                    hidden_dim=10)
     model = torch.nn.DataParallel(model).cuda()
-    checkpoint = os.path.expanduser("../../artifacts/data/skipnet/resnet-101-rnn-imagenet.pth.tar")
+    checkpoint = os.path.expanduser("../../data/skipnet/resnet-101-rnn-imagenet.pth.tar")
     logging.info('=> loading checkpoint `{}`'.format(checkpoint))
     checkpoint = torch.load(checkpoint)
     model.load_state_dict(checkpoint['state_dict'], strict=False)
@@ -2191,7 +2191,7 @@ def prepare_data():
             cases += inputs.shape[0]
         print(f"top1 = {top1}, cases = {cases}")
 
-        prefix = "../../artifacts/data/skipnet/"
+        prefix = "../../data/skipnet/"
         with open(os.path.join(prefix, "inputs.shape"), "w") as f: f.write(" ".join(str(x) for x in inputs_all.shape))
         with open(os.path.join(prefix, "actions.shape"), "w") as f: f.write(" ".join(str(x) for x in actions_all.shape))
         with open(os.path.join(prefix, "outputs.shape"), "w") as f: f.write(" ".join(str(x) for x in outputs_all.shape))
@@ -2215,7 +2215,7 @@ def read_bin(s):
 model = load_checkpoint()
 model.eval()
 model.control.rnn.update_param()
-prefix = "../../artifacts/data/skipnet/"
+prefix = "../../data/skipnet/"
 inputs_all = read_bin(os.path.join(prefix, "inputs")).cuda()
 # actions_all = read_bin(os.path.join(prefix, "actions")).cuda()
 # outputs_all = read_bin(os.path.join(prefix, "outputs")).cuda()

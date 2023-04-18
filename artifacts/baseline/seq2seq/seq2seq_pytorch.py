@@ -26,7 +26,7 @@ from timer import Timer
 from nvprof import profile_start, profile_stop, enable_profile
 enable_profile(platform)
 
-prefix = "../../artifacts/data/seq2seq"
+prefix = "../../data/seq2seq"
 MAX_LENGTH = 50
 OUTPUT_SIZE = 3797
 HIDDEN_SIZE = 256
@@ -482,7 +482,7 @@ def read_bin(s, dtype=np.float32):
     return tensor
 
 
-tokens = read_bin('../../artifacts/data/tatoeba-eng-fra/tokens', dtype=np.int64).cuda()
+tokens = read_bin('../../data/tatoeba-eng-fra/tokens', dtype=np.int64).cuda()
 masks = gen_mask_from_sequence(tokens)
 
 def run(batch_size):

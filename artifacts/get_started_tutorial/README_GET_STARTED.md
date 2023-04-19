@@ -3,9 +3,6 @@ We assume you already build and install Grinder following the *Environment Prepa
 
 The goal of this tutorial is to demonstrate how to compile and optimize a typical DNN model with control flow, and showcase the performance improvement with Grinder compiler.
 
-**For AE Reviewers**: The nico cluster we provide for artifact evaluation is managed by slurm. To run GPU-related commands, please use `srun --pty --exclusive` before the original command, which will submit the job to the compute node (nico[3-4]). For your convenience, we have included this prefix in our artifact but will remove it in the final version. If you are running the artifact on your own machine, please remember to remove the prefix.
-
-
 ## Run PyTorch, TensorFlow, and JAX baselines
 
 ```bash

@@ -55,3 +55,5 @@ models/frozenmodels/
 
 artifacts/data
 artifacts/reproduce_results
+*.onnx
+*.tfgraph

@@ -1,88 +1,41 @@
-# Installation of Evaluated Systems
-assume running at artifacts directory
+# OSDI'23 Grinder Artifacts Evaluation
 
+## 0. Overview
+This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "Grinder: Analysis and Optimization for Dynamic Control Flow in Deep Learning".
 
-## Pre-requisites
-conda, nvcc ......
+### Evaluation Setup
+* Artifacts Available:
+    * All Grinder related code are available under NNFusion open-source project located in: [https://github.com/microsoft/nnfusion/tree/TODO](https://github.com/microsoft/nnfusion/tree/TODO)
+* Artifacts Functional:
+    * *Documentation*: the following of documents include detailed guidelines on how to build, install, test Grinder and the experiments to compare with other baselines.
+    * *Completeness*: the [C++ part](..) of Grinder has been merged into NNFusion in this branch, and the [Python part](ast_analyzer) is available in this artifact.
+    * *Exercisability*: under the *artifacts* folder, we prepare all the script and data to reproduce the experiements in individual folders named by the figure name in paper.
+* Results Reproduced:
+    * To reproduce the main results presented in our paper, we provide Docker images containing all the environments and baseline software, and machines with the same configurations as we used in paper evaluation. We also provide detailed guideline to help reproduce the results step by step. 
 
-## TensorFlow
-install from env/requirements_tf.txt
-Install onnx-tf from source (the pre-compiled version depends on TF2)
+## 1. Environment Preparation
 
-```bash
-conda create python=3.8 --name baseline_tf1 -y
-conda activate baseline_tf1
-pip install nvidia-pyindex
-pip install -r env/requirements_tf.txt
-mkdir third-party && cd third-party
-git clone https://github.com/onnx/onnx-tensorflow.git
-cd onnx-tensorflow
-git checkout 0e4f4836 # v1.7.0-tf-1.15m
-git apply ../../env/onnx_tf.patch
-pip install -e .
-conda deactivate
+**For AE Reviewers**:
+1. The nico cluster we provide for artifact evaluation is managed by slurm. To run GPU-related commands, please use `srun --pty --exclusive` before the original command, which will submit the job to the compute node (nico[3-4]). For your convenience, we have included this prefix in our artifact but will remove it in the final version. If you are running the artifact on your own machine, please remember to remove the prefix.
+2. Due to security concerns, we cannot provide the docker permission to reviewers. Instead, for NVIDIA GPU, we provide an account with all the dependencies installed, and for AMD GPU, we provide ssh access into the dockers. You can skip this environment preparation section.
+
+## NVIDIA GPU
 ```
-## JAX
-```bash
-conda create python=3.8 --name baseline_jax -y
-conda activate baseline_jax
-pip install nvidia-pyindex
-pip install -r env/requirements_jax.txt -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html -f https://download.pytorch.org/whl/torch_stable.html
-conda deactivate
+cd $YOUR_DIR_FOR_NNFUSION
+git clone https://github.com/microsoft/nnfusion.git --branch TODO --single-branch
+cd nnfusion/artifacts
+docker build -t grinder -f env/Dockerfile.nv .
+docker run -it --name grinder-ae -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion grinder:latest --shm-size="32g" /bin/bash
 ```
 
-# TVM
-```bash
-conda create python==3.8 --name kerneldb -y
-pip install ply==3.11
-mkdir third-party && cd third-party
-git clone https://github.com/apache/tvm.git --recursive
-cd tvm
-git checkout 22ba6523c
-git apply ../../env/tvm.patch
-mkdir build
-cd build
-cp ../../../env/tvm.config.cmake config.cmake
-make -j
-cd ../python
-pip install -e .
-```
+adapted (TODO: remove)
+docker build --network=host -t grinder -f env/Dockerfile.nv .
+docker run -it --name heheda-grinder-ae -v /home/heheda/control_flow/nnfusion-docker:/root/nnfusion --shm-size="32g" --network=host grinder:latest /bin/bash
 
-## NNFusion
+TODO get data
 
-## Pytorch & Grinder
-```bash
-conda create python=3.7 --name grinder -y
-conda activate grinder
-pip install nvidia-pyindex
-pip install -r env/requirements_pytorch.txt -f https://download.pytorch.org/whl/torch_stable.html
-conda deactivate
-```
-
-## Grinder (with code)
-```bash
-export ARTIFACT_ROOT=***/ControlFlow/artifacts TODO
-cd $ARTIFACT_ROOT/..
-pip install -e .
-```
-TODO install nnfusion
-TODO prepare kerneldb
-
-
-docker: --shm-size="32g"
-docker build -t grinder:latest -f env/Dockerfile.rocm --network=host .
-
-cmake ..
-```
-cd $ARTIFACT_ROOT/../nnfusion
-mkdir build && cd build
-cmake .. && make -j
-cd $ARTIFACT_ROOT/..
-pip install -e . 
-TODO: config.py
-```
-
-# build jax docker
+## AMD GPU
+* build jax docker
 ```bash
 mkdir third-party && cd third-party
 git clone https://github.com/google/jax.git
@@ -91,8 +44,37 @@ git checkout 0282b4bfad
 git apply ../../env/jax.rocm.patch
 ./build/rocm/ci_build.sh --keep_image bash -c "./build/rocm/build_rocm.sh"
 ```
+TODO get data
+
+## 2. Getting Started with a Simple Example
+
+* Go to the *get_started_tutorial/* folder and follow [README_GET_STARTED.md](get_started_tutorial/README_GET_STARTED.md).
 
 
-srun --pty -w nico3 -p Long --exclusive ./run_nv_gpu.sh 
+## 3. Kernel Generation
+This step generates all kernels for Grinder. More details can be found in [README_KERNEL_DB.md](kernel_db/README_KERNEL_DB.md).
+**NOTE**: this process will take about TODO hours.
+```bash
+# assume running at nnfusion/artifacts directory
+cd kernel_db
+srun --pty --exclusive ./reproduce_kernel_db.sh
+```
 
-cd plot && ./plot_nv.sh && cd -
+## 4. Reproducing Individual Experiement Results
+**NOTE**: we provide a script named "run_nv_gpu.sh" to run the experiments except Figure19. You can use `./run_nv_gpu.sh` to run the experiments. TODO: explain the run of Figure 19.
+
+**For AE Reviewers**: Please use `srun --pty -w nico3 --exclusive ./run_nv_gpu.sh ` to submit the jobs to the compute node of the provided cluster. TODO: 是否需要 -p Long?
+
+| Experiments   | Figure # in Paper |  Script Location |
+| -----------     | -----------  |  ----------- |
+| #1. Control flow overhead in JAX | Figure 2 | N/A (use the results in Figure 15, 16, and 18) |
+| #2. End-to-end DNN inference on NVIDIA V100 GPU | Figure 14 | [run.sh](Figure14/run.sh) |
+| #3. Control flow overhead of models with loops | Figure 15 | [run.sh](Figure15/run.sh) |
+| #4. Control flow overhead of models with branches | Figure 16 | [run.sh](Figure16/run.sh) |
+| #5. Different ratio of executed layers | Figure 17 | [run.sh](Figure17/run.sh) |
+| #6. Control flow overhead of RAE with recursion | Figure 18 | [run.sh](Figure18/run.sh) |
+| #7. End-to-end DNN inference on ROCm MI100 GPU with BS=1 | Figure 19 | [run.sh](Figure19/run.sh) TODO |
+| #8. Breakdown of models with BS=1 | Figure 20 | [run.sh](Figure20/run.sh)|
+
+## 5. Reproduce the Figures in the paper
+TODO (how to draw figure 19?)

@@ -88,7 +88,7 @@ def main_full():
     is_leaf[:65] = torch.tensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     x = torch.randn([n, 512], device=device)
-    x.cpu().detach().numpy().tofile("tmp/rae-in/x.bin")
+    # x.cpu().detach().numpy().tofile("tmp/rae-in/x.bin")
     left = left.cuda()
     right = right.cuda()
     is_leaf = is_leaf.cuda()
@@ -111,8 +111,8 @@ def main_full():
         # manual stack with shared memory
         # to_torch_func.NNFUSION_CODEGEN_FLAGS = {'recursive_stack': True}
         workflow_fix_flag(model, 'rae', (left, right, is_leaf, x, root), args.platform, args.measure, allow_233=True, enable_control_flow=args.cf)
-        with open("tmp/bin/output_ref_0.bin", "wb") as f:
-            out.cpu().detach().numpy().tofile(f)
+        # with open("tmp/bin/output_ref_0.bin", "wb") as f:
+        #     out.cpu().detach().numpy().tofile(f)
 
 
 def main_sst():

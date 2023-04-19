@@ -20,50 +20,82 @@ This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "
 2. Due to security concerns, we cannot provide the docker permission to reviewers. Instead, for NVIDIA GPU, we provide an account with all the dependencies installed, and for AMD GPU, we provide ssh access into the dockers. You can skip this environment preparation section.
 
 ## NVIDIA GPU
-```
+```bash
 cd $YOUR_DIR_FOR_NNFUSION
 git clone https://github.com/microsoft/nnfusion.git --branch TODO --single-branch
 cd nnfusion/artifacts
 docker build -t grinder -f env/Dockerfile.nv .
-docker run -it --name grinder-ae -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion grinder:latest --shm-size="32g" /bin/bash
+docker run -it --gpus all --name grinder-ae -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion --shm-size="32g" -w /root/nnfusion/artifacts grinder:latest /bin/bash
+# run inside docker
+pip install -e .
+cd .. && mkdir build && cd build && cmake .. && make -j && cd -
 ```
 
 adapted (TODO: remove)
+```bash
 docker build --network=host -t grinder -f env/Dockerfile.nv .
-docker run -it --name heheda-grinder-ae -v /home/heheda/control_flow/nnfusion-docker:/root/nnfusion --shm-size="32g" --network=host grinder:latest /bin/bash
-
-TODO get data
+docker run -it --gpus all --name heheda-grinder-ae -v /home/heheda/control_flow/nnfusion-docker:/root/nnfusion -v /home/heheda/control_flow/kernel_db.docker:/root/.cache/nnfusion -w /root/nnfusion/artifacts --privileged=true --shm-size="32g" --network=host grinder:latest /bin/bash
+```
 
 ## AMD GPU
-* build jax docker
-```bash
-mkdir third-party && cd third-party
-git clone https://github.com/google/jax.git
-cd jax
-git checkout 0282b4bfad
-git apply ../../env/jax.rocm.patch
-./build/rocm/ci_build.sh --keep_image bash -c "./build/rocm/build_rocm.sh"
-```
-TODO get data
+* Build jax docker
+    ```bash
+    cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
+    mkdir third-party && cd third-party
+    git clone https://github.com/google/jax.git
+    cd jax
+    git checkout 0282b4bfad
+    git apply ../../env/jax.rocm.patch
+    ./build/rocm/ci_build.sh --keep_image bash -c "./build/rocm/build_rocm.sh"
+    ```
+* Build grinder docker
+    ```bash
+    cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
+    docker build -t grinder:latest -f env/Dockerfile.rocm --network=host .
+    ```
+* Pull the TensorFlow docker
+    ```bash
+    docker pull rocm/tensorflow:rocm4.3.1-tf1.15-dev
+    ```
 
 ## 2. Getting Started with a Simple Example
 
 * Go to the *get_started_tutorial/* folder and follow [README_GET_STARTED.md](get_started_tutorial/README_GET_STARTED.md).
 
 
-## 3. Kernel Generation
-This step generates all kernels for Grinder. More details can be found in [README_KERNEL_DB.md](kernel_db/README_KERNEL_DB.md).
-**NOTE**: this process will take about TODO hours.
-```bash
-# assume running at nnfusion/artifacts directory
-cd kernel_db
-srun --pty --exclusive ./reproduce_kernel_db.sh
-```
+## 3. Data and Kernel Preparation
+* Download the input data and model weights from TODO, unzip them and put them under the nnfusion/artifacts directory. The tree structure should be like:
+    ```
+    nnfusion
+    ├── artifacts
+    │   ├── data
+    │   │   ├── attention
+    │   │   ├── blockdrop
+    │   │   ├── lstm
+    │   │   ├── seq2seq
+    │   │   ├── skipnet
+    │   │   ├── sst
+    │   │   └── tatoeba-eng-fra
+    ```
+* Generates all kernels for Grinder. More details can be found in [README_KERNEL_DB.md](kernel_db/README_KERNEL_DB.md).
+    
+    **NOTE**: this process will take about 20 minutes if using the tuning result in the artifact, or much longer if you want to re-tune the kernels.
+    ```bash
+    # assume running at nnfusion/artifacts directory
+
+    # On Nvidia GPU node
+    cd kernel_db
+    srun --pty --exclusive ./reproduce_kernel_db.sh
+    srun -w nico3 --pty bash -c "mkdir -p /tmp/`whoami` && rsync -avz nico0:~/.cache/nnfusion/* /tmp/`whoami`/"
+    srun -w nico4 --pty bash -c "mkdir -p /tmp/`whoami` && rsync -avz nico0:~/.cache/nnfusion/* /tmp/`whoami`/"
+    # On AMD GPU node
+    TODO
+    ```
 
 ## 4. Reproducing Individual Experiement Results
-**NOTE**: we provide a script named "run_nv_gpu.sh" to run the experiments except Figure19. You can use `./run_nv_gpu.sh` to run the experiments. TODO: explain the run of Figure 19.
+**NOTE**: we provide a script named "run_nv_gpu.sh" to run the experiments except Figure19. You can go to `nnfusion/artifacts` directory and use `./run_nv_gpu.sh` to run the experiments. TODO: explain the run of Figure 19.
 
-**For AE Reviewers**: Please use `srun --pty -w nico3 --exclusive ./run_nv_gpu.sh ` to submit the jobs to the compute node of the provided cluster. TODO: 是否需要 -p Long?
+**For AE Reviewers**: Please use `srun --pty --exclusive ./run_nv_gpu.sh ` to submit the jobs to the compute node of the provided cluster.
 
 | Experiments   | Figure # in Paper |  Script Location |
 | -----------     | -----------  |  ----------- |
@@ -77,4 +109,8 @@ srun --pty --exclusive ./reproduce_kernel_db.sh
 | #8. Breakdown of models with BS=1 | Figure 20 | [run.sh](Figure20/run.sh)|
 
 ## 5. Reproduce the Figures in the paper
-TODO (how to draw figure 19?)
+TODO: collect result of Figure 19 with SCP
+
+```bash
+ cd plot && ./plot_nv.sh && cd - 
+```

@@ -67,27 +67,3 @@ pip install -r env/requirements_pytorch.txt -f https://download.pytorch.org/whl/
 pip install -e .
 conda deactivate
 ```
-
-TODO get data
-
-TODO prepare kerneldb
-
-docker: --shm-size="32g"
-docker build -t grinder:latest -f env/Dockerfile.rocm --network=host .
-
-
-
-
-
-assume running at artifacts directory
-
-
-## Pre-requisites
-conda, nvcc ......
-
-
-
-
-srun --pty -w nico3 -p Long --exclusive ./run_nv_gpu.sh 
-
-cd plot && ./plot_nv.sh && cd -

@@ -1,8 +1,8 @@
 #!/bin/bash
-cd nnfusion
-mkdir build && cd build && cmake .. && make -j && cd -
+cd /root/nnfusion
+mkdir build && cd build && cmake .. && make -j
 
-cd artifacts
+cd /root/nnfusion/artifacts
 conda activate grinder
 pip install -e .
 conda deactivate

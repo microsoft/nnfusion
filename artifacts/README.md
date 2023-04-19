@@ -35,6 +35,7 @@ adapted (TODO: remove)
 ```bash
 docker build --network=host -t grinder -f env/Dockerfile.nv .
 docker run -it --gpus all --name heheda-grinder-ae -v /home/heheda/control_flow/nnfusion-docker:/root/nnfusion -v /home/heheda/control_flow/kernel_db.docker:/root/.cache/nnfusion -w /root/nnfusion/artifacts --privileged=true --shm-size="32g" --network=host grinder:latest /bin/bash
+permission: chmod 777 the two folders, config not to /dev/shm
 ```
 
 ## AMD GPU

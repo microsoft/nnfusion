@@ -9,7 +9,6 @@
 #include <sstream>
 #include "nnfusion_rt.h"
 #include <fstream>
-#include <cudnn.h>
 
 __global__ void printTensor(float* data, int n) {
     for (int i = 0; i < min(n, 10); i++) printf("%f ", data[i]);

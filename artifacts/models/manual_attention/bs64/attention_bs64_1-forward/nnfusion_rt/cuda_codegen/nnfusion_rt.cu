@@ -7,7 +7,7 @@
 #include <sstream>
 #include <fstream>
 #include <stdio.h>
-#include <cudnn.h>
+// #include <cudnn.h>
 #include "nnfusion_rt.h"
 #ifndef __HALF_COMPARE_EX__
 #define __HALF_COMPARE_EX__

@@ -23,15 +23,7 @@ cuda_add_library(${TARGET_NAME} SHARED ${SRC})
 
 link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
 
-find_path(CUDNN_INCLUDE_DIR cudnn.h
-    HINTS ${CUDA_TOOLKIT_ROOT_DIR}
-    PATH_SUFFIXES cuda/include include)
-
-include_directories(${CUDNN_INCLUDE_DIR} ${CUDA_INCLUDE_DIRS})
-
-find_library(CUDNN_LIBRARY cudnn
-    HINTS ${CUDA_TOOLKIT_ROOT_DIR}
-    PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
+include_directories(${CUDA_INCLUDE_DIRS})
 
 find_library(CUDA_cuda_LIBRARY cuda ${CUDA_TOOLKIT_ROOT_DIR}/lib64/stubs)
 find_library(CUDA_cudart_LIBRARY libcudart.so ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
@@ -40,8 +32,7 @@ target_link_libraries(${TARGET_NAME}
     ${CUDA_cuda_LIBRARY}
     ${CUDA_cudart_LIBRARY}
     ${CUDA_LIBRARIES}
-    ${CUDA_CUBLAS_LIBRARIES}
-    ${CUDNN_LIBRARY})
+    ${CUDA_CUBLAS_LIBRARIES})
 
 cuda_add_executable(main_test main_test.cpp)   
 target_link_libraries(main_test ${TARGET_NAME}) 

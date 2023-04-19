@@ -10,7 +10,7 @@ using namespace nnfusion::kernels;
 // Header
 LU_DEFINE(header::cuda, "#include <cuda.h>\n#include <cuda_runtime.h>\n#include <cooperative_groups.h>\n");
 LU_DEFINE(header::cublas, "#include <cublas_v2.h>\n");
-LU_DEFINE(header::cudnn, "#include <cudnn.h>\n");
+LU_DEFINE(header::cudnn, "// #include <cudnn.h>\n");
 LU_DEFINE(header::superscaler, "#include \"superscaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");

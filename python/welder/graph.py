@@ -311,7 +311,7 @@ class IRNode(Node):
         return new_node
 
     def get_ir(self) -> str:
-        return "\n".join([str(op) for op in self.compute_ops])
+        return "\n".join([str(op) for op in self.compute_ops]) + "\n" + str(self.schedule_stage.name)
 
 def topo_order(list_of_nodes) -> List[Node]:
     input_ready_count = {node : len(node.inputs) for node in list_of_nodes}

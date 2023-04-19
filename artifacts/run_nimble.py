@@ -15,7 +15,7 @@ def run_nimble(model, inputs):
         cu_inputs.append(item.cuda() if isinstance(item, torch.Tensor) else item)
     with torch.no_grad():
         nimble_model = torch.cuda.Nimble(model)
-        nimble_model.prepare(cu_inputs, training=False, use_multi_stream=True)
+        nimble_model.prepare(cu_inputs, training=False, use_multi_stream=args.multi_stream)
 
     def get_runtime():
         tic = time.time()
@@ -37,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument("model", type=str)
     parser.add_argument("--bs", type=int, default=1)
     parser.add_argument("--fp16", action="store_true", default=False)
+    parser.add_argument("--multi_stream", action="store_true", default=False)
     args = parser.parse_args()
     assert (args.model in globals()), "Model {} not found.".format(args.model)
 

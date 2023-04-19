@@ -15,9 +15,9 @@ ENV PATH="/opt/conda/bin:${PATH}"
 
 RUN conda install python~=3.10 pip cmake && conda clean --all
 
-RUN pip install --no-cache-dir --default-timeout=1000 torch==1.12 torchvision==0.13 timm==0.5.4 \
+RUN pip install --no-cache-dir --default-timeout=1000 torch==1.12 torchvision==0.13 timm==0.5.4 einops \
     onnx==1.12 onnxruntime-gpu==1.12 onnxconverter_common==1.12 \
-    attrs cloudpickle decorator psutil synr tornado xgboost regex \
+    attrs cloudpickle decorator psutil synr tornado xgboost==1.5.0 regex \
     && rm -rf ~/.cache/pip
 
 RUN git clone https://github.com/nox-410/tvm --recursive -b welder \

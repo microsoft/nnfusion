@@ -117,8 +117,8 @@ class Attention(nn.Module):
         k = rearrange(k, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
         v = rearrange(v, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
 
-        # q = torch.nn.functional.normalize(q, dim=-1)
-        # k = torch.nn.functional.normalize(k, dim=-1)
+        q = torch.nn.functional.normalize(q, dim=-1)
+        k = torch.nn.functional.normalize(k, dim=-1)
 
         attn = (q @ k.transpose(-2, -1)) * self.temperature
         attn = attn.softmax(dim=-1)
@@ -171,9 +171,8 @@ class Downsample(nn.Module):
     def __init__(self, n_feat):
         super(Downsample, self).__init__()
 
-        # self.body = nn.Sequential(nn.Conv2d(n_feat, n_feat//2, kernel_size=3, stride=1, padding=1, bias=False),
-        #                           nn.PixelUnshuffle(2))
-        self.body = nn.Conv2d(n_feat, 2 * n_feat, 2, 2)
+        self.body = nn.Sequential(nn.Conv2d(n_feat, n_feat//2, kernel_size=3, stride=1, padding=1, bias=False),
+                                  nn.PixelUnshuffle(2))
 
     def forward(self, x):
         return self.body(x)
@@ -198,7 +197,7 @@ class Restormer(nn.Module):
         num_blocks = [4,6,6,8],
         num_refinement_blocks = 4,
         heads = [1,2,4,8],
-        ffn_expansion_factor = 2.66,
+        ffn_expansion_factor = 8/3,
         bias = False,
         LayerNorm_type = 'WithBias',   ## Other option 'BiasFree'
         dual_pixel_task = False        ## True for dual-pixel defocus deblurring only. Also set inp_channels=6

@@ -25,16 +25,17 @@ cd $YOUR_DIR_FOR_NNFUSION
 git clone https://github.com/microsoft/nnfusion.git --branch TODO --single-branch
 cd nnfusion/artifacts
 docker build -t grinder -f env/Dockerfile.nv .
+chmod 777 $YOUR_DIR_FOR_NNFUSION/nnfusion
 docker run -it --gpus all --name grinder-ae -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion --shm-size="32g" -w /root/nnfusion/artifacts grinder:latest /bin/bash
 # run inside docker
-pip install -e .
-cd .. && mkdir build && cd build && cmake .. && make -j && cd -
+bash ./env/install_grinder_docker.sh
 ```
 
 adapted (TODO: remove)
 ```bash
 docker build --network=host -t grinder -f env/Dockerfile.nv .
 docker run -it --gpus all --name heheda-grinder-ae -v /home/heheda/control_flow/nnfusion-docker:/root/nnfusion -v /home/heheda/control_flow/kernel_db.docker:/root/.cache/nnfusion -w /root/nnfusion/artifacts --privileged=true --shm-size="32g" --network=host grinder:latest /bin/bash
+srun -w nico3 --pty --exclusive docker exec -it heheda-grinder-ae bash ./run_nv_gpu.sh
 permission: chmod 777 the two folders, config not to /dev/shm
 ```
 

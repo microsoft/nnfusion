@@ -1,5 +1,4 @@
 from ast_analyzer.grad import annotations as anno
-import astunparse
 import gast
 
 class Namer:

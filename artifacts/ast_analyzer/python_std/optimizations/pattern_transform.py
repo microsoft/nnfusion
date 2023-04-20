@@ -5,7 +5,6 @@ from ast_analyzer.python_std.passmanager import Transformation
 
 from copy import deepcopy
 import gast as ast
-import astunparse
 
 
 class Pattern(object):

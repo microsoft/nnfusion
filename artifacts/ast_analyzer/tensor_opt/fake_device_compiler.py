@@ -1,11 +1,8 @@
 import gast
-import astunparse
 import copy
 from ast_analyzer.utils.unparse import unparse_ast_list
 from ast_analyzer.grad import annotations as anno
-from ast_analyzer.grad.cfg import get_def_use, BackwardActive, backward_block
-from ast_analyzer.grad.annotate import GatherDefUse
-from ast_analyzer.to_onnx.exporter import export_to_onnx_subast, export_to_onnx_subast_simple
+from ast_analyzer.to_onnx.exporter import export_to_onnx_subast
 
 class FetchType(gast.NodeVisitor):
     to_ignore = ['torch', 'self', 'math', 'range', 'print', 'int']
@@ -60,10 +57,7 @@ class DeviceCompilerWrapper():
                 arg_with_type.append((name, fetch_type.result[name]))
         print("[arg_with_type]", [x for x, _ in arg_with_type])
         if simple_mode:
-            self.func_name = 'func_' + self.graph_name
-            self.file_name, new_ast = export_to_onnx_subast_simple(self.scope, self.type_dict, stmts, self.graph_name,
-                            arg_with_type, rets, 'self' in args, self.func_name , cfg_nodes, platform)
-            to_import = None
+            raise NotImplementedError
         else:
             new_ast, to_import = export_to_onnx_subast(self.scope, self.type_dict, stmts, self.graph_name,
                             arg_with_type, rets, 'self' in args, '__' + self.graph_name, cfg_nodes, func2name, check_model, wrap_recursion, self.platform)

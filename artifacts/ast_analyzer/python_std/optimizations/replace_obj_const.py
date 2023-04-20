@@ -3,7 +3,6 @@
 from ast_analyzer.python_std.passmanager import Transformation
 from ast_analyzer.python_std.conversion import to_ast
 import gast as ast
-import astunparse
 from ast_analyzer.grad import annotations as anno
 from ast_analyzer.shape_inference.types import *
 from ast_analyzer.grad.grammar import STATEMENTS

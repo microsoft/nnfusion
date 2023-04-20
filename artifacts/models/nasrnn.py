@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import ast_analyzer.grad.impl as grad
 from ast_analyzer.utils.argparser import get_parser
 from ast_analyzer.to_onnx import to_torch_func
 import os
@@ -185,8 +184,6 @@ if __name__ == "__main__":
             # if args.bs == 64:
             #     to_torch_func.NNFUSION_CODEGEN_FLAGS['max_block_dim'] = 128
             # workflow_fix_flag(model, f"nasrnn_bs{args.bs}", (inputs,), args.platform, args.measure, run_unroll=True, enable_control_flow=args.cf)
-    if args.mode == 'train':
-        workflow_train_recursion(model, (inputs,), "nasrnn", "cuda", args.profile=="sys", args.run_sct, use_nnfusion=False)
 
     # with torch.no_grad():
     #     workflow_fix_flag(model, 'nasrnn', (inputs,), args.platform, args.measure)

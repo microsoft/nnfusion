@@ -16,12 +16,6 @@ RUN_DYNAMIC_UNROLL = True
 def apply_passes_ast(node, obj):
     assert(isinstance(node, gast.Module))
     pm = PassManager("opt", obj=obj)
-    # annotations = {}
-    # for arg in node.body[0].args.args:
-    #     if arg.annotation is not None:
-    #         annotations[arg] = arg.annotation
-    #         arg.annotation = None
-    # _, node = pm.apply(ExpandBuiltins, node)
     _, node = pm.apply(ReplaceObjConst, node)
     if RUN_DYNAMIC_UNROLL:
         _, node = pm.apply(DynamicLoopSplit, node)
@@ -31,17 +25,6 @@ def apply_passes_ast(node, obj):
     _, node = pm.apply(ListToNode, node)
     _, node = pm.apply(ToTensorTransform, node)
     _, node = pm.apply(CopyToAssign, node)
-    # for i in range(2):
-    #     _, node = pm.apply(PatternTransform, node)
-    #     _, node = pm.apply(Functional, node)
-    #     _, node = pm.apply(ForwardSubstitution, node)
-    #     _, node = pm.apply(ConstantFolding, node)
-    #     _, node = pm.apply(PartialConstantFolding, node)
-    #     _, node = pm.apply(ConstantPropagation, node)
-    #     _, node = pm.apply(DeadCodeElimination, node)
-    #     _, node = pm.apply(ToTensorTransform, node)
-    # for arg, annotation in annotations.items():
-    #     arg.annotation = annotation
     print("[Python Compile]")
     print(astunparse.unparse(node))
     return node

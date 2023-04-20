@@ -1,11 +1,10 @@
 from ast_analyzer.shape_inference.types import *
 from ast_analyzer.utils.save_tensor import save_tensor_bin
-from ast_analyzer import workflow_fix_flag, test_torch_eval, test_torch_train, workflow_train_recursion
+from ast_analyzer import workflow_fix_flag, test_torch_eval
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import ast_analyzer.grad.impl as grad
 from ast_analyzer.utils.argparser import get_parser
 import os
 from ast_analyzer.to_onnx import to_torch_func

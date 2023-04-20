@@ -1,10 +1,8 @@
 """ DeadCodeElimination remove useless code. """
 
-from ast_analyzer.python_std.analyses import PureExpressions, DefUseChains, Ancestors, ConstantExpressions
 from ast_analyzer.python_std.passmanager import Transformation
 
 import gast as ast
-import astunparse
 
 class ClumsyOpenMPDependencyHandler(ast.NodeVisitor):
 

@@ -1,12 +1,11 @@
 from ast_analyzer.shape_inference.types import *
 from ast_analyzer.utils.save_tensor import save_tensor_bin
 from ast_analyzer.utils import config
-from ast_analyzer import workflow_fix_flag, test_torch_eval, test_torch_train, workflow_train_recursion, workflow_search_flag
+from ast_analyzer import workflow_fix_flag, test_torch_eval, workflow_search_flag
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import ast_analyzer.grad.impl as grad
 from ast_analyzer.utils.argparser import get_parser
 import os
 from ast_analyzer.to_onnx import to_torch_func
@@ -292,9 +291,3 @@ if __name__ == "__main__":
                 # disable_dynamic_unroll()
                 # to_torch_func.NNFUSION_CODEGEN_FLAGS = {}
                 # workflow_fix_flag(model, f"lstm_bs{args.bs}", (inputs,), args.platform, args.measure, run_unroll=True, enable_control_flow=args.cf)
-
-    if args.mode == 'train':
-        if args.run_pytorch:
-            test_torch_train(model, (inputs,), args.profile)
-        if args.run_sys:
-            workflow_train_recursion(model, (inputs,), "lstmmulti", "cuda", args.profile=="sys", args.run_sct, use_nnfusion=False)

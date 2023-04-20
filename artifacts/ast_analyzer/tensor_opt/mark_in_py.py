@@ -1,7 +1,6 @@
 from ast import iter_fields, AST
 import gast
 from ast_analyzer.grad import annotations as anno
-import astunparse
 
 # may_push is set to false if its subAST contains statements that must be executed in python
 # e.g., unknown callee function

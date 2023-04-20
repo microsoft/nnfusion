@@ -13,23 +13,17 @@ from ast_analyzer.shape_inference.shape_elem import *
 from ast_analyzer.shape_inference import utils
 
 from ast_analyzer.shape_inference.ext.numpy_functions import *
-from ast_analyzer.shape_inference.ext.chainer_functions import *
 from ast_analyzer.shape_inference.ext.pytorch_functions import *
-from ast_analyzer.shape_inference.ext.grad_functions import *
 from ast_analyzer.shape_inference.std.builtin_functions import *
 from ast_analyzer.shape_inference.std.builtin_ops import *
 from ast_analyzer.shape_inference.std.list_functions import *
 from ast_analyzer.shape_inference.std.math_functions import *
 
-import chainer
-import chainer.links as L
 import numpy as np
 import logging
 
 import torch
 import torch.nn as nn
-
-from ast_analyzer.grad import impl as grad
 
 import astunparse
 import inspect
@@ -334,19 +328,8 @@ class InferenceEngine():
         if func in numpy_func_ty.keys():
             return call_function(numpy_func_ty, func, node, ty_args, ty_kwargs)
 
-        if func in chainer_func_ty.keys():
-            # external (eg. np/chainer) functions
-            return call_function(chainer_func_ty, func, node, ty_args, ty_kwargs)
-
         if func in pytorch_func_ty.keys():
             return call_function(pytorch_func_ty, func, node, ty_args, ty_kwargs)
-
-        if func in grad_func_ty.keys():
-            return call_function(grad_func_ty, func, node, ty_args, ty_kwargs)
-
-        if type(func) in L.__dict__.values():
-            # chainer links
-            return call_callable(chainer_callable_ty, func, node, ty_args, ty_kwargs)
 
         if type(func) in nn.__dict__.values():
             # torch.nn
@@ -407,7 +390,7 @@ class InferenceEngine():
 
         else:
             # defined with __call__
-            if isinstance(func, chainer.Chain) or isinstance(func, nn.Module):
+            if isinstance(func, nn.Module):
                 func_body = func.forward
                 # node._func_inst = func.forward
                 if hasattr(func, '__ast__'):
@@ -837,7 +820,7 @@ class InferenceEngine():
             if isinstance(node.value, gast.Name) and \
                     hasattr(self.module, node.value.id) and \
                     isinstance(getattr(self.module, node.value.id), types.ModuleType):
-                # function of imported libraries (eg. np, chainer, F, L)
+                # function of imported libraries (eg. np, F, L)
                 module = getattr(self.module, node.value.id)
                 return getattr(module, node.attr), None
 
@@ -916,7 +899,7 @@ class InferenceEngine():
         if isinstance(node.value, gast.Name) and \
                 hasattr(self.module, node.value.id) and \
                 isinstance(getattr(self.module, node.value.id), types.ModuleType):
-            # function of imported libraries (eg. np, chainer, F, L)
+            # function of imported libraries (eg. np, F, L)
             module = getattr(self.module, node.value.id)
             attr = getattr(module, node.attr)
             return type_of_value(attr)

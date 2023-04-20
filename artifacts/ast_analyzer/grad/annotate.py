@@ -6,8 +6,6 @@ import gast
 from . import transformers
 from ast import AST, iter_fields
 import json
-import copy
-from ast_analyzer.utils.two_node_visitor import TwoNodeVisitor
 
 class ResolveCalls(gast.NodeVisitor):
     """Annotate Call nodes with the function being called."""

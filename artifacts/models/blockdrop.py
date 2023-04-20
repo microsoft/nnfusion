@@ -11,11 +11,9 @@ from torch.autograd import Variable
 import numpy as np
 
 from ast_analyzer.shape_inference.types import *
-from ast_analyzer import workflow_fix_flag, test_torch_eval, test_torch_train, workflow_train_recursion, workflow_search_flag
+from ast_analyzer import workflow_fix_flag, test_torch_eval,  workflow_search_flag
 from ast_analyzer.utils.nvprof import enable_profile, profile_start, profile_stop
 from ast_analyzer.utils import config
-
-import ast_analyzer.grad.impl as grad
 from ast_analyzer.utils.argparser import get_parser
 from ast_analyzer.utils.timer import Timer
 from ast_analyzer.to_onnx import to_torch_func

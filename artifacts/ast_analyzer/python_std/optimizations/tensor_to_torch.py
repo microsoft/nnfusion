@@ -1,7 +1,6 @@
 """ Optimization for Python costly pattern. """
 
 from ast_analyzer.python_std.conversion import mangle
-from ast_analyzer.python_std.analyses import Check, Placeholder
 from ast_analyzer.python_std.passmanager import Transformation
 
 from copy import deepcopy

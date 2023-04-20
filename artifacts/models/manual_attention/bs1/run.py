@@ -28,6 +28,7 @@ NUM_HEAD = 12
 SIZE_PER_HEAD = 64
 n_warmup = 100
 n_run = 100
+torch.random.manual_seed(0)
 
 if __name__ == "__main__":
     batch_size = 1
@@ -41,6 +42,7 @@ if __name__ == "__main__":
     for i in range(n_warmup):
         _ = model.forward(x, k, v)
         torch.cuda.synchronize()
+    print(_)
     # run
     timer = Timer("ms")
     enable_profile('V100')

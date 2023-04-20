@@ -184,7 +184,7 @@ if __name__ == '__main__':
             mask = masks[:, i:i+batch_size].contiguous()
             torch.cuda.synchronize()
             output_all, h = model(encoder_output, mask, h, c)
-            if i == 0: print(output_all)
+            if i == 0: print(output_all, h)
             torch.cuda.synchronize()
         # run
         timer = Timer("ms")

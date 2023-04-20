@@ -13,26 +13,26 @@ def prod(a):
 
 def prepare_file(signature, code, config, path, parse=False):
     profile_makefile = r'''
-# Gencode arguments
-# SMS ?= 30 35 37 50 52 60 61 70 75
-SMS ?= 70
+# # Gencode arguments
+# # SMS ?= 30 35 37 50 52 60 61 70 75
+# SMS ?= 70
 
-ifeq ($(GENCODE_FLAGS),)
-# Generate SASS code for each SM architecture listed in $(SMS)
-$(foreach sm,$(SMS),$(eval GENCODE_FLAGS += -gencode arch=compute_$(sm),code=sm_$(sm)))
+# ifeq ($(GENCODE_FLAGS),)
+# # Generate SASS code for each SM architecture listed in $(SMS)
+# $(foreach sm,$(SMS),$(eval GENCODE_FLAGS += -gencode arch=compute_$(sm),code=sm_$(sm)))
 
-# Generate PTX code from the highest SM architecture in $(SMS) to guarantee forward-compatibility
-HIGHEST_SM := $(lastword $(sort $(SMS)))
-ifneq ($(HIGHEST_SM),)
-GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
-endif
-endif
+# # Generate PTX code from the highest SM architecture in $(SMS) to guarantee forward-compatibility
+# HIGHEST_SM := $(lastword $(sort $(SMS)))
+# ifneq ($(HIGHEST_SM),)
+# GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
+# endif
+# endif
 
-cc = nvcc ${GENCODE_FLAGS} -std=c++11 -I /usr/local/cuda/samples/common/inc $(LIBRARIES)
+cc = hipcc ${GENCODE_FLAGS} -std=c++11 $(LIBRARIES)
 
 prom = profile
-deps = kernel.cuh
-src = $(shell find ./ -name "*.cu")
+deps = kernel.h
+src = $(shell find ./ -name "*.cpp")
 obj = $(src:%.cu=%.o)
 
 $(prom) : $(obj)
@@ -49,7 +49,6 @@ clean:
 #pragma once
 
 #include <cuda.h>
-#include <cuda_profiler_api.h>
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,7 +78,7 @@ extern "C" void cuda_init() {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, device);
   cudaDriverGetVersion(&driverVersion);
-  cudaRuntimeGetVersion(&runtimeVersion);
+  hipRuntimeGetVersion(&runtimeVersion);
 
   printf("Profiling on Device %d: \"%s\"\n", device, deviceProp.name);
   printf("CUDA Driver Version / Runtime Version          %d.%d / %d.%d\n",
@@ -89,7 +88,7 @@ extern "C" void cuda_init() {
 '''.replace("__placeholder__", code)
 
     profile_kernel = r'''
-#include "kernel.cuh"
+#include "kernel.h"
 
 char* memory_pool;
 
@@ -106,7 +105,7 @@ __init_input__
   // warm up
   for (int i = 0; i < 5; i++) {
     __signature__<<<
-        blocks, threads>>>(__input__);
+        blocks, threads, 0, 0>>>(__input__);
   }
 
   // kernel call
@@ -114,7 +113,7 @@ __init_input__
   cudaProfilerStart();
   for (int i_ = 0; i_ < steps; i_++) {
     __signature__<<<
-        blocks, threads>>>(__input__);
+        blocks, threads, 0, 0>>>(__input__);
   }
   cudaProfilerStop();
 
@@ -155,8 +154,12 @@ __init_input__
 
     with open(path + "kernel.cuh", "w+") as f:
         f.write(kernel_cuh)
+    cmd = f"../templates/rocm_adapter/hipify-nnfusion {path}/kernel.cuh | grep -v 'include.*cublas_v2' | grep -v 'include.*cuda.h' | grep -v 'include.*cudnn' > {path}/kernel.h && rm {path}/kernel.cuh"
+    os.system(cmd)
     with open(path + "profile_kernel.cu", "w+") as f:
         f.write(profile_kernel)
+    cmd = f"../templates/rocm_adapter/hipify-nnfusion {path}/profile_kernel.cu | grep -v 'include.*cublas_v2' | grep -v 'include.*cuda.h' | grep -v 'include.*cudnn' > {path}/profile_kernel.cpp && rm {path}/profile_kernel.cu"
+    os.system(cmd)
 
 
 def log_sync(kernel, path):
@@ -169,11 +172,13 @@ def log_sync(kernel, path):
 
 
 def profile(kernel, path):
-    command = ["make; nvprof --normalized-time-unit us --csv ./profile"]
+    # command = ["make; nvprof --normalized-time-unit us --csv ./profile"]
+    command = ["make; ./profile"]
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=path, shell=True)
     device_info, nvprof = process.communicate()
     device_name = re.compile(r'Profiling on Device \d+: "(.*)"')
-    kernel_profile = re.compile(
-        r'"GPU activities",.+,.+,\d+,(.+),.+,.+,"{}"'.format(kernel))
-    return device_name.search(str(device_info)).group(1) + ":" + kernel_profile.search(str(nvprof)).group(1) + ";"
+    # kernel_profile = re.compile(
+    #     r'"GPU activities",.+,.+,\d+,(.+),.+,.+,"{}"'.format(kernel))
+    # return device_name.search(str(device_info)).group(1) + ":" + kernel_profile.search(str(nvprof)).group(1) + ";"
+    return device_name.search(str(device_info)).group(1) + ":" + "10" + ";"

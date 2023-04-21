@@ -8,7 +8,6 @@ import re
 import getpass
 
 from .cuparse import parse as code_parse
-from .profile import prepare_file, log_sync, profile, prod
 
 db_path = os.environ['HOME'] + "/.cache/nnfusion"
 db_name = "kernel_cache.db"
@@ -110,9 +109,17 @@ def insert_db(name, resource, identifier, platform="CUDA_GPU", tags="", profile=
     os.system(f"rsync -avz ~/.cache/nnfusion/* /tmp/{getpass.getuser()}/")
 
 
-def save_to_db(identifier, source, grid_size, block_size):
+# device_type: CUDA_GPU, ROCM_GPU
+def save_to_db(identifier, source, grid_size, block_size, device_type="CUDA_GPU"):
     if not os.path.exists(db_path):
         os.mkdir(db_path)
+
+    if device_type == "CUDA_GPU":
+        from .profile_cuda import prepare_file, log_sync, profile, prod
+    elif device_type == "ROCM_GPU":
+        from .profile_rocm import prepare_file, log_sync, profile, prod
+    else:
+        raise NotImplementedError
 
     # parse and clean up the cuda code to get some specific information
     source = clean_up(source)
@@ -159,7 +166,7 @@ def save_to_db(identifier, source, grid_size, block_size):
     profile_info = profile(signature, os.path.join(db_path, "profile"))
     print(profile_info, resource, config["num_syncthreads"])
     insert_db(operator_path + "/" + name, resource, identifier,
-                tags=default_tags, profile=profile_info)
+              platform=device_type, tags=default_tags, profile=profile_info)
     # repo.index.add(db_path)
     # repo.index.commit(f"{identifier} with {profile_info}")
     return True

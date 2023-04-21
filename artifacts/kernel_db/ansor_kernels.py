@@ -13,14 +13,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--tid", type=int)
 parser.add_argument("--trial", type=int, default=0)
 parser.add_argument("--inject", action="store_true")
-parser.add_argument("--efficient", action="store_true")
 args = parser.parse_args()
 op_func = None
-
-    # get_expr(func_name, shape)
-    # expr = globals()[func_name](shape)
-    # print(expr)
-    # exit(0)
 
 if __name__ == '__main__':
     with open("ansor.id") as f:

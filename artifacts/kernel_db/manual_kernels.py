@@ -1,6 +1,11 @@
 from db import save_to_db
 import os
 import re
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--device', type=str, default='CUDA_GPU', choices=['CUDA_GPU', 'ROCM_GPU'])
+args = parser.parse_args()
 
 kernels = {
     "AvgPool[64,1,8,8;64,1,1,1floatfloatShape{8, 8}Strides{8, 8}Shape{0, 0}Shape{0, 0}]": "avgpool_64_1_1_8_8_S8P0", # blockdrop bs1
@@ -34,8 +39,15 @@ kernels = {
     "BatchMatMul[1,12,1,64;1,12,64,64;1,12,1,64floatfloatfloat]": "bmm_12_1_64_64", # attention bs1
 }
 
+kernels_rocm = {
+
+}
+
 def save_one(identifier):
-    file_name = kernels[identifier] + ".cu"
+    if args.device == "ROCM_GPU" and identifier in kernels_rocm:
+        file_name = kernels_rocm[identifier] + ".cu"
+    else:
+        file_name = kernels[identifier] + ".cu"
     with open(os.path.join("manual_kernels", file_name)) as f:
         while True:
             st = f.readline()
@@ -59,8 +71,7 @@ def save_one(identifier):
         block = f.readline()
         block = re.search("(\d+), (\d+), (\d+)", block).groups()
         block = tuple(int(x) for x in block)
-        save_to_db(identifier, kernel_code, grid, block)
-        
+        save_to_db(identifier, kernel_code, grid, block, args.device)
 
 def save_all():
     for id in kernels:

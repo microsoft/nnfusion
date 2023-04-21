@@ -20,6 +20,6 @@ python3 skipnet.py --platform V100 --bs 1 --no-torch --measure --enable-breakdow
 python3 rae.py --platform V100 --bs 1 --no-torch --measure --enable-breakdown --opt=1 2>&1 | tee $LOG_DIR/rae.opt1.b1.log
 python3 rae.py --platform V100 --bs 1 --no-torch --measure --enable-breakdown --opt=2 2>&1 | tee $LOG_DIR/rae.opt2.b1.log
 python3 rae.py --platform V100 --bs 1 --no-torch --measure --enable-breakdown --opt=3 2>&1 | tee $LOG_DIR/rae.opt3.b1.log
-python3 rae.py --platform V100 --bs 1 --no-torch --measure --enable-breakdown --opt=3 2>&1 | tee $LOG_DIR/rae.opt4.b1.log
+python3 rae.py --platform V100 --bs 1 --no-torch --measure --enable-breakdown --opt=4 2>&1 | tee $LOG_DIR/rae.opt4.b1.log
 
 conda deactivate

@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch import functional as f
 from vgg_arch import MultiConv
+import time
 
 class VGG16(nn.Module):
     def __init__(self, n_channels, n_classes, device=0):
@@ -55,14 +56,23 @@ class VGG16Base(nn.Module):
         x = self.conv5_3(self.conv5_2(self.conv5_1(self.maxpool(x))))
         return x
 
-import time
-torch.random.manual_seed(0)
-with torch.no_grad():
-    net = VGG16Base(3, 1000)
-    x = torch.rand(1, 3, 8192, 8192)
+if __name__ == "__main__":
+    torch.random.manual_seed(0)
     repeats=5
-    for i in range(repeats):
-        start = time.time()
-        _ = net(x)
-        end = time.time()
-        print(end - start)
+    x = torch.rand(1, 3, 8192, 8192)
+    with torch.no_grad():
+        print("evaluating VGG Welder Optimized")
+        net = VGG16(3, 1000)
+        for i in range(repeats):
+            start = time.time()
+            _ = net(x)
+            end = time.time()
+            print(end - start)
+
+        print("evaluating VGG Welder Base")
+        net = VGG16Base(3, 1000)
+        for i in range(repeats):
+            start = time.time()
+            _ = net(x)
+            end = time.time()
+            print(end - start)

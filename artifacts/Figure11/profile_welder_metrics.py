@@ -2,10 +2,9 @@ import argparse
 import ctypes
 import os
 import time
-
-import numpy as np
-import torch
 import json
+import torch
+
 cuda = ctypes.CDLL("libcudart.so")
 
 def profile_welder(prefix):
@@ -53,14 +52,13 @@ def profile_welder(prefix):
         cuda.cudaDeviceSynchronize()
         return (time.monotonic_ns() - tic) / 1e6
 
-    print("Warming up ...")
     st = time.time()
     while time.time() - st < 1.0:
         get_runtime() # warmup
-    times = [get_runtime() for _ in range(100)]
-    print(f"avg: {np.mean(times)} ms")
-    print(f"min: {np.min(times)} ms")
-    print(f"max: {np.max(times)} ms")
+
+    cuda.cudaProfilerStart()
+    get_runtime()
+    cuda.cudaProfilerStop()
     os.chdir(cur_dir)
 
 if __name__ == "__main__":

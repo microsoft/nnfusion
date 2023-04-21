@@ -1,6 +1,30 @@
 import numpy as np
 import torch
 
+def resnet18(batch_size):
+    from torchvision.models import resnet18 as Net
+    model = Net()
+    input = torch.randn(batch_size, 3, 224, 224)
+    return model, (input, )
+
+def resnet50(batch_size):
+    from torchvision.models import resnet50 as Net
+    model = Net()
+    input = torch.randn(batch_size, 3, 224, 224)
+    return model, (input, )
+
+def vgg16(batch_size):
+    from torchvision.models import vgg16 as Net
+    model = Net()
+    input = torch.randn(batch_size, 3, 224, 224)
+    return model, (input, )
+
+def unet(batch_size):
+    from .unet import UNet as Net
+    model = Net(3, 100)
+    input = torch.randn(batch_size, 3, 224, 224)
+    return model, (input, )
+
 def mobilenet(batch_size):
     from torchvision.models import mobilenet_v2 as Net
     model = Net()

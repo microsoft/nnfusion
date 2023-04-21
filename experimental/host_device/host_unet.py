@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch import functional as f
 from unet_arch import DoubleConv, UpConv, Conv, UpSample
+import time
 
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes):
@@ -70,15 +71,23 @@ class UNetBase(nn.Module):
         x = self.up4c(self.up4b(self.up4a(x1, x)))
         return x
 
-import time
-torch.random.manual_seed(0)
-with torch.no_grad():
-    net = UNetBase(3, 1000)
-    x = torch.rand(1, 3, 8192, 8192)
+if __name__ == "__main__":
+    torch.random.manual_seed(0)
     repeats=5
-    for i in range(repeats):
-        start = time.time()
-        _ = net(x)
+    x = torch.rand(1, 3, 8192, 8192)
+    with torch.no_grad():
+        print("evaluating Unet Welder Optimized")
+        net = UNet(3, 1000)
+        for i in range(repeats):
+            start = time.time()
+            _ = net(x)
+            end = time.time()
+            print(end - start)
 
-        end = time.time()
-        print(end - start)
+        print("evaluating Unet Welder Base")
+        net = UNetBase(3, 1000)
+        for i in range(repeats):
+            start = time.time()
+            _ = net(x)
+            end = time.time()
+            print(end - start)

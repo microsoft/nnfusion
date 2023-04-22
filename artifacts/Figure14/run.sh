@@ -16,5 +16,5 @@ conda deactivate
 
 conda activate grinder
 ./run_base.sh
-./run_grinder.sh
+./run_sys.sh
 conda deactivate

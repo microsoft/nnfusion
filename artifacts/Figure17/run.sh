@@ -15,5 +15,5 @@ conda activate baseline_jax
 conda deactivate
 
 conda activate grinder
-./run_grinder.sh
+./run_sys.sh
 conda deactivate

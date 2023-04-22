@@ -28,7 +28,7 @@ docker build -t grinder -f env/Dockerfile.nv .
 chmod 777 $YOUR_DIR_FOR_NNFUSION/nnfusion
 docker run -it --gpus all --name grinder-ae -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion --shm-size="32g" -w /root/nnfusion/artifacts grinder:latest /bin/bash
 # run inside docker
-bash ./env/install_grinder_docker.sh
+bash ./env/install_in_docker.sh
 ```
 
 adapted (TODO: remove)
@@ -58,7 +58,7 @@ TODO
     docker build -t grinder:latest -f env/Dockerfile.rocm --network=host .
 
     # run inside docker
-    bash ./env/install_grinder_docker.sh
+    bash ./env/install_in_docker.sh
     ```
 * Pull the TensorFlow docker
     ```bash

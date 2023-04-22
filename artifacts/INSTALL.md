@@ -41,10 +41,11 @@ git clone https://github.com/apache/tvm.git
 cd tvm
 git checkout 22ba6523c
 git submodule init && git submodule update
-git apply ../../env/tvm.patch
+git apply ../../env/tvm.patch # from roller
 mkdir build
 cd build
-cp ../../../env/tvm.config.cmake config.cmake
+cp ../cmake/config.cmake config.cmake
+sed -i "s/USE_CUDA OFF/USE_CUDA ON/g" config.cmake && sed -i "s/USE_LLVM OFF/USE_LLVM ON/g" config.cmake
 make -j
 cd ../python
 pip install -e .

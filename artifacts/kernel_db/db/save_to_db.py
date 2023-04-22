@@ -106,7 +106,6 @@ def insert_db(name, resource, identifier, platform="CUDA_GPU", tags="", profile=
     conn.commit()
     conn.close()
     print("end insert db", flush=True)
-    os.system(f"rsync -avz ~/.cache/nnfusion/* /tmp/{getpass.getuser()}/")
 
 
 # device_type: CUDA_GPU, ROCM_GPU

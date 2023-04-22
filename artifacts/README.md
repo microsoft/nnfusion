@@ -40,6 +40,8 @@ permission: chmod 777 the two folders, config not to /dev/shm
 ```
 
 ## AMD GPU
+* download code and data
+TODO
 * Build jax docker
     ```bash
     cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
@@ -54,10 +56,18 @@ permission: chmod 777 the two folders, config not to /dev/shm
     ```bash
     cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
     docker build -t grinder:latest -f env/Dockerfile.rocm --network=host .
+
+    # run inside docker
+    bash ./env/install_grinder_docker.sh
     ```
 * Pull the TensorFlow docker
     ```bash
     docker pull rocm/tensorflow:rocm4.3.1-tf1.15-dev
+    ```
+* Build TVM docker
+    ```bash
+    cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
+    docker build -t tvm_rocm_cuda:latest -f env/Dockerfile.tvm.rocm --network=host .
     ```
 
 ## 2. Getting Started with a Simple Example

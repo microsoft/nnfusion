@@ -139,11 +139,12 @@ __init_input__
 
     with open(os.path.join(path, "kernel.cuh"), "w+") as f:
         f.write(kernel_cuh)
-    cmd = f"../../../tools/nnfusion/templates/rocm_adapter/hipify-nnfusion {path}/kernel.cuh | grep -v 'include.*cublas_v2' | grep -v 'include.*cuda.h' | grep -v 'include.*cudnn' > {path}/kernel.h && rm {path}/kernel.cuh"
+    hipify= os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../src/tools/nnfusion/templates/rocm_adapter/hipify-nnfusion'))
+    cmd = f"{hipify} {path}/kernel.cuh | grep -v 'include.*cublas_v2' | grep -v 'include.*cuda.h' | grep -v 'include.*cudnn' > {path}/kernel.h && rm {path}/kernel.cuh"
     os.system(cmd)
     with open(os.path.join(path, "profile_kernel.cu"), "w+") as f:
         f.write(profile_kernel)
-    cmd = f"../../../tools/nnfusion/templates/rocm_adapter/hipify-nnfusion {path}/profile_kernel.cu | grep -v 'include.*cublas_v2' | grep -v 'include.*cuda.h' | grep -v 'include.*cudnn' > {path}/profile_kernel.cpp && rm {path}/profile_kernel.cu"
+    cmd = f"{hipify} {path}/profile_kernel.cu | grep -v 'include.*cublas_v2' | grep -v 'include.*cuda.h' | grep -v 'include.*cudnn' > {path}/profile_kernel.cpp && rm {path}/profile_kernel.cu"
     os.system(cmd)
 
 

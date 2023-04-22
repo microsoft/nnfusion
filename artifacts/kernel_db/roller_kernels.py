@@ -175,6 +175,11 @@ def compile_and_run_kernel(rprog, op, shape, data_type, arch, policy, device_id,
     times = 10
     if not config["use_tc"]:
         source = get_tvm_source(rprog, arch, shape, policy, data_type, config)
+        if "float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad, float* __restrict__ bias" in source:
+            source = source.replace(
+                "float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad, float* __restrict__ bias",
+                "float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ bias, float* __restrict__ conv_unpad"
+            )
         main_source = main_template("tvm", source, op, grids, blocks, times, config)
     else:
         source = get_tc_mm_source(
@@ -306,13 +311,6 @@ def run(identifier, arch, tmp_dir=None, fix_block_size=None):
     print("best config: {}".format(rprogs[best_idx].Dump()))
     print("top1 compile time: {} s".format(emit_time))
     print("top10 compile time: {} s".format(eval_time))
-
-    if 'Matched_Pattern(Convolution-Add-Relu)' in identifier:
-        assert("float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad, float* __restrict__ bias" in best_source)
-        best_source = best_source.replace(
-            "float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ conv_unpad, float* __restrict__ bias",
-            "float* __restrict__ data, float* __restrict__ kernel, float* __restrict__ bias, float* __restrict__ conv_unpad"
-        )
 
     with open(os.path.join(prefix, "final.cu"), "w") as f:
         f.write(best_source)

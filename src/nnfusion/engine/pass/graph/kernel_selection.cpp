@@ -328,7 +328,7 @@ pair<NNFusion_DeviceType, kernels::KernelEmitter::Pointer>
             SUPPORT_PLATFORM.end())
     {
         // fetch all available kernel entries from kernel cache DB
-        auto fetched = cache_manager->fetch_all(identifier, "CUDA_GPU");
+        auto fetched = cache_manager->fetch_all(identifier, get_device_str(devtype));
 
         // emit External kernels
         {

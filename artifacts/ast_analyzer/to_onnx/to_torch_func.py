@@ -15,6 +15,11 @@ RT_DIRS = {
     'MI100': 'rocm_codegen'
 }
 
+SM_COUNT = {
+    'V100': 80,
+    'MI100': 120,
+}
+
 def to_torch_func(
     model_name,  # type: str
     n_in,  # type: int

@@ -23,6 +23,7 @@ DEFINE_bool(fpattern_substitution,
 DEFINE_bool(fbiasadd_fix,
             false,
             "Fix biasadd shape for TVM Conv2d-Add fusion in pattern_substitution_pass");
+DECLARE_string(fdefault_device);
 
 // Only serial pattern supported in current implementation
 // The substitution directly applied to computation graph, no back propagation involved
@@ -151,7 +152,7 @@ private:
             // Todo: more tags, more platform
             identifier = generate_pattern_name() + "[" + identifier + "]";
             std::set<std::string> tags = {};
-            auto fetched_kernel = kernel_db->fetch_all(identifier, "CUDA_GPU");
+            auto fetched_kernel = kernel_db->fetch_all(identifier, get_device_str(nnfusion::get_device_type(FLAGS_fdefault_device)));
             if (fetched_kernel.size() > 0)
             {
                 NNFUSION_CHECK(fetched_kernel[0]->function != "");

@@ -1,0 +1,1 @@
+python3 manual_kernels.py --device ROCM_GPU  

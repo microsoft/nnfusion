@@ -1,5 +1,5 @@
 import importlib
-from ast_analyzer.to_onnx.to_torch_func import DEFAULT_DEVICES, RT_DIRS
+from ast_analyzer.to_onnx.to_torch_func import DEFAULT_DEVICES, RT_DIRS, SM_COUNT
 from ast_analyzer.utils import config
 import os
 import stat
@@ -72,7 +72,10 @@ def gen_flags(onnx_model, model_name, platform, block_dim):
     has_recursion = exists['Recursion']
     has_conv = exists['Conv']
     
-    possible_grid_dims = [80, 128, 160, 240, 256, 320, 384, 400, 480]
+    possible_grid_dims = [128, 256, 384]
+    for i in [1, 2, 3, 4, 5, 6]:
+        possible_grid_dims.append(SM_COUNT[platform] * i)
+
     if block_dim == -1: block_dim = 256
     
     flags_to_try = []

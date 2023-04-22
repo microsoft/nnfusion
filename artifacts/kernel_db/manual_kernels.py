@@ -40,7 +40,6 @@ kernels = {
 }
 
 kernels_rocm = {
-    "BatchMatMul[1,256;4,256,256;4,1,256floatfloatfloat]": "bmm_4_1_256_rocm", # lstm bs1
     "Dot[1,256;3797,256;1,3797floatfloatfloat01]": "dot_1_256_3797_256_1_3797_01_rocm", # seq2seq bs1
     "BatchMatMul[1,12,1,64;12,64,64;1,12,1,64floatfloatfloat]": "bmm_12_1_64_64_rocm", # attention bs1
     "BatchMatMul[1,12,1,64;1,12,64,64;1,12,1,64floatfloatfloat]": "bmm_12_1_64_64_rocm", # attention bs1

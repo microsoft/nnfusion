@@ -10,5 +10,6 @@ python3 figure15.py
 python3 figure16.py
 python3 figure17.py
 python3 figure18.py
+python3 figure19.py
 python3 figure20.py
 conda deactivate

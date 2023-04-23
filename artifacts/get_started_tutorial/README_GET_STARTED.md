@@ -12,17 +12,17 @@ source ~/miniconda3/etc/profile.d/conda.sh
 
 # PyTorch
 conda activate grinder
-srun --pty --exclusive python3 nasrnn_pytorch.py --bs 64
+srun -p AE -w nico1 --pty --exclusive python3 nasrnn_pytorch.py --bs 64
 conda deactivate
 
 # TensorFlow
 conda activate baseline_tf1
-srun --pty --exclusive python3 nasrnn_tf.py --bs 64
+srun -p AE -w nico1 --pty --exclusive python3 nasrnn_tf.py --bs 64
 conda deactivate
 
 # JAX
 conda activate baseline_jax
-srun --pty --exclusive python3 nasrnn_jax.py --bs 64
+srun -p AE -w nico1 --pty --exclusive python3 nasrnn_jax.py --bs 64
 conda deactivate
 ```
 
@@ -49,9 +49,8 @@ export ARTIFACT_ROOT=TODO
 cd $ARTIFACT_ROOT/kernel_db
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate kerneldb
-srun --pty --exclusive python3 example_roller_kernels.py --reproduce
-srun -w nico3 --pty bash -c "mkdir -p /tmp/`whoami` && rsync -avz nico0:~/.cache/nnfusion/* /tmp/`whoami`/"
-srun -w nico4 --pty bash -c "mkdir -p /tmp/`whoami` && rsync -avz nico0:~/.cache/nnfusion/* /tmp/`whoami`/"
+srun -p AE -w nico1 --pty --exclusive python3 example_roller_kernels.py --reproduce
+srun -p AE -w nico1 --pty bash -c "mkdir -p /tmp/`whoami` && rsync -avz nico0:~/.cache/nnfusion/* /tmp/`whoami`/"
 conda deactivate
 cd $ARTIFACT_ROOT/get_started_tutorial
 ```
@@ -65,7 +64,7 @@ cd $ARTIFACT_ROOT/get_started_tutorial
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate grinder
 
-srun --pty --exclusive python3 nasrnn.py --platform V100 --bs 64 --no-torch --disable-cf --measure
+srun -p AE -w nico1 --pty --exclusive python3 nasrnn.py --platform V100 --bs 64 --no-torch --disable-cf --measure
 ```
 
 The output should be similar to the following:
@@ -95,7 +94,7 @@ cd $ARTIFACT_ROOT/get_started_tutorial
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate grinder
 
-srun --pty --exclusive python3 nasrnn.py --platform V100 --bs 64 --no-torch --measure
+srun -p AE -w nico1 --pty --exclusive python3 nasrnn.py --platform V100 --bs 64 --no-torch --measure
 ```
 The output should be similar to the following:
 ```bash

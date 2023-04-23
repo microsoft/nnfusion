@@ -4,7 +4,7 @@ import getpass
 
 # config start
 KERNELDB_REQUEST_FNAME="kerneldb_request.log"
-TMP_DIR = f"/dev/shm/{getpass.getuser()}/grinder"
+TMP_DIR = f"/dev/shm/{getpass.getuser()}/controlflow"
 NNFUSION_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../..'))
 KERNELDB_PATH = os.path.expanduser(f"/tmp/{getpass.getuser()}/kernel_cache.db")
 NUM_GPU = 8

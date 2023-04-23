@@ -11,7 +11,7 @@ cd $ARTIFACT_ROOT/get_started_tutorial
 source ~/miniconda3/etc/profile.d/conda.sh
 
 # PyTorch
-conda activate grinder
+conda activate controlflow
 srun -p AE -w nico1 --pty --exclusive python3 nasrnn_pytorch.py --bs 64
 conda deactivate
 
@@ -62,7 +62,7 @@ After that, you can get a kernel database file in `~/.cache/nnfusion/kernel_cach
 export ARTIFACT_ROOT=TODO
 cd $ARTIFACT_ROOT/get_started_tutorial
 source ~/miniconda3/etc/profile.d/conda.sh
-conda activate grinder
+conda activate controlflow
 
 srun -p AE -w nico1 --pty --exclusive python3 nasrnn.py --platform V100 --bs 64 --no-torch --disable-cf --measure
 ```
@@ -85,14 +85,14 @@ tensor equals!
 100 iters, min = 65.4466 ms, max = 66.7112 ms, avg = 65.8735 ms
 ```
 
-The `forward` function in the output is the python code executed during time measurement, which accelerates the basic block of the model (locate at `/dev/shm/$USER/grinder/base_nasrnn_bs64_0/forward` and `/dev/shm/$USER/grinder/base_nasrnn_bs64_2/forward`) and relies on PyTorch for executing the control flows. The `tensor equals!` indicates that the output of GrinderBase matches that of PyTorch.
+The `forward` function in the output is the python code executed during time measurement, which accelerates the basic block of the model (locate at `/dev/shm/$USER/controlflow/base_nasrnn_bs64_0/forward` and `/dev/shm/$USER/controlflow/base_nasrnn_bs64_2/forward`) and relies on PyTorch for executing the control flows. The `tensor equals!` indicates that the output of GrinderBase matches that of PyTorch.
 
 ## Run Grinder
 ```bash
 export ARTIFACT_ROOT=TODO
 cd $ARTIFACT_ROOT/get_started_tutorial
 source ~/miniconda3/etc/profile.d/conda.sh
-conda activate grinder
+conda activate controlflow
 
 srun -p AE -w nico1 --pty --exclusive python3 nasrnn.py --platform V100 --bs 64 --no-torch --measure
 ```
@@ -110,7 +110,7 @@ tensor equals!
 100 iters, min = 25.3108 ms, max = 25.7773 ms, avg = 25.3788 ms
 ```
 
-The generated code of Grinder is located at `/dev/shm/$USER/grinder/nasrnn_bs64_0/forward`. The `Best flag` indicates the schedule result of Grinder. The `tensor equals!` indicates that the output of Grinder matches that of PyTorch.
+The generated code of Grinder is located at `/dev/shm/$USER/controlflow/nasrnn_bs64_0/forward`. The `Best flag` indicates the schedule result of Grinder. The `tensor equals!` indicates that the output of Grinder matches that of PyTorch.
 
 ## Summary
 The following table summarizes the above experiments. Grinder achieves $1.71\times$ speedup against the fastest baseline (JAX).

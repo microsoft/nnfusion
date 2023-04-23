@@ -7,7 +7,7 @@ def enable_profile(platform):
         global _cudart
         _cudart = ctypes.CDLL('libcudart.so')
     elif platform == 'MI100':
-        pass # Grinder's experiments don't need profilers on MI100
+        pass # The experiments don't need profilers on MI100
     else:
         raise NotImplementedError
 

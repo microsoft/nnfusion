@@ -14,7 +14,7 @@ colors = [line_colors[0], line_colors[1], line_colors[2], line_colors[4]]
 def get_log_from(filename: str):
     result_dir = f'../reproduce_results/Figure{figure_id}'
     results = [-1, -1] # skip pytorch and tf
-    for s in ['jax', 'grinder']:
+    for s in ['jax', 'sys']:
         result_file_path = os.path.join(result_dir, s, filename)
         t = parse_time(result_file_path)
         if t is not None:

@@ -17,7 +17,7 @@ colors = [
 def get_log_from(filename: str):
     result_dir = f'../reproduce_results/Figure{figure_id}'
     results = []
-    for s in ['pytorch', 'jax', 'grinder']:
+    for s in ['pytorch', 'jax', 'sys']:
         result_file_path = os.path.join(result_dir, s, filename + '.log')
         t = parse_time(result_file_path)
         if t is not None:
@@ -28,7 +28,7 @@ def get_log_from(filename: str):
                 results.append(t)
             else:
                 raise ValueError("Cannot parse time from file: {}".format(result_file_path))
-    for s in ['pytorch', 'jax', 'grinder']:
+    for s in ['pytorch', 'jax', 'sys']:
         result_file_path = os.path.join(result_dir, s, filename + '.nvprof.log')
         t = parse_kernel_time(result_file_path)
         if t is not None:

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure18/grinder
+LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure18/sys
 mkdir -p ${LOG_DIR}
 cd ${ARTIFACT_ROOT}/models
 

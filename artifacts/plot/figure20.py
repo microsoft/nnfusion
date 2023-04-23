@@ -27,7 +27,7 @@ sys_general = ['GrinderBase', 'schedule', 'optimize & schedule']
 def get_log_from(filename: str):
     result_dir = f'../reproduce_results/Figure{figure_id}'
     results = []
-    for s in ['base', 'schedule', 'grinder']:
+    for s in ['base', 'schedule', 'sys']:
         result_file_path = os.path.join(result_dir, s, filename)
         t = parse_time(result_file_path)
         if t is not None:

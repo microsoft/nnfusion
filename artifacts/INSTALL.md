@@ -61,8 +61,8 @@ mkdir build && cd build && cmake .. && make -j
 
 ## Pytorch & Grinder
 ```bash
-conda create python=3.7 --name grinder -y
-conda activate grinder
+conda create python=3.7 --name controlflow -y
+conda activate controlflow
 pip install nvidia-pyindex
 pip install -r env/requirements_pytorch.txt -f https://download.pytorch.org/whl/torch_stable.html
 pip install -e .

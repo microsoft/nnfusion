@@ -22,7 +22,7 @@ hatch_def = [
 def get_log_from(filename: str):
     result_dir = f'../reproduce_results/Figure{figure_id}'
     results = []
-    for s in ['pytorch', 'tf', 'jax', 'base', 'grinder']:
+    for s in ['pytorch', 'tf', 'jax', 'base', 'sys']:
         result_file_path = os.path.join(result_dir, s, filename)
         if not os.path.exists(result_file_path):
             results.append('N/A')

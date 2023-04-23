@@ -19,6 +19,7 @@ This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "
 Please follow the instructions in "Comments for AEC" on HotCRP and skip this section if you want to use the provided environment. The following steps need docker permission which is not provided due to security concerns.
 
 ## NVIDIA GPU
+Please follow the instructions in [INSTALL.md](INSTALL.md) or use the following docker-based script to build and install Grinder.
 ```bash
 cd $YOUR_DIR_FOR_NNFUSION
 git clone https://github.com/microsoft/nnfusion.git --branch TODO --single-branch
@@ -84,6 +85,7 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Grinder
 
 ## 3. Data and Kernel Preparation
 * Download the input data and model weights from TODO, unzip them and put them under the nnfusion/artifacts directory. The tree structure should be like:
+    **For AE Reviewers**: This step has been done on the provided nodes.
     ```
     nnfusion
     ├── artifacts

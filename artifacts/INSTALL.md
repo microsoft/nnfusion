@@ -46,7 +46,7 @@ mkdir build
 cd build
 cp ../cmake/config.cmake config.cmake
 sed -i "s/USE_CUDA OFF/USE_CUDA ON/g" config.cmake && sed -i "s/USE_LLVM OFF/USE_LLVM ON/g" config.cmake
-make -j
+cmake .. && make -j
 cd ../python
 pip install -e .
 ```

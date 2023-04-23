@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 source ~/miniconda3/etc/profile.d/conda.sh
-
 conda activate kerneldb
+
+mkdir -p ~/.cache/nnfusion
 
 python3 manual_kernels.py
 python3 roller_kernels.py --reproduce

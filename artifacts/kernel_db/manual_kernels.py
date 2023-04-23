@@ -62,7 +62,8 @@ def save_one(identifier):
                 break
             kernel_code.append(st)
         kernel_code = "".join(kernel_code)
-        kernel_code = kernel_code.replace("_sync(0xffffffff, ", "(") # change __shfl_sync(0xffffffff, ....) to __shfl(....)
+        if args.device == "ROCM_GPU":
+            kernel_code = kernel_code.replace("_sync(0xffffffff, ", "(")
 
         while True:
             st = f.readline()

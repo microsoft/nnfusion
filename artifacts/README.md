@@ -25,15 +25,16 @@ sudo docker build -t welder_cuda .
 sudo nvidia-docker run -it --cap-add=SYS_ADMIN --network=host --name welder_test welder_cuda bash
 ```
 
-## 2. Paper result reproduce
+## 2. Paper result quick reproduce
 
-We have provided tuning logs and pre-compiled models under folder /sharepoint in the Docker so that reviewers can quickly reproduce results in the paper. Here is a list we provide:
+Since welder's paper evaluate different models with different batch-sizes and data-types, leading to more than 50 models to tune to completely reproduce the paper's result. We have created a docker with all tuned models saved under folder /sharepoint in the Docker so that reviewers can quickly reproduce results in the paper. Using these pre-compiled models, results can be reproduced more quickly with a few commands. Here is a list we provide:
 
 | Name      | Description                                              | Commands                      |
 | --------- | -------------------------------------------------------- | ----------------------------- |
-| Figure1   | onnxruntime memory performance for different models     | [Figure1](#f1) |
+| Figure1   | onnxruntime memory performance for different models    | [Figure1](#Figure1) |
+| Figure5   | Latency Number of a simple case | [Figure5](#Figure5) |
 | Figure9   | Model inference performance on V100 FP32                 | [Figure9_10](#f2)                    |
-| Figure10a | Model inference performance on V100 FP16 (TensorCore)     | [Figure9_10](#f2)                    |
+| Figure10a | Model inference performance on V100 FP16 (TensorCore     | [Figure9_10](#f2)                    |
 | Figure10b | Model inference performance on V100 FP16 (No TensorCore) | [Figure10b](#f3)                     |
 | Figure11  | Latency, kernel count, global memory transaction and IRS | [Figure11](#f4)                      |
 | Table3    | Performance for WELDER and FasterTransformer             | [Table3](#f5)                        |
@@ -43,7 +44,15 @@ We have provided tuning logs and pre-compiled models under folder /sharepoint in
 
 Note that results in Figure12/part of Table 6 requires ROCM-GPU/GraphCore IPU environments which is not directly available here.
 
-### <a id="f1">Figure1 </a>
+### <a id="Figure1">Figure1 </a>
+
+The run instruction is
+
+```bash
+python run_all.py
+```
+
+### <a id="Figure5"> Figure5 </a>
 
 The run instruction is
 
@@ -53,7 +62,7 @@ python run_all.py
 
 ### <a id="f2">Figure9-10</a>
 
-The run instructions for Welder, onnxruntime, pytorch, tensorrt and Rammer are
+This figure includes several baselines. The for Welder, onnxruntime, pytorch, tensorrt and Rammer are
 
 ```bash
 python profile_rammer_all.py
@@ -63,10 +72,10 @@ python profile_welder_all.py
 python profile_trt_all.py
 ```
 
-The run instruction for Ansor is, but requires additional action before running it.
+The run instruction for Ansor is below, it requires additional action before running it.
 
 ```bash
-# Our tune log for Ansor only applies for this version.
+# Our tunning log for Ansor only applies for this version.
 cd /root/tvm/build && git checkout v0.9.0 && make -j
 # after switching branch
 cd -
@@ -92,7 +101,15 @@ The run instructions are
 python get_IRS.py
 # measure memory perf
 python get_metrics.py
+
+# measure Ansor's latency, IRS, kernel count and memory perf
+cd /root/tvm/build && git checkout v0.9.0 && make -j
+python get_ansor_data.py
+cd /root/tvm/build && git checkout welder && make -j
 ```
+Note 1: get_ansor_data.py requires TVM v0.9.0, please switch to that branch following the above instructions.
+
+Note 2: Memory perf (Load/Store trans) from get_ansor_data.py should be halfed because the evaluator actually runs the model twice.
 
 ### <a id="f5">Table3</a>
 
@@ -137,9 +154,9 @@ Despite using the logs provided above, you can also run welder from scratch. To 
 python torch2onnx.py MODEL --prefix PREFIX [--bs BATCHSIZE] [--fp16]
 ```
 
-To generate an ONNX model, we first use the script torch2onnx.py to generate an onnx file under the PREFIX folder.
+To generate an ONNX model, we first use the script torch2onnx.py to generate an onnx file under the PREFIX folder. It is recommended to create a new PREFIX folder for every model.
 
-The MODEL parameter can be one of the ten models used in the paper (bert, vit, swin_transformer, BSRN, NAFNet, Restormer, mobilevit, Conformer, mobilenet and NeRF).
+The MODEL parameter can be one of the ten models evaluated in the paper (bert, vit, swin_transformer, BSRN, NAFNet, Restormer, mobilevit, Conformer, mobilenet and NeRF).
 
 Default batchsize is 1, it can be set with --bs flag. The default datatype is float32, if --fp16 is used, the datatype will be float16.
 
@@ -150,25 +167,15 @@ After running this command, The PREFIX folder will be created which contains a m
 Afther the PREFIX folder is created, goto this folder and run the following command
 
 ```bash
-nnfusion model.onnx -f onnx -ftune_output_file=model.json &&
-python3 -m run_compiler model.json tuned.json --topk 20 --arch V100 &&
-nnfusion model.onnx -f onnx -ftune_output_file=/dev/null -ftune_input_file=tuned.json &&
-rm -rf nnfusion_rt/cuda_codegen/build/ &&
-cmake -S nnfusion_rt/cuda_codegen/ -B nnfusion_rt/cuda_codegen/build/ &&
-make -C nnfusion_rt/cuda_codegen/build/
+python tune_welder.py PREFIX ---topk 20 --arch V100
 ```
 
-This command looks complicated, as it includes some compile flags. We will briefly explain what does each line do. The first line will convert model.onnx into model.json which is the compute graph definition. The second line converts model.json into tuned.json which contains tuned kernels, --topk 20 and --arch V100 indicates that 20 trails is made for each task(subgraph) and V100 GPU is the target. The third line organized kernels in tuned.json constructs CUDA/C code. The last three line use device compilers(nvcc) to compile the CUDA/C code into binary.
+The command will compile the model.onnx under the PREFIX folder. The --topk 20 and --arch V100 indicates that 20 trails is made for each task(subgraph) and V100 GPU is the target.
 
-Specially, when reproducing results in the paper, special flags will be added. The 3 included cases are: bert, fp32, bs=1,64 and swin_transformer, fp16, bs=1. In this three cases, we add "--fusion_skiplist=Dot" after the nnfusion command in both line 1 and line 3:
+Specially, when reproducing results in the paper, special flags will be added. The 3 included cases are: bert, fp32, bs=1,64 and swin_transformer, fp16, bs=1. In this three cases, we add an additional compile flag:
 
 ```bash
-nnfusion model.onnx -f onnx -ftune_output_file=model.json -ffusion_skiplist=Dot &&
-python3 -m run_compiler model.json tuned.json --topk 20 --arch V100 &&
-nnfusion model.onnx -f onnx -ftune_output_file=/dev/null -ftune_input_file=tuned.json -ffusion_skiplist=Dot &&
-rm -rf nnfusion_rt/cuda_codegen/build/ &&
-cmake -S nnfusion_rt/cuda_codegen/ -B nnfusion_rt/cuda_codegen/build/ &&
-make -C nnfusion_rt/cuda_codegen/build/
+python tune_welder.py PREFIX ---topk 20 --arch V100 --skip_dot
 ```
 
 

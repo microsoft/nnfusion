@@ -5,7 +5,7 @@ This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "
 
 ### Evaluation Setup
 * Artifacts Available:
-    * All Cocktailer related code are available under NNFusion open-source project located in: [https://github.com/microsoft/nnfusion/tree/TODO](https://github.com/microsoft/nnfusion/tree/TODO)
+    * All Cocktailer related code are available under NNFusion open-source project located in: [https://github.com/microsoft/nnfusion/tree/cocktailer_artifact](https://github.com/microsoft/nnfusion/tree/cocktailer_artifact)
 * Artifacts Functional:
     * *Documentation*: the following of documents include detailed guidelines on how to build, install, test Cocktailer and the experiments to compare with other baselines.
     * *Completeness*: the [C++ part](..) of Cocktailer has been merged into NNFusion in this branch, and the [Python part](ast_analyzer) is available in this artifact.
@@ -22,7 +22,7 @@ Please follow the instructions in "Comments for AEC" on HotCRP and skip this sec
 Please follow the instructions in [INSTALL.md](INSTALL.md) or use the following docker-based script to build and install Cocktailer.
 ```bash
 cd $YOUR_DIR_FOR_NNFUSION
-git clone https://github.com/microsoft/nnfusion.git --branch TODO --single-branch
+git clone https://github.com/microsoft/nnfusion.git --branch cocktailer_artifact --single-branch
 cd nnfusion/artifacts
 docker build -t cocktailer -f env/Dockerfile.nv .
 chmod 777 $YOUR_DIR_FOR_NNFUSION/nnfusion
@@ -36,7 +36,7 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktai
 * download code
     ```bash
     cd $YOUR_DIR_FOR_NNFUSION
-    git clone https://github.com/microsoft/nnfusion.git --branch TODO --single-branch
+    git clone https://github.com/microsoft/nnfusion.git --branch cocktailer_artifact --single-branch
     ```
 * Build and run jax docker (the result image is `jax-rocm:latest`)
     ```bash
@@ -76,7 +76,7 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktai
 
 
 ## 3. Data and Kernel Preparation
-* Download the input data and model weights from TODO, unzip them and put them under the nnfusion/artifacts directory. The tree structure should be like:
+* Download the input data and model weights from [zenodo](https://doi.org/10.5281/zenodo.7856472), unzip them and put them under the nnfusion/artifacts directory. The tree structure should be like:
     **For AE Reviewers**: This step has been done on the provided nodes.
     ```
     nnfusion

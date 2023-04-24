@@ -6,19 +6,12 @@ sub_dirs = [
     ["NAFNet", (1, 64), ("fp32", "fp16")],
     ["vit", (1, 64), ("fp32", "fp16")],
     ["bert", (1, 64), ("fp32", "fp16")],
-    ["mobilevit", (1, ), ("fp32", "fp16")],
-    ["swin", (1, ), ("fp32", "fp16")],
-    ["mobilevit", (64, ), ("fp16", )],
-    ["swin", (64, ), ("fp16", )],
+    ["mobilevit", (1, 64), ("fp32", "fp16")],
+    ["swin", (1, 64), ("fp32", "fp16")],
     ["Conformer", (1, 64), ("fp32", "fp16")],
     ["BSRN", (1, ), ("fp32", )],
     ["restormer", (1, ), ("fp32", )],
     ["NeRF", (1, ), ("fp32", "fp16")]
-]
-
-sub_dirs2 = [
-    ["mobilevit", (64, ), ("fp32", )],
-    ["swin", (64, ), ("fp32", )],
 ]
 
 def get_sub_dirs(prefix):

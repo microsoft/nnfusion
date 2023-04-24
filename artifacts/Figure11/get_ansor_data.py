@@ -28,4 +28,3 @@ if __name__ == "__main__":
         subprocess.run(command3.split(), check=True)
         command4 = "python run_ansor.py --prefix " + sub_dir
         subprocess.run(command4.split(), check=True)
-

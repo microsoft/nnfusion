@@ -23,9 +23,9 @@ def run_ansor(prefix, device, skip_tuning):
     # Create graph executor
     dev = tvm.device(str(target), device)
     module = graph_executor.GraphModule(lib["default"](dev))
-    module.benchmark(dev, min_repeat_ms=500, end_to_end=False)
+    print(module.benchmark(dev, min_repeat_ms=500, end_to_end=False))
     cuda.cudaProfilerStart()
-    print(module.benchmark(dev, repeat=1, number=2, end_to_end=False))
+    module.benchmark(dev, repeat=1, number=1, end_to_end=False)
     cuda.cudaProfilerStop()
 
 if __name__ == "__main__":

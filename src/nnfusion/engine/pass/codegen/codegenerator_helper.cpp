@@ -13,13 +13,16 @@ using namespace nnfusion::kernels;
 using namespace nnfusion::async;
 
 DECLARE_string(fhlsl_codegen_type);
+DECLARE_string(fdefault_device);
 
 LanguageUnit_p extern_function(LanguageUnit_p lu)
 {
+    return lu;
 }
 
 LanguageUnit_p extern_variable(LanguageUnit_p lu)
 {
+    return lu;
 }
 
 void FunctionFile::save_file()
@@ -160,17 +163,31 @@ FunctionFile_p FunctionFile::convert_from(std::shared_ptr<nnfusion::kernels::Ker
 
         args[args.size() - 1] = ',';
 
-        std::vector<std::string> params;
-        for (int i = 0, j; j = args.find(',', i), j >= 0; i = j + 1)
-        {
-            int start = args.find_last_of(' ', j) + 1;
-            NNFUSION_CHECK(start >= 1);
-            params.push_back(args.substr(start, j - start));
-        }
+        pos = body_unit.find("Barrier();");
+        if ((pos > 0 || gnode->get_op_type() == "Recursion") && nnfusion::get_device_type(FLAGS_fdefault_device) == nnfusion::NNFusion_DeviceType::CUDA_GPU) {
+            std::vector<std::string> params;
+            for (int i = 0, j; j = args.find(',', i), j >= 0; i = j + 1)
+            {
+                int start = args.find_last_of(' ', j) + 1;
+                NNFUSION_CHECK(start >= 1);
+                params.push_back("&" + args.substr(start, j - start));
+            }
+            def << "void* args[] = {" << join(params, ", ") << "};\n";
+            def << "CUDA_SAFE_CALL(cudaLaunchCooperativeKernel((const void*) " << func_name << ", grids, blocks, args, (size_t) mem, stream));";
+            def << "}\n";
+        } else {
+            std::vector<std::string> params;
+            for (int i = 0, j; j = args.find(',', i), j >= 0; i = j + 1)
+            {
+                int start = args.find_last_of(' ', j) + 1;
+                NNFUSION_CHECK(start >= 1);
+                params.push_back(args.substr(start, j - start));
+            }
 
-        def << "    " << func_name << "<<<grids, blocks, mem, stream>>>(" << join(params, ", ")
-            << ");\n";
-        def << "}\n";
+            def << "    " << func_name << "<<<grids, blocks, mem, stream>>>(" << join(params, ", ")
+                << ");\n";
+            def << "}\n";
+        }
     }
 #endif
 

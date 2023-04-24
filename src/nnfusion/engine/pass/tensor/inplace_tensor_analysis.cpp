@@ -328,8 +328,8 @@ bool InplaceTensorAnalysis::run(std::shared_ptr<InterpreterContext> ctx,
         }
     }
 
-    NNFUSION_LOG(INFO) << "Inpalce tensor analysis: annotated concat: " << annotate_concat
-                       << ", inlace_concat: " << inplace_concat;
+    NNFUSION_LOG(INFO) << "Inplace tensor analysis: annotated concat: " << annotate_concat
+                       << ", inplace_concat: " << inplace_concat;
 
     return true;
 }

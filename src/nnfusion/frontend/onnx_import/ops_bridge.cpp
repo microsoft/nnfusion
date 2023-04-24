@@ -46,10 +46,12 @@
 #include "op/gather.hpp"
 #include "op/gemm.hpp"
 #include "op/identity.hpp"
+#include "op/if.hpp"
 #include "op/index_reduce.hpp"
 #include "op/layer_norm.hpp"
 #include "op/leaky_relu.hpp"
 #include "op/log_softmax.hpp"
+#include "op/loop.hpp"
 #include "op/lstm.hpp"
 #include "op/matmul.hpp"
 #include "op/memory_copy.hpp"
@@ -190,13 +192,18 @@ namespace nnfusion
                 REGISTER_OPERATOR("GlobalMaxPool", 1, TranslatePoolOp<op::MaxPool>);
                 REGISTER_OPERATOR("Greater", 1, TranslateBinaryOp<op::Greater>);
                 //REGISTER_OPERATOR("HardSigmoid", 1, hard_sigmoid);
-                REGISTER_OPERATOR("Identity", 1, TranslateIdentityOp);
+                REGISTER_OPERATOR("Identity", 1, TranslateUnaryOp<op::Identity>);
+                // REGISTER_OPERATOR("If", 1, TranslateIfOp);
+                REGISTER_OPERATOR(
+                    "If", 1, TranslateIdentityOp); // TODO(lingm): fix convert_func map
                 REGISTER_OPERATOR("LayerNormalization", 1, TranslateLayerNormalizationOp);
                 REGISTER_OPERATOR("LayerNormalizationGrad", 1, TranslateLayerNormalizationGradOp);
                 REGISTER_OPERATOR("LeakyRelu", 1, TranslateLeakyReluOp);
                 REGISTER_OPERATOR("Less", 1, TranslateBinaryOp<op::Less>);
                 REGISTER_OPERATOR("Log", 1, TranslateUnaryOp<op::Log>);
                 REGISTER_OPERATOR("LogSoftmax", 1, TranslateLogSoftmaxOp);
+                REGISTER_OPERATOR(
+                    "Loop", 1, TranslateIdentityOp); // TODO(lingm): fix convert_func map
                 //REGISTER_OPERATOR("LRN", 1, lrn);
                 REGISTER_OPERATOR("LSTM", 1, TranslateLstmOp);
                 REGISTER_OPERATOR("MatMul", 1, TranslateMatmulOp);
@@ -206,6 +213,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("MemcpyFromHost", 1, TranslateMemcpyFromHostOp);
                 REGISTER_OPERATOR("MemcpyToHost", 1, TranslateMemcpyToHostOp);
                 REGISTER_OPERATOR("Min", 1, TranslateLegacyBinaryOp<op::Minimum>);
+                REGISTER_OPERATOR("Mod", 1, TranslateBinaryOp<op::Mod>);
                 REGISTER_OPERATOR("Mul", 1, TranslateLegacyBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Mul", 7, TranslateBinaryOp<op::Multiply>);
                 REGISTER_OPERATOR("Neg", 1, TranslateUnaryOp<op::Negative>);
@@ -221,8 +229,9 @@ namespace nnfusion
                 //REGISTER_OPERATOR("ReduceLogSumExp", 1, reduce_log_sum_exp);
                 //REGISTER_OPERATOR("ReduceL1", 1, reduce_l1);
                 //REGISTER_OPERATOR("ReduceL2", 1, reduce_l2);
-                //REGISTER_OPERATOR("ReduceMax", 1, reduce_max);
+                REGISTER_OPERATOR("ReduceMax", 1, TranslateReduceMaxOp);
                 REGISTER_OPERATOR("ReduceMean", 1, TranslateReduceMeanOp);
+                REGISTER_OPERATOR("ReduceMin", 1, TranslateReduceMinOp);
                 //REGISTER_OPERATOR("ReduceMin", 1, reduce_min);
                 //REGISTER_OPERATOR("ReduceProd", 1, reduce_prod);
                 REGISTER_OPERATOR("ReduceSum", 1, TranslateReduceSumOp);
@@ -230,6 +239,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Relu", 1, TranslateUnaryOp<op::Relu>);
                 REGISTER_OPERATOR("Reshape", 1, TranslateReshapeOp);
                 REGISTER_OPERATOR("ReshapeGrad", 1, TranslateReshapeGradOp);
+                REGISTER_OPERATOR("ScatterND", 11, TranslateScatterNDOp);
                 //REGISTER_OPERATOR("Selu", 1, selu);
                 REGISTER_OPERATOR("Shape", 1, TranslateShapeOp);
                 REGISTER_OPERATOR("Sigmoid", 1, TranslateUnaryOp<op::Sigmoid>);
@@ -270,7 +280,6 @@ namespace nnfusion
                 REGISTER_OPERATOR("Resize", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Upsample", 1, TranslateResizeOp);
                 REGISTER_OPERATOR("Where", 1, TranslateWhereOp);
-                REGISTER_OPERATOR("ScatterND", 11, TranslateScatterNDOp);
                 REGISTER_OPERATOR("DepthToSpace", 1, TranslateDepthToSpaceOp);
                 REGISTER_OPERATOR("DepthToSpace", 11, TranslateDepthToSpaceOp);
                 REGISTER_DOMAIN_OPERATOR("org.pytorch.aten", "roll", 1, TranslateRollOp);

@@ -1,0 +1,12 @@
+Convolution[16,64,32,32;16,16,3,3;16,64,32,32floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[16,64,32,32;16,16,3,3;16,64,32,32floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[16,64,32,32;16,64,32,32;16,64,32,32floatfloatfloat]Relu[16,64,32,32;16,64,32,32floatfloat]]:::CUDA_GPU
+Convolution[64,64,8,8;64,64,3,3;64,64,8,8floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[16,64,32,32;32,16,3,3;32,64,16,16floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,64,16,16;32,64,16,16;32,64,16,16floatfloatfloat]Relu[32,64,16,16;32,64,16,16floatfloat]]:::CUDA_GPU
+BatchMatMul[64,256;4,256,256;4,64,256floatfloatfloat]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,3,32,32;16,3,3,3;16,64,32,32floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[16,64,32,32;16,64,32,32;16,64,32,32floatfloatfloat]Relu[16,64,32,32;16,64,32,32floatfloat]]:::CUDA_GPU
+Convolution[32,64,16,16;32,32,3,3;32,64,16,16floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,64,8,8;64,64,3,3;64,64,8,8floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,64,8,8;64,64,8,8;64,64,8,8floatfloatfloat]Relu[64,64,8,8;64,64,8,8floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[32,64,16,16;64,32,3,3;64,64,8,8floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,64,8,8;64,64,8,8;64,64,8,8floatfloatfloat]Relu[64,64,8,8;64,64,8,8floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[32,64,16,16;32,32,3,3;32,64,16,16floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,64,16,16;32,64,16,16;32,64,16,16floatfloatfloat]Relu[32,64,16,16;32,64,16,16floatfloat]]:::CUDA_GPU
+BatchMatMul[1,12,64,64;1,12,64,1;1,12,64,1floatfloatfloat]:::CUDA_GPU
+BatchMatMul[64,12,64,64;64,12,64,1;64,12,64,1floatfloatfloat]:::CUDA_GPU

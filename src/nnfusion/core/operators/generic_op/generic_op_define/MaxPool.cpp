@@ -32,6 +32,7 @@ REGISTER_OP(MaxPool)
         auto& output_shape = curr->get_output_shape(0);
         auto& dtype = curr->get_element_type();
         bool is_1d = (output_shape.size() == 3);
+        NNFUSION_CHECK(_op->get_data_format() == "NCHW" || _op->get_data_format() == "NHWC");
         const bool is_nchw = _op->get_data_format() == "NCHW" ? true : false;
         auto& m_strides = _op->get_window_movement_strides();
         auto& strides = _op->get_window_shape();

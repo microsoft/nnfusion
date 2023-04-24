@@ -296,7 +296,7 @@ namespace nnfusion
 std::ostream& element::operator<<(std::ostream& out, const element::Type& obj)
 {
     out << "element::Type{" << obj.m_bitwidth << ", " << obj.m_is_real << ", " << obj.m_is_signed
-        << ", " << obj.m_is_quantized << ", \"" << obj.m_cname << "\"}";
+        << ", " << obj.m_is_quantized << ", \"" << obj.m_cname << "\", static: " << obj.is_static() << "}";
     return out;
 }
 
@@ -321,4 +321,35 @@ bool element::Type::merge(element::Type& dst, const element::Type& t1, const ele
     {
         return false;
     }
+}
+
+std::string element::Type::extract_value(const Type& ng_et, const void* data_ptr) {
+    if (ng_et == element::boolean)
+        return std::to_string(*(char*)data_ptr);
+    else if (ng_et == element::character)
+        return std::to_string(*(char*)data_ptr);
+    else if (ng_et == element::f16)
+        return std::to_string(*(half*)data_ptr);
+    else if (ng_et == element::f32)
+        return std::to_string(*(float*)data_ptr);
+    else if (ng_et == element::f64)
+        return std::to_string(*(double*)data_ptr);
+    else if (ng_et == element::i8)
+        return std::to_string(*(int8_t*)data_ptr);
+    else if (ng_et == element::i16)
+        return std::to_string(*(int16_t*)data_ptr);
+    else if (ng_et == element::i32)
+        return std::to_string(*(int32_t*)data_ptr);
+    else if (ng_et == element::i64)
+        return std::to_string(*(int64_t*)data_ptr);
+    else if (ng_et == element::u8)
+        return std::to_string(*(uint8_t*)data_ptr);
+    else if (ng_et == element::u16)
+        return std::to_string(*(uint16_t*)data_ptr);
+    else if (ng_et == element::u32)
+        return std::to_string(*(uint32_t*)data_ptr);
+    else if (ng_et == element::u64)
+        return std::to_string(*(uint64_t*)data_ptr);
+    NNFUSION_CHECK_FAIL() << "not support\n";
+    return "";
 }

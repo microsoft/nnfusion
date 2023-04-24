@@ -38,6 +38,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL()
                         << "unsupported attribute type : "
                         << onnx::AttributeProto_AttributeType_Name(attribute.type());
+                    return T();
                 }
 
                 template <>
@@ -52,6 +53,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return 0;
                 }
 
                 template <>
@@ -71,6 +73,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<float>();
                 }
 
                 template <>
@@ -86,6 +89,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return 0;
                 }
 
                 template <>
@@ -106,6 +110,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<double>();
                 }
 
                 template <>
@@ -132,6 +137,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<std::size_t>();
                 }
 
                 template <>
@@ -156,6 +162,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<int64_t>();
                 }
 
                 template <>
@@ -181,6 +188,7 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<std::string>();
                 }
 
                 template <>
@@ -206,6 +214,35 @@ namespace nnfusion
                             << "invalid attribute type : "
                             << onnx::AttributeProto_AttributeType_Name(attribute.type());
                     }
+                    return std::vector<Tensor>();
+                }
+
+                template <>
+                inline onnx::GraphProto get_value(const onnx::AttributeProto& attribute)
+                {
+                    NNFUSION_CHECK(attribute.type() == onnx::AttributeProto_AttributeType_GRAPH)
+                        << "invalid attribute type : "
+                        << onnx::AttributeProto_AttributeType_Name(attribute.type());
+
+                    return attribute.g();
+                }
+
+                template <>
+                inline std::vector<onnx::GraphProto>
+                    get_value(const onnx::AttributeProto& attribute)
+                {
+                    switch (attribute.type())
+                    {
+                    case onnx::AttributeProto_AttributeType_GRAPH:
+                        return {onnx::GraphProto{attribute.g()}};
+                    case onnx::AttributeProto_AttributeType_GRAPHS:
+                        return {std::begin(attribute.graphs()), std::end(attribute.graphs())};
+                    default:
+                        NNFUSION_CHECK_FAIL()
+                            << "invalid attribute type : "
+                            << onnx::AttributeProto_AttributeType_Name(attribute.type());
+                    }
+                    return std::vector<onnx::GraphProto>();
                 }
 
             } // namespace detail

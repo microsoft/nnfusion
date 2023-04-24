@@ -57,6 +57,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL()
                         << "unsupported data type: "
                         << static_cast<onnx::TensorProto_DataType>(tensor.data_type());
+                    return std::vector<T>();
                 }
 
                 template <>
@@ -86,6 +87,7 @@ namespace nnfusion
                                    static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
                         break;
                     }
+                    return std::vector<double>();
                 }
 
                 template <>
@@ -116,6 +118,7 @@ namespace nnfusion
                         << "invalid data type: "
                         << onnx::TensorProto_DataType_Name(
                                static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
+                    return std::vector<float>();
                 }
 
                 template <>
@@ -132,6 +135,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL() << "invalid data type: "
                                           << onnx::TensorProto_DataType_Name(
                                                  onnx::TensorProto_DataType(tensor.data_type()));
+                    return std::vector<int32_t>();
                 }
 
                 template <>
@@ -160,6 +164,54 @@ namespace nnfusion
                     return __get_data<uint64_t>(tensor.uint64_data());
                 }
 
+                template <>
+                inline std::vector<char> get_data(const onnx::TensorProto& tensor)
+                {
+                    // NNFUSION_CHECK(tensor.has_raw_data()) << "Data type char only supports raw_data";
+                    // return __get_raw_data<char>(tensor.raw_data());
+
+                    // the following is for control-flow test
+                    if (tensor.has_raw_data())
+                    {
+                        return __get_raw_data<char>(tensor.raw_data());
+                    }
+                    // NNFUSION_CHECK(tensor.data_type() == onnx::TensorProto_DataType_INT32)
+                    //     << "invalid data type: "
+                    //     << onnx::TensorProto_DataType_Name(
+                    //            static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
+                    auto tmp = __get_data<int32_t>(tensor.int32_data());
+                    std::vector<char> ret;
+                    for (auto item : tmp)
+                    {
+                        ret.push_back((char)item);
+                    }
+                    return ret;
+                }
+
+                template <>
+                inline std::vector<bool> get_data(const onnx::TensorProto& tensor)
+                {
+                    // NNFUSION_CHECK(tensor.has_raw_data()) << "Data type boolean only supports raw_data";
+                    // return __get_raw_data<bool>(tensor.raw_data());
+
+                    // the following is for control-flow test
+                    if (tensor.has_raw_data())
+                    {
+                        return __get_raw_data<bool>(tensor.raw_data());
+                    }
+                    // NNFUSION_CHECK(tensor.data_type() == onnx::TensorProto_DataType_INT32)
+                    //     << "invalid data type: "
+                    //     << onnx::TensorProto_DataType_Name(
+                    //            static_cast<onnx::TensorProto_DataType>(tensor.data_type()));
+                    auto tmp = __get_data<int32_t>(tensor.int32_data());
+                    std::vector<bool> ret;
+                    for (auto item : tmp)
+                    {
+                        ret.push_back((bool)item);
+                    }
+                    return ret;
+                }
+
                 /// \brief      Fill specified range with monotonic sequence.
                 ///
                 /// \param[in]  first            The iterator to the beginning of the range.
@@ -181,7 +233,7 @@ namespace nnfusion
                         *first = init_value;
                     }
                 }
-            }
+            } // namespace detail
 
             class Tensor;
             class Node;
@@ -263,6 +315,10 @@ namespace nnfusion
             Shape get_kernel_shape(const Node& node,
                                    const std::shared_ptr<graph::GNode> input_gnode);
 
+            Shape get_kernel_shape(const Node& node,
+                                   const std::shared_ptr<graph::GNode> input_gnode,
+                                   int index);
+
             /// \brief  Get number of pixels to stride operation by in each direction.
             ///
             /// \param node The Node ptr representing Conv or Pool operation.
@@ -276,6 +332,7 @@ namespace nnfusion
             /// \param input_gnode The input gnode
             /// \return The kernel Shape object representing its dimensions (height, width, depth).
             Strides get_strides(const Node& node, const std::shared_ptr<graph::GNode> input_gnode);
+            Strides get_strides(const Node& node, const std::shared_ptr<graph::GNode> input_gnode, int index);
 
             /// \brief Get number of pixels for filter dilation in each direction.
             ///
@@ -285,6 +342,9 @@ namespace nnfusion
             ///         (height, width, depth).
             Strides get_dilations(const Node& node,
                                   const std::shared_ptr<graph::GNode> input_gnode);
+            Strides get_dilations(const Node& node,
+                                  const std::shared_ptr<graph::GNode> input_gnode,
+                                  int index);
 
             /// \brief Get padding values for the operation described by an ONNX node.
             /// \details If `auto_pad` attribute is specified as SAME_UPPER or SAME_LOWER, or VALID
@@ -311,9 +371,16 @@ namespace nnfusion
             ///         pixels to pad in respective dimensions (height, width, depth).
 
             inline std::pair<CoordinateDiff, CoordinateDiff>
+                get_pads(const Node& node, const std::shared_ptr<graph::GNode> input_gnode, int index)
+            {
+                return get_pads(node, get_kernel_shape(node, input_gnode, index));
+            }
+
+            inline std::pair<CoordinateDiff, CoordinateDiff>
                 get_pads(const Node& node, const std::shared_ptr<graph::GNode> input_gnode)
             {
-                return get_pads(node, get_kernel_shape(node, input_gnode));
+                NNFUSION_CHECK(input_gnode->get_output_size() == 1);
+                return get_pads(node, input_gnode, 0);
             }
 
             CoordinateDiff get_auto_pads(const Shape& kernel_shape, const std::string& auto_pad);
@@ -321,6 +388,11 @@ namespace nnfusion
             Strides get_strides_helper(const Node& node,
                                        const std::string& name,
                                        const Shape& kernel_shape);
+
+            std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto, bool ignore_graph_input=false);
+            onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto, const onnx::GraphProto& full_graph_proto);
+            std::shared_ptr<graph::GNode> find_node_from_graph(const graph::Graph::Pointer graph,
+                                                               const std::string& name);
 
         } // namespace onnx_import
     }     // namespace frontend

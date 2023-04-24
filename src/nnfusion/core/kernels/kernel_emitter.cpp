@@ -84,6 +84,10 @@ NNFusion_DeviceType KernelEmitter::get_device_type()
     {
         return NNFusion_DeviceType::GraphCore;
     }
+    else if (m_kernel_type == "single_cpu")
+    {
+        return NNFusion_DeviceType::SINGLE_CPU;
+    }
     return NNFusion_DeviceType::UNKNOWN;
 }
 
@@ -144,12 +148,17 @@ LanguageUnit_p KernelEmitter::emit_function_signature()
 
 LanguageUnit_p KernelEmitter::emit_function_call()
 {
-    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
-    auto& lu = *_lu;
-    vector<string> names;
+    std::vector<std::string> names;
     names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
     names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
     names.insert(names.end(), m_context->tensor_names.begin(), m_context->tensor_names.end());
+    return KernelEmitter::emit_function_call(names);
+}
+
+LanguageUnit_p KernelEmitter::emit_function_call(std::vector<std::string> names)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
+    auto& lu = *_lu;
     lu << "(";
 
     auto gnode = m_context->gnode;
@@ -435,7 +444,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
     std::string identifier("");
 
     // operator type as identifier
-    identifier += op_type;
+    identifier += op_type + "[";
 
     // shapes of input and output tensors as identifier
     std::function<std::string(std::vector<size_t>::const_iterator)> f_shape =
@@ -460,6 +469,7 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         auto conv = std::dynamic_pointer_cast<op::Convolution>(ctx->gnode->get_op_ptr());
         NNFUSION_CHECK_NOT_NULLPTR(conv);
         std::stringstream str;
+        str << "Layout{" << conv->get_data_format() << "}";
         str << conv->get_window_movement_strides();
         str << conv->get_window_dilation_strides();
         str << conv->get_padding_below();
@@ -487,17 +497,25 @@ std::string nnfusion::kernels::KernelContext::generate_identifier()
         str << maxpool->get_padding_above();
         identifier += str.str();
     }
+    else if (op_type == "Sum")
+    {
+        auto sum = std::dynamic_pointer_cast<op::Sum>(ctx->gnode->get_op_ptr());
+        std::stringstream str;
+        str << sum->get_reduction_axes();
+        identifier += str.str();
+    }
     else if (op_type == "Dot")
     {
-        ///\todo encode dot attrs, stay the same with db importor
-        // auto dot = std::dynamic_pointer_cast<op::Dot>(ctx->gnode->get_op_ptr());
-        // NNFUSION_CHECK_NOT_NULLPTR(dot);
-        // std::stringstream str;
-        // str << dot->get_transpose_A();
-        // str << dot->get_transpose_B();
-        // ///\todo: need to encode dot reduction_axes_count?
-        // identifier += str.str();
+        ///\todo encode dot attrs, stay the same with db importor auto dot =
+        auto dot = std::dynamic_pointer_cast<op::Dot>(ctx->gnode->get_op_ptr());
+        NNFUSION_CHECK_NOT_NULLPTR(dot);
+        std::stringstream str;
+        str << dot->get_transpose_A();
+        str << dot->get_transpose_B();
+        ///\todo: need to encode dot reduction_axes_count?
+        identifier += str.str();
     }
+    identifier += "]";
 
     return identifier;
 }

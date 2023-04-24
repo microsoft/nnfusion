@@ -44,6 +44,12 @@ namespace nnfusion
                                     shared_ptr<GNode> gnode,
                                     NNFusion_DeviceType devtype);
             };
+
+            class CPUOpSelector: public DefaultKernelSelector
+            {
+            public:
+                bool run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& graph) override;
+            };
         }
     }
 } // namespace nnfusion

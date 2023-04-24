@@ -87,6 +87,7 @@ namespace nnfusion
                                                               std::string& dtype);
             static bool dtype_string_to_nnfusion_element_type(const std::string& dtype,
                                                               Type& ng_et);
+            static std::string extract_value(const Type& ng_et, const void* data_ptr);
 
             /// Returns true if the type is floating point, else false.
             bool get_is_real() const { return m_is_real; }

@@ -7,11 +7,23 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 using namespace nnfusion::async;
 
+DEFINE_int32(fmax_block_dim, 256, "Max blockDim for cuda kernel");
+DEFINE_int32(fmax_grid_dim, 256, "Max blockDim for cuda kernel");
+
 LanguageUnit_p cuda::CudaEmitter::emit_function_call()
+{
+    vector<string> names;
+    //set stream during codegen
+    names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
+    names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+
+    return CudaEmitter::emit_function_call(names);
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_function_call(std::vector<std::string> names)
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_call"));
     auto& lu = *_lu;
-    vector<string> names;
     set_launch_config();
 
     auto gnode = m_context->gnode;
@@ -22,10 +34,7 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_call()
         if (async_info.execution_stream != nullptr)
             stream_name = async_info.execution_stream->get_name();
     }
-
-    //set stream during codegen
-    names.insert(names.end(), m_context->input_names.begin(), m_context->input_names.end());
-    names.insert(names.end(), m_context->output_names.begin(), m_context->output_names.end());
+    
     lu << "<<<dim3(" << m_gridDim.x << ", " << m_gridDim.y << ", " << m_gridDim.z << "), dim3("
        << m_blockDim.x << ", " << m_blockDim.y << ", " << m_blockDim.z << "), 0, " << stream_name
        << ">>>(" << join(names, ", ") << ");\n";
@@ -59,6 +68,81 @@ LanguageUnit_p cuda::CudaEmitter::emit_function_signature()
     emit_function_body();
     lu << "extern \"C\" __launch_bounds__(" << m_blockDim.x * m_blockDim.y * m_blockDim.z
        << ") __global__ void "
+       << "(" << join(params, ", ") << ")";
+    return _lu;
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_block_kernel()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel"));
+    auto& lu = *_lu;
+
+    FunctionUnit_p fu = this->get_or_emit_source();
+    lu << fu->comment_unit->get_code();
+    lu << this->emit_device_function_signature()->get_code() << "\n";
+    lu.block_begin();
+    lu << this->emit_device_function_body()->get_code();
+    lu.block_end();
+
+    return _lu;
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_block_kernel_call(std::vector<std::string> params)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
+    auto& lu = *_lu;
+    params.push_back("shared_buffer");
+    lu << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ");"
+       << "\n";
+    return _lu;
+}
+
+LanguageUnit_p cuda::BlockCudaEmitter::emit_block_kernel_call(std::vector<std::string> params)
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_call"));
+    auto& lu = *_lu;
+    params.push_back("threadIdx.x");
+    params.push_back("blockIdx.x");
+    params.push_back("shared_buffer");
+    lu << m_kernel_name << "_block_kernel"
+       << "(" << join(params, ", ") << ");"
+       << "\n";
+    return _lu;
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_device_function_body()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_body"));
+    auto& lu = *_lu;
+    FunctionUnit_p fu = this->get_or_emit_source();
+    lu << fu->body_unit->get_code() << "\n";
+    return _lu;
+}
+
+LanguageUnit_p cuda::CudaEmitter::emit_device_function_signature()
+{
+    LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_sig"));
+    auto& lu = *_lu;
+
+    vector<string> params;
+    for (size_t i = 0; i < m_context->inputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "input" << i;
+        params.push_back(ss.str());
+    }
+
+    for (size_t i = 0; i < m_context->outputs.size(); i++)
+    {
+        stringstream ss;
+        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
+        ss << "output" << i;
+        params.push_back(ss.str());
+    }
+    params.push_back("char* shared_buffer");
+    lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
        << "(" << join(params, ", ") << ")";
     return _lu;
 }
@@ -101,29 +185,18 @@ LanguageUnit_p cuda::BlockCudaEmitter::emit_device_function_signature()
 {
     LanguageUnit_p _lu(new LanguageUnit(this->m_kernel_name + "_device_kernel_sig"));
     auto& lu = *_lu;
+    LanguageUnit_p _sig(emit_function_signature());
+    std::string sig_code = _sig->get_code();
+    size_t param_start = sig_code.find("void (") + 6;
+    std::string param_str = sig_code.substr(param_start, sig_code.find_last_of(')') - param_start);
 
     vector<string> params;
-    for (size_t i = 0; i < m_context->inputs.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->inputs[i]->get_element_type().c_type_string() << "* ";
-        ss << "input" << i;
-        params.push_back(ss.str());
-    }
-
-    for (size_t i = 0; i < m_context->outputs.size(); i++)
-    {
-        stringstream ss;
-        ss << m_context->outputs[i]->get_element_type().c_type_string() << "* ";
-        ss << "output" << i;
-        params.push_back(ss.str());
-    }
     params.push_back("int thread_id");
     params.push_back("int block_id");
     params.push_back("char *shared_buffer");
 
     lu << "__device__ __noinline__ void " << m_kernel_name << "_block_kernel"
-       << "(" << join(params, ", ") << ")";
+       << "(" << param_str << ", " << join(params, ", ") << ")";
     return _lu;
 }
 

@@ -49,7 +49,7 @@ def cast_pytorch_tensor(pytorch_tensor):
         raise Exception(
             "Cannot cast incontiguous tensor, please use tensor.detach().clone().contiguous() before casting."
         )
-    tensor_addr = pytorch_tensor.storage().data_ptr()
+    tensor_addr = pytorch_tensor.data_ptr()
     shape = pytorch_tensor.shape
     dtype = str(pytorch_tensor.dtype).split(".")[-1]
     pointer_type = ctypes.POINTER(dtypes.str2type[dtype].c_type)

@@ -32,12 +32,14 @@ namespace nnfusion
             LU_DECLARE(CUBLAS_SAFE_CALL);
             LU_DECLARE(CUDA_SAFE_LAUNCH);
             LU_DECLARE(CUPTI_CALL);
+            LU_DECLARE(DBG_TENSOR);
         } // namespace macro
 
         namespace declaration
         {
             LU_DECLARE(division_by_invariant_multiplication);
             LU_DECLARE(rocm_division_by_invariant_multiplication);
+            LU_DECLARE(cuda_cpu_division_by_invariant_multiplication);
             LU_DECLARE(load);
             LU_DECLARE(mad16);
             LU_DECLARE(mod16);
@@ -54,6 +56,11 @@ namespace nnfusion
             LU_DECLARE(math_Gelu);
             LU_DECLARE(ort_softmax);
             LU_DECLARE(warp);
+            LU_DECLARE(barrier);
+            LU_DECLARE(manual_barrier);
+            LU_DECLARE(inc_iter);
+            LU_DECLARE(step_to_device);
+            LU_DECLARE(block_barrier);
         } // namespace declaration
     }     // namespace kernels
 } // namespace nnfusion

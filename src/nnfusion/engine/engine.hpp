@@ -8,6 +8,7 @@
 #include "nnfusion/engine/interpreter.hpp"
 #include "nnfusion/engine/memory_allocator.hpp"
 #include "nnfusion/engine/pass/graph/graph_pass_base.hpp"
+#include <cxxabi.h>
 
 /*
 Basically, this engine has three parts:
@@ -27,6 +28,7 @@ namespace nnfusion
         using Pointer = shared_ptr<EngineContext>;
         graph::Graph::Pointer m_legacy_graph;
         std::unordered_set<std::shared_ptr<graph::GNode>> blacklist;
+        bool is_outmost_graph = 1;
     };
 
     class GraphVisitor
@@ -88,9 +90,17 @@ namespace nnfusion
 
             for (auto& pass : *this)
             {
+                int demangle_status;
+                NNFUSION_LOG(INFO) << "Pass " << abi::__cxa_demangle(typeid(*(pass.get())).name(), 0, 0, &demangle_status) << " starts";
+                pass->set_context(context);
                 status = pass->run_on_graph(graph);
-                if (!status)
+                if (!status) {
+                    int demangle_status;
+                    NNFUSION_LOG(ERROR) << "Pass " << abi::__cxa_demangle(typeid(*(pass.get())).name(), 0, 0, &demangle_status) << " failed";
                     break;
+                } else {
+                    NNFUSION_LOG(INFO) << "Pass " << abi::__cxa_demangle(typeid(*(pass.get())).name(), 0, 0, &demangle_status) << " ends";
+                }
             }
             return status;
         };
@@ -101,9 +111,11 @@ namespace nnfusion
     public:
         Engine();
         bool run_on_graph(graph::Graph::Pointer graph, EngineContext::Pointer context = nullptr);
+        nnfusion::TranslationUnit::Pointer convert_graph_to_program(graph::Graph::Pointer graph, bool is_outmost_graph=true);
 
     protected:
         InterpreterPassManager::Pointer m_passes;
+        GraphPassManager::Pointer t_passes;
         GraphPassManager::Pointer g_passes;
         GraphVisitor::Pointer g_visitor;
     };

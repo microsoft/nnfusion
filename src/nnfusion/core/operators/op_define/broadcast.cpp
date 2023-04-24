@@ -71,6 +71,8 @@ void Broadcast::validate_and_infer_types(std::shared_ptr<graph::GNode> gnode)
 void Broadcast::inner_or_outer_broadcast()
 {
     nnfusion::AxisSet outer_axes;
+    m_is_outer_broadcast = false;
+    m_is_inner_broadcast = false;
     size_t rest_size = 1;
     bool count_size_only = false;
     size_t no_need_broadcast = 0;

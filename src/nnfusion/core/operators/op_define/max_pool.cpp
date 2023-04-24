@@ -115,6 +115,7 @@ void MaxPool::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
     }
 
     m_shared_memory.clear();
+    NNFUSION_CHECK(get_data_format() == "NCHW" || get_data_format() == "NHWC");
     int channel = get_data_format() == "NCHW" ? 1 : 3;
     m_shared_memory.clear();
     for (size_t i = 0; i < output_shape.size(); i++)

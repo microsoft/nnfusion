@@ -101,7 +101,7 @@ std::shared_ptr<GNode> Graph::add_node_and_edge(const std::shared_ptr<nnfusion::
 void Graph::add_gnode_and_edge(const std::shared_ptr<GNode> gnode,
                                const GNodeIndexVector& input_gnodes)
 {
-    NNFUSION_CHECK(gnode == nullptr) << "GNode can't be nullptr.";
+    NNFUSION_CHECK(gnode != nullptr) << "GNode can't be nullptr.";
 
     add_node(gnode);
 
@@ -110,6 +110,7 @@ void Graph::add_gnode_and_edge(const std::shared_ptr<GNode> gnode,
         add_edge(input_gnodes[i].gnode, input_gnodes[i].index, gnode, i);
     }
     gnode->get_op_ptr()->revalidate_and_infer_types(gnode->shared_from_this());
+    gnode->get_op_ptr()->infer_shared_memory(gnode->shared_from_this());
 }
 
 void Graph::remove_node(std::shared_ptr<GNode> node)
@@ -163,14 +164,14 @@ void Graph::replace_node(std::shared_ptr<GNode> old_node,
         }
         else
         {
-            add_edge(new_node, 0, edge->get_dst(), edge->get_dst_input());
+            add_edge(new_node, edge->get_src_output(), edge->get_dst(), edge->get_dst_input());
         }
     }
 
     remove_node(old_node);
 }
 
-GNodeVector Graph::get_nodes()
+GNodeVector Graph::get_nodes() const
 {
     GNodeVector valid_nodes;
     for (auto node : m_nodes)
@@ -219,6 +220,7 @@ GNodeVector Graph::get_bfs_ordered_ops()
             nullptr,
             NodeComparatorName());
         m_bfs_ordered_ops_is_valid = true;
+        NNFUSION_CHECK(m_bfs_ordered_ops.size() == m_nodes.size());
     }
     return m_bfs_ordered_ops;
 }
@@ -261,7 +263,7 @@ const std::shared_ptr<nnfusion::graph::Edge>
         auto source_type = source->get_output_element_type(x);
         auto dest_type = dest->get_input_element_type(y);
         NNFUSION_CHECK(source_type == dest_type)
-            << "Fail to add edge, the soutce element type (" << source_type
+            << "Fail to add edge, the source element type (" << source_type
             << " ) does not match the dest element type (" << dest_type << ").";
 
         auto source_shape = source->get_output_partial_shape(x);
@@ -358,16 +360,38 @@ void Graph::set_default_outputs()
     {
         if (node != nullptr && node->get_out_edges().size() == 0)
         {
-            m_output_nodes.push_back(node);
+            m_output_nodes.push_back(GNodeIndex{node});
         }
     }
 }
-void Graph::set_outputs(const GNodeVector& outputs)
+
+void Graph::set_outputs(const GNodeIndexVector& outputs)
 {
     m_output_nodes = outputs;
 }
 
+void Graph::set_outputs(const GNodeVector& outputs)
+{
+    m_output_nodes.clear();
+    for (auto node : outputs)
+        m_output_nodes.push_back(GNodeIndex{node});
+}
+
+void Graph::set_output(const GNodeIndex& output, size_t i)
+{
+    NNFUSION_CHECK(i < m_output_nodes.size());
+    m_output_nodes[i] = output;
+}
+
 GNodeVector Graph::get_outputs()
+{
+    GNodeVector result;
+    for (const auto& node : m_output_nodes)
+        result.push_back(node.gnode);
+    return result;
+}
+
+GNodeIndexVector Graph::get_indexed_outputs()
 {
     return m_output_nodes;
 }
@@ -379,7 +403,7 @@ const size_t Graph::get_output_size()
 
 const std::shared_ptr<GNode> Graph::get_output_op(size_t i)
 {
-    return m_output_nodes.at(i);
+    return m_output_nodes.at(i).gnode;
 }
 
 void Graph::set_default_parameters()
@@ -463,7 +487,7 @@ bool Graph::serialize_to_file(const std::string& file_path)
 #if 0
         // Plan_gen can't parse this now. So just skip it for now.
         else
-        {            
+        {
             nnfusion::serialize::AttrValue_ListValue* _data_types_list =
                 new nnfusion::serialize::AttrValue_ListValue();
             for (auto nnfusion_output : nnfusion_node->get_outputs())

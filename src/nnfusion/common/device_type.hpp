@@ -14,6 +14,7 @@ namespace nnfusion
         GENERIC_CPU,
         HLSL,
         GraphCore,
+        SINGLE_CPU,
         UNKNOWN
     };
 

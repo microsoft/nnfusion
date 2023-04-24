@@ -6,6 +6,9 @@
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"
 #include "matmuladd.hpp"
+
+DECLARE_int32(fmax_block_dim);
+
 namespace nnfusion
 {
     namespace kernels
@@ -36,12 +39,12 @@ namespace nnfusion
                     LanguageUnit& lu = *lu_;
 
                     //std::string op = CudaOpMap<T>::op;
-                    auto iter = CudaElementOpMap.find(m_context->gnode->get_op_type());
+                    auto iter = CudaElementOpMap.find(m_context->op->get_op_type());
                     NNFUSION_CHECK(iter != CudaElementOpMap.end())
-                        << "unable find op type: " << m_context->gnode->get_op_type();
+                        << "unable find op type: " << m_context->op->get_op_type();
                     std::string op = iter->second.op;
 
-                    if (m_context->gnode->get_op_type() == "Convert")
+                    if (m_context->op->get_op_type() == "Convert")
                     {
                         lu.require(declaration::cuda_convert_template);
                         lu.require(header::cublas);
@@ -52,7 +55,7 @@ namespace nnfusion
                             get_math_kernel(op, iter->second.math_kernel, data_types);
                         NNFUSION_CHECK_NOT_NULLPTR(math_kernel);
                         lu.require(math_kernel);
-                        if (m_context->gnode->get_op_type() == "Gelu")
+                        if (m_context->op->get_op_type() == "Gelu")
                         {
                             math_kernel->require(declaration::math_Gelu);
                             math_kernel->require(header::cublas);
@@ -86,9 +89,10 @@ namespace nnfusion
                             lu << "output0[" << tid << "] = " << invoke_func << "(";
                             for (size_t i = 0; i < num_inputs - 1; i++)
                             {
-                                lu << "input" << i << "[" << tid << "], ";
+                                std::string idx = tid;
+                                lu << "input" << i << "[" << (shape_size(m_context->inputs[i]->get_shape()) > 1 ? tid : std::to_string(0)) << "], ";
                             }
-                            lu << "input" << num_inputs - 1 << "[" << tid << "]);\n";
+                            lu << "input" << num_inputs - 1 << "[" << (shape_size(m_context->inputs[num_inputs - 1]->get_shape()) > 1 ? tid : std::to_string(0)) << "]);\n";
                         }
                     }
                     return lu_;
@@ -97,8 +101,32 @@ namespace nnfusion
                 LanguageUnit_p emit_dependency() override
                 {
                     LanguageUnit_p _lu(new LanguageUnit(get_function_name() + "_dep"));
+                    LanguageUnit& lu = *_lu;
                     _lu->require(header::cuda);
                     _lu->require(header::stdio);
+
+                    auto iter = CudaElementOpMap.find(m_context->op->get_op_type());
+                    NNFUSION_CHECK(iter != CudaElementOpMap.end())
+                        << "unable find op type: " << m_context->op->get_op_type();
+                    std::string op = iter->second.op;
+
+                    if (m_context->op->get_op_type() == "Convert")
+                    {
+                        lu.require(declaration::cuda_convert_template);
+                        lu.require(header::cublas);
+                    }
+                    else if (iter->second.math_kernel != "")
+                    {
+                        auto math_kernel =
+                            get_math_kernel(op, iter->second.math_kernel, data_types);
+                        NNFUSION_CHECK_NOT_NULLPTR(math_kernel);
+                        lu.require(math_kernel);
+                        if (m_context->op->get_op_type() == "Gelu")
+                        {
+                            math_kernel->require(declaration::math_Gelu);
+                            math_kernel->require(header::cublas);
+                        }
+                    }
 
                     return _lu;
                 }
@@ -134,7 +162,7 @@ namespace nnfusion
                 {
                     uint32_t num_ele = static_cast<uint32_t>(
                         nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-                    for (int i = 512; i >= 64; i >>= 1)
+                    for (int i = FLAGS_fmax_block_dim; i >= 32; i >>= 1)
                     {
                         if (num_ele % i == 0)
                         {
@@ -142,7 +170,7 @@ namespace nnfusion
                             return;
                         }
                     }
-                    for (int i = 512; i >= 32; i--)
+                    for (int i = FLAGS_fmax_block_dim; i >= 32; i--)
                     {
                         if (num_ele % i == 0)
                         {
@@ -153,7 +181,7 @@ namespace nnfusion
                     if (num_ele < 32)
                         grids = 1, blocks = num_ele, bound = 0;
                     else
-                        grids = (num_ele + 255) / 256, blocks = 256, bound = 1;
+                        grids = (num_ele + FLAGS_fmax_block_dim - 1) / FLAGS_fmax_block_dim, blocks = FLAGS_fmax_block_dim, bound = num_ele;
                 }
 
                 // shared_ptr<KernelContext> kernel_ctx;

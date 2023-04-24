@@ -4,6 +4,7 @@
 #include "memory_allocator.hpp"
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fcustomized_mem_imp);
+DECLARE_bool(fenable_cpu);
 
 nnfusion::MemoryAllocator::node::node(size_t size, block_state state)
     : m_size{size}
@@ -240,10 +241,10 @@ void nnfusion::MemoryAllocator::free(shared_ptr<descriptor::Tensor> tensor)
     {
         this->record("[free]", tensor);
     }
-    NNFUSION_CHECK(found) << "bad free";
+    NNFUSION_CHECK(found) << "bad free" << tensor->get_name() << " " << tensor->get_name(false);
 }
 
-void nnfusion::MemoryAllocator::dump(ofstream& out)
+void nnfusion::MemoryAllocator::dump(ostream& out)
 {
     out << m_trace.str();
     out << "max allocated memory:\n" << m_max_allocated << "\n";
@@ -271,10 +272,12 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_init()
     if (m_max_allocated > 0)
     {
         lu << "char* " << this->get_name() << "_memory_pool;\n";
+        if (FLAGS_fenable_cpu) lu << "char* " << this->get_name() << "_memory_pool_cpu;\n";
 
         for (auto tensor : m_allocated_tensors)
         {
             lu << tensor->get_element_type().c_type_string() << "* " << tensor->get_name() << ";\n";
+            if (FLAGS_fenable_cpu) lu << tensor->get_element_type().c_type_string() << "* " << tensor->get_name() << "_cpu;\n";
         }
     }
     return _lu;
@@ -294,6 +297,11 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
            << m_max_allocated << "));\n";
         lu << "CUDA_SAFE_CALL(cudaMemset((void*)" << this->get_name() << "_memory_pool, 0, "
            << m_max_allocated << "));\n";
+        if (FLAGS_fenable_cpu) {
+            lu << this->get_name() << "_memory_pool_cpu = (char*) malloc(" << m_max_allocated << ");\n";
+            lu << "memset((void*)" << this->get_name() << "_memory_pool_cpu, 0, "
+            << m_max_allocated << ");\n";
+        }
 
         for (auto tensor : m_allocated_tensors)
         {
@@ -307,6 +315,9 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_alloc()
             NNFUSION_CHECK(tensor->get_pool() == this->get_name());
             lu << tensor->get_name() << " = (" << tensor->get_element_type().c_type_string()
                << "*)(" << this->get_name() << "_memory_pool+" << tensor->get_pool_offset()
+               << ");\n";
+            if (FLAGS_fenable_cpu) lu << tensor->get_name() << "_cpu = (" << tensor->get_element_type().c_type_string()
+               << "*)(" << this->get_name() << "_memory_pool_cpu+" << tensor->get_pool_offset()
                << ");\n";
         }
     }
@@ -322,6 +333,7 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_free()
     auto& lu = *_lu;
     lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
     lu << "CUDA_SAFE_CALL(cudaFree(" << this->get_name() + "_memory_pool));\n";
+    if (FLAGS_fenable_cpu) lu << "free(" << this->get_name() << "_memory_pool_cpu);\n";
     return _lu;
 }
 
@@ -332,6 +344,8 @@ LanguageUnit_p nnfusion::MemoryAllocator::emit_memory_set(int value)
     lu << "CUDA_SAFE_CALL(cudaSetDevice(" << m_device_id << "));\n";
     lu << "CUDA_SAFE_CALL(cudaMemset((void*)" << this->get_name() + "_memory_pool, " << value
        << ", " << m_max_allocated << "));\n";
+    if (FLAGS_fenable_cpu) lu << "memset((void*)" << this->get_name() + "_memory_pool_cpu, " << value
+       << ", " << m_max_allocated << ");\n";
     return _lu;
 }
 

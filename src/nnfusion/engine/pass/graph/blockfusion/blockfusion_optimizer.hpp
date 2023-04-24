@@ -63,7 +63,8 @@ public:
                                   std::string _device_name,
                                   int _fusion_level = 1,
                                   bool _flag_interplay = true,
-                                  bool _flag_check_correctness = false);
+                                  bool _flag_check_correctness = false,
+                                  bool is_outmost_graph = true);
 
     bool Optimize() override;
 
@@ -143,4 +144,5 @@ private:
     static size_t MAX_GROUP;
     static size_t DEFAULT_BE;
     const static size_t RESOURCE_CAPACITY;
+    bool m_is_outmost_graph;
 };

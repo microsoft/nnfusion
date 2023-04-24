@@ -1,0 +1,317 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    CHAR
+    COMMENT1
+    COMMENT2
+    DPOUND
+    ELSE
+    FLOAT
+    FOR
+    IF
+    POUND
+    STRING
+    SYNC
+    WS
+
+Grammar
+
+Rule 0     S' -> start
+Rule 1     start -> signature
+Rule 2     start -> shared
+Rule 3     signature -> GLOBAL VOID ID ( parameters )
+Rule 4     parameters -> parameter
+Rule 5     parameters -> parameters , parameter
+Rule 6     parameter -> type ID
+Rule 7     parameter -> type QUALIFIER ID
+Rule 8     parameter -> QUALIFIER type ID
+Rule 9     type -> TYPE
+Rule 10    type -> TYPE *
+Rule 11    shared -> SHARED TYPE ID [ INTEGER ] ;
+
+Terminals, with rules where they appear
+
+(                    : 3
+)                    : 3
+*                    : 10
+,                    : 5
+;                    : 11
+CHAR                 : 
+COMMENT1             : 
+COMMENT2             : 
+DPOUND               : 
+ELSE                 : 
+FLOAT                : 
+FOR                  : 
+GLOBAL               : 3
+ID                   : 3 6 7 8 11
+IF                   : 
+INTEGER              : 11
+POUND                : 
+QUALIFIER            : 7 8
+SHARED               : 11
+STRING               : 
+SYNC                 : 
+TYPE                 : 9 10 11
+VOID                 : 3
+WS                   : 
+[                    : 11
+]                    : 11
+error                : 
+
+Nonterminals, with rules where they appear
+
+parameter            : 4 5
+parameters           : 3 5
+shared               : 2
+signature            : 1
+start                : 0
+type                 : 6 7 8
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . start
+    (1) start -> . signature
+    (2) start -> . shared
+    (3) signature -> . GLOBAL VOID ID ( parameters )
+    (11) shared -> . SHARED TYPE ID [ INTEGER ] ;
+
+    GLOBAL          shift and go to state 4
+    SHARED          shift and go to state 5
+
+    start                          shift and go to state 1
+    signature                      shift and go to state 2
+    shared                         shift and go to state 3
+
+state 1
+
+    (0) S' -> start .
+
+
+
+state 2
+
+    (1) start -> signature .
+
+    $end            reduce using rule 1 (start -> signature .)
+
+
+state 3
+
+    (2) start -> shared .
+
+    $end            reduce using rule 2 (start -> shared .)
+
+
+state 4
+
+    (3) signature -> GLOBAL . VOID ID ( parameters )
+
+    VOID            shift and go to state 6
+
+
+state 5
+
+    (11) shared -> SHARED . TYPE ID [ INTEGER ] ;
+
+    TYPE            shift and go to state 7
+
+
+state 6
+
+    (3) signature -> GLOBAL VOID . ID ( parameters )
+
+    ID              shift and go to state 8
+
+
+state 7
+
+    (11) shared -> SHARED TYPE . ID [ INTEGER ] ;
+
+    ID              shift and go to state 9
+
+
+state 8
+
+    (3) signature -> GLOBAL VOID ID . ( parameters )
+
+    (               shift and go to state 10
+
+
+state 9
+
+    (11) shared -> SHARED TYPE ID . [ INTEGER ] ;
+
+    [               shift and go to state 11
+
+
+state 10
+
+    (3) signature -> GLOBAL VOID ID ( . parameters )
+    (4) parameters -> . parameter
+    (5) parameters -> . parameters , parameter
+    (6) parameter -> . type ID
+    (7) parameter -> . type QUALIFIER ID
+    (8) parameter -> . QUALIFIER type ID
+    (9) type -> . TYPE
+    (10) type -> . TYPE *
+
+    QUALIFIER       shift and go to state 15
+    TYPE            shift and go to state 16
+
+    parameters                     shift and go to state 12
+    parameter                      shift and go to state 13
+    type                           shift and go to state 14
+
+state 11
+
+    (11) shared -> SHARED TYPE ID [ . INTEGER ] ;
+
+    INTEGER         shift and go to state 17
+
+
+state 12
+
+    (3) signature -> GLOBAL VOID ID ( parameters . )
+    (5) parameters -> parameters . , parameter
+
+    )               shift and go to state 18
+    ,               shift and go to state 19
+
+
+state 13
+
+    (4) parameters -> parameter .
+
+    )               reduce using rule 4 (parameters -> parameter .)
+    ,               reduce using rule 4 (parameters -> parameter .)
+
+
+state 14
+
+    (6) parameter -> type . ID
+    (7) parameter -> type . QUALIFIER ID
+
+    ID              shift and go to state 20
+    QUALIFIER       shift and go to state 21
+
+
+state 15
+
+    (8) parameter -> QUALIFIER . type ID
+    (9) type -> . TYPE
+    (10) type -> . TYPE *
+
+    TYPE            shift and go to state 16
+
+    type                           shift and go to state 22
+
+state 16
+
+    (9) type -> TYPE .
+    (10) type -> TYPE . *
+
+    ID              reduce using rule 9 (type -> TYPE .)
+    QUALIFIER       reduce using rule 9 (type -> TYPE .)
+    *               shift and go to state 23
+
+
+state 17
+
+    (11) shared -> SHARED TYPE ID [ INTEGER . ] ;
+
+    ]               shift and go to state 24
+
+
+state 18
+
+    (3) signature -> GLOBAL VOID ID ( parameters ) .
+
+    $end            reduce using rule 3 (signature -> GLOBAL VOID ID ( parameters ) .)
+
+
+state 19
+
+    (5) parameters -> parameters , . parameter
+    (6) parameter -> . type ID
+    (7) parameter -> . type QUALIFIER ID
+    (8) parameter -> . QUALIFIER type ID
+    (9) type -> . TYPE
+    (10) type -> . TYPE *
+
+    QUALIFIER       shift and go to state 15
+    TYPE            shift and go to state 16
+
+    parameter                      shift and go to state 25
+    type                           shift and go to state 14
+
+state 20
+
+    (6) parameter -> type ID .
+
+    )               reduce using rule 6 (parameter -> type ID .)
+    ,               reduce using rule 6 (parameter -> type ID .)
+
+
+state 21
+
+    (7) parameter -> type QUALIFIER . ID
+
+    ID              shift and go to state 26
+
+
+state 22
+
+    (8) parameter -> QUALIFIER type . ID
+
+    ID              shift and go to state 27
+
+
+state 23
+
+    (10) type -> TYPE * .
+
+    ID              reduce using rule 10 (type -> TYPE * .)
+    QUALIFIER       reduce using rule 10 (type -> TYPE * .)
+
+
+state 24
+
+    (11) shared -> SHARED TYPE ID [ INTEGER ] . ;
+
+    ;               shift and go to state 28
+
+
+state 25
+
+    (5) parameters -> parameters , parameter .
+
+    )               reduce using rule 5 (parameters -> parameters , parameter .)
+    ,               reduce using rule 5 (parameters -> parameters , parameter .)
+
+
+state 26
+
+    (7) parameter -> type QUALIFIER ID .
+
+    )               reduce using rule 7 (parameter -> type QUALIFIER ID .)
+    ,               reduce using rule 7 (parameter -> type QUALIFIER ID .)
+
+
+state 27
+
+    (8) parameter -> QUALIFIER type ID .
+
+    )               reduce using rule 8 (parameter -> QUALIFIER type ID .)
+    ,               reduce using rule 8 (parameter -> QUALIFIER type ID .)
+
+
+state 28
+
+    (11) shared -> SHARED TYPE ID [ INTEGER ] ; .
+
+    $end            reduce using rule 11 (shared -> SHARED TYPE ID [ INTEGER ] ; .)
+

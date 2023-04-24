@@ -44,7 +44,7 @@ REGISTER_BACKWARD_TRANSLATOR(BatchMatMul)
             myConfigB["adj_x"]["b"] = true;
             myConfigB["adj_y"]["b"] = true;
             auto B_grad_op = std::make_shared<nnfusion::op::GenericOp>(
-                forward_node->get_name() + "_b_grad", "BatchMatMul", myConfigB);
+                forward_node->get_name() + "_b_grad", "", myConfigB);
             auto B_grad_node = graph->add_node_and_edge(B_grad_op, {outputs_grad[0], A});
             return GNodeIndexVector{GNodeIndex{A_grad_node, 0}, GNodeIndex{B_grad_node, 0}};
         }

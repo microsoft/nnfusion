@@ -23,6 +23,7 @@ DEFINE_bool(fpattern_substitution,
 DEFINE_bool(fbiasadd_fix,
             false,
             "Fix biasadd shape for TVM Conv2d-Add fusion in pattern_substitution_pass");
+DECLARE_string(fdefault_device);
 
 // Only serial pattern supported in current implementation
 // The substitution directly applied to computation graph, no back propagation involved
@@ -149,11 +150,12 @@ private:
         if (identifier != "")
         {
             // Todo: more tags, more platform
+            identifier = generate_pattern_name() + "[" + identifier + "]";
             std::set<std::string> tags = {};
-            auto fetched_kernel = kernel_db->fetch_with_tags(identifier, "CUDA", tags);
-            if (fetched_kernel != nullptr)
+            auto fetched_kernel = kernel_db->fetch_all(identifier, get_device_str(nnfusion::get_device_type(FLAGS_fdefault_device)));
+            if (fetched_kernel.size() > 0)
             {
-                NNFUSION_CHECK(fetched_kernel->function != "");
+                NNFUSION_CHECK(fetched_kernel[0]->function != "");
                 NNFUSION_LOG(INFO) << "Substitution applied: " << identifier;
                 return Substitution(matched, identifier);
             }
@@ -196,38 +198,52 @@ private:
             // here we apply the BN folding to remove computation
 
             // biasadd fix for TVM conv-biasadd fusion due to different implementation of BiasAdd in NNFusion and TVM
-            if (m_node->node->get_op_type() == "Add" && FLAGS_fbiasadd_fix)
-            {
-                if (m_pattern[0] == "Convolution" && m_pattern[1] == "Add")
-                {
-                    auto add_node = m_node->node;
-                    auto add_bias_node = add_node->get_in_edge(1)->get_src();
-                    auto add_bias_const_ptr = std::dynamic_pointer_cast<nnfusion::op::Constant>(
-                        add_bias_node->get_op_ptr());
-                    auto dtype = add_node->get_input_element_type(1);
-                    std::vector<double> add_bias = ExtractConstantData(add_bias_const_ptr, dtype);
-                    auto bias_shape = add_node->get_input_shape(1);
-                    std::shared_ptr<op::Constant> new_add_bias_op_ptr;
-                    if (dtype == element::f32)
-                    {
-                        auto add_bias_converted = ConvertAddBias<float>(add_bias, bias_shape);
-                        new_add_bias_op_ptr = std::make_shared<op::Constant>(
-                            dtype, add_node->get_input_shape(1), add_bias_converted.data());
-                    }
-                    else
-                    {
-                        NNFUSION_CHECK_FAIL() << "Not support DataType " << dtype;
-                    }
-                    auto new_add_bias_gnode = std::make_shared<nnfusion::graph::GNode>(
-                        new_add_bias_op_ptr, GNodeVector());
-                    m_graph->replace_node(add_bias_node, new_add_bias_gnode, false);
-                }
-            }
+            // if (m_node->node->get_op_type() == "Add" && FLAGS_fbiasadd_fix)
+            // {
+            //     if (m_pattern[0] == "Convolution" && m_pattern[1] == "Add")
+            //     {
+            //         auto add_node = m_node->node;
+            //         auto add_bias_node = add_node->get_in_edge(1)->get_src();
+            //         auto add_bias_const_ptr = std::dynamic_pointer_cast<nnfusion::op::Constant>(
+            //             add_bias_node->get_op_ptr());
+            //         auto dtype = add_node->get_input_element_type(1);
+            //         std::vector<double> add_bias = ExtractConstantData(add_bias_const_ptr, dtype);
+            //         auto bias_shape = add_node->get_input_shape(1);
+            //         std::shared_ptr<op::Constant> new_add_bias_op_ptr;
+            //         if (dtype == element::f32)
+            //         {
+            //             auto add_bias_converted = ConvertAddBias<float>(add_bias, bias_shape);
+            //             new_add_bias_op_ptr = std::make_shared<op::Constant>(
+            //                 dtype, add_node->get_input_shape(1), add_bias_converted.data());
+            //         }
+            //         else
+            //         {
+            //             NNFUSION_CHECK_FAIL() << "Not support DataType " << dtype;
+            //         }
+            //         auto new_add_bias_gnode = std::make_shared<nnfusion::graph::GNode>(
+            //             new_add_bias_op_ptr, GNodeVector());
+            //         m_graph->replace_node(add_bias_node, new_add_bias_gnode, false);
+            //     }
+            // }
             if (m_node->node->get_op_type() == "BatchNormInference" ||
                 m_node->node->get_op_type() == "Add")
             {
                 auto bias_edge = m_node->node->get_in_edge(1);
-                subs_node->set_input(next_input_id, m_node->node->get_inputs().at(1));
+                auto bias_input = m_node->node->get_inputs().at(1);
+                if (m_pattern[0] == "Convolution" && m_node->node->get_op_type() == "Add" &&
+                    FLAGS_fbiasadd_fix)
+                {
+                    auto broadcast_node = bias_edge->get_src();
+                    auto broadcast_op = std::dynamic_pointer_cast<nnfusion::op::Broadcast>(
+                        broadcast_node->get_op_ptr());
+                    if (broadcast_op)
+                    {
+                        NNFUSION_LOG(INFO) << "Convert Broadcast+Add into a single BiasAdd!";
+                        bias_edge = broadcast_node->get_in_edge(0);
+                        bias_input = broadcast_node->get_inputs().at(0);
+                    }
+                }
+                subs_node->set_input(next_input_id, bias_input);
                 m_graph->add_edge(
                     bias_edge->get_src(), bias_edge->get_src_output(), subs_node, next_input_id++);
             }
@@ -381,6 +397,14 @@ private:
         }
 
         return bias_output;
+    }
+
+    std::string generate_pattern_name() {
+        NNFUSION_CHECK(m_pattern.size() > 0) << "Empty pattern";
+        std::string name;
+        for (auto p: m_pattern) name += p + "-";
+        name.pop_back();
+        return "Matched_Pattern(" + name + ")";
     }
 
     std::shared_ptr<Graph> m_graph;

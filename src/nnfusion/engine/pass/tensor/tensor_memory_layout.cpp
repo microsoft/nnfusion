@@ -24,6 +24,7 @@ DEFINE_string(fmem_log_path, "memory.log", "The file path of memory log.");
 DECLARE_string(fhlsl_codegen_type);
 DECLARE_bool(fextern_result_memory);
 DECLARE_bool(fhost_entry);
+DEFINE_bool(fenable_extern_result_inline, true, "Enable the elimination of d2d copy from extern_result_memory.");
 
 bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
                                    std::shared_ptr<TranslationUnit> tu)
@@ -32,9 +33,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
     string mem_log_path = tu->m_graph->get_name() + "_" + FLAGS_fmem_log_path;
 
     // Open memory log file.
-    std::ofstream mem_log;
-    if (dump_trace)
-        mem_log.open(mem_log_path);
+    std::ostream& mem_log = std::cout;
 
     NNFUSION_CHECK(tu->memory_allocator_factory == nullptr);
     tu->memory_allocator_factory =
@@ -52,6 +51,8 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             // do not allocate parameter tensors.
             if (gnode && gnode->is_parameter() && !FLAGS_fhost_entry)
                 continue;
+            if (dump_trace)
+                NNFUSION_LOG(INFO) << "Assign memory layout for " << *gnode;
             // Tensors should be considered
             // Node: inputs outputs
             // Kernel Context: +tensors
@@ -81,10 +82,29 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
             }
 
             unordered_set<std::shared_ptr<descriptor::Tensor>> newlist(alloc_temp);
+            // todo: this hack is to eliminate d2d copy caused by extern result memory
+            bool skip = false;
+            if (FLAGS_fextern_result_memory && FLAGS_fenable_extern_result_inline && gnode && gnode->get_op_type() != "Loop" && gnode->get_op_type() != "While")
+            {
+                bool all_users_are_result = true;
+                for (size_t i = 0; i < gnode->get_out_edges().size(); i++)
+                {
+                    auto dst = gnode->get_out_edges()[i]->get_dst();
+
+                    if (dst && !dst->get_op_ptr()->is_output())
+                    {
+                        all_users_are_result = false;
+                        break;
+                    }
+                }
+                if (all_users_are_result)
+                {
+                    skip = true;
+                }
+            }
             // The output of output nodes refers to the input, so there is NO need
             // to allocate memory space for output of output nodes.
-            if (!gnode || !gnode->get_op_ptr()->is_output() ||
-                (gnode->get_op_ptr()->is_output() && !FLAGS_fextern_result_memory))
+            if (gnode)
                 newlist.insert(ins->liveness_new_list.begin(), ins->liveness_new_list.end());
 
             // Allocate in two passes to make sure ref-tensors is after non-ref-tensors
@@ -158,7 +178,7 @@ bool AssignTensorMemoryLayout::run(std::shared_ptr<InterpreterContext> ctx,
     if (dump_trace)
     {
         // close memory log file.
-        mem_log.close();
+        // mem_log.close();
     }
     NNFUSION_LOG(INFO) << "---------------Tensor memory layout pass done.";
     return true;

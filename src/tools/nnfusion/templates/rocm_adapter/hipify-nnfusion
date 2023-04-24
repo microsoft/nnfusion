@@ -231,6 +231,7 @@ while (@ARGV) {
         $countIncludes += s/(\s*#\s*include\s+)[<"]cuda_runtime\.h[>"]/$1<hip\/hip_runtime.h>/;
         $countIncludes += s/(\s*#\s*include\s+)[<"]cuda_runtime_api\.h[>"]/$1<hip\/hip_runtime_api.h>/;
         $countIncludes += s/(\s*#\s*include\s+)[<"]cuda_fp16\.h[>"]/$1<hip\/hip_fp16.h>/;
+        $countIncludes += s/(\s*#\s*include\s+)[<"]cooperative_groups\.h[>"]/$1<hip\/amd_detail\/amd_hip_cooperative_groups.h>/;
 
 
         #--------

@@ -11,25 +11,28 @@
 #include "nnfusion/core/kernels/kernel_registration.hpp"
 #include "nnfusion/core/operators/op_define/noop.hpp"
 #include "nnfusion/engine/pass/graph/kernel_selection.hpp"
+#include "nnfusion/engine/cache/manager.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::blockfusion;
 using namespace nnfusion::graph;
 using namespace nnfusion::pass::graph;
 using namespace nnfusion::kernels;
+using namespace nnfusion::cache;
 
 const size_t BlockFusionWavefrontOptimizer::DEFAULT_GROUP_ID = -1;
 size_t BlockFusionWavefrontOptimizer::MAX_GROUP = 128;
-size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 10240;
+size_t BlockFusionWavefrontOptimizer::DEFAULT_BE = 1024;
 const size_t BlockFusionWavefrontOptimizer::RESOURCE_CAPACITY =
-    4 * 80; // volta max parallelism: 4 * #SM
+    4096; // volta max parallelism: 4 * #SM
 
 BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Graph> g,
                                                              std::string _device_type,
                                                              std::string _device_name,
                                                              int _fusion_level,
                                                              bool _flag_interplay,
-                                                             bool _flag_check_correctness)
+                                                             bool _flag_check_correctness,
+                                                             bool is_outmost_graph)
     : BlockFusionOptimizer(g, _device_type, _flag_check_correctness)
 {
     m_nodes.resize(m_graph->get_max_node_id());
@@ -46,6 +49,7 @@ BlockFusionWavefrontOptimizer::BlockFusionWavefrontOptimizer(std::shared_ptr<Gra
     {
         m_active_gnodes_name.insert(active_gnodes[i]->get_name());
     }
+    m_is_outmost_graph = is_outmost_graph;
 }
 
 bool BlockFusionWavefrontOptimizer::Optimize()
@@ -58,7 +62,23 @@ bool BlockFusionWavefrontOptimizer::Optimize()
     {
         std::shared_ptr<std::vector<std::shared_ptr<FusionGroup>>> fuse_groups =
             ExtractFusionGroups();
+        // NNFUSION_LOG(INFO) << "fused groups";
+        // for (auto fuse_group: *fuse_groups) {
+        //     std::cout << "-------------------------\n";
+        //     std::cout << "merge: " << fuse_group->merge;
+        //     for (size_t node_id: fuse_group->nodes) {
+        //         std::cout << *(m_nodes[node_id]->node) << "\n";
+        //     }
+        // }
+
         SplitGroup(fuse_groups);
+        NNFUSION_LOG(INFO) << "split groups";
+        for (auto fuse_group: *fuse_groups) {
+            std::cout << "-------------------------\n";
+            for (size_t node_id: fuse_group->nodes) {
+                std::cout << *(m_nodes[node_id]->node) << "\n";
+            }
+        }
         if (m_fusion_level == 2)
         {
             // Todo: General fine grained schedule policy to be implemented
@@ -181,7 +201,7 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
 
     if (std::dynamic_pointer_cast<BlockCudaEmitter>(kernel) == nullptr)
     {
-        NNFUSION_LOG(INFO) << "Operator " << node->get_name()
+        NNFUSION_LOG(INFO) << "Operator " << *node
                            << " is not BlockCudaEmitter, skip in BlockFusion";
         return false;
     }
@@ -201,6 +221,39 @@ bool BlockFusionWavefrontOptimizer::verify_node(size_t node_id,
             return false;
         }
     }
+    
+    NNFUSION_LOG(INFO) << "verify_node:" << *node << " " << emitted_kernel.second->is_eliminative();
+    if (node->get_op_type() == "Reshape") {
+        auto op = std::dynamic_pointer_cast<op::Reshape>(node->get_op_ptr());
+        if ((!op->get_is_transpose()) || (!op->get_is_layout_change())) return false;
+    }
+    if (emitted_kernel.second->is_eliminative())
+        return false;
+    if (!m_is_outmost_graph) { // these ops are specially treated in control flow codegen
+        if (node->get_op_type() == "GatherV2")
+            return false;
+        bool skip_due_to_scalar_op = true; // TODO: process scalar op with a single thread
+        for (auto inp: node->get_in_edges()) {
+            if (inp->is_control_edge()) continue;
+            if (shape_size(inp->get_src()->get_output_shape(inp->get_src_output())) > 1) {
+                skip_due_to_scalar_op = false;
+                break;
+            }
+        }
+        for (auto outp: node->get_out_edges()) {
+            if (outp->is_control_edge()) continue;
+            if (shape_size(outp->get_dst()->get_input_shape(outp->get_dst_input())) > 1) {
+                skip_due_to_scalar_op = false;
+                break;
+            }
+        }
+        if (skip_due_to_scalar_op) {
+            NNFUSION_LOG(INFO) << "no need to fuse scalar op " << *node;
+            return false;
+        }
+    }
+    if (node->get_op_type() == "Convolution" || node->get_op_type() == "Matched_Pattern")
+        return false;
 
     cur_group->nodes.push_back(node_id);
     cur_group->block_kernels.push_back(kernel);
@@ -291,6 +344,10 @@ std::shared_ptr<std::vector<std::shared_ptr<BlockFusionWavefrontOptimizer::Fusio
     for (auto node : m_graph->get_nodes())
     {
         auto tn = m_nodes[node->get_id()];
+        if (!tn->visited)
+        {
+            NNFUSION_LOG(INFO) << "Node " << *node << " is not visited";
+        }
         NNFUSION_CHECK(tn->visited);
         NNFUSION_CHECK(tn->group_id != DEFAULT_GROUP_ID);
     }
@@ -575,19 +632,37 @@ int BlockFusionWavefrontOptimizer::FuseGroupOnGraph(const std::shared_ptr<Fusion
                 auto node = m_nodes[group->nodes.at(i)]->node;
                 std::shared_ptr<KernelContext> ctx(new KernelContext(node));
                 std::string identifier = ctx->generate_identifier();
-                auto fetched_kernel =
-                    m_kernel_db->fetch_with_tags(identifier, "CUDA_GPU", set<string>{}, true);
-                if (fetched_kernel != nullptr)
+                std::string device = "CUDA_GPU";
+                auto fetched_kernels = m_kernel_db->fetch_all(identifier, device);
+                if (fetched_kernels.size() > 0)
                 {
+                    KernelEntry fetched_kernel;
+                    fetched_kernel.profile[device] = 1048576;
+                    fetched_kernel.function = fetched_kernels[0]->function;
+                    fetched_kernel.resource = fetched_kernels[0]->resource;
+                    for (auto matched_kernel : fetched_kernels)
+                    {
+                        if (matched_kernel->profile.find(device) != matched_kernel->profile.end())
+                        {
+                            if (matched_kernel->profile[device] * matched_kernel->resource <
+                                fetched_kernel.profile[device] * fetched_kernel.resource)
+                            {
+                                fetched_kernel.function = matched_kernel->function;
+                                fetched_kernel.profile[device] = matched_kernel->profile[device];
+                                fetched_kernel.resource = matched_kernel->resource;
+                            }
+                        }
+                    }
+                    auto fetched_kernel_p = std::make_shared<KernelEntry>(fetched_kernel);
                     auto kernel =
-                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, fetched_kernel);
+                        std::make_shared<kernels::cuda::CacheBlockCudaEmitter>(ctx, fetched_kernel_p);
                     kernel->get_or_emit_source();
                     group->block_kernels[i] = kernel;
-                    group->duration[i] = fetched_kernel->profile[m_device_name];
+                    group->duration[i] = fetched_kernel_p->profile[m_device_name];
                     NNFUSION_LOG(DEBUG) << "fetched kernel " << identifier << " with resource "
-                                        << fetched_kernel->resource << " and profiled on "
+                                        << fetched_kernel_p->resource << " and profiled on "
                                         << m_device_name << " in "
-                                        << fetched_kernel->profile[m_device_name] << "us";
+                                        << fetched_kernel_p->profile[m_device_name] << "us";
                 }
             }
         }

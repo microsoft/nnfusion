@@ -8,13 +8,13 @@
 using namespace nnfusion::kernels;
 
 // Header
-LU_DEFINE(header::cuda, "#include <cuda.h>\n#include <cuda_runtime.h>\n");
+LU_DEFINE(header::cuda, "#include <cuda.h>\n#include <cuda_runtime.h>\n#include <cooperative_groups.h>\n");
 LU_DEFINE(header::cublas, "#include <cublas_v2.h>\n");
-LU_DEFINE(header::cudnn, "#include <cudnn.h>\n");
+LU_DEFINE(header::cudnn, "// #include <cudnn.h>\n");
 LU_DEFINE(header::superscaler, "#include \"superscaler.h\"\n");
 LU_DEFINE(header::cupti, "#include <cupti.h>\n");
 LU_DEFINE(header::cuda_prof_api, "#include <cuda_profiler_api.h>\n");
-LU_DEFINE(header::cuda_fp16, "#include <cuda_fp16.h>\n");
+LU_DEFINE(header::cuda_fp16, "// #include <cuda_fp16.h>\n");
 LU_DEFINE(header::cub, "#include <cub/cub.cuh>\n");
 LU_DEFINE(header::math_constants, "#include <math_constants.h>\n");
 
@@ -159,6 +159,54 @@ LU_DEFINE(macro::CUPTI_CALL,
     } while (0)
 )");
 
+LU_DEFINE(macro::DBG_TENSOR,
+R"(
+__global__ void printTensor(float* data, int n) {
+    for (int i = 0; i < min(n, 10); i++) printf("%f ", data[i]);
+    if (n > 10) printf("... %f", data[n-1]);
+}
+
+#define DEBUG_TENSOR(tensor, size) { \
+    printf("%s: ", #tensor); \
+    printTensor<<<1, 1>>>(tensor, size); \
+    CUDA_SAFE_CALL(cudaDeviceSynchronize()); \
+    fflush(stdout); \
+    printf("\n"); \
+}
+
+__global__ void printTensorChar(char* data, int n) {
+    for (int i = 0; i < min(n, 10); i++) printf("%d ", (int) data[i]);
+    if (n > 10) printf("... %d", (int) data[n-1]);
+}
+
+#define DEBUG_TENSOR_CHAR(tensor, size) { \
+    printf("%s: ", #tensor); \
+    printTensorChar<<<1, 1>>>(tensor, size); \
+    CUDA_SAFE_CALL(cudaDeviceSynchronize()); \
+    fflush(stdout); \
+    printf("\n"); \
+}
+
+__global__ void printTensor3D(float* data, int n, int c, int stride) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < c; j++) {
+            printf("%f ", data[(j * n + i) * stride]);
+        }
+        printf("\n");
+    }
+    // if (n > 10) printf("... %f", data[n-1]);
+}
+
+#define DEBUG_TENSOR1(tensor, n, c, stride) { \
+    printf("%s: ", #tensor); \
+    printTensor3D<<<1, 1>>>(tensor, n, c, stride); \
+    CUDA_SAFE_CALL(cudaDeviceSynchronize()); \
+    fflush(stdout); \
+    printf("\n"); \
+}
+)"
+);
+
 // Declaration
 //<TODO>Need special code for this global_cublas_handle
 LU_DEFINE(declaration::num_SMs, "int num_SMs;\n");
@@ -186,6 +234,19 @@ LU_DEFINE(
 LU_DEFINE(
     declaration::rocm_division_by_invariant_multiplication,
     R"(__device__ __forceinline__ int division_by_invariant_multiplication(int value, int magic, int shift)
+{
+    long long res64 = ((long long)(unsigned int)value) * ((long long)(unsigned int)magic);
+    int hi32 = res64 >> 32;
+    if(magic == 1)
+        hi32 = value;
+    int result = hi32 >> shift;
+    return result;
+}
+)");
+
+LU_DEFINE(
+    declaration::cuda_cpu_division_by_invariant_multiplication,
+    R"(__forceinline__ int division_by_invariant_multiplication_cpu(int value, int magic, int shift)
 {
     long long res64 = ((long long)(unsigned int)value) * ((long long)(unsigned int)magic);
     int hi32 = res64 >> 32;
@@ -224,19 +285,10 @@ LU_DEFINE(
         v = __ldg(in + i);
     }
     return v;
-} 
+}
 __device__ __forceinline__ float  load(const float*  __restrict__ in, int i=0, bool b=true)
 {
     float v = 0.0f;
-    if (b)
-    {
-        v = __ldg(in + i);
-    }
-    return v;
-}
-__device__ __forceinline__ half  load(const half*  __restrict__ in, int i=0, bool b=true)
-{
-    half v = 0.0f;
     if (b)
     {
         v = __ldg(in + i);
@@ -883,7 +935,7 @@ struct KeyValuePairSum {
 
 template <typename T, int TPB>
 __device__ inline void LayerNorm(
-    const cub::KeyValuePair<T, T>& thread_data, const int ld, const int offset, const T* beta, 
+    const cub::KeyValuePair<T, T>& thread_data, const int ld, const int offset, const T* beta,
     const T* gamma, const T epsilon, T* output) {
   // Assuming thread_data is already divided by ld
 
@@ -1259,7 +1311,7 @@ void ComputeSoftmaxWithMask1D(cudaStream_t stream, const int all_sequence_length
     const int blockSize = 1024;
     MaskedSoftmaxKernel<T, blockSize>
         <<<grid, blockSize, 0, stream>>>(all_sequence_length, sequence_length, mask_index, mask_start, input, output);
-  } 
+  }
 }
 
 template <typename T>
@@ -1291,7 +1343,7 @@ void ComputeSoftmaxWithMask2D(cudaStream_t stream, const int all_sequence_length
     const int blockSize = 1024;
     SoftmaxWithMask2DSmallKernel<T, blockSize>
         <<<grid, blockSize, 0, stream>>>(all_sequence_length, sequence_length, attention_mask, input, output, is_unidirectional, scalar);
-  } 
+  }
 }
 
 template <typename T>
@@ -1673,7 +1725,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward) 
+// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward)
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.
@@ -1908,7 +1960,7 @@ __device__ __forceinline__ void warp_reduce(acc_t* sum) {
 
 /* Modifications Copyright (c) Microsoft. */
 
-// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward) 
+// The code below(from the defination of softmax_warp_forward to the defination of dispatch_softmax_forward)
 // is mostly copied from Pytorch PersistentSoftmax.cuh
 
 // The softmax_warp_* methods perform softmax forward and backward propagation on samples spanning the fast dimension.
@@ -2188,3 +2240,93 @@ __device__ __forceinline__ T WARP_SHFL_DOWN(T value, unsigned int delta, int wid
 }
 )",
                  "");
+
+LU_DEFINE(declaration::barrier,
+          R"(
+__device__ void Barrier() {
+    cooperative_groups::grid_group g = cooperative_groups::this_grid();
+    g.sync();
+}
+)");
+
+LU_DEFINE(declaration::manual_barrier,
+          R"(
+__device__ void Barrier() {
+    // __device__ static volatile uint64_t global_state_in[1024] = {0};
+    // __device__ static volatile uint64_t global_state_out[1024] = {0};
+    __device__ static volatile uint8_t global_state_in[1024] = {0};
+    __device__ static volatile uint8_t global_state_out[1024] = {0};
+    const int BLOCK_NUM = gridDim.x * gridDim.y;
+    const int thread_idx_in_block = blockDim.x * threadIdx.y + threadIdx.x;
+    const int block_idx = gridDim.x * blockIdx.y + blockIdx.x;
+    if (thread_idx_in_block == 0) {
+        global_state_in[block_idx] = 1;
+    }
+    if (block_idx == 0) {
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            while (global_state_in[i] != 1) {
+            }
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            global_state_in[i] = 0;
+        __syncthreads();
+        for (int i = thread_idx_in_block; i < BLOCK_NUM; i += blockDim.x)
+            global_state_out[i] = 1;
+    }
+    if (thread_idx_in_block == 0) {
+        while (global_state_out[block_idx] != 1) {
+        };
+        global_state_out[block_idx] = 0;
+    }
+    __syncthreads();
+    __threadfence();
+}
+)");
+
+LU_DEFINE(declaration::inc_iter,
+          R"(
+__global__ void inc_iter(int64_t* i) {
+    i[0] = i[0] + 1;
+}
+)");
+
+LU_DEFINE(declaration::step_to_device,
+          R"(
+__device__ __forceinline__ void BlockFusion_step_to_device_function(volatile int* be_state_buffer, int be_id, int step_id) {
+    __threadfence();
+    __syncthreads();
+    if (threadIdx.x == 0) {
+        be_state_buffer[be_id] = step_id;
+    }
+}
+)");
+
+LU_DEFINE(declaration::block_barrier,
+          R"(
+__device__ void block_Barrier(int local_block_id, int block_num) {
+    __device__ static volatile uint64_t global_state_in[1024] = {0};
+    __device__ static volatile uint64_t global_state_out[1024] = {0};
+    int block_start = blockIdx.x - local_block_id;
+    int to_be = block_num;
+    __threadfence();
+    __syncthreads();
+    if (threadIdx.x == 0) {
+        global_state_in[blockIdx.x] = to_be;
+    }
+    if (local_block_id == 0) {
+        for (int i = threadIdx.x; i < block_num; i += blockDim.x) {
+            while (global_state_in[i + block_start] != to_be) {}
+        }
+        for (int i = threadIdx.x; i < block_num; i += blockDim.x)
+            global_state_in[i + block_start] = 0;
+        __syncthreads();
+        for (int i = threadIdx.x; i < block_num; i += blockDim.x)
+            global_state_out[i + block_start] = to_be;
+    }
+    if (threadIdx.x == 0) {
+        while (global_state_out[blockIdx.x] != to_be) {};
+        global_state_out[blockIdx.x] = 0;
+    }
+    __syncthreads();
+}
+)"
+);

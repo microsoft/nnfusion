@@ -80,7 +80,7 @@ LanguageUnit_p cuda::Gather1D::emit_function_body()
                << "slice_i = i - batch_indices_i * " << slice_size << ";\n";
         }
 
-        lu << "uint32_t gather_i = __ldg(indices + indices_i);\n";
+        lu << "uint32_t gather_i = *(indices + indices_i);\n";
         lu << "if (gather_i >= " << gather_dim_size << ")\n"
            << "   out[i] = 0;\n"
            << "else\n";
@@ -100,7 +100,7 @@ LanguageUnit_p cuda::Gather1D::emit_function_body()
 void cuda::Gather1D::set_launch_config()
 {
     uint32_t nthreads = static_cast<uint32_t>(shape_size(output_shape));
-    uint32_t block_size_x = 64;
+    uint32_t block_size_x = 256;
     uint32_t aligned_grid_size_x = align_to_block_size(nthreads, block_size_x);
 
     m_gridDim = dim3(aligned_grid_size_x, 1, 1);

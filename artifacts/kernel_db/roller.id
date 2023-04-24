@@ -1,0 +1,77 @@
+BatchMatMul[64,256;8,256,256;8,64,256floatfloatfloat]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,16,32,32;32,16,3,3;32,1,16,16floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,1,16,16;32,1,16,16;32,1,16,16floatfloatfloat]Relu[32,1,16,16;32,1,16,16floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[256,1,56,56;128,256,1,1;128,1,56,56floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[128,1,56,56;128,1,56,56;128,1,56,56floatfloatfloat]Relu[128,1,56,56;128,1,56,56floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[256,1,14,14;256,256,3,3;256,1,14,14floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[256,1,14,14;256,1,14,14;256,1,14,14floatfloatfloat]Relu[256,1,14,14;256,1,14,14floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,32,16,16;32,32,3,3;32,1,16,16floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,1,16,16;32,1,16,16;32,1,16,16floatfloatfloat]Relu[32,1,16,16;32,1,16,16floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,1024,14,14;256,1024,1,1;256,1,14,14floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[256,1,14,14;256,1,14,14;256,1,14,14floatfloatfloat]Relu[256,1,14,14;256,1,14,14floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[32,1,16,16;32,32,3,3;32,1,16,16floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,1,16,16;32,1,16,16;32,1,16,16floatfloatfloat]Relu[32,1,16,16;32,1,16,16floatfloat]]:::CUDA_GPU
+AvgPool[16,64,32,32;16,64,16,16floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,16,32,32;16,16,3,3;16,64,32,32floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[16,64,32,32;16,64,32,32;16,64,32,32floatfloatfloat]Relu[16,64,32,32;16,64,32,32floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[16,1,32,32;16,16,3,3;16,1,32,32floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[16,1,32,32;16,1,32,32;16,1,32,32floatfloatfloat]Relu[16,1,32,32;16,1,32,32floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,1,56,56;64,64,3,3;64,1,56,56floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,1,56,56;64,1,56,56;64,1,56,56floatfloatfloat]Relu[64,1,56,56;64,1,56,56floatfloat]]:::CUDA_GPU
+MaxPool[64,1,112,112;64,1,56,56floatfloatShape{3, 3}Strides{2, 2}Shape{1, 1}Shape{1, 1}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,256,56,56;128,256,1,1;128,1,56,56floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[128,1,56,56;128,1,56,56;128,1,56,56floatfloatfloat]Relu[128,1,56,56;128,1,56,56floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[512,1,28,28;256,512,1,1;256,1,28,28floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[256,1,28,28;256,1,28,28;256,1,28,28floatfloatfloat]Relu[256,1,28,28;256,1,28,28floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,1,56,56;64,64,1,1;64,1,56,56floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[64,1,56,56;64,1,56,56;64,1,56,56floatfloatfloat]Relu[64,1,56,56;64,1,56,56floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[512,1,14,14;512,512,3,3;512,1,7,7floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[512,1,7,7;512,1,7,7;512,1,7,7floatfloatfloat]Relu[512,1,7,7;512,1,7,7floatfloat]]:::CUDA_GPU
+AvgPool[64,32,16,16;64,32,8,8floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Convolution[128,1,28,28;512,128,1,1;512,1,28,28floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,3,224,224;64,3,7,7;64,1,112,112floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{3, 3}]Add[64,1,112,112;64,1,112,112;64,1,112,112floatfloatfloat]Relu[64,1,112,112;64,1,112,112floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[512,1,28,28;128,512,1,1;128,1,28,28floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[128,1,28,28;128,1,28,28;128,1,28,28floatfloatfloat]Relu[128,1,28,28;128,1,28,28floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[128,1,56,56;128,128,3,3;128,1,28,28floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[128,1,28,28;128,1,28,28;128,1,28,28floatfloatfloat]Relu[128,1,28,28;128,1,28,28floatfloat]]:::CUDA_GPU
+Dot[1,2048;1000,2048;1,1000floatfloatfloat01]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,1,8,8;64,64,3,3;64,1,8,8floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,1,8,8;64,1,8,8;64,1,8,8floatfloatfloat]Relu[64,1,8,8;64,1,8,8floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[256,1,28,28;256,256,3,3;256,1,14,14floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[256,1,14,14;256,1,14,14;256,1,14,14floatfloatfloat]Relu[256,1,14,14;256,1,14,14floatfloat]]:::CUDA_GPU
+Convolution[1,1024,14,14;2048,1024,1,1;2048,1,7,7floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[512,1,28,28;1024,512,1,1;1024,1,14,14floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,64,8,8;64,64,3,3;64,64,8,8floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,64,8,8;64,64,8,8;64,64,8,8floatfloatfloat]Relu[64,64,8,8;64,64,8,8floatfloat]]:::CUDA_GPU
+AvgPool[16,1,32,32;16,1,16,16floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Convolution[1,256,56,56;512,256,1,1;512,1,28,28floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[2048,1,7,7;512,2048,1,1;512,1,7,7floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[512,1,7,7;512,1,7,7;512,1,7,7floatfloatfloat]Relu[512,1,7,7;512,1,7,7floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,64,8,8;64,64,3,3;64,1,8,8floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,1,8,8;64,1,8,8;64,1,8,8floatfloatfloat]Relu[64,1,8,8;64,1,8,8floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,32,16,16;64,32,3,3;64,1,8,8floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,1,8,8;64,1,8,8;64,1,8,8floatfloatfloat]Relu[64,1,8,8;64,1,8,8floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,512,28,28;128,512,1,1;128,1,28,28floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[128,1,28,28;128,1,28,28;128,1,28,28floatfloatfloat]Relu[128,1,28,28;128,1,28,28floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,32,16,16;64,32,3,3;64,64,8,8floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,64,8,8;64,64,8,8;64,64,8,8floatfloatfloat]Relu[64,64,8,8;64,64,8,8floatfloat]]:::CUDA_GPU
+Convolution[16,1,32,32;16,16,3,3;16,1,32,32floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,512,28,28;256,512,1,1;256,1,28,28floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[256,1,28,28;256,1,28,28;256,1,28,28floatfloatfloat]Relu[256,1,28,28;256,1,28,28floatfloat]]:::CUDA_GPU
+Convolution[64,1,8,8;64,64,3,3;64,1,8,8floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]:::CUDA_GPU
+Convolution[512,1,7,7;2048,512,1,1;2048,1,7,7floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[512,1,7,7;512,512,3,3;512,1,7,7floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[512,1,7,7;512,1,7,7;512,1,7,7floatfloatfloat]Relu[512,1,7,7;512,1,7,7floatfloat]]:::CUDA_GPU
+BatchMatMul[64,12,1,64;64,12,64,64;64,12,1,64floatfloatfloat]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[32,1,16,16;64,32,3,3;64,1,8,8floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[64,1,8,8;64,1,8,8;64,1,8,8floatfloatfloat]Relu[64,1,8,8;64,1,8,8floatfloat]]:::CUDA_GPU
+Convolution[1024,1,14,14;2048,1024,1,1;2048,1,7,7floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[256,1,56,56;512,256,1,1;512,1,28,28floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,1024,14,14;512,1024,1,1;512,1,14,14floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[512,1,14,14;512,1,14,14;512,1,14,14floatfloatfloat]Relu[512,1,14,14;512,1,14,14floatfloat]]:::CUDA_GPU
+BatchMatMul[64,12,1,64;12,64,64;64,12,1,64floatfloatfloat]:::CUDA_GPU
+Convolution[256,1,14,14;1024,256,1,1;1024,1,14,14floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[32,1,16,16;32,32,3,3;32,1,16,16floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]:::CUDA_GPU
+AvgPool[32,1,16,16;32,1,8,8floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,32,16,16;32,32,3,3;32,64,16,16floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,64,16,16;32,64,16,16;32,64,16,16floatfloatfloat]Relu[32,64,16,16;32,64,16,16floatfloat]]:::CUDA_GPU
+AvgPool[1,16,32,32;1,16,16,16floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[256,1,56,56;64,256,1,1;64,1,56,56floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[64,1,56,56;64,1,56,56;64,1,56,56floatfloatfloat]Relu[64,1,56,56;64,1,56,56floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,2048,7,7;512,2048,1,1;512,1,7,7floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[512,1,7,7;512,1,7,7;512,1,7,7floatfloatfloat]Relu[512,1,7,7;512,1,7,7floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[64,16,32,32;32,16,3,3;32,64,16,16floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,64,16,16;32,64,16,16;32,64,16,16floatfloatfloat]Relu[32,64,16,16;32,64,16,16floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,16,32,32;16,16,3,3;16,1,32,32floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[16,1,32,32;16,1,32,32;16,1,32,32floatfloatfloat]Relu[16,1,32,32;16,1,32,32floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,256,56,56;64,256,1,1;64,1,56,56floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[64,1,56,56;64,1,56,56;64,1,56,56floatfloatfloat]Relu[64,1,56,56;64,1,56,56floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,3,32,32;16,3,3,3;16,1,32,32floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[16,1,32,32;16,1,32,32;16,1,32,32floatfloatfloat]Relu[16,1,32,32;16,1,32,32floatfloat]]:::CUDA_GPU
+Convolution[64,1,56,56;256,64,1,1;256,1,56,56floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[1,512,28,28;1024,512,1,1;1024,1,14,14floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1024,1,14,14;256,1024,1,1;256,1,14,14floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[256,1,14,14;256,1,14,14;256,1,14,14floatfloatfloat]Relu[256,1,14,14;256,1,14,14floatfloat]]:::CUDA_GPU
+AvgPool[32,64,16,16;32,64,8,8floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Dot[64,64;10,64;64,10floatfloatfloat01]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[128,1,28,28;128,128,3,3;128,1,28,28floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[128,1,28,28;128,1,28,28;128,1,28,28floatfloatfloat]Relu[128,1,28,28;128,1,28,28floatfloat]]:::CUDA_GPU
+AvgPool[1,32,16,16;1,32,8,8floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+AvgPool[64,16,32,32;64,16,16,16floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[16,1,32,32;32,16,3,3;32,1,16,16floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,1,16,16;32,1,16,16;32,1,16,16floatfloatfloat]Relu[32,1,16,16;32,1,16,16floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1024,1,14,14;512,1024,1,1;512,1,14,14floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[512,1,14,14;512,1,14,14;512,1,14,14floatfloatfloat]Relu[512,1,14,14;512,1,14,14floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1,3,32,32;16,3,3,3;16,1,32,32floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[16,1,32,32;16,1,32,32;16,1,32,32floatfloatfloat]Relu[16,1,32,32;16,1,32,32floatfloat]]:::CUDA_GPU
+Convolution[64,1,56,56;256,64,1,1;256,1,56,56floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[1,512,28,28;1024,512,1,1;1024,1,14,14floatfloatfloatLayout{NCHW2CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1024,1,14,14;256,1024,1,1;256,1,14,14floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[256,1,14,14;256,1,14,14;256,1,14,14floatfloatfloat]Relu[256,1,14,14;256,1,14,14floatfloat]]:::CUDA_GPU
+AvgPool[32,64,16,16;32,64,8,8floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Dot[64,64;10,64;64,10floatfloatfloat01]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[128,1,28,28;128,128,3,3;128,1,28,28floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{1, 1}]Add[128,1,28,28;128,1,28,28;128,1,28,28floatfloatfloat]Relu[128,1,28,28;128,1,28,28floatfloat]]:::CUDA_GPU
+AvgPool[1,32,16,16;1,32,8,8floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+AvgPool[64,16,32,32;64,16,16,16floatfloatShape{2, 2}Strides{2, 2}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[16,1,32,32;32,16,3,3;32,1,16,16floatfloatfloatLayout{CNHW}Strides{2, 2}Strides{1, 1}CoordinateDiff{1, 1}]Add[32,1,16,16;32,1,16,16;32,1,16,16floatfloatfloat]Relu[32,1,16,16;32,1,16,16floatfloat]]:::CUDA_GPU
+Matched_Pattern(Convolution-Add-Relu)[Convolution[1024,1,14,14;512,1024,1,1;512,1,14,14floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]Add[512,1,14,14;512,1,14,14;512,1,14,14floatfloatfloat]Relu[512,1,14,14;512,1,14,14floatfloat]]:::CUDA_GPU

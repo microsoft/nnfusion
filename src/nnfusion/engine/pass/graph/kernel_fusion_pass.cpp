@@ -65,6 +65,7 @@ namespace
         size_t output_size = 0; // used in element_group
         NNFusion_DeviceType device_type = UNKNOWN;
         int device_id = -1;
+        int stage;
 
         std::vector<size_t> nodes;
     };
@@ -271,13 +272,15 @@ private:
                 tn = m_nodes[node_id];
                 auto n_device_type = (*(tn->node))["DeviceType"].as<NNFusion_DeviceType>();
                 auto n_device_id = (*(tn->node))["DeviceID"].as<int>();
-                std::string dev_name = get_device_str(n_device_type) + to_string(n_device_id);
+                int n_stage = tn->node->Get<int>("stage_cpu");
+                std::string dev_name = get_device_str(n_device_type) + to_string(n_device_id) + "_" + to_string(n_stage);
                 if (dev_group.find(dev_name) == dev_group.end())
                 {
                     cur_group = std::make_shared<FuseGroup>();
                     cur_group->nodes.push_back(node_id);
                     cur_group->device_type = n_device_type;
                     cur_group->device_id = n_device_id;
+                    cur_group->stage = n_stage;
                     dev_group[dev_name] = cur_group;
                 }
                 else
@@ -324,9 +327,12 @@ private:
                 size_t tensor_size = nnfusion::shape_size(tn->node->get_output_shape(0));
                 auto n_device_type = (*(tn->node))["DeviceType"].as<NNFusion_DeviceType>();
                 auto n_device_id = (*(tn->node))["DeviceID"].as<int>();
+                int n_stage = tn->node->Get<int>("stage_cpu");
                 if (cur_elemgroup && (cur_elemgroup->output_size != tensor_size ||
                                       cur_elemgroup->device_type != n_device_type ||
-                                      cur_elemgroup->device_id != n_device_id))
+                                      cur_elemgroup->device_id != n_device_id ||
+                                      cur_elemgroup->stage != n_stage
+                                      ))
                 {
                     AppendElementGroup();
                 }
@@ -338,6 +344,7 @@ private:
                 cur_elemgroup->output_size = tensor_size;
                 cur_elemgroup->device_type = n_device_type;
                 cur_elemgroup->device_id = n_device_id;
+                cur_elemgroup->stage = n_stage;
                 break;
             }
 
@@ -426,6 +433,7 @@ private:
                         auto n_node = elem_tn->node;
                         auto n_device_type = (*n_node)["DeviceType"].as<NNFusion_DeviceType>();
                         auto n_device_id = (*n_node)["DeviceID"].as<int>();
+                        int n_stage = n_node->Get<int>("stage_cpu");
                         std::vector<std::shared_ptr<nnfusion::graph::Edge>> inedges(
                             elem_tn->node->get_in_edges());
                         for (auto in_edge : inedges)
@@ -436,9 +444,11 @@ private:
                             auto input_device_type =
                                 (*input_node)["DeviceType"].as<NNFusion_DeviceType>();
                             auto input_device_id = (*input_node)["DeviceID"].as<int>();
+                            int input_stage = input_node->Get<int>("stage_cpu");
                             // only fuse nodes on the same device
                             if (input_device_type != n_device_type ||
-                                input_device_id != n_device_id)
+                                input_device_id != n_device_id ||
+                                input_stage != n_stage)
                                 continue;
 
                             auto bc = std::dynamic_pointer_cast<nnfusion::op::Broadcast>(
@@ -618,6 +628,7 @@ private:
                     NNFusion_DeviceType k_device_type;
                     NNFusion_DeviceType n_device_type;
                     int n_device_id;
+                    int n_stage = 0;
 
                     for (auto elem_id : tn->elem_group->nodes)
                     {
@@ -626,6 +637,7 @@ private:
                         NNFUSION_CHECK_NOT_NULLPTR(node);
                         n_device_type = (*node)["DeviceType"].as<NNFusion_DeviceType>();
                         n_device_id = (*node)["DeviceID"].as<int>();
+                        n_stage = max(n_stage, node->Get<int>("stage_cpu"));
                         fusing_nodes.insert(node);
                     }
 
@@ -647,6 +659,8 @@ private:
                         NNFUSION_CHECK(n_device_id != -1);
                         (*fused_node)["DeviceType"] = n_device_type;
                         (*fused_node)["DeviceID"] = n_device_id;
+                        fused_node->Set<int>("stage_cpu", (int) n_stage);
+                        fused_node->set_on_gpu(!(n_stage & 1));
                         for (auto& node : fusing_nodes)
                             m_graph->remove_node(node);
                     }

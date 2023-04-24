@@ -19,13 +19,20 @@ REGISTER_OP(BatchMatMul)
         const nnfusion::Shape& input_shape_1 = gnode->get_input_shape(1);
         nnfusion::Shape output_shape_0;
 
-        NNFUSION_CHECK(input_shape_0.size() == input_shape_1.size());
         NNFUSION_CHECK(gnode->get_input_element_type(0) == gnode->get_input_element_type(1));
-
-        for (int i = 0; i < input_shape_0.size() - 2; i++)
-        {
-            NNFUSION_CHECK(input_shape_0[i] == input_shape_1[i]);
-            output_shape_0.push_back(input_shape_0[i]);
+        NNFUSION_CHECK(input_shape_0.size() >= 2 && input_shape_1.size() >= 2);
+        int shape_bias_0 = max(0, static_cast<int>(input_shape_0.size()) - static_cast<int>(input_shape_1.size()));
+        int shape_bias_1 = max(0, static_cast<int>(input_shape_1.size()) - static_cast<int>(input_shape_0.size()));
+        for (int i = 0; i < std::min(input_shape_0.size(), input_shape_1.size()) - 2; i++)
+            NNFUSION_CHECK(input_shape_0[i + shape_bias_0] == input_shape_1[i + shape_bias_1] || input_shape_0[i + shape_bias_0] == 1 || input_shape_1[i + shape_bias_1] == 1);
+        for (int i = 0; i < std::max(input_shape_0.size(), input_shape_1.size()) - 2; i++) {
+            if (i < shape_bias_0) {
+                output_shape_0.push_back(input_shape_0[i]);
+            } else if (i < shape_bias_1) {
+                output_shape_0.push_back(input_shape_1[i]);
+            } else {
+                output_shape_0.push_back(max(input_shape_0[i - shape_bias_1], input_shape_1[i - shape_bias_0]));
+            }
         }
 
         int m0 = input_shape_0[input_shape_0.size() - 2],
@@ -103,14 +110,12 @@ REGISTER_OP(BatchMatMul)
         return expression;
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-
         NNFUSION_CHECK(curr->get_input_size() == 2);
 
         const nnfusion::Shape& input_shape_0 = curr->get_input_shape(0);
         const nnfusion::Shape& input_shape_1 = curr->get_input_shape(1);
         nnfusion::Shape output_shape_0 = curr->get_output_shape(0);
 
-        NNFUSION_CHECK(input_shape_0.size() == input_shape_1.size());
         NNFUSION_CHECK(curr->get_input_element_type(0) == curr->get_input_element_type(1));
 
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
@@ -128,8 +133,10 @@ REGISTER_OP(BatchMatMul)
         {
             std::string batch_dim = "B" + to_string(i);
             output0_layout.push_back(batch_dim);
-            input0_layout.push_back(batch_dim);
-            input1_layout.push_back(batch_dim);
+            if (i >= output_shape_0.size() - input_shape_0.size())
+                input0_layout.push_back(batch_dim);
+            if (i >= output_shape_0.size() - input_shape_1.size())
+                input1_layout.push_back(batch_dim);
         }
 
         output0_layout.push_back("N");

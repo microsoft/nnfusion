@@ -20,6 +20,7 @@ set(SRC
     assign_async_info_pass.cpp
     kernel_profiling_pass.cpp
     runtime_const_folding_pass.cpp
+    control_flow_pass.cpp
     common_subexpression_elimination_pass.cpp
     pattern_substitution.cpp
     batchnorm_inference_folding_pass.cpp
@@ -29,7 +30,10 @@ set(SRC
     superscaler_dataparallelism_pass.cpp
     ir_based_fusion_pass.cpp
     subgraph_fusion_pass.cpp
-
+    dump_op.cpp
+    conv_layout_pass.cpp
+    subgraph_op_move.cpp
+    to_cpu_pass.cpp
 )
 
 add_library(nnfusion_engine_pass_graph STATIC ${SRC})

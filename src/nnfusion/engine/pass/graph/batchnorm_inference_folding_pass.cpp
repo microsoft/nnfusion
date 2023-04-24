@@ -485,6 +485,7 @@ private:
 
             std::vector<double> conv_bias_tmp = ExtractConstantData(conv_bias_const_ptr, dtype);
             auto conv_output_shape = conv_node->get_output_shape(0);
+            NNFUSION_CHECK(conv_node_op_ptr->get_data_format() == "NCHW" || conv_node_op_ptr->get_data_format() == "NHWC");
             bool is_nhwc = (conv_node_op_ptr->get_data_format() == "NHWC");
             if (is_nhwc)
             {
@@ -709,12 +710,17 @@ private:
 
             // compute and replace constant data
             std::shared_ptr<op::Constant> new_conv_weight_op_ptr;
+            std::shared_ptr<op::Constant> new_conv_bias_op_ptr;
             if (dtype == element::f64)
             {
                 auto conv_weight_converted =
                     ConvertConvolutionWeight<double>(conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<double>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data()
+                );
             }
             else if (dtype == element::f32)
             {
@@ -722,6 +728,10 @@ private:
                     ConvertConvolutionWeight<float>(conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<float>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data()
+                );
             }
             else if (dtype == element::bf16)
             {
@@ -729,6 +739,10 @@ private:
                     ConvertConvolutionWeight<float>(conv_weight, bn_gain, bn_variance, bn_epsilon));
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = bfloat16::from_float_vector(ConvertConvolutionBias<float>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon));
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data()
+                );
             }
             else if (dtype == element::i64)
             {
@@ -736,6 +750,9 @@ private:
                     conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<int64_t>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data());
             }
             else if (dtype == element::i32)
             {
@@ -743,6 +760,9 @@ private:
                     conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<int32_t>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data());
             }
             else if (dtype == element::i16)
             {
@@ -750,6 +770,9 @@ private:
                     conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<int16_t>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data());
             }
             else if (dtype == element::i8)
             {
@@ -757,6 +780,9 @@ private:
                     ConvertConvolutionWeight<int8_t>(conv_weight, bn_gain, bn_variance, bn_epsilon);
                 new_conv_weight_op_ptr = std::make_shared<op::Constant>(
                     dtype, conv_node->get_input_shape(1), conv_weight_converted.data());
+                auto conv_bias_converted = ConvertConvolutionBias<int8_t>(std::vector<double>(bn_gain.size(), 0.0), bn_gain, bn_bias, bn_mean, bn_variance, bn_epsilon);
+                new_conv_bias_op_ptr = std::make_shared<op::Constant>(
+                    dtype, bn_node->get_input_shape(0), conv_bias_converted.data());
             }
             else
             {
@@ -768,16 +794,16 @@ private:
 
             // BiasAdd: broadcast -> add
             auto conv_output_shape = conv_node->get_output_shape(0);
-            bool is_nhwc = (conv_node_op_ptr->get_data_format() == "NHWC");
+            std::string data_format = conv_node_op_ptr->get_data_format();
             nnfusion::AxisSet broadcast_axes;
-            if (is_nhwc)
+            if (data_format == "NHWC")
             {
                 for (size_t i = 0; i < conv_output_shape.size() - 1; i++)
                 {
                     broadcast_axes.insert(i);
                 }
             }
-            else
+            else if (data_format == "NCHW")
             {
                 for (size_t i = 0; i < conv_output_shape.size(); i++)
                 {
@@ -787,12 +813,27 @@ private:
                     }
                 }
             }
+            else if (data_format == "NCHW2CNHW" || data_format == "CNHW") {
+                for (size_t i = 1; i < conv_output_shape.size(); i++)
+                {
+                    broadcast_axes.insert(i);
+                }
+            } else {
+                NNFUSION_CHECK_FAIL() << "data format " << data_format << " is not supported";
+            }
+
+            auto new_conv_bias_gnode = m_graph->add_node_and_edge(new_conv_bias_op_ptr, GNodeIndexVector());            
+            m_nodes.resize(m_graph->get_max_node_id());
+            m_nodes[new_conv_bias_gnode->get_id()] = std::make_shared<TaggedNode>();
+            m_nodes[new_conv_bias_gnode->get_id()]->node = new_conv_bias_gnode;
+
             auto new_broadcast_gnode = m_graph->add_node_and_edge(
                 std::make_shared<op::Broadcast>(conv_output_shape, broadcast_axes),
-                {bn_node->get_in_edge(1)->get_src()});
+                {new_conv_bias_gnode});
             m_nodes.resize(m_graph->get_max_node_id());
             m_nodes[new_broadcast_gnode->get_id()] = std::make_shared<TaggedNode>();
             m_nodes[new_broadcast_gnode->get_id()]->node = new_broadcast_gnode;
+            
             auto new_add_gnode = m_graph->add_node_and_edge(std::make_shared<op::Add>(),
                                                             {conv_node, new_broadcast_gnode});
             m_nodes.resize(m_graph->get_max_node_id());

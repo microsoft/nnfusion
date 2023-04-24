@@ -50,7 +50,7 @@ namespace nnfusion
             KernelCacheManager();
             ~KernelCacheManager();
 
-            std::vector<KernelEntry_p> fetch_all(std::string identifier, std::string device_type);
+            std::vector<KernelEntry_p> fetch_all(std::string identifier, std::string device_type, bool must_exist=false);
             KernelEntry_p fetch_with_tags(std::string identifier,
                                           std::string device_type,
                                           std::set<std::string> tags,
@@ -63,6 +63,7 @@ namespace nnfusion
         public:
             // TODO(lingm): SupportOpList depends on the correctness of the KernelContext identifier
             static std::unordered_set<std::string> SupportOpList;
+            static std::unordered_set<std::string> CodegenOpList;
 
         private:
             std::string m_path;

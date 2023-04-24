@@ -3,6 +3,7 @@
 
 #include "blockfusion_pass.hpp"
 #include "blockfusion/blockfusion.hpp"
+#include "nnfusion/engine/engine.hpp"
 
 using namespace nnfusion;
 using namespace nnfusion::pass::graph;
@@ -31,6 +32,9 @@ bool BlockFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
     }
 
     std::shared_ptr<BlockFusionOptimizer> optimizer;
+    auto ctx = get_context();
+    // fix the compile bug of below code
+    bool is_outmost_graph = (ctx != nullptr && ctx->is_outmost_graph);
     if (FLAGS_fblockfusion_level == 1)
     {
         optimizer =
@@ -39,7 +43,8 @@ bool BlockFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
                                                             FLAGS_fproduct_name,
                                                             1,
                                                             FLAGS_fblockfusion_interplay,
-                                                            FLAGS_fblockfusion_check_correctness);
+                                                            FLAGS_fblockfusion_check_correctness,
+                                                            is_outmost_graph);
     }
     else if (FLAGS_fblockfusion_level == 2)
     {
@@ -49,7 +54,8 @@ bool BlockFusionPass::run_on_graph(std::shared_ptr<nnfusion::graph::Graph>& grap
                                                             FLAGS_fproduct_name,
                                                             2,
                                                             FLAGS_fblockfusion_interplay,
-                                                            FLAGS_fblockfusion_check_correctness);
+                                                            FLAGS_fblockfusion_check_correctness,
+                                                            is_outmost_graph);
     }
 
     if (optimizer->Optimize())

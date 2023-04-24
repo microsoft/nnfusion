@@ -202,6 +202,7 @@ void Convolution::infer_shared_memory(std::shared_ptr<graph::GNode> gnode)
 
     m_shared_memory.clear();
     const Shape& input_shape = gnode->get_input_shape(0);
+    NNFUSION_CHECK(get_data_format() == "NCHW" || get_data_format() == "NHWC");
     int channel = get_data_format() == "NCHW" ? 1 : 3;
     auto input_channel_count = input_shape[channel];
 

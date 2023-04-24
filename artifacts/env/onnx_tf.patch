@@ -1,0 +1,101 @@
+diff --git a/onnx_tf/backend.py b/onnx_tf/backend.py
+index 82b8847..fbf7043 100644
+--- a/onnx_tf/backend.py
++++ b/onnx_tf/backend.py
+@@ -148,7 +148,13 @@ class TensorflowBackend(Backend):
+                                                      handlers,
+                                                      opset=opset,
+                                                      strict=strict)
+-        curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
++        if len(output_ops) != len(onnx_node.outputs):
++          assert len(output_ops) == 1
++          output_ops = output_ops[0]
++          assert len(output_ops) == len(onnx_node.outputs)
++          curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
++        else:
++          curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
+         tensor_dict.update(curr_node_output_map)
+ 
+     tf_rep = TensorflowRep()
+@@ -254,7 +260,8 @@ class TensorflowBackend(Backend):
+     if handlers:
+       handler = handlers[node.domain].get(node.op_type, None) if node.domain in handlers else None
+       if handler:
+-        return handler.handle(node, tensor_dict=tensor_dict, strict=strict)
++        tf_op = handler.handle(node, tensor_dict=tensor_dict, strict=strict)
++        return tf_op
+ 
+     raise BackendIsNotSupposedToImplementIt("{} is not implemented.".format(node.op_type))
+ 
+diff --git a/onnx_tf/common/handler_helper.py b/onnx_tf/common/handler_helper.py
+index 8d0c3ca..365dd27 100644
+--- a/onnx_tf/common/handler_helper.py
++++ b/onnx_tf/common/handler_helper.py
+@@ -32,6 +32,10 @@ def get_all_backend_handlers(opset_dict):
+         common.logger.debug("Fail to get since_version of {} in domain `{}` "
+                       "with max_inclusive_version={}. Set to 1.".format(
+                           handler.ONNX_OP, handler.DOMAIN, version))
++      except defs.SchemaError:
++        common.logger.warning("SchemaError: Fail to get since_version of {} in domain `{}` "
++                      "with max_inclusive_version={}. Set to 1.".format(
++                          handler.ONNX_OP, handler.DOMAIN, version))
+     else:
+       common.logger.debug("Unknown op {} in domain `{}`.".format(
+           handler.ONNX_OP, handler.DOMAIN or "ai.onnx"))
+diff --git a/onnx_tf/handlers/backend/add.py b/onnx_tf/handlers/backend/add.py
+index e306e6c..60fa870 100644
+--- a/onnx_tf/handlers/backend/add.py
++++ b/onnx_tf/handlers/backend/add.py
+@@ -20,4 +20,5 @@ class Add(ArithmeticMixin, BackendHandler):
+ 
+   @classmethod
+   def version_7(cls, node, **kwargs):
+-    return [cls.make_tensor_from_onnx_node(node, **kwargs)]
++    ret = [cls.make_tensor_from_onnx_node(node, **kwargs)]
++    return ret
+diff --git a/onnx_tf/handlers/backend/conv_mixin.py b/onnx_tf/handlers/backend/conv_mixin.py
+index 5d43cd4..0013cf2 100644
+--- a/onnx_tf/handlers/backend/conv_mixin.py
++++ b/onnx_tf/handlers/backend/conv_mixin.py
+@@ -27,6 +27,9 @@ class ConvMixin(BroadcastMixin):
+         conv_transpose_output_shape[i] = strides[i] * (input_shape[i] - 1) + kernel_shape[i]
+     """
+     x = input_dict[node.inputs[0]]
++    if isinstance(x, list):
++      assert len(x) == 1
++      x = x[0]
+     x_rank = len(x.get_shape())
+     x_shape = tf_shape(x, tf.int32)
+     spatial_size = x_rank - 2
+diff --git a/onnx_tf/handlers/backend/pad.py b/onnx_tf/handlers/backend/pad.py
+index 85ed2f4..9a824cb 100644
+--- a/onnx_tf/handlers/backend/pad.py
++++ b/onnx_tf/handlers/backend/pad.py
+@@ -14,7 +14,10 @@ class Pad(BackendHandler):
+   def _common(cls, node, **kwargs):
+     tensor_dict = kwargs["tensor_dict"]
+     x = tensor_dict[node.inputs[0]]
+-    num_dim = len(tensor_dict[node.inputs[0]].get_shape())
++    if isinstance(x, list):
++      assert len(x) == 1
++      x = x[0]
++    num_dim = len(x.get_shape())
+     mode = node.attrs.pop("mode", "constant")
+ 
+     if cls.SINCE_VERSION < 11:  # for opset 1 and opset 2
+diff --git a/onnx_tf/handlers/backend_handler.py b/onnx_tf/handlers/backend_handler.py
+index 3069fc6..3fd18bd 100644
+--- a/onnx_tf/handlers/backend_handler.py
++++ b/onnx_tf/handlers/backend_handler.py
+@@ -188,4 +188,11 @@ class BackendHandler(Handler):
+     if ambiguous_arguments:
+       raise TypeError('Ambiguous arguments for {}()'.format(tf_func.__name__))
+     kwargs.update((p, v) for p, v in attrs.items() if v is not None)
++    if tf_func in [tf.add, tf.multiply, tf.identity]:
++      for p, v in kwargs.items():
++        if isinstance(v, list):
++          assert len(v) == 1
++          kwargs[p] = v[0]
++    out = tf_func(**kwargs)
++    return out
+     return tf_func(**kwargs)

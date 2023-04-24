@@ -63,13 +63,19 @@ namespace nnfusion
                                                        bool is_host = false);
             virtual std::string get_kernel_entry_args(std::shared_ptr<TranslationUnit> tu,
                                                       bool is_host = false);
+            virtual std::tuple<std::string, std::string, std::string>
+                get_kernel_torch_entry_paras(std::shared_ptr<TranslationUnit> tu);
+            virtual std::tuple<std::string, std::string, std::string>
+                get_kernel_torch_entry_returns(std::shared_ptr<TranslationUnit> tu);
 
             virtual std::pair<std::string, std::string>
                 get_paras_and_args(std::vector<nnfusion::ir::Instruction::Pointer>& ir_vec);
             virtual nnfusion::LanguageUnit_p
                 func_call_codegen(nnfusion::ir::Instruction::Pointer ins,
+                                  const std::unordered_map<std::string, std::string>& replaced_extern_result_memory,
                                   bool func_call_only = false,
-                                  const std::string& func_call = "");
+                                  const std::string& func_call = ""
+                                  );
             virtual LanguageUnit_p get_d2hcopy(std::shared_ptr<TranslationUnit> tu);
             virtual LanguageUnit_p get_h2dcopy(std::shared_ptr<TranslationUnit> tu);
             virtual LanguageUnit_p get_sync();

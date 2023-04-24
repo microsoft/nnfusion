@@ -22,6 +22,7 @@ GNode::GNode()
     : m_id(Graph::freeGnodeId)
     , m_instance_id(m_next_instance_id.fetch_add(1))
     , m_unique_name("graph_node_" + to_string(m_instance_id))
+    , m_on_gpu(true)
 {
 }
 
@@ -210,6 +211,10 @@ const std::shared_ptr<nnfusion::graph::Edge> GNode::get_in_edge(size_t i) const
     return found_in_edge;
 }
 
+void GNode::clear_in_edges() {
+    m_in_edges.clear();
+}
+
 void GNode::add_in_edge(std::shared_ptr<Edge> edge)
 {
     m_in_edges.insert(edge);
@@ -380,6 +385,30 @@ const nnfusion::element::Type& GNodeIndex::get_element_type() const
     return gnode->get_output_element_type(index);
 }
 
+std::ostream& nnfusion::graph::operator<<(std::ostream& s, const GNode& gnode) {
+    s << gnode.get_name() << "(" <<  gnode.get_op_type() << ") in {";
+    for (auto edge: gnode.get_in_edges()) {
+        s << edge->get_src()->get_name();
+        if (edge->is_control_edge()) {
+            s << " (control)";
+        } else {
+            s << " " << edge->get_src()->get_output_shape(edge->get_src_output());
+        }
+        s << ", ";
+    }
+    s << "} out {";
+    for (auto edge: gnode.get_out_edges()) {
+        if (edge->is_control_edge()) {
+            s << " (control)";
+        } else {
+            s << " " << edge->get_dst()->get_input_shape(edge->get_dst_input());
+        }
+        s << ", ";
+    }
+    s << "}";
+    return s;
+}
+
 void FusedGNode::build_fused_node(std::unordered_set<std::shared_ptr<GNode>> nodes,
                                   std::shared_ptr<Graph> graph,
                                   bool clean_graph)
@@ -465,6 +494,18 @@ void FusedGNode::set_inputs_and_outputs(std::shared_ptr<Graph> graph)
                                 out_edge->get_dst(),
                                 out_edge->get_dst_input());
             }
+        }
+        for (const auto& out_edge : m_node->get_out_edges())
+        {
+            if (!out_edge->is_control_edge())
+                continue;
+            auto out_node = out_edge->get_dst();
+            if (cached_nodes.find(out_node) != cached_nodes.end() || out_node == shared_from_this())
+                continue;
+            graph->add_edge(shared_from_this(),
+                            Graph::kControlSlot,
+                            out_edge->get_dst(),
+                            out_edge->get_src_output());
         }
     }
 }

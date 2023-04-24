@@ -282,9 +282,6 @@ cuda::AvgPoolmD::AvgPoolmD(shared_ptr<KernelContext> ctx)
 
 LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
 {
-    if (input_shape.size() != 4 && input_shape.size() != 5)
-        return nullptr;
-
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
     auto rank = input_shape.size();
@@ -297,8 +294,8 @@ LanguageUnit_p cuda::AvgPoolmD::emit_function_body()
         window_shape.insert(window_shape.begin(), 1);
         padding_below.insert(padding_below.begin(), 0);
         window_stride.insert(window_stride.begin(), 1);
-        _input_shape.insert(_input_shape.begin() + 1, 1);
-        _output_shape.insert(_output_shape.begin() + 1, 1);
+        _input_shape.insert(_input_shape.begin() + 2, 1);
+        _output_shape.insert(_output_shape.begin() + 2, 1);
         rank = 4;
     }
 
@@ -517,10 +514,10 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
         window_shape.insert(window_shape.begin(), 1);
         padding_below.insert(padding_below.begin(), 0);
         window_stride.insert(window_stride.begin(), 1);
-        _input_shape.insert(_input_shape.begin() + 1, 1);
-        _output_shape.insert(_output_shape.begin() + 1, 1);
-        _d_input_shape.insert(_d_input_shape.begin() + 1, 1);
-        _d_output_shape.insert(_d_output_shape.begin() + 1, 1);
+        _input_shape.insert(_input_shape.begin() + 2, 1);
+        _output_shape.insert(_output_shape.begin() + 2, 1);
+        _d_input_shape.insert(_d_input_shape.begin() + 2, 1);
+        _d_output_shape.insert(_d_output_shape.begin() + 2, 1);
         rank = 4;
     }
 
@@ -609,10 +606,10 @@ LanguageUnit_p cuda::AvgPoolmDGrad::emit_function_body()
     return _lu;
 }
 
-REGISTER_KERNEL_EMITTER(
-    "AvgPool",                                                                    // op_name
-    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
-    cuda::AvgPool1D)                                                              // constructor
+// REGISTER_KERNEL_EMITTER(
+//     "AvgPool",                                                                    // op_name
+//     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel").Priority(2), // attrs
+//     cuda::AvgPool1D)                                                              // constructor
 
 REGISTER_KERNEL_EMITTER(
     "AvgPool",                                                                     // op_name

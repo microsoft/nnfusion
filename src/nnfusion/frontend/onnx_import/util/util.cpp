@@ -115,6 +115,7 @@ namespace nnfusion
                     NNFUSION_CHECK_FAIL() << "unsupported value info element type: "
                                           << onnx::TensorProto_DataType_Name(onnx_et);
                 }
+                return make_constant_op<float>(element::f32, shape, tensor);
             }
 
             std::shared_ptr<graph::GNode> GetInputNode(const NodeMap& all_ng_nodes,
@@ -183,9 +184,16 @@ namespace nnfusion
             }
 
             Shape get_kernel_shape(const Node& node,
-                                   const std::shared_ptr<graph::GNode> input_gnode)
+                                   const std::shared_ptr<graph::GNode> input_gnode) {
+                NNFUSION_CHECK(input_gnode->get_output_size() == 1);
+                return get_kernel_shape(node, input_gnode, 0);
+            }
+
+            Shape get_kernel_shape(const Node& node,
+                                   const std::shared_ptr<graph::GNode> input_gnode,
+                                   int index)
             {
-                std::size_t input_spacial_dims = input_gnode->get_shape().size() - 2;
+                std::size_t input_spacial_dims = input_gnode->get_output_shape(index).size() - 2;
                 return node.get_attribute_value<std::vector<std::size_t>>(
                     "kernel_shape", std::vector<std::size_t>(input_spacial_dims, 1UL));
             }
@@ -197,12 +205,24 @@ namespace nnfusion
 
             Strides get_strides(const Node& node, const std::shared_ptr<graph::GNode> input_gnode)
             {
-                return get_strides(node, get_kernel_shape(node, input_gnode));
+                NNFUSION_CHECK(input_gnode->get_output_size() == 1);
+                return get_strides(node, input_gnode, 0);
+            }
+
+            Strides get_strides(const Node& node, const std::shared_ptr<graph::GNode> input_gnode, int index)
+            {
+                return get_strides(node, get_kernel_shape(node, input_gnode, index));
             }
 
             Strides get_dilations(const Node& node, const std::shared_ptr<graph::GNode> input_gnode)
             {
-                return get_strides_helper(node, "dilations", get_kernel_shape(node, input_gnode));
+                NNFUSION_CHECK(input_gnode->get_output_size() == 1);
+                return get_dilations(node, input_gnode, 0);
+            }
+
+            Strides get_dilations(const Node& node, const std::shared_ptr<graph::GNode> input_gnode, int index)
+            {
+                return get_strides_helper(node, "dilations", get_kernel_shape(node, input_gnode, index));
             }
 
             std::pair<CoordinateDiff, CoordinateDiff> get_pads(const Node& node,
@@ -278,6 +298,105 @@ namespace nnfusion
             {
                 return node.get_attribute_value<std::vector<std::size_t>>(
                     name, std::vector<std::size_t>(kernel_shape.size(), 1UL));
+            }
+
+            std::unordered_set<std::string> extract_input(const onnx::GraphProto& graph_proto, bool ignore_graph_input)
+            {
+                std::unordered_set<std::string> node_inputs;
+                std::unordered_set<std::string> node_outputs;
+
+                for (auto node_proto : graph_proto.node())
+                {
+                    for (size_t i = 0; i < node_proto.input_size(); i++)
+                    {
+                        node_inputs.insert(node_proto.input(i));
+                    }
+                    for (size_t i = 0; i < node_proto.output_size(); i++)
+                    {
+                        node_outputs.insert(node_proto.output(i));
+                    }
+                    if (node_proto.op_type() == "If") {
+                        Node node(node_proto);
+                        auto then_inputs = extract_input(node.get_attribute_value<onnx::GraphProto>("then_branch"));
+                        node_inputs.insert(then_inputs.begin(), then_inputs.end());
+                        auto else_inputs = extract_input(node.get_attribute_value<onnx::GraphProto>("else_branch"));
+                        node_inputs.insert(else_inputs.begin(), else_inputs.end());
+                    } else if (node_proto.op_type() == "Loop") {
+                        Node node(node_proto);
+                        auto body_inputs = extract_input(node.get_attribute_value<onnx::GraphProto>("body"));
+                        node_inputs.insert(body_inputs.begin(), body_inputs.end());
+                    } else if (node_proto.op_type() == "Recursion") {
+                        Node node(node_proto);
+                        auto body_inputs = extract_input(node.get_attribute_value<onnx::GraphProto>("body"));
+                        node_inputs.insert(body_inputs.begin(), body_inputs.end());
+                    }
+                }
+
+                std::unordered_set<std::string> graph_inputs;
+                for (auto item : node_inputs)
+                {
+                    if (node_outputs.find(item) == node_outputs.end())
+                    {
+                        graph_inputs.insert(item);
+                    }
+                }
+
+                std::unordered_set<std::string> existing_inputs;
+                for (auto input_proto : graph_proto.input())
+                {
+                    existing_inputs.insert(input_proto.name());
+                }
+
+                std::unordered_set<std::string> missing_inputs;
+
+                for (auto input : graph_inputs)
+                {
+                    if (existing_inputs.find(input) == existing_inputs.end())
+                    {
+                        missing_inputs.insert(input);
+                        // std::cout << input << std::endl;
+                    }
+                }
+
+                return missing_inputs;
+            }
+
+            onnx::GraphProto complete_graphproto(const onnx::GraphProto& graph_proto, const onnx::GraphProto& full_graph_proto)
+            {
+                onnx::GraphProto completed_graphproto(graph_proto);
+                std::unordered_set<std::string> missing_inputs = extract_input(graph_proto);
+
+                std::unordered_map<std::string, size_t> full_graph_initializer_index;
+                for (size_t i = 0; i < full_graph_proto.initializer().size(); i++) {
+                    auto& initializer = full_graph_proto.initializer(i);
+                    full_graph_initializer_index[initializer.name()] = i;
+                }
+
+                for (auto item : missing_inputs)
+                {
+                    if (full_graph_initializer_index.find(item) != full_graph_initializer_index.end()) {
+                        auto initializer = completed_graphproto.add_initializer();
+                        initializer->CopyFrom(full_graph_proto.initializer(full_graph_initializer_index[item]));
+                        NNFUSION_LOG(INFO) << "Copy initializer to inner graph: " << item;
+                    } else {
+                        auto input = completed_graphproto.add_input();
+                        input->set_name(item);
+                    }
+                }
+
+                // std::cout << completed_graphproto.DebugString() << std::endl;
+
+                return completed_graphproto;
+            }
+            std::shared_ptr<graph::GNode> find_node_from_graph(const graph::Graph::Pointer graph,
+                                                               const std::string& name)
+            {
+                for (auto node : graph->get_nodes())
+                {
+                    if (node->get_name() == name)
+                        return node;
+                }
+                return nullptr;
             }
 
         } // namespace onnx_import

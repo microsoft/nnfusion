@@ -18,12 +18,14 @@ DEFINE_bool(fadd_allreduce, false, "Add Allreduce operater after ApplyGradient o
 bool GradientWeightMappingPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
     bool allreduce_enable = FLAGS_fadd_allreduce;
-    std::vector<std::shared_ptr<GNode>> result_nodes;
+    GNodeIndexVector result_nodes;
 
     auto const_nodes = graph->get_const_nodes();
 
-    for (auto node : graph->get_outputs())
+    for (auto indexed_node : graph->get_indexed_outputs())
     {
+        auto node = indexed_node.gnode;
+        auto node_index = indexed_node.index;
         std::shared_ptr<GNode> update_node = node;
         bool is_apply_gradient_op = false;
         if ((*node)["Alias"].is_valid())
@@ -89,7 +91,8 @@ bool GradientWeightMappingPass::run_on_graph(std::shared_ptr<Graph>& graph)
             result_op->set_needs_copy_to_host(false);
         }
         ///\todo: the first output of gnode, remove the restriction
-        auto result_node = graph->add_node_and_edge(result_op, {GNodeIndex{update_node, 0}});
+        auto result_node =
+            graph->add_node_and_edge(result_op, {GNodeIndex{update_node, node_index}});
         result_nodes.emplace_back(result_node);
     }
     graph->set_outputs(result_nodes);

@@ -4,6 +4,8 @@
 #include "../cuda_emitter.hpp"
 #include "../cuda_langunit.hpp"
 
+DECLARE_int32(fmax_block_dim);
+
 namespace nnfusion
 {
     namespace kernels
@@ -147,7 +149,7 @@ namespace nnfusion
                 void set_launch_config() override
                 {
                     size_t nthreads = shape_size(result_shape);
-                    uint32_t block_size_x = 64;
+                    uint32_t block_size_x = FLAGS_fmax_block_dim;
                     uint32_t aligned_grid_size_x =
                         align_to_block_size(static_cast<uint32_t>(nthreads), block_size_x);
                     m_gridDim = dim3(aligned_grid_size_x, 1, 1);

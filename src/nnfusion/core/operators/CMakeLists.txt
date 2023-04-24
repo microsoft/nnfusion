@@ -35,6 +35,7 @@ set(SRC
     op_define/cosh.cpp
     op_define/divide.cpp
     op_define/dot.cpp
+    op_define/d2h.cpp
     op_define/equal.cpp
     op_define/erf.cpp
     op_define/exp.cpp
@@ -42,15 +43,20 @@ set(SRC
     op_define/gelu.cpp
     op_define/greater_eq.cpp
     op_define/greater.cpp
+    op_define/h2d.cpp
+    op_define/identity.cpp
+    op_define/if.cpp
     op_define/less_eq.cpp
     op_define/less.cpp
     op_define/log.cpp
+    op_define/loop.cpp
     op_define/lrn.cpp
     op_define/max_pool.cpp
     op_define/max.cpp
     op_define/maximum.cpp
     op_define/min.cpp
     op_define/minimum.cpp
+    op_define/mod.cpp
     op_define/multiply.cpp
     op_define/negative.cpp
     op_define/not_equal.cpp
@@ -61,6 +67,7 @@ set(SRC
     op_define/power.cpp
     op_define/product.cpp
     op_define/reduce_window.cpp
+    op_define/recursion.cpp
     op_define/reduce.cpp
     op_define/relu.cpp
     op_define/replace_slice.cpp
@@ -87,6 +94,8 @@ set(SRC
     op_define/topk.cpp
     op_define/variable.cpp
     op_define/fused.cpp
+    op_define/while.cpp
+    op_define/if_single.cpp
     ${generic_op_define}
 )
 

@@ -6,8 +6,10 @@
 using namespace nnfusion;
 using namespace nnfusion::kernels;
 
+DECLARE_int32(fmax_block_dim);
+
 cuda::Reshape::Reshape(shared_ptr<KernelContext> ctx)
-    : CudaEmitter(ctx)
+    : BlockCudaEmitter(ctx)
 {
     NNFUSION_CHECK(ctx->outputs[0]->size(false) > 0) << "Invalid output shape for Reshape.";
     reshape = static_pointer_cast<nnfusion::op::Reshape>(ctx->gnode->get_op_ptr());
@@ -358,7 +360,7 @@ void cuda::Reshape3D::set_launch_config()
 cuda::ReshapehD::ReshapehD(shared_ptr<KernelContext> ctx)
     : Reshape(ctx)
 {
-    block_size_x = 64;
+    block_size_x = 256;
     input_strides = nnfusion::row_major_strides(arg_shape);
     output_strides = nnfusion::NVShape(arg_rank);
     trans_strides = nnfusion::NVShape(arg_rank);
@@ -381,14 +383,14 @@ cuda::ReshapehD::ReshapehD(shared_ptr<KernelContext> ctx)
 
 LanguageUnit_p cuda::ReshapehD::emit_function_body()
 {
-    if (is_noop || is_memcpy || arg_rank == 3 || arg_rank == 2)
+    if (is_noop || is_memcpy)
     {
         return nullptr;
     }
 
     LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
     auto& lu = *_lu;
-    uint32_t nthreads = static_cast<uint32_t>(shape_size(arg_shape));
+    uint32_t n = static_cast<uint32_t>(shape_size(arg_shape));
 
     // function signature:
     // extern "C" __global__ void kernel(m_context->dtypes[0]* input0, m_context->dtypes[2]* output0)
@@ -404,11 +406,11 @@ LanguageUnit_p cuda::ReshapehD::emit_function_body()
 
         lu << expand_vector_uint32("input_strides", input_strides);
         lu << expand_vector_uint32("trans_strides", trans_strides);
-        lu << "size_t n = " << nthreads << ";\n";
+        lu << "size_t n = " << n << ";\n";
+        lu << "size_t nthreads =" << block_size_x * m_gridDim.x << ";\n";
         // Common data area ends
 
-        lu << "uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;\n";
-        lu << "if (tid < n)\n";
+        lu << "for (uint32_t tid = blockIdx.x*blockDim.x+threadIdx.x; tid<n; tid+=nthreads)\n";
         lu.block_begin();
         {
             lu << "uint32_t input_idx = tid;\n";
@@ -435,6 +437,8 @@ void cuda::ReshapehD::set_launch_config()
 {
     uint32_t nthreads = static_cast<uint32_t>(shape_size(arg_shape));
     uint32_t aligned_grid_size_x = align_to_block_size(nthreads, block_size_x);
+    if (aligned_grid_size_x > 80)
+        aligned_grid_size_x = 80;
 
     m_gridDim = dim3(aligned_grid_size_x, 1, 1);
     m_blockDim = dim3(block_size_x, 1, 1);
@@ -554,7 +558,51 @@ LanguageUnit_p cuda::ReshapeMemcpy::emit_function_signature()
     return _lu;
 }
 
-// Register Reshape kernel emitter
+cuda::ReshapeMemcpyBlock::ReshapeMemcpyBlock(shared_ptr<KernelContext> ctx): Reshape(ctx) {}
+
+LanguageUnit_p cuda::ReshapeMemcpyBlock::emit_function_body()
+{
+    if (!is_memcpy && !is_noop)
+    {
+        return nullptr;
+    }
+
+    LanguageUnit_p _lu(new LanguageUnit(get_function_name()));
+    auto& lu = *_lu;
+
+    if (is_memcpy)
+    {
+        size_t arg_size = shape_size(arg_shape);
+        lu << "uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;\n";
+        lu << "if (tid >= " << arg_size << ") { return; }\n";
+        lu << "output0[tid] = input0[tid];\n";
+    }
+    else
+    {
+        lu << "// noop as input0 == output0.\n";
+    }
+
+    return _lu;
+}
+
+void cuda::ReshapeMemcpyBlock::set_launch_config() {
+    size_t arg_size = shape_size(arg_shape);
+    uint32_t nthreads = arg_size;
+    uint32_t block_size_x = FLAGS_fmax_block_dim;
+    uint32_t aligned_grid_size_x = align_to_block_size(nthreads, block_size_x);
+
+    m_gridDim = dim3(aligned_grid_size_x, 1, 1);
+    m_blockDim = dim3(block_size_x, 1, 1);
+}
+
+bool cuda::ReshapeMemcpyBlock::is_eliminative()
+{
+    if (is_memcpy && m_context->inputs[0]->is_same_address(m_context->outputs[0]))
+        return true;
+    else
+        return false;
+}
+
 
 REGISTER_KERNEL_EMITTER(
     "Reshape",                                                                       // op_name
@@ -568,10 +616,15 @@ REGISTER_KERNEL_EMITTER(
 
 REGISTER_KERNEL_EMITTER(
     "Reshape",                                                                      // op_name
-    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel_D").Priority(2), // attrs
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel_D").Priority(3), // attrs
     cuda::ReshapehD)                                                                // constructor
 
 REGISTER_KERNEL_EMITTER(
     "Reshape",                                                                 // op_name
     Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_lib").Priority(2), // attrs
     cuda::ReshapeMemcpy)                                                       // constructor
+
+REGISTER_KERNEL_EMITTER(
+    "Reshape",
+    Device(CUDA_GPU).TypeConstraint(element::f32).Tag("cuda_kernel_D").Priority(2),
+    cuda::ReshapeMemcpyBlock)

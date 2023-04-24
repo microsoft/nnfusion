@@ -42,7 +42,9 @@ namespace nnfusion
 
             /// \return A set containing the indices of the broadcast axes (0-based).
             const nnfusion::AxisSet& get_broadcast_axes() const { return m_broadcast_axes; }
+            void set_broadcast_axes(const nnfusion::AxisSet& axis) { m_broadcast_axes = axis; }
             const nnfusion::Shape& get_broadcast_shape() const { return m_shape; }
+            void set_broadcast_shape(const nnfusion::Shape& shape) { m_shape = shape; }
             bool is_inner_broadcast() { return m_is_inner_broadcast; }
             bool is_outer_broadcast() { return m_is_outer_broadcast; }
             size_t get_inner_broadcast_size() { return m_inner_bc_size; }

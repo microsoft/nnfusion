@@ -4,6 +4,9 @@
 #include "manager.hpp"
 #include <limits>
 #include <pwd.h>
+#ifdef PYTHON_INTERPRETER
+#include <Python.h> 
+#endif
 #include "nnfusion/core/graph/graph.hpp"
 #include "nnfusion/core/kernels/cuda_gpu/cuda_common_ops.hpp"
 #include "nnfusion/core/kernels/kernel_emitter.hpp"
@@ -17,10 +20,13 @@ DEFINE_string(fkernel_cache_path, "", "Kernel cache DB path");
 DEFINE_string(fproduct_name,
               "default",
               "Device product name, like 'GeForce GTX 1080 Ti', 'Tesla V100-PCIE-16GB'");
+DEFINE_bool(fcodegen_unexist_kernel, false, "Generate a kernel with roller and insert to db if not found");
+DEFINE_string(flog_kerneldb_request, "#", "Save request to a file");
 
 using namespace nnfusion::cache;
 
 std::unordered_set<std::string> KernelCacheManager::SupportOpList;
+std::unordered_set<std::string> KernelCacheManager::CodegenOpList;
 
 sqlite3* KernelCacheManager::kernel_cache = nullptr;
 KernelCacheManager::KernelCacheManager()
@@ -83,12 +89,24 @@ CREATE TABLE IF NOT EXISTS KernelCache(
             SupportOpList.insert(it.first);
         }
         SupportOpList.insert({"Dot",
+                              "BatchMatMul",
                               "Convolution",
                               "AvgPool",
                               "MaxPool",
-                              "Fused_Convolution_Relu",
-                              "Fused_Convolution_Add_Relu",
-                              "Matched_Pattern"});
+                              "Matched_Pattern(Convolution-Add-Relu)",
+                              "Sum"});
+    }
+
+    if (CodegenOpList.size() == 0)
+    {
+        CodegenOpList.insert({
+            "Dot",
+            "BatchMatMul",
+            "Convolution",
+            "AvgPool",
+            "MaxPool",
+            "Matched_Pattern(Convolution-Add-Relu)"
+        });
     }
 }
 
@@ -99,10 +117,26 @@ KernelCacheManager::~KernelCacheManager()
 }
 
 std::vector<KernelEntry_p> KernelCacheManager::fetch_all(std::string identifier,
-                                                         std::string device_type)
+                                                         std::string device_type,
+                                                         bool must_exist)
 {
-    NNFUSION_LOG(DEBUG) << "Trying to fetch kernel " << identifier
-                        << " on DeviceType: " << device_type;
+    if (FLAGS_flog_kerneldb_request != "#")
+    {
+        static bool first = true;
+        if (first)
+        {
+            std::ofstream log_file(FLAGS_flog_kerneldb_request, std::ios::trunc);
+            log_file << identifier << ":::" << device_type << std::endl;
+            log_file.close();
+            first = false;
+        } else {
+            std::ofstream log_file(FLAGS_flog_kerneldb_request, std::ios::app);
+            log_file << identifier << ":::" << device_type << std::endl;
+            log_file.close();
+        }
+    }
+    // NNFUSION_LOG(INFO) << "Trying to fetch kernel " << identifier
+    //                     << " on DeviceType: " << device_type;
     sqlite3_stmt* pStmt;
     const char* fetch = R"(
 SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, Miscs FROM KernelCache WHERE (Identifier = ?) AND (DeviceType = ?);
@@ -130,7 +164,7 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
 
         if (SupportOpList.find(fetched_kernel->op_type) == SupportOpList.end())
         {
-            NNFUSION_LOG(DEBUG) << "Unsupported op_type: " << fetched_kernel->op_type
+            NNFUSION_LOG(INFO) << "Unsupported op_type: " << fetched_kernel->op_type
                                 << ", ingore this fetch";
             fetched.clear();
             break;
@@ -172,12 +206,59 @@ SELECT Key, Identifier, OpType, Attributes, Source, DeviceType, Function, Tags, 
     NNFUSION_CHECK(SQLITE_OK == sqlite3_finalize(pStmt));
     if (fetched.size() > 0)
     {
-        NNFUSION_LOG(DEBUG) << fetched.size() << " cached kernel fetched " << identifier
+        NNFUSION_LOG(INFO) << fetched.size() << " cached kernel fetched " << identifier
                             << " on: " << device_type;
     }
     else
     {
-        NNFUSION_LOG(DEBUG) << "Failed to fetch, fallback plan will be uses";
+        // NNFUSION_LOG(INFO) << "Failed to fetch, fallback plan will be uses";
+    }
+    if (must_exist) {
+        NNFUSION_CHECK(fetched.size() > 0);
+    }
+    std::string kernel_name = identifier.substr(0, identifier.find('['));
+    if (FLAGS_fcodegen_unexist_kernel && CodegenOpList.find(kernel_name) != CodegenOpList.end() && fetched.size() == 0) {
+#ifdef PYTHON_INTERPRETER
+        NNFUSION_LOG(INFO) << "codegen unexist kernel: " << identifier;
+        static bool python_init = false;
+        if (!python_init) {
+            Py_Initialize();
+            python_init = true;
+        }
+        std::string module_name = "roller";
+        PyObject *pName = PyUnicode_FromString(module_name.c_str());
+        PyObject *pModule = PyImport_Import(pName);
+        PyObject* pFunc;
+        if(pModule != NULL){
+            pFunc = PyObject_GetAttrString(pModule, "run");
+            assert(pFunc && PyCallable_Check(pFunc));
+        } else{
+            PyErr_Print();
+            fprintf(stderr, "Failed to load \"%s\"\n", module_name.c_str());
+            exit(1);
+            return std::vector<KernelEntry_p>();
+        }
+
+        PyObject* pArgs = PyTuple_New(2);
+        PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", identifier.c_str()));
+        PyTuple_SetItem(pArgs, 1, Py_BuildValue("s", FLAGS_fproduct_name.c_str()));
+        PyObject_Call(pFunc, pArgs, nullptr);
+        fflush(stdout);
+        fflush(stderr);
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+            fflush(stdout);
+            fflush(stderr);
+            fprintf(stderr, "Error in python\n");
+            exit(1);
+        }
+        NNFUSION_CHECK(SQLITE_OK == sqlite3_open(m_path.c_str(), &kernel_cache));
+        fetched = fetch_all(identifier, device_type, true);
+#else
+        NNFUSION_LOG(ERROR) << "python interpreter not found, skip codegen unexist kernel: " << identifier;
+        exit(1);
+#endif
+
     }
     return fetched;
 }

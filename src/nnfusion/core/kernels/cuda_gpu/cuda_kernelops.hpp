@@ -53,11 +53,13 @@ namespace nnfusion
         class GreaterEq;
         class Less;
         class LessEq;
+        class Mod;
         class Not;
         class Relu;
         class ReluBackprop;
         class Relu6;
         class Relu6Backprop;
+        class Identity;
         class Max;
         class Min;
         class Negative;
@@ -276,6 +278,13 @@ namespace nnfusion
             };
 
             template <>
+            struct CudaOpMap<nnfusion::op::Mod>
+            {
+                static constexpr const char* op = "fmod";
+                static constexpr const char* math_kernel = nullptr;
+            };
+
+            template <>
             struct CudaOpMap<nnfusion::op::Sign>
             {
                 static constexpr const char* op = "sign";
@@ -344,6 +353,13 @@ namespace nnfusion
             {
                 static constexpr const char* op = "relu";
                 static constexpr const char* math_kernel = "fmaxf(0,x0)";
+            };
+
+            template <>
+            struct CudaOpMap<nnfusion::op::Identity>
+            {
+                static constexpr const char* op = "identity";
+                static constexpr const char* math_kernel = "x0";
             };
 
             template <>

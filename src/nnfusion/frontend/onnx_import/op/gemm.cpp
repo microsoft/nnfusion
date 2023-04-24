@@ -70,16 +70,23 @@ namespace nnfusion
                     if (beta_value != 0)
                     {
                         auto C = input_indexes[2];
-                        auto beta_op = std::make_shared<op::Constant>(
+                        std::shared_ptr<graph::GNode> bias;
+                        
+                        if (beta_value == 1) {
+                            bias = C.gnode;
+                            NNFUSION_CHECK(C.gnode->get_output_size() == 1) << "not implemented";
+                        } else {
+                            auto beta_op = std::make_shared<op::Constant>(
                             element::f32, C.get_shape(), std::vector<float>({beta_value}));
-                        auto beta = m_graph->add_node_and_edge(beta_op, graph::GNodeVector({}));
-                        if (beta->get_element_type() != C.get_element_type())
-                        {
-                            auto cast_op = std::make_shared<op::Convert>(C.get_element_type());
-                            beta = m_graph->add_node_and_edge(cast_op, {beta});
-                        }
-                        auto bias = m_graph->add_node_and_edge(std::make_shared<op::Multiply>(),
+                            auto beta = m_graph->add_node_and_edge(beta_op, graph::GNodeVector({}));
+                            if (beta->get_element_type() != C.get_element_type())
+                            {
+                                auto cast_op = std::make_shared<op::Convert>(C.get_element_type());
+                                beta = m_graph->add_node_and_edge(cast_op, {beta});
+                            }
+                            bias = m_graph->add_node_and_edge(std::make_shared<op::Multiply>(),
                                                                {C, GNodeIndex{beta, 0}});
+                        }
                         std::tie(result, bias) =
                             numpy_broadcast(std::make_pair(result, bias), m_graph);
                         result =

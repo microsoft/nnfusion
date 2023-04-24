@@ -239,4 +239,5 @@ string to_lower(string s)
 string to_upper(string s)
 {
     transform(s.begin(), s.end(), s.begin(), ::toupper);
+    return s;
 }

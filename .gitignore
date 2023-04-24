@@ -52,3 +52,15 @@ doc/doxygen/html/*
 
 nnfusion_rt/
 models/frozenmodels/
+
+artifacts/data
+artifacts/reproduce_results
+*.onnx
+*.tfgraph
+
+artifacts/baseline/attention/onnx
+artifacts/baseline/seq2seq/onnx
+artifacts/baseline/blockdrop/onnx
+artifacts/baseline/skipnet/onnx
+artifacts/baseline/resnet18/resnet18.b1.onnx
+artifacts/baseline/resnet101/resnet101.b1.onnx

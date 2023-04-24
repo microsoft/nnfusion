@@ -1,0 +1,29 @@
+AvgPool[64,1,8,8;64,1,1,1floatfloatShape{8, 8}Strides{8, 8}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+AvgPool[1,64,8,8;1,64,1,1floatfloatShape{8, 8}Strides{8, 8}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+AvgPool[64,64,8,8;64,64,1,1floatfloatShape{8, 8}Strides{8, 8}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Dot[1,64;10,64;1,10floatfloatfloat01]:::CUDA_GPU
+BatchMatMul[1,256;4,256,256;4,1,256floatfloatfloat]:::CUDA_GPU
+BatchMatMul[1,256;8,256,256;8,1,256floatfloatfloat]:::CUDA_GPU
+AvgPool[256,1,56,56;256,1,1,1floatfloatShape{56, 56}Strides{56, 56}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+AvgPool[1,256,56,56;1,256,1,1floatfloatShape{56, 56}Strides{56, 56}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Convolution[256,1,1,1;10,256,1,1;10,1,1,1floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[1,256,1,1;10,256,1,1;10,1,1,1floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+BatchMatMul[1,10;4,10,10;4,1,10floatfloatfloat]:::CUDA_GPU
+Convolution[1,10,1,1;1,10,1,1;1,1,1,1floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[1,10,1,1;1,10,1,1;1,1,1,1floatfloatfloatLayout{NCHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+AvgPool[512,1,28,28;512,1,1,1floatfloatShape{28, 28}Strides{28, 28}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+AvgPool[1,512,28,28;1,512,1,1floatfloatShape{28, 28}Strides{28, 28}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Convolution[512,1,1,1;10,512,1,1;10,1,1,1floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[1,512,1,1;10,512,1,1;10,1,1,1floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+AvgPool[1024,1,14,14;1024,1,1,1floatfloatShape{14, 14}Strides{14, 14}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+AvgPool[1,1024,14,14;1,1024,1,1floatfloatShape{14, 14}Strides{14, 14}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Convolution[1024,1,1,1;10,1024,1,1;10,1,1,1floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[1,1024,1,1;10,1024,1,1;10,1,1,1floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+AvgPool[2048,1,7,7;2048,1,1,1floatfloatShape{7, 7}Strides{7, 7}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+AvgPool[1,2048,7,7;1,2048,1,1floatfloatShape{7, 7}Strides{7, 7}Shape{0, 0}Shape{0, 0}]:::CUDA_GPU
+Convolution[2048,1,1,1;10,2048,1,1;10,1,1,1floatfloatfloatLayout{CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Convolution[1,2048,1,1;10,2048,1,1;10,1,1,1floatfloatfloatLayout{NCHW2CNHW}Strides{1, 1}Strides{1, 1}CoordinateDiff{0, 0}]:::CUDA_GPU
+Dot[1,1024;512,1024;1,512floatfloatfloat01]:::CUDA_GPU
+Dot[1,256;3797,256;1,3797floatfloatfloat01]:::CUDA_GPU
+BatchMatMul[1,12,1,64;12,64,64;1,12,1,64floatfloatfloat]:::CUDA_GPU
+BatchMatMul[1,12,1,64;1,12,64,64;1,12,1,64floatfloatfloat]:::CUDA_GPU

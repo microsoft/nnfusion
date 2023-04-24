@@ -20,6 +20,7 @@ option(CODE_COVERAGE_ENABLE "Enable code coverage." FALSE)
 option(ONNX_FRONTEND "Enable ONNX frontend." TRUE)
 option(TENSORFLOW_FRONTEND "Enable Tensorflow frontend." TRUE)
 option(TORCHSCRIPT_FRONTEND "Enable TorchScript frontend." FALSE)
+option(PYTHON_INTERPRETER "Enable Python interpreter" FALSE)
 
 #-----------------------------------------------------------------------------------------------
 # STEP.1 Customnized targets
@@ -73,7 +74,7 @@ endif()
 if(${DEBUG_ENABLE})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g")
 endif()
 
 if (CODE_COVERAGE_ENABLE)
@@ -104,6 +105,10 @@ if(TORCHSCRIPT_FRONTEND)
     add_definitions(-DTORCHSCRIPT_FRONTEND)
 endif()
 
+if(PYTHON_INTERPRETER)
+add_definitions(-DPYTHON_INTERPRETER)
+endif()
+
 add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 #-----------------------------------------------------------------------------------------------
@@ -115,10 +120,17 @@ find_package(CURL)
 ###Static###
 set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Threads REQUIRED) # This is for test usage
-find_package(GTest)
+# find_package(GTest)
 find_package(Protobuf 3.5.0)
 find_library(gflags NAMES libgflags.a)
 find_library(sqlite3 NAMES libsqlite3.a)
+if(PYTHON_INTERPRETER)
+find_package(Python COMPONENTS Interpreter Development)
+message("python include dir ${Python_INCLUDE_DIRS}")
+include_directories(
+    ${Python_INCLUDE_DIRS}
+)
+endif()
 
 #-----------------------------------------------------------------------------------------------
 # STEP.6 Check envs
@@ -136,8 +148,8 @@ message(STATUS "thirdparty enabled")
 add_subdirectory(src)
 message(STATUS "nnfusion enabled")
 
-add_subdirectory(test)
-message(STATUS "unit tests enabled")
+# add_subdirectory(test)
+# message(STATUS "unit tests enabled")
 
 # add_subdirectory(doc)
 # message(STATUS "nnfusion documents enabled")

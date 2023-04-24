@@ -44,8 +44,10 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
      element_op(
          "divnonan",
          "(x0 / x1).when([x1 != const(0).cast(x1.dtype())], const(0).cast(input1[].dtype()))")},
+    {"Mod", element_op("fmod", "")},
     {"Square", element_op("square", "x0 * x0")},
     {"Negative", element_op("negative", "-x0")},
+    {"Identity", element_op("identity", "x0")},
     {"Select", element_op("select", "x2.when([x0 == 0], x1)")},
     {"Sign", element_op("sign", "const(1).when([x0 > 0], const(-1).when([x0 < 0], 0))")},
     {"Gelu", element_op("gelu", "x0 * x0.call(`normcdf`)")},
@@ -127,7 +129,45 @@ auto trans_elementwise = [](std::shared_ptr<graph::GNode>& node) {
 
 #define REGISTER_ELEM_OP(op_name)                                                                  \
     REGISTER_OP(op_name)                                                                           \
-        .infershape(nnfusion::op::infershape::copy_shape_from_inputs)                              \
+        .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {                               \
+            int num_inputs = gnode->get_input_size();                                              \
+            auto shape = gnode->get_input_shape(0);                                                \
+            for (int i = 1; i < num_inputs; i++)                                                  \
+            {                                                                                      \
+                auto input_shape = gnode->get_input_shape(i);                                     \
+                while (shape.size() < input_shape.size())                                         \
+                {                                                                                  \
+                    shape.insert(shape.begin(), 1);                                               \
+                }                                                                                  \
+                while (shape.size() > input_shape.size())                                         \
+                {                                                                                  \
+                    input_shape.insert(input_shape.begin(), 1);                                   \
+                }                                                                                  \
+                for (int j = 0; j < shape.size(); j++)                                            \
+                {                                                                                  \
+                    if (shape[j] == 1)                                                             \
+                    {                                                                              \
+                        shape[j] = input_shape[j];                                                 \
+                    }                                                                              \
+                    else if (input_shape[j] == 1)                                                 \
+                    {                                                                              \
+                        continue;                                                                  \
+                    }                                                                              \
+                    else if (shape[j] != input_shape[j])                                           \
+                    {                                                                              \
+                        NNFUSION_CHECK(false) << "Shape mismatch: " << shape << " vs "             \
+                                               << input_shape;                                     \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            NNFUSION_LOG(INFO) << "op_type " << gnode->get_op_type();                              \
+            auto dtype = gnode->get_input_element_type(0);                                         \
+            if (gnode->get_op_type() == "Select")                                                  \
+            {                                                                                      \
+                dtype = gnode->get_input_element_type(2);                                          \
+            }                                                                                      \
+            gnode->set_output_type_and_shape(0, dtype, shape);                                     \
+        })                                                                                         \
         .translate_v2([](std::shared_ptr<graph::GNode> node) -> std::string {                      \
             return trans_elementwise(node);                                                        \
         })                                                                                         \
@@ -174,6 +214,7 @@ REGISTER_ELEM_OP(Subtract)
 REGISTER_ELEM_OP(Multiply)
 REGISTER_ELEM_OP(Divide)
 REGISTER_ELEM_OP(DivNoNan)
+REGISTER_ELEM_OP(Mod)
 REGISTER_ELEM_OP(Square)
 REGISTER_ELEM_OP(Negative)
 REGISTER_ELEM_OP(Select)
@@ -183,6 +224,7 @@ REGISTER_ELEM_OP(Relu)
 REGISTER_ELEM_OP(Relu6)
 REGISTER_ELEM_OP(ReluBackprop)
 REGISTER_ELEM_OP(Relu6Backprop)
+REGISTER_ELEM_OP(Identity)
 REGISTER_ELEM_OP(Sigmoid)
 REGISTER_ELEM_OP(SigmoidBackprop)
 REGISTER_ELEM_OP(Equal)

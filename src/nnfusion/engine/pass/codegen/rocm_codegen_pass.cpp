@@ -19,6 +19,7 @@ using namespace nnfusion::async;
 
 DECLARE_bool(fkernels_as_files);
 DECLARE_int64(fkernels_files_number);
+DECLARE_int32(fstack_size);
 
 void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
                                  std::shared_ptr<TranslationUnit> tu)
@@ -62,7 +63,10 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     auto& lu_init_begin = *(projgen->lup_init->begin);
     {
         lu_init_begin << "\nextern \"C\" void cuda_init()\n{\n";
-        lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceReset());\n";
+    }
+    if (FLAGS_fstack_size != -1)
+    {
+        lu_init_begin << "CUDA_SAFE_CALL(cudaDeviceSetLimit(cudaLimitStackSize, " << FLAGS_fstack_size <<"));\n";
     }
 
     auto& lu_init_end = *(projgen->lup_init->end);
@@ -92,6 +96,7 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
 
     auto& lu_exec_end = *(projgen->lup_exec->end);
     {
+        lu_exec_end << "CUDA_SAFE_CALL(cudaDeviceSynchronize());";
         lu_exec_end << "return 0;\n";
         lu_exec_end << "}\n";
     }
@@ -122,6 +127,7 @@ void RocmCodegenPass::initialize(std::shared_ptr<InterpreterContext> ctx,
     projgen->lup_codegen->require(macro::CUDA_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUDNN_SAFE_CALL);
     projgen->lup_codegen->require(macro::CUBLAS_SAFE_CALL);
+    projgen->lup_codegen->require(macro::DBG_TENSOR);
     projgen->lup_codegen->require(codegen_device_type());
 
     return;
@@ -144,7 +150,7 @@ SET(SRC "nnfusion_rt.cpp" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
 
 set(CMAKE_CXX_COMPILER /opt/rocm/bin/hipcc)
-set(CMAKE_CXX_FLAGS "-O2 -Wno-ignored-attributes -Wno-duplicate-decl-specifier")
+set(CMAKE_CXX_FLAGS "-O2 -Wno-ignored-attributes -Wno-duplicate-decl-specifier -save-temps --amdgpu-target=gfx908")
 )";
     if (FLAGS_fkernels_as_files)
     {
@@ -189,6 +195,15 @@ bool RocmCodegenPass::after_projgen()
             throw nnfusion::errors::RuntimeError("Failed to copy constant files.\n");
         }
     }
+    std::string para_info_json = get_current_dir_name() + std::string("/para_info.json");
+    if (stat(para_info_json.c_str(), &s) == 0)
+    {
+        std::string cmd = std::string("mv ") + para_info_json + " " + m_codegen_folder;
+        if (0 != system(cmd.c_str()))
+        {
+            throw nnfusion::errors::RuntimeError("Failed to move para_info.json.\n");
+        }
+    }
     auto cd = get_current_dir_name();
     NNFUSION_CHECK(chdir(m_codegen_folder.c_str()) == 0);
     {
@@ -228,6 +243,10 @@ bool RocmCodegenPass::after_projgen()
         string rocm35cmd = "sed -i 's/extern *__shared__/__shared__/g' nnfusion_rt.cpp";
         NNFUSION_CHECK(0 == system((rocm35cmd).c_str())) << rocm35cmd;
 
+        // shfl_serials
+        NNFUSION_CHECK(
+            0 == system("sed -i 's/__shfl_xor_sync(0xffffffff, /__shfl_xor(/g' nnfusion_rt.cpp"));
+
         // update for main_test.cpp
         NNFUSION_CHECK(
             0 == system("sed -i 's/^.*include.*cuda_profiler_api.*$//g' main_test.cpp && sed -i "
@@ -236,6 +255,10 @@ bool RocmCodegenPass::after_projgen()
         NNFUSION_CHECK(0 ==
                        system("sed -i 's/<cuda\\.h>/\"rocm_adapter.h\"/g' nnfusion_rt.h && sed -i "
                               "'s/cuda_runtime\\.h/hip\\/hip_runtime.h/g' nnfusion_rt.h"));
+        // remove cooperative group for rocm 4
+        NNFUSION_CHECK(0 == system("sed -i 's/^.*include.*cooperative_groups.*$//g' nnfusion_rt.h"));
+        NNFUSION_CHECK(0 == system("sed -i 's/^.*include.*amd_hip_cooperative_groups.*$//g' nnfusion_rt.cpp"));
+
         // Update for kernels
         if (FLAGS_fkernels_as_files)
         {

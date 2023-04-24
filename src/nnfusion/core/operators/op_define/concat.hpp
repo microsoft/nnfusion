@@ -38,8 +38,9 @@ namespace nnfusion
 
             /// \return The concatenation axis.
             size_t get_concatenation_axis() const { return m_concatenation_axis; }
+            void set_concatenation_axis(size_t axis) { m_concatenation_axis = axis; }
         protected:
-            const size_t m_concatenation_axis;
+            size_t m_concatenation_axis;
         };
     }
 }

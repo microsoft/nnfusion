@@ -1,0 +1,9 @@
+from rocm/pytorch:rocm4.3.1_ubuntu18.04_py3.6_pytorch_1.10.0
+WORKDIR /root
+RUN wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
+SHELL ["/bin/bash", "--login", "-c"]
+RUN bash cuda_11.8.0_520.61.05_linux.run --silent --toolkit
+COPY env /root/env
+RUN pip install ply==3.11 && mkdir -p third-party && cd third-party && git clone https://github.com/apache/tvm.git && cd tvm && git checkout 7b50b2d0d && git submodule init && git submodule update && git apply ../../env/tvm.rocm.patch && mkdir build && cd build && cp ../cmake/config.cmake config.cmake && sed -i "s/USE_CUDA OFF/USE_CUDA ON/g" config.cmake && sed -i "s/USE_LLVM OFF/USE_LLVM ON/g" config.cmake && sed -i "s/USE_ROCM OFF/USE_ROCM ON/g" config.cmake && cmake .. && make -j && cd ../python && pip install -e .
+RUN ln -s /usr/local/cuda-11.8/targets/x86_64-linux/lib/stubs/libcuda.so /usr/local/cuda-11.8/targets/x86_64-linux/lib/stubs/libcuda.so.1
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda-11.8/targets/x86_64-linux/lib/stubs:$LD_LIBRARY_PATH PATH=/usr/local/cuda/bin:$PATH

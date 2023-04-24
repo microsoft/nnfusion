@@ -8,6 +8,8 @@ using namespace nnfusion;
 using namespace nnfusion::kernels;
 using namespace nnfusion::kernels::cuda;
 
+DECLARE_int32(fmax_block_dim);
+
 int ElementWiseFused::unique_func_id = 0;
 
 ElementWiseFused::ElementWiseFused(shared_ptr<KernelContext> ctx)
@@ -67,19 +69,29 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
     }
 
     int grids, blocks, bound;
+    uint32_t num_ele =
+        static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
     compute_best_config(grids, blocks, bound);
-
-    if (grids == 1)
+    if (grids * blocks != num_ele)
     {
-        lu << "int tid = threadIdx.x;\n";
+        lu << "for (int tid = blockIdx.x * " << blocks << " + threadIdx.x; tid < " << num_ele
+           << "; tid += " << grids * blocks << ")";
+        lu.block_begin();
     }
     else
     {
-        lu << "int tid = blockIdx.x * " << std::to_string(blocks) << " + threadIdx.x;\n";
-    }
-    if (bound)
-    {
-        lu << "if (tid >= " << bound << ") return;\n";
+        if (grids == 1)
+        {
+            lu << "int tid = threadIdx.x;\n";
+        }
+        else
+        {
+            lu << "int tid = blockIdx.x * " << std::to_string(blocks) << " + threadIdx.x;\n";
+        }
+        if (bound)
+        {
+            lu << "if (tid >= " << bound << ") return;\n";
+        }
     }
 
     for (auto op_ctx : m_gnode->get_op_contexts())
@@ -184,6 +196,8 @@ LanguageUnit_p ElementWiseFused::emit_function_body()
             lu << in_args[pair.first] << "[tid];\n";
         }
     }
+    if (grids * blocks != num_ele)
+        lu.block_end();
 
     return lu_;
 }
@@ -261,26 +275,33 @@ void ElementWiseFused::compute_best_config(int& grids, int& blocks, int& bound)
 {
     uint32_t num_ele =
         static_cast<uint32_t>(nnfusion::shape_size(m_context->outputs[0]->get_shape()));
-    for (int i = 512; i >= 64; i >>= 1)
-    {
-        if (num_ele % i == 0)
-        {
-            grids = num_ele / i, blocks = i, bound = 0;
-            return;
-        }
+    const int max_block_size = FLAGS_fmax_block_dim;
+    if (num_ele % max_block_size == 0) {
+        grids = num_ele / max_block_size, blocks = max_block_size, bound = 0;
+        return;
     }
-    for (int i = 512; i >= 32; i--)
-    {
-        if (num_ele % i == 0)
-        {
-            grids = num_ele / i, blocks = i, bound = 0;
-            return;
-        }
-    }
+    // for (int i = max_block_size; i >= 64; i >>= 1)
+    // {
+    //     if (num_ele % i == 0)
+    //     {
+    //         grids = num_ele / i, blocks = i, bound = 0;
+    //         // if (grids > max_block_size)
+    //         //     grids = max_block_size;
+    //         return;
+    //     }
+    // }
+    // for (int i = max_block_size; i >= 32; i--)
+    // {
+    //     if (num_ele % i == 0)
+    //     {
+    //         grids = num_ele / i, blocks = i, bound = 0;
+    //         return;
+    //     }
+    // }
     if (num_ele < 32)
         grids = 1, blocks = num_ele, bound = 0;
     else
-        grids = (num_ele + 255) / 256, blocks = 256, bound = 1;
+        grids = (num_ele + max_block_size - 1) / max_block_size, blocks = max_block_size, bound = 1;
 }
 
 REGISTER_KERNEL_EMITTER(

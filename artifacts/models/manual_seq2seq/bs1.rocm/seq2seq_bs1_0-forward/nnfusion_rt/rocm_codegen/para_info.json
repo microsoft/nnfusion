@@ -1,0 +1,92 @@
+{
+    "input": {
+        "c_1": {
+            "id": "((float*)(inputs[2]))",
+            "name": "Parameter_15_0",
+            "shape": [
+                1,
+                256
+            ]
+        },
+        "h_1": {
+            "id": "((float*)(inputs[3]))",
+            "name": "Parameter_16_0",
+            "shape": [
+                1,
+                256
+            ]
+        },
+        "id_0": {
+            "id": "((int64_t*)(inputs[1]))",
+            "name": "Parameter_14_0",
+            "shape": []
+        },
+        "output_0": {
+            "id": "((int64_t*)(inputs[0]))",
+            "name": "Parameter_13_0",
+            "shape": [
+                1
+            ]
+        },
+        "output_all_0": {
+            "id": "((int64_t*)(inputs[5]))",
+            "name": "Parameter_18_0",
+            "shape": [
+                50,
+                1
+            ]
+        },
+        "std_0": {
+            "id": "((float*)(inputs[4]))",
+            "name": "Parameter_17_0",
+            "shape": [
+                50,
+                1,
+                3797
+            ]
+        }
+    },
+    "output": {
+        "@tmp_41": {
+            "id": "((int64_t*)(outputs[2]))",
+            "name": "Result_98_0",
+            "shape": [
+                50,
+                1
+            ]
+        },
+        "c_0": {
+            "id": "((float*)(outputs[3]))",
+            "name": "Result_99_0",
+            "shape": [
+                1,
+                256
+            ]
+        },
+        "cond_0": {
+            "id": "((char*)(outputs[0]))",
+            "name": "Result_96_0",
+            "shape": []
+        },
+        "h_2": {
+            "id": "((float*)(outputs[4]))",
+            "name": "Result_100_0",
+            "shape": [
+                1,
+                256
+            ]
+        },
+        "id_1": {
+            "id": "((int64_t*)(outputs[1]))",
+            "name": "Result_97_0",
+            "shape": []
+        },
+        "output_2": {
+            "id": "((int64_t*)(outputs[5]))",
+            "name": "Result_101_0",
+            "shape": [
+                1
+            ]
+        }
+    }
+}

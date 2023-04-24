@@ -2,13 +2,13 @@ import os.path as osp
 import subprocess
 
 sub_dirs = [
-    ["NAFNet"],
+    ["NAFNet/64"],
     ["NAFNet_welder_base"],
     ["NAFNet_welder_none"],
-    ["vit"],
+    ["vit/64"],
     ["vit_welder_base"],
     ["vit_welder_none"],
-    ["swin"],
+    ["swin/64"],
     ["swin_welder_base"],
     ["swin_welder_none"],
 ]
@@ -22,7 +22,7 @@ def get_sub_dirs(prefix):
     return results, model_strings
 
 if __name__ == "__main__":
-    prefix = "/sharepoint/Figure11"
+    prefix = "../temp"
     for sub_dir, model_string in zip(*get_sub_dirs(prefix)):
         print("Running", model_string)
         base_comamnd = "python profile_welder_metrics.py " + sub_dir

@@ -4,16 +4,16 @@ import os.path as osp
 data_prefix = ""
 
 sub_dirs = [
-    ["mobilenet", (1, 64)],
-    ["NAFNet", (1, 64)],
-    ["vit", (1, 64)],
-    ["bert", (1, 64)],
-    ["mobilevit", (1, 64)],
-    ["swin", (1, 64)],
-    ["Conformer", (1, 64)],
-    ["BSRN", (1, )],
-    ["restormer", (1, )],
-    ["NeRF", (1, )]
+    ["notc_mobilenet", (1, 64)],
+    ["notc_NAFNet", (1, 64)],
+    ["notc_vit", (1, 64)],
+    ["notc_bert", (1, 64)],
+    ["notc_mobilevit", (1, 64)],
+    ["notc_swin", (1, 64)],
+    ["notc_Conformer", (1, 64)],
+    ["notc_BSRN", (1, )],
+    ["notc_restormer", (1, )],
+    ["notc_NeRF", (1, )]
 ]
 
 def get_sub_dirs(prefix):
@@ -28,7 +28,7 @@ def get_sub_dirs(prefix):
     return results, model_strings
 
 if __name__ == "__main__":
-    prefix = "/sharepoint/Figure10b/"
+    prefix = "../temp/"
     for sub_dir, model_string in zip(*get_sub_dirs(prefix)):
         print("Running", model_string)
         ret = subprocess.run(["python", "../run_welder.py", sub_dir])

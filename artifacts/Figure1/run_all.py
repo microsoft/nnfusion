@@ -24,7 +24,7 @@ def get_sub_dirs(prefix):
 
 # sudo required
 if __name__ == "__main__":
-    prefix = "/sharepoint/e2e/"
+    prefix = "../temp/"
     for sub_dir, model_string in zip(*get_sub_dirs(prefix)):
         print("Running", model_string)
         base_comamnd = "python profile_onnxrt.py --prefix " + sub_dir

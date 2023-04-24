@@ -32,8 +32,6 @@ def torch2onnx(prefix, model, inputs, fp16):
         opset_version=11)
     if fp16:
         tofp16model( osp.join(prefix, "model.onnx"),  osp.join(prefix, "model.onnx"))
-    feed_dict = dict(zip(input_names, inputs))
-    np.savez(osp.join(prefix, "inputs.npz"), **feed_dict)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -9,6 +9,12 @@ class _save:
 def init_server(arch):
     _save.arch = arch
 
+def close_lib(lib):
+    dlclose_func = ctypes.CDLL(None).dlclose
+    dlclose_func.argtypes = [ctypes.c_void_p]
+    dlclose_func.restype = ctypes.c_int
+    dlclose_func(lib._handle)
+
 def call_profile(libname, args, device):
     lib = ctypes.CDLL(libname)
     lib.profile.restype = ctypes.c_float
@@ -24,6 +30,7 @@ def call_profile(libname, args, device):
         # sometimes we meet unrecoverable errors like illegal memory access
         # in these cases, we have to abort and restart the profiler
         exit()
+    close_lib(lib)
     if latency < 0:
         return 1e8
     return latency

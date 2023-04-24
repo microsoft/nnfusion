@@ -47,7 +47,7 @@ def run_ansor_for_once(prefix):
     tuner.tune(tune_option)
 
 if __name__ == "__main__":
-    prefix = "/sharepoint/e2e/"
+    prefix = "../temp"
     for sub_dir, model_string in zip(*get_sub_dirs(prefix)):
         p = multiprocessing.Process(target=run_ansor_for_once, args=[sub_dir])
         p.start()

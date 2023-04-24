@@ -29,7 +29,7 @@ def get_sub_dirs(prefix):
     return results, model_strings
 
 if __name__ == "__main__":
-    prefix = "/sharepoint/e2e/"
+    prefix = "../temp"
     for sub_dir, model_string in zip(*get_sub_dirs(prefix)):
         print("Running", model_string)
         ret = subprocess.run(["python", "../run_welder.py", sub_dir])

@@ -24,19 +24,15 @@ def run_trt(prefix, use_fp16=False):
     print("Built engine successfully.")
 
     tensors = []
-    for index, binding in enumerate(engine):
+    for binding in engine:
         shape = engine.get_binding_shape(binding)
-        size = trt.volume(shape)
         dtype = trt.nptype(engine.get_binding_dtype(binding))
         torch_dtype = torch.from_numpy(np.array([]).astype(dtype)).dtype
-        tensors.append(torch.Tensor(*shape).to(torch_dtype).cuda())
-
-    input_tensor = []
-    feed_dict = dict(np.load(osp.join(prefix, "inputs.npz"), allow_pickle=True))
-    for item in feed_dict.values():
-        input_tensor.append(torch.from_numpy(item))
-    for i, tensor in enumerate(input_tensor):
-        tensors[i] = tensor.cuda()
+        if dtype == torch.float or dtype == torch.half:
+            tensor = torch.randn(tuple(shape))
+        else:
+            tensor = torch.ones(tuple(shape))
+        tensors.append(tensor.to(torch_dtype).cuda())
 
     context = engine.create_execution_context()
     buffer = [tensor.data_ptr() for tensor in tensors]
@@ -49,6 +45,7 @@ def run_trt(prefix, use_fp16=False):
     st = time.time()
     while time.time() - st < 1.0:
         get_runtime() # warmup
+
     times = [get_runtime() for i in range(100)]
     print(f"avg: {np.mean(times)} ms")
     print(f"min: {np.min(times)} ms")

@@ -1,4 +1,4 @@
-# Kernel DB for GrinderBase and Grinder
+# Kernel DB for CocktailerBase and Cocktailer
 
 The `reproduce_kernel_db.sh` scripts will leverage AutoTVM, Ansor, Roller, and manual implementation to generate kernels. The result kernels will be injected in to a kernel database, located in *~/.cache/nnfusion/kernel_cache.db*, which will be finally loaded by NNFusion.
 

@@ -7,7 +7,7 @@ import os
 
 figure_id = 19
 
-sys =      ['TorchScript', 'TensorFlow', 'JAX+JIT', 'GrinderBase', sys_name]
+sys =      ['TorchScript', 'TensorFlow', 'JAX+JIT', 'CocktailerBase', sys_name]
 
 hatch_def = [
     '..',

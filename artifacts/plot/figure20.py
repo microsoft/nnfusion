@@ -22,7 +22,7 @@ hatch_rae = [
     '',
 ]
 
-sys_general = ['GrinderBase', 'schedule', 'optimize & schedule']
+sys_general = ['CocktailerBase', 'schedule', 'optimize & schedule']
 
 def get_log_from(filename: str):
     result_dir = f'../reproduce_results/Figure{figure_id}'
@@ -50,7 +50,7 @@ seq2seq = get_log_from('seq2seq.b1.log')
 blockdrop = get_log_from('blockdrop.b1.log')
 skipnet = get_log_from('skipnet.b1.log')
 
-sys_recursive = ['GrinderBase', 'serial schedule', 'stack in global memory', 'stack in shared memory', 'parallel schedule']
+sys_recursive = ['CocktailerBase', 'serial schedule', 'stack in global memory', 'stack in shared memory', 'parallel schedule']
 rae = [
     parse_time(f'../reproduce_results/Figure{figure_id}/base/rae.b1.log'),
     parse_time(f'../reproduce_results/Figure{figure_id}/schedule/rae.opt1.b1.log'),

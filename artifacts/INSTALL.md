@@ -59,7 +59,7 @@ cd .. # to $YOUR_DIR_FOR_NNFUSION/nnfusion
 mkdir build && cd build && cmake .. && make -j
 ```
 
-## Pytorch & Grinder
+## Pytorch & Cocktailer
 ```bash
 conda create python=3.7 --name controlflow -y
 conda activate controlflow

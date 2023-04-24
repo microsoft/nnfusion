@@ -8,7 +8,7 @@ logout
 ssh root@impreza0 -p 31703
 cd Figure19 && ./run_jax.sh # about 10 min
 logout
-# in grinder-ae docker
+# in cocktailer-ae docker
 ssh root@impreza0 -p 31705
 cd Figure19 && ./run_in_sys_docker.sh # about 1 hour
 ```

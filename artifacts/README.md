@@ -1,14 +1,14 @@
-# OSDI'23 Grinder Artifacts Evaluation
+# OSDI'23 Cocktailer Artifacts Evaluation
 
 ## 0. Overview
-This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "Grinder: Analysis and Optimization for Dynamic Control Flow in Deep Learning".
+This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "Cocktailer: Analysis and Optimization for Dynamic Control Flow in Deep Learning".
 
 ### Evaluation Setup
 * Artifacts Available:
-    * All Grinder related code are available under NNFusion open-source project located in: [https://github.com/microsoft/nnfusion/tree/TODO](https://github.com/microsoft/nnfusion/tree/TODO)
+    * All Cocktailer related code are available under NNFusion open-source project located in: [https://github.com/microsoft/nnfusion/tree/TODO](https://github.com/microsoft/nnfusion/tree/TODO)
 * Artifacts Functional:
-    * *Documentation*: the following of documents include detailed guidelines on how to build, install, test Grinder and the experiments to compare with other baselines.
-    * *Completeness*: the [C++ part](..) of Grinder has been merged into NNFusion in this branch, and the [Python part](ast_analyzer) is available in this artifact.
+    * *Documentation*: the following of documents include detailed guidelines on how to build, install, test Cocktailer and the experiments to compare with other baselines.
+    * *Completeness*: the [C++ part](..) of Cocktailer has been merged into NNFusion in this branch, and the [Python part](ast_analyzer) is available in this artifact.
     * *Exercisability*: under the *artifacts* folder, we prepare all the script and data to reproduce the experiements in individual folders named by the figure name in paper.
 * Results Reproduced:
     * To reproduce the main results presented in our paper, we provide Docker images containing all the environments and baseline software, and machines with the same configurations as we used in paper evaluation. We also provide detailed guideline to help reproduce the results step by step. 
@@ -19,28 +19,20 @@ This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "
 Please follow the instructions in "Comments for AEC" on HotCRP and skip this section if you want to use the provided environment. The following steps need docker permission which is not provided due to security concerns.
 
 ## NVIDIA GPU
-Please follow the instructions in [INSTALL.md](INSTALL.md) or use the following docker-based script to build and install Grinder.
+Please follow the instructions in [INSTALL.md](INSTALL.md) or use the following docker-based script to build and install Cocktailer.
 ```bash
 cd $YOUR_DIR_FOR_NNFUSION
 git clone https://github.com/microsoft/nnfusion.git --branch TODO --single-branch
 cd nnfusion/artifacts
-docker build -t grinder -f env/Dockerfile.nv .
+docker build -t cocktailer -f env/Dockerfile.nv .
 chmod 777 $YOUR_DIR_FOR_NNFUSION/nnfusion
-docker run -it --gpus all --name grinder-ae -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion --shm-size="32g" -w /root/nnfusion/artifacts grinder:latest /bin/bash
+docker run -it --gpus all --name cocktailer-ae -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion --shm-size="32g" -w /root/nnfusion/artifacts cocktailer:latest /bin/bash
 # run inside docker
 bash ./env/install_in_docker.sh
 ```
 
-adapted (TODO: remove)
-```bash
-docker build --network=host -t grinder -f env/Dockerfile.nv .
-docker run -it --gpus all --name heheda-grinder-ae -v /home/heheda/control_flow/nnfusion-docker:/root/nnfusion -v /home/heheda/control_flow/kernel_db.docker:/root/.cache/nnfusion -w /root/nnfusion/artifacts --privileged=true --shm-size="32g" --network=host grinder:latest /bin/bash
-srun -p AE -w nico1 --pty --exclusive docker exec -it heheda-grinder-ae bash ./run_nv_gpu.sh
-permission: chmod 777 the two folders, config not to /dev/shm
-```
-
 ## AMD GPU
-Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Grinder respectively.
+Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktailer respectively.
 * download code
     ```bash
     cd $YOUR_DIR_FOR_NNFUSION
@@ -69,11 +61,11 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Grinder
     docker build -t tvm_rocm_cuda:latest -f env/Dockerfile.tvm.rocm --network=host .
     docker run -it --device=/dev/kfd --device=/dev/dri --name tvm-ae -v $YOUR_DIR_FOR_NNFUSION/kernel_db:/root/.cache/nnfusion -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion -w /root/nnfusion/artifacts -e ARTIFACT_ROOT=/root/nnfusion/artifacts tvm_rocm_cuda /bin/bash
     ```
-* Build and run grinder docker
+* Build and run cocktailer docker
     ```bash
     cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
-    docker build -t grinder:latest -f env/Dockerfile.rocm --network=host .
-    docker run -it --device=/dev/kfd --device=/dev/dri --name grinder-ae -v $YOUR_DIR_FOR_NNFUSION/kernel_db:/root/.cache/nnfusion -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion -w /root/nnfusion/artifacts -e ARTIFACT_ROOT=/root/nnfusion/artifacts grinder /bin/bash
+    docker build -t cocktailer:latest -f env/Dockerfile.rocm --network=host .
+    docker run -it --device=/dev/kfd --device=/dev/dri --name cocktailer-ae -v $YOUR_DIR_FOR_NNFUSION/kernel_db:/root/.cache/nnfusion -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion -w /root/nnfusion/artifacts -e ARTIFACT_ROOT=/root/nnfusion/artifacts cocktailer /bin/bash
     # run inside docker
     bash ./env/install_in_rocm_docker.sh
     ```
@@ -99,7 +91,7 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Grinder
     │   │   └── tatoeba-eng-fra
     ```
 
-* Generates all kernels for Grinder. More details can be found in [README_KERNEL_DB.md](kernel_db/README_KERNEL_DB.md).
+* Generates all kernels for Cocktailer. More details can be found in [README_KERNEL_DB.md](kernel_db/README_KERNEL_DB.md).
     **NOTE**: this process will take about 20 minutes for each architecture if using the tuning result in the artifact, or longer if you want to re-tune the kernels.
     * NVIDIA GPU
         ```bash

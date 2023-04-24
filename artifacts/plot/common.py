@@ -1,7 +1,7 @@
 import numpy as np
 import re
 
-sys_name = "Grinder"
+sys_name = "Cocktailer"
 
 line_markers = [
     'x',

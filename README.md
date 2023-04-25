@@ -27,17 +27,9 @@ sudo nvidia-docker run -it --cap-add=SYS_ADMIN --network=host --name welder_test
 
 ## 2. Paper result quick reproduce
 
-Since welder's paper evaluate different models with different batch-sizes and data-types, leading to more than 50 models to tune to completely reproduce the paper's result. To help reproduce quickly, we have updated all the tuning logs of V100 GPU into [temp.tar.gz - Google Cloud Drive](https://drive.google.com/file/d/1SgotXBBRm62XPDNCey8F0piClG_r0LJW/view)
+Since welder's paper evaluate different models with different batch-sizes and data-types, leading to more than 50 models to tune to completely reproduce the paper's result. To help reproduce quickly, we have uploaded all welder's compiled model of V100 GPU at [temp.tar.gz - Google Cloud Drive](https://drive.google.com/file/d/1xJUk7ZBoe6bjaqMpTI-n9gqGtc01IOWG)
 
-You will find a lot of model folders, each with model.onnx(original ONNX model), model.json(Welder's intermediate file) and tuned.json (Welder's tuned kernels) inside it. Some also have Ansor tuning logs which is used to reproduce Ansor's baseline.
-
-To use the pre-compiled models, extract and rename it as a ./temp folder under welder/artifacts folder. Then run
-
-```bash
-python build_all.py
-```
-
-to build these models. With these pre-compiled models, results can be reproduced more quickly with a few commands. Here is a list of script we provide:
+After downloading, it should be extracted under the artifacts/temp folder. You can see a lot of model folders in it. With these pre-compiled models, results can be reproduced more quickly with a few commands. Here is a list of script we provide:
 
 | Name      | Description                                              | Commands                      |
 | --------- | -------------------------------------------------------- | ----------------------------- |

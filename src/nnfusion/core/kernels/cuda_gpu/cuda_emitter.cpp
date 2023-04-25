@@ -870,7 +870,7 @@ void cuda::FusionCudaEmitter::set_launch_config()
     block[2].get_to(m_blockDim.z);
     grid[0].get_to(m_gridDim.x);
     grid[1].get_to(m_gridDim.y);
-    grid[1].get_to(m_gridDim.z);
+    grid[2].get_to(m_gridDim.z);
 }
 
 LanguageUnit_p cuda::FusionCudaEmitter::emit_function_signature()

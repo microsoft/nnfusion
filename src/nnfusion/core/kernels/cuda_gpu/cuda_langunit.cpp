@@ -59,6 +59,9 @@ inline __device__ longlong4 make_int8(int x0, int x1, int x2, int x3, int x4, in
   long long l3 = *(long long*)&i3;
   return make_longlong4(l0, l1, l2, l3);
 }
+inline __device__ longlong4 make_longlong4(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
+  return make_int8(x0, x1, x2, x3, x4, x5, x6, x7);
+}
 inline __device__ __host__ unsigned
 __pack_half2(const half x, const half y) {
   unsigned v0 = *((unsigned short *)&x);
@@ -285,6 +288,15 @@ __device__ __forceinline__ float  load(const float*  __restrict__ in, int i=0, b
 __device__ __forceinline__ half  load(const half*  __restrict__ in, int i=0, bool b=true)
 {
     half v = 0.0f;
+    if (b)
+    {
+        v = __ldg(in + i);
+    }
+    return v;
+}
+__device__ __forceinline__ int16_t  load(const int16_t*  __restrict__ in, int i=0, bool b=true)
+{
+    int16_t v = 0;
     if (b)
     {
         v = __ldg(in + i);

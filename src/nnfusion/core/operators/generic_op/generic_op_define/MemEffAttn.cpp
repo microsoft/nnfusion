@@ -126,7 +126,7 @@ REGISTER_OP(MemEffAttnBasic)
                                            {"head_size", head_size},
                                            {"block_size", block_size}});
 
-         if (stage == 0 || stage == 4)
+        if (stage == 0 || stage == 4)
         {
             expression_code += "## @: tensorCoreConfig=(2, 3)";
         }

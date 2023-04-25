@@ -43,7 +43,7 @@ LanguageUnit_p cuda::MemEffAttn::emit_function_body()
 
     auto code = nnfusion::op::create_code_from_template(
         R"( 
-int64_t batch_size {@batch_size@};  
+long long batch_size {@batch_size@};  
 mem_eff_attention_@idx@(
     output0,
     input0, input1, input2,

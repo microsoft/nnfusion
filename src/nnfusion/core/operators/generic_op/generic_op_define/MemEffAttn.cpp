@@ -31,7 +31,7 @@ REGISTER_OP(MemEffAttnBasic)
     .attr<size_t>("head_size")
     .attr<float>("p_dropout", 0)
     .attr<int>("stage")
-    .attr<float>("softmax_scale", 0.1580810546875)
+    .attr<float>("softmax_scale", 0.125)
     .attr<bool>("is_causal", false) // Whether every token can only attend to previous tokens
     .attr<size_t>("block_size", 128)
 
@@ -49,7 +49,7 @@ REGISTER_OP(MemEffAttnBasic)
         {
             output_shape = {batch_size, num_heads, seq_len, block_size};
         }
-        else if (stage == 4 || stage == 6)
+        else if (stage == 3 || stage == 5)
         {
             output_shape = {batch_size, num_heads, seq_len, head_size};
         }
@@ -61,7 +61,9 @@ REGISTER_OP(MemEffAttnBasic)
     })
     .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
-        float softmax_scale = generic_op->localOpConfig.getRoot()["softmax_scale"];
+        // float softmax_scale = generic_op->localOpConfig.getRoot()["softmax_scale"];
+        size_t num_heads = generic_op->localOpConfig.getRoot()["num_heads"];
+        float softmax_scale = 1.0/num_heads;
         int stage = generic_op->localOpConfig.getRoot()["stage"];
         int block_size = generic_op->localOpConfig.getRoot()["block_size"];
         int head_size = generic_op->localOpConfig.getRoot()["head_size"];
@@ -91,12 +93,6 @@ REGISTER_OP(MemEffAttnBasic)
         }
         else if (stage == 3)
         {
-            //p-> l_ij
-            expression_template =
-                R"(@output0@[B, H, Q] +=! @input0@[B, H, Q, Kc];)";
-        }
-        else if (stage == 4)
-        {
             //m_i, m_ij -> acc_o_scale
             // acc_o_scale, acc_o, p, v -> acc_o
 
@@ -104,13 +100,15 @@ REGISTER_OP(MemEffAttnBasic)
             expression_template =
                 R"( mediate0[B, H, Q] = (@input0@[B, H, Q] - @input1@[B, H, Q]).call(`exp`); mediate1[B, H, Q, D] = mediate0[B, H, Q] where D in @head_size@; mediate2[B, H, Q, D] = @input2@[B, H, Q, D] * mediate1[B, H, Q, D]; mediate3[B, H, Q, D] +=! @input3@[B, H, Q, Kc] * @input4@[B, H, Kc, D]; @output0@[B, H, Q, D] = mediate2[B, H, Q, D] + mediate3[B, H, Q, D];)";
         }
-        else if (stage == 5)
+        else if (stage == 4)
         {
+            //p->l_ij
             // m_ij, lse_i, l_ij -> lse_i
+            // m_ij, lse_i, p-> lse_i
             expression_template =
-                R"( @output0@[B, H, Q] = @input0@[B, H, Q] + ((@input1@[B, H, Q] - @input0@[B, H, Q]).call(`exp`) + @input2@[B, H, Q]).call(`log`); )";
+                R"( mediate0[B, H, Q] +=! @input2@[B, H, Q, Kc]; @output0@[B, H, Q] = @input0@[B, H, Q] + ((@input1@[B, H, Q] - @input0@[B, H, Q]).call(`exp`) + mediate0[B, H, Q]).call(`log`); )";
         }
-        else if (stage == 6)
+        else if (stage == 5)
         {
             // m_i, lse_i, acc_o-> out
             expression_template =
@@ -126,7 +124,7 @@ REGISTER_OP(MemEffAttnBasic)
                                            {"head_size", head_size},
                                            {"block_size", block_size}});
 
-        if (stage == 0 || stage == 4)
+        if (stage == 0 || stage == 3)
         {
             expression_code += "## @: tensorCoreConfig=(2, 3)";
         }

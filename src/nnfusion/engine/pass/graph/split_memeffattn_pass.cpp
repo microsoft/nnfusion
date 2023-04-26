@@ -45,8 +45,8 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
         auto lse_i = graph->add_node_and_edge(oplse_i, GNodeVector{});
         auto m_i = graph->add_node_and_edge(opm_i, GNodeVector{});
         auto acc_o = graph->add_node_and_edge(opacc_o, GNodeVector{});
-        op::OpConfig::any config[7];
-        for (int j = 0; j < 7; j++)
+        op::OpConfig::any config[6];
+        for (int j = 0; j < 6; j++)
         {
             config[j]["stage"] = j;
             config[j]["softmax_scale"] = softmax_scale;
@@ -79,31 +79,27 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
 
             auto opqk = make_shared<op::GenericOp>(
                 node->get_name() + "." + to_string(i) + ".qk", "MemEffAttnBasic", config[0]);
-
             auto opm_i = make_shared<op::GenericOp>(
                 node->get_name() + "." + to_string(i) + ".m_i", "MemEffAttnBasic", config[1]);
             auto opp = make_shared<op::GenericOp>(
                 node->get_name() + "." + to_string(i) + ".p", "MemEffAttnBasic", config[2]);
-            auto opl_ij = make_shared<op::GenericOp>(
-                node->get_name() + "." + to_string(i) + ".l_ij", "MemEffAttnBasic", config[3]);
             auto opacc_o = make_shared<op::GenericOp>(
-                node->get_name() + "." + to_string(i) + ".acc_o", "MemEffAttnBasic", config[4]);
+                node->get_name() + "." + to_string(i) + ".acc_o", "MemEffAttnBasic", config[3]);
             auto oplse_i = make_shared<op::GenericOp>(
-                node->get_name() + "." + to_string(i) + ".lse_i", "MemEffAttnBasic", config[5]);
+                node->get_name() + "." + to_string(i) + ".lse_i", "MemEffAttnBasic", config[4]);
 
             auto qk = graph->add_node_and_edge(opqk, {q, kr});
             auto new_m_i = graph->add_node_and_edge(opm_i, {qk, lse_i});
             auto p = graph->add_node_and_edge(opp, {new_m_i, qk});
-            auto l_ij = graph->add_node_and_edge(opl_ij, {p});
             auto new_acc_o = graph->add_node_and_edge(opacc_o, {m_i, new_m_i, acc_o, p, vr});
-            auto new_lse_i = graph->add_node_and_edge(oplse_i, {new_m_i, lse_i, l_ij});
+            auto new_lse_i = graph->add_node_and_edge(oplse_i, {new_m_i, lse_i, p});
             m_i = new_m_i;
             lse_i = new_lse_i;
             acc_o = new_acc_o;
         }
 
         auto opout =
-            make_shared<op::GenericOp>(node->get_name() + ".out", "MemEffAttnBasic", config[6]);
+            make_shared<op::GenericOp>(node->get_name() + ".out", "MemEffAttnBasic", config[5]);
 
         auto out = graph->add_node_and_edge(
             opout, {GNodeIndex(m_i, 0), GNodeIndex(lse_i, 0), GNodeIndex(acc_o, 0)});

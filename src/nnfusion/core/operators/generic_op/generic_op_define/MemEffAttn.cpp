@@ -63,7 +63,7 @@ REGISTER_OP(MemEffAttnBasic)
         auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
         // float softmax_scale = generic_op->localOpConfig.getRoot()["softmax_scale"];
         size_t num_heads = generic_op->localOpConfig.getRoot()["num_heads"];
-        float softmax_scale = 1.0/num_heads;
+        float softmax_scale = 1.0 / num_heads;
         int stage = generic_op->localOpConfig.getRoot()["stage"];
         int block_size = generic_op->localOpConfig.getRoot()["block_size"];
         int head_size = generic_op->localOpConfig.getRoot()["head_size"];
@@ -124,7 +124,8 @@ REGISTER_OP(MemEffAttnBasic)
                                            {"head_size", head_size},
                                            {"block_size", block_size}});
 
-        if (stage == 0 || stage == 3)
+        if ((stage == 0 || stage == 3) &&
+            curr->get_output_element_type(0) == nnfusion::element::f16)
         {
             expression_code += "## @: tensorCoreConfig=(2, 3)";
         }

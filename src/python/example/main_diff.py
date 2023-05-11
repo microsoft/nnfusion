@@ -12,7 +12,7 @@ import time
 import argparse
 import numpy as np
 import torch
-# torch.manual_seed(0)
+torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -25,7 +25,7 @@ def inference(nnf_model_path, total_iter):
     assert total_iter >= 1
     executor = Executor(nnf_model_path)
     input_dict, output_dict = {}, {}
-    if executor.host_mode:
+    if False:#executor.host_mode:
         # host mode leverage pytorch tensor as storage
         for input in executor.get_inputs():
             input_dict[input.name] = cast_pytorch_tensor(generate_sample(input))
@@ -47,21 +47,21 @@ def inference(nnf_model_path, total_iter):
         else:
             raise Exception("only support device kernel_entry on cuda/hlsl backend.")
         
-    # q = torch.randn(2, 8, 128, 64).cuda().half()
-    # k = torch.randn(2, 8, 128, 64).cuda().half()
-    # v = torch.Tensor(2, 8, 128, 64).cuda().half()
-    # torch.save(q,'q128.pt')
-    # torch.save(k, 'k128.pt')
-    # torch.save(v, 'v128.pt')
-    # torch.save(latent_model_input_pt, "/home/yuqxia/sample.pt")
-    # torch.save(text_embeddings_pt, "/home/yuqxia/encoder_hidden_states.pt")
-    # torch.save(timesteps_pt, "timestep.pt")
+    # q = torch.randn(2, 8, 128, 64).cuda()
+    # k = torch.randn(2, 8, 128, 64).cuda()
+    # v = torch.Tensor(2, 8, 128, 64).cuda()
+    # torch.save(q,'q128.f32.pt')
+    # torch.save(k, 'k128.f32.pt')
+    # torch.save(v, 'v128.f32.pt')
+    # torch.save(latent_model_input_pt, "/home/yuqxia/sample.f32.pt")
+    # torch.save(text_embeddings_pt, "/home/yuqxia/encoder_hidden_states.f32.pt")
+    # torch.save(timesteps_pt, "timestep.f32.pt")
     # # print(input_dict)
-    input_dict['q'] = cast_pytorch_tensor(torch.load("/home/yuqxia/sparse-attn/torchscale/component/q128.pt"))
-    input_dict['k'] = cast_pytorch_tensor(torch.load("/home/yuqxia/sparse-attn/torchscale/component/k128.pt"))
-    input_dict['v'] = cast_pytorch_tensor(torch.load("/home/yuqxia/sparse-attn/torchscale/component/v128.pt"))
+    input_dict['q'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/flash-attention/flash_attn/q128.pt"))
+    input_dict['k'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/flash-attention/flash_attn/k128.pt"))
+    input_dict['v'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/flash-attention/flash_attn/v128.pt"))
 
-    # print("expect out: ",torch.load("/home/yuqxia/sparse-attn/torchscale/component/out128.pt"))
+    # print("expect out: ",torch.load("/home/yuqxia/nnfusion/flash-attention/flash_attn/out128.f32.pt"))
     # warm up
     for _ in range(1):
         executor(input_dict, output_dict)

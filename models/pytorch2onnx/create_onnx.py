@@ -866,15 +866,18 @@ def memeffattn():
     # https://github.com/onnx/onnx/blob/master/onnx/onnx.proto
 
     # Create input (ValueInfoProto)
-    q = helper.make_tensor_value_info('q', TensorProto.FLOAT16, [2, 8, 1024, 64])
-    k = helper.make_tensor_value_info('k', TensorProto.FLOAT16, [2, 8, 64, 64])
-    v = helper.make_tensor_value_info('v', TensorProto.FLOAT16, [2, 8, 64, 64])
+    q = helper.make_tensor_value_info('q', TensorProto.FLOAT16, [2, 8, 128, 64])
+    k = helper.make_tensor_value_info('k', TensorProto.FLOAT16, [2, 8, 128, 64])
+    v = helper.make_tensor_value_info('v', TensorProto.FLOAT16, [2, 8, 128, 64])
+    lse = helper.make_tensor_value_info('lse', TensorProto.FLOAT16, [2, 8, 128])
+    m = helper.make_tensor_value_info('m', TensorProto.FLOAT16, [2, 8, 128])
+    acco = helper.make_tensor_value_info('acco', TensorProto.FLOAT16, [2, 8, 128, 64])
     # Create one output (ValueInfoProto)
-    y = helper.make_tensor_value_info('y', TensorProto.FLOAT16, [2, 8, 1024, 64])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT16, [2, 8, 128, 64])
 
     node_def = helper.make_node(
         'MemEffAttn',  # node name
-        ['q', 'k', 'v'],  # inputs
+        ['q', 'k', 'v', 'lse', 'm', 'acco'],  # inputs
         ['y'],  # outputs
         is_causal=False,
         softmax_scale=0.125,
@@ -884,14 +887,14 @@ def memeffattn():
     graph_def = helper.make_graph(
         [node_def],
         'MemEffAttn',
-        [q, k, v],
+        [q, k, v, lse, m, acco],
         [y],
     )
 
     # Create the model (ModelProto)
     model_def = helper.make_model(graph_def, producer_name='onnx-example')
 
-    save_model(model_def, "memeffattn102464.onnx")
+    save_model(model_def, "memeffattn128.s.onnx")
 
 
 def max():
@@ -1062,7 +1065,4 @@ def add():
 
     save_model(model_def, "add.onnx")
 
-msa0()
-msa1()
-add()
-msa()
+memeffattn()

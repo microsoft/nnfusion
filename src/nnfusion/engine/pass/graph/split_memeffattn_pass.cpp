@@ -25,6 +25,10 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             auto q = node->get_in_edge(0)->get_src();
             auto k = node->get_in_edge(1)->get_src();
             auto v = node->get_in_edge(2)->get_src();
+            auto lse = node->get_in_edge(3)->get_src();
+            auto m = node->get_in_edge(4)->get_src();
+            auto acco = node->get_in_edge(5)->get_src();
+
             int block_size = FLAGS_fblock_size;
             float softmax_scale = op->localOpConfig.getRoot()["softmax_scale"];
             bool is_causal = op->localOpConfig.getRoot()["is_causal"];
@@ -37,14 +41,15 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             size_t Q = q_shape[2];
             size_t D = q_shape[3];
             nnfusion::element::Type et = node->get_output_element_type(0);
+            op::OpConfig::any identity_config[3];
             Shape lse_shape{B, H, Q};
-            auto oplse_i = make_shared<op::Variable>(et, lse_shape);
-            auto opm_i = make_shared<op::Variable>(et, lse_shape);
-            auto opacc_o = make_shared<op::Variable>(et, q_shape);
+            auto oplse_i = make_shared<op::GenericOp>("lse0", "Identity", identity_config[0]);
+            auto opm_i = make_shared<op::GenericOp>("m0", "Identity", identity_config[1]);
+            auto opacc_o = make_shared<op::GenericOp>("acc_o0", "Identity", identity_config[2]);
 
-            auto lse_i = graph->add_node_and_edge(oplse_i, GNodeVector{});
-            auto m_i = graph->add_node_and_edge(opm_i, GNodeVector{});
-            auto acc_o = graph->add_node_and_edge(opacc_o, GNodeVector{});
+            auto lse_i = graph->add_node_and_edge(oplse_i, {lse});
+            auto m_i = graph->add_node_and_edge(opm_i, {m});
+            auto acc_o = graph->add_node_and_edge(opacc_o, {acco});
             op::OpConfig::any config[6];
             for (int j = 0; j < 6; j++)
             {

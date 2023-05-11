@@ -15,7 +15,8 @@ REGISTER_OP(MemEffAttn)
     .attr<bool>("is_causal", false) // Whether every token can only attend to previous tokens
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
         // q: [b, h, q, d], k & v : [b, h, k, d]
-        NNFUSION_CHECK(gnode->get_in_edges().size() == 3);
+        // lse: [b, h, q], m: [b, h, q], acco: [b,h, q, d]
+        NNFUSION_CHECK(gnode->get_in_edges().size() == 6);
 
         auto in_shape = gnode->get_input_shape(0);
         NNFUSION_CHECK(in_shape.size() == 4);

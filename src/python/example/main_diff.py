@@ -12,7 +12,7 @@ import time
 import argparse
 import numpy as np
 import torch
-torch.manual_seed(0)
+torch.manual_seed(4)
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -57,11 +57,14 @@ def inference(nnf_model_path, total_iter):
     # torch.save(text_embeddings_pt, "/home/yuqxia/encoder_hidden_states.f32.pt")
     # torch.save(timesteps_pt, "timestep.f32.pt")
     # # print(input_dict)
-    input_dict['q'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/flash-attention/flash_attn/q128.pt"))
-    input_dict['k'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/flash-attention/flash_attn/k128.pt"))
-    input_dict['v'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/flash-attention/flash_attn/v128.pt"))
+    input_dict['q'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/q.pt"))
+    input_dict['k'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/k.pt"))
+    input_dict['delta'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/delta.pt").half())
+    input_dict['do_'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/do.pt"))
+    input_dict['lse'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/lse.pt").half())
+    input_dict['v'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/v.pt"))
 
-    # print("expect out: ",torch.load("/home/yuqxia/nnfusion/flash-attention/flash_attn/out128.f32.pt"))
+    # print("expect out: ",torch.load("/home/yuqxia/nnfusion/out128.f32.pt"))
     # warm up
     for _ in range(1):
         executor(input_dict, output_dict)

@@ -19,11 +19,22 @@ bool GradientWeightMappingPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
     bool allreduce_enable = FLAGS_fadd_allreduce;
     std::vector<std::shared_ptr<GNode>> result_nodes;
+    std::unordered_map<std::shared_ptr<GNode>, int> node_output;
 
     auto const_nodes = graph->get_const_nodes();
 
     for (auto node : graph->get_outputs())
     {
+        
+        if (node_output.find(node) == node_output.end())
+        {
+            node_output[node] = 0;
+        }
+        else
+        {
+            node_output[node] = node_output[node] + 1;
+        }
+        NNFUSION_LOG(INFO) << node->get_name() << node_output[node];
         std::shared_ptr<GNode> update_node = node;
         bool is_apply_gradient_op = false;
         if ((*node)["Alias"].is_valid())
@@ -89,7 +100,7 @@ bool GradientWeightMappingPass::run_on_graph(std::shared_ptr<Graph>& graph)
             result_op->set_needs_copy_to_host(false);
         }
         ///\todo: the first output of gnode, remove the restriction
-        auto result_node = graph->add_node_and_edge(result_op, {GNodeIndex{update_node, 0}});
+        auto result_node = graph->add_node_and_edge(result_op, {GNodeIndex{update_node, node_output[node]}});
         result_nodes.emplace_back(result_node);
     }
     graph->set_outputs(result_nodes);

@@ -11,6 +11,7 @@ using namespace nnfusion::pass::graph;
 DECLARE_string(ftune_output_file);
 DEFINE_int32(fblock_size, 128, "");
 DEFINE_bool(fsplit_memeffattn, false, "");
+DEFINE_bool(fsequence_parallel, false, "");
 
 bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
 {
@@ -19,7 +20,98 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
     NNFUSION_LOG(INFO) << "split Attn pass starts";
     for (auto node : graph->get_ordered_ops())
     {
-        if (node->get_op_type() == "MemEffAttn")
+        if (node->get_op_type() == "MemEffAttnGrad")
+        {
+            NNFUSION_LOG(INFO) << "MemEffAttnGrad";
+            auto op = std::dynamic_pointer_cast<op::GenericOp>(node->get_op_ptr());
+            auto q = node->get_in_edge(0)->get_src();
+            auto k = node->get_in_edge(1)->get_src();
+            auto v = node->get_in_edge(2)->get_src();
+            auto do_ = node->get_in_edge(3)->get_src();
+            auto lse = node->get_in_edge(4)->get_src();
+            auto delta = node->get_in_edge(5)->get_src();
+            auto dq_accum = node->get_in_edge(6)->get_src();
+            auto dki = node->get_in_edge(7)->get_src();
+            auto dvi = node->get_in_edge(8)->get_src();
+
+            int block_size = FLAGS_fblock_size;
+            float softmax_scale = op->localOpConfig.getRoot()["softmax_scale"];
+            bool is_causal = op->localOpConfig.getRoot()["is_causal"] != 0;
+            auto k_shape = node->get_input_shape(1); // b, n, k, d
+            size_t K = k_shape[2];
+            Shape q_shape = node->get_input_shape(0);
+            size_t B = q_shape[0];
+            size_t H = q_shape[1];
+            size_t Q = q_shape[2];
+            size_t D = q_shape[3];
+            int num_block = Q / block_size;
+            nnfusion::element::Type et = node->get_output_element_type(0);
+            op::OpConfig::any identity_config[3];
+            // auto opdv = make_shared<op::GenericOp>("dv", "Identity", identity_config[0]);
+            // auto opdk = make_shared<op::GenericOp>("dk", "Identity", identity_config[1]);
+            // auto opdq = make_shared<op::GenericOp>("dq", "Identity", identity_config[2]);
+            // auto dq = graph->add_node_and_edge(opdq, {dq_accum});
+            // auto dv = graph->add_node_and_edge(opdv, {dvi});
+            // auto dk = graph->add_node_and_edge(opdk, {dki});
+            
+            op::OpConfig::any config[7];
+            for (int j = 0; j < 7; j++)
+            {
+                config[j]["stage"] = j;
+                config[j]["softmax_scale"] = softmax_scale;
+                config[j]["is_causal"] = is_causal;
+                config[j]["batch_size"] = B;
+                config[j]["num_heads"] = H;
+                config[j]["seq_len"] = Q;
+                config[j]["head_size"] = D;
+                config[j]["seq_len_kv"] = K;
+                config[j]["block_size"] = block_size;
+                config[j]["atomic_add"] = (bool)FLAGS_fsequence_parallel;
+            }
+            
+
+            auto opqk = make_shared<op::GenericOp>(
+                node->get_name() + ".qk", "MemEffAttnGradBasic", config[0]);
+            auto opp = make_shared<op::GenericOp>(
+                node->get_name() + ".p", "MemEffAttnGradBasic", config[1]);
+            auto opdv_ = make_shared<op::GenericOp>(
+                node->get_name() + ".dv", "MemEffAttnGradBasic", config[2]);
+            auto opdp = make_shared<op::GenericOp>(
+                node->get_name() + ".dp", "MemEffAttnGradBasic", config[3]);
+            auto opds = make_shared<op::GenericOp>(
+                node->get_name() + ".ds", "MemEffAttnGradBasic", config[4]);
+            auto opdk_ = make_shared<op::GenericOp>(
+                node->get_name() + ".dk", "MemEffAttnGradBasic", config[5]);
+            auto opdq_ = make_shared<op::GenericOp>(
+                node->get_name() + ".dq", "MemEffAttnGradBasic", config[6]);
+
+            auto qk = graph->add_node_and_edge(opqk, {q, k}); 
+            auto p = graph->add_node_and_edge(opp, {qk, lse}); // lse_i
+            auto dv_ = graph->add_node_and_edge(opdv_, {p, do_, dvi});
+            auto dp = graph->add_node_and_edge(opdp, {do_, v});
+            auto ds = graph->add_node_and_edge(opds, {p, dp, delta}); // delta_i
+            auto dk_ = graph->add_node_and_edge(opdk_, {ds, q, dki});
+            std::shared_ptr<GNode> dq_;
+            if (FLAGS_fsequence_parallel)
+                dq_ = graph->add_node_and_edge(opdq_, {ds, k});
+            else
+                dq_ = graph->add_node_and_edge(opdq_, {ds, k, dq_accum});
+
+            auto out_edges = node->get_out_edges();
+            for (auto edge : out_edges)
+            {
+                if (edge->get_src_output() == 0)
+                    graph->add_edge(dq_, 0, edge->get_dst(), edge->get_dst_input());
+                else if (edge->get_src_output() == 1)
+                    graph->add_edge(dk_, 0, edge->get_dst(), edge->get_dst_input());
+                else if (edge->get_src_output() == 2)
+                    graph->add_edge(dv_, 0, edge->get_dst(), edge->get_dst_input());
+            }
+            NNFUSION_LOG(INFO) << "split MemEffAttnGrad";
+            graph->remove_node(node);
+        }
+
+        else if (node->get_op_type() == "MemEffAttn")
         {
             auto op = std::dynamic_pointer_cast<op::GenericOp>(node->get_op_ptr());
             auto q = node->get_in_edge(0)->get_src();
@@ -119,7 +211,6 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             NNFUSION_LOG(INFO) << "split MemEffAttn";
             graph->remove_node(node);
         }
-
         else if (node->get_op_type() == "MultiScaleAttn0")
         {
             auto op = std::dynamic_pointer_cast<op::GenericOp>(node->get_op_ptr());

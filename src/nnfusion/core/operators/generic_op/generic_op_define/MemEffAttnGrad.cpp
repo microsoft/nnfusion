@@ -77,11 +77,11 @@ REGISTER_OP(MemEffAttnGradBasic)
         size_t head_size = generic_op->localOpConfig.getRoot()["head_size"];
 
         nnfusion::Shape output_shape;
-        if (stage == 0 || stage == 1 || stage == 3 || stage == 4)
+        if (stage == 0 || stage == 2)
         {
             output_shape = {batch_size, num_heads, seq_len, seq_len_kv};
         }
-        else if (stage == 2 || stage == 5)
+        else if (stage == 1 || stage == 3)
         {
             output_shape = {batch_size, num_heads, seq_len_kv, head_size};
         }
@@ -104,40 +104,34 @@ REGISTER_OP(MemEffAttnGradBasic)
         if (stage == 0)
         {
             //q, k -> qk 
+            // qk, lse_i -> p
+
+            // q, k, lse -> p
             expression_template =
-                R"( @output0@[B, H, Q, K] +=! @input0@[B, H, Q, D] * @input1@[B, H, K, D];  )";
+                R"( mediate0[B, H, Q, K] +=! @input0@[B, H, Q, D] * @input1@[B, H, K, D]; @output0@[B, H, Q, K] = (mediate0[B, H, Q, K] * const(@softmax_scale@).cast(input0[0].dtype()) - @input2@[B, H, Q]).call(`exp`);)";
         }
         else if (stage == 1)
-        {
-            // qk, lse_i -> p
-            expression_template =
-                R"(@output0@[B, H, Q, K] = (@input0@[B, H, Q, K] * const(@softmax_scale@).cast(input0[0].dtype()) - @input1@[B, H, Q]).call(`exp`);)";
-        }
-        else if (stage == 2)
         {
             //p, do, dv -> dv
             expression_template =
                 R"( mediate0[B, H, K, D] +=! @input0@[B, H, Q, K] * @input1@[B, H, Q, D]; @output0@[B, H, K, D] = mediate0[B, H, K, D] + @input2@[B, H, K, D];)";
         }
-        else if (stage == 3)
+        else if (stage == 2)
         {
             //do, v-> dp
-            expression_template =
-                R"(@output0@[B, H, Q, K] +=! @input0@[B, H, Q, D] * @input1@[B, H, K, D];)";
-        }
-        else if (stage == 4)
-        {
             // p, dp, delta -> ds
+
+            // do, v, p, delta->ds
             expression_template =
-                R"(@output0@[B, H, Q, K] = @input0@[B, H, Q, K] * (@input1@[B, H, Q, K] - @input2@[B, H, Q]) * const(@softmax_scale@).cast(input0[0].dtype());)";
+                R"(mediate0[B, H, Q, K] +=! @input0@[B, H, Q, D] * @input1@[B, H, K, D]; @output0@[B, H, Q, K] = @input2@[B, H, Q, K] * (mediate0[B, H, Q, K] - @input3@[B, H, Q]) * const(@softmax_scale@).cast(input0[0].dtype());)";
         }
-        else if (stage == 5)
+        else if (stage == 3)
         {
             // ds, q, dk -> dk
             expression_template =
                 R"(mediate0[B, H, K, D] +=! @input0@[B, H, Q, K] * @input1@[B, H, Q, D]; @output0@[B, H, K, D] = mediate0[B, H, K, D] + @input2@[B, H, K, D]; )";
         }
-        else if (stage == 6)
+        else if (stage == 4)
         {
             if (atomic_add)
             {
@@ -162,8 +156,7 @@ REGISTER_OP(MemEffAttnGradBasic)
                                             {"softmax_scale", softmax_scale},
                                           });
 
-        if ((stage != 1 && stage != 4) &&
-            curr->get_output_element_type(0) == nnfusion::element::f16)
+        if (curr->get_output_element_type(0) == nnfusion::element::f16)
         {
             expression_code += "## @: tensorCoreConfig=(2, 3)";
         }

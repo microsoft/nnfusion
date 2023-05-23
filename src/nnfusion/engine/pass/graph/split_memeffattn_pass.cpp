@@ -231,8 +231,8 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             size_t D = v_shape[4];
             nnfusion::element::Type et = node->get_output_element_type(0);
 
-            op::OpConfig::any config[3];
-            for (int j = 0; j < 3; j++)
+            op::OpConfig::any config[2];
+            for (int j = 0; j < 2; j++)
             {
                 config[j]["stage"] = j;
                 // config[j]["b"] = B;
@@ -246,14 +246,11 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             }
             auto opqk = make_shared<op::GenericOp>(
                 node->get_name() + ".qk", "MultiScaleAttnBasic0", config[0]);
-            auto opqkm = make_shared<op::GenericOp>(
-                node->get_name() + ".qkm", "MultiScaleAttnBasic0", config[1]);
             auto opattn = make_shared<op::GenericOp>(
-                node->get_name() + ".attn", "MultiScaleAttnBasic0", config[2]);
-
+                node->get_name() + ".attn", "MultiScaleAttnBasic0", config[1]);    
             auto qk = graph->add_node_and_edge(opqk, {qr, kr});
-            auto qkm = graph->add_node_and_edge(opqkm, {qk, mask});
-            auto out = graph->add_node_and_edge(opattn, {qkm, v});
+            auto out = graph->add_node_and_edge(opattn, {qk, mask, v});
+
 
             for (auto& edge : node->get_out_edges())
             {

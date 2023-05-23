@@ -90,23 +90,29 @@ def batch_mat_mul_1():
     # https://github.com/onnx/onnx/blob/master/onnx/onnx.proto
 
     # Create input (ValueInfoProto)
-    input0 = helper.make_tensor_value_info('input0', TensorProto.FLOAT, [3, 3, 2])
-    input1 = helper.make_tensor_value_info('input1', TensorProto.FLOAT, [3, 2, 1])
+    input0 = helper.make_tensor_value_info('input0', TensorProto.FLOAT16, [512, 128, 256])
+    input1 = helper.make_tensor_value_info('input1', TensorProto.FLOAT16, [512, 256, 128])
+    input2 = helper.make_tensor_value_info('input2', TensorProto.FLOAT16, [512, 128, 64])
     # Create one output (ValueInfoProto)
-    output = helper.make_tensor_value_info('output', TensorProto.FLOAT, [3, 3, 1])
+    output = helper.make_tensor_value_info('output', TensorProto.FLOAT16, [512, 128, 64])
 
     # Create a node (NodeProto) - This is based on Pad-11
-    node_def = helper.make_node(
+    node_def1 = helper.make_node(
         'MatMul',  # node name
         ['input0', 'input1'],  # inputs
-        ['output'],  # outputs
+        ['output0'],  # outputs
         domain=None)
 
+    node_def2 = helper.make_node(
+        'MatMul',  # node name
+        ['output0', 'input2'],  # inputs
+        ['output'],  # outputs
+        domain=None)
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
-        [node_def],
+        [node_def1, node_def2],
         'MatMul',
-        [input0, input1],
+        [input0, input1, input2],
         [output],
     )
 
@@ -929,7 +935,7 @@ def max():
     save_model(model_def, "max.onnx")
 
 def msa0():
-    BNBL, NQ, BLQ, KD, NQ, NV, BLK, D = 512, 4, 128, 256, 4, 1, 128, 256
+    BNBL, NQ, BLQ, KD, NV, BLK, D = 16384, 2, 64, 512, 8, 64, 64
     # The protobuf definition can be found here:
     # https://github.com/onnx/onnx/blob/master/onnx/onnx.proto
 
@@ -1064,5 +1070,5 @@ def add():
     model_def = helper.make_model(graph_def, producer_name='onnx-example')
 
     save_model(model_def, "add.onnx")
-
-memeffattn()
+# batch_mat_mul_1()
+msa0()

@@ -99,15 +99,23 @@ REGISTER_OP(MultiScaleAttnBasic0)
         int stage = generic_op->localOpConfig.getRoot()["stage"];
 
         nnfusion::Shape output_shape;
+        // if (stage == 0)
+        // {
+        //     output_shape = {bnbl, nq, blq, blk};
+        // }
+        // else if (stage == 1)
+        // {
+        //     output_shape = {bnbl, nq, nv, blq, blk};
+        // }
+        // else if (stage == 2)
+        // {
+        //     output_shape = {bnbl, nq, nv, blq, d};
+        // }
         if (stage == 0)
         {
             output_shape = {bnbl, nq, blq, blk};
         }
         else if (stage == 1)
-        {
-            output_shape = {bnbl, nq, nv, blq, blk};
-        }
-        else if (stage == 2)
         {
             output_shape = {bnbl, nq, nv, blq, d};
         }
@@ -126,14 +134,11 @@ REGISTER_OP(MultiScaleAttnBasic0)
         else if (stage == 1)
         {
             //qk, mask -> qkm
-            expression_template =
-                R"(@output0@[BNBL, NQ, NV, BLQ, BLK] = @input0@[BNBL, NQ, BLQ, BLK] * @input1@[NQ, NV, BLQ, BLK];)";
-        }
-        else if (stage == 2)
-        {
             // qkm, v -> attn
+
+            // qk, mask, v -> attn
             expression_template =
-                R"(@output0@[BNBL, NQ, NV, BLQ, D] +=! @input0@[BNBL, NQ, NV, BLQ, BLK] * @input1@[BNBL, NQ, NV, BLK, D];)";
+                R"(mediate0[BNBL, NQ, NV, BLQ, BLK] = @input0@[BNBL, NQ, BLQ, BLK] * @input1@[NQ, NV, BLQ, BLK]; @output0@[BNBL, NQ, NV, BLQ, D] +=! mediate0[BNBL, NQ, NV, BLQ, BLK] * @input2@[BNBL, NQ, NV, BLK, D])";
         }
         else
         {
@@ -145,7 +150,7 @@ REGISTER_OP(MultiScaleAttnBasic0)
         {
             if (stage == 0)
                 expression_code += "## @: tensorCoreConfig=(2, 3)";
-            else if (stage == 2)
+            else if (stage == 1)
                 expression_code += "## @: tensorCoreConfig=(3, 4)";
         }
         return expression_code;

@@ -721,3 +721,89 @@ REGISTER_OP(LayoutBMM)
             }
             return ir;
         });
+
+REGISTER_OP(QuantLinear)
+    .attr<int>("bits", 4)
+    .attr<bool>("transpose_A", false)
+    .attr<bool>("transpose_B", true)
+    .infershape(
+        [](std::shared_ptr<graph::GNode> gnode) -> void
+        {
+            auto generic_op =
+                std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+            bool trans_a = generic_op->localOpConfig.getRoot()["transpose_A"];
+            bool trans_b = generic_op->localOpConfig.getRoot()["transpose_B"];
+            NNFUSION_CHECK(trans_a == false) << "Currently only support non-transpose A";
+            NNFUSION_CHECK(trans_b == true) << "Currently only support transpose B";
+            NNFUSION_CHECK(4 == gnode->get_input_size());
+            // input 0 shape is B, S, K, input 1 is K, N
+            // output sahpe is B, S, N
+            auto input_shape = nnfusion::Shape(gnode->get_input_shape(0));
+            auto qweight_shape = nnfusion::Shape(gnode->get_input_shape(1));
+            NNFUSION_CHECK(input_shape.size() == 2 || input_shape.size() == 3);
+            NNFUSION_CHECK(qweight_shape.size() == 2);
+            if (input_shape.size() == 2)
+            {
+                nnfusion::Shape output_shape{trans_a ? input_shape[1] : input_shape[0],
+                                             trans_b ? qweight_shape[0] : qweight_shape[1]};
+                gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+            }
+            else if (input_shape.size() == 3)
+            {
+                nnfusion::Shape output_shape{input_shape[0],
+                                             trans_a ? input_shape[2] : input_shape[1],
+                                             trans_b ? qweight_shape[0] : qweight_shape[1]};
+                gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+            }
+
+            // print input0 shape and input1 shape
+            NNFUSION_LOG(INFO) << "input0 shape is " << gnode->get_input_shape(0);
+            NNFUSION_LOG(INFO) << "input1 shape is " << gnode->get_input_shape(1);
+            NNFUSION_LOG(INFO) << "output shape is " << gnode->get_output_shape(0);
+        })
+    .translate_v2(
+        [](std::shared_ptr<graph::GNode> curr) -> std::string
+        {
+            auto _op = static_pointer_cast<nnfusion::op::Dot>(curr->get_op_ptr());
+            NNFUSION_CHECK_NOT_NULLPTR(_op)
+                << "Node type is not " << curr->get_op_ptr()->get_op_type();
+            auto input_shape = curr->get_input_shape(0);
+            auto qweight_shape = curr->get_input_shape(1);
+            auto scales_shape = curr->get_input_shape(2);
+            auto zeros_shape = curr->get_input_shape(3);
+
+            auto ir_template =
+                R"( @output0@@output0_layout@ = @input0@@input0_layout@ + @input1@@input1_layout@ + @input2@@input2_layout@ + @input3@@input3_layout@; )";
+
+            vector<string> input_layout, qweight_layout, scales_layout, zeros_layout, output_layout;
+
+            for (size_t i = 0; i + 2 < qweight_shape.size(); i++)
+            {
+                input_layout.push_back("S" + std::to_string(i));
+                output_layout.push_back("S" + std::to_string(i));
+            }
+
+            output_layout.push_back("N");
+            output_layout.push_back("M");
+            input_layout.push_back(_op->get_transpose_A() ? "K" : "N");
+            input_layout.push_back(_op->get_transpose_A() ? "N" : "K");
+            qweight_layout.push_back(_op->get_transpose_B() ? "M" : "K");
+            qweight_layout.push_back(_op->get_transpose_B() ? "K" : "M");
+            scales_layout.push_back("M");
+            zeros_layout.push_back("M");
+
+            for (size_t i = 0; i + 2 < input_shape.size(); i++)
+            {
+                qweight_layout.push_back("E" + std::to_string(i));
+                output_layout.push_back("E" + std::to_string(i));
+            }
+
+            op::OpConfig::any op_config;
+            op_config["input0_layout"] = nnfusion::vector_to_string(input_layout);
+            op_config["input1_layout"] = nnfusion::vector_to_string(qweight_layout);
+            op_config["input2_layout"] = nnfusion::vector_to_string(scales_layout);
+            op_config["input3_layout"] = nnfusion::vector_to_string(zeros_layout);
+            op_config["output0_layout"] = nnfusion::vector_to_string(output_layout);
+            auto ir = op::create_code_from_template(ir_template, op_config);
+            return ir;
+        });

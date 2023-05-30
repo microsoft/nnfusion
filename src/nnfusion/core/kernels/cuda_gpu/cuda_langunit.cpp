@@ -59,6 +59,11 @@ CUDA_UNSUPPORTED_HALF_MATH_UNARY(herf, erf)
 
 LU_DEFINE(macro::TVM_PACK_VALUES,
           R"(
+__device__ __half max(__half a, __half b)
+{
+    return (float)a > (float)b ? a : b;
+}
+
 inline __device__ longlong4 make_int8(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
   int2 i0 = make_int2(x0, x1);
   int2 i1 = make_int2(x2, x3);

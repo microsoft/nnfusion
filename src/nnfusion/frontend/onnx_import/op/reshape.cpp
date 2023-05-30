@@ -45,6 +45,9 @@ namespace nnfusion
                     NNFUSION_CHECK(std::count(output_shape.begin(), output_shape.end(), -1) <= 1)
                         << "Shape should have at most 1 dynamic dimension";
 
+                    NNFUSION_LOG(INFO) << "Reshape Name " << node_proto.name() << node_proto.output(0) << " "
+                                       << join(input_shape)
+                                       << " -> " << join(output_shape);
                     size_t num_input_elements = nnfusion::shape_size(input_shape);
 
                     // infer the dimension of -1 and 0
@@ -69,7 +72,7 @@ namespace nnfusion
                     if (dynamic_dim == output_shape.end())
                     {
                         NNFUSION_CHECK(static_size == num_input_elements)
-                            << "Reshape size doesn\'t match";
+                            << "Reshape size doesn\'t match, static_size " << static_size << " vs " << num_input_elements;
                     }
                     else
                     {

@@ -155,6 +155,27 @@ namespace nnfusion
 
                     return {{node_proto.output(0), generic_gnode}};
                 }
+               
+                NamedNodeVector
+                    TranslateGatherElementsOp(const onnx::NodeProto& node_proto,
+                                              const NodeMap& all_ng_nodes,
+                                              std::shared_ptr<nnfusion::graph::Graph> m_graph)
+                {
+                    auto input_indexes = GetAllInputIndex(all_ng_nodes, node_proto);
+
+                    Node node(node_proto);
+                    auto axis = node.get_attribute_value<int64_t>("axis", 0);
+                    axis += axis < 0 ? input_indexes[0].get_shape().size() : 0;
+
+                    nnfusion::op::OpConfig::any myConfig;
+                    myConfig["axis"] = axis;
+
+                    auto generic_op = std::make_shared<nnfusion::op::GenericOp>(
+                        node_proto.output(0), "GatherElements", myConfig);
+                    auto generic_gnode = m_graph->add_node_and_edge(generic_op, input_indexes);
+
+                    return {{node_proto.output(0), generic_gnode}};
+                }
 
             } // namespace set_11
 

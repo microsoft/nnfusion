@@ -521,7 +521,10 @@ namespace nnfusion
 
             NamedNodeVector GraphConvert::convert_node(const onnx::NodeProto& node_proto)
             {
-                NNFUSION_LOG(DEBUG) << "convert node: " << node_proto.name();
+                NNFUSION_LOG(INFO) << "convert node: " << node_proto.name();
+                // op_type
+                NNFUSION_LOG(INFO) << "op_type: " << node_proto.op_type()<< " domain: " << node_proto.domain();
+                
                 const auto& convert_func =
                     get_convert_func(node_proto.op_type(), node_proto.domain());
 
@@ -551,6 +554,14 @@ namespace nnfusion
             const ConvertFunc& GraphConvert::get_convert_func(const std::string& name,
                                                               const std::string& domain) const
             {
+                if (m_domain_convert_func_map.find(domain) == m_domain_convert_func_map.end() )
+                {
+                    NNFUSION_LOG(NNFUSION_WARNING) << "No domain: " << domain << " found";
+                }
+                if (m_domain_convert_func_map.at(domain).find(name) ==
+                    m_domain_convert_func_map.at(domain).end()){
+                    NNFUSION_LOG(NNFUSION_WARNING) << "No op: " << name << " found";
+                }
                 if (m_domain_convert_func_map.find(domain) == m_domain_convert_func_map.end() ||
                     m_domain_convert_func_map.at(domain).find(name) ==
                         m_domain_convert_func_map.at(domain).end())

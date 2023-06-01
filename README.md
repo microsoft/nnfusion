@@ -20,31 +20,36 @@ To ease the process of installing all the dependencies, baseline software, and W
 ```bash
 cd welder
 # build the image
-sudo docker build -t welder_cuda .
+docker build -t welder_cuda .
 # run the container
-sudo nvidia-docker run -it --cap-add=SYS_ADMIN --network=host --name welder_test welder_cuda bash
+nvidia-docker run -it --cap-add=SYS_ADMIN --network=host --name welder_test welder_cuda bash
 ```
 
 ## 2. Paper result quick reproduce
 
 Since welder's paper evaluate different models with different batch-sizes and data-types, leading to more than 50 models to tune to completely reproduce the paper's result. To help reproduce quickly, we have uploaded all welder's compiled model of V100 GPU at [temp.tar.gz - Google Cloud Drive](https://drive.google.com/file/d/1xJUk7ZBoe6bjaqMpTI-n9gqGtc01IOWG)
 
+```bash
+pip install gdown
+gdown https://drive.google.com/u/0/uc?id=1xJUk7ZBoe6bjaqMpTI-n9gqGtc01IOWG
+```
+
 After downloading, it should be extracted under the artifacts/temp folder. You can see a lot of model folders in it. With these pre-compiled models, results can be reproduced more quickly with a few commands. Here is a list of script we provide:
 
 | Name      | Description                                              | Commands                      |
 | --------- | -------------------------------------------------------- | ----------------------------- |
 | Figure1   | onnxruntime memory performance for different models    | [Figure1](#Figure1) |
-| Figure5   | Latency Number of a simple case | [Figure5](#Figure5) |
+| Figure2   | Latency Number of a simple case | [Figure2](#Figure2) |
 | Figure9   | Model inference performance on V100 FP32                 | [Figure9_10](#f2)                    |
-| Figure10a | Model inference performance on V100 FP16 (TensorCore)    | [Figure9_10](#f2)                    |
-| Figure10b | Model inference performance on V100 FP16 (No TensorCore) | [Figure10b](#f3)                     |
-| Figure11  | Latency, kernel count, global memory transaction and IRS | [Figure11](#f4)                      |
+| Figure10 | Model inference performance on V100 FP16 (TensorCore)    | [Figure9_10](#f2)                    |
+| Figure11 | Model inference performance on V100 FP16 (No TensorCore) | [Figure11](#f3)                     |
+| Figure13  | Latency, kernel count, global memory transaction and IRS | [Figure13](#f4)                      |
 | Table3    | Performance for WELDER and FasterTransformer             | [Table3](#f5)                        |
-| Table4    | Compilation time of Ansor and Welder                     | [Table4](#f6)                        |
-| Table5    | Performance on compute intensive models                  | [Table5](#f7)                        |
-| Table6    | Scale-up large DNN models to host memory (GPU)           | [Table6](#f8)                        |
+| Table5    | Compilation time of Ansor and Welder                     | [Table5](#f6)                        |
+| Table6    | Performance on compute intensive models                  | [Table6](#f7)                        |
+| Table7    | Scale-up large DNN models to host memory (GPU)           | [Table7](#f8)                        |
 
-Note that results in Figure12/part of Table 6 requires ROCM-GPU/GraphCore IPU environments which is not directly available here.
+Note that results in Figure13/part of Table 6 requires ROCM-GPU/GraphCore IPU environments which is not directly available here.
 
 ### <a id="Figure1">Figure1 </a>
 
@@ -54,7 +59,7 @@ The run instruction is
 python run_all.py
 ```
 
-### <a id="Figure5"> Figure5 </a>
+### <a id="Figure2"> Figure2 </a>
 
 The run instruction is
 
@@ -86,15 +91,16 @@ python profile_ansor_all.py
 cd /root/tvm/build && git checkout welder && make -j
 ```
 
-### <a id="f3">Figure10b</a>
+### <a id="f3">Figure11</a>
 
 The run instruction is
 
 ```bash
 python profile_welder_no_tc.py
 ```
+Note that the baseline(Ansor)'s result is already shown in the above section with profile_ansor_all.py.
 
-### <a id="f4"> Figure 11</a>
+### <a id="f4"> Figure13</a>
 
 The run instructions are
 
@@ -134,7 +140,7 @@ cmake .. -DSM=70 -DCMAKE_BUILD_TYPE=Release
 make bert_example bert_gemm vit_example vit_gemm swin_example swin_gemm -j
 ```
 
-### <a id="f6">Table4</a>
+### <a id="f6">Table5</a>
 
 The run instruction is
 
@@ -143,7 +149,7 @@ python estimate_run_time_welder.py
 python estimate_run_time_ansor.py
 ```
 
-### <a id="f7">Table5</a>
+### <a id="f7">Table6</a>
 
 The run instruction is
 
@@ -151,7 +157,7 @@ The run instruction is
 python run_all.py
 ```
 
-### <a id="f8">Table6</a>
+### <a id="f8">Table7</a>
 
 The run instruction is
 
@@ -182,7 +188,7 @@ After running this command, The PREFIX folder will be created which contains a m
 Afther the PREFIX folder is created, run the following command
 
 ```bash
-python tune_welder.py PREFIX ---topk 20 --arch V100
+python tune_welder.py PREFIX --topk 20 --arch V100
 ```
 
 The command will compile the model.onnx under the PREFIX folder. The --topk 20 and --arch V100 indicates that 20 trails is made for each task(subgraph) and V100 GPU is the target.
@@ -190,7 +196,7 @@ The command will compile the model.onnx under the PREFIX folder. The --topk 20 a
 Specially, when reproducing results in the paper, special flags will be added. The 3 included cases are: bert, fp32, bs=1,64 and swin_transformer, fp16, bs=1. In this three cases, we add an additional compile flag:
 
 ```bash
-python tune_welder.py PREFIX ---topk 20 --arch V100 --skip_dot
+python tune_welder.py PREFIX --topk 20 --arch V100 --skip_dot
 ```
 
 

@@ -26,7 +26,7 @@ RUN git clone https://github.com/nox-410/tvm --recursive -b welder \
   && cmake .. && make -j
 ENV PYTHONPATH /root/tvm/python:$PYTHONPATH
 
-RUN git clone https://github.com/nox-410/nnfusion -b fix_rammer_op \
+RUN git clone https://github.com/nox-410/nnfusion -b welder \
   && mkdir nnfusion/build \
   && cd nnfusion/build && cmake .. && make -j
 ENV PATH /root/nnfusion/build/src/tools/nnfusion:$PATH

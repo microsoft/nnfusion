@@ -5,11 +5,11 @@ conda activate controlflow
 
 cd ${ARTIFACT_ROOT}/models
 
-mkdir -p ${ARTIFACT_ROOT}/reproduce_results/Figure20
-cp -r ${ARTIFACT_ROOT}/reproduce_results/Figure14/base ${ARTIFACT_ROOT}/reproduce_results/Figure20
-cp -r ${ARTIFACT_ROOT}/reproduce_results/Figure14/sys ${ARTIFACT_ROOT}/reproduce_results/Figure20
+mkdir -p ${ARTIFACT_ROOT}/reproduce_results/Figure19
+cp -r ${ARTIFACT_ROOT}/reproduce_results/Figure14/base ${ARTIFACT_ROOT}/reproduce_results/Figure19
+cp -r ${ARTIFACT_ROOT}/reproduce_results/Figure14/sys ${ARTIFACT_ROOT}/reproduce_results/Figure19
 
-LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure20/schedule
+LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure19/schedule
 mkdir -p ${LOG_DIR}
 python3 lstm.py --platform V100 --bs 1 --no-torch --measure --enable-breakdown 2>&1 | tee $LOG_DIR/lstm.b1.log
 cp ${ARTIFACT_ROOT}/reproduce_results/Figure14/sys/nasrnn.b1.log ${LOG_DIR}

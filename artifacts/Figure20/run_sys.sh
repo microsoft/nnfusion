@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure19/sys
+LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure20/sys
 mkdir -p ${LOG_DIR}
 cd ${ARTIFACT_ROOT}/models
 python3 lstm.py --platform MI100 --bs 1 --no-torch --measure 2>&1 | tee $LOG_DIR/lstm.b1.log

@@ -13,5 +13,5 @@ cd Figure17 && ./run.sh && cd -
 date > ${ARTIFACT_ROOT}/reproduce_results/Figure17/finish_time.txt
 cd Figure18 && ./run.sh && cd -
 date > ${ARTIFACT_ROOT}/reproduce_results/Figure18/finish_time.txt
-cd Figure20 && ./run.sh && cd -
-date > ${ARTIFACT_ROOT}/reproduce_results/Figure20/finish_time.txt
+cd Figure19 && ./run.sh && cd -
+date > ${ARTIFACT_ROOT}/reproduce_results/Figure19/finish_time.txt

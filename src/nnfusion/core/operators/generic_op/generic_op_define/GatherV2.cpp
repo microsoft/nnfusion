@@ -99,7 +99,7 @@ REGISTER_OP(GatherV2)
         }
 
         input1_layout = input1_layout.empty() ? std::vector<std::string>({"0"}) : input1_layout;
-        output0_layout = output0_layout.empty() ? std::vector<std::string>({"N0"}) : output0_layout;
+        // output0_layout = output0_layout.empty() ? std::vector<std::string>({"N0"}) : output0_layout;
         op::OpConfig::any op_config;
         op_config["output0_layout"] = vector_to_string<std::vector<std::string>>(output0_layout);
         op_config["input0_layout_left"] = input0_layout_left;

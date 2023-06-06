@@ -1,7 +1,7 @@
 # OSDI'23 Cocktailer Artifacts Evaluation
 
 ## 0. Overview
-This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "Cocktailer: Analysis and Optimization for Dynamic Control Flow in Deep Learning".
+This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "Cocktailer: Analyzing and Optimizing Dynamic Control Flow in Deep Learning".
 
 ### Evaluation Setup
 * Artifacts Available:
@@ -14,11 +14,7 @@ This code branch is used for OSDI'23 Artifact Evaluation of paper #628, titled "
     * To reproduce the main results presented in our paper, we provide Docker images containing all the environments and baseline software, and machines with the same configurations as we used in paper evaluation. We also provide detailed guideline to help reproduce the results step by step. 
 
 ## 1. Environment Preparation
-
-**For AE Reviewers**:
-Please follow the instructions in "Comments for AEC" on HotCRP and skip this section if you want to use the provided environment. The following steps need docker permission which is not provided due to security concerns.
-
-## NVIDIA GPU
+### NVIDIA GPU
 Please follow the instructions in [INSTALL.md](INSTALL.md) or use the following docker-based script to build and install Cocktailer.
 ```bash
 cd $YOUR_DIR_FOR_NNFUSION
@@ -31,7 +27,7 @@ docker run -it --gpus all --name cocktailer-ae -v $YOUR_DIR_FOR_NNFUSION/nnfusio
 bash ./env/install_in_docker.sh
 ```
 
-## AMD GPU
+### AMD GPU
 Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktailer respectively.
 * download code
     ```bash
@@ -58,13 +54,13 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktai
     ```bash
     mkdir $YOUR_DIR_FOR_NNFUSION/kernel_db
     cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
-    docker build -t tvm_rocm_cuda:latest -f env/Dockerfile.tvm.rocm --network=host .
+    docker build -t tvm_rocm_cuda:latest -f env/Dockerfile.tvm.rocm .
     docker run -it --device=/dev/kfd --device=/dev/dri --name tvm-ae -v $YOUR_DIR_FOR_NNFUSION/kernel_db:/root/.cache/nnfusion -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion -w /root/nnfusion/artifacts -e ARTIFACT_ROOT=/root/nnfusion/artifacts tvm_rocm_cuda /bin/bash
     ```
 * Build and run cocktailer docker
     ```bash
     cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
-    docker build -t cocktailer:latest -f env/Dockerfile.rocm --network=host .
+    docker build -t cocktailer:latest -f env/Dockerfile.rocm .
     docker run -it --device=/dev/kfd --device=/dev/dri --name cocktailer-ae -v $YOUR_DIR_FOR_NNFUSION/kernel_db:/root/.cache/nnfusion -v $YOUR_DIR_FOR_NNFUSION/nnfusion:/root/nnfusion -w /root/nnfusion/artifacts -e ARTIFACT_ROOT=/root/nnfusion/artifacts cocktailer /bin/bash
     # run inside docker
     bash ./env/install_in_rocm_docker.sh
@@ -77,7 +73,6 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktai
 
 ## 3. Data and Kernel Preparation
 * Download the input data and model weights from [zenodo](https://doi.org/10.5281/zenodo.7856472), unzip them and put them under the nnfusion/artifacts directory. The tree structure should be like:
-    **For AE Reviewers**: This step has been done on the provided nodes.
     ```
     nnfusion
     ├── artifacts
@@ -97,8 +92,8 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktai
         ```bash
         # assume running at nnfusion/artifacts directory
         cd kernel_db
-        srun -p AE -w nico1 --pty --exclusive ./reproduce_kernel_db.sh
-        srun -p AE -w nico1 --pty bash -c "mkdir -p /tmp/`whoami` && rsync -avz nico0:~/.cache/nnfusion/* /tmp/`whoami`/"
+        ./reproduce_kernel_db.sh
+        mkdir -p /tmp/`whoami` && cp -r ~/.cache/nnfusion/* /tmp/`whoami`/
         ```
     * AMD GPU
         ```bash
@@ -108,9 +103,7 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktai
         ```
 
 ## 4. Reproducing Individual Experiement Results
-**NOTE**: we provide a script named "run_nv_gpu.sh" to run the experiments except Figure19. You can go to `nnfusion/artifacts` directory and use `./run_nv_gpu.sh` to run the experiments. For Figure19, please follow the README.md in the `Figure19` directory.
-
-**For AE Reviewers**: Please use `srun -p AE -w nico1 --pty --exclusive ./run_nv_gpu.sh ` to submit the jobs to the compute node of the NVIDIA GPU cluster and follow the README.md in the `Figure19` directory to reproduce Figure19.
+**NOTE**: we provide a script named "run_nv_gpu.sh" to run the experiments except Figure20. You can go to `nnfusion/artifacts` directory and use `./run_nv_gpu.sh` to run the experiments. For Figure20, please follow the README.md in the `Figure20` directory.
 
 | Experiments   | Figure # in Paper |  Script Location |
 | -----------     | -----------  |  ----------- |
@@ -120,14 +113,14 @@ Please prepare four dockers for running JAX, TensorFlow, TVM, PyTorch \& Cocktai
 | #4. Control flow overhead of models with branches | Figure 16 | [run.sh](Figure16/run.sh) |
 | #5. Different ratio of executed layers | Figure 17 | [run.sh](Figure17/run.sh) |
 | #6. Control flow overhead of RAE with recursion | Figure 18 | [run.sh](Figure18/run.sh) |
-| #7. End-to-end DNN inference on ROCm MI100 GPU with BS=1 | Figure 19 | [README.md](Figure19/README.md) |
-| #8. Breakdown of models with BS=1 | Figure 20 | [run.sh](Figure20/run.sh)|
+| #7. Breakdown of models with BS=1 | Figure 19 | [run.sh](Figure19/run.sh)|
+| #8. End-to-end DNN inference on AMD MI100 GPU with BS=1 | Figure 20 | [README.md](Figure20/README.md) |
 
 ## 5. Reproduce the Figures in the paper
 Copy the ROCM results to the NVIDIA GPU node and draw figures on the NVIDIA GPU node
 
 ```bash
 cd $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts
-scp -P 31705 -r root@impreza0:~/nnfusion/artifacts/reproduce_results/Figure19 reproduce_results 
+# copy the logs in $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts/reproduce_results/Figure20 of the AMD GPU node to $YOUR_DIR_FOR_NNFUSION/nnfusion/artifacts/reproduce_results of the NVIDIA GPU node
 cd plot && ./plot_all.sh && cd - 
 ```

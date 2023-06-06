@@ -2,7 +2,7 @@
 This document describes how to install the software used in the artifact on a node with NVIDIA GPU. All scripts are assumed to be run from `nnfusion/artifacts` directory.
 
 ## Prerequirements
-We assume that you have a node with NVIDIA GPU and CUDA installed. We also assume that you have installed conda and nvcc. If you have not installed conda, you can install it by following the instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html) (Miniconda is enough, and this artifact assumes that miniconda is installed at the default path `~/miniconda3`). If you have not installed nvcc, you can install it by following the instructions [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html).
+We assume that you have a node with NVIDIA driver and CUDA installed. We also assume that you have installed conda and nvcc. If you have not installed conda, you can install it by following the instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html) (Miniconda is enough, and this artifact assumes that miniconda is installed at the default path `~/miniconda3`). If you have not installed nvcc, you can install it by following the instructions [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html).
 
 ## TensorFlow
 The onnx-tf for TF 1.15 needs to be built from source because the pre-compiled version depends on TF2. We also fix some bugs in that commit to properly support the control flow operations. The following commands will prepare the conda env for TF 1.15.

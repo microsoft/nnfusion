@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure19/jax
+LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure20/jax
 mkdir -p ${LOG_DIR}
 cd ${ARTIFACT_ROOT}/baseline
 cd lstm

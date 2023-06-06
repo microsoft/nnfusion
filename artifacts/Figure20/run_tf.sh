@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure19/tf
+LOG_DIR=${ARTIFACT_ROOT}/reproduce_results/Figure20/tf
 mkdir -p ${LOG_DIR}
 cd ${ARTIFACT_ROOT}/baseline
 cd lstm

@@ -33,9 +33,9 @@ def kernel_slice_to_code(kernel_slice, kernel_name, in_args, out_args, thread_ex
   thread_extent_suffix = ['.x', '.y', '.z']
   grid_size = ['  // [thread_extent] blockIdx%s = %d' % (sfx, val) for sfx, val in zip(thread_extent_suffix, thread_extent['grid_size'])]
   block_size = ['  // [thread_extent] threadIdx%s = %d' % (sfx, val) for sfx, val in zip(thread_extent_suffix, thread_extent['block_size'])]
-  idx = kernel_slice.find('__global__')
-  idx = kernel_slice.find(') {\n', idx) + 4
-  kernel_slice = kernel_slice[:idx] + '\n'.join(grid_size + block_size) +'\n' + kernel_slice[idx:]
+  idx1 = kernel_slice.find('__global__')
+  idx2 = kernel_slice.find(') {\n', idx1) + 4
+  kernel_slice = kernel_slice[:idx1] + 'extern "C" ' + kernel_slice[idx1 : idx2] + '\n'.join(grid_size + block_size) +'\n' + kernel_slice[idx2:]
   # add code header
   kernel = code_header + '\n' + kernel_slice
   display_inputs = ', '.join([tensor_display(name, prop) for (name, prop) in in_args])

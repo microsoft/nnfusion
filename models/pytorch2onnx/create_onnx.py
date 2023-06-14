@@ -966,7 +966,39 @@ def msa0():
     model_def = helper.make_model(graph_def, producer_name='onnx-example')
 
     save_model(model_def, "msa0_basic.onnx")
+def msav2():
+    B, H, Q, KD, K, D = 1, 32, 8192, 128, 64, 256
+    # The protobuf definition can be found here:
+    # https://github.com/onnx/onnx/blob/master/onnx/onnx.proto
 
+    # Create input (ValueInfoProto)
+    q = helper.make_tensor_value_info('q', TensorProto.FLOAT16, [B, H, Q, KD])
+    k = helper.make_tensor_value_info('k', TensorProto.FLOAT16, [B, H, K, KD])
+    v = helper.make_tensor_value_info('v', TensorProto.FLOAT16, [B, H, K, D])
+    mask = helper.make_tensor_value_info('mask', TensorProto.FLOAT16, [H, Q, K])
+    acco = helper.make_tensor_value_info('acco', TensorProto.FLOAT16, [B, H, Q, D])
+    d = helper.make_tensor_value_info('d', TensorProto.FLOAT16, [B, H, Q])
+    # Create one output (ValueInfoProto)
+    attn = helper.make_tensor_value_info('attn', TensorProto.FLOAT16, [B, H, Q, D])
+
+    node_def = helper.make_node(
+        'MultiScaleAttnV2',  # node name
+        ['q', 'k', 'v', 'mask', 'acco', 'd'],  # inputs
+        ['attn'],  # outputs
+        domain=None)
+
+    # Create the graph (GraphProto)
+    graph_def = helper.make_graph(
+        [node_def],
+        'MultiScaleAttnV2',
+        [q, k, v, mask, acco, d],
+        [attn],
+    )
+
+    # Create the model (ModelProto)
+    model_def = helper.make_model(graph_def, producer_name='onnx-example')
+
+    save_model(model_def, "msav2.onnx")
 def msa1():
     B, NQ, BLQ, KD, NQ, NV, BLK, D = 4, 4, 128, 256, 4, 1, 128, 256
     # The protobuf definition can be found here:
@@ -1072,4 +1104,4 @@ def add():
 
     save_model(model_def, "add.onnx")
 # batch_mat_mul_1()
-msa0()
+msav2()

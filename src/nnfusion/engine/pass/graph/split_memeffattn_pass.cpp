@@ -53,7 +53,7 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             // auto dq = graph->add_node_and_edge(opdq, {dq_accum});
             // auto dv = graph->add_node_and_edge(opdv, {dvi});
             // auto dk = graph->add_node_and_edge(opdk, {dki});
-            
+
             op::OpConfig::any config[7];
             for (int j = 0; j < 7; j++)
             {
@@ -68,7 +68,6 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
                 config[j]["block_size"] = block_size;
                 config[j]["atomic_add"] = (bool)FLAGS_fsequence_parallel;
             }
-            
 
             auto opqk = make_shared<op::GenericOp>(
                 node->get_name() + ".qk", "MemEffAttnGradBasic", config[0]);
@@ -85,7 +84,7 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             auto opdq_ = make_shared<op::GenericOp>(
                 node->get_name() + ".dq", "MemEffAttnGradBasic", config[6]);
 
-            auto qk = graph->add_node_and_edge(opqk, {q, k}); 
+            auto qk = graph->add_node_and_edge(opqk, {q, k});
             auto p = graph->add_node_and_edge(opp, {qk, lse}); // lse_i
             auto dv_ = graph->add_node_and_edge(opdv_, {p, do_, dvi});
             auto dp = graph->add_node_and_edge(opdp, {do_, v});
@@ -232,7 +231,8 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
 
             op::OpConfig::any identity_config[2];
             auto attn_acc_ = node->get_in_edge(4)->get_src();
-            auto opattn_acc= make_shared<op::GenericOp>("attn_acc", "Identity", identity_config[0]);
+            auto opattn_acc =
+                make_shared<op::GenericOp>("attn_acc", "Identity", identity_config[0]);
             auto attn_acc = graph->add_node_and_edge(opattn_acc, {attn_acc_});
 
             op::OpConfig::any config[2];
@@ -251,10 +251,10 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             auto opqk = make_shared<op::GenericOp>(
                 node->get_name() + ".qk", "MultiScaleAttnBasic0", config[0]);
             auto opattn = make_shared<op::GenericOp>(
-                node->get_name() + ".attn", "MultiScaleAttnBasic0", config[1]);    
+                node->get_name() + ".attn", "MultiScaleAttnBasic0", config[1]);
             auto qk = graph->add_node_and_edge(opqk, {qr, kr});
             auto new_attn_acc = graph->add_node_and_edge(opattn, {qk, mask, v, attn_acc});
-            auto opout= make_shared<op::GenericOp>("out", "Identity", identity_config[1]);
+            auto opout = make_shared<op::GenericOp>("out", "Identity", identity_config[1]);
             auto out = graph->add_node_and_edge(opout, {new_attn_acc});
 
             for (auto& edge : node->get_out_edges())
@@ -395,6 +395,74 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
                     graph->add_edge(out, 0, edge->get_dst(), edge->get_dst_input());
             }
             NNFUSION_LOG(INFO) << "split MultiScaleAttn0";
+            graph->remove_node(node);
+        }
+
+        else if (node->get_op_type() == "MultiScaleAttnV2")
+        {
+            auto op = std::dynamic_pointer_cast<op::GenericOp>(node->get_op_ptr());
+            auto q = node->get_in_edge(0)->get_src();
+            auto k = node->get_in_edge(1)->get_src();
+            auto v = node->get_in_edge(2)->get_src();
+            auto mask = node->get_in_edge(3)->get_src();
+            auto acco_ = node->get_in_edge(4)->get_src();
+            auto d_ = node->get_in_edge(5)->get_src();
+
+            Shape q_shape = node->get_input_shape(0);
+            Shape v_shape = node->get_input_shape(2);
+
+            size_t B = q_shape[0];
+            size_t H = q_shape[1];
+            size_t Q = q_shape[2];
+            size_t KD = q_shape[3];
+            size_t K = v_shape[2];
+            size_t D = v_shape[3];
+
+            op::OpConfig::any identity_config[3];
+
+            auto opacco = make_shared<op::GenericOp>("acco", "Identity", identity_config[0]);
+            auto acco = graph->add_node_and_edge(opacco, {acco_});
+            auto opd = make_shared<op::GenericOp>("d", "Identity", identity_config[1]);
+            auto d = graph->add_node_and_edge(opacco, {d_});
+
+            op::OpConfig::any config[5];
+            for (int j = 0; j < 5; j++)
+            {
+                config[j]["stage"] = j;
+                config[j]["b"] = B;
+                config[j]["h"] = H;
+                config[j]["q"] = Q;
+                config[j]["kd"] = KD;
+                config[j]["k"] = K;
+                config[j]["d"] = D;
+            }
+            auto opqk = make_shared<op::GenericOp>(
+                node->get_name() + ".qk", "MultiScaleAttnV2Basic", config[0]);
+            auto opqkm = make_shared<op::GenericOp>(
+                node->get_name() + ".qkm", "MultiScaleAttnV2Basic", config[1]);
+            auto opd_new = make_shared<op::GenericOp>(
+                node->get_name() + ".d_new", "MultiScaleAttnV2Basic", config[2]);
+            auto opacco_new = make_shared<op::GenericOp>(
+                node->get_name() + ".acco_new", "MultiScaleAttnV2Basic", config[3]);
+            auto opaccum = make_shared<op::GenericOp>(
+                node->get_name() + ".accum", "MultiScaleAttnV2Basic", config[4]);
+
+            auto qk = graph->add_node_and_edge(opqk, {q, k});
+            auto qkm = graph->add_node_and_edge(opqkm, {qk, mask});
+            auto d_new = graph->add_node_and_edge(opd_new, {qkm});
+            auto acco_new = graph->add_node_and_edge(opacco_new, {qkm, v, d_new});
+            auto accum = graph->add_node_and_edge(opaccum, {d, d_new, acco, acco_new});
+            auto opout = make_shared<op::GenericOp>("out", "Identity", identity_config[2]);
+            auto out = graph->add_node_and_edge(opout, {accum});
+
+            for (auto& edge : node->get_out_edges())
+            {
+                if (edge->is_control_edge())
+                    graph->add_control_edge(out, edge->get_dst());
+                else
+                    graph->add_edge(out, 0, edge->get_dst(), edge->get_dst_input());
+            }
+            NNFUSION_LOG(INFO) << "split MultiScaleAttnV2";
             graph->remove_node(node);
         }
     }

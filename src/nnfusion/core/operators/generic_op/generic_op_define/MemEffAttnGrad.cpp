@@ -24,9 +24,9 @@ REGISTER_OP(MemEffAttnGradPre)
         nnfusion::Shape outshape{in_shape[0], in_shape[1], in_shape[2]};
         gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), outshape);
     })
-    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string { 
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
         std::string expression_code =
-                R"( @output0@[B, H, Q] +=! @input0@[B, H, Q, D] * @input1@[B, H, Q, D];)";
+            R"( @output0@[B, H, Q] +=! @input0@[B, H, Q, D] * @input1@[B, H, Q, D];)";
         return expression_code;
     });
 REGISTER_OP(MemEffAttnGrad)
@@ -40,18 +40,20 @@ REGISTER_OP(MemEffAttnGrad)
     .attr<float>("p_dropout", 0)
     .attr<bool>("is_causal", false) // Whether every token can only attend to previous tokens
     .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
-        // q: [b, h, q, d], k & v : [b, h, k, d], do: [b,h, q, d], 
+        // q: [b, h, q, d], k & v : [b, h, k, d], do: [b,h, q, d],
         //lse:[b,h,q], delta:[b, h, q]
         // dq_accum: [b, h, q, d]
         // out: dq, dk, dv
 
         NNFUSION_CHECK(gnode->get_in_edges().size() == 9);
-        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), gnode->get_input_shape(0));
-        gnode->set_output_type_and_shape(1, gnode->get_input_element_type(1), gnode->get_input_shape(1));
-        gnode->set_output_type_and_shape(2, gnode->get_input_element_type(2), gnode->get_input_shape(2));
+        gnode->set_output_type_and_shape(
+            0, gnode->get_input_element_type(0), gnode->get_input_shape(0));
+        gnode->set_output_type_and_shape(
+            1, gnode->get_input_element_type(1), gnode->get_input_shape(1));
+        gnode->set_output_type_and_shape(
+            2, gnode->get_input_element_type(2), gnode->get_input_shape(2));
     })
-    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
-    return ""; });
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string { return ""; });
 
 REGISTER_OP(MemEffAttnGradBasic)
     .attr<size_t>("batch_size")
@@ -103,7 +105,7 @@ REGISTER_OP(MemEffAttnGradBasic)
         string expression_template;
         if (stage == 0)
         {
-            //q, k -> qk 
+            //q, k -> qk
             // qk, lse_i -> p
 
             // q, k, lse -> p
@@ -137,13 +139,13 @@ REGISTER_OP(MemEffAttnGradBasic)
             {
                 // ds, k -> dq
                 expression_template =
-                R"(@output0@[B, H, Q, D] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, D];)";
+                    R"(@output0@[B, H, Q, D] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, D];)";
             }
             else
             {
                 // ds, k, dq -> dq
                 expression_template =
-                R"(mediate0[B, H, Q, D] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, D]; @output0@[B, H, Q, D] = mediate0[B, H, Q, D] + @input2@[B, H, Q, D];)";
+                    R"(mediate0[B, H, Q, D] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, D]; @output0@[B, H, Q, D] = mediate0[B, H, Q, D] + @input2@[B, H, Q, D];)";
             }
         }
         else
@@ -153,7 +155,7 @@ REGISTER_OP(MemEffAttnGradBasic)
         std::string expression_code =
             op::create_code_from_template(expression_template,
                                           {
-                                            {"softmax_scale", softmax_scale},
+                                              {"softmax_scale", softmax_scale},
                                           });
 
         if (curr->get_output_element_type(0) == nnfusion::element::f16)

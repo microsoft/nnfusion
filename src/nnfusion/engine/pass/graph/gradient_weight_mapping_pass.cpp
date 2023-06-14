@@ -25,7 +25,6 @@ bool GradientWeightMappingPass::run_on_graph(std::shared_ptr<Graph>& graph)
 
     for (auto node : graph->get_outputs())
     {
-        
         if (node_output.find(node) == node_output.end())
         {
             node_output[node] = 0;
@@ -100,7 +99,8 @@ bool GradientWeightMappingPass::run_on_graph(std::shared_ptr<Graph>& graph)
             result_op->set_needs_copy_to_host(false);
         }
         ///\todo: the first output of gnode, remove the restriction
-        auto result_node = graph->add_node_and_edge(result_op, {GNodeIndex{update_node, node_output[node]}});
+        auto result_node =
+            graph->add_node_and_edge(result_op, {GNodeIndex{update_node, node_output[node]}});
         result_nodes.emplace_back(result_node);
     }
     graph->set_outputs(result_nodes);

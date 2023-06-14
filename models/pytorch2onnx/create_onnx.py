@@ -935,21 +935,22 @@ def max():
     save_model(model_def, "max.onnx")
 
 def msa0():
-    BNBL, NQ, BLQ, KD, NV, BLK, D = 16384, 2, 64, 512, 8, 64, 64
+    BNBL, NQ, BLQ, KD, BLK, D = 1, 32, 32, 128, 64, 256
     # The protobuf definition can be found here:
     # https://github.com/onnx/onnx/blob/master/onnx/onnx.proto
 
     # Create input (ValueInfoProto)
     q = helper.make_tensor_value_info('q', TensorProto.FLOAT16, [BNBL, NQ, BLQ, KD])
     k = helper.make_tensor_value_info('k', TensorProto.FLOAT16, [BNBL, NQ, BLK, KD])
-    v = helper.make_tensor_value_info('v', TensorProto.FLOAT16, [BNBL, NQ, NV, BLK, D])
-    mask = helper.make_tensor_value_info('mask', TensorProto.FLOAT16, [NQ, NV, BLQ, BLK])
+    v = helper.make_tensor_value_info('v', TensorProto.FLOAT16, [BNBL, NQ, BLK, D])
+    mask = helper.make_tensor_value_info('mask', TensorProto.FLOAT16, [NQ, BLQ, BLK])
+    attn_acco = helper.make_tensor_value_info('attn_acco', TensorProto.FLOAT16, [BNBL, NQ, BLQ, D])
     # Create one output (ValueInfoProto)
-    attn = helper.make_tensor_value_info('attn', TensorProto.FLOAT16, [BNBL, NQ, NV, BLQ, D])
+    attn = helper.make_tensor_value_info('attn', TensorProto.FLOAT16, [BNBL, NQ, BLQ, D])
 
     node_def = helper.make_node(
         'MultiScaleAttn0',  # node name
-        ['q', 'k', 'v', 'mask'],  # inputs
+        ['q', 'k', 'v', 'mask', 'attn_acco'],  # inputs
         ['attn'],  # outputs
         domain=None)
 
@@ -957,14 +958,14 @@ def msa0():
     graph_def = helper.make_graph(
         [node_def],
         'MultiScaleAttn0',
-        [q, k, v, mask],
+        [q, k, v, mask, attn_acco],
         [attn],
     )
 
     # Create the model (ModelProto)
     model_def = helper.make_model(graph_def, producer_name='onnx-example')
 
-    save_model(model_def, "msa0.onnx")
+    save_model(model_def, "msa0_basic.onnx")
 
 def msa1():
     B, NQ, BLQ, KD, NQ, NV, BLK, D = 4, 4, 128, 256, 4, 1, 128, 256

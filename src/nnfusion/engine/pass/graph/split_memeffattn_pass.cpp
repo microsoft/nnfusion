@@ -218,7 +218,6 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             auto kr = node->get_in_edge(1)->get_src();
             auto v = node->get_in_edge(2)->get_src();
             auto mask = node->get_in_edge(3)->get_src();
-
             Shape qr_shape = node->get_input_shape(0);
             Shape v_shape = node->get_input_shape(2);
             // size_t B = qr_shape[0];
@@ -226,10 +225,15 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             size_t NQ = qr_shape[1];
             size_t BLQ = qr_shape[2];
             size_t KD = qr_shape[3];
-            size_t NV = v_shape[2];
-            size_t BLK = v_shape[3];
-            size_t D = v_shape[4];
+            // size_t NV = v_shape[2];
+            size_t BLK = v_shape[2];
+            size_t D = v_shape[3];
             nnfusion::element::Type et = node->get_output_element_type(0);
+
+            op::OpConfig::any identity_config[2];
+            auto attn_acc_ = node->get_in_edge(4)->get_src();
+            auto opattn_acc= make_shared<op::GenericOp>("attn_acc", "Identity", identity_config[0]);
+            auto attn_acc = graph->add_node_and_edge(opattn_acc, {attn_acc_});
 
             op::OpConfig::any config[2];
             for (int j = 0; j < 2; j++)
@@ -240,7 +244,7 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
                 config[j]["nq"] = NQ;
                 config[j]["blq"] = BLQ;
                 config[j]["kd"] = KD;
-                config[j]["nv"] = NV;
+                // config[j]["nv"] = NV;
                 config[j]["blk"] = BLK;
                 config[j]["d"] = D;
             }
@@ -249,8 +253,9 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
             auto opattn = make_shared<op::GenericOp>(
                 node->get_name() + ".attn", "MultiScaleAttnBasic0", config[1]);    
             auto qk = graph->add_node_and_edge(opqk, {qr, kr});
-            auto out = graph->add_node_and_edge(opattn, {qk, mask, v});
-
+            auto new_attn_acc = graph->add_node_and_edge(opattn, {qk, mask, v, attn_acc});
+            auto opout= make_shared<op::GenericOp>("out", "Identity", identity_config[1]);
+            auto out = graph->add_node_and_edge(opout, {new_attn_acc});
 
             for (auto& edge : node->get_out_edges())
             {

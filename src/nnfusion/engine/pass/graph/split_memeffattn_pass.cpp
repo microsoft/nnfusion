@@ -436,19 +436,16 @@ bool SplitMemEffAttnPass::run_on_graph(std::shared_ptr<Graph>& graph)
                 config[j]["k"] = K;
                 config[j]["d"] = D;
             }
-            auto opqk = make_shared<op::GenericOp>(
-                node->get_name() + ".qk", "MultiScaleAttnV2Basic", config[0]);
             auto opqkm = make_shared<op::GenericOp>(
-                node->get_name() + ".qkm", "MultiScaleAttnV2Basic", config[1]);
+                node->get_name() + ".qkm", "MultiScaleAttnV2Basic", config[0]);
             auto opd_new = make_shared<op::GenericOp>(
-                node->get_name() + ".d_new", "MultiScaleAttnV2Basic", config[2]);
+                node->get_name() + ".d_new", "MultiScaleAttnV2Basic", config[1]);
             auto opacco_new = make_shared<op::GenericOp>(
-                node->get_name() + ".acco_new", "MultiScaleAttnV2Basic", config[3]);
+                node->get_name() + ".acco_new", "MultiScaleAttnV2Basic", config[2]);
             auto opaccum = make_shared<op::GenericOp>(
-                node->get_name() + ".accum", "MultiScaleAttnV2Basic", config[4]);
+                node->get_name() + ".accum", "MultiScaleAttnV2Basic", config[3]);
 
-            auto qk = graph->add_node_and_edge(opqk, {q, k});
-            auto qkm = graph->add_node_and_edge(opqkm, {qk, mask});
+            auto qkm = graph->add_node_and_edge(opqkm, {q, k, mask});
             auto d_new = graph->add_node_and_edge(opd_new, {qkm});
             auto acco_new = graph->add_node_and_edge(opacco_new, {qkm, v, d_new});
             auto accum = graph->add_node_and_edge(opaccum, {d, d_new, acco, acco_new});

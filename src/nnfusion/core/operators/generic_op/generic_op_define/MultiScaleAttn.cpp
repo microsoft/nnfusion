@@ -408,11 +408,11 @@ REGISTER_OP(MultiScaleAttnV2Basic)
         int stage = generic_op->localOpConfig.getRoot()["stage"];
 
         nnfusion::Shape output_shape;
-        if (stage == 0 || stage == 1)
+        if (stage == 0)
         {
             output_shape = {b, h, q, k};
         }
-        else if (stage == 3 || stage == 4)
+        else if (stage == 2 || stage == 3)
         {
             output_shape = {b, h, q, d};
         }
@@ -428,37 +428,30 @@ REGISTER_OP(MultiScaleAttnV2Basic)
         string expression_template;
         if (stage == 0)
         {
-            //qr, kr -> qk
+            //qr, kr, mask -> qkm
             expression_template =
-                R"(@output0@[B, H, Q, K] +=! @input0@[B, H, Q, KD] * @input1@[B, H, K, KD];)";
+                R"(mediate0[B, H, Q, K] +=! @input0@[B, H, Q, KD] * @input1@[B, H, K, KD]; @output0@[B, H, Q, K] = mediate0[B, H, Q, K] * @input2@[H, Q, K];)";
         }
         else if (stage == 1)
         {
-            //qk, mask -> qkm
-            expression_template =
-                R"(@output0@[B, H, Q, K] = @input0@[B, H, Q, K] * @input1@[H, Q, K];)";
-        }
-        else if (stage == 2)
-        {
             //qkm -> d_new
             expression_template =
-                R"(mediate0[B, H, Q] +=! @input0@[B, H, Q, K].call(`abs`); output0[B, H, Q] = mediate0[B, H, Q].call(`max`, const(1.0).cast(input0[0].dtype()));)";
+                R"(mediate0[B, H, Q] +=! @input0@[B, H, Q, K].call(`abs`); output0[B, H, Q] = mediate0[B, H, Q].call(`max`, [const(1.0).cast(input0[0].dtype())]);)";
         }
-        else if (stage == 3)
+        else if (stage == 2)
         {
             // qkm, v, d_new -> acco_new
             expression_template =
                 R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input2@[B, H, Q]; output0[B, H, Q, D] +=! mediate0[B, H, Q, K] * @input1@[B, H, K, D];)";
         }
-        else if (stage == 4)
+        else if (stage == 3)
         {
             // d, d_new -> d`
             // acco, d_new, acco_new -> acco`
 
             // d, d_new, acco, acco_new-> acco`
             expression_template =
-                R"(mediate0[B, H, Q] = (@input0@[B, H, Q] + @input1@[B, H, Q]).call(`max`, const(1.0).cast(input0[0].dtype()));
-                @output0@[B, H, Q, D] = (@input0@[B, H, Q] * @input2@[B, H, Q, D] + @input1@[B, H, Q] * @input3@[B, H, Q, D]) / mediate0[B, H, Q];)";
+                R"(mediate0[B, H, Q] = (@input0@[B, H, Q] + @input1@[B, H, Q]).call(`max`, [const(1.0).cast(input0[0].dtype())]); @output0@[B, H, Q, D] = (@input0@[B, H, Q] * @input2@[B, H, Q, D] + @input1@[B, H, Q] * @input3@[B, H, Q, D]) / mediate0[B, H, Q];)";
         }
         else
         {
@@ -468,7 +461,7 @@ REGISTER_OP(MultiScaleAttnV2Basic)
 
         if (curr->get_output_element_type(0) == nnfusion::element::f16)
         {
-            if (stage == 0 || stage == 3)
+            if (stage == 0 || stage == 2)
                 expression_code += "## @: tensorCoreConfig=(2, 3)";
         }
         return expression_code;

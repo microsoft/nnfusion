@@ -442,9 +442,12 @@ REGISTER_OP(MultiScaleAttnV2Basic)
         {
             // qkm, v, d_new -> acco_new
             // d, d_new, acco, acco_new-> acco`
-            // qkm0, v1, d_new2, d3, acco4-> acco`
+            // qkm, v, d_new, d, acco-> acco`
             expression_template =
-                R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input2@[B, H, Q]; mediate1[B, H, Q, D] +=! mediate0[B, H, Q, K] * @input1@[B, H, K, D];mediate2[B, H, Q] = (@input3@[B, H, Q] + @input2@[B, H, Q]).call(`max`, [const(1.0).cast(input0[0].dtype())]); @output0@[B, H, Q, D] = (@input3@[B, H, Q] * @input4@[B, H, Q, D] + @input2@[B, H, Q] * mediate1[B, H, Q, D]) / mediate2[B, H, Q];)";
+                R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input2@[B, H, Q];
+                mediate1[B, H, Q, D] +=! mediate0[B, H, Q, K] * @input1@[B, H, K, D];
+                mediate2[B, H, Q] = (@input3@[B, H, Q] + @input2@[B, H, Q]).call(`max`, [const(1.0).cast(input0[0].dtype())]); 
+                @output0@[B, H, Q, D] = (@input3@[B, H, Q] * @input4@[B, H, Q, D] + @input2@[B, H, Q] * mediate1[B, H, Q, D]) / mediate2[B, H, Q];)";
         }
         else
         {

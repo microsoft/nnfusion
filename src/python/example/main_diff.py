@@ -59,10 +59,10 @@ def inference(nnf_model_path, total_iter):
     # # print(input_dict)
     q = torch.load("/home/yuqxia/project/msa/qr.pt")
     # q = torch.randn(1, 32, 8192, 128).to(q)
-    k = torch.load("/home/yuqxia/project/msa/kr.pt")#[:, :, :64  , :]
-    v = torch.load("/home/yuqxia/project/msa/vr.pt")#[:, :, :64  , :]
-    # mask = torch.ones_like(torch.load("/home/yuqxia/project/msa/mask.pt"))#[:, :, :64]
-    mask = torch.load("/home/yuqxia/project/msa/mask.pt")#[:, :, :64]
+    k = torch.load("/home/yuqxia/project/msa/kr.pt")[:, :, :64  , :]
+    v = torch.load("/home/yuqxia/project/msa/vr.pt")[:, :, :64  , :]
+    mask = torch.ones_like(torch.load("/home/yuqxia/project/msa/mask.pt"))[:, :, :64]
+    # mask = torch.load("/home/yuqxia/project/msa/mask.pt")[:, :, :64]
     attn_acco = torch.zeros(1, 32, 8192, 256).to(q)
     expect = torch.load("/home/yuqxia/project/msa/output.pt")
     input_dict['q'] = cast_pytorch_tensor(q)
@@ -71,14 +71,18 @@ def inference(nnf_model_path, total_iter):
     # input_dict['do_'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/do.pt"))
     # input_dict['lse'] = cast_pytorch_tensor(torch.load("/home/yuqxia/nnfusion/lse.pt").half())
     input_dict['v'] = cast_pytorch_tensor(v)
+    seq_k = 64
     Br = 32
     Bc = 64
     Tr = 8192//Br
-    Tc = 8192//Bc
+    Tc = seq_k//Bc
     h = 32
-    input_dict['mask'] = cast_pytorch_tensor(mask.view(h, Tr, Br, Tc, Bc).permute(0, 1, 3, 2, 4).contiguous())
-    input_dict['attn_acco'] = cast_pytorch_tensor(attn_acco)
-    output_dict['Identity_10_0_0'] = cast_pytorch_tensor(torch.zeros(1, 32, 8192, 256).to(q))
+    input_dict['mask'] = cast_pytorch_tensor(mask)
+    # input_dict['mask'] = cast_pytorch_tensor(mask.view(h, Tr, Br, Tc, Bc).permute(0, 1, 3, 2, 4).contiguous())
+    input_dict['acco'] = cast_pytorch_tensor(attn_acco)
+    output_dict['Identity_13_0_0'] = cast_pytorch_tensor(torch.zeros(1, 32, 8192, 256).to(q))
+    input_dict['d'] = cast_pytorch_tensor(torch.zeros(1, 32, 8192).to(q))
+
     # print("expect out: ",torch.load("/home/yuqxia/nnfusion/out128.f32.pt"))
     # warm up
     # print(expect)
@@ -88,27 +92,32 @@ def inference(nnf_model_path, total_iter):
     maskr = mask#.unsqueeze(0)
     attn = qr @ kr.transpose(-1, -2)
     attn = attn * maskr
+    attn = attn / attn.detach().abs().sum(dim=-1, keepdim=True).clamp(min=1)
     expect = torch.matmul(attn, vr)
-    # print(expect)
-    output = torch.zeros(1, 32, 8192, 256).to(qr)
-    for i in range(128):
-        q = qr
-        k = kr[:, :, i*64: (i+1) *64, :]
-        v = vr[:, :, i*64: (i+1) *64, :]
-        m = mask[:, :, i*64: (i+1) *64]
-        attn = q @ k.transpose(-1, -2)
-        attn = attn * m
-        attn = torch.matmul(attn, v)
-        output += attn
-    print(output)
+    print(expect)
+    # o = torch.zeros(1, 32, 8192, 256).to(qr)
+    # d = torch.zeros(1, 32, 8192, 1).to(qr)
+    # for i in range(128):
+    #     q = qr
+    #     k = kr[:, :, i*64: (i+1) *64, :]
+    #     v = vr[:, :, i*64: (i+1) *64, :]
+    #     m = mask[:, :, i*64: (i+1) *64]
+    #     attn = q @ k.transpose(-1, -2)
+    #     attn = attn * m
+    #     d_new = attn.detach().abs().sum(dim=-1, keepdim=True)
+    #     o_new = torch.matmul(attn /d_new.clamp(min=1), v)
+    #     o = d * o
+    #     d = (d + d_new).clamp(min=1)
+    #     o = (o + d_new*o_new)/d
+    # # output
+    # print(o)
     for _ in range(1):
         executor(input_dict, output_dict)
         for k, v in output_dict.items():
             out = v.to_pytorch_tensor()
             print(f"{k} = {out}")
-    max_diff = 0
-    total_diff  = 0
-    diff = torch.abs(expect - output_dict['Identity_10_0_0'].to_pytorch_tensor())
+
+    diff = torch.abs(expect - output_dict['Identity_13_0_0'].to_pytorch_tensor())
     print(torch.max(diff), torch.mean(diff))
     # evaluate
     print(f"Begin evaluation of {total_iter} iters")

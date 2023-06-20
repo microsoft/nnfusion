@@ -1104,4 +1104,39 @@ def add():
 
     save_model(model_def, "add.onnx")
 # batch_mat_mul_1()
-msav2()
+def msav2grad():
+    B, H, Q, KD, K, D = 1, 32, 64, 128, 8192, 256
+    # The protobuf definition can be found here:
+    # https://github.com/onnx/onnx/blob/master/onnx/onnx.proto
+
+    # Create input (ValueInfoProto)
+    q = helper.make_tensor_value_info('q', TensorProto.FLOAT16, [B, H, Q, KD])
+    k = helper.make_tensor_value_info('k', TensorProto.FLOAT16, [B, H, K, KD])
+    v = helper.make_tensor_value_info('v', TensorProto.FLOAT16, [B, H, K, D])
+    mask = helper.make_tensor_value_info('mask', TensorProto.FLOAT16, [H, Q, K])
+    d = helper.make_tensor_value_info('d', TensorProto.FLOAT16, [B, H, Q])
+    dout = helper.make_tensor_value_info('dout', TensorProto.FLOAT16, [B, H, Q, D])
+    # Create one output (ValueInfoProto)
+    dq = helper.make_tensor_value_info('dq', TensorProto.FLOAT16, [B, H, Q, KD])
+    dk = helper.make_tensor_value_info('dk', TensorProto.FLOAT16, [B, H, K, KD])
+    dv = helper.make_tensor_value_info('dv', TensorProto.FLOAT16, [B, H, K, D])
+
+    node_def = helper.make_node(
+        'MultiScaleAttnV2Grad',  # node name
+        ['q', 'k', 'v', 'mask', 'dout', 'd'],  # inputs
+        ['dq', 'dk', 'dv'],  # outputs
+        domain=None)
+
+    # Create the graph (GraphProto)
+    graph_def = helper.make_graph(
+        [node_def],
+        'MultiScaleAttnV2Grad',
+        [q, k, v, mask, dout, d],
+        [dq, dk, dv],
+    )
+
+    # Create the model (ModelProto)
+    model_def = helper.make_model(graph_def, producer_name='onnx-example')
+
+    save_model(model_def, "msav2grad.onnx")
+msav2grad()

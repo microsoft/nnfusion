@@ -378,7 +378,6 @@ REGISTER_OP(MultiScaleAttnV2)
         // d (B, H, Q)
         // out(attn): (B, H, Q, D)
 
-        // NNFUSION_CHECK(gnode->get_in_edges().size() == 4);
 
         auto qr_shape = gnode->get_input_shape(0);
         auto v_shape = gnode->get_input_shape(2);
@@ -459,6 +458,140 @@ REGISTER_OP(MultiScaleAttnV2Basic)
         {
             if (stage == 0 || stage == 2)
                 expression_code += "## @: tensorCoreConfig=(2, 3)";
+        }
+        return expression_code;
+    });
+
+
+REGISTER_OP(MultiScaleAttnV2Grad)
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+
+        // q (B, H, Q, KD)
+        // k (B, H, K, KD)
+        // v (B, H, K, D)
+        // mask (H, Q, K)
+        // dq (B, H, Q, KD)
+        // dk (B, H, K, KD)
+        // dv (B, H, K, D)
+        // do (B, H, Q, D)
+        // d (B, H, Q) saved from fwd
+
+        // out: dq, dk, dv
+
+        auto q_shape = gnode->get_input_shape(0);
+        auto k_shape = gnode->get_input_shape(1);
+        auto v_shape = gnode->get_input_shape(2);
+        NNFUSION_CHECK(q_shape.size() == 4);
+        
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), q_shape);
+        gnode->set_output_type_and_shape(1, gnode->get_input_element_type(1), k_shape);
+        gnode->set_output_type_and_shape(2, gnode->get_input_element_type(2), v_shape);
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string { return ""; });
+
+REGISTER_OP(MultiScaleAttnV2GradBasic)
+    .attr<int>("stage")
+    .attr<size_t>("b")
+    .attr<size_t>("h")
+    .attr<size_t>("q")
+    .attr<size_t>("k")
+    .attr<size_t>("kd")
+    .attr<size_t>("d")
+    .infershape([](std::shared_ptr<graph::GNode> gnode) -> void {
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(gnode->get_op_ptr());
+        size_t b = generic_op->localOpConfig.getRoot()["b"];
+        size_t h = generic_op->localOpConfig.getRoot()["h"];
+        size_t q = generic_op->localOpConfig.getRoot()["q"];
+        size_t k = generic_op->localOpConfig.getRoot()["k"];
+        size_t kd = generic_op->localOpConfig.getRoot()["kd"];
+        size_t d = generic_op->localOpConfig.getRoot()["d"];
+
+        int stage = generic_op->localOpConfig.getRoot()["stage"];
+
+        nnfusion::Shape output_shape;
+        if (stage == 0 || stage == 2)
+        {
+            output_shape = {b, h, q, k};
+        }
+        else if (stage == 1)
+        {
+            output_shape = {b, h, k, d};
+        }
+        else if (stage ==3 )
+        {
+            output_shape = {b, h, q, kd};
+        }
+        else if (stage == 4)
+        {
+            output_shape = {b, h, k, kd};
+        }
+        else
+        {
+            NNFUSION_CHECK_FAIL() << "Incorrect Stage ID: " << stage;
+        }
+        gnode->set_output_type_and_shape(0, gnode->get_input_element_type(0), output_shape);
+    })
+    .translate_v2([](std::shared_ptr<graph::GNode> curr) -> std::string {
+        auto generic_op = std::dynamic_pointer_cast<nnfusion::op::GenericOp>(curr->get_op_ptr());
+        int stage = generic_op->localOpConfig.getRoot()["stage"];
+        string expression_template;
+        if (stage == 0)
+        {
+            //qr, kr, mask -> qkm
+            expression_template =
+                R"(mediate0[B, H, Q, K] +=! @input0@[B, H, Q, KD] * @input1@[B, H, K, KD]; @output0@[B, H, Q, K] = mediate0[B, H, Q, K] * @input2@[H, Q, K];)";
+        }
+        else if (stage == 1)
+        {
+           // s = qkm/d
+           // dv = dv + s *do
+           
+           //qkm, d, do, dv -> dv`
+            // expression_template =
+                // R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input1@[B, H, Q]; mediate1[B, H, K, D] +=! mediate0[B, H, Q, K] * @input2@[B, H, Q, D]; @output0@[B, H, K, D] = mediate1[B, H, K, D] + @input3@[B, H, K, D];)";
+            expression_template =
+                R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input1@[B, H, Q]; @output0@[B, H, K, D] +=! mediate0[B, H, Q, K] * @input2@[B, H, Q, D];)";
+
+        }
+        else if (stage == 2)
+        {
+            //ds = do *v
+            // d(qk) = (ds/ d)*m
+
+            // do, v, d, m -> dqk
+            expression_template =
+                R"(meidate0[B, H, Q, K] +=! @input0@[B, H, Q, D] * @input1@[B, H, K, D]; @output0@[B, H, Q, K] = (meidate0[B, H, Q, K] / @input2@[B, H, Q]) * @input3@[H, Q, K];)";
+        }
+        else if (stage == 3)
+        {
+            // dq = dq + d(qk) * k
+
+            // dqk, k, dq -> dq`
+            // expression_template =
+            //     R"(mediate0[B, H, Q, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, KD]; @output0@[B, H, Q, KD] = mediate0[B, H, Q, KD] + @input2@[B, H, Q, KD];)";
+            expression_template =
+                R"(@output0@[B, H, Q, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, KD];)";
+        }
+        else if (stage == 4)
+        {
+            // dk = dk + d(qk) * q
+
+            // dqk, q, dk -> dk`
+            // expression_template =
+            //     R"(mediate0[B, H, K, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, Q, KD]; @output0@[B, H, K, KD] = mediate0[B, H, K, KD] + @input2@[B, H, K, KD];)";
+            expression_template =
+                R"(@output0@[B, H, K, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, Q, KD];)";
+
+        }
+        else
+        {
+            NNFUSION_CHECK_FAIL() << "Incorrect Stage ID: " << stage;
+        }
+        std::string expression_code = op::create_code_from_template(expression_template, {});
+
+        if (curr->get_output_element_type(0) == nnfusion::element::f16)
+        {
+            expression_code += "## @: tensorCoreConfig=(2, 3)";
         }
         return expression_code;
     });

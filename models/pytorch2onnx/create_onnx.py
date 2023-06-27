@@ -1116,6 +1116,9 @@ def msav2grad():
     mask = helper.make_tensor_value_info('mask', TensorProto.FLOAT16, [H, Q, K])
     d = helper.make_tensor_value_info('d', TensorProto.FLOAT16, [B, H, Q])
     dout = helper.make_tensor_value_info('dout', TensorProto.FLOAT16, [B, H, Q, D])
+    dq0 = helper.make_tensor_value_info('dq0', TensorProto.FLOAT16, [B, H, Q, KD])
+    dk0 = helper.make_tensor_value_info('dk0', TensorProto.FLOAT16, [B, H, K, KD])
+    dv0 = helper.make_tensor_value_info('dv0', TensorProto.FLOAT16, [B, H, K, D])
     # Create one output (ValueInfoProto)
     dq = helper.make_tensor_value_info('dq', TensorProto.FLOAT16, [B, H, Q, KD])
     dk = helper.make_tensor_value_info('dk', TensorProto.FLOAT16, [B, H, K, KD])
@@ -1123,7 +1126,7 @@ def msav2grad():
 
     node_def = helper.make_node(
         'MultiScaleAttnV2Grad',  # node name
-        ['q', 'k', 'v', 'mask', 'dout', 'd'],  # inputs
+        ['q', 'k', 'v', 'mask', 'dout', 'd', 'dq0', 'dk0', 'dv0'],  # inputs
         ['dq', 'dk', 'dv'],  # outputs
         domain=None)
 
@@ -1131,7 +1134,7 @@ def msav2grad():
     graph_def = helper.make_graph(
         [node_def],
         'MultiScaleAttnV2Grad',
-        [q, k, v, mask, dout, d],
+        [q, k, v, mask, dout, d, dq0, dk0, dv0],
         [dq, dk, dv],
     )
 

@@ -547,10 +547,10 @@ REGISTER_OP(MultiScaleAttnV2GradBasic)
            // dv = dv + s *do
            
            //qkm, d, do, dv -> dv`
-            // expression_template =
-                // R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input1@[B, H, Q]; mediate1[B, H, K, D] +=! mediate0[B, H, Q, K] * @input2@[B, H, Q, D]; @output0@[B, H, K, D] = mediate1[B, H, K, D] + @input3@[B, H, K, D];)";
             expression_template =
-                R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input1@[B, H, Q]; @output0@[B, H, K, D] +=! mediate0[B, H, Q, K] * @input2@[B, H, Q, D];)";
+                R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input1@[B, H, Q]; mediate1[B, H, K, D] +=! mediate0[B, H, Q, K] * @input2@[B, H, Q, D]; @output0@[B, H, K, D] = mediate1[B, H, K, D] + @input3@[B, H, K, D];)";
+            // expression_template =
+            //     R"(mediate0[B, H, Q, K] = @input0@[B, H, Q, K] / @input1@[B, H, Q]; @output0@[B, H, K, D] +=! mediate0[B, H, Q, K] * @input2@[B, H, Q, D];)";
 
         }
         else if (stage == 2)
@@ -567,20 +567,20 @@ REGISTER_OP(MultiScaleAttnV2GradBasic)
             // dq = dq + d(qk) * k
 
             // dqk, k, dq -> dq`
-            // expression_template =
-            //     R"(mediate0[B, H, Q, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, KD]; @output0@[B, H, Q, KD] = mediate0[B, H, Q, KD] + @input2@[B, H, Q, KD];)";
             expression_template =
-                R"(@output0@[B, H, Q, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, KD];)";
+                R"(mediate0[B, H, Q, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, KD]; @output0@[B, H, Q, KD] = mediate0[B, H, Q, KD] + @input2@[B, H, Q, KD];)";
+            // expression_template =
+            //     R"(@output0@[B, H, Q, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, K, KD];)";
         }
         else if (stage == 4)
         {
             // dk = dk + d(qk) * q
 
             // dqk, q, dk -> dk`
-            // expression_template =
-            //     R"(mediate0[B, H, K, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, Q, KD]; @output0@[B, H, K, KD] = mediate0[B, H, K, KD] + @input2@[B, H, K, KD];)";
             expression_template =
-                R"(@output0@[B, H, K, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, Q, KD];)";
+                R"(mediate0[B, H, K, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, Q, KD]; @output0@[B, H, K, KD] = mediate0[B, H, K, KD] + @input2@[B, H, K, KD];)";
+            // expression_template =
+            //     R"(@output0@[B, H, K, KD] +=! @input0@[B, H, Q, K] * @input1@[B, H, Q, KD];)";
 
         }
         else

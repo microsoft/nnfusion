@@ -56,28 +56,28 @@ def inference(nnf_model_path, total_iter):
     mask = torch.load("/home/yuqxia/project/msa/mask.pt")#[:, :, :64]
     # attn_acco = torch.zeros(1, 32, 8192, 256).to(q)
     expect = torch.load("/home/yuqxia/project/msa/output.pt")
-    input_dict['q'] = cast_pytorch_tensor(q)
-    input_dict['k'] = cast_pytorch_tensor(k)
-    input_dict['v'] = cast_pytorch_tensor(v)
+    seq_q = 8192
     seq_k = 8192
-    Br = 32
-    Bc = 64
-    Tr = 8192//Br
+    Br = 64
+    Bc = 32
+    Tr = seq_q//Br
     Tc = seq_k//Bc
     h = 32
-    # input_dict['mask'] = cast_pytorch_tensor(mask)
-    input_dict['mask'] = cast_pytorch_tensor(mask.view(h, Tr, Br, Tc, Bc).permute(0, 3, 1, 2, 4).contiguous())
+    input_dict['mask'] = cast_pytorch_tensor(mask)
+    # input_dict['mask'] = cast_pytorch_tensor(mask.view(h, Tr, Br, Tc, Bc).permute(0, 3, 1, 2, 4).contiguous())
     # input_dict['acco'] = cast_pytorch_tensor(attn_acco)
     # output_dict['out'] = cast_pytorch_tensor(torch.zeros(1, 32, 8192, 256).to(q))
     # input_dict['d'] = cast_pytorch_tensor(torch.zeros(1, 32, 8192).to(q))
 
     # warm up
     # print(expect) 
-    qr = q#[:, :, :3072]
-   # qr.retain_grad()
-    kr = k
-    vr = v
-    maskr = mask#[:, :3072]
+    qr = q[:, :, :seq_q, :]
+    qr.retain_grad()
+    kr = k[:, :, :seq_k, :]
+    kr.retain_grad()
+    vr = v[:, :, :seq_k, :]
+    vr.retain_grad()
+    maskr = mask[:, :seq_q, :seq_k]
     # exit(0)
     attn = qr @ kr.transpose(-1, -2)
     attn = attn * maskr
@@ -87,95 +87,142 @@ def inference(nnf_model_path, total_iter):
     # exit(0)
     grad = torch.randn_like(expect)
     # exit(0)
+    
+    # exit(0)
+    input_dict['q'] = cast_pytorch_tensor(qr)
+    input_dict['k'] = cast_pytorch_tensor(kr)
+    input_dict['v'] = cast_pytorch_tensor(vr)
+    input_dict['mask'] = cast_pytorch_tensor(maskr.view(h, Tr, Br, Tc, Bc).permute(0, 3, 1, 2, 4).contiguous())
+    input_dict['d'] = cast_pytorch_tensor(d.squeeze(-1))
+    input_dict['dout'] = cast_pytorch_tensor(grad)
+    input_dict['dq0'] = cast_pytorch_tensor(torch.zeros_like(qr))
+    input_dict['dk0'] = cast_pytorch_tensor(torch.zeros_like(kr))
+    input_dict['dv0'] = cast_pytorch_tensor(torch.zeros_like(vr))
+    output_dict['dq'] = cast_pytorch_tensor(torch.zeros_like(q).float())
+    output_dict['dk'] = input_dict['dk0']#cast_pytorch_tensor(torch.zeros_like(k))
+    output_dict['dv'] = input_dict['dv0']#cast_pytorch_tensor(torch.zeros_like(v))
+    # exit(0)
     expect.backward(grad)
+    exit(0)
+
     q_grad = qr.grad
     k_grad = kr.grad
     v_grad = vr.grad
 
-    input_dict['d'] = cast_pytorch_tensor(d)
-    input_dict['dout'] = cast_pytorch_tensor(grad)
-    output_dict['dq'] = cast_pytorch_tensor(torch.zeros_like(q))
-    output_dict['dk'] = cast_pytorch_tensor(torch.zeros_like(k))
-    output_dict['dv'] = cast_pytorch_tensor(torch.zeros_like(v))
+    attn1 = qr @ kr.transpose(-1, -2)
+    attn1 = attn1 * maskr
+    d = attn1.detach().abs().sum(dim=-1, keepdim=True).clamp(min=1)
+    s = attn1.detach()/d
+    # dv[:, :, j * k_chunk: (j+1) * k_chunk, :] += s.transpose(-1, -2) @ do
+    dv = s.transpose(-1, -2) @ grad
 
+    ds = grad @ vr.transpose(-1, -2)
+    dqk = (ds/d)*maskr
+    # dk[:, :, j * k_chunk: (j+1) * k_chunk, :] += dqk.transpose(-1, -2) @ q
+    dk = dqk.transpose(-1, -2) @ q
+    dq = dqk @ k
+   
     #bwd
-    seq_parallel = False
-    # if seq_parallel:
-    #     q_chunk = 2048
-    #     # k_chunk = 2048
-    #     dq = torch.zeros_like(qr)
-    #     dk = torch.zeros_like(kr)
-    #     dv = torch.zeros_like(vr)
-    #     # for j in range(4):
-    #     for i in range(4):
-    #         q = qr[:, :, i * q_chunk: (i+1) * q_chunk, :]
-    #         k = kr#[:, :, j * k_chunk: (j+1) * k_chunk, :]
-    #         v = vr#[:, :, j * k_chunk: (j+1) * k_chunk, :]
-    #         m = maskr[:, i*q_chunk:(i+1) * q_chunk]#, j * k_chunk: (j+1) * k_chunk]
-    #         d_ = d[:, :, i*q_chunk:(i+1) * q_chunk]
-    #         do = grad[:, :, i*q_chunk:(i+1) * q_chunk, :]
-    #         attn = q @ k.transpose(-1, -2)
-    #         attn = attn * m
-    #         s = attn.detach()/d_
-    #         # dv[:, :, j * k_chunk: (j+1) * k_chunk, :] += s.transpose(-1, -2) @ do
-    #         dv += s.transpose(-1, -2) @ do
-    #         ds = do @ v.transpose(-1, -2)
-    #         dqk = (ds/d_)*m
-    #         # dk[:, :, j * k_chunk: (j+1) * k_chunk, :] += dqk.transpose(-1, -2) @ q
-    #         dk += dqk.transpose(-1, -2) @ q
-    #         dq[:, :, i * q_chunk: (i+1) * q_chunk, :] += dqk @ k
-    # else:
-    #     q_chunk = 2048
-    #     k_chunk = 2048
-    #     dq = torch.zeros_like(qr)
-    #     dk = torch.zeros_like(kr)
-    #     dv = torch.zeros_like(vr)
-    #     for j in range(4):
-    #         for i in range(4):
-    #             q = qr[:, :, i * q_chunk: (i+1) * q_chunk, :]
-    #             k = kr[:, :, j * k_chunk: (j+1) * k_chunk, :]
-    #             v = vr[:, :, j * k_chunk: (j+1) * k_chunk, :]
-    #             m = maskr[:, i*q_chunk:(i+1) * q_chunk, j * k_chunk: (j+1) * k_chunk]
-    #             d_ = d[:, :, i*q_chunk:(i+1) * q_chunk]
-    #             do = grad[:, :, i*q_chunk:(i+1) * q_chunk, :]
-    #             attn = q @ k.transpose(-1, -2)
-    #             attn = attn * m
-    #             s = attn.detach()/d_
-    #             dv[:, :, j * k_chunk: (j+1) * k_chunk, :] += s.transpose(-1, -2) @ do
-    #             ds = do @ v.transpose(-1, -2)
-    #             dqk = (ds/d_)*m
-    #             dk[:, :, j * k_chunk: (j+1) * k_chunk, :] += dqk.transpose(-1, -2) @ q
-    #             dq[:, :, i * q_chunk: (i+1) * q_chunk, :] += dqk @ k
+    seq_parallel = True
+    if seq_parallel:
+        q_chunk = 64
+        # k_chunk = 2048
+        dq = torch.zeros_like(qr)
+        dk = torch.zeros_like(kr)
+        dv = torch.zeros_like(vr)
+        # for j in range(4):
+        for i in range(128):
+            q = qr[:, :, i * q_chunk: (i+1) * q_chunk, :]
+            k = kr#[:, :, j * k_chunk: (j+1) * k_chunk, :]
+            v = vr#[:, :, j * k_chunk: (j+1) * k_chunk, :]
+            m = maskr[:, i*q_chunk:(i+1) * q_chunk]#, j * k_chunk: (j+1) * k_chunk]
+            d_ = d[:, :, i*q_chunk:(i+1) * q_chunk]
+            do = grad[:, :, i*q_chunk:(i+1) * q_chunk, :]
+            attn = q @ k.transpose(-1, -2)
+            attn = attn * m
+            s = attn.detach()/d_
+            # dv[:, :, j * k_chunk: (j+1) * k_chunk, :] += s.transpose(-1, -2) @ do
+            dv += s.transpose(-1, -2) @ do
+            ds = do @ v.transpose(-1, -2)
+            dqk = (ds/d_)*m
+            # dk[:, :, j * k_chunk: (j+1) * k_chunk, :] += dqk.transpose(-1, -2) @ q
+            dk += dqk.transpose(-1, -2) @ q
+            dq[:, :, i * q_chunk: (i+1) * q_chunk, :] += dqk @ k
+    else:
+        q_chunk = 64
+        k_chunk = 32
+        dq = torch.zeros_like(qr)
+        dk = torch.zeros_like(kr)
+        dv = torch.zeros_like(vr)
+        for j in range(Tc):
+            for i in range(Tr):
+                q = qr[:, :, i * q_chunk: (i+1) * q_chunk, :]
+                k = kr[:, :, j * k_chunk: (j+1) * k_chunk, :]
+                v = vr[:, :, j * k_chunk: (j+1) * k_chunk, :]
+                m = maskr[:, i*q_chunk:(i+1) * q_chunk, j * k_chunk: (j+1) * k_chunk]
+                d_ = d[:, :, i*q_chunk:(i+1) * q_chunk]
+                do = grad[:, :, i*q_chunk:(i+1) * q_chunk, :]
+                attn = q @ k.transpose(-1, -2)
+                attn = attn * m
+                s = attn.detach()/d_
+                dv[:, :, j * k_chunk: (j+1) * k_chunk, :] += s.transpose(-1, -2) @ do
+                ds = do @ v.transpose(-1, -2)
+                dqk = (ds/d_)*m
+                dk[:, :, j * k_chunk: (j+1) * k_chunk, :] += dqk.transpose(-1, -2) @ q
+                dq[:, :, i * q_chunk: (i+1) * q_chunk, :] += dqk @ k
     
+    # print(dq)
+    # print(dk)
+    # print(dv)
+    # # # exit(0)
     # diff_q = torch.abs(dq - q_grad)
     # diff_k = torch.abs(dk - k_grad)
     # diff_v = torch.abs(dv - v_grad)
 
-    # print(q_grad)
-    # print(dq)
-    # print(diff_q)
-    # indices = torch.where(diff_q == 0.1250)
-    # first_index = tuple(coord[0] for coord in indices)
-    # print(first_index)
-    # print(dq[first_index], q_grad[first_index], diff_q[first_index])
-    # print(dk)
+    # # print(q_grad)
+    # # print(dq)
+    # # print(diff_q)
+    # # indices = torch.where(diff_q == 0.1250)
+    # # first_index = tuple(coord[0] for coord in indices)
+    # # print(first_index)
+    # # print(dq[first_index], q_grad[first_index], diff_q[first_index])
+    # # print(dk)
     # print(torch.max(diff_q), torch.mean(diff_q))
     # print(torch.max(diff_k), torch.mean(diff_k))
     # print(torch.max(diff_v), torch.mean(diff_v))
+    # exit(0)
 
-
-
+    print("===================")
     for _ in range(1):
         executor(input_dict, output_dict)
         for k, v in output_dict.items():
             out = v.to_pytorch_tensor()
+            if (k == 'dq'):
+                print(dq.shape)
+            elif (k == 'dk'):
+                print(dk)
+            else:
+                print(dv)
             print(f"{k} = {out}")
-    print(expect)
+    # exit(0)
+    # print(expect)
     # print(o)
-    diff = torch.abs(expect - output_dict['out'].to_pytorch_tensor())
-    print(torch.max(diff), torch.mean(diff))
-    diff1 = torch.abs(d.squeeze(-1) - output_dict['d'].to_pytorch_tensor())
-    print(torch.max(diff1), torch.mean(diff1))
+    # vv = output_dict['dv'].to_pytorch_tensor()
+    # for i in range(32,64):
+    #     if (vv[0,0,i,0] != 0):
+    #         print(i, vv[0,0,i,0])
+    # for i in range(32,64):
+    #     if (dv[0,0,i,0] != 0):
+    #         print(i, dv[0,0,i,0])
+    diff_dq = torch.abs(q_grad - output_dict['dq'].to_pytorch_tensor().half())
+    print(torch.max(diff_dq), torch.mean(diff_dq))
+    diff_dk = torch.abs(k_grad - output_dict['dk'].to_pytorch_tensor())
+    print(torch.max(diff_dk), torch.mean(diff_dk))
+    diff_dv = torch.abs(v_grad - output_dict['dv'].to_pytorch_tensor())
+    # print(diff_dv)
+    print(torch.max(diff_dv), torch.mean(diff_dv))
+    exit(0)
+
     # diff = torch.abs(o - output_dict['Identity_13_0_0'].to_pytorch_tensor())
     # diff = torch.abs(expect - o)
     # print(diff)

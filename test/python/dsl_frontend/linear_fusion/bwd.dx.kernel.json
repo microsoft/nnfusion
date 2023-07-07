@@ -1,0 +1,49 @@
+[
+  {
+    "nodes": [
+      4
+    ],
+    "node_names": [
+      "FusedLayer_4"
+    ],
+    "group_id": 0,
+    "input_desc": [
+      [
+        4,
+        0
+      ],
+      [
+        4,
+        1
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        4,
+        3
+      ]
+    ],
+    "output_desc": [
+      [
+        4,
+        0
+      ]
+    ],
+    "code": "__global__ void __launch_bounds__(128) Group0(half* __restrict__ input0, half* __restrict__ input1, half* __restrict__ input2, half* __restrict__ input3, float* __restrict__ output0) {\n  nvcuda::wmma::fragment<nvcuda::wmma::accumulator, 8, 32, 16, half> m0_wmma_accumulator[8];\n  __shared__ half input3_shared[4608];\n  __shared__ half input1_shared[8704];\n  nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, 8, 32, 16, half, nvcuda::wmma::row_major> input3_shared_wmma_matrix_a[4];\n  nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, 8, 32, 16, half, nvcuda::wmma::row_major> input1_shared_wmma_matrix_b[2];\n  for (int N0_c_outer_init = 0; N0_c_outer_init < 4; ++N0_c_outer_init) {\n    for (int N1_c_outer_init = 0; N1_c_outer_init < 2; ++N1_c_outer_init) {\n      nvcuda::wmma::fill_fragment(m0_wmma_accumulator[((N0_c_outer_init * 2) + N1_c_outer_init)], 0.000000e+00f);\n    }\n  }\n  for (int N2_outer = 0; N2_outer < 64; ++N2_outer) {\n    __syncthreads();\n    *(uint4*)(input3_shared + (((((int)threadIdx.y) * 288) + ((((int)threadIdx.x) >> 3) * 72)) + ((((int)threadIdx.x) & 7) * 8))) = *(uint4*)(input3 + ((((((((int)blockIdx.x) >> 7) * 262144) + (((int)threadIdx.y) * 16384)) + ((((int)threadIdx.x) >> 3) * 4096)) + (N2_outer * 64)) + ((((int)threadIdx.x) & 7) * 8)));\n    *(uint4*)(input3_shared + ((((((int)threadIdx.y) * 288) + ((((int)threadIdx.x) >> 3) * 72)) + ((((int)threadIdx.x) & 7) * 8)) + 1152)) = *(uint4*)(input3 + (((((((((int)blockIdx.x) >> 7) * 262144) + (((int)threadIdx.y) * 16384)) + ((((int)threadIdx.x) >> 3) * 4096)) + (N2_outer * 64)) + ((((int)threadIdx.x) & 7) * 8)) + 65536));\n    *(uint4*)(input3_shared + ((((((int)threadIdx.y) * 288) + ((((int)threadIdx.x) >> 3) * 72)) + ((((int)threadIdx.x) & 7) * 8)) + 2304)) = *(uint4*)(input3 + (((((((((int)blockIdx.x) >> 7) * 262144) + (((int)threadIdx.y) * 16384)) + ((((int)threadIdx.x) >> 3) * 4096)) + (N2_outer * 64)) + ((((int)threadIdx.x) & 7) * 8)) + 131072));\n    *(uint4*)(input3_shared + ((((((int)threadIdx.y) * 288) + ((((int)threadIdx.x) >> 3) * 72)) + ((((int)threadIdx.x) & 7) * 8)) + 3456)) = *(uint4*)(input3 + (((((((((int)blockIdx.x) >> 7) * 262144) + (((int)threadIdx.y) * 16384)) + ((((int)threadIdx.x) >> 3) * 4096)) + (N2_outer * 64)) + ((((int)threadIdx.x) & 7) * 8)) + 196608));\n    *(uint4*)(input1_shared + (((((int)threadIdx.y) * 272) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8))) = *(uint4*)(input1 + (((((N2_outer * 1048576) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)));\n    *(uint4*)(input1_shared + ((((((int)threadIdx.y) * 272) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8)) + 1088)) = *(uint4*)(input1 + ((((((N2_outer * 1048576) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + 131072));\n    *(uint4*)(input1_shared + ((((((int)threadIdx.y) * 272) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8)) + 2176)) = *(uint4*)(input1 + ((((((N2_outer * 1048576) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + 262144));\n    *(uint4*)(input1_shared + ((((((int)threadIdx.y) * 272) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8)) + 3264)) = *(uint4*)(input1 + ((((((N2_outer * 1048576) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + 393216));\n    *(uint4*)(input1_shared + ((((((int)threadIdx.y) * 272) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8)) + 4352)) = *(uint4*)(input1 + ((((((N2_outer * 1048576) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + 524288));\n    *(uint4*)(input1_shared + ((((((int)threadIdx.y) * 272) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8)) + 5440)) = *(uint4*)(input1 + ((((((N2_outer * 1048576) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + 655360));\n    *(uint4*)(input1_shared + ((((((int)threadIdx.y) * 272) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8)) + 6528)) = *(uint4*)(input1 + ((((((N2_outer * 1048576) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + 786432));\n    *(uint4*)(input1_shared + ((((((int)threadIdx.y) * 272) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8)) + 7616)) = *(uint4*)(input1 + ((((((N2_outer * 1048576) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + 917504));\n    __syncthreads();\n    for (int N2_inner_outer = 0; N2_inner_outer < 4; ++N2_inner_outer) {\n      for (int ax0_outer = 0; ax0_outer < 4; ++ax0_outer) {\n        nvcuda::wmma::load_matrix_sync(input3_shared_wmma_matrix_a[ax0_outer], (&(input3_shared[((((((int)threadIdx.y) >> 1) * 2304) + (ax0_outer * 576)) + (N2_inner_outer * 16))])), 72);\n      }\n      for (int ax1_outer = 0; ax1_outer < 2; ++ax1_outer) {\n        nvcuda::wmma::load_matrix_sync(input1_shared_wmma_matrix_b[ax1_outer], (&(input1_shared[(((N2_inner_outer * 2176) + ((((int)threadIdx.y) & 1) * 64)) + (ax1_outer * 32))])), 136);\n      }\n      for (int N0_c_outer = 0; N0_c_outer < 4; ++N0_c_outer) {\n        for (int N1_c_outer = 0; N1_c_outer < 2; ++N1_c_outer) {\n          nvcuda::wmma::mma_sync(m0_wmma_accumulator[((N0_c_outer * 2) + N1_c_outer)], input3_shared_wmma_matrix_a[N0_c_outer], input1_shared_wmma_matrix_b[N1_c_outer], m0_wmma_accumulator[((N0_c_outer * 2) + N1_c_outer)]);\n        }\n      }\n    }\n  }\n  __syncthreads();\n  for (int ax0_inner_outer = 0; ax0_inner_outer < 4; ++ax0_inner_outer) {\n    for (int ax1_inner_outer = 0; ax1_inner_outer < 2; ++ax1_inner_outer) {\n      nvcuda::wmma::store_matrix_sync((&(input1_shared[(((((((int)threadIdx.y) >> 1) * 4352) + (ax0_inner_outer * 1088)) + ((((int)threadIdx.y) & 1) * 64)) + (ax1_inner_outer * 32))])), m0_wmma_accumulator[((ax0_inner_outer * 2) + ax1_inner_outer)], 136, nvcuda::wmma::mem_row_major);\n    }\n  }\n  __syncthreads();\n  for (int N0_inner_N1_inner_fused_outer_outer_outer = 0; N0_inner_N1_inner_fused_outer_outer_outer < 8; ++N0_inner_N1_inner_fused_outer_outer_outer) {\n    for (int N0_inner_N1_inner_fused_inner_s = 0; N0_inner_N1_inner_fused_inner_s < 8; ++N0_inner_N1_inner_fused_inner_s) {\n      output0[((((((((((int)blockIdx.x) >> 7) * 1048576) + (N0_inner_N1_inner_fused_outer_outer_outer * 131072)) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + N0_inner_N1_inner_fused_inner_s)] = (((float)((input1_shared[(((((N0_inner_N1_inner_fused_outer_outer_outer * 1088) + (((int)threadIdx.y) * 272)) + ((((int)threadIdx.x) >> 4) * 136)) + ((((int)threadIdx.x) & 15) * 8)) + N0_inner_N1_inner_fused_inner_s)] * input2[((((((((((int)blockIdx.x) >> 7) * 1048576) + (N0_inner_N1_inner_fused_outer_outer_outer * 131072)) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + N0_inner_N1_inner_fused_inner_s)]) * __float2half_rn(5.000000e-01f))) * ((5.000000e-01f * (1.000000e+00f + erff((((float)input0[((((((((((int)blockIdx.x) >> 7) * 1048576) + (N0_inner_N1_inner_fused_outer_outer_outer * 131072)) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + N0_inner_N1_inner_fused_inner_s)]) * 7.071068e-01f)))) + (((float)input0[((((((((((int)blockIdx.x) >> 7) * 1048576) + (N0_inner_N1_inner_fused_outer_outer_outer * 131072)) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + N0_inner_N1_inner_fused_inner_s)]) * (__expf(((-5.000000e-01f * ((float)input0[((((((((((int)blockIdx.x) >> 7) * 1048576) + (N0_inner_N1_inner_fused_outer_outer_outer * 131072)) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + N0_inner_N1_inner_fused_inner_s)])) * ((float)input0[((((((((((int)blockIdx.x) >> 7) * 1048576) + (N0_inner_N1_inner_fused_outer_outer_outer * 131072)) + (((int)threadIdx.y) * 32768)) + ((((int)threadIdx.x) >> 4) * 16384)) + ((((int)blockIdx.x) & 127) * 128)) + ((((int)threadIdx.x) & 15) * 8)) + N0_inner_N1_inner_fused_inner_s)]))) * 3.989423e-01f))));\n    }\n  }\n}\n\n",
+    "block_size": [
+      32,
+      4,
+      1
+    ],
+    "grid_size": [
+      4096,
+      1,
+      1
+    ],
+    "latency": 5.310894966125488,
+    "name": "Group0",
+    "gain": 0
+  }
+]

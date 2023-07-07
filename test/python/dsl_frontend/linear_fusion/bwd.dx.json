@@ -1,0 +1,36 @@
+[
+  [
+    4,
+    "- einstein_v2(\"m0[N0, N1] +=! input3[N0, N2] * input1[N2, N1];m1[N0, N1] = m0[N0, N1] * input2[N0, N1] * const(0.5).cast(`float16`);m2[N0, N1] = m1[N0, N1].cast(`float32`); m3[N0, N1] = const(0.5).cast(`float32`) * (const(1.0).cast(`float32`) + (input0[N0, N1] * const(0.70710678118654752440).cast(`float32`)).call(`erf`));m4[N0, N1] = (const(-0.5).cast(`float32`) * input0[N0, N1] * input0[N0, N1]).call(`exp`) * const(0.3989422804014327).cast(`float32`);output0[N0, N1] = m2[N0, N1] * (m3[N0, N1] + input0[N0, N1] * m4[N0, N1]);\", input_dict={\"input0\" : { \"dtype\" : \"float16\", \"shape\" : [2048, 16384]},  \"input1\" : { \"dtype\" : \"float16\", \"shape\" : [4096, 16384]},  \"input2\" : { \"dtype\" : \"float16\", \"shape\" : [2048, 16384]},\"input3\" : { \"dtype\" : \"float16\", \"shape\" : [2048, 4096]}})## @: tensorCoreConfig=(0, 1)",
+    "FusedLayer",
+    [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        3,
+        0
+      ]
+    ]
+  ],
+  [
+    5,
+    "",
+    "Result",
+    [
+      [
+        4,
+        0
+      ]
+    ]
+  ]
+]

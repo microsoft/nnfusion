@@ -1217,6 +1217,27 @@ TEST(nnfusion_onnx_import, relu_op)
     }
 }
 
+TEST(nnfusion_onnx_import, shape_op)
+{
+    // shape op is used
+    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/shape.onnx"));
+
+    Inputs inputs;
+    inputs.emplace_back(test::NDArray<float, 3>(
+                            {{{1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}},
+                             {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}},
+                             {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}}})
+                            .get_vector());
+    vector<vector<int64_t>> expected_outputs{{3, 4, 5}};
+
+    vector<vector<int64_t>> outputs{execute<float, int64_t>(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for (size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_EQ(expected_outputs[i], outputs[i]);
+    }
+}
+
 TEST(nnfusion_onnx_import, sigmoid_op)
 {
     auto model =
@@ -1245,6 +1266,26 @@ TEST(nnfusion_onnx_import, sin_op)
     for (size_t i = 0; i < expected_outputs.size(); ++i)
     {
         EXPECT_TRUE(test::all_close_f(expected_outputs[i], outputs[i]));
+    }
+}
+
+TEST(nnfusion_onnx_import, slice_op)
+{
+    auto model = frontend::load_onnx_model(file_util::path_join(SERIALIZED_ZOO, "onnx/slice.onnx"));
+
+    RawInputs inputs;
+    inputs.emplace_back(convert_to_raw(test::NDArray<float, 2>({{1, 2, 3, 4}, {5, 6, 7, 8}}).get_vector()));  // data
+    // inputs.emplace_back(convert_to_raw(vector<int64_t>{1, 0}));  // starts
+    // inputs.emplace_back(convert_to_raw(vector<int64_t>{2, 3}));  // ends
+    // inputs.emplace_back(convert_to_raw(vector<int64_t>{0, 1}));  // axes
+    // inputs.emplace_back(convert_to_raw(vector<int64_t>{1, 2}));  // steps
+    vector<vector<float>> expected_outputs{{5, 7}};
+    
+    RawOutputs outputs{mixed_type_execute(model, inputs, "NNFusion")};
+    EXPECT_EQ(outputs.size(), expected_outputs.size());
+    for(size_t i = 0; i < expected_outputs.size(); ++i)
+    {
+        EXPECT_TRUE(test::all_close_f(expected_outputs[i], convert_from_raw<float>(outputs[i])));
     }
 }
 

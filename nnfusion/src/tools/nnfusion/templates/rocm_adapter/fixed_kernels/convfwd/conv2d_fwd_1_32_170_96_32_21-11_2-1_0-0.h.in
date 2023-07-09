@@ -1,0 +1,81 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+
+  float *data = input0, *kernel = input1;
+
+  // [thread_extent] blockIdx.z = 1
+   float output0_local[5];
+  __shared__ float output01[3816];
+  __shared__ float output02[8448];
+  // [thread_extent] blockIdx.y = 1
+  // [thread_extent] blockIdx.x = 86
+  // [thread_extent] threadIdx.z = 32
+  // [thread_extent] threadIdx.y = 15
+  // [thread_extent] threadIdx.x = 1
+  output0_local[0] = 0.000000e+00f;
+  output0_local[1] = 0.000000e+00f;
+  output0_local[2] = 0.000000e+00f;
+  output0_local[3] = 0.000000e+00f;
+  output0_local[4] = 0.000000e+00f;
+  for (int rc_outer = 0; rc_outer < 4; ++rc_outer) {
+    for (int ry_outer = 0; ry_outer < 2; ++ry_outer) {
+      for (int rx_outer = 0; rx_outer < 4; ++rx_outer) {
+  // [thread_extent] threadIdx.z = 32
+  // [thread_extent] threadIdx.y = 15
+  // [thread_extent] threadIdx.x = 1
+        __syncthreads();
+        for (int ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner = 0; ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner < 8; ++ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner) {
+          if (((((int)threadIdx.z) * 40) + (((((int)threadIdx.y) * 8) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner) / 3)) < 1272) {
+            if ((((((int)threadIdx.z) * 120) + (((int)threadIdx.y) * 8)) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner) < 3816) {
+              if ((((rx_outer * 3) + ((int)blockIdx.x)) + (((((int)threadIdx.y) * 8) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner) % 3)) < 96) {
+                output01[(((((int)threadIdx.z) * 120) + (((int)threadIdx.y) * 8)) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner)] = data[(((((((rc_outer * 130560) + (((((((int)threadIdx.z) * 120) + (((int)threadIdx.y) * 8)) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner) / 477) * 16320)) + (ry_outer * 1056)) + ((((((((int)threadIdx.z) * 120) + (((int)threadIdx.y) * 8)) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner) % 477) / 3) * 96)) + (rx_outer * 3)) + ((int)blockIdx.x)) + (((((int)threadIdx.y) * 8) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner) % 3))];
+              }
+            }
+          }
+        }
+  // [thread_extent] threadIdx.z = 32
+  // [thread_extent] threadIdx.y = 15
+  // [thread_extent] threadIdx.x = 1
+        for (int ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1 = 0; ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1 < 18; ++ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1) {
+          if (((((((int)threadIdx.y) * 6) + (ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1 / 3)) / 88) + ((int)threadIdx.z)) < 32) {
+            if (((((int)threadIdx.z) * 8) + (((((int)threadIdx.y) * 6) + (ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1 / 3)) / 11)) < 256) {
+              if ((((((int)threadIdx.z) * 88) + (((int)threadIdx.y) * 6)) + (ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1 / 3)) < 2816) {
+                if ((((((int)threadIdx.z) * 264) + (((int)threadIdx.y) * 18)) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1) < 8448) {
+                  if (((((int)threadIdx.y) * 18) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1) < 264) {
+                    if (((ry_outer * 11) + (((((int)threadIdx.y) * 6) + (ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1 / 3)) % 11)) < 21) {
+                      if (((rx_outer * 3) + (ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1 % 3)) < 11) {
+                        output02[(((((int)threadIdx.z) * 264) + (((int)threadIdx.y) * 18)) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1)] = kernel[(((((((((int)threadIdx.z) * 7392) + (rc_outer * 1848)) + ((((((int)threadIdx.y) * 18) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1) / 33) * 231)) + (ry_outer * 121)) + (((((((int)threadIdx.y) * 18) + ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1) % 33) / 3) * 11)) + (rx_outer * 3)) + (ax0_ax1_fused_ax2_fused_ax3_fused_inner_inner_inner1 % 3))];
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        __syncthreads();
+        for (int rc_inner = 0; rc_inner < 8; ++rc_inner) {
+          for (int ry_inner = 0; ry_inner < 11; ++ry_inner) {
+            for (int rx_inner = 0; rx_inner < 3; ++rx_inner) {
+              if (((ry_outer * 11) + ry_inner) < 21) {
+                if (((rx_outer * 3) + rx_inner) < 11) {
+                  output0_local[0] = (output0_local[0] + (output01[((((rc_inner * 477) + (((int)threadIdx.y) * 6)) + (ry_inner * 3)) + rx_inner)] * output02[((((((int)threadIdx.z) * 264) + (rc_inner * 33)) + (ry_inner * 3)) + rx_inner)]));
+                  output0_local[1] = (output0_local[1] + (output01[(((((rc_inner * 477) + (((int)threadIdx.y) * 6)) + (ry_inner * 3)) + rx_inner) + 90)] * output02[((((((int)threadIdx.z) * 264) + (rc_inner * 33)) + (ry_inner * 3)) + rx_inner)]));
+                  output0_local[2] = (output0_local[2] + (output01[(((((rc_inner * 477) + (((int)threadIdx.y) * 6)) + (ry_inner * 3)) + rx_inner) + 180)] * output02[((((((int)threadIdx.z) * 264) + (rc_inner * 33)) + (ry_inner * 3)) + rx_inner)]));
+                  output0_local[3] = (output0_local[3] + (output01[(((((rc_inner * 477) + (((int)threadIdx.y) * 6)) + (ry_inner * 3)) + rx_inner) + 270)] * output02[((((((int)threadIdx.z) * 264) + (rc_inner * 33)) + (ry_inner * 3)) + rx_inner)]));
+                  output0_local[4] = (output0_local[4] + (output01[(((((rc_inner * 477) + (((int)threadIdx.y) * 6)) + (ry_inner * 3)) + rx_inner) + 360)] * output02[((((((int)threadIdx.z) * 264) + (rc_inner * 33)) + (ry_inner * 3)) + rx_inner)]));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  output0[(((((int)threadIdx.z) * 6450) + (((int)threadIdx.y) * 86)) + ((int)blockIdx.x))] = output0_local[0];
+  output0[((((((int)threadIdx.z) * 6450) + (((int)threadIdx.y) * 86)) + ((int)blockIdx.x)) + 1290)] = output0_local[1];
+  output0[((((((int)threadIdx.z) * 6450) + (((int)threadIdx.y) * 86)) + ((int)blockIdx.x)) + 2580)] = output0_local[2];
+  output0[((((((int)threadIdx.z) * 6450) + (((int)threadIdx.y) * 86)) + ((int)blockIdx.x)) + 3870)] = output0_local[3];
+  output0[((((((int)threadIdx.z) * 6450) + (((int)threadIdx.y) * 86)) + ((int)blockIdx.x)) + 5160)] = output0_local[4];
+

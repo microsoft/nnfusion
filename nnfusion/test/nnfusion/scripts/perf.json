@@ -1,0 +1,20 @@
+{
+    "env": {
+      "PYTHONDONTWRITEBYTECODE" : {
+        "set" : 1
+      },
+      "HSA_USERPTR_FOR_PAGED_MEM": {
+        "set": 0
+      },
+      "LD_LIBRARY_PATH": {
+        "append": "/usr/local/lib"
+      },
+      "HIP_VISIBLE_DEVICES" : {
+        "set": 1
+      }
+    },
+    "device_capability": ["CUDA"],
+    "enabled_tags": {
+      "CUDA" : ["perf"]
+    }
+  }

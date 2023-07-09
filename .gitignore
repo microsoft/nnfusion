@@ -1,6 +1,68 @@
 # cutlass
 # PyCache files
-**/__pycache__/
+cutlass__pycache__/
+ 
+cutlass/build/
 
-**/build/
+# nnfusion
+
+# Compiled Object files
+nnfusion/*.slo
+nnfusion/*.lo
+nnfusion/*.o
+nnfusion/*.obj
+nnfusion/*.pyc
+
+# Precompiled Headers
+nnfusion/*.gch
+nnfusion/*.pch
+
+# emacs
+nnfusion/*~
+
+# vim
+nnfusion/*.swp
+nnfusion/*.swo
+
+nnfusion/build/
+nnfusion/dist/
+nnfusion/__pycache__
+nnfusion/nnfusion.tar.gz
+
+# makeenv and test intermediate files
+nnfusion/tmp/
+
+nnfusion/venv/
+nnfusion/.vscode/
+nnfusion/.vs/
+
+# VisualGDB files
+nnfusion/VisualGDB/
+nnfusion/toolchain.cmake
+
+# docbuild artifacts
+nnfusion/doc/sphinx/build/*
+nnfusion/doc/doxygen/*.xml
+nnfusion/doc/doxygen/*.html
+nnfusion/doc/doxygen/man/*
+nnfusion/doc/doxygen/latex/*
+nnfusion/doc/doxygen/xml/*
+nnfusion/doc/doxygen/html/*
+
+# git merge
+nnfusion/*.orig
+\#*
+\.#*
+
+# idea
+nnfusion/.idea/*
+
+# python egg
+nnfusion/*.egg-info
+
+# Macos
+**/.DS_Store
+
+nnfusion/nnfusion_rt/
+nnfusion/models/frozenmodels/
 

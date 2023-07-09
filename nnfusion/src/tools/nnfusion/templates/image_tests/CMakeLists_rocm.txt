@@ -1,0 +1,29 @@
+project(image_test)
+cmake_minimum_required(VERSION 3.5)
+
+SET(CMAKE_CXX_COMPILER /opt/rocm/bin/hipcc)
+set(CMAKE_CXX_FLAGS "-O2 -Wno-ignored-attributes")
+
+include_directories(
+    ..
+    /opt/rocm/include
+    /opt/rocm/rocblas/include
+    /opt/rocm/rocrand/include
+    /opt/rocm/hiprand/include
+    /opt/rocm/hipsparse/include
+)
+
+add_library(nnfusion_naive_rt ../nnfusion_rt.cpp)
+
+find_package(JPEG)
+if (JPEG_FOUND)
+    set(jpeg_lib jpeg)
+endif()
+
+add_executable(image_test image_test.cpp)
+target_link_libraries(image_test nnfusion_naive_rt MIOpen rocblas ${jpeg_lib})
+
+execute_process(
+    COMMAND sh -c "ln -s ../Constant ."
+    # OUTPUT_VARIABLE outVar
+)

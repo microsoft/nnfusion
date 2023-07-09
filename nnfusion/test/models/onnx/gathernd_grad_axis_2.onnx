@@ -1,0 +1,22 @@
+onnx-example:º
+9
+shape
+indices
+gradoutput"GatherNDGrad*
+axis gathernd_grad**BshapeZ
+indices
+
+
+
+Z
+grad
+
+
+
+b 
+output
+
+
+
+
+B

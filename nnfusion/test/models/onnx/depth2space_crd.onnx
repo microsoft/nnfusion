@@ -1,0 +1,17 @@
+onnx-example:
+>
+dataoutput"DepthToSpace*
+	blocksize *
+mode"CRD DepthToSpaceZ
+data
+
+
+
+
+b 
+output
+
+
+
+
+B

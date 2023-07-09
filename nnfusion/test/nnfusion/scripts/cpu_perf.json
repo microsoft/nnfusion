@@ -1,0 +1,12 @@
+{
+    "env": {
+      "LD_LIBRARY_PATH": {
+        "append": "/usr/local/lib"
+      }
+    },
+    "device_capability": ["CPU"],
+    "enabled_tags": {
+      "CPU"  : ["performance_cpu_only"]
+    }
+}
+  

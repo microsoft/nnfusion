@@ -1,0 +1,165 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# CI docker GPU env
+# tag: v0.60
+FROM nvidia/cuda:11.0.3-cudnn8-devel-ubuntu18.04
+
+COPY utils/apt-install-and-clear.sh /usr/local/bin/apt-install-and-clear
+
+# Per https://forums.developer.nvidia.com/t/notice-cuda-linux-repository-key-rotation/212772
+# we need to add a new GPG key before running apt update.
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
+
+# Base scripts
+RUN rm -f /etc/apt/sources.list.d/nvidia-ml.list && apt-get clean
+RUN apt-get update --fix-missing
+
+COPY install/ubuntu_install_core.sh /install/ubuntu_install_core.sh
+RUN bash /install/ubuntu_install_core.sh
+
+COPY install/ubuntu_install_cmake_source.sh /install/ubuntu_install_cmake_source.sh
+RUN bash /install/ubuntu_install_cmake_source.sh
+
+COPY install/ubuntu_install_googletest.sh /install/ubuntu_install_googletest.sh
+RUN bash /install/ubuntu_install_googletest.sh
+
+ENV TVM_VENV /venv/apache-tvm-py3.7
+COPY python/bootstrap/lockfiles /install/python/bootstrap/lockfiles
+COPY install/ubuntu_install_python.sh /install/ubuntu_install_python.sh
+RUN bash /install/ubuntu_install_python.sh
+ENV PATH ${TVM_VENV}/bin:$PATH
+ENV PYTHONNOUSERSITE 1  # Disable .local directory from affecting CI.
+
+COPY install/ubuntu_install_cmake_source.sh /install/ubuntu_install_cmake_source.sh
+# Globally disable pip cache
+RUN bash /install/ubuntu_install_cmake_source.sh
+
+COPY install/ubuntu1804_install_llvm.sh /install/ubuntu1804_install_llvm.sh
+RUN bash /install/ubuntu1804_install_llvm.sh
+
+COPY install/ubuntu_install_opencl.sh /install/ubuntu_install_opencl.sh
+RUN bash /install/ubuntu_install_opencl.sh
+
+COPY install/ubuntu_install_python_package.sh /install/ubuntu_install_python_package.sh
+RUN bash /install/ubuntu_install_python_package.sh
+
+COPY install/ubuntu_install_sphinx.sh /install/ubuntu_install_sphinx.sh
+RUN bash /install/ubuntu_install_sphinx.sh
+
+# Enable doxygen for c++ doc build
+RUN apt-get update && apt-install-and-clear -y doxygen libprotobuf-dev protobuf-compiler
+
+COPY install/ubuntu_install_java.sh /install/ubuntu_install_java.sh
+RUN bash /install/ubuntu_install_java.sh
+
+COPY install/ubuntu_install_nodejs.sh /install/ubuntu_install_nodejs.sh
+RUN bash /install/ubuntu_install_nodejs.sh
+
+COPY install/ubuntu_install_rocm.sh /install/ubuntu_install_rocm.sh
+RUN bash /install/ubuntu_install_rocm.sh
+
+# DL Frameworks
+COPY install/ubuntu_install_mxnet.sh /install/ubuntu_install_mxnet.sh
+RUN bash /install/ubuntu_install_mxnet.sh
+
+COPY install/ubuntu_install_gluoncv.sh /install/ubuntu_install_gluoncv.sh
+RUN bash /install/ubuntu_install_gluoncv.sh
+
+COPY install/ubuntu_install_coreml.sh /install/ubuntu_install_coreml.sh
+RUN bash /install/ubuntu_install_coreml.sh
+
+COPY install/ubuntu_install_tensorflow.sh /install/ubuntu_install_tensorflow.sh
+RUN bash /install/ubuntu_install_tensorflow.sh
+
+COPY install/ubuntu_install_darknet.sh /install/ubuntu_install_darknet.sh
+RUN bash /install/ubuntu_install_darknet.sh
+
+COPY install/ubuntu_install_onnx.sh /install/ubuntu_install_onnx.sh
+RUN bash /install/ubuntu_install_onnx.sh
+
+COPY install/ubuntu_install_libtorch.sh /install/ubuntu_install_libtorch.sh
+RUN bash /install/ubuntu_install_libtorch.sh
+
+COPY install/ubuntu_install_tflite.sh /install/ubuntu_install_tflite.sh
+RUN bash /install/ubuntu_install_tflite.sh
+
+COPY install/ubuntu_install_dgl.sh /install/ubuntu_install_dgl.sh
+RUN bash /install/ubuntu_install_dgl.sh
+
+ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
+COPY install/ubuntu_install_vulkan.sh /install/ubuntu_install_vulkan.sh
+RUN bash /install/ubuntu_install_vulkan.sh
+
+COPY install/ubuntu_install_paddle.sh /install/ubuntu_install_paddle.sh
+RUN bash /install/ubuntu_install_paddle.sh
+
+# OneFlow deps
+COPY install/ubuntu_install_oneflow.sh /install/ubuntu_install_oneflow.sh
+RUN bash /install/ubuntu_install_oneflow.sh
+
+# Rust env (build early; takes a while)
+COPY install/ubuntu_install_rust.sh /install/ubuntu_install_rust.sh
+RUN bash /install/ubuntu_install_rust.sh
+ENV RUSTUP_HOME /opt/rust
+ENV CARGO_HOME /opt/rust
+ENV PATH $PATH:$CARGO_HOME/bin
+
+# wasmtime
+COPY install/ubuntu_install_wasmtime.sh /install/ubuntu_install_wasmtime.sh
+RUN bash /install/ubuntu_install_wasmtime.sh
+
+# AutoTVM deps
+COPY install/ubuntu_install_redis.sh /install/ubuntu_install_redis.sh
+RUN bash /install/ubuntu_install_redis.sh
+
+# NNPACK deps
+COPY install/ubuntu_install_nnpack.sh /install/ubuntu_install_nnpack.sh
+RUN bash /install/ubuntu_install_nnpack.sh
+
+# BYODT deps
+COPY install/ubuntu_install_universal.sh /install/ubuntu_install_universal.sh
+RUN bash /install/ubuntu_install_universal.sh
+
+# PAPI profiling deps
+COPY install/ubuntu_install_papi.sh /install/ubuntu_install_papi.sh
+RUN bash /install/ubuntu_install_papi.sh "cuda rocm"
+
+# sccache
+COPY install/ubuntu_install_sccache.sh /install/ubuntu_install_sccache.sh
+RUN bash /install/ubuntu_install_sccache.sh
+ENV PATH /opt/sccache:$PATH
+
+# dnnl
+COPY install/ubuntu_install_dnnl.sh /install/ubuntu_install_dnnl.sh
+RUN bash /install/ubuntu_install_dnnl.sh
+
+# Environment variables
+ENV PATH=/usr/local/nvidia/bin:${PATH}
+ENV PATH=/usr/local/cuda/bin:${PATH}
+ENV CPLUS_INCLUDE_PATH=/usr/local/cuda/include:${CPLUS_INCLUDE_PATH}
+ENV C_INCLUDE_PATH=/usr/local/cuda/include:${C_INCLUDE_PATH}
+ENV LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/compat:${LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/compat:${LD_LIBRARY_PATH}
+
+# Ensure the local libcuda have higher priority than the /usr/local/cuda/compact
+# since the compact libcuda does not work on non-Tesla gpus
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/:${LD_LIBRARY_PATH}
+
+ENV LD_LIBRARY_PATH=/opt/rocm/lib:${LD_LIBRARY_PATH}
+ENV PATH=/node_modules/.bin:${PATH}
+ENV VULKAN_SDK=/usr

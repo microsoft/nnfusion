@@ -80,3 +80,275 @@ welder/temp/
 welder/*.pb
 welder/*.onnx
 welder/output
+
+# tvm
+# Byte-compiled / optimized / DLL files
+tvm/__pycache__/
+tvm/*.py[cod]
+tvm/*$py.class
+tvm/*.S
+# C extensions
+tvm/*.so
+tvm/*.ll
+tvm/.npm
+# Distribution / packaging
+tvm/.Python
+tvm/env/
+tvm/build/
+tvm/build-*/
+tvm/develop-eggs/
+tvm/dist/
+tvm/downloads/
+tvm/eggs/
+tvm/.eggs/
+tvm/lib/
+tvm/lib64/
+tvm/parts/
+tvm/sdist/
+tvm/var/
+tvm/*.egg-info/
+tvm/.installed.cfg
+tvm/*.egg
+tvm/.conda/
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+tvm/*.manifest
+tvm/*.spec
+
+# Installer logs
+tvm/pip-log.txt
+tvm/pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+tvm/htmlcov/
+tvm/.tox/
+tvm/.coverage
+tvm/.coverage.*
+tvm/.cache
+tvm/nosetests.xml
+tvm/coverage.xml
+tvm/*,cover
+tvm/.hypothesis/
+
+# Translations
+tvm/*.mo
+tvm/*.pot
+
+# Django stuff:
+tvm/*.log
+tvm/local_settings.py
+
+# Flask stuff:
+tvm/instance/
+tvm/.webassets-cache
+
+# Scrapy stuff:
+tvm/.scrapy
+
+# Sphinx documentation
+tvm/docs/_build/
+tvm/docs/_staging/
+
+# PyBuilder
+/target/
+
+# IPython Notebook
+tvm/.ipynb_checkpoints
+
+# pyenv
+tvm/.python-version
+
+# celery beat schedule file
+tvm/celerybeat-schedule
+
+# dotenv
+.env
+
+# virtualenv
+tvm/venv/
+tvm/ENV/
+
+# Spyder project settings
+tvm/.spyderproject
+
+# Rope project settings
+tvm/.ropeproject
+tvm/*~
+tvm/*.pyc
+tvm/*~
+tvm/config.mk
+tvm/config.cmake
+tvm/Win32
+tvm/*.dir
+tvm/perf
+tvm/*.wasm
+tvm/.emscripten
+
+## IOS
+tvm/DerivedData/
+
+## Java
+tvm/*.class
+tvm/jvm/*/target/
+tvm/jvm/*/*/target/
+tvm/jvm/native/*/generated
+tvm/jvm/native/src/main/native/org_apache_tvm_native_c_api.h
+tvm/*.worksheet
+tvm/*.idea
+tvm/*.iml
+tvm/*.classpath
+tvm/*.project
+tvm/*.settings
+tvm/*/node_modules/
+
+## Various settings
+tvm/*.pbxuser
+tvm/!default.pbxuser
+tvm/*.mode1v3
+tvm/!default.mode1v3
+tvm/*.mode2v3
+tvm/!default.mode2v3
+tvm/*.perspectivev3
+tvm/!default.perspectivev3
+tvm/xcuserdata/
+tvm/.pkl_memoize_*
+
+tvm/.emscripten*
+tvm/.m2
+
+# Compiled Dynamic libraries
+tvm/*.so
+tvm/*.dylib
+tvm/*.dll
+
+# Compiled Object files
+tvm/*.slo
+tvm/*.lo
+tvm/*.o
+tvm/*.obj
+
+# Precompiled Headers
+tvm/*.gch
+tvm/*.pch
+
+# Compiled Static libraries
+tvm/*.lai
+tvm/*.la
+tvm/*.a
+tvm/*.lib
+
+# Executables
+tvm/*.exe
+tvm/*.out
+tvm/*.app
+
+## Other
+tvm/*.moved-aside
+tvm/*.xccheckout
+tvm/*.xcscmblueprint
+tvm/.DS_Store
+tvm/tags
+tvm/cscope*
+tvm/*.lock
+
+# vim temporary files
+tvm/*.swp
+tvm/*.swo
+
+# TVM generated code
+tvm/perf
+tvm/.bash_history
+tvm/*.json
+tvm/*.params
+tvm/*.ro
+tvm/*.onnx
+tvm/*.h5
+tvm/synset.txt
+tvm/cat.jpg
+tvm/cat.png
+tvm/docs.tgz
+tvm/cat.png
+tvm/*.mlmodel
+tvm/tvm_u.*
+tvm/tvm_t.*
+# Mac OS X
+tvm/.DS_Store
+
+# Jetbrain
+tvm/.idea
+tvm/.ipython
+tvm/.jupyter
+tvm/.nv
+tvm/.pylint.d
+tvm/.python_history
+tvm/.pytest_cache
+tvm/.local
+tvm/cmake-build-debug
+
+# Visual Studio
+tvm/.vs
+
+# Visual Studio Code
+tvm/.vscode
+
+# tmp file
+tvm/.nfs*
+
+# keys
+tvm/*.pem
+tvm/*.p12
+tvm/*.pfx
+tvm/*.cer
+tvm/*.crt
+tvm/*.der
+
+# patch sentinel
+tvm/patched.txt
+
+# Python type checking
+tvm/.mypy_cache/
+tvm/.pyre/
+
+# pipenv files
+tvm/Pipfile
+tvm/Pipfile.lock
+
+# conda package artifacts
+tvm/conda/Dockerfile.cuda*
+tvm/conda/pkg
+tvm/.node_repl_history
+# nix files
+tvm/.envrc
+tvm/*.nix
+
+# Docker files
+tvm/.sudo_as_admin_successful
+
+# Downloaded models/datasets
+tvm/.tvm_test_data
+tvm/.dgl
+tvm/.caffe2
+
+# Local docs build
+tvm/_docs/
+tvm/jvm/target
+tvm/.config/configstore/
+tvm/.ci-py-scripts/
+
+# Generated Hexagon files
+tvm/src/runtime/hexagon/rpc/hexagon_rpc.h
+tvm/src/runtime/hexagon/rpc/hexagon_rpc_skel.c
+tvm/src/runtime/hexagon/rpc/hexagon_rpc_stub.c
+
+# Local tvm-site checkout
+tvm/tvm-site/
+
+# Generated docs files
+tvm/gallery/how_to/work_with_microtvm/micro_tvmc.py
+
+# Test sample data files
+!tvm/tests/python/ci/sample_prs/*.json
+
+# Used in CI to communicate between Python and Jenkins
+tvm/.docker-image-names/

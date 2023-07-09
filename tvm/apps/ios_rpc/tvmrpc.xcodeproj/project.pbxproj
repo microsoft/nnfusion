@@ -1,0 +1,448 @@
+// !$*UTF8*$!
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		016B19C22657B390002E1719 /* RPCServer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 016B19C12657B390002E1719 /* RPCServer.mm */; };
+		01A1DB432652CBA700655BBC /* RPCArgs.mm in Sources */ = {isa = PBXBuildFile; fileRef = 01A1DB412652CBA700655BBC /* RPCArgs.mm */; };
+		01A9B7B3265BD1FD000D092F /* libtvm_runtime.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 01A9B7B2265BD1FD000D092F /* libtvm_runtime.dylib */; };
+		01A9B7B8265BD307000D092F /* libtvm_runtime.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 01A9B7B2265BD1FD000D092F /* libtvm_runtime.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C02637501F1C25E8007247A9 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = C026374F1F1C25E8007247A9 /* main.m */; };
+		C02637531F1C25E8007247A9 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = C02637521F1C25E8007247A9 /* AppDelegate.m */; };
+		C02637591F1C25E8007247A9 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C02637571F1C25E8007247A9 /* Main.storyboard */; };
+		C026375B1F1C25E8007247A9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C026375A1F1C25E8007247A9 /* Assets.xcassets */; };
+		C026375E1F1C25E8007247A9 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C026375C1F1C25E8007247A9 /* LaunchScreen.storyboard */; };
+		C02637661F1C2690007247A9 /* TVMRuntime.mm in Sources */ = {isa = PBXBuildFile; fileRef = C02637651F1C2690007247A9 /* TVMRuntime.mm */; };
+		C02637691F1C26AF007247A9 /* ViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = C02637681F1C26AF007247A9 /* ViewController.mm */; };
+		D7685AD324390EAE00D1469C /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7685AD224390EAD00D1469C /* CoreML.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		01A9B7B9265BD307000D092F /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				01A9B7B8265BD307000D092F /* libtvm_runtime.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		016B19C02657B390002E1719 /* RPCServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RPCServer.h; sourceTree = "<group>"; };
+		016B19C12657B390002E1719 /* RPCServer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RPCServer.mm; sourceTree = "<group>"; };
+		01A1DB402652CBA700655BBC /* RPCArgs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RPCArgs.h; sourceTree = "<group>"; };
+		01A1DB412652CBA700655BBC /* RPCArgs.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RPCArgs.mm; sourceTree = "<group>"; };
+		01A9B7B2265BD1FD000D092F /* libtvm_runtime.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libtvm_runtime.dylib; path = "${TVM_BUILD_DIR}/libtvm_runtime.dylib"; sourceTree = "<group>"; };
+		C026374B1F1C25E8007247A9 /* tvmrpc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tvmrpc.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C026374F1F1C25E8007247A9 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		C02637511F1C25E8007247A9 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		C02637521F1C25E8007247A9 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		C02637541F1C25E8007247A9 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		C02637581F1C25E8007247A9 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		C026375A1F1C25E8007247A9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C026375D1F1C25E8007247A9 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		C026375F1F1C25E8007247A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C02637651F1C2690007247A9 /* TVMRuntime.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TVMRuntime.mm; sourceTree = "<group>"; };
+		C02637681F1C26AF007247A9 /* ViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ViewController.mm; sourceTree = "<group>"; };
+		D7685AD224390EAD00D1469C /* CoreML.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreML.framework; path = System/Library/Frameworks/CoreML.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C02637481F1C25E8007247A9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				01A9B7B3265BD1FD000D092F /* libtvm_runtime.dylib in Frameworks */,
+				D7685AD324390EAE00D1469C /* CoreML.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C02637421F1C25E8007247A9 = {
+			isa = PBXGroup;
+			children = (
+				C026374D1F1C25E8007247A9 /* tvmrpc */,
+				C026374C1F1C25E8007247A9 /* Products */,
+				D7685AD124390EAD00D1469C /* Frameworks */,
+			);
+			indentWidth = 2;
+			sourceTree = "<group>";
+			tabWidth = 2;
+		};
+		C026374C1F1C25E8007247A9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C026374B1F1C25E8007247A9 /* tvmrpc.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C026374D1F1C25E8007247A9 /* tvmrpc */ = {
+			isa = PBXGroup;
+			children = (
+				016B19C02657B390002E1719 /* RPCServer.h */,
+				016B19C12657B390002E1719 /* RPCServer.mm */,
+				01A1DB402652CBA700655BBC /* RPCArgs.h */,
+				01A1DB412652CBA700655BBC /* RPCArgs.mm */,
+				C02637651F1C2690007247A9 /* TVMRuntime.mm */,
+				C02637511F1C25E8007247A9 /* AppDelegate.h */,
+				C02637521F1C25E8007247A9 /* AppDelegate.m */,
+				C02637541F1C25E8007247A9 /* ViewController.h */,
+				C02637681F1C26AF007247A9 /* ViewController.mm */,
+				C02637571F1C25E8007247A9 /* Main.storyboard */,
+				C026375A1F1C25E8007247A9 /* Assets.xcassets */,
+				C026375C1F1C25E8007247A9 /* LaunchScreen.storyboard */,
+				C026375F1F1C25E8007247A9 /* Info.plist */,
+				C026374E1F1C25E8007247A9 /* Supporting Files */,
+			);
+			path = tvmrpc;
+			sourceTree = "<group>";
+		};
+		C026374E1F1C25E8007247A9 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				C026374F1F1C25E8007247A9 /* main.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		D7685AD124390EAD00D1469C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				01A9B7B2265BD1FD000D092F /* libtvm_runtime.dylib */,
+				D7685AD224390EAD00D1469C /* CoreML.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C026374A1F1C25E8007247A9 /* tvmrpc */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C02637621F1C25E8007247A9 /* Build configuration list for PBXNativeTarget "tvmrpc" */;
+			buildPhases = (
+				C02637471F1C25E8007247A9 /* Sources */,
+				C02637481F1C25E8007247A9 /* Frameworks */,
+				C02637491F1C25E8007247A9 /* Resources */,
+				01A9B7B9265BD307000D092F /* Embed Libraries */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = tvmrpc;
+			productName = tvmrpc;
+			productReference = C026374B1F1C25E8007247A9 /* tvmrpc.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C02637431F1C25E8007247A9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = dmlc;
+				TargetAttributes = {
+					C026374A1F1C25E8007247A9 = {
+						CreatedOnToolsVersion = 8.3.3;
+						DevelopmentTeam = 3FR42MXLK9;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = C02637461F1C25E8007247A9 /* Build configuration list for PBXProject "tvmrpc" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				English,
+				en,
+				Base,
+			);
+			mainGroup = C02637421F1C25E8007247A9;
+			productRefGroup = C026374C1F1C25E8007247A9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C026374A1F1C25E8007247A9 /* tvmrpc */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C02637491F1C25E8007247A9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C026375E1F1C25E8007247A9 /* LaunchScreen.storyboard in Resources */,
+				C026375B1F1C25E8007247A9 /* Assets.xcassets in Resources */,
+				C02637591F1C25E8007247A9 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C02637471F1C25E8007247A9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C02637691F1C26AF007247A9 /* ViewController.mm in Sources */,
+				01A1DB432652CBA700655BBC /* RPCArgs.mm in Sources */,
+				016B19C22657B390002E1719 /* RPCServer.mm in Sources */,
+				C02637531F1C25E8007247A9 /* AppDelegate.m in Sources */,
+				C02637661F1C2690007247A9 /* TVMRuntime.mm in Sources */,
+				C02637501F1C25E8007247A9 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		C02637571F1C25E8007247A9 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C02637581F1C25E8007247A9 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		C026375C1F1C25E8007247A9 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C026375D1F1C25E8007247A9 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		C02637601F1C25E8007247A9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+					"DMLC_USE_LOGGING_LIBRARY=<tvm/runtime/logging.h>",
+					"TVM_USE_LIBBACKTRACE=0",
+					"TVM_LOG_CUSTOMIZE=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C02637611F1C25E8007247A9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DMLC_USE_LOGGING_LIBRARY=<tvm/runtime/logging.h>",
+					"TVM_USE_LIBBACKTRACE=0",
+					"TVM_LOG_CUSTOMIZE=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		C02637631F1C25E8007247A9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				DEVELOPMENT_TEAM = 3FR42MXLK9;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"USE_CUSTOM_DSO_LOADER=${USE_CUSTOM_DSO_LOADER}",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					../../include,
+					../../3rdparty/dlpack/include,
+					"../../3rdparty/dmlc-core/include",
+					"${TVM_BUILD_DIR}/apps/ios_rpc/custom_dso_loader/include",
+				);
+				INFOPLIST_FILE = tvmrpc/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"${TVM_BUILD_DIR}/apps/ios_rpc/custom_dso_loader/lib",
+					"${TVM_BUILD_DIR}",
+				);
+				OTHER_LDFLAGS = "${_DSO_LOADER_NAME_${USE_CUSTOM_DSO_LOADER}}";
+				PRODUCT_BUNDLE_IDENTIFIER = org.apache.tvmiosrpc;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TVM_BUILD_DIR = "path-to-tvm-ios-build-folder";
+				USE_CUSTOM_DSO_LOADER = 1;
+				WARNING_CFLAGS = "-Wno-shorten-64-to-32";
+				_DSO_LOADER_NAME_0 = "";
+				_DSO_LOADER_NAME_1 = "-lmacho_dyld";
+			};
+			name = Debug;
+		};
+		C02637641F1C25E8007247A9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				DEVELOPMENT_TEAM = 3FR42MXLK9;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"USE_CUSTOM_DSO_LOADER=${USE_CUSTOM_DSO_LOADER}",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					../../include,
+					../../3rdparty/dlpack/include,
+					"../../3rdparty/dmlc-core/include",
+					"${TVM_BUILD_DIR}/apps/ios_rpc/custom_dso_loader/include",
+				);
+				INFOPLIST_FILE = tvmrpc/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"${TVM_BUILD_DIR}/apps/ios_rpc/custom_dso_loader/lib",
+					"${TVM_BUILD_DIR}",
+				);
+				OTHER_LDFLAGS = "${_DSO_LOADER_NAME_${USE_CUSTOM_DSO_LOADER}}";
+				PRODUCT_BUNDLE_IDENTIFIER = org.apache.tvmiosrpc;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TVM_BUILD_DIR = "path-to-tvm-ios-build-folder";
+				USE_CUSTOM_DSO_LOADER = 1;
+				WARNING_CFLAGS = "-Wno-shorten-64-to-32";
+				_DSO_LOADER_NAME_0 = "";
+				_DSO_LOADER_NAME_1 = "-lmacho_dyld";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C02637461F1C25E8007247A9 /* Build configuration list for PBXProject "tvmrpc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C02637601F1C25E8007247A9 /* Debug */,
+				C02637611F1C25E8007247A9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C02637621F1C25E8007247A9 /* Build configuration list for PBXNativeTarget "tvmrpc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C02637631F1C25E8007247A9 /* Debug */,
+				C02637641F1C25E8007247A9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C02637431F1C25E8007247A9 /* Project object */;
+}

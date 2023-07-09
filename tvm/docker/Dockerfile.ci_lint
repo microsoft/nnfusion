@@ -1,0 +1,62 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# For lint test
+# CI docker lint env
+# tag: v0.60
+FROM ubuntu:18.04
+
+COPY utils/apt-install-and-clear.sh /usr/local/bin/apt-install-and-clear
+
+RUN apt-get update --fix-missing
+
+RUN apt-install-and-clear -y wget git sudo make parallel
+
+ENV TVM_VENV /venv/apache-tvm-py3.7
+COPY python/bootstrap/lockfiles /install/python/bootstrap/lockfiles
+COPY install/ubuntu_install_python.sh /install/ubuntu_install_python.sh
+RUN bash /install/ubuntu_install_python.sh
+ENV PATH ${TVM_VENV}/bin:$PATH
+ENV PYTHONNOUSERSITE 1  # Disable .local directory from affecting CI.
+
+RUN apt-get update && apt-install-and-clear -y doxygen graphviz curl shellcheck
+
+RUN pip3 install cpplint pylint==2.4.4 mypy==0.902 black==22.3.0 flake8==3.9.2 blocklint==0.2.3 jinja2==3.0.3
+
+# Rust env (build early; takes a while)
+COPY install/ubuntu_install_rust.sh /install/ubuntu_install_rust.sh
+RUN bash /install/ubuntu_install_rust.sh
+ENV RUSTUP_HOME /opt/rust
+ENV CARGO_HOME /opt/rust
+ENV PATH $PATH:$CARGO_HOME/bin
+
+# java deps for rat
+COPY install/ubuntu_install_java.sh /install/ubuntu_install_java.sh
+RUN bash /install/ubuntu_install_java.sh
+
+COPY install/ubuntu_install_rat.sh /install/ubuntu_install_rat.sh
+RUN bash /install/ubuntu_install_rat.sh
+
+COPY install/ubuntu1804_install_clang_format.sh /install/ubuntu1804_install_clang_format.sh
+RUN bash /install/ubuntu1804_install_clang_format.sh
+
+COPY install/ubuntu_install_nodejs.sh /install/ubuntu_install_nodejs.sh
+RUN bash /install/ubuntu_install_nodejs.sh
+
+# To prevent `black` command line errors caused by ASCII encoding
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8

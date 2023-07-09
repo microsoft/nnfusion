@@ -1,0 +1,61 @@
+# subdirectories
+3rdparty
+.github
+
+# Binary or data files
+.*\.ipynb
+.*\.pyc
+.*\.so
+.*\.json
+.*\.txt
+.*\.svg
+.*\.lst
+.*\.lds
+.*\.in
+.*\.diff
+.*\.edl
+.*\.md5
+.*\.csv
+.*\.log
+.*\.interp
+.*\.tokens
+
+# microTVM test data files
+testdata
+
+# Generated modules
+.*\.egg-info
+.*gen_modules
+.*doxygen
+core.cpp
+build
+_static
+_build
+node_modules
+dist
+.*~
+\#..*\#
+\.#.*
+.npm
+.node_repl_history
+node_modules
+
+# Specific files
+package-list
+MANIFEST
+.eslintignore
+.gitignore
+.gitattributes
+.gitmodules
+.clang-format
+.bash_history
+rat-excludes
+Cargo.lock
+
+# Included template files
+Build.groovy.j2
+Deploy.groovy.j2
+DockerBuild.groovy.j2
+Lint.groovy.j2
+Prepare.groovy.j2
+Test.groovy.j2

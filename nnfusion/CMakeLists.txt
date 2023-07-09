@@ -62,7 +62,7 @@ cmake_minimum_required (VERSION 3.10)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # STEP.3 Set compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 if (${WARNINGS_AS_ERRORS})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")

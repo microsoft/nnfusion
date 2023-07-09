@@ -6,9 +6,11 @@ The Ladder LLM repo is the artifact for the poster **Ladder: Efficent Tensor Com
 
 ### Python Environment
 
-```bash
-
-```
+- torch == 2.0.1
+- transformers == 4.28.1
+- onnx == 1.10.1
+- onnxruntime-gpu == .15.0
+- onnxsim == 0.4.24
 
 ### Install nnfusion
 
@@ -73,13 +75,13 @@ PYTHONPATH=$(pwd)/welder/python:$(pwd)/tvm/python CPLUS_INCLUDE_PATH=$(pwd)/cutl
 python3 qlinear_kernel_replace.py
 ```
 
-codegen
+cuda code generation.
 
 ```bash
 PYTHONPATH=$(pwd)/welder/python:$(pwd)/tvm/python nnfusion/build/src/tools/nnfusion/nnfusion quantization/models/huggingchat-30b-rlhf-2-4bit/qmodel_b1s1.onnx  -ftune_output_file=/dev/null -ftune_input_file=tuned_new.json -ffusion_skiplist="Dot,BatchMatMul,QuantLinear" -fwarmup_step=5 -frun_step=10 -fdot_permutation=0 | tee get_model_block.log
 ```
 
-benchmark the model
+model benchmarking
 
 ```bash
 cd nnufion_rt/cuda_codegen

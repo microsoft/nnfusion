@@ -88,3 +88,5 @@ cd nnufion_rt/cuda_codegen
 cmake .; make -j
 ./main_test
 ```
+
+![end2end latency](figures/end2end_bench_layency.png)

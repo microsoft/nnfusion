@@ -1,0 +1,13 @@
+*.pyc
+*.csv
+*.tar.gz*
+*.pkl.gz
+.dataset
+build/
+.vscode/
+cmake/config.cmake
+events.out.tfevents.*
+temp/
+*.pb
+*.onnx
+output

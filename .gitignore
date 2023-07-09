@@ -66,3 +66,17 @@ nnfusion/*.egg-info
 nnfusion/nnfusion_rt/
 nnfusion/models/frozenmodels/
 
+# welder
+welder/*.pyc
+welder/*.csv
+welder/*.tar.gz*
+welder/*.pkl.gz
+welder/.dataset
+welder/build/
+welder/.vscode/
+welder/cmake/config.cmake
+welder/events.out.tfevents.*
+welder/temp/
+welder/*.pb
+welder/*.onnx
+welder/output

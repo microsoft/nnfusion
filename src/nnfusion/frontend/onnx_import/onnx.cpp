@@ -68,10 +68,9 @@ namespace nnfusion
                                       "(models/pytorch2onnx/increase_precision.py)";
                 string script_path =
                     nnfusion::codegen::get_file_from_templates("onnx/increase_precision.py");
-                string cmd = "python3 " + script_path +
-                             " --file " +
-                             m_path + " --mp_file " + mp_filename;
-                
+                string cmd =
+                    "python3 " + script_path + " --file " + m_path + " --mp_file " + mp_filename;
+
                 int sys_ret = system(cmd.c_str());
                 // NNFUSION_LOG(INFO) << "mix precision model path: " << mp_filename;
                 opt_fin = std::ifstream(mp_filename.c_str());
@@ -86,7 +85,7 @@ namespace nnfusion
                            "check error messages reported by the tool, fallback";
                 }
             }
-           
+
             string optimized_filename = string(nnfusion::tmpnam(nullptr));
             if (FLAGS_fort_folding)
             {

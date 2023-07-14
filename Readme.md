@@ -2,6 +2,14 @@
 
 The Ladder LLM repo is the artifact for the poster **Ladder: Efficent Tensor Compilation on Cunstomized Data Fromat** presented at OSDI '23. ladder llm aims to optimize large language models by leveraging quantization and memory fusion techniques. By efficiently compiling tensor computations on customized data formats, Ladder LLM addresses the challenges posed by various hardware platforms and data formats in the deep learning community.
 
+## Features
+
+- Fast and Efficient Kernel Support for diverse data formats and bitwidths： e.g. 4-bit inference，support INT4, FP4, NF4, W4A16 can be 4x faster in general.
+- Efficient Model Compilation supported by nnfusion.
+- Efficient Memory Fusion supported by welder.
+- archieve 80% theory performance of HuggingChat30B-4bit on NVIDIA RTX 3090.
+
+
 ## Quick Start
 
 ### Python Environment

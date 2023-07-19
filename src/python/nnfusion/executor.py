@@ -108,13 +108,15 @@ class Executor(object):
 
         # prepare init/free/kernel_entry
         self.init_flag = False
+        # dxil.dll and dxcompiler.dll must be manually imported
+        self.lib_dxil, self.lib_dxcompiler = None, None
+        if os.path.exists(os.path.join(nnf_rt_dir, "dxil.dll")):
+            self.lib_dxil = ctypes.cdll.LoadLibrary(os.path.join(nnf_rt_dir, "dxil.dll"))
+        if os.path.exists(os.path.join(nnf_rt_dir, "dxcompiler.dll")):
+            self.lib_dxcompiler = ctypes.cdll.LoadLibrary(os.path.join(nnf_rt_dir, "dxcompiler.dll"))
+        # antares.dll must be loaded after dxil.dll and dxcompiler.dll
         if os.path.exists(os.path.join(nnf_rt_dir, "antares.dll")):
             HLSLTensor.init_antares_lib(os.path.join(nnf_rt_dir, "antares.dll"))
-        # dxil.dll and dxcompiler.dll must be manually imported
-        if os.path.exists(os.path.join(nnf_rt_dir, "dxil.dll")):
-            ctypes.cdll.LoadLibrary(os.path.join(nnf_rt_dir, "dxil.dll"))
-        if os.path.exists(os.path.join(nnf_rt_dir, "dxcompiler.dll")):
-            ctypes.cdll.LoadLibrary(os.path.join(nnf_rt_dir, "dxcompiler.dll"))
         self.libnnf = ctypes.cdll.LoadLibrary(self.libnnf_path)
         if hasattr(self.libnnf, "kernel_entry_host"):
             self.kernel_entry = self.libnnf.kernel_entry_host
@@ -278,10 +280,35 @@ class Executor(object):
         if self.init_flag and nnf_rt_free:
             nnf_rt_free()
             self.init_flag = False
+        self._release_dynamic_libraries()
 
     def __call__(self, *args, **kwargs):
         # self.feed_tensors(*args, **kwargs)
         return self.feed_data(*args, **kwargs)
+
+    def _release_dynamic_libraries(self):
+        # There are four DLLs loaded: antares.dll, dxcompiler.dll, dxil.dll, nnfusion_rt.dll
+        # But the antares.dll is warpped in the class HLSLTensor and loaded only once during process
+        # Thus the other three DLLs are loaded for each test case and need to be explicitly released
+        if platform.system().lower() == "windows":
+            ctypes.windll.kernel32.FreeLibrary.argtypes = [ctypes.c_void_p]
+            # release nnfusion_rt.dll
+            handle = self.libnnf._handle
+            del self.libnnf
+            ctypes.windll.kernel32.FreeLibrary(handle)
+            # release dxil.dll
+            if self.lib_dxil:
+                handle = self.lib_dxil._handle
+                del self.lib_dxil
+                ctypes.windll.kernel32.FreeLibrary(handle)
+            # release dxcompiler.dll
+            if self.lib_dxcompiler:
+                handle = self.lib_dxcompiler._handle
+                del self.lib_dxcompiler
+                ctypes.windll.kernel32.FreeLibrary(handle)
+        elif platform.system().lower() == "linux":
+            pass  # TODO: release libraries in linux
+        return
 
     def _dict_to_pointer_list(self, inputs, outputs, strict=True):
         signature = [None] * (len(self.input_descs) + len(self.output_descs))

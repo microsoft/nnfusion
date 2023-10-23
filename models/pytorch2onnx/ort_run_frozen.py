@@ -93,6 +93,10 @@ elif args.graph_optimization_level == 'ORT_ENABLE_EXTENDED':
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
 if args.optimized_model_filepath != '':
     sess_options.optimized_model_filepath = args.optimized_model_filepath
+    sess_options.add_session_config_entry(
+                "session.optimized_model_external_initializers_file_name", os.path.basename(args.optimized_model_filepath) + ".data"
+            )
+    sess_options.add_session_config_entry("session.optimized_model_external_initializers_min_size_in_bytes", "100")
 
 for k, v in args.symbolic_dims.items():
     sess_options.add_free_dimension_override_by_name(k, int(v))

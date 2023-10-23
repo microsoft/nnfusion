@@ -313,10 +313,15 @@ namespace nnfusion
             {
                 config[alias_name + "_dtype"] = "int64";
             }
+            else if (d_type == element::u8)
+            {
+                // hack!!!
+                config[alias_name + "_dtype"] = "int8";
+            }
             else
             {
                 NNFUSION_CHECK_FAIL()
-                    << "Unhandled type: " << d_type
+                    << "Unhandled type for " << input_name << ": " << d_type
                     << ", antares currently supports int8/16/32/64, float16/32/64";
             }
             auto shape = tensor->get_shape();

@@ -21,6 +21,6 @@
 using namespace nnfusion::op;
 
 Round::Round()
-    : ElementwiseArithmetic("round")
+    : ElementwiseArithmetic("Round")
 {
 }

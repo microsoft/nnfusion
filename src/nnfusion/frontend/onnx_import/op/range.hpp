@@ -89,6 +89,7 @@ namespace nnfusion
                     else
                         NNFUSION_CHECK_FAIL() << "non-supported data type for Range op: "
                                               << element_type.c_type_string();
+                    return {};
                 }
 
             } // namespace set_11

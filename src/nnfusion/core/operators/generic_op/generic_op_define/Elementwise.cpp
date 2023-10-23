@@ -31,7 +31,7 @@ static const std::unordered_map<std::string, element_op> ElementOpMap = {
     {"Sin", element_op("sin", "")},
     {"Sinh", element_op("sinh", "")},
     {"Sqrt", element_op("sqrt", "")},
-    {"Round", element_op("gelu", "x0.call(`round`)")},
+    {"Round", element_op("round", "x0.call(`round`)")},
     {"Rsqrt", element_op("rsqrt", "")},
     {"Tan", element_op("tan", "")},
     {"Tanh", element_op("tanh", "")},
@@ -197,6 +197,7 @@ REGISTER_ELEM_OP(Relu)
 REGISTER_ELEM_OP(Relu6)
 REGISTER_ELEM_OP(ReluBackprop)
 REGISTER_ELEM_OP(Relu6Backprop)
+REGISTER_ELEM_OP(Round)
 REGISTER_ELEM_OP(Sigmoid)
 REGISTER_ELEM_OP(SigmoidBackprop)
 REGISTER_ELEM_OP(Equal)

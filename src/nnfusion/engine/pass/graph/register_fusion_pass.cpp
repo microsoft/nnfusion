@@ -19,6 +19,7 @@ using namespace nnfusion::kernels;
 
 DEFINE_string(ftune_output_file, "", "the output json file path");
 DEFINE_string(ftune_input_file, "", "the input json file path");
+DEFINE_bool(fnofuse, false, "Disable element-wise fusion");
 DEFINE_string(ffusion_skiplist, "", "List of op types that skips in fusion");
 DECLARE_string(fdefault_device);
 
@@ -84,6 +85,14 @@ namespace
                    });
         return nodes;
     }
+
+    string ir_add_tag(const string& ir, const string& tag)
+    {
+        if (ir.find("## @:") != string::npos)
+            return ir + "|" + tag;
+        else
+            return ir + "## @: " + tag;
+    }
 }
 
 class RegisterFusionOptimizer
@@ -138,11 +147,13 @@ public:
                 fuse_from_node(tnode, true);
             }
         }
+        inline_lightweighted_ops();
         auto groups = extract_fusion_group();
-        for (auto group : groups)
-        {
-            insert_fuse_group(group);
-        }
+        if (!FLAGS_fnofuse)
+            for (auto group : groups)
+            {
+                insert_fuse_group(group);
+            }
         auto nodes = nlohmann::json().array();
         for (auto& node : find_topo_sort_priority(m_graph))
         {
@@ -151,10 +162,12 @@ public:
             auto str = nnfusion::op::get_translation_v2(node);
             if (skip_ops.count(node->get_op_type()))
             {
-                if (str.find("## @:") != string::npos)
-                    str += "|skip";
-                else
-                    str += "## @: skip";
+                str = ir_add_tag(str, "skip");
+            }
+            if (node->get_op_type() == "Fused" &&
+                std::dynamic_pointer_cast<op::Fused>(node->get_op_ptr())->get_is_memcpy())
+            {
+                str = ir_add_tag(str, "memcpy");
             }
             auto edge = nlohmann::json().array();
             for (auto& e : node->get_in_edges())
@@ -173,7 +186,7 @@ public:
     }
 
 private:
-    vector<shared_ptr<FuseGroup>> extract_fusion_group()
+    vector<shared_ptr<FuseGroup>> extract_fusion_group() const
     {
         unordered_map<int, shared_ptr<FuseGroup>> groups;
         vector<shared_ptr<FuseGroup>> result;
@@ -193,6 +206,85 @@ private:
                 result.push_back(kv.second);
         }
         return result;
+    }
+
+    bool is_lightweighted_op(const shared_ptr<GNode>& node)
+    {
+        auto type = node->get_op_type();
+        if (type == "Slice" || type == "Broadcast")
+            return true;
+        if (type == "Reshape")
+        {
+            auto op = std::dynamic_pointer_cast<op::Reshape>(node->get_op_ptr());
+            auto order = op->get_input_order();
+            if (order.empty())
+                return true;
+
+            bool is_lower_dim_kept = order.back() == order.size() - 1;
+            return is_lower_dim_kept;
+        }
+        return false;
+    }
+
+    void inline_lightweighted_ops()
+    {
+        // Iterate over all independent groups
+        // inline first group into second if:
+        // 1. first group has one output
+        // 2. first group are all light weighted ops
+        // 3. all ops not in skip lists
+        unordered_map<int, shared_ptr<FuseGroup>> map;
+        vector<shared_ptr<FuseGroup>> groups;
+        for (auto& tnode : node_list_)
+        {
+            if (tnode->node_->get_op_ptr()->is_tensor_op())
+                continue;
+            if (tnode->group_id_ < 0)
+            {
+                auto f = make_shared<FuseGroup>();
+                f->nodes.insert(tnode->node_);
+                groups.push_back(f);
+            }
+            else
+            {
+                if (!map.count(tnode->group_id_))
+                {
+                    map[tnode->group_id_] = make_shared<FuseGroup>();
+                }
+                map[tnode->group_id_]->nodes.insert(tnode->node_);
+            }
+        }
+        for (auto& kv : map)
+            groups.push_back(kv.second);
+
+        for (auto& group : groups)
+        {
+            bool group_is_lightweighted = true;
+            unordered_set<shared_ptr<GNode>> group_outputs;
+            for (auto& node : group->nodes)
+            {
+                group_is_lightweighted &= is_lightweighted_op(node);
+                for (auto& edge : node->get_out_edges())
+                {
+                    if (!group->nodes.count(edge->get_dst()))
+                        group_outputs.insert(edge->get_dst());
+                }
+            }
+            if (group_outputs.size() == 0)
+                continue;
+            auto& output_node = *group_outputs.begin();
+            auto& tag_output_node = node_map_[output_node];
+            bool op_skip = skip_ops.count(output_node->get_op_type());
+            for (auto& node : group->nodes)
+                op_skip |= skip_ops.count(node->get_op_type());
+            if (group_is_lightweighted && !op_skip && group_outputs.size() == 1)
+            {
+                if (tag_output_node->group_id_ < 0)
+                    tag_output_node->group_id_ = cur_group_++;
+                for (auto& node : group->nodes)
+                    node_map_[node]->group_id_ = tag_output_node->group_id_;
+            }
+        }
     }
 
     void insert_fuse_group(shared_ptr<FuseGroup> group)

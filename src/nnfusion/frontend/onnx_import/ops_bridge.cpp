@@ -433,6 +433,7 @@ namespace nnfusion
                 REGISTER_OPERATOR("Relu", 1, TranslateUnaryOp<op::Relu>);
                 REGISTER_OPERATOR("Reshape", 1, TranslateReshapeOp);
                 REGISTER_OPERATOR("ReshapeGrad", 1, TranslateReshapeGradOp);
+                REGISTER_OPERATOR("Round", 11, TranslateUnaryOp<op::Round>);
                 //REGISTER_OPERATOR("Selu", 1, selu);
                 REGISTER_OPERATOR("Shape", 1, TranslateShapeOp);
                 REGISTER_OPERATOR("Shape", 15, TranslateShapeOp);

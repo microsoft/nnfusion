@@ -68,10 +68,9 @@ namespace nnfusion
                                       "(models/pytorch2onnx/increase_precision.py)";
                 string script_path =
                     nnfusion::codegen::get_file_from_templates("onnx/increase_precision.py");
-                string cmd = "python3 " + script_path +
-                             " --file " +
-                             m_path + " --mp_file " + mp_filename;
-                
+                string cmd =
+                    "python3 " + script_path + " --file " + m_path + " --mp_file " + mp_filename;
+
                 int sys_ret = system(cmd.c_str());
                 // NNFUSION_LOG(INFO) << "mix precision model path: " << mp_filename;
                 opt_fin = std::ifstream(mp_filename.c_str());
@@ -86,7 +85,7 @@ namespace nnfusion
                            "check error messages reported by the tool, fallback";
                 }
             }
-           
+
             string optimized_filename = string(nnfusion::tmpnam(nullptr));
             if (FLAGS_fort_folding)
             {
@@ -112,6 +111,7 @@ namespace nnfusion
                     dim_params_str += "}\'";
                     cmd += dim_params_str;
                 }
+                NNFUSION_LOG(INFO) << "Executing: " << cmd;
                 int sys_ret = system(cmd.c_str());
                 opt_fin = std::ifstream(optimized_filename.c_str());
                 if (sys_ret == 0 && opt_fin.is_open())
@@ -128,11 +128,11 @@ namespace nnfusion
             std::ifstream ifs{m_path, std::ios::in | std::ios::binary};
             NNFUSION_CHECK(ifs.is_open()) << "failure opening file:" + path;
             string model_dir = "";
-            string weight_path = FLAGS_fincrease_precision ? m_path : path;
-            auto pos = weight_path.rfind("/");
+            // string weight_path = FLAGS_fincrease_precision ? m_path : path;
+            auto pos = m_path.rfind("/");
             if (pos != std::string::npos)
             {
-                model_dir = weight_path.substr(0, pos);
+                model_dir = m_path.substr(0, pos);
             }
 
             auto graph = load_onnx_model(ifs, model_dir, dim_params);
@@ -141,7 +141,10 @@ namespace nnfusion
             {
                 remove(optimized_filename.c_str());
             }
-
+            if (std::ifstream((optimized_filename + ".data").c_str()).good())
+            {
+                remove((optimized_filename + ".data").c_str());
+            }
             return graph;
         }
     } // namespace frontend

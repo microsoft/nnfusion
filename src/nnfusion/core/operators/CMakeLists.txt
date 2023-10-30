@@ -68,6 +68,7 @@ set(SRC
     op_define/result.cpp
     op_define/reverse_sequence.cpp
     op_define/reverse.cpp
+    op_define/round.cpp
     op_define/rsqrt.cpp
     op_define/select_and_scatter.cpp
     op_define/select.cpp

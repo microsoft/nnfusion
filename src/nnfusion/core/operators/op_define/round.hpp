@@ -14,31 +14,22 @@
 // limitations under the License.
 //*****************************************************************************
 
-// Microsoft (c) 2019, NNFusion Team
+// Microsoft (c) 2020, NNFusion Team
 
-#include "../op.hpp"
+#pragma once
+
+#include "nnfusion/core/operators/util/elementwise_arithmetic.hpp"
 
 namespace nnfusion
 {
     namespace op
     {
-        class Fused : public Op
+        /// \brief Elementwise cosine operation.
+        class Round : public ElementwiseArithmetic
         {
         public:
-            Fused(const std::string& name, const std::string& opname)
-                : Op(opname){};
-
-            void register_ir2(std::vector<std::shared_ptr<graph::GNode>>& gnodes,
-                              std::shared_ptr<graph::GNode> fused_node);
-            std::string get_fused_ir2() { return fused_op_ir2; };
-            std::string get_plan_rule();
-            bool get_is_memcpy() { return is_memcpy; }
-        protected:
-            void assemble_inputs_and_outputs();
-
-            std::string fused_op_ir2;
-            std::vector<std::string> plan_rules;
-            bool is_memcpy;
+            /// \brief Constructs a round operation.
+            Round();
         };
     }
 }

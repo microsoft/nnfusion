@@ -84,6 +84,7 @@
 #include "nnfusion/core/operators/op_define/result.hpp"
 #include "nnfusion/core/operators/op_define/reverse.hpp"
 #include "nnfusion/core/operators/op_define/reverse_sequence.hpp"
+#include "nnfusion/core/operators/op_define/round.hpp"
 #include "nnfusion/core/operators/op_define/rsqrt.hpp"
 #include "nnfusion/core/operators/op_define/select.hpp"
 #include "nnfusion/core/operators/op_define/select_and_scatter.hpp"

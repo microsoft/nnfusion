@@ -52,18 +52,26 @@ namespace nnfusion
                         NNFUSION_CHECK(nnfusion::shape_size(value.get_shape()) == 1);
                         const_op = make_constant_op(
                             value.get_ng_type(),
-                            Shape(std::begin(output_shape), std::end(output_shape)),
+                            Shape{1},
                             value);
+                        // const_op = make_constant_op(
+                        //     value.get_ng_type(),
+                        //     Shape(std::begin(output_shape), std::end(output_shape)),
+                        //     value);
                     }
                     else
                     {
                         auto vec = std::vector<float>{0};
                         const_op = std::make_shared<op::Constant>(element::f32, Shape{1}, vec);
                     }
-
-                    const_op->set_name(node_proto.output(0));
-                    const_op->set_global_consistent_name(node_proto.output(0));
+                    // const_op->set_name(node_proto.output(0));
+                    // const_op->set_global_consistent_name(node_proto.output(0));
                     auto const_gnode = m_graph->add_node_and_edge(const_op, graph::GNodeVector({}));
+
+                    const_gnode = make_broadcast_node(const_gnode, Shape(std::begin(output_shape), std::end(output_shape)), m_graph);
+                    const_gnode->get_op_ptr()->set_name(node_proto.output(0));
+                    const_gnode->get_op_ptr()->set_global_consistent_name(node_proto.output(0));
+
 
                     return {{node_proto.output(0), const_gnode}};
                 }

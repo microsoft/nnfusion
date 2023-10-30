@@ -65,6 +65,12 @@ namespace nnfusion
             {
                 using set_1::TranslateUnaryOp;
             }
+
+            namespace set_11
+            {
+                using set_1::TranslateUnaryOp;
+            }
+
             namespace set_13
             {
                 using set_1::TranslateUnaryOp;

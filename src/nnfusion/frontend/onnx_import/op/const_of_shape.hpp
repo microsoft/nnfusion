@@ -64,7 +64,6 @@ namespace nnfusion
                         auto vec = std::vector<float>{0};
                         const_op = std::make_shared<op::Constant>(element::f32, Shape{1}, vec);
                     }
-                    std::cout << node_proto.output(0) << std::endl;
                     // const_op->set_name(node_proto.output(0));
                     // const_op->set_global_consistent_name(node_proto.output(0));
                     auto const_gnode = m_graph->add_node_and_edge(const_op, graph::GNodeVector({}));

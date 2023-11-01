@@ -1480,7 +1480,7 @@ void CudaCodegenPass::create_cmake_file(std::shared_ptr<InterpreterContext> ctx,
 cmake_minimum_required(VERSION 3.5)
 SET(SRC "nnfusion_rt.cu" CACHE STRING "codegen source file")
 SET(TARGET_NAME "nnfusion_naive_rt" CACHE STRING "codegen target name")
-SET(CUDA_ARCH "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86" CACHE STRING "target architecture")
+SET(CUDA_ARCH "-gencode=arch=compute_60,code=compute_60 -gencode=arch=compute_61,code=compute_61 -gencode=arch=compute_70,code=compute_70 -gencode=arch=compute_75,code=compute_75 -gencode=arch=compute_80,code=compute_80 -gencode=arch=compute_86,code=compute_86" CACHE STRING "target architecture")
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()

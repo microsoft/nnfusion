@@ -50,7 +50,12 @@ namespace nnfusion
                     //     std::iota(perm.rbegin(), perm.rend(), 0);
                     // }
                     AxisVector ng_axis_order(perm.begin(), perm.end());
-
+                    // print node name
+                    NNFUSION_LOG(INFO) << "Transpose: " << node_proto.output(0);
+                    NNFUSION_LOG(INFO) << "Transpose: " << node_proto.name();
+                    // print input
+                    NNFUSION_LOG(INFO) << data.gnode->get_name();
+                    NNFUSION_LOG(INFO) << data.gnode->get_output_shape(0);
                     auto out_gnode =
                         nnfusion::graph::numpy_transpose(data.gnode, ng_axis_order, data.index);
                     out_gnode->get_op_ptr()->set_name(node_proto.output(0));

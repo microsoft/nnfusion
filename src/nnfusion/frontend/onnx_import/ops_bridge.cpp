@@ -66,6 +66,7 @@
 #include "op/one_hot.hpp"
 #include "op/pad.hpp"
 #include "op/pool.hpp"
+#include "op/quant_linear.hpp"
 #include "op/range.hpp"
 #include "op/reciprocal.hpp"
 #include "op/reduce.hpp"
@@ -88,7 +89,6 @@
 #include "op/unsqueeze.hpp"
 #include "op/where.hpp"
 #include "ops_bridge.hpp"
-
 namespace nnfusion
 {
     namespace frontend
@@ -254,6 +254,8 @@ namespace nnfusion
                 REGISTER_OPERATOR("GatherND", 12, TranslateGatherNDOp);
                 REGISTER_OPERATOR("GatherND", 13, TranslateGatherNDOp);
                 REGISTER_OPERATOR("GatherNDGrad", 11, TranslateGatherNDGradOp);
+                REGISTER_OPERATOR("GatherElements", 11, TranslateGatherElementsOp);
+                REGISTER_OPERATOR("GatherElements", 13, TranslateGatherElementsOp);
                 REGISTER_OPERATOR("Gelu", 1, TranslateUnaryOp<op::Gelu>);
                 REGISTER_OPERATOR("GlobalAveragePool",
                                   1,
@@ -344,6 +346,11 @@ namespace nnfusion
                 REGISTER_OPERATOR("Pow", 12, TranslateBinaryOp<op::Power>);
                 REGISTER_OPERATOR("Pow", 13, TranslateBinaryOp<op::Power>);
                 REGISTER_OPERATOR("Pow", 15, TranslateBinaryOp<op::Power>);
+                REGISTER_DOMAIN_OPERATOR("nnfusion", "QuantLinear", 1, TranslateQuantLinearOp);
+                REGISTER_DOMAIN_OPERATOR("nnfusion", "QuantLinear", 7, TranslateQuantLinearOp);
+                REGISTER_DOMAIN_OPERATOR("nnfusion", "QuantLinear", 9, TranslateQuantLinearOp);
+                REGISTER_DOMAIN_OPERATOR("nnfusion", "QuantLinear", 11, TranslateQuantLinearOp);
+                REGISTER_DOMAIN_OPERATOR("nnfusion", "QuantLinear", 13, TranslateQuantLinearOp);
                 //REGISTER_OPERATOR("PRelu", 1, prelu);
                 REGISTER_OPERATOR("Range", 11, TranslateRangeOp);
                 REGISTER_OPERATOR("Reciprocal", 1, TranslateReciprocalOp);

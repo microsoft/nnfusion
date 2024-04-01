@@ -98,10 +98,8 @@ To test the new models, we did modify `run_classifier.py` to add support for the
 version of MultiNLI where the dev/test sets have been human-translated, and the
 training set has been machine-translated.
 
-To run the fine-tuning code, please download the
-[XNLI dev/test set](https://s3.amazonaws.com/xnli/XNLI-1.0.zip) and the
-[XNLI machine-translated training set](https://s3.amazonaws.com/xnli/XNLI-MT-1.0.zip)
-and then unpack both .zip files into some directory `$XNLI_DIR`.
+To run the fine-tuning code, Refer to [Download XNLI dataset](https://github.com/facebookresearch/XNLI?tab=readme-ov-file#download).
+After downloading, extract both .zip files into a specified directory named `$XNLI_DIR`.
 
 To run fine-tuning on XNLI. The language is hard-coded into `run_classifier.py`
 (Chinese by default), so please modify `XnliProcessor` if you want to run on

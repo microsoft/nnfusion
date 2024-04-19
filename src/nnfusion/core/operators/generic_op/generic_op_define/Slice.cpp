@@ -36,10 +36,12 @@ REGISTER_OP(Slice)
             auto step = steps[d];
             auto start = starts[d];
             auto end = ends[d];
-            auto range = (u_int64_t)ceil((double)(end-start)/(double)step);
-            input_layout.push_back((step == 1? output_layout[d] : output_layout[d] + " * " + to_string(step))  + " + " + to_string(start));
-            slice_dims += (slice_dims.empty() ? "" : " , ") + output_layout[d] +
-                         " in " + to_string(range);
+            auto range = (u_int64_t)ceil((double)(end - start) / (double)step);
+            input_layout.push_back(
+                (step == 1 ? output_layout[d] : output_layout[d] + " * " + to_string(step)) +
+                " + " + to_string(start));
+            slice_dims +=
+                (slice_dims.empty() ? "" : " , ") + output_layout[d] + " in " + to_string(range);
         }
 
         auto expression_code = op::create_code_from_template(

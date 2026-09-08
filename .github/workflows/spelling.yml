@@ -23,7 +23,7 @@ jobs:
     steps:
     - name: check-spelling
       id: spelling
-      uses: check-spelling/check-spelling@v0.0.20
+      uses: check-spelling/check-spelling@729687234a293e0680b12ca055a02fff415da89d # v0.0.20
       with:
         suppress_push_for_open_pull_request: 1
         checkout: true
@@ -39,7 +39,7 @@ jobs:
     if: (success() || failure()) && needs.spelling.outputs.followup
     steps:
     - name: comment
-      uses: check-spelling/check-spelling@v0.0.20
+      uses: check-spelling/check-spelling@729687234a293e0680b12ca055a02fff415da89d # v0.0.20
       with:
         checkout: true
         task: ${{ needs.spelling.outputs.followup }}
